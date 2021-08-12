@@ -8,15 +8,11 @@ tags:
   - name: group
 paths:
   /groups:
-    post:
-      operationId: createGroup
-      summary: Create a group
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/NewGroup"
+    get:
+      operationId: listGroups
+      summary: list groups
+      parameters:
+        - $ref: "#/components/parameters/searchParam"
       responses:
         "201":
           description: null response
@@ -26,7 +22,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/error"
-  /groups/{group}:
+  /group:
+    post:
+      operationId: createGroup
+      summary: create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/newGroup"
+      responses:
+        "201":
+          description: null response
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /group/{group}:
     parameters:
       - $ref: "#/components/parameters/groupParam"
     get:
@@ -38,7 +53,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupDetail"
+                $ref: "#/components/schemas/groupDetail"
         default:
           description: Unexpected error
           content:
@@ -53,14 +68,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GroupDetail'
+              $ref: '#/components/schemas/groupDetail'
       responses:
         '200':
           description: Update result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupDetail'
+                $ref: '#/components/schemas/groupDetail'
         default:
           description:  Unexpected error
           content:
@@ -79,7 +94,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/error'
-  /groups/{group}/subgroups:
+  /group/{group}/subgroups:
     parameters:
       - $ref: "#/components/parameters/groupParam"
       - $ref: "#/components/parameters/searchParam"
@@ -93,8 +108,8 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GroupDetail'
-  /groups/{group}/services:
+                  $ref: '#/components/schemas/groupDetail'
+  /group/{group}/services:
     parameters:
       - $ref: "#/components/parameters/groupParam"
       - $ref: "#/components/parameters/searchParam"
@@ -125,7 +140,11 @@ components:
       schema:
         type: string
   schemas:
-    NewGroup:
+    queryGroup:
+      type: string
+      maxLength: 100
+      description: param for querying group
+    newGroup:
       type: object
       required:
         - name
@@ -137,13 +156,13 @@ components:
         path:
           $ref: '#/components/schemas/groupPath'
         description:
-          $ref: '#/components/schemas/GroupDescription'
+          $ref: '#/components/schemas/groupDescription'
         visibilityLevel:
           $ref: '#/components/schemas/visibilityLevel'
         parantId:
           $ref: '#/components/schemas/groupId'
 
-    GroupDetail:
+    groupDetail:
       type: object
       properties:
         id:
@@ -153,7 +172,7 @@ components:
         path:
           $ref: '#/components/schemas/groupPath'
         description:
-          $ref: '#/components/schemas/GroupDescription'
+          $ref: '#/components/schemas/groupDescription'
         visibilityLevel:
           $ref: '#/components/schemas/visibilityLevel'
         createTime:
@@ -180,7 +199,7 @@ components:
       enum: [0,1]
       default: 0
       description: 0 means public(every one can see the group), 1 means private one member can see
-    GroupDescription:
+    groupDescription:
       type: string
       maxLength: 1024
       description: the group description
