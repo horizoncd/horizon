@@ -1,0 +1,82 @@
+openapi: 3.0.0
+info:
+  title: Horizon Login API
+  description: |
+    Login API, Use to login platform
+  version: 1.0.0
+tags:
+  - name: login
+paths:
+  /api/v1/login:
+    get:
+      operationId: login
+      summary: user login
+      parameters:
+      - name: redirectUrl
+        in: query
+        description: redirectUrl after login success
+        required: true
+      - name: fromHost
+        in: query
+        description: fromHost
+        required: true
+      responses:
+        "302":
+          description: redirectUrl
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /api/v1/logout:
+    get:
+      operationId: logout
+      summary: user logout
+      responses:
+        '200':
+          description: Expected response to a valid request
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+  /api/v1/login/status:
+    get:
+      operationId: user status
+      responses:
+        '200':
+          description: Return the list of groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      mailAddress:
+                        type: string
+                      name:
+                        type: string
+                      nickName:
+                        type: string
+components:
+  schemas:
+    error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+

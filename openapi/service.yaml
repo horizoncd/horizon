@@ -14,11 +14,6 @@ paths:
       responses:
         '200':
           description: null response
-  /services/{service}:
-  /services/
-
-  /user/{user}/services:
-
 
 components:
   schemas:
