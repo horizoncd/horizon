@@ -8,19 +8,20 @@ servers:
 paths:
   /api/v1/login:
     post:
-      description: OpenID登录
+      description: login
+      summary: login
       operationId: login
       tags:
         - login
       parameters:
         - name: redirectUrl
           in: query
-          description: 重定向到的url
+          description: redirect url after logining
           schema:
             type: string
         - name: fromHost
           in: query
-          description: 重定向到的host
+          description: redirect host after logining
           schema:
             type: string
       responses:
@@ -32,7 +33,8 @@ paths:
                 $ref: '#/components/schemas/LoginResult'
   /api/v1/logout:
     post:
-      description: 登出接口
+      description: logout
+      summary: logout
       operationId: logout
       tags:
         - login
@@ -57,7 +59,8 @@ paths:
     get:
       tags:
         - login
-      description: 查当前用户
+      description: status of the currentUser
+      summary: status of the currentUser
       operationId: currentUser
       parameters:
         - name: openIDState
@@ -77,12 +80,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
       x-codegen-request-body-name: body
     x-swagger-router-controller: api
-  /api/v1/groups:
+  /api/v1/group/query:
     post:
       tags:
         - group
-      description: 查分组
-      summary: 根据搜索条件查分组
+      description: query groups
+      summary: query groups
       operationId: queryGroups
       requestBody:
         content:
@@ -124,7 +127,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/error"
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/group/children?parentId={groupId}:
+    post:
+      tags:
+        - group
+      operationId: queryGroupChildren
+      summary: query children of a group
+      parameters:
+        - name: groupId
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupChildren"
+          description: normam response
   /api/v1/group/{groupId}:
     parameters:
       - $ref: "#/components/parameters/groupParam"
@@ -174,7 +193,7 @@ paths:
       tags:
         - group
       operationId: deleteGroup
-      summary: delete an empty group
+      summary: delete a  group
       responses:
         '200':
           description: null response
@@ -246,10 +265,7 @@ components:
         success:
           type: boolean
           description: 业务上的请求是否成功
-    queryGroup:
-      type: string
-      maxLength: 100
-      description: param for querying group
+
     newGroup:
       type: object
       required:
@@ -282,6 +298,8 @@ components:
         visibilityLevel:
           $ref: '#/components/schemas/visibilityLevel'
         createTime:
+          $ref: '#/components/schemas/date'
+        modifyTime:
           $ref: '#/components/schemas/date'
     date:
       type: string
@@ -320,3 +338,32 @@ components:
           format: int32
         message:
           type: string
+    GroupChild:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/GroupChildType'
+        childrenCount:
+          type: integer
+        createTime:
+          $ref: '#/components/schemas/date'
+        modifyTime:
+          $ref: '#/components/schemas/date'
+
+    GroupChildren:
+      type: array
+      items:
+        $ref: '#/components/schemas/GroupChild'
+
+    GroupChildType:
+      type: string
+      enum:
+        - group
+        - service
+
+
+
