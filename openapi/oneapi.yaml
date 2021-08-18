@@ -7,7 +7,7 @@ servers:
   - url: 'http://horizon.mockserver.org/'
 paths:
   /api/v1/login:
-    get:
+    post:
       description: OpenID登录
       operationId: login
       tags:
@@ -53,7 +53,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     x-swagger-router-controller: api
-  /api/v1/status:
+  /api/v1/login/status:
     get:
       tags:
         - login
@@ -78,7 +78,7 @@ paths:
       x-codegen-request-body-name: body
     x-swagger-router-controller: api
   /api/v1/groups:
-    get:
+    post:
       tags:
         - group
       description: 查分组
@@ -125,7 +125,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/error"
-  /api/v1/group/{group}:
+  /api/v1/group/{groupId}:
     parameters:
       - $ref: "#/components/parameters/groupParam"
     get:
@@ -187,11 +187,11 @@ paths:
 components:
   parameters:
     groupParam:
-      name: group
+      name: groupId
       in: path
       required: true
       schema:
-        type: string
+        $ref: '#/components/schemas/groupId'
     searchParam:
       name: search
       in: query
