@@ -1,29 +1,69 @@
-openapi: 3.0.0
+openapi: 3.0.1
 info:
-  title: Horizon Group API
-  description: |
-    This API
+  title: Horizon
   version: 1.0.0
-tags:
-  - name: group
+servers:
+  - url: 'http://horizon.mockserver.org/'
 paths:
-  /groups:
+  /api/v1/groups?filter={filter}:
     get:
-      operationId: listGroups
-      summary: list groups
+      tags:
+        - group
+      description: query groups
+      summary: query groups
+      operationId: queryGroups
       parameters:
-        - $ref: "#/components/parameters/searchParam"
+        - name: filter
+          in: path
       responses:
-        "201":
-          description: null response
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupsFilterItem'
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/error"
-  /group:
+                $ref: "core.yaml#/components/schemas/Error"
+
+  /api/v1/groups/children?parentId={groupId}:
+    get:
+      tags:
+        - group
+      operationId: queryGroupChildren
+      summary: query children of a group
+      parameters:
+        - name: groupId
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupChild'
+          description: success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/group:
     post:
+      tags:
+        - group
       operationId: createGroup
       summary: create a group
       requestBody:
@@ -31,36 +71,41 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/newGroup"
+              $ref: "#/components/schemas/NewGroup"
       responses:
-        "201":
-          description: null response
+        "200":
+          description: success
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/error"
-  /group/{group}:
+                $ref: "core.yaml#/components/schemas/Error"
+
+  /api/v1/group/{groupId}:
     parameters:
-      - $ref: "#/components/parameters/groupParam"
+      - $ref: "#/components/schemas/GroupId"
     get:
+      tags:
+        - group
       operationId: getGroupDetail
       summary: get the detail of a group
       responses:
         '200':
-          description: Expected response to a valid request
+          description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/groupDetail"
+                $ref: "#/components/schemas/Group"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/error"
+                $ref: "core.yaml#/components/schemas/Error"
     put:
+      tags:
+        - group
       operationId: updateGroupDetail
       summary: update detail of a group
       requestBody:
@@ -68,83 +113,62 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/groupDetail'
+              $ref: '#/components/schemas/Group'
       responses:
         '200':
-          description: Update result
+          description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/groupDetail'
+                $ref: '#/components/schemas/Group'
         default:
-          description:  Unexpected error
+          description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
+                $ref: "core.yaml#/components/schemas/Error"
     delete:
+      tags:
+        - group
       operationId: deleteGroup
-      summary: delete an empty group
+      summary: delete a group
       responses:
         '200':
-          description: null response
+          description: Success
         default:
-          description:  Unexpected error
+          description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error'
-  /group/{group}/subgroups:
+                $ref: "core.yaml#/components/schemas/Error"
+
+  /api/v1/group/{groupId}/subgroups:
     parameters:
-      - $ref: "#/components/parameters/groupParam"
-      - $ref: "#/components/parameters/searchParam"
+      - $ref: "#/components/schemas/GroupId"
     get:
-      operationId: listSubGroups
+      tags:
+        - group
+      operationId: getSubgroups
+      summary: get the subgroup of a group
       responses:
         '200':
-          description: Return the list of groups
+          description: Success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/groupDetail'
-  /group/{group}/services:
-    parameters:
-      - $ref: "#/components/parameters/groupParam"
-      - $ref: "#/components/parameters/searchParam"
-    get:
-      operationId: listGroupService
-      responses:
-        '200':
-          description: Return the list of service
+                  $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: 'service.yaml#/components/schemas/serviceDetail'
+                $ref: "core.yaml#/components/schemas/Error"
+
 components:
-  parameters:
-    groupParam:
-      name: group
-      in: path
-      required: true
-      schema:
-        type: string
-    searchParam:
-      name: search
-      in: query
-      description: Return the list of authorized groups matching the search criteria
-      required: false
-      schema:
-        type: string
   schemas:
-    queryGroup:
-      type: string
-      maxLength: 100
-      description: param for querying group
-    newGroup:
+    NewGroup:
       type: object
       required:
         - name
@@ -152,66 +176,123 @@ components:
         - visibilityLevel
       properties:
         name:
-          $ref: '#/components/schemas/groupName'
+          $ref: '#/components/schemas/GroupName'
         path:
-          $ref: '#/components/schemas/groupPath'
+          $ref: '#/components/schemas/GroupPath'
         description:
-          $ref: '#/components/schemas/groupDescription'
+          $ref: '#/components/schemas/GroupDescription'
         visibilityLevel:
-          $ref: '#/components/schemas/visibilityLevel'
+          $ref: '#/components/schemas/VisibilityLevel'
         parantId:
-          $ref: '#/components/schemas/groupId'
+          $ref: '#/components/schemas/GroupId'
 
-    groupDetail:
+    Group:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/groupId'
+          $ref: '#/components/schemas/GroupId'
         name:
-          $ref: '#/components/schemas/groupName'
+          $ref: '#/components/schemas/GroupName'
         path:
-          $ref: '#/components/schemas/groupPath'
+          $ref: '#/components/schemas/GroupPath'
         description:
-          $ref: '#/components/schemas/groupDescription'
+          $ref: '#/components/schemas/GroupDescription'
         visibilityLevel:
-          $ref: '#/components/schemas/visibilityLevel'
+          $ref: '#/components/schemas/VisibilityLevel'
         createTime:
-          $ref: '#/components/schemas/date'
-    date:
+          $ref: '#/components/schemas/Date'
+        modifyTime:
+          $ref: '#/components/schemas/Date'
+
+    Date:
       type: string
       format: date
       pattern: full-date
-    groupId:
+
+    GroupId:
       type: integer
       format: int64
       description: the parent id of the subgroup,if not provided. a root group
-    groupName:
+
+    GroupName:
       type: string
       maxLength: 64
       description: the group Name
-    groupPath:
+
+    GroupPath:
       type: string
       maxLength: 1024
       description: the group path
-    visibilityLevel:
+
+    VisibilityLevel:
       type: integer
       format: int32
       enum: [0,1]
       default: 0
       description: 0 means public(every one can see the group), 1 means private one member can see
-    groupDescription:
+
+    GroupDescription:
       type: string
       maxLength: 1024
       description: the group description
-    error:
+
+    SubGroupCount:
+      type: integer
+
+    ApplicationCount:
+      type: integer
+
+    GroupsFilterItem:
       type: object
-      required:
-        - code
-        - message
       properties:
-        code:
-          type: integer
-          format: int32
-        message:
-          type: string
+        id:
+          $ref: '#/components/schemas/GroupId'
+        name:
+          $ref: '#/components/schemas/GroupName'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        subGroupCount:
+          $ref: '#/components/schemas/SubGroupCount'
+        applicationCount:
+          $ref: '#/components/schemas/ApplicationCount'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupChild'
+        createTime:
+          $ref: '#/components/schemas/Date'
+        modifyTime:
+          $ref: '#/components/schemas/Date'
+
+    GroupChild:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/GroupId'
+        name:
+          $ref: '#/components/schemas/GroupName'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        type:
+          $ref: '#/components/schemas/GroupChildType'
+        subGroupCount:
+          $ref: '#/components/schemas/SubGroupCount'
+        applicationCount:
+          $ref: '#/components/schemas/ApplicationCount'
+        createTime:
+          $ref: '#/components/schemas/Date'
+        modifyTime:
+          $ref: '#/components/schemas/Date'
+
+    GroupChildType:
+      type: string
+      enum:
+        - group
+        - application
+
+
 
