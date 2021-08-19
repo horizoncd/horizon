@@ -79,7 +79,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /api/v1/groups?filter={filter}&pageIndex=${pageIndex}&pageSize={pageSize}:
+  /api/v1/groups?filter={filter}:
     get:
       tags:
         - group
@@ -88,10 +88,6 @@ paths:
       operationId: queryGroups
       parameters:
         - name: filter
-          in: path
-        - name: pageIndex
-          in: path
-        - name: pageSize
           in: path
       responses:
         '200':
@@ -254,12 +250,13 @@ components:
         mailAddress:
           type: string
 
-    PageIndex:
-      type: integer
-      minimum: 1
-
-    PageSize:
-      type: integer
+    PageParams:
+      type: object
+      properties:
+        current:
+          type: number
+        pageSize:
+          type: number
 
     NewGroup:
       type: object
