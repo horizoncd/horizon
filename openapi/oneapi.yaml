@@ -216,6 +216,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/v1/group/{groupId}/subgroups:
+    parameters:
+      - $ref: "#/components/schemas/GroupId"
+    get:
+      tags:
+        - group
+      operationId: getSubgroups
+      summary: get the subgroup of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   schemas:
     CurrentUser:
