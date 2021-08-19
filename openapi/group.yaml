@@ -60,7 +60,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "core.yaml#/components/schemas/Error"
 
   /api/v1/group:
     post:

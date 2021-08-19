@@ -31,7 +31,14 @@ components:
         - message
       properties:
         code:
-          type: integer
-          format: int32
+          type: string
         message:
+          type: string
+
+    Result:
+      type: object
+      properties:
+        data:
+          type: object
+        requestId:
           type: string
