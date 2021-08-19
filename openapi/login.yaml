@@ -1,0 +1,90 @@
+openapi: 3.0.1
+info:
+  title: Horizon-login
+  version: 1.0.0
+servers:
+  - url: 'http://horizon.mockserver.org/'
+paths:
+  /api/v1/login:
+    post:
+      description: login
+      summary: login
+      operationId: login
+      tags:
+        - login
+      parameters:
+        - name: redirectUrl
+          in: query
+          description: redirect url after logining
+          schema:
+            type: string
+        - name: fromHost
+          in: query
+          description: redirect host after logining
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/logout:
+    post:
+      description: logout
+      summary: logout
+      operationId: logout
+      tags:
+        - login
+      parameters:
+        - name: openIDState
+          in: cookie
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/login/status:
+    get:
+      tags:
+        - login
+      description: status of the currentUser
+      summary: status of the currentUser
+      operationId: currentUser
+      parameters:
+        - name: openIDState
+          in: cookie
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CurrentUser'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    CurrentUser:
+      type: object
+      properties:
+        name:
+          type: string
+        mailAddress:
+          type: string
