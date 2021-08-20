@@ -7,7 +7,7 @@ servers:
 paths:
   /api/v1/login:
     post:
-      description: login
+      description: login with OpenID
       summary: login
       operationId: login
       tags:
@@ -31,11 +31,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "../core.yaml#/components/schemas/Error"
 
   /api/v1/logout:
     post:
-      description: logout
+      description: logout, user session expires
       summary: logout
       operationId: logout
       tags:
@@ -46,19 +46,23 @@ paths:
       responses:
         '200':
           description: Success
+          headers:
+            requestId:
+              schema:
+                type: string
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "../core.yaml#/components/schemas/Error"
 
   /api/v1/login/status:
     get:
       tags:
         - login
-      description: status of the currentUser
-      summary: status of the currentUser
+      description: used to decide whether to redirect to login page
+      summary: get status of the currentUser
       operationId: currentUser
       parameters:
         - name: openIDState
@@ -77,7 +81,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "core.yaml#/components/schemas/Error"
+                $ref: "../core.yaml#/components/schemas/Error"
 
 components:
   schemas:
@@ -85,6 +89,4 @@ components:
       type: object
       properties:
         name:
-          type: string
-        mailAddress:
           type: string

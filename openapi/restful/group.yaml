@@ -5,63 +5,6 @@ info:
 servers:
   - url: 'http://horizon.mockserver.org/'
 paths:
-  /api/v1/groups?filter={filter}&pageIndex=${pageIndex}&pageSize={pageSize}:
-    get:
-      tags:
-        - group
-      description: query groups
-      summary: query groups
-      operationId: queryGroups
-      parameters:
-        - name: filter
-          in: path
-        - $ref: 'core.yaml/#/components/parameters/pageIndex'
-        - $ref: 'core.yaml/#/components/parameters/pageSize'
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/GroupsFilterItem'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "core.yaml#/components/schemas/Error"
-
-  /api/v1/groups/children?parentId={groupId}:
-    get:
-      tags:
-        - group
-      operationId: queryGroupChildren
-      summary: query children of a group
-      parameters:
-        - name: groupId
-          in: query
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/GroupChild'
-          description: success
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "core.yaml#/components/schemas/Error"
-
   /api/v1/group:
     post:
       tags:
@@ -82,7 +25,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "core.yaml#/components/schemas/Error"
+                $ref: "../core.yaml#/components/schemas/Error"
 
   /api/v1/group/{groupId}:
     parameters:
@@ -104,7 +47,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "core.yaml#/components/schemas/Error"
+                $ref: "../core.yaml#/components/schemas/Error"
     put:
       tags:
         - group
@@ -128,7 +71,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "core.yaml#/components/schemas/Error"
+                $ref: "../core.yaml#/components/schemas/Error"
     delete:
       tags:
         - group
@@ -142,7 +85,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "core.yaml#/components/schemas/Error"
+                $ref: "../core.yaml#/components/schemas/Error"
 
   /api/v1/group/{groupId}/subgroups:
     parameters:
@@ -166,7 +109,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "core.yaml#/components/schemas/Error"
+                $ref: "../core.yaml#/components/schemas/Error"
 
 components:
   schemas:
@@ -214,7 +157,7 @@ components:
     GroupId:
       type: integer
       format: int64
-      description: the parent id of the subgroup,if not provided. a root group
+      description: the parent id of the subgroup, if not provided, a root group
 
     GroupName:
       type: string
@@ -231,70 +174,12 @@ components:
       format: int32
       enum: [0,1]
       default: 0
-      description: 0 means public(every one can see the group), 1 means private one member can see
+      description: 0 means public(every one can see the group), 1 means private only members can see
 
     GroupDescription:
       type: string
       maxLength: 1024
       description: the group description
-
-    SubGroupCount:
-      type: integer
-
-    ApplicationCount:
-      type: integer
-
-    GroupsFilterItem:
-      type: object
-      properties:
-        id:
-          $ref: '#/components/schemas/GroupId'
-        name:
-          $ref: '#/components/schemas/GroupName'
-        description:
-          $ref: '#/components/schemas/GroupDescription'
-        path:
-          $ref: '#/components/schemas/GroupPath'
-        subGroupCount:
-          $ref: '#/components/schemas/SubGroupCount'
-        applicationCount:
-          $ref: '#/components/schemas/ApplicationCount'
-        children:
-          type: array
-          items:
-            $ref: '#/components/schemas/GroupChild'
-        createTime:
-          $ref: '#/components/schemas/Date'
-        modifyTime:
-          $ref: '#/components/schemas/Date'
-
-    GroupChild:
-      type: object
-      properties:
-        id:
-          $ref: '#/components/schemas/GroupId'
-        name:
-          $ref: '#/components/schemas/GroupName'
-        description:
-          $ref: '#/components/schemas/GroupDescription'
-        path:
-          $ref: '#/components/schemas/GroupPath'
-        type:
-          $ref: '#/components/schemas/GroupChildType'
-        subGroupCount:
-          $ref: '#/components/schemas/SubGroupCount'
-        applicationCount:
-          $ref: '#/components/schemas/ApplicationCount'
-        createTime:
-          $ref: '#/components/schemas/Date'
-        modifyTime:
-          $ref: '#/components/schemas/Date'
-
-    GroupChildType:
-      type: string
-      enum:
-        - group
-        - application
 
 
 

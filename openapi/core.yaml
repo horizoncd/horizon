@@ -4,7 +4,32 @@ info:
   version: 1.0.0
 servers:
   - url: 'http://horizon.mockserver.org/'
-paths: {}
+paths:
+  /api/v1/get-resource-type?path={path}:
+    get:
+      description: get resource type, group or application or applicationInstance
+      summary: get resource type by path
+      operationId: getResourceType
+      parameters:
+        - name: path
+          in: query
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  resourceType:
+                    $ref: "#/components/schemas/resourceType"
+                  resourceId:
+                    type: integer
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
   parameters:
@@ -34,11 +59,12 @@ components:
           type: string
         message:
           type: string
-
-    Result:
-      type: object
-      properties:
-        data:
-          type: object
         requestId:
           type: string
+
+    resourceType:
+      type: string
+      enum:
+        - group
+        - application
+        - applicationInstance

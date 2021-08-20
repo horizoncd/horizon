@@ -1,0 +1,128 @@
+openapi: 3.0.1
+info:
+  title: Horizon-group
+  version: 1.0.0
+servers:
+  - url: 'http://horizon.mockserver.org/'
+paths:
+  /api/v1/groups?parentId={groupId}&filter={filter}&pageIndex=${pageIndex}&pageSize={pageSize}:
+    get:
+      tags:
+        - group
+      description: query groups
+      summary: query groups
+      operationId: queryGroups
+      parameters:
+        - name: groupId
+          in: query
+        - name: filter
+          in: query
+        - $ref: '../core.yaml/#/components/parameters/pageIndex'
+        - $ref: '../core.yaml/#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupsFilterItem'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+  /api/v1/groups/children?parentId={groupId}:
+    get:
+      tags:
+        - group
+      operationId: queryGroupChildren
+      summary: query children of a group
+      parameters:
+        - name: groupId
+          in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupChild'
+          description: success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    SubGroupCount:
+      type: integer
+
+    ApplicationCount:
+      type: integer
+
+    GroupsFilterItem:
+      type: object
+      properties:
+        id:
+          $ref: '../restful/group.yaml/#/components/schemas/GroupId'
+        name:
+          $ref: '../restful/group.yaml/#/components/schemas/GroupName'
+        description:
+          $ref: '../restful/group.yaml/#/components/schemas/GroupDescription'
+        path:
+          $ref: '../restful/group.yaml/#/components/schemas/GroupPath'
+        subGroupCount:
+          $ref: '#/components/schemas/SubGroupCount'
+        applicationCount:
+          $ref: '#/components/schemas/ApplicationCount'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupChild'
+        createTime:
+          $ref: '../restful/group.yaml/#/components/schemas/Date'
+        modifyTime:
+          $ref: '../restful/group.yaml/#/components/schemas/Date'
+
+    GroupChild:
+      type: object
+      properties:
+        id:
+          $ref: '../restful/group.yaml/#/components/schemas/GroupId'
+        name:
+          $ref: '../restful/group.yaml/#/components/schemas/GroupName'
+        description:
+          $ref: '../restful/group.yaml/#/components/schemas/GroupDescription'
+        path:
+          $ref: '../restful/group.yaml/#/components/schemas/GroupPath'
+        type:
+          $ref: '#/components/schemas/GroupChildType'
+        subGroupCount:
+          $ref: '#/components/schemas/SubGroupCount'
+        applicationCount:
+          $ref: '#/components/schemas/ApplicationCount'
+        createTime:
+          $ref: '../restful/group.yaml/#/components/schemas/Date'
+        modifyTime:
+          $ref: '../restful/group.yaml/#/components/schemas/Date'
+
+    GroupChildType:
+      type: string
+      enum:
+        - group
+        - application
+
+
+
