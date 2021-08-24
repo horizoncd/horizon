@@ -10,7 +10,6 @@ type Response struct {
 	Code      int         `json:"code"`
 	Message   string      `json:"message"`
 	Data      interface{} `json:"data,omitempty"`
-	RequestID string      `json:"requestID,omitempty"`
 }
 
 func NewResponse(code int, message string) *Response {
@@ -36,7 +35,7 @@ func SuccessWithData(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, NewResponseWithData(http.StatusOK, http.StatusText(http.StatusOK), data))
 }
 
-func abort(c *gin.Context, code int, message string) {
+func Abort(c *gin.Context, code int, message string) {
 	c.JSON(code, &Response{
 		Code:    code,
 		Message: message,
@@ -45,9 +44,9 @@ func abort(c *gin.Context, code int, message string) {
 }
 
 func AbortWithRequestError(c *gin.Context, message string) {
-	abort(c, http.StatusBadRequest, message)
+	Abort(c, http.StatusBadRequest, message)
 }
 
-func AbortWithInternalError(c *gin.Context) {
-	abort(c, http.StatusInternalServerError, "服务器内部错误")
+func AbortWithInternalError(c *gin.Context, message string) {
+	Abort(c, http.StatusInternalServerError, message)
 }
