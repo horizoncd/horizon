@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-// Option function to set the options of the cache
+// Option function to set the options of the redis
 type Option func(*Options)
 
-// Options options of the cache
+// Options options of the redis
 type Options struct {
 	Codec      Codec         // the codec for redis data
-	Expiration time.Duration // the default expiration for the cache
-	Prefix     string        // the prefix for all the keys in the cache
+	Expiration time.Duration // the default expiration for the redis
+	Prefix     string        // the prefix for all the keys in the redis data
 }
 
 // Key returns the real cache key
