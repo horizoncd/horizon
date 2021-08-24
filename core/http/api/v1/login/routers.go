@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	sessionmiddleware "g.hz.netease.com/horizon/core/middleware/session"
 	oidc2 "g.hz.netease.com/horizon/core/pkg/oidc"
 	"g.hz.netease.com/horizon/core/pkg/oidc/netease"
@@ -15,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"g.hz.netease.com/horizon/server/route"
+	"github.com/gin-gonic/gin"
 )
 
 // RegisterRoutes register routes
@@ -22,8 +22,11 @@ func RegisterRoutes(engine *gin.Engine) {
 	api := engine.Group("/api/v1")
 	var c, _ = NewController()
 	api.Use(requestid.Middleware())
-	api.Use(sessionmiddleware.Middleware(c.sessionManager, middleware.MethodAndPathSkipper(
-		http.MethodPost, func() *regexp.Regexp {re, _ := regexp.Compile("/api/v1/login"); return re}())))
+	api.Use(sessionmiddleware.Middleware(c.sessionManager,
+		middleware.MethodAndPathSkipper(http.MethodPost, func() *regexp.Regexp {re, _ := regexp.Compile("/api/v1/login"); return re}()),
+		middleware.MethodAndPathSkipper(http.MethodGet, func() *regexp.Regexp {re, _ := regexp.Compile("/api/v1/login/callback"); return re}()),
+	))
+
 	var routes = route.Routes{
 		{
 			"Login",
