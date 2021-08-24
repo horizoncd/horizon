@@ -41,7 +41,7 @@ paths:
       tags:
         - login
       parameters:
-        - name: openIDState
+        - name: sessionid
           in: cookie
       responses:
         '200':
@@ -65,7 +65,7 @@ paths:
       summary: get status of the currentUser
       operationId: currentUser
       parameters:
-        - name: openIDState
+        - name: sessionid
           in: cookie
       responses:
         '200':
