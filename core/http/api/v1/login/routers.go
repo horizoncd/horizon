@@ -23,8 +23,8 @@ func RegisterRoutes(engine *gin.Engine) {
 	var c, _ = NewController()
 	api.Use(requestid.Middleware())
 	api.Use(sessionmiddleware.Middleware(c.sessionManager,
-		middleware.MethodAndPathSkipper(http.MethodPost, func() *regexp.Regexp {re, _ := regexp.Compile("/api/v1/login"); return re}()),
-		middleware.MethodAndPathSkipper(http.MethodGet, func() *regexp.Regexp {re, _ := regexp.Compile("/api/v1/login/callback"); return re}()),
+		middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("/api/v1/login")),
+		middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("/api/v1/login/callback")),
 	))
 
 	var routes = route.Routes{
