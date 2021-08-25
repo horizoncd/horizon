@@ -27,7 +27,7 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/v1/group/{groupId}:
+  /api/v1/groups/{groupId}:
     parameters:
       - $ref: "#/components/schemas/GroupId"
     get:
@@ -87,7 +87,7 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/v1/group/{groupId}/subgroups:
+  /api/v1/groups/{groupId}/subgroups:
     parameters:
       - $ref: "#/components/schemas/GroupId"
     get:

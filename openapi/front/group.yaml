@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://horizon.mockserver.org/'
 paths:
-  /api/v1/groups?parentId={groupId}&filter={filter}&pageIndex=${pageIndex}&pageSize={pageSize}:
+  /api/v1/groups/search?parentId={parentId}&filter={filter}&pageIndex=${pageIndex}&pageSize={pageSize}:
     get:
       tags:
         - group
@@ -13,7 +13,7 @@ paths:
       summary: query groups
       operationId: queryGroups
       parameters:
-        - name: groupId
+        - name: parentId
           in: query
         - name: filter
           in: query
