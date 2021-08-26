@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	"g.hz.netease.com/horizon/core/pkg/oidc"
-	"g.hz.netease.com/horizon/pkg/log"
+	"g.hz.netease.com/horizon/gateway/pkg/oidc"
+	"g.hz.netease.com/horizon/lib/log"
 )
 
 type OIDC struct {

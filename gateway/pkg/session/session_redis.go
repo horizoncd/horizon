@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/log"
-	"g.hz.netease.com/horizon/pkg/redis"
+	"g.hz.netease.com/horizon/lib/log"
+	"g.hz.netease.com/horizon/lib/redis"
 )
 
 const expiration = 2 * time.Hour

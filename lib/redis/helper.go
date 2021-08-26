@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/log"
+	"g.hz.netease.com/horizon/lib/log"
 	"github.com/gomodule/redigo/redis"
 )
 

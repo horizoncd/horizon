@@ -3,7 +3,7 @@ package session
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/pkg/oidc"
+	"g.hz.netease.com/horizon/gateway/pkg/oidc"
 )
 
 type Interface interface {

@@ -3,7 +3,7 @@ package session
 import (
 	"net/http"
 
-	"g.hz.netease.com/horizon/core/pkg/session"
+	"g.hz.netease.com/horizon/gateway/pkg/session"
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/response"
 	"github.com/gin-gonic/gin"

@@ -3,7 +3,7 @@ package netease
 import (
 	"testing"
 
-	"g.hz.netease.com/horizon/core/pkg/oidc"
+	"g.hz.netease.com/horizon/gateway/pkg/oidc"
 )
 
 func TestOIDC_GetRedirectURL(t *testing.T) {

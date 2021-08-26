@@ -1,7 +1,7 @@
 package log
 
 import (
-	"g.hz.netease.com/horizon/pkg/log"
+	"g.hz.netease.com/horizon/lib/log"
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"github.com/gin-gonic/gin"

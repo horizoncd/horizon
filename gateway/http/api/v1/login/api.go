@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	sessionmiddleware "g.hz.netease.com/horizon/core/middleware/session"
-	"g.hz.netease.com/horizon/core/pkg/session"
-	"g.hz.netease.com/horizon/pkg/log"
+	sessionmiddleware "g.hz.netease.com/horizon/gateway/middleware/session"
+	"g.hz.netease.com/horizon/gateway/pkg/session"
+	"g.hz.netease.com/horizon/lib/log"
 	"g.hz.netease.com/horizon/server/response"
 	"github.com/gin-gonic/gin"
 	"github.com/satori/go.uuid"
