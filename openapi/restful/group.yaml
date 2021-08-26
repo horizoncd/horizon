@@ -5,7 +5,31 @@ info:
 servers:
   - url: 'http://horizon.mockserver.org/'
 paths:
-  /api/v1/group:
+  /api/v1/grups?path={path}:
+    get:
+      tags:
+        - group
+      operationId: queryGroupByPath
+      summary: query group by it's path
+      parameters:
+        - name: path
+          in: query
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+  /api/v1/groups:
     post:
       tags:
         - group
