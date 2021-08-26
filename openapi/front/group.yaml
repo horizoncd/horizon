@@ -56,7 +56,7 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/GroupChild'
-          description: success
+          description: Success
         default:
           description: Unexpected error
           content:

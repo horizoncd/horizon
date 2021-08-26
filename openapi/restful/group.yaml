@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://horizon.mockserver.org/'
 paths:
-  /api/v1/grups?path={path}:
+  /api/v1/groups?path={path}:
     get:
       tags:
         - group
@@ -43,7 +43,7 @@ paths:
               $ref: "#/components/schemas/NewGroup"
       responses:
         "200":
-          description: success
+          description: Success
         default:
           description: Unexpected error
           content:
