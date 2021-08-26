@@ -1,10 +1,12 @@
 package redis
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
+	"g.hz.netease.com/horizon/pkg/log"
 	"github.com/gomodule/redigo/redis"
 )
 
@@ -13,10 +15,10 @@ var (
 )
 
 type Interface interface {
-	Ping() error
-	Get(key string, value interface{}) error
-	Save(key string, value interface{}, expiration ...time.Duration) error
-	Delete(key string) error
+	Ping(ctx context.Context) error
+	Get(ctx context.Context, key string, value interface{}) error
+	Save(ctx context.Context, key string, value interface{}, expiration ...time.Duration) error
+	Delete(ctx context.Context, key string) error
 }
 
 type Helper struct {
@@ -51,13 +53,16 @@ func NewHelperWithPool(pool *redis.Pool, opts *Options) (*Helper, error) {
 	}, nil
 }
 
-func (h *Helper) Ping() error {
-	_, err := h.do("PING")
+func (h *Helper) Ping(ctx context.Context) (err error) {
+	defer log.TRACE.Debug(ctx)(func() error { return err })
+	_, err = h.do(ctx, "PING")
 	return err
 }
 
-func (h *Helper) Get(key string, value interface{}) error {
-	data, err := redis.Bytes(h.do("GET", h.opts.Key(key)))
+func (h *Helper) Get(ctx context.Context, key string, value interface{}) (err error) {
+	defer log.TRACE.Debug(ctx)(func() error { return err })
+
+	data, err := redis.Bytes(h.do(ctx, "GET", h.opts.Key(key)))
 	if err != nil {
 		// convert internal or Timeout error to be ErrNotFound
 		// so that the caller can continue working without breaking
@@ -71,7 +76,9 @@ func (h *Helper) Get(key string, value interface{}) error {
 	return nil
 }
 
-func (h *Helper) Save(key string, value interface{}, expiration ...time.Duration) error {
+func (h *Helper) Save(ctx context.Context, key string, value interface{}, expiration ...time.Duration) (err error) {
+	defer log.TRACE.Debug(ctx)(func() error { return err })
+
 	data, err := h.opts.Codec.Encode(value)
 	if err != nil {
 		return fmt.Errorf("failed to encode value, key %s, error: %v", key, err)
@@ -90,19 +97,22 @@ func (h *Helper) Save(key string, value interface{}, expiration ...time.Duration
 		args = append(args, "EX", int64(exp/time.Second))
 	}
 
-	_, err = h.do("SET", args...)
+	_, err = h.do(ctx, "SET", args...)
 	return err
 }
 
-func (h *Helper) Delete(key string) error {
-	_, err := h.do("DEL", h.opts.Key(key))
+func (h *Helper) Delete(ctx context.Context, key string) (err error) {
+	defer log.TRACE.Debug(ctx)(func() error { return err })
+
+	_, err = h.do(ctx, "DEL", h.opts.Key(key))
 	return err
 }
 
-func (h *Helper) do(command string, args ...interface{}) (reply interface{}, err error) {
+func (h *Helper) do(ctx context.Context, command string, args ...interface{}) (reply interface{}, err error) {
+	defer log.TRACE.Debug(ctx)(func() error { return err })
+
 	conn := h.pool.Get()
 	defer func() { _ = conn.Close() }()
 
 	return conn.Do(command, args...)
 }
-

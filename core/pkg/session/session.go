@@ -1,11 +1,15 @@
 package session
 
-import "g.hz.netease.com/horizon/core/pkg/oidc"
+import (
+	"context"
+
+	"g.hz.netease.com/horizon/core/pkg/oidc"
+)
 
 type Interface interface {
-	GetSession(sessionID string) (*Session, error)
-	SetSession(sessionID string, session *Session) error
-	DeleteSession(sessionID string) error
+	GetSession(ctx context.Context, sessionID string) (*Session, error)
+	SetSession(ctx context.Context, sessionID string, session *Session) error
+	DeleteSession(ctx context.Context, sessionID string) error
 }
 
 type Session struct {

@@ -15,16 +15,18 @@ func Middleware(session session.Interface, skippers ...middleware.Skipper) gin.H
 	return middleware.New(func(c *gin.Context) {
 		sessionID, err := c.Cookie(SessionIDKey)
 		if err != nil {
-			response.Abort(c, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+			response.Abort(c, http.StatusUnauthorized,
+				http.StatusText(http.StatusUnauthorized), http.StatusText(http.StatusUnauthorized))
 			return
 		}
-		s, err := session.GetSession(sessionID)
-		if err != nil{
-			response.AbortWithInternalError(c, err.Error())
+		s, err := session.GetSession(c, sessionID)
+		if err != nil {
+			response.AbortWithInternalError(c, "GetSessionFailed", err.Error())
 			return
 		}
 		if s == nil {
-			response.Abort(c, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+			response.Abort(c, http.StatusUnauthorized,
+				http.StatusText(http.StatusUnauthorized), http.StatusText(http.StatusUnauthorized))
 			return
 		}
 	}, skippers...)

@@ -1,6 +1,5 @@
 package redis
 
-
 import (
 	"time"
 )

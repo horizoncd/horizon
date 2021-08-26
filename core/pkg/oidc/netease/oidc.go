@@ -1,6 +1,7 @@
 package netease
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/core/pkg/oidc"
+	"g.hz.netease.com/horizon/pkg/log"
 )
 
 type OIDC struct {
@@ -27,7 +29,8 @@ type User struct {
 	Email    string `json:"email"`
 }
 
-func (o *OIDC) GetRedirectURL(requestHost, state string) string {
+func (o *OIDC) GetRedirectURL(ctx context.Context, requestHost, state string) string {
+	defer log.TRACE.Debug(ctx)(func() error { return nil })
 	params := url.Values{
 		"response_type": {"code"},
 		"scope":         {strings.Join(o.config.Scopes, " ")},
@@ -44,9 +47,10 @@ type tokenStruct struct {
 	AccessToken string `json:"access_token"`
 }
 
-func (o *OIDC) getAccessToken(requestHost, code string)(string, error) {
-	redirectURL := url.QueryEscape(httpScheme + "://" + requestHost + o.config.RedirectURI)
+func (o *OIDC) getAccessToken(ctx context.Context, requestHost, code string) (_ string, err error) {
+	defer log.TRACE.Debug(ctx)(func() error { return err })
 
+	redirectURL := url.QueryEscape(httpScheme + "://" + requestHost + o.config.RedirectURI)
 	req, err := http.NewRequest(http.MethodPost, o.config.Endpoint.TokenURL, strings.NewReader(url.Values{
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
@@ -75,8 +79,10 @@ func (o *OIDC) getAccessToken(requestHost, code string)(string, error) {
 	return ts.AccessToken, nil
 }
 
-func (o *OIDC) GetUser(requestHost, code string) (*oidc.User, error) {
-	accessToken, err := o.getAccessToken(requestHost, code)
+func (o *OIDC) GetUser(ctx context.Context, requestHost, code string) (_ *oidc.User, err error) {
+	defer log.TRACE.Debug(ctx)(func() error { return err })
+
+	accessToken, err := o.getAccessToken(ctx, requestHost, code)
 	if err != nil {
 		return nil, err
 	}

@@ -22,7 +22,7 @@ type Route struct {
 type Routes []Route
 
 // RegisterRoutes register every route to routerGroup
-func RegisterRoutes(api *gin.RouterGroup, routes Routes){
+func RegisterRoutes(api *gin.RouterGroup, routes Routes) {
 	for _, route := range routes {
 		switch route.Method {
 		case http.MethodGet:

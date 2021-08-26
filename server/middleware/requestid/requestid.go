@@ -1,8 +1,8 @@
 package requestid
 
 import (
-	"github.com/gin-gonic/gin"
 	"g.hz.netease.com/horizon/server/middleware"
+	"github.com/gin-gonic/gin"
 	"github.com/satori/go.uuid"
 )
 
