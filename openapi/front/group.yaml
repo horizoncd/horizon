@@ -29,7 +29,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/GroupsFilterItem'
+                      $ref: '#/components/schemas/GroupChild'
         default:
           description: Unexpected error
           content:
@@ -66,36 +66,6 @@ paths:
 
 components:
   schemas:
-    SubGroupCount:
-      type: integer
-
-    ApplicationCount:
-      type: integer
-
-    GroupsFilterItem:
-      type: object
-      properties:
-        id:
-          $ref: '../restful/group.yaml/#/components/schemas/GroupId'
-        name:
-          $ref: '../restful/group.yaml/#/components/schemas/GroupName'
-        description:
-          $ref: '../restful/group.yaml/#/components/schemas/GroupDescription'
-        path:
-          $ref: '../restful/group.yaml/#/components/schemas/GroupPath'
-        subGroupCount:
-          $ref: '#/components/schemas/SubGroupCount'
-        applicationCount:
-          $ref: '#/components/schemas/ApplicationCount'
-        children:
-          type: array
-          items:
-            $ref: '#/components/schemas/GroupsFilterItem'
-        createTime:
-          $ref: '../restful/group.yaml/#/components/schemas/Date'
-        modifyTime:
-          $ref: '../restful/group.yaml/#/components/schemas/Date'
-
     GroupChild:
       type: object
       properties:
@@ -109,10 +79,16 @@ components:
           $ref: '../restful/group.yaml/#/components/schemas/GroupPath'
         type:
           $ref: '#/components/schemas/GroupChildType'
+        childrenCount:
+          type: integer
         subGroupCount:
-          $ref: '#/components/schemas/SubGroupCount'
+          type: integer
         applicationCount:
-          $ref: '#/components/schemas/ApplicationCount'
+          type: integer
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupChild'
         createTime:
           $ref: '../restful/group.yaml/#/components/schemas/Date'
         modifyTime:
