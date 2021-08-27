@@ -89,6 +89,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GroupChild'
+        parentId:
+          type: integer
         createTime:
           $ref: '../restful/group.yaml/#/components/schemas/Date'
         modifyTime:
