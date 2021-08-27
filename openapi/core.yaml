@@ -5,11 +5,10 @@ info:
 servers:
   - url: 'http://horizon.mockserver.org/'
 paths:
-  /api/v1/get-resource-type?path={path}:
+  /api/v1/resources:
     get:
-      description: get resource type, group or application or applicationInstance
-      summary: get resource type by path
-      operationId: getResourceType
+      summary: get resource type and id by path
+      operationId: getResource
       parameters:
         - name: path
           in: query
