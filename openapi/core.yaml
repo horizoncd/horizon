@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://horizon.mockserver.org/'
 paths:
-  /api/v1/resources:
+  /api/v1/resources?path={path}:
     get:
       summary: get resource type and id by path
       operationId: getResource
@@ -67,3 +67,8 @@ components:
         - group
         - application
         - applicationInstance
+
+    Date:
+      type: string
+      format: date
+      pattern: full-date

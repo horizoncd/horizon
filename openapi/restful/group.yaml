@@ -135,6 +135,30 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
+  /api/v1/groups/{groupId}/applications:
+    parameters:
+      - $ref: "#/components/schemas/GroupId"
+    get:
+      tags:
+        - group
+      operationId: getGroupAppliatons
+      summary: get the application of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../application.yaml#/components/schemas/application'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
 components:
   schemas:
     NewGroup:
@@ -168,15 +192,10 @@ components:
           $ref: '#/components/schemas/GroupDescription'
         visibilityLevel:
           $ref: '#/components/schemas/VisibilityLevel'
-        createTime:
-          $ref: '#/components/schemas/Date'
-        modifyTime:
-          $ref: '#/components/schemas/Date'
-
-    Date:
-      type: string
-      format: date
-      pattern: full-date
+        createdAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+        modifiedAt:
+          $ref: "../core.yaml#/components/schemas/Date"
 
     GroupId:
       type: integer

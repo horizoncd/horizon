@@ -29,7 +29,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/GroupChild'
+                      $ref: '#/components/schemas/SearchGroupResult'
         default:
           description: Unexpected error
           content:
@@ -66,17 +66,44 @@ paths:
 
 components:
   schemas:
+
     GroupChild:
       type: object
       properties:
         id:
-          $ref: '../restful/group.yaml/#/components/schemas/GroupId'
+          type: integer
         name:
-          $ref: '../restful/group.yaml/#/components/schemas/GroupName'
+          type: string
         description:
-          $ref: '../restful/group.yaml/#/components/schemas/GroupDescription'
+          type: string
         path:
-          $ref: '../restful/group.yaml/#/components/schemas/GroupPath'
+          type: string
+        type:
+          $ref: '#/components/schemas/GroupChildType'
+        childrenCount:
+          type: integer
+        subGroupCount:
+          type: integer
+        applicationCount:
+          type: integer
+        parentId:
+          type: integer
+        createdAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+        modifiedAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+
+    SearchGroupResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        path:
+          type: string
         type:
           $ref: '#/components/schemas/GroupChildType'
         childrenCount:
@@ -91,10 +118,10 @@ components:
             $ref: '#/components/schemas/GroupChild'
         parentId:
           type: integer
-        createTime:
-          $ref: '../restful/group.yaml/#/components/schemas/Date'
-        modifyTime:
-          $ref: '../restful/group.yaml/#/components/schemas/Date'
+        createdAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+        modifiedAt:
+          $ref: "../core.yaml#/components/schemas/Date"
 
     GroupChildType:
       type: string
