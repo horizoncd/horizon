@@ -20,13 +20,14 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine) {
-	api := engine.Group("/api/v1")
+	api := engine.Group("/api/v2")
 	var c, _ = NewController()
 	api.Use(requestid.Middleware())
 	api.Use(log.Middleware())
 	api.Use(sessionmiddleware.Middleware(c.sessionManager,
 		middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/api/v1/login")),
 		middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/api/v1/login/callback")),
+		middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/api/v2/login/status")),
 	))
 
 	var routes = route.Routes{

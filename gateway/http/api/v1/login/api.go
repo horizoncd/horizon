@@ -89,23 +89,33 @@ func (controller *Controller) Logout(c *gin.Context) {
 
 // UserStatus -
 func (controller *Controller) UserStatus(c *gin.Context) {
-	sessionID, err := c.Cookie(sessionmiddleware.SessionIDKey)
-	if err != nil {
-		response.AbortWithInternalError(c, GetCookieFailed, fmt.Sprintf("get cookie failed: %v", err))
-		return
+	logger := log.GetLogger(c)
+	for k, v := range c.Request.Header {
+		logger.Infof("%s: %s", k, v)
 	}
-	session, err := controller.sessionManager.GetSession(c, sessionID)
-	if err != nil {
-		response.AbortWithInternalError(c, GetSessionFailed, err.Error())
-		return
-	}
-	if session == nil || session.User == nil {
-		response.Abort(c, http.StatusUnauthorized, Unauthorized, http.StatusText(http.StatusUnauthorized))
-		return
-	}
+	// sessionID, err := c.Cookie(sessionmiddleware.SessionIDKey)
+	// if err != nil {
+	// 	response.AbortWithInternalError(c, GetCookieFailed, fmt.Sprintf("get cookie failed: %v", err))
+	// 	return
+	// }
+	// session, err := controller.sessionManager.GetSession(c, sessionID)
+	// if err != nil {
+	// 	response.AbortWithInternalError(c, GetSessionFailed, err.Error())
+	// 	return
+	// }
+	// if session == nil || session.User == nil {
+	// 	response.Abort(c, http.StatusUnauthorized, Unauthorized, http.StatusText(http.StatusUnauthorized))
+	// 	return
+	// }
 
-	u := session.User
+	// u := session.User
+	name := c.Request.Header.Get("X-User-Name")
+	if len(name) == 0 {
+		response.Abort(c, http.StatusUnauthorized, Unauthorized, http.StatusText(http.StatusUnauthorized))
+			return
+	}
+	// email, err := c.Cookie("X-User-Email")
 	response.SuccessWithData(c, User{
-		Name: u.Name,
+		Name: name,
 	})
 }
