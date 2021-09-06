@@ -1,23 +1,15 @@
 openapi: 3.0.1
 info:
-  title: Horizon Group API
+  title: Horizon Application API
   description: |
     This API
   version: 1.0.0
 tags:
-  - name: service
-paths:
-  /services:
-    get:
-      operationId: getService
-      summary: delete an empty group
-      responses:
-        '200':
-          description: null response
-
+  - name: application
+paths: {}
 components:
   schemas:
-    serviceDetail:
+    application:
       type: object
       properties:
         code:

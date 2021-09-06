@@ -1,0 +1,228 @@
+openapi: 3.0.1
+info:
+  title: Horizon-group
+  version: 1.0.0
+servers:
+  - url: 'http://horizon.mockserver.org/'
+paths:
+  /api/v1/groups?path={path}:
+    get:
+      tags:
+        - group
+      operationId: queryGroups
+      summary: query groups by field
+      parameters:
+        - name: path
+          in: query
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+  /api/v1/groups:
+    post:
+      tags:
+        - group
+      operationId: createGroup
+      summary: create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewGroup"
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+  /api/v1/groups/{groupId}:
+    parameters:
+      - $ref: "#/components/schemas/GroupId"
+    get:
+      tags:
+        - group
+      operationId: getGroupDetail
+      summary: get the detail of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - group
+      operationId: updateGroupDetail
+      summary: update detail of a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - group
+      operationId: deleteGroup
+      summary: delete a group
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+  /api/v1/groups/{groupId}/subgroups:
+    parameters:
+      - $ref: "#/components/schemas/GroupId"
+    get:
+      tags:
+        - group
+      operationId: getSubgroups
+      summary: get the subgroup of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+  /api/v1/groups/{groupId}/applications:
+    parameters:
+      - $ref: "#/components/schemas/GroupId"
+    get:
+      tags:
+        - group
+      operationId: getGroupAppliatons
+      summary: get the application of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../application.yaml#/components/schemas/application'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    NewGroup:
+      type: object
+      required:
+        - name
+        - path
+        - visibilityLevel
+      properties:
+        name:
+          $ref: '#/components/schemas/GroupName'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        visibilityLevel:
+          $ref: '#/components/schemas/VisibilityLevel'
+        parantId:
+          $ref: '#/components/schemas/GroupId'
+
+    Group:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/GroupId'
+        name:
+          $ref: '#/components/schemas/GroupName'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        visibilityLevel:
+          $ref: '#/components/schemas/VisibilityLevel'
+        createdAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+        modifiedAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+
+    GroupId:
+      type: integer
+      format: int64
+      description: the parent id of the subgroup, if not provided, a root group
+
+    GroupName:
+      type: string
+      maxLength: 64
+      description: the group Name
+
+    GroupPath:
+      type: string
+      maxLength: 1024
+      description: the group path
+
+    VisibilityLevel:
+      type: integer
+      format: int32
+      enum: [0,1]
+      default: 0
+      description: 0 means public(every one can see the group), 1 means private only members can see
+
+    GroupDescription:
+      type: string
+      maxLength: 1024
+      description: the group description
+
+
+
