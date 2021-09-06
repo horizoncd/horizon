@@ -9,8 +9,8 @@ paths:
     get:
       tags:
         - group
-      operationId: queryGroupByPath
-      summary: query group by it's path
+      operationId: queryGroups
+      summary: query groups by field
       parameters:
         - name: path
           in: query

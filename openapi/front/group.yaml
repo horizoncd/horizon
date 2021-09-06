@@ -115,7 +115,7 @@ components:
         children:
           type: array
           items:
-            $ref: '#/components/schemas/GroupChild'
+            $ref: '#/components/schemas/SearchGroupResult'
         parentId:
           type: integer
         createdAt:
