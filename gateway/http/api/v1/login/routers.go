@@ -3,15 +3,12 @@ package login
 import (
 	"net/http"
 	"os"
-	"regexp"
 	"time"
 
-	sessionmiddleware "g.hz.netease.com/horizon/gateway/middleware/session"
 	"g.hz.netease.com/horizon/gateway/pkg/oidc"
 	"g.hz.netease.com/horizon/gateway/pkg/oidc/netease"
 	"g.hz.netease.com/horizon/gateway/pkg/session"
 	"g.hz.netease.com/horizon/lib/redis"
-	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/log"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"g.hz.netease.com/horizon/server/route"
@@ -20,15 +17,15 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine) {
-	api := engine.Group("/api/v2")
+	api := engine.Group("/api/v1")
 	var c, _ = NewController()
 	api.Use(requestid.Middleware())
 	api.Use(log.Middleware())
-	api.Use(sessionmiddleware.Middleware(c.sessionManager,
-		middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/api/v1/login")),
-		middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/api/v1/login/callback")),
-		middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/api/v2/login/status")),
-	))
+	// api.Use(sessionmiddleware.Middleware(c.sessionManager,
+	// 	middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/api/v1/login")),
+	// 	middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/api/v1/login/callback")),
+	// 	middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/api/v2/login/status")),
+	// ))
 
 	var routes = route.Routes{
 		{
@@ -49,7 +46,7 @@ func RegisterRoutes(engine *gin.Engine) {
 		}, {
 			"LoginStatus",
 			http.MethodGet,
-			"/login/status",
+			"/status",
 			c.UserStatus,
 		},
 	}

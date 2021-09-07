@@ -14,5 +14,5 @@ func main() {
 	gin.ForceConsoleColor()
 	login.RegisterRoutes(r)
 
-	log.Fatal(r.Run(":8081"))
+	log.Fatal(r.Run(":8080"))
 }

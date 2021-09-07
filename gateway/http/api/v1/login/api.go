@@ -109,7 +109,8 @@ func (controller *Controller) UserStatus(c *gin.Context) {
 	// }
 
 	// u := session.User
-	name := c.Request.Header.Get("X-User-Name")
+	name := c.Request.Header.Get("X-HORIZON-USER")
+	email := c.Request.Header.Get("X-HORIZON-EMAIL")
 	if len(name) == 0 {
 		response.Abort(c, http.StatusUnauthorized, Unauthorized, http.StatusText(http.StatusUnauthorized))
 			return
@@ -117,5 +118,6 @@ func (controller *Controller) UserStatus(c *gin.Context) {
 	// email, err := c.Cookie("X-User-Email")
 	response.SuccessWithData(c, User{
 		Name: name,
+		Email: email,
 	})
 }
