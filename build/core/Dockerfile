@@ -1,5 +1,5 @@
 FROM golang:1.15.3 AS builder
-COPY .. /horizon
+COPY . /horizon
 
 WORKDIR /horizon
 
