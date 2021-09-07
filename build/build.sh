@@ -24,8 +24,8 @@ build(){
     esac
   done
   [[ ! -z "$CONTEXT" ]] || CONTEXT="$PWD"
-  local IMAGE="${REPOSITORY_PREFIX%/}/$COMPONENT"
-  echo docker build --network=host -t "$IMAGE" -f "$DOCKERFILE_PATH" "$CONTEXT"
+  local IMAGE="${REPOSITORY_PREFIX%/}/$COMPONENT:$APP_REVISION"
+  docker build --network=host --rm -t "$IMAGE" -f "$DOCKERFILE_PATH" "$CONTEXT"
   [[ "$NO_PUSH" == "y" ]] || {
     docker push "$IMAGE"
     docker rmi "$IMAGE" -f
