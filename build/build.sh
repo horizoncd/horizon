@@ -33,7 +33,7 @@ build(){
 }
 
 main(){
-  	local SCRIPT="${BASH_SOURCE[0]}" && [[ -L "$SCRIPT" ]] && SCRIPT="$(readlink -f "$SCRIPT")"
+    local SCRIPT="${BASH_SOURCE[0]}" && [[ -L "$SCRIPT" ]] && SCRIPT="$(readlink -f "$SCRIPT")"
     local SCRIPT_DIR="$(cd "$(dirname $SCRIPT)"; pwd)" SUB_PATH
     for SUB in $(ls "$SCRIPT_DIR"); do
       SUB_PATH="$SCRIPT_DIR/$SUB"
