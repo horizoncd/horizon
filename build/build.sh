@@ -25,9 +25,9 @@ build(){
   done
   [[ ! -z "$CONTEXT" ]] || CONTEXT="$PWD"
   local IMAGE="${REPOSITORY_PREFIX%/}/$COMPONENT:$APP_REVISION"
-  docker build --network=host --rm -t "$IMAGE" -f "$DOCKERFILE_PATH" "$CONTEXT"
+  docker build --network=host --rm -t "$IMAGE" -f "$DOCKERFILE_PATH" "$CONTEXT" || exit 1
   [[ "$NO_PUSH" == "y" ]] || {
-    docker push "$IMAGE"
+    docker push "$IMAGE" || exit 1
     docker rmi "$IMAGE" -f
   }
 }
