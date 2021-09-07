@@ -25,7 +25,7 @@ build(){
   done
   [[ ! -z "$CONTEXT" ]] || CONTEXT="$PWD"
   local IMAGE="${REPOSITORY_PREFIX%/}/$COMPONENT"
-  echo docker build -t "$IMAGE" -f "$DOCKERFILE_PATH" "$CONTEXT"
+  echo docker build --network=host -t "$IMAGE" -f "$DOCKERFILE_PATH" "$CONTEXT"
   [[ "$NO_PUSH" == "y" ]] || {
     docker push "$IMAGE"
     docker rmi "$IMAGE" -f
