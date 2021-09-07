@@ -1,6 +1,0 @@
-# ref: https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/go-gin-server.md
-additionalProperties:
-  apiPath: /api/v1/group
-  packageName: group
-  packageVersion: 1.0.0
-  serverPort: "8080"
