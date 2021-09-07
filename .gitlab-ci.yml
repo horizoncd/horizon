@@ -1,0 +1,21 @@
+stages:
+  - build
+
+variables:
+  REPOSITORY: harbor.mock.org/cloudnative/horizon/
+
+before_script:
+  - APP_REVISION="${CI_COMMIT_TAG:-${CI_COMMIT_REF_NAME##*/}-r$CI_PIPELINE_ID}"
+  - CHART_VERSION="${CI_COMMIT_TAG:-v0.0.0-r$CI_PIPELINE_ID}"
+
+build:
+  stage: build
+  variables:
+    DOCKER_CONFIG_JSON: $DOCKER_AUTH_CONFIG_INNER
+  script:
+    - bash build/build.sh
+  only:
+    - develop
+    - tags
+  except:
+    - schedules
