@@ -66,7 +66,7 @@ func Run(flags *Flags) {
 	r.Use(requestid.Middleware())
 	r.Use(logmiddle.Middleware())
 	r.Use(ormmiddle.Middleware(mySQLDB))
-	r.Use(user.Middleware(mySQLDB))
+	r.Use(user.Middleware())
 	gin.ForceConsoleColor()
 	group.RegisterRoutes(r, controller)
 

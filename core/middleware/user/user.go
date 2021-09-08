@@ -8,7 +8,6 @@ import (
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/response"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 const (
@@ -20,20 +19,20 @@ const (
 
 // Middleware check user is exists in db. If not, add user into db.
 // Attach a User object into context.
-func Middleware(db *gorm.DB, skippers ...middleware.Skipper) gin.HandlerFunc {
+func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		oidcID := c.Request.Header.Get(HeaderUserOIDCID)
 		oidcType := c.Request.Header.Get(HeaderUserOIDCType)
 		userName := c.Request.Header.Get(HeaderUserName)
 		email := c.Request.Header.Get(HeaderUserEmail)
 		d := dao.New()
-		user, err := d.FindByOIDC(db, oidcID, oidcType)
+		user, err := d.FindByOIDC(c, oidcID, oidcType)
 		if err != nil {
 			response.AbortWithInternalError(c, "UserFindError", fmt.Sprintf("error to find user: %v", err))
 			return
 		}
 		if user == nil {
-			_, err := d.Create(db, &models.User{
+			_, err := d.Create(c, &models.User{
 				Name:     userName,
 				Email:    email,
 				OIDCId:   oidcID,
