@@ -52,13 +52,7 @@ deploy_dev:
     NAMESPACE: horizon
     RELEASE_NAME: horizon-backend
   script:
-    - |
-      REPO_ADDR="$(jq -r '.repo//empty'<<<"$ONLINE_CHART_REPO")"
-      USERNAME="$(jq -r '.username//empty'<<<"$ONLINE_CHART_REPO")"
-      PASSWORD="$(jq -r '.password//empty'<<<"$ONLINE_CHART_REPO")"
-      helm repo add --insecure-skip-tls-verify --username="$USERNAME" \
-      --password="$PASSWORD" "$REPO_NAME" "$REPO_ADDR/chartrepo/$REPO_NAME" --force-update
-    - helm pull --insecure-skip-tls-verify "$REPO_NAME"/horizon --version "$CHART_VERSION"
-    - helm upgrade  $RELEASE_NAME "$(ls | grep tgz)" -n $NAMESPACE  --install --create-namespace
+    - ls -l
+    - ls -l target/
   only:
     - develop
