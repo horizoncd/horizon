@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
@@ -58,6 +59,7 @@ func Run(flags *Flags) {
 	// init server
 	log.Printf("Server started")
 	r := gin.Default()
+	r.Use(user.Middleware(mySQLDB))
 	gin.ForceConsoleColor()
 	group.RegisterRoutes(r, controller)
 
