@@ -19,3 +19,16 @@ build:
     - tags
   except:
     - schedules
+
+helm_package:
+  stage: package
+  script:
+    - mkdir -p target && cp -r chart target/$CI_PROJECT_NAME || exit 1
+    - helm package --version="$CHART_VERSION" --app-version="$APP_REVISION" -d target target/$CI_PROJECT_NAME || exit 1
+    - echo "$CHART_VERSION"
+    - cd target && HELM_PACKAGE=$(ls | grep tgz) && s3 put $HELM_PACKAGE $NOS_BUCKET$NOS_BUCKET_PREFIX/$HELM_PACKAGE || exit 1
+  only:
+    - develop
+    - tags
+  except:
+    - schedules
