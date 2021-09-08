@@ -50,7 +50,7 @@ deploy_dev:
     REPO_NAME: cloudnative
     KUBECONFIG_YAML: $KUBECONFIG_DEV
     NAMESPACE: horizon
-    RELEASE_NAME: horizon
+    RELEASE_NAME: horizon-backend
   script:
     - |
       REPO_ADDR="$(jq -r '.repo//empty'<<<"$ONLINE_CHART_REPO")"
