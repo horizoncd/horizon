@@ -18,12 +18,12 @@ func New() DAO {
 type dao struct{}
 
 func (d *dao) FindByOIDC(db *gorm.DB, oidcID, oidcType string)(*models.User, error){
-	var user *models.User
+	var user models.User
 	result := db.Raw("SELECT * FROM user WHERE oidc_id = ? and oidc_type = ?", oidcID, oidcType).Scan(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (d *dao) Create(db *gorm.DB, user *models.User) (int64, error) {
