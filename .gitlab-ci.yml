@@ -54,7 +54,6 @@ deploy_dev:
     NAMESPACE: horizon
     RELEASE_NAME: horizon-backend
   script:
-    - ls -l
-    - ls -l target/
+    - helm upgrade  $RELEASE_NAME "$(ls target/ | grep tgz)" -n $NAMESPACE  --install --create-namespace
   only:
     - develop
