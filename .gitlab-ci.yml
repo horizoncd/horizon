@@ -1,5 +1,6 @@
 stages:
   - build
+  - package
 
 variables:
   REPOSITORY_PREFIX: harbor.mock.org/cloudnative/horizon/
