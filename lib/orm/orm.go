@@ -20,7 +20,7 @@ type MySQL struct {
 }
 
 func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
-	conn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", db.Username,
+	conn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", db.Username,
 		db.Password, db.Host, db.Port, db.Database)
 
 	sqlDB, err := sql.Open("mysql", conn)
