@@ -1,0 +1,7 @@
+# "horizon:O{AyroRA@@tcp(music-horizon-dev-jd-26519.rds.cn-east-p1.internal:3331)/horizon?charset=utf8mb4&parseTime=True&loc=Local"
+dbconfig:
+  host: music-horizon-dev-jd-26519.rds.cn-east-p1.internal
+  port: 3331
+  username: horizon
+  password: O{AyroRA@
+  database: horizon

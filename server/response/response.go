@@ -7,9 +7,9 @@ import (
 )
 
 type Response struct {
-	ErrorCode    string         `json:"errorCode,omitempty"`
+	ErrorCode    string      `json:"errorCode,omitempty"`
 	ErrorMessage string      `json:"errorMessage,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
+	Data         interface{} `json:"data,omitempty"`
 }
 
 func NewResponse() *Response {
@@ -18,7 +18,7 @@ func NewResponse() *Response {
 
 func NewResponseWithData(data interface{}) *Response {
 	return &Response{
-		Data:    data,
+		Data: data,
 	}
 }
 

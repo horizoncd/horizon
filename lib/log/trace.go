@@ -39,7 +39,7 @@ func (t *tracer) trace(ctx context.Context, l logrus.Level) func(f func() error)
 	fn := runtime.FuncForPC(pc)
 	name := fn.Name()
 	file = file[strings.LastIndex(file, "/")+1:]
-	logger = logger.WithField("file", file + ":" + strconv.Itoa(line))
+	logger = logger.WithField("file", file+":"+strconv.Itoa(line))
 	logger.Logf(l, "enter: %v", name)
 	return func(f func() error) {
 		err := f()

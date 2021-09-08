@@ -3,7 +3,7 @@ info:
   title: Horizon-group
   version: 1.0.0
 servers:
-  - url: 'http://horizon.mockserver.org/'
+  - url: 'http://localhost:8080/'
 paths:
   /api/v1/groups?path={path}:
     get:
@@ -194,7 +194,7 @@ components:
           $ref: '#/components/schemas/VisibilityLevel'
         createdAt:
           $ref: "../core.yaml#/components/schemas/Date"
-        modifiedAt:
+        updatedAt:
           $ref: "../core.yaml#/components/schemas/Date"
 
     GroupId:
@@ -213,11 +213,10 @@ components:
       description: the group path
 
     VisibilityLevel:
-      type: integer
-      format: int32
-      enum: [0,1]
-      default: 0
-      description: 0 means public(every one can see the group), 1 means private only members can see
+      type: string
+      enum: ["public", "private"]
+      default: "private"
+      description: public means public(every one can see the group), private means private only members can see
 
     GroupDescription:
       type: string

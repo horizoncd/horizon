@@ -1,4 +1,4 @@
-package v1
+package group
 
 import (
 	"net/http"
@@ -9,27 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(engine *gin.Engine) {
-	api := engine.Group("/api/v1")
-	var c, _ = NewController()
+// RegisterRoutes register routes
+func RegisterRoutes(engine *gin.Engine, c *Controller) {
+	api := engine.Group("/api/v1/groups")
 	api.Use(requestid.Middleware())
 	api.Use(log.Middleware())
 
 	var routes = route.Routes{
 		{
-			"Test",
-			http.MethodGet,
-			"/test",
-			c.Test,
+			"CreateGroup",
+			http.MethodPost,
+			"",
+			c.CreateGroup,
 		},
 	}
 	route.RegisterRoutes(api, routes)
-}
-
-type Controller struct {}
-
-func NewController() (*Controller, error) {
-
-	return &Controller{
-	}, nil
 }
