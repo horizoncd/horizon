@@ -7,6 +7,16 @@ RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o bin/app -ldflags '-s -w' ./
 
 FROM alpine:3.9 AS runtime
 
+ARG GROUP=netease
+ARG USER=appops
+ARG GROUP_ID=10001
+ARG USER_ID=10001
+
 COPY --from=builder /horizon/bin/app /usr/local/bin/app
+
+RUN addgroup --gid $GROUP_ID $GROUP && adduser -h /home/$USER -u $USER_ID -G $GROUP -D $USER && \
+    chown -R $USER:$GROUP /usr/local/bin/app
+
+USER $USER
 
 CMD ["/usr/local/bin/app"]
