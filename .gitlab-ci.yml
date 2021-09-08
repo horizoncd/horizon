@@ -11,7 +11,7 @@ before_script:
 build:
   stage: build
   variables:
-    DOCKER_CONFIG_JSON: $DOCKER_AUTH_CONFIG_DEV
+    DOCKER_CONFIG_JSON: $DOCKER_AUTH_CONFIG_ONLINE
   script:
     - bash build/build.sh || exit 1
   only:
