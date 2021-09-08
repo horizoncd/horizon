@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"flag"
+	"io/ioutil"
+	"log"
+
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/lib/orm"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"log"
 )
 
 // Flags defines agent CLI flags.

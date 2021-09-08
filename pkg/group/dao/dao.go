@@ -7,7 +7,6 @@ import (
 
 type DAO interface {
 	Create(db *gorm.DB, group *models.Group) (int, error)
-	//Update(db *gorm.DB, group *models.Group) error
 }
 
 // New returns an instance of the default DAO

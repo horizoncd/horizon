@@ -3,11 +3,11 @@ package orm
 import (
 	"database/sql"
 	"fmt"
-	"gorm.io/gorm/schema"
 	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 // MySQL ...
@@ -25,7 +25,7 @@ func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
 
 	sqlDB, err := sql.Open("mysql", conn)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)

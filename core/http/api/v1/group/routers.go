@@ -1,11 +1,12 @@
 package group
 
 import (
+	"net/http"
+
 	"g.hz.netease.com/horizon/server/middleware/log"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"g.hz.netease.com/horizon/server/route"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 // RegisterRoutes register routes

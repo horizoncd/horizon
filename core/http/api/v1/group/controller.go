@@ -2,6 +2,7 @@ package group
 
 import (
 	"fmt"
+
 	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/server/response"
@@ -34,6 +35,10 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 	}
 
 	create, err := controller.dao.Create(controller.db, group)
+	if err != nil {
+		response.AbortWithInternalError(c, CreateGroupError, fmt.Sprintf("create group failed: %v", err))
+		return
+	}
 
 	response.NewResponseWithData(create)
 }
