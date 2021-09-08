@@ -1,6 +1,5 @@
 stages:
   - build
-  - package
   - deploy
 
 variables:
@@ -23,7 +22,7 @@ build:
     - schedules
 
 helm_package:
-  stage: package
+  stage: build
   variables:
     REPO_NAME: cloudnative
   script:
@@ -38,6 +37,9 @@ helm_package:
       helm repo add --insecure-skip-tls-verify --username="$USERNAME" \
       --password="$PASSWORD" "$REPO_NAME" "$REPO_ADDR/chartrepo/$REPO_NAME" --force-update
       helm push --insecure target/$(cd target; ls | grep tgz) "$REPO_NAME" || exit 1
+  artifacts:
+    paths:
+      - target/*.tgz
   only:
     - develop
     - tags
