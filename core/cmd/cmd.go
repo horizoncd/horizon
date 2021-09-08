@@ -8,8 +8,12 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
+
+	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
+	ormmiddle "g.hz.netease.com/horizon/server/middleware/orm"
 )
 
 // Flags defines agent CLI flags.
@@ -54,11 +58,14 @@ func Run(flags *Flags) {
 	}
 
 	// init controller
-	var controller = group.NewController(mySQLDB)
+	var controller = group.NewController()
 
 	// init server
 	log.Printf("Server started")
 	r := gin.Default()
+	r.Use(requestid.Middleware())
+	r.Use(logmiddle.Middleware())
+	r.Use(ormmiddle.Middleware(mySQLDB))
 	r.Use(user.Middleware(mySQLDB))
 	gin.ForceConsoleColor()
 	group.RegisterRoutes(r, controller)
