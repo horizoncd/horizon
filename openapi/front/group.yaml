@@ -37,7 +37,7 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/v1/groups/children?parentId={groupId}:
+  /api/v1/groups/children?parentId={groupId}&pageIndex=${pageIndex}&pageSize={pageSize}:
     get:
       tags:
         - group
@@ -46,6 +46,8 @@ paths:
       parameters:
         - name: groupId
           in: query
+        - $ref: '../core.yaml/#/components/parameters/pageIndex'
+        - $ref: '../core.yaml/#/components/parameters/pageSize'
       responses:
         "200":
           content:
@@ -90,7 +92,7 @@ components:
           type: integer
         createdAt:
           $ref: "../core.yaml#/components/schemas/Date"
-        modifiedAt:
+        updatedAt:
           $ref: "../core.yaml#/components/schemas/Date"
 
     SearchGroupResult:
@@ -120,7 +122,7 @@ components:
           type: integer
         createdAt:
           $ref: "../core.yaml#/components/schemas/Date"
-        modifiedAt:
+        updatedAt:
           $ref: "../core.yaml#/components/schemas/Date"
 
     GroupChildType:
