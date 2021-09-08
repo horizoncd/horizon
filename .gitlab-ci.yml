@@ -11,9 +11,31 @@ before_script:
 build:
   stage: build
   variables:
-    DOCKER_CONFIG_JSON: $DOCKER_AUTH_CONFIG_DEV
+    DOCKER_CONFIG_JSON: $DOCKER_AUTH_CONFIG_ONLINE
   script:
     - bash build/build.sh || exit 1
+  only:
+    - develop
+    - tags
+  except:
+    - schedules
+
+helm_package:
+  stage: package
+  variables:
+    REPO_NAME: cloudnative
+  script:
+    - mkdir -p target && cp -r chart target/$CI_PROJECT_NAME || exit 1
+    - helm package --version="$CHART_VERSION" --app-version="$APP_REVISION" -d target target/$CI_PROJECT_NAME || exit 1
+    - echo "$CHART_VERSION"
+    - |
+      REPO_ADDR="$(jq -r '.repo//empty'<<<"$ONLINE_CHART_REPO")"
+      USERNAME="$(jq -r '.username//empty'<<<"$ONLINE_CHART_REPO")"
+      PASSWORD="$(jq -r '.password//empty'<<<"$ONLINE_CHART_REPO")"
+
+      helm repo add --insecure-skip-tls-verify --username="$USERNAME" \
+      --password="$PASSWORD" "$REPO_NAME" "$REPO_ADDR/chartrepo/$REPO_NAME" --force-update
+      helm push --insecure target/$(cd target; ls | grep tgz) "$REPO_NAME" || exit 1
   only:
     - develop
     - tags
