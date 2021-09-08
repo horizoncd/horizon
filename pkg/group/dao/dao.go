@@ -11,7 +11,7 @@ type DAO interface {
 	Get(db *gorm.DB, id int64) (*models.Group, error)
 	GetByPath(db *gorm.DB, path string) (*models.Group, error)
 	Update(db *gorm.DB, group *models.Group) error
-	GetChildren(db *gorm.DB, id int64) error
+	GetChildren(db *gorm.DB, id int64) ([]*models.Group, error)
 }
 
 // New returns an instance of the default DAO
