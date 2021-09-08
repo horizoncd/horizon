@@ -19,4 +19,4 @@ RUN addgroup --gid $GROUP_ID $GROUP && adduser -h /home/$USER -u $USER_ID -G $GR
 
 USER $USER
 
-CMD ["/usr/local/bin/app"]
+ENTRYPOINT ["/usr/local/bin/app"]
