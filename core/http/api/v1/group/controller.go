@@ -3,7 +3,7 @@ package group
 import (
 	"fmt"
 
-	"g.hz.netease.com/horizon/pkg/group/dao"
+	groupDao "g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/server/response"
 	"github.com/gin-gonic/gin"
@@ -15,14 +15,14 @@ const (
 )
 
 type Controller struct {
-	db  *gorm.DB
-	dao dao.DAO
+	db       *gorm.DB
+	groupDao groupDao.DAO
 }
 
 func NewController(db *gorm.DB) *Controller {
 	return &Controller{
-		db:  db,
-		dao: dao.New(),
+		db:       db,
+		groupDao: groupDao.New(),
 	}
 }
 
@@ -34,7 +34,7 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 		return
 	}
 
-	create, err := controller.dao.Create(controller.db, group)
+	create, err := controller.groupDao.Create(controller.db, group)
 	if err != nil {
 		response.AbortWithInternalError(c, CreateGroupError, fmt.Sprintf("create group failed: %v", err))
 		return
