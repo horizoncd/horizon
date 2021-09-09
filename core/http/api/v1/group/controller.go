@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group"
 	"g.hz.netease.com/horizon/pkg/group/models"
@@ -20,6 +21,7 @@ const (
 	UpdateGroup      = "UpdateGroupError"
 	ParamGroupId     = "groupId"
 	ParamPath        = "path"
+	ParamFilter      = "filter"
 )
 
 type Controller struct {
@@ -128,19 +130,46 @@ func (controller *Controller) GetChildren(c *gin.Context) {
 }
 
 func (controller *Controller) GetSubGroups(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
-	k := q.KeyWords{
-		"parent_id": groupId,
-	}
-	// sort by updated_at desc，let newer items be in head
-	s := q.NewSort("updated_at", true)
-	query := q.New(k)
-	query.Sorts = []*q.Sort{s}
-	groups, err := controller.manager.List(c, query)
+	groups, err := controller.manager.List(c, formatQuerySubGroups(c))
 	if err != nil {
 		response.AbortWithInternalError(c, GetSubGroups, fmt.Sprintf("get subgroups failed: %v", err))
 		return
 	}
 
 	response.SuccessWithData(c, groups)
+}
+
+func (controller *Controller) SearchGroups(c *gin.Context) {
+	filter := c.Param(ParamFilter)
+	// 检索字符串为空，只展示 parent_id = null 的group
+	if filter == "" {
+		controller.GetSubGroups(c)
+		return
+	}
+	// 检索字符串过短，返回空数组回去
+	if len(filter) < 3 {
+		response.SuccessWithData(c, []*models.Group{})
+		return
+	}
+	// 正常检索
+
+}
+
+func formatQuerySubGroups(c *gin.Context) *q.Query {
+	groupId := c.Param(ParamGroupId)
+	if groupId == "" {
+		// 数据库判断字段空值用null
+		groupId = "null"
+	}
+	k := q.KeyWords{
+		"parent_id": groupId,
+	}
+	// sort by updated_at desc，let newer items be in head
+	s := q.NewSort("updated_at", true)
+	query := q.New(k)
+	query.PageNumber, _ = strconv.Atoi(c.Param(common.PAGE_NUMBER))
+	query.PageSize, _ = strconv.Atoi(c.Param(common.PAGE_SIZE))
+	query.Sorts = []*q.Sort{s}
+
+	return query
 }
