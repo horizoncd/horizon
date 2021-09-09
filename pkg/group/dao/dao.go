@@ -13,7 +13,7 @@ type DAO interface {
 	Delete(ctx context.Context, id int64) error
 	Get(ctx context.Context, id int64) (*models.Group, error)
 	GetByPath(ctx context.Context, path string) (*models.Group, error)
-	Update(ctx context.Context, group *models.Group) error
+	Update(ctx context.Context, group *models.Group) (int64, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, error)
 }
 
@@ -25,7 +25,7 @@ func New() DAO {
 type dao struct{}
 
 func (d *dao) Create(ctx context.Context, group *models.Group) (int64, error) {
-	// todo 判断同名
+	// todo 判断同名和同path
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, err
@@ -86,14 +86,14 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	return groups, result.Error
 }
 
-func (d *dao) Update(ctx context.Context, group *models.Group) error {
+func (d *dao) Update(ctx context.Context, group *models.Group) (int64, error) {
 	// todo 判断同名
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	result := db.Model(group).Select("Name", "Description", "VisibilityLevel").Updates(group)
+	result := db.Model(group).Select("Name", "Description", "VisibilityLevel").Where("deleted_at = ?", "null").Updates(group)
 
-	return result.Error
+	return result.RowsAffected, result.Error
 }

@@ -5,14 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
-	"regexp"
 
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/health"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/server/middleware"
 	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
@@ -73,11 +69,11 @@ func Run(flags *Flags) {
 	r.Use(
 		gin.LoggerWithWriter(gin.DefaultWriter, "/health"),
 		gin.Recovery(),
-		requestid.Middleware(), // requestID middleware, attach a request to context
-		logmiddle.Middleware(), // log middleware, attach a logger to context
+		requestid.Middleware(),        // requestID middleware, attach a request to context
+		logmiddle.Middleware(),        // log middleware, attach a logger to context
 		ormmiddle.Middleware(mySQLDB), // orm db middleware, attach a db to context
-		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/health"))),
+		// user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
+		// 	middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/health"))),
 	)
 
 	gin.ForceConsoleColor()

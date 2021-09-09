@@ -39,7 +39,7 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 		{
 			"UpdateGroup",
 			http.MethodPut,
-			"",
+			"/:groupId",
 			c.UpdateGroup,
 		},
 		{

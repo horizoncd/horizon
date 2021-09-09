@@ -114,7 +114,8 @@ paths:
 
   /api/v1/groups/{groupId}/subgroups:
     parameters:
-      - $ref: "#/components/schemas/GroupId"
+      - name: groupId
+        in: path
     get:
       tags:
         - group

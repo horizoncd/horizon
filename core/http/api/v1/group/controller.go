@@ -46,7 +46,7 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 		return
 	}
 
-	response.NewResponseWithData(create)
+	response.SuccessWithData(c, create)
 }
 
 func (controller *Controller) DeleteGroup(c *gin.Context) {
@@ -130,17 +130,17 @@ func (controller *Controller) GetChildren(c *gin.Context) {
 func (controller *Controller) GetSubGroups(c *gin.Context) {
 	groupId := c.Param(ParamGroupId)
 	k := q.KeyWords{
-		"parentId": groupId,
+		"parent_id": groupId,
 	}
 	// sort by updated_at desc，let newer items be in head
 	s := q.NewSort("updated_at", true)
 	query := q.New(k)
 	query.Sorts = []*q.Sort{s}
-	groups, err := controller.manager.List(c, q.New(k))
+	groups, err := controller.manager.List(c, query)
 	if err != nil {
 		response.AbortWithInternalError(c, GetSubGroups, fmt.Sprintf("get subgroups failed: %v", err))
 		return
 	}
 
-	response.NewResponseWithData(groups)
+	response.SuccessWithData(c, groups)
 }

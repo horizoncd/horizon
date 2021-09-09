@@ -2,6 +2,7 @@ package group
 
 import (
 	"context"
+	"errors"
 
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/dao"
@@ -43,7 +44,15 @@ func (m manager) GetByPath(ctx context.Context, path string) (*models.Group, err
 }
 
 func (m manager) Update(ctx context.Context, group *models.Group) error {
-	return m.dao.Update(ctx, group)
+	update, err := m.dao.Update(ctx, group)
+	if err != nil {
+		return err
+	}
+	if update == 0 {
+		return errors.New("record not exist")
+	}
+
+	return nil
 }
 
 func (m manager) List(ctx context.Context, query *q.Query) ([]*models.Group, error) {
