@@ -13,6 +13,12 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 
 	var routes = route.Routes{
 		{
+			"SearchGroups",
+			http.MethodGet,
+			"/search",
+			c.SearchGroups,
+		},
+		{
 			"CreateGroup",
 			http.MethodPost,
 			"",
@@ -53,12 +59,6 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 			http.MethodGet,
 			"/:groupId/subgroups",
 			c.GetSubGroups,
-		},
-		{
-			"SearchGroups",
-			http.MethodGet,
-			"/search",
-			c.SearchGroups,
 		},
 	}
 	route.RegisterRoutes(api, routes)
