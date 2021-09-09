@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info:
-  title: Horizon-group
+  title: Horizon-group-front
   version: 1.0.0
 servers:
-  - url: 'http://horizon.mockserver.org/'
+  - url: 'http://localhost:8080/'
 paths:
-  /api/v1/groups/search?parentId={parentId}&filter={filter}&pageIndex=${pageIndex}&pageSize={pageSize}:
+  /api/v1/groups/search?parentId={parentId}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
@@ -17,7 +17,7 @@ paths:
           in: query
         - name: filter
           in: query
-        - $ref: '../core.yaml/#/components/parameters/pageIndex'
+        - $ref: '../core.yaml/#/components/parameters/pageNumber'
         - $ref: '../core.yaml/#/components/parameters/pageSize'
       responses:
         '200':
@@ -37,7 +37,7 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/v1/groups/children?parentId={groupId}&pageIndex=${pageIndex}&pageSize={pageSize}:
+  /api/v1/groups/children?parentId={groupId}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
@@ -46,7 +46,7 @@ paths:
       parameters:
         - name: groupId
           in: query
-        - $ref: '../core.yaml/#/components/parameters/pageIndex'
+        - $ref: '../core.yaml/#/components/parameters/pageNumber'
         - $ref: '../core.yaml/#/components/parameters/pageSize'
       responses:
         "200":

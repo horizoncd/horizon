@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/models"
 )
 
@@ -13,7 +14,7 @@ type DAO interface {
 	Get(ctx context.Context, id int64) (*models.Group, error)
 	GetByPath(ctx context.Context, path string) (*models.Group, error)
 	Update(ctx context.Context, group *models.Group) error
-	GetChildren(ctx context.Context, id int64) ([]*models.Group, error)
+	List(ctx context.Context, query *q.Query) ([]*models.Group, error)
 }
 
 // New returns an instance of the default DAO
@@ -70,14 +71,17 @@ func (d *dao) GetByPath(ctx context.Context, path string) (*models.Group, error)
 	return group, result.Error
 }
 
-func (d *dao) GetChildren(ctx context.Context, id int64) ([]*models.Group, error) {
+func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var groups []*models.Group
-	result := db.Where("parentId = ?", id).Find(&groups)
+
+	sort := orm.FormatSortExp(query)
+	offset := (query.PageNumber - 1) * query.PageSize
+	result := db.Order(sort).Where(query.Keywords).Limit(query.PageSize).Offset(offset).Find(&groups)
 
 	return groups, result.Error
 }

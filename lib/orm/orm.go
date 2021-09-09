@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"g.hz.netease.com/horizon/lib/q"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -41,4 +42,22 @@ func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
 	})
 
 	return orm, err
+}
+
+func FormatSortExp(query *q.Query) string {
+	exp := ""
+
+	if query == nil || query.Sorts == nil || len(query.Sorts) == 0 {
+		return exp
+	}
+
+	for _, sort := range query.Sorts {
+		sorting := sort.Key
+		if sort.DESC {
+			sorting = fmt.Sprintf("%s desc", sorting)
+		}
+		exp += sorting + ", "
+	}
+
+	return exp[:len(exp)-2]
 }
