@@ -2,12 +2,17 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"regexp"
 
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
+	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
@@ -63,12 +68,24 @@ func Run(flags *Flags) {
 	// init server
 	log.Printf("Server started")
 	r := gin.Default()
+
+	// use middleware
+	// 1. requestID middleware, attach a request to context
 	r.Use(requestid.Middleware())
+	// 2. log middleware, attach a logger to context
 	r.Use(logmiddle.Middleware())
+	// 3. orm db middleware, attach a db to context
 	r.Use(ormmiddle.Middleware(mySQLDB))
-	r.Use(user.Middleware())
+	// 4. user middleware, check user and attach current user to context.
+	//    NOTE: should skip for health check
+	r.Use(user.Middleware(config.OIDCConfig,
+		middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/health"))))
+
 	gin.ForceConsoleColor()
+
+	// register routes
+	health.RegisterRoutes(r)
 	group.RegisterRoutes(r, controller)
 
-	log.Fatal(r.Run(":8080"))
+	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
 }

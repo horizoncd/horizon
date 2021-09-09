@@ -8,8 +8,10 @@ import (
 )
 
 type DAO interface {
-	Create(ctx context.Context, user *models.User) (int64, error)
-	FindByOIDC(ctx context.Context, oidcID, oidcType string)(*models.User, error)
+	// Create user
+	Create(ctx context.Context, user *models.User) (*models.User, error)
+	// GetByOIDCMeta get user by oidcID and oidcType
+	GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error)
 }
 
 // New returns an instance of the default DAO
@@ -19,7 +21,17 @@ func New() DAO {
 
 type dao struct{}
 
-func (d *dao) FindByOIDC(ctx context.Context, oidcID, oidcType string)(*models.User, error){
+func (d *dao) Create(ctx context.Context, user *models.User) (*models.User, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := db.Create(user)
+	return user, result.Error
+}
+
+func (d *dao) GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -31,14 +43,4 @@ func (d *dao) FindByOIDC(ctx context.Context, oidcID, oidcType string)(*models.U
 		return nil, result.Error
 	}
 	return &user, nil
-}
-
-func (d *dao) Create(ctx context.Context, user *models.User) (int64, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	result := db.Create(user)
-	return result.RowsAffected, result.Error
 }
