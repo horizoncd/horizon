@@ -54,6 +54,12 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 			"/:groupId/subgroups",
 			c.GetSubGroups,
 		},
+		{
+			"SearchGroups",
+			http.MethodGet,
+			"/search",
+			c.SearchGroups,
+		},
 	}
 	route.RegisterRoutes(api, routes)
 }
