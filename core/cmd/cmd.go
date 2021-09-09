@@ -13,11 +13,11 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
+	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 
-	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
 	ormmiddle "g.hz.netease.com/horizon/server/middleware/orm"
 )
 
@@ -67,19 +67,18 @@ func Run(flags *Flags) {
 
 	// init server
 	log.Printf("Server started")
-	r := gin.Default()
+	r := gin.New()
 
 	// use middleware
-	// 1. requestID middleware, attach a request to context
-	r.Use(requestid.Middleware())
-	// 2. log middleware, attach a logger to context
-	r.Use(logmiddle.Middleware())
-	// 3. orm db middleware, attach a db to context
-	r.Use(ormmiddle.Middleware(mySQLDB))
-	// 4. user middleware, check user and attach current user to context.
-	//    NOTE: should skip for health check
-	r.Use(user.Middleware(config.OIDCConfig,
-		middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/health"))))
+	r.Use(
+		gin.LoggerWithWriter(gin.DefaultWriter, "/health"),
+		gin.Recovery(),
+		requestid.Middleware(),
+		logmiddle.Middleware(),
+		ormmiddle.Middleware(mySQLDB),
+		user.Middleware(config.OIDCConfig,
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/health"))),
+	)
 
 	gin.ForceConsoleColor()
 
