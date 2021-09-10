@@ -13,15 +13,15 @@ import (
 )
 
 const (
-	CreateGroupError = "CreateGroupError"
-	GetSubGroups     = "GetSubGroupsError"
-	DeleteGroup      = "DeleteGroupError"
-	GetGroup         = "GetGroupError"
-	GetGroupByPath   = "GetGroupByPathError"
-	UpdateGroup      = "UpdateGroupError"
-	ParamGroupId     = "groupId"
-	ParamPath        = "path"
-	ParamFilter      = "filter"
+	CreateGroupError    = "CreateGroupError"
+	GetSubGroupsError   = "GetSubGroupsError"
+	DeleteGroupError    = "DeleteGroupError"
+	GetGroupError       = "GetGroupError"
+	GetGroupByPathError = "GetGroupByPathError"
+	UpdateGroupError    = "UpdateGroupError"
+	ParamGroupId        = "groupId"
+	ParamPath           = "path"
+	ParamFilter         = "filter"
 )
 
 type Controller struct {
@@ -35,14 +35,13 @@ func NewController() *Controller {
 }
 
 func (controller *Controller) CreateGroup(c *gin.Context) {
-	var newGroup *models.Group
+	var newGroup *NewGroup
 	err := c.ShouldBindJSON(&newGroup)
 	if err != nil {
 		response.AbortWithRequestError(c, CreateGroupError, fmt.Sprintf("create group failed: %v", err))
 		return
 	}
-
-	create, err := controller.manager.Create(c, newGroup)
+	create, err := controller.manager.Create(c, convertNewGroupToGroup(newGroup))
 	if err != nil {
 		response.AbortWithInternalError(c, CreateGroupError, fmt.Sprintf("create group failed: %v", err))
 		return
@@ -56,12 +55,12 @@ func (controller *Controller) DeleteGroup(c *gin.Context) {
 
 	idInt, err := strconv.ParseInt(groupId, 10, 64)
 	if err != nil {
-		response.AbortWithRequestError(c, DeleteGroup, fmt.Sprintf("delete group failed: %v", err))
+		response.AbortWithRequestError(c, DeleteGroupError, fmt.Sprintf("delete group failed: %v", err))
 		return
 	}
 	err = controller.manager.Delete(c, idInt)
 	if err != nil {
-		response.AbortWithInternalError(c, DeleteGroup, fmt.Sprintf("delete group failed: %v", err))
+		response.AbortWithInternalError(c, DeleteGroupError, fmt.Sprintf("delete group failed: %v", err))
 		return
 	}
 	response.Success(c)
@@ -72,13 +71,13 @@ func (controller *Controller) GetGroup(c *gin.Context) {
 
 	idInt, err := strconv.ParseInt(groupId, 10, 64)
 	if err != nil {
-		response.AbortWithRequestError(c, GetGroup, fmt.Sprintf("get group failed: %v", err))
+		response.AbortWithRequestError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
 		return
 	}
 
 	_group, err := controller.manager.Get(c, idInt)
 	if err != nil {
-		response.AbortWithInternalError(c, GetGroup, fmt.Sprintf("get group failed: %v", err))
+		response.AbortWithInternalError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
 		return
 	}
 
@@ -90,7 +89,7 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 
 	_group, err := controller.manager.GetByPath(c, path)
 	if err != nil {
-		response.AbortWithInternalError(c, GetGroupByPath, fmt.Sprintf("get group by path failed: %v", err))
+		response.AbortWithInternalError(c, GetGroupByPathError, fmt.Sprintf("get group by path failed: %v", err))
 		return
 	}
 
@@ -102,14 +101,14 @@ func (controller *Controller) UpdateGroup(c *gin.Context) {
 
 	idInt, err := strconv.ParseUint(groupId, 10, 64)
 	if err != nil {
-		response.AbortWithRequestError(c, UpdateGroup, fmt.Sprintf("upate group failed: %v", err))
+		response.AbortWithRequestError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
 		return
 	}
 
 	var updatedGroup *models.Group
 	err = c.ShouldBindJSON(&updatedGroup)
 	if err != nil {
-		response.AbortWithRequestError(c, UpdateGroup, fmt.Sprintf("upate group failed: %v", err))
+		response.AbortWithRequestError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
 		return
 	}
 	// 以URL path中的id为准
@@ -117,7 +116,7 @@ func (controller *Controller) UpdateGroup(c *gin.Context) {
 
 	err = controller.manager.Update(c, updatedGroup)
 	if err != nil {
-		response.AbortWithInternalError(c, UpdateGroup, fmt.Sprintf("upate group failed: %v", err))
+		response.AbortWithInternalError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
 		return
 	}
 
@@ -132,11 +131,16 @@ func (controller *Controller) GetChildren(c *gin.Context) {
 func (controller *Controller) GetSubGroups(c *gin.Context) {
 	groups, err := controller.manager.List(c, formatQuerySubGroups(c))
 	if err != nil {
-		response.AbortWithInternalError(c, GetSubGroups, fmt.Sprintf("get subgroups failed: %v", err))
+		response.AbortWithInternalError(c, GetSubGroupsError, fmt.Sprintf("get subgroups failed: %v", err))
 		return
 	}
 
-	response.SuccessWithData(c, groups)
+	var details []*GroupDetail
+	for _, tmp := range groups {
+		detail := ConvertGroupToGroupDetail(tmp)
+		details = append(details, detail)
+	}
+	response.SuccessWithData(c, details)
 }
 
 func (controller *Controller) SearchGroups(c *gin.Context) {

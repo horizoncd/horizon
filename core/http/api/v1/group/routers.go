@@ -13,49 +13,41 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 
 	var routes = route.Routes{
 		{
-			"SearchGroups",
 			http.MethodGet,
 			"/search",
 			c.SearchGroups,
 		},
 		{
-			"CreateGroup",
 			http.MethodPost,
 			"",
 			c.CreateGroup,
 		},
 		{
-			"DeleteGroup",
 			http.MethodDelete,
 			"/:groupId",
 			c.DeleteGroup,
 		},
 		{
-			"GetGroup",
 			http.MethodGet,
 			"/:groupId",
 			c.GetGroup,
 		},
 		{
-			"GetGroupByPath",
 			http.MethodGet,
 			"",
 			c.GetGroupByPath,
 		},
 		{
-			"UpdateGroup",
 			http.MethodPut,
 			"/:groupId",
 			c.UpdateGroup,
 		},
 		{
-			"GetChildren",
 			http.MethodGet,
 			"/:groupId/children",
 			c.GetChildren,
 		},
 		{
-			"GetSubGroups",
 			http.MethodGet,
 			"/:groupId/subgroups",
 			c.GetSubGroups,

@@ -14,7 +14,6 @@ func RegisterRoutes(engine *gin.Engine) {
 
 	var routes = route.Routes{
 		{
-			"HealthCheck",
 			http.MethodGet,
 			"",
 			healthCheck,
