@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"g.hz.netease.com/horizon/server/middleware"
@@ -17,8 +18,8 @@ const (
 
 var apiHistogram = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
-		Name:    "horizon_api_request_histogram",
-		Help:    "horizon api request histogram.",
+		Name:    "horizon_api_request_duration",
+		Help:    "horizon api request duration histogram.",
 		Buckets: prometheus.ExponentialBuckets(50, 2, 10),
 	},
 	[]string{_handlerLabel, _statusLabel},
@@ -36,11 +37,21 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 		latency := time.Now().Sub(start)
 
 		statusCode := c.Writer.Status()
-		handler := c.HandlerName()
+		var handler string
+		if handler = func() string {
+			handlerName := c.HandlerName()
+			// 忽略匿名的handler
+			if regexp.MustCompile(".*func\\d*$").MatchString(handlerName) {
+				return ""
+			}
+			return handlerName
+		}(); handler == "" {
+			return
+		}
+
 		apiHistogram.With(prometheus.Labels{
 			_handlerLabel: handler,
-			_statusLabel: fmt.Sprintf("%v", statusCode),
+			_statusLabel:  fmt.Sprintf("%v", statusCode),
 		}).Observe(float64(latency.Milliseconds()))
 	}, skippers...)
 }
-
