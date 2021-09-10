@@ -73,8 +73,8 @@ func Run(flags *Flags) {
 	r.Use(
 		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
-		requestid.Middleware(), // requestID middleware, attach a request to context
-		logmiddle.Middleware(), // log middleware, attach a logger to context
+		requestid.Middleware(),        // requestID middleware, attach a request to context
+		logmiddle.Middleware(),        // log middleware, attach a logger to context
 		ormmiddle.Middleware(mySQLDB), // orm db middleware, attach a db to context
 		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),

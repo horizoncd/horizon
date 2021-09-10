@@ -1,6 +1,6 @@
 openapi: 3.0.1
 info:
-  title: Horizon-group
+  title: Horizon-group-restful
   version: 1.0.0
 servers:
   - url: 'http://localhost:8080/'
@@ -53,7 +53,8 @@ paths:
 
   /api/v1/groups/{groupId}:
     parameters:
-      - $ref: "#/components/schemas/GroupId"
+      - name: groupId
+        in: path
     get:
       tags:
         - group
@@ -113,7 +114,8 @@ paths:
 
   /api/v1/groups/{groupId}/subgroups:
     parameters:
-      - $ref: "#/components/schemas/GroupId"
+      - name: groupId
+        in: path
     get:
       tags:
         - group

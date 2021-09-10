@@ -32,12 +32,12 @@ paths:
 
 components:
   parameters:
-    pageIndex:
-      name: pageIndex
-      in: path
+    pageNumber:
+      name: pageNumber
+      in: query
     pageSize:
       name: pageSize
-      in: path
+      in: query
 
   schemas:
     PageParams:

@@ -8,5 +8,5 @@ type Group struct {
 	Path            string
 	VisibilityLevel string
 	Description     string
-	ParentId        int
+	ParentId        *int
 }
