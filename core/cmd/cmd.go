@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"regexp"
 
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/health"
+	"g.hz.netease.com/horizon/core/http/metrics"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
@@ -71,19 +71,21 @@ func Run(flags *Flags) {
 
 	// use middleware
 	r.Use(
-		gin.LoggerWithWriter(gin.DefaultWriter, "/health"),
+		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
 		requestid.Middleware(), // requestID middleware, attach a request to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
 		ormmiddle.Middleware(mySQLDB), // orm db middleware, attach a db to context
 		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/health"))),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 	)
 
 	gin.ForceConsoleColor()
 
 	// register routes
 	health.RegisterRoutes(r)
+	metrics.RegisterRoutes(r)
 	group.RegisterRoutes(r, controller)
 
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
