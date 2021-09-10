@@ -2,6 +2,9 @@ package common
 
 // const variables
 const (
-	PAGE_NUMBER = "pageNumber"
-	PAGE_SIZE   = "pageSize"
+	PageNumber = "pageNumber"
+	PageSize   = "pageSize"
+
+	DefaultPageNumber = 1
+	DefaultPageSize   = 20
 )

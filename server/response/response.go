@@ -45,3 +45,7 @@ func AbortWithRequestError(c *gin.Context, errorCode, errorMessage string) {
 func AbortWithInternalError(c *gin.Context, errorCode, message string) {
 	Abort(c, http.StatusInternalServerError, errorCode, message)
 }
+
+func AbortWithNotFoundError(c *gin.Context, errorCode, message string) {
+	Abort(c, http.StatusNotFound, errorCode, message)
+}

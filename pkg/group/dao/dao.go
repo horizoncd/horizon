@@ -67,6 +67,9 @@ func (d *dao) GetByPath(ctx context.Context, path string) (*models.Group, error)
 
 	var group *models.Group
 	result := db.Find(&group, "path = ?", path)
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
 
 	return group, result.Error
 }

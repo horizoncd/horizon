@@ -22,6 +22,8 @@ const (
 	ParamGroupId        = "groupId"
 	ParamPath           = "path"
 	ParamFilter         = "filter"
+	ParamParentId       = "parentId"
+	ParentId            = "parent_id"
 )
 
 type Controller struct {
@@ -80,8 +82,8 @@ func (controller *Controller) GetGroup(c *gin.Context) {
 		response.AbortWithInternalError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
 		return
 	}
-
-	response.SuccessWithData(c, _group)
+	detail := ConvertGroupToGroupDetail(_group)
+	response.SuccessWithData(c, detail)
 }
 
 func (controller *Controller) GetGroupByPath(c *gin.Context) {
@@ -92,8 +94,12 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 		response.AbortWithInternalError(c, GetGroupByPathError, fmt.Sprintf("get group by path failed: %v", err))
 		return
 	}
-
-	response.SuccessWithData(c, _group)
+	if _group == nil {
+		response.AbortWithNotFoundError(c, GetGroupByPathError, fmt.Sprintf("get group by path failed: %v", err))
+		return
+	}
+	detail := ConvertGroupToGroupDetail(_group)
+	response.SuccessWithData(c, detail)
 }
 
 func (controller *Controller) UpdateGroup(c *gin.Context) {
@@ -135,10 +141,10 @@ func (controller *Controller) GetSubGroups(c *gin.Context) {
 		return
 	}
 
-	var details []*GroupDetail
-	for _, tmp := range groups {
+	var details = make([]*GroupDetail, len(groups))
+	for idx, tmp := range groups {
 		detail := ConvertGroupToGroupDetail(tmp)
-		details = append(details, detail)
+		details[idx] = detail
 	}
 	response.SuccessWithData(c, details)
 }
@@ -160,19 +166,25 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 }
 
 func formatQuerySubGroups(c *gin.Context) *q.Query {
-	groupId := c.Param(ParamGroupId)
-	if groupId == "" {
-		// 数据库判断字段空值用null
-		groupId = "null"
-	}
+	paramParentId := c.Query(ParamParentId)
 	k := q.KeyWords{
-		"parent_id": groupId,
+		ParentId: nil,
 	}
+	if paramParentId != "" {
+		k[ParentId], _ = strconv.Atoi(paramParentId)
+	}
+
 	// sort by updated_at desc，let newer items be in head
 	s := q.NewSort("updated_at", true)
 	query := q.New(k)
-	query.PageNumber, _ = strconv.Atoi(c.Param(common.PAGE_NUMBER))
-	query.PageSize, _ = strconv.Atoi(c.Param(common.PAGE_SIZE))
+	query.PageNumber, _ = strconv.Atoi(c.Query(common.PageNumber))
+	if query.PageNumber == 0 {
+		query.PageNumber = common.DefaultPageNumber
+	}
+	query.PageSize, _ = strconv.Atoi(c.Query(common.PageSize))
+	if query.PageSize == 0 {
+		query.PageSize = common.DefaultPageSize
+	}
 	query.Sorts = []*q.Sort{s}
 
 	return query

@@ -2,10 +2,11 @@
 CREATE TABLE `group` (
      `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
      `name` varchar(128) NOT NULL DEFAULT '',
+     `full_name` varchar(512) NOT NULL DEFAULT '',
      `path` varchar(256) NOT NULL DEFAULT '',
      `description` varchar(256) DEFAULT NULL,
      `visibility_level` varchar(16) NOT NULL,
-     `parent_id` int(11) NOT NULL,
+     `parent_id` int(11) NULL,
      `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
      `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
      `deleted_at` datetime DEFAULT NULL,
