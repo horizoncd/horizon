@@ -13,7 +13,6 @@ func RegisterRoutes(engine *gin.Engine) {
 
 	var routes = route.Routes{
 		{
-			"Metrics",
 			http.MethodGet,
 			"",
 			gin.WrapH(promhttp.Handler()),
