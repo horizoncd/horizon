@@ -6,6 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type DataWithTotal struct {
+	Total int64       `json:"total"`
+	Items interface{} `json:"items"`
+}
+
 type Response struct {
 	ErrorCode    string      `json:"errorCode,omitempty"`
 	ErrorMessage string      `json:"errorMessage,omitempty"`

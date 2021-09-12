@@ -7,6 +7,7 @@ import (
 
 	"g.hz.netease.com/horizon/lib/q"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -36,6 +37,16 @@ func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
 	orm, err := gorm.Open(mysql.New(mysql.Config{
 		Conn: sqlDB,
 	}), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,
+		},
+	})
+
+	return orm, err
+}
+
+func NewSqliteDB(file string) (*gorm.DB, error) {
+	orm, err := gorm.Open(sqlite.Open(file), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},

@@ -21,3 +21,11 @@ func FromContext(ctx context.Context) (*gorm.DB, error) {
 	}
 	return o, nil
 }
+
+// NewContext returns new context with orm
+func NewContext(ctx context.Context, o *gorm.DB) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, ormKey, o)
+}

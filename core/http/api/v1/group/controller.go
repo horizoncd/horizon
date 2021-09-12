@@ -55,12 +55,12 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 func (controller *Controller) DeleteGroup(c *gin.Context) {
 	groupId := c.Param(ParamGroupId)
 
-	idInt, err := strconv.ParseInt(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupId, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, DeleteGroupError, fmt.Sprintf("delete group failed: %v", err))
 		return
 	}
-	err = controller.manager.Delete(c, idInt)
+	err = controller.manager.Delete(c, uint(idInt))
 	if err != nil {
 		response.AbortWithInternalError(c, DeleteGroupError, fmt.Sprintf("delete group failed: %v", err))
 		return
@@ -71,13 +71,13 @@ func (controller *Controller) DeleteGroup(c *gin.Context) {
 func (controller *Controller) GetGroup(c *gin.Context) {
 	groupId := c.Param(ParamGroupId)
 
-	idInt, err := strconv.ParseInt(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupId, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
 		return
 	}
 
-	_group, err := controller.manager.Get(c, idInt)
+	_group, err := controller.manager.Get(c, uint(idInt))
 	if err != nil {
 		response.AbortWithInternalError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
 		return
@@ -135,7 +135,7 @@ func (controller *Controller) GetChildren(c *gin.Context) {
 }
 
 func (controller *Controller) GetSubGroups(c *gin.Context) {
-	groups, err := controller.manager.List(c, formatQuerySubGroups(c))
+	groups, count, err := controller.manager.List(c, formatQuerySubGroups(c))
 	if err != nil {
 		response.AbortWithInternalError(c, GetSubGroupsError, fmt.Sprintf("get subgroups failed: %v", err))
 		return
@@ -146,7 +146,10 @@ func (controller *Controller) GetSubGroups(c *gin.Context) {
 		detail := ConvertGroupToGroupDetail(tmp)
 		details[idx] = detail
 	}
-	response.SuccessWithData(c, details)
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: count,
+		Items: details,
+	})
 }
 
 func (controller *Controller) SearchGroups(c *gin.Context) {
