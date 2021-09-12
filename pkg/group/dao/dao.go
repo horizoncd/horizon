@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/models"
@@ -10,6 +11,7 @@ import (
 )
 
 type DAO interface {
+	CheckUnique(ctx context.Context, group *models.Group) error
 	Create(ctx context.Context, group *models.Group) (uint, error)
 	Delete(ctx context.Context, id uint) error
 	Get(ctx context.Context, id uint) (*models.Group, error)
@@ -25,8 +27,31 @@ func New() DAO {
 
 type dao struct{}
 
+func (d *dao) CheckUnique(ctx context.Context, group *models.Group) error {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	query := map[string]interface{}{
+		"parent_id": group.ParentId,
+		"name":      group.Name,
+	}
+	result := db.Model(&models.Group{}).Where(query).Find(&models.Group{})
+	if result.RowsAffected > 0 {
+		return common.NameConflictErr
+	}
+
+	return nil
+}
+
 func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
 	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	// conflict if there's record with the same parentId and name
+	err = d.CheckUnique(ctx, group)
 	if err != nil {
 		return 0, err
 	}
@@ -92,6 +117,12 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 
 func (d *dao) Update(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	// conflict if there's record with the same parentId and name
+	err = d.CheckUnique(ctx, group)
 	if err != nil {
 		return err
 	}

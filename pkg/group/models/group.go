@@ -4,9 +4,9 @@ import "gorm.io/gorm"
 
 type Group struct {
 	gorm.Model
-	Name            string `gorm:"index:idx_name_parent_id,unique"`
+	Name            string
 	FullName        string
-	Path            string `gorm:"index:idx_path,unique"`
+	Path            string
 	VisibilityLevel string
 	Description     string
 	ParentId        *uint
