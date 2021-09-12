@@ -10,15 +10,17 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"gorm.io/plugin/prometheus"
 )
 
 // MySQL ...
 type MySQL struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password,omitempty"`
-	Database string `json:"database"`
+	Host              string `json:"host"`
+	Port              int    `json:"port"`
+	Username          string `json:"username"`
+	Password          string `json:"password,omitempty"`
+	Database          string `json:"database"`
+	PrometheusEnabled bool   `json:"prometheusEnabled"`
 }
 
 func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
@@ -29,6 +31,7 @@ func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
@@ -41,6 +44,17 @@ func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
 			SingularTable: true,
 		},
 	})
+
+	if db.PrometheusEnabled{
+		if err := orm.Use(prometheus.New(prometheus.Config{
+			DBName: "mysql",
+			MetricsCollector: []prometheus.MetricsCollector{
+				&prometheus.MySQL{},
+			},
+		})); err != nil {
+			return nil, err
+		}
+	}
 
 	return orm, err
 }

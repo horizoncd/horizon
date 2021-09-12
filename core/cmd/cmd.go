@@ -52,11 +52,12 @@ func Run(flags *Flags) {
 
 	// init db
 	mySQLDB, err := orm.NewMySQLDB(&orm.MySQL{
-		Host:     config.DBConfig.Host,
-		Port:     config.DBConfig.Port,
-		Username: config.DBConfig.Username,
-		Password: config.DBConfig.Password,
-		Database: config.DBConfig.Database,
+		Host:              config.DBConfig.Host,
+		Port:              config.DBConfig.Port,
+		Username:          config.DBConfig.Username,
+		Password:          config.DBConfig.Password,
+		Database:          config.DBConfig.Database,
+		PrometheusEnabled: config.DBConfig.PrometheusEnabled,
 	})
 	if err != nil {
 		panic(err)
