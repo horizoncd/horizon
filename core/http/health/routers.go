@@ -14,9 +14,8 @@ func RegisterRoutes(engine *gin.Engine) {
 
 	var routes = route.Routes{
 		{
-			http.MethodGet,
-			"",
-			healthCheck,
+			Method:      http.MethodGet,
+			HandlerFunc: healthCheck,
 		},
 	}
 	route.RegisterRoutes(api, routes)

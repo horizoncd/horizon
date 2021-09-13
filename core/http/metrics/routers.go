@@ -13,9 +13,8 @@ func RegisterRoutes(engine *gin.Engine) {
 
 	var routes = route.Routes{
 		{
-			http.MethodGet,
-			"",
-			gin.WrapH(promhttp.Handler()),
+			Method:      http.MethodGet,
+			HandlerFunc: gin.WrapH(promhttp.Handler()),
 		},
 	}
 	route.RegisterRoutes(api, routes)

@@ -116,6 +116,7 @@ func TestGet(t *testing.T) {
 
 func TestGetByPath(t *testing.T) {
 	_, err := Mgr.Create(ctx, getGroup1())
+	assert.Nil(t, err)
 
 	// query exist record
 	group1, err := Mgr.GetByPath(ctx, group1Path)
@@ -133,6 +134,7 @@ func TestGetByPath(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	group1 := getGroup1()
 	id, err := Mgr.Create(ctx, group1)
+	assert.Nil(t, err)
 
 	// update exist record
 	group1.ID = id
