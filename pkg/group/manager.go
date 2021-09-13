@@ -18,12 +18,18 @@ type Manager interface {
 	Delete(ctx context.Context, id uint) error
 	Get(ctx context.Context, id uint) (*models.Group, error)
 	GetByPath(ctx context.Context, path string) (*models.Group, error)
+	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
 	Update(ctx context.Context, group *models.Group) error
+	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
 }
 
 type manager struct {
 	dao dao.DAO
+}
+
+func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
+	return m.dao.GetByNameFuzzily(ctx, name)
 }
 
 func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) {
@@ -58,6 +64,10 @@ func (m manager) GetByPath(ctx context.Context, path string) (*models.Group, err
 
 func (m manager) Update(ctx context.Context, group *models.Group) error {
 	return m.dao.Update(ctx, group)
+}
+
+func (m manager) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error) {
+	return m.dao.ListWithoutPage(ctx, query)
 }
 
 func (m manager) List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error) {

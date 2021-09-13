@@ -44,6 +44,15 @@ func getGroup2(pid uint) *models.Group {
 	}
 }
 
+func getGroup3(pid uint) *models.Group {
+	return &models.Group{
+		Name:            "3",
+		Path:            "c",
+		VisibilityLevel: "public",
+		ParentId:        &pid,
+	}
+}
+
 func init() {
 	// create table
 	err := db.AutoMigrate(&models.Group{})
@@ -155,7 +164,9 @@ func TestUpdate(t *testing.T) {
 func TestList(t *testing.T) {
 	pid, err := Mgr.Create(ctx, getGroup1())
 	assert.Nil(t, err)
-	_, err = Mgr.Create(ctx, getGroup2(pid))
+	var group2Id, group3Id uint
+	group2Id, err = Mgr.Create(ctx, getGroup2(pid))
+	group3Id, err = Mgr.Create(ctx, getGroup3(pid))
 	assert.Nil(t, err)
 
 	// page with keywords, items: 1, total: 1
@@ -174,7 +185,19 @@ func TestList(t *testing.T) {
 	items, total, err = Mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(items))
-	assert.Equal(t, int64(2), total)
+	assert.Equal(t, int64(3), total)
+
+	// list by parentIdList
+	query.Keywords = q.KeyWords{
+		"parent_id": []uint{
+			pid,
+		},
+	}
+	query.PageSize = 10
+	items, total, err = Mgr.List(ctx, query)
+	assert.Nil(t, err)
+	assert.Equal(t, group2Id, items[0].ID)
+	assert.Equal(t, group3Id, items[1].ID)
 
 	// drop table
 	db.Where("1 = 1").Delete(&models.Group{})

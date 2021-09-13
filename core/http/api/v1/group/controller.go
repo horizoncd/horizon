@@ -15,15 +15,19 @@ import (
 const (
 	CreateGroupError    = "CreateGroupError"
 	GetSubGroupsError   = "GetSubGroupsError"
+	SearchGroupsError   = "SearchGroupsError"
 	DeleteGroupError    = "DeleteGroupError"
 	GetGroupError       = "GetGroupError"
 	GetGroupByPathError = "GetGroupByPathError"
 	UpdateGroupError    = "UpdateGroupError"
-	ParamGroupID        = "groupId"
+	ParamGroupId        = "groupId"
 	ParamPath           = "path"
 	ParamFilter         = "filter"
-	ParamParentID       = "parentId"
-	ParentID            = "parent_id"
+	QueryParentId       = "parentId"
+	ParentId            = "parent_id"
+	Group               = "group"
+	GroupId             = "groupId"
+	Name                = "name"
 )
 
 type Controller struct {
@@ -53,9 +57,9 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 }
 
 func (controller *Controller) DeleteGroup(c *gin.Context) {
-	groupID := c.Param(ParamGroupID)
+	groupId := c.Param(ParamGroupId)
 
-	idInt, err := strconv.ParseUint(groupID, 10, 64)
+	idInt, err := strconv.ParseUint(groupId, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, DeleteGroupError, fmt.Sprintf("delete group failed: %v", err))
 		return
@@ -69,9 +73,9 @@ func (controller *Controller) DeleteGroup(c *gin.Context) {
 }
 
 func (controller *Controller) GetGroup(c *gin.Context) {
-	groupID := c.Param(ParamGroupID)
+	groupId := c.Param(ParamGroupId)
 
-	idInt, err := strconv.ParseUint(groupID, 10, 64)
+	idInt, err := strconv.ParseUint(groupId, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
 		return
@@ -103,9 +107,9 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 }
 
 func (controller *Controller) UpdateGroup(c *gin.Context) {
-	groupID := c.Param(ParamGroupID)
+	groupId := c.Param(ParamGroupId)
 
-	idInt, err := strconv.ParseUint(groupID, 10, 64)
+	idInt, err := strconv.ParseUint(groupId, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
 		return
@@ -141,52 +145,128 @@ func (controller *Controller) GetSubGroups(c *gin.Context) {
 		return
 	}
 
-	var details = make([]*Detail, len(groups))
-	for idx, tmp := range groups {
-		detail := ConvertGroupToGroupDetail(tmp)
-		details[idx] = detail
-	}
 	response.SuccessWithData(c, response.DataWithTotal{
 		Total: count,
-		Items: details,
+		Items: controller.formatPageGroupDetails(c, groups),
 	})
 }
 
+func (controller *Controller) SearchChildren(c *gin.Context) {
+	// todo also query application
+	controller.SearchGroups(c)
+}
+
 func (controller *Controller) SearchGroups(c *gin.Context) {
-	filter := c.Param(ParamFilter)
-	// 检索字符串为空，只展示 parent_id = null 的group
+	filter := c.Query(ParamFilter)
 	if filter == "" {
-		controller.GetSubGroups(c)
+		groups, count, err := controller.manager.List(c, formatSearchGroups(c))
+		if err != nil {
+			response.AbortWithInternalError(c, SearchGroupsError, fmt.Sprintf("search groups failed: %v", err))
+			return
+		}
+		response.SuccessWithData(c, response.DataWithTotal{
+			Total: count,
+			Items: controller.formatPageGroupDetails(c, groups),
+		})
 		return
 	}
 	// 检索字符串过短，返回空数组回去
 	if len(filter) < 3 {
-		response.SuccessWithData(c, []*models.Group{})
+		response.SuccessWithData(c, response.DataWithTotal{
+			Total: 0,
+			Items: []*models.Group{},
+		})
 		return
 	}
-	// 正常检索
+	// 正常检索，根据name检索
+	// groups, err := controller.manager.GetByNameFuzzily(c, filter)
+	// if err != nil {
+	// 	response.AbortWithInternalError(c, SearchGroupsError, fmt.Sprintf("search groups failed: %v", err))
+	// 	return
+	// }
+
 }
 
-func formatQuerySubGroups(c *gin.Context) *q.Query {
-	paramParentID := c.Query(ParamParentID)
-	k := q.KeyWords{
-		ParentID: nil,
+func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*models.Group) []*GroupChild {
+	var parentIds []uint
+	for _, m := range groups {
+		parentIds = append(parentIds, m.ID)
 	}
-	if paramParentID != "" {
-		k[ParentID], _ = strconv.Atoi(paramParentID)
+	query := q.New(q.KeyWords{
+		ParentId: parentIds,
+	})
+	subGroups, err := controller.manager.ListWithoutPage(c, query)
+	if err != nil {
+		response.AbortWithInternalError(c, GetSubGroupsError, fmt.Sprintf("get subgroups failed: %v", err))
+		return nil
+	}
+	childrenCountMap := map[uint]int{}
+	for _, subgroup := range subGroups {
+		if v, ok := childrenCountMap[*subgroup.ParentId]; ok {
+			childrenCountMap[*subgroup.ParentId] = v + 1
+		} else {
+			childrenCountMap[*subgroup.ParentId] = 1
+		}
 	}
 
+	var details = make([]*GroupChild, len(groups))
+	for idx, tmp := range groups {
+		detail := ConvertGroupToGroupDetail(tmp)
+		// todo currently using fixed type: group
+		detail.Type = Group
+		detail.ChildrenCount = childrenCountMap[detail.ID]
+		details[idx] = detail
+	}
+
+	return details
+}
+
+// url pattern: api/vi/groups/:groupId/subgroups
+func formatQuerySubGroups(c *gin.Context) *q.Query {
+	parentId := c.Param(GroupId)
+	k := q.KeyWords{
+		ParentId: nil,
+	}
+	if parentId != "" {
+		k[ParentId], _ = strconv.Atoi(parentId)
+	}
+
+	query := formatDefaultQuery()
+	query.Keywords = k
+	pageNumber, _ := strconv.Atoi(c.Query(common.PageNumber))
+	if pageNumber > 0 {
+		query.PageNumber = pageNumber
+	}
+
+	return query
+}
+
+// url pattern: api/vi/groups/search?parentId=?
+func formatSearchGroups(c *gin.Context) *q.Query {
+	parentId := c.Query(QueryParentId)
+	k := q.KeyWords{
+		ParentId: nil,
+	}
+	if parentId != "" {
+		k[ParentId], _ = strconv.Atoi(parentId)
+	}
+
+	query := formatDefaultQuery()
+	query.Keywords = k
+	pageNumber, _ := strconv.Atoi(c.Query(common.PageNumber))
+	if pageNumber > 0 {
+		query.PageNumber = pageNumber
+	}
+
+	return query
+}
+
+func formatDefaultQuery() *q.Query {
 	// sort by updated_at desc，let newer items be in head
 	s := q.NewSort("updated_at", true)
-	query := q.New(k)
-	query.PageNumber, _ = strconv.Atoi(c.Query(common.PageNumber))
-	if query.PageNumber == 0 {
-		query.PageNumber = common.DefaultPageNumber
-	}
-	query.PageSize, _ = strconv.Atoi(c.Query(common.PageSize))
-	if query.PageSize == 0 {
-		query.PageSize = common.DefaultPageSize
-	}
+	query := q.New(q.KeyWords{})
+	query.PageNumber = common.DefaultPageNumber
+	query.PageSize = common.DefaultPageSize
 	query.Sorts = []*q.Sort{s}
 
 	return query
