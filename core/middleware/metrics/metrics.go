@@ -34,14 +34,14 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 		c.Next()
 
 		// end timer
-		latency := time.Now().Sub(start)
+		latency := time.Since(start)
 
 		statusCode := c.Writer.Status()
 		var handler string
 		if handler = func() string {
 			handlerName := c.HandlerName()
 			// 忽略匿名的handler
-			if regexp.MustCompile(".*func\\d*$").MatchString(handlerName) {
+			if regexp.MustCompile(`.*func\d*$`).MatchString(handlerName) {
 				return ""
 			}
 			return handlerName

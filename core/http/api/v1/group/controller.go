@@ -19,11 +19,11 @@ const (
 	GetGroupError       = "GetGroupError"
 	GetGroupByPathError = "GetGroupByPathError"
 	UpdateGroupError    = "UpdateGroupError"
-	ParamGroupId        = "groupId"
+	ParamGroupID        = "groupId"
 	ParamPath           = "path"
 	ParamFilter         = "filter"
-	ParamParentId       = "parentId"
-	ParentId            = "parent_id"
+	ParamParentID       = "parentId"
+	ParentID            = "parent_id"
 )
 
 type Controller struct {
@@ -53,9 +53,9 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 }
 
 func (controller *Controller) DeleteGroup(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
+	groupID := c.Param(ParamGroupID)
 
-	idInt, err := strconv.ParseUint(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupID, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, DeleteGroupError, fmt.Sprintf("delete group failed: %v", err))
 		return
@@ -69,9 +69,9 @@ func (controller *Controller) DeleteGroup(c *gin.Context) {
 }
 
 func (controller *Controller) GetGroup(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
+	groupID := c.Param(ParamGroupID)
 
-	idInt, err := strconv.ParseUint(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupID, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
 		return
@@ -103,9 +103,9 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 }
 
 func (controller *Controller) UpdateGroup(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
+	groupID := c.Param(ParamGroupID)
 
-	idInt, err := strconv.ParseUint(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupID, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
 		return
@@ -141,7 +141,7 @@ func (controller *Controller) GetSubGroups(c *gin.Context) {
 		return
 	}
 
-	var details = make([]*GroupDetail, len(groups))
+	var details = make([]*Detail, len(groups))
 	for idx, tmp := range groups {
 		detail := ConvertGroupToGroupDetail(tmp)
 		details[idx] = detail
@@ -165,16 +165,15 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		return
 	}
 	// 正常检索
-
 }
 
 func formatQuerySubGroups(c *gin.Context) *q.Query {
-	paramParentId := c.Query(ParamParentId)
+	paramParentID := c.Query(ParamParentID)
 	k := q.KeyWords{
-		ParentId: nil,
+		ParentID: nil,
 	}
-	if paramParentId != "" {
-		k[ParentId], _ = strconv.Atoi(paramParentId)
+	if paramParentID != "" {
+		k[ParentID], _ = strconv.Atoi(paramParentID)
 	}
 
 	// sort by updated_at desc，let newer items be in head

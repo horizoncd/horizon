@@ -10,9 +10,9 @@ import (
 // Middleware add db to context
 func Middleware(db *gorm.DB, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
-		_orm := c.Value(orm.ORMKey())
+		_orm := c.Value(orm.Key())
 		if _orm == nil {
-			c.Set(orm.ORMKey(), db)
+			c.Set(orm.Key(), db)
 		}
 		c.Next()
 	}, skippers...)
