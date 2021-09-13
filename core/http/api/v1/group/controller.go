@@ -20,14 +20,13 @@ const (
 	GetGroupError       = "GetGroupError"
 	GetGroupByPathError = "GetGroupByPathError"
 	UpdateGroupError    = "UpdateGroupError"
-	ParamGroupId        = "groupId"
+	ParamGroupID        = "groupID"
 	ParamPath           = "path"
 	ParamFilter         = "filter"
-	QueryParentId       = "parentId"
-	ParentId            = "parent_id"
+	QueryParentID       = "parentId"
+	ParentID            = "parent_id"
 	Group               = "group"
-	GroupId             = "groupId"
-	Name                = "name"
+	GroupID             = "groupId"
 )
 
 type Controller struct {
@@ -57,9 +56,9 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 }
 
 func (controller *Controller) DeleteGroup(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
+	groupID := c.Param(ParamGroupID)
 
-	idInt, err := strconv.ParseUint(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupID, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, DeleteGroupError, fmt.Sprintf("delete group failed: %v", err))
 		return
@@ -73,9 +72,9 @@ func (controller *Controller) DeleteGroup(c *gin.Context) {
 }
 
 func (controller *Controller) GetGroup(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
+	groupID := c.Param(ParamGroupID)
 
-	idInt, err := strconv.ParseUint(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupID, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
 		return
@@ -107,9 +106,9 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 }
 
 func (controller *Controller) UpdateGroup(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
+	groupID := c.Param(ParamGroupID)
 
-	idInt, err := strconv.ParseUint(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupID, 10, 64)
 	if err != nil {
 		response.AbortWithRequestError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
 		return
@@ -184,16 +183,15 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 	// 	response.AbortWithInternalError(c, SearchGroupsError, fmt.Sprintf("search groups failed: %v", err))
 	// 	return
 	// }
-
 }
 
-func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*models.Group) []*GroupChild {
+func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*models.Group) []*Child {
 	var parentIds []uint
 	for _, m := range groups {
 		parentIds = append(parentIds, m.ID)
 	}
 	query := q.New(q.KeyWords{
-		ParentId: parentIds,
+		ParentID: parentIds,
 	})
 	subGroups, err := controller.manager.ListWithoutPage(c, query)
 	if err != nil {
@@ -202,14 +200,14 @@ func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*m
 	}
 	childrenCountMap := map[uint]int{}
 	for _, subgroup := range subGroups {
-		if v, ok := childrenCountMap[*subgroup.ParentId]; ok {
-			childrenCountMap[*subgroup.ParentId] = v + 1
+		if v, ok := childrenCountMap[*subgroup.ParentID]; ok {
+			childrenCountMap[*subgroup.ParentID] = v + 1
 		} else {
-			childrenCountMap[*subgroup.ParentId] = 1
+			childrenCountMap[*subgroup.ParentID] = 1
 		}
 	}
 
-	var details = make([]*GroupChild, len(groups))
+	var details = make([]*Child, len(groups))
 	for idx, tmp := range groups {
 		detail := ConvertGroupToGroupDetail(tmp)
 		// todo currently using fixed type: group
@@ -223,12 +221,12 @@ func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*m
 
 // url pattern: api/vi/groups/:groupId/subgroups
 func formatQuerySubGroups(c *gin.Context) *q.Query {
-	parentId := c.Param(GroupId)
+	parentID := c.Param(GroupID)
 	k := q.KeyWords{
-		ParentId: nil,
+		ParentID: nil,
 	}
-	if parentId != "" {
-		k[ParentId], _ = strconv.Atoi(parentId)
+	if parentID != "" {
+		k[ParentID], _ = strconv.Atoi(parentID)
 	}
 
 	query := formatDefaultQuery()
@@ -243,12 +241,12 @@ func formatQuerySubGroups(c *gin.Context) *q.Query {
 
 // url pattern: api/vi/groups/search?parentId=?
 func formatSearchGroups(c *gin.Context) *q.Query {
-	parentId := c.Query(QueryParentId)
+	parentID := c.Query(QueryParentID)
 	k := q.KeyWords{
-		ParentId: nil,
+		ParentID: nil,
 	}
-	if parentId != "" {
-		k[ParentId], _ = strconv.Atoi(parentId)
+	if parentID != "" {
+		k[ParentID], _ = strconv.Atoi(parentID)
 	}
 
 	query := formatDefaultQuery()

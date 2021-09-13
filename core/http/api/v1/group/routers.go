@@ -23,12 +23,12 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 		},
 		{
 			Method:      http.MethodDelete,
-			Pattern:     "/:groupId",
+			Pattern:     "/:groupID",
 			HandlerFunc: c.DeleteGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/:groupId",
+			Pattern:     "/:groupID",
 			HandlerFunc: c.GetGroup,
 		},
 		{
@@ -37,17 +37,17 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 		},
 		{
 			Method:      http.MethodPut,
-			Pattern:     "/:groupId",
+			Pattern:     "/:groupID",
 			HandlerFunc: c.UpdateGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/:groupId/children",
+			Pattern:     "/:groupID/children",
 			HandlerFunc: c.GetChildren,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/:groupId/subgroups",
+			Pattern:     "/:groupID/subgroups",
 			HandlerFunc: c.GetSubGroups,
 		},
 	}

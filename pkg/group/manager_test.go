@@ -49,7 +49,7 @@ func getGroup3(pid uint) *models.Group {
 		Name:            "3",
 		Path:            "c",
 		VisibilityLevel: "public",
-		ParentId:        &pid,
+		ParentID:        &pid,
 	}
 }
 
@@ -166,6 +166,7 @@ func TestList(t *testing.T) {
 	assert.Nil(t, err)
 	var group2Id, group3Id uint
 	group2Id, err = Mgr.Create(ctx, getGroup2(pid))
+	assert.Nil(t, err)
 	group3Id, err = Mgr.Create(ctx, getGroup3(pid))
 	assert.Nil(t, err)
 
@@ -194,7 +195,7 @@ func TestList(t *testing.T) {
 		},
 	}
 	query.PageSize = 10
-	items, total, err = Mgr.List(ctx, query)
+	items, _, err = Mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, group2Id, items[0].ID)
 	assert.Equal(t, group3Id, items[1].ID)

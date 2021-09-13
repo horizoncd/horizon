@@ -2,15 +2,15 @@ package group
 
 import "g.hz.netease.com/horizon/pkg/group/models"
 
-func ConvertGroupToGroupDetail(group *models.Group) *GroupChild {
-	return &GroupChild{
+func ConvertGroupToGroupDetail(group *models.Group) *Child {
+	return &Child{
 		ID:              group.ID,
 		Name:            group.Name,
 		FullName:        group.FullName,
 		Path:            group.Path,
 		VisibilityLevel: group.VisibilityLevel,
 		Description:     group.Description,
-		ParentId:        group.ParentId,
+		ParentID:        group.ParentID,
 	}
 }
 
@@ -20,6 +20,6 @@ func convertNewGroupToGroup(newGroup *NewGroup) *models.Group {
 		Path:            newGroup.Path,
 		VisibilityLevel: newGroup.VisibilityLevel,
 		Description:     newGroup.Description,
-		ParentId:        newGroup.ParentId,
+		ParentID:        newGroup.ParentID,
 	}
 }
