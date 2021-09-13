@@ -37,8 +37,17 @@ func (d *dao) CheckUnique(ctx context.Context, group *models.Group) error {
 		"parent_id": group.ParentId,
 		"name":      group.Name,
 	}
-	result := db.Model(&models.Group{}).Where(query).Find(&models.Group{})
-	if result.RowsAffected > 0 {
+
+	queryResult := &models.Group{}
+	result := db.Model(&models.Group{}).Where(query).Find(queryResult)
+
+	// update group conflict, has another record with the same parentId & name
+	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
+		return common.NameConflictErr
+	}
+
+	// create group conflict
+	if group.ID == 0 && result.RowsAffected > 0 {
 		return common.NameConflictErr
 	}
 
@@ -71,6 +80,8 @@ func (d *dao) Delete(ctx context.Context, id uint) error {
 	if result.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound
 	}
+
+	// todo delete children
 
 	return result.Error
 }
