@@ -2,8 +2,8 @@ package group
 
 import "g.hz.netease.com/horizon/pkg/group/models"
 
-func ConvertGroupToGroupDetail(group *models.Group) *GroupDetail {
-	return &GroupDetail{
+func ConvertGroupToGroupDetail(group *models.Group) *GroupChild {
+	return &GroupChild{
 		ID:              group.ID,
 		Name:            group.Name,
 		FullName:        group.FullName,

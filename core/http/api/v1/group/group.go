@@ -1,13 +1,16 @@
 package group
 
-type GroupDetail struct {
-	ID              uint   `json:"id"`
-	Name            string `json:"name"`
-	FullName        string `json:"fullName"`
-	Path            string `json:"path"`
-	VisibilityLevel string `json:"visibilityLevel"`
-	Description     string `json:"description"`
-	ParentId        *uint  `json:"parentId"`
+type GroupChild struct {
+	ID              uint         `json:"id"`
+	Name            string       `json:"name"`
+	FullName        string       `json:"fullName"`
+	Path            string       `json:"path"`
+	VisibilityLevel string       `json:"visibilityLevel"`
+	Description     string       `json:"description"`
+	ParentId        *uint        `json:"parentId"`
+	Type            string       `json:"type"`
+	ChildrenCount   int          `json:"childrenCount"`
+	Children        []GroupChild `json:"children"`
 }
 
 type NewGroup struct {

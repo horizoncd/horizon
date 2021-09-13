@@ -16,7 +16,9 @@ type DAO interface {
 	Delete(ctx context.Context, id uint) error
 	Get(ctx context.Context, id uint) (*models.Group, error)
 	GetByPath(ctx context.Context, path string) (*models.Group, error)
+	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
 	Update(ctx context.Context, group *models.Group) error
+	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
 }
 
@@ -26,6 +28,18 @@ func New() DAO {
 }
 
 type dao struct{}
+
+func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []*models.Group
+	result := db.Where("name LIKE ?", "%"+name+"%").Find(&groups)
+
+	return groups, result.Error
+}
 
 func (d *dao) CheckUnique(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
@@ -108,6 +122,20 @@ func (d *dao) GetByPath(ctx context.Context, path string) (*models.Group, error)
 	result := db.First(&group, "path = ?", path)
 
 	return group, result.Error
+}
+
+func (d *dao) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []*models.Group
+
+	sort := orm.FormatSortExp(query)
+	result := db.Order(sort).Where(query.Keywords).Find(&groups)
+
+	return groups, result.Error
 }
 
 func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error) {
