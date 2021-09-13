@@ -13,44 +13,42 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 
 	var routes = route.Routes{
 		{
-			http.MethodGet,
-			"/search",
-			c.SearchGroups,
+			Method:      http.MethodGet,
+			Pattern:     "/search",
+			HandlerFunc: c.SearchGroups,
 		},
 		{
-			http.MethodPost,
-			"",
-			c.CreateGroup,
+			Method:      http.MethodPost,
+			HandlerFunc: c.CreateGroup,
 		},
 		{
-			http.MethodDelete,
-			"/:groupId",
-			c.DeleteGroup,
+			Method:      http.MethodDelete,
+			Pattern:     "/:groupID",
+			HandlerFunc: c.DeleteGroup,
 		},
 		{
-			http.MethodGet,
-			"/:groupId",
-			c.GetGroup,
+			Method:      http.MethodGet,
+			Pattern:     "/:groupID",
+			HandlerFunc: c.GetGroup,
 		},
 		{
-			http.MethodGet,
-			"",
-			c.GetGroupByPath,
+			Method:      http.MethodGet,
+			HandlerFunc: c.GetGroupByPath,
 		},
 		{
-			http.MethodPut,
-			"/:groupId",
-			c.UpdateGroup,
+			Method:      http.MethodPut,
+			Pattern:     "/:groupID",
+			HandlerFunc: c.UpdateGroup,
 		},
 		{
-			http.MethodGet,
-			"/:groupId/children",
-			c.GetChildren,
+			Method:      http.MethodGet,
+			Pattern:     "/:groupID/children",
+			HandlerFunc: c.GetChildren,
 		},
 		{
-			http.MethodGet,
-			"/:groupId/subgroups",
-			c.GetSubGroups,
+			Method:      http.MethodGet,
+			Pattern:     "/:groupID/subgroups",
+			HandlerFunc: c.GetSubGroups,
 		},
 	}
 	route.RegisterRoutes(api, routes)

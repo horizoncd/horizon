@@ -1,13 +1,43 @@
 stages:
+  - lint
+  - unit-test
   - build
   - deploy
 
 variables:
+  COVERAGE_STANDARD: 70
   REPOSITORY_PREFIX: harbor.mock.org/cloudnative/horizon/
 
 before_script:
   - export APP_REVISION="${CI_COMMIT_TAG:-${CI_COMMIT_REF_NAME##*/}-r$CI_PIPELINE_ID}"
   - export CHART_VERSION="${CI_COMMIT_TAG:-v0.0.0-r$CI_PIPELINE_ID}"
+
+golint:
+  stage: lint
+  script:
+    - golangci-lint run
+  only:
+    refs:
+      - merge_requests
+    variables:
+      - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+
+unit-tests:
+  stage: unit-test
+  script:
+    - |
+      COVERAGE=$(. .unit-test.sh)
+      [[ "$?" == 0 ]] || exit 1
+      [[ $(awk -v M=$COVERAGE -v N=$COVERAGE_STANDARD 'BEGIN{print(M>=N)?"0":"1"}') == "0" ]] && \
+      echo "coverage is $COVERAGE" || {
+        echo "coverage is $COVERAGE, is less than $COVERAGE_STANDARD"; exit 1
+      }
+  only:
+    refs:
+      - merge_requests
+    variables:
+      - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+      - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
 
 build:
   stage: build

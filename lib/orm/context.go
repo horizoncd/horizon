@@ -9,7 +9,7 @@ import (
 
 const ormKey = "ORM"
 
-func ORMKey() string {
+func Key() string {
 	return ormKey
 }
 
@@ -27,5 +27,5 @@ func NewContext(ctx context.Context, o *gorm.DB) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return context.WithValue(ctx, ormKey, o)
+	return context.WithValue(ctx, ormKey, o) // nolint
 }

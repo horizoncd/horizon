@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,14 +14,14 @@ import (
 )
 
 var (
-	db *gorm.DB
+	db  *gorm.DB
 	ctx context.Context
 )
 
 func Test(t *testing.T) {
 	var (
-		name = "Tony"
-		email = "tony@163.com"
+		name     = "Tony"
+		email    = "tony@163.com"
 		oidcID   = "H12323"
 		oidcType = "ne"
 	)
@@ -52,6 +53,6 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&models.User{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(nil, db)
-	m.Run()
+	ctx = orm.NewContext(context.TODO(), db)
+	os.Exit(m.Run())
 }

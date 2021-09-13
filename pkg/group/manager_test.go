@@ -1,6 +1,7 @@
 package group
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -17,12 +18,12 @@ import (
 var (
 	// use tmp sqlite
 	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(nil, db)
+	ctx   = orm.NewContext(context.TODO(), db)
 
 	group1Id   = uint(1)
 	group1Path = "/a"
 
-	notExistId   = uint(100)
+	notExistID   = uint(100)
 	notExistPath = "x"
 )
 
@@ -39,7 +40,7 @@ func getGroup2(pid uint) *models.Group {
 		Name:            "2",
 		Path:            "b",
 		VisibilityLevel: "public",
-		ParentId:        &pid,
+		ParentID:        &pid,
 	}
 }
 
@@ -48,7 +49,7 @@ func getGroup3(pid uint) *models.Group {
 		Name:            "3",
 		Path:            "c",
 		VisibilityLevel: "public",
-		ParentId:        &pid,
+		ParentID:        &pid,
 	}
 }
 
@@ -64,11 +65,12 @@ func init() {
 func TestCreate(t *testing.T) {
 	// normal create
 	id, err := Mgr.Create(ctx, getGroup1())
+	assert.Nil(t, err)
 	assert.Equal(t, id, group1Id)
 
 	// name conflict, parentId: nil
 	_, err = Mgr.Create(ctx, getGroup1())
-	assert.Equal(t, common.NameConflictErr, err)
+	assert.Equal(t, common.ErrNameConflict, err)
 
 	// normal create, parent: 1
 	group2 := getGroup2(id)
@@ -79,7 +81,7 @@ func TestCreate(t *testing.T) {
 
 	// name conflict, parentId: 1
 	_, err = Mgr.Create(ctx, getGroup2(id))
-	assert.Equal(t, common.NameConflictErr, err)
+	assert.Equal(t, common.ErrNameConflict, err)
 
 	// drop table
 	db.Where("1 = 1").Delete(&models.Group{})
@@ -87,6 +89,7 @@ func TestCreate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	id, err := Mgr.Create(ctx, getGroup1())
+	assert.Nil(t, err)
 
 	// delete exist record
 	err = Mgr.Delete(ctx, id)
@@ -96,7 +99,7 @@ func TestDelete(t *testing.T) {
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// delete not exist record
-	err = Mgr.Delete(ctx, notExistId)
+	err = Mgr.Delete(ctx, notExistID)
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// drop table
@@ -105,6 +108,7 @@ func TestDelete(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	id, err := Mgr.Create(ctx, getGroup1())
+	assert.Nil(t, err)
 
 	// query exist record
 	group1, err := Mgr.Get(ctx, id)
@@ -112,7 +116,7 @@ func TestGet(t *testing.T) {
 	assert.NotNil(t, group1.ID)
 
 	// query not exist record
-	_, err = Mgr.Get(ctx, notExistId)
+	_, err = Mgr.Get(ctx, notExistID)
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// drop table
@@ -121,6 +125,7 @@ func TestGet(t *testing.T) {
 
 func TestGetByPath(t *testing.T) {
 	_, err := Mgr.Create(ctx, getGroup1())
+	assert.Nil(t, err)
 
 	// query exist record
 	group1, err := Mgr.GetByPath(ctx, group1Path)
@@ -138,6 +143,7 @@ func TestGetByPath(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	group1 := getGroup1()
 	id, err := Mgr.Create(ctx, group1)
+	assert.Nil(t, err)
 
 	// update exist record
 	group1.ID = id
@@ -146,7 +152,7 @@ func TestUpdate(t *testing.T) {
 	assert.Nil(t, err)
 
 	// update not exist record
-	group1.ID = notExistId
+	group1.ID = notExistID
 	group1.Name = "update2"
 	err = Mgr.Update(ctx, group1)
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
@@ -160,6 +166,7 @@ func TestList(t *testing.T) {
 	assert.Nil(t, err)
 	var group2Id, group3Id uint
 	group2Id, err = Mgr.Create(ctx, getGroup2(pid))
+	assert.Nil(t, err)
 	group3Id, err = Mgr.Create(ctx, getGroup3(pid))
 	assert.Nil(t, err)
 
@@ -188,7 +195,7 @@ func TestList(t *testing.T) {
 		},
 	}
 	query.PageSize = 10
-	items, total, err = Mgr.List(ctx, query)
+	items, _, err = Mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, group2Id, items[0].ID)
 	assert.Equal(t, group3Id, items[1].ID)

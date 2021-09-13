@@ -12,5 +12,5 @@ const (
 )
 
 var (
-	NameConflictErr = errors.New("name conflict")
+	ErrNameConflict = errors.New("name conflict")
 )

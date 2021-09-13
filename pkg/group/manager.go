@@ -34,8 +34,8 @@ func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.G
 
 func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) {
 	// query parent group info
-	if group.ParentId != nil {
-		pgroup, err := m.dao.Get(ctx, *(group.ParentId))
+	if group.ParentID != nil {
+		pgroup, err := m.dao.Get(ctx, *(group.ParentID))
 		if err != nil {
 			return 0, err
 		}

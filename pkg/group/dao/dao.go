@@ -48,7 +48,7 @@ func (d *dao) CheckUnique(ctx context.Context, group *models.Group) error {
 	}
 
 	query := map[string]interface{}{
-		"parent_id": group.ParentId,
+		"parent_id": group.ParentID,
 		"name":      group.Name,
 	}
 
@@ -57,12 +57,12 @@ func (d *dao) CheckUnique(ctx context.Context, group *models.Group) error {
 
 	// update group conflict, has another record with the same parentId & name
 	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
-		return common.NameConflictErr
+		return common.ErrNameConflict
 	}
 
 	// create group conflict
 	if group.ID == 0 && result.RowsAffected > 0 {
-		return common.NameConflictErr
+		return common.ErrNameConflict
 	}
 
 	return nil
