@@ -1,6 +1,9 @@
 package requestid
 
 import (
+	"context"
+	"errors"
+
 	"g.hz.netease.com/horizon/server/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/satori/go.uuid"
@@ -20,4 +23,12 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 		c.Header(HeaderXRequestID, rid)
 		c.Next()
 	}, skippers...)
+}
+
+func FromContext(ctx context.Context) (string, error) {
+	rid, ok := ctx.Value(HeaderXRequestID).(string)
+	if !ok {
+		return "", errors.New("cannot get the requestID from context")
+	}
+	return rid, nil
 }

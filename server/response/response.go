@@ -3,6 +3,8 @@ package response
 import (
 	"net/http"
 
+	"g.hz.netease.com/horizon/lib/log"
+	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,6 +17,7 @@ type Response struct {
 	ErrorCode    string      `json:"errorCode,omitempty"`
 	ErrorMessage string      `json:"errorMessage,omitempty"`
 	Data         interface{} `json:"data,omitempty"`
+	RequestID    string      `json:"requestId,omitempty"`
 }
 
 func NewResponse() *Response {
@@ -36,9 +39,16 @@ func SuccessWithData(c *gin.Context, data interface{}) {
 }
 
 func Abort(c *gin.Context, httpCode int, errorCode, errorMessage string) {
+	logger := log.GetLogger(c)
+	rid, err := requestid.FromContext(c)
+	if err != nil {
+		logger.Errorf("error to get requestID from context, err: %v", err)
+	}
+
 	c.JSON(httpCode, &Response{
 		ErrorCode:    errorCode,
 		ErrorMessage: errorMessage,
+		RequestID:    rid,
 	})
 	c.Abort()
 }
