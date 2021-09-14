@@ -20,3 +20,9 @@ type NewGroup struct {
 	Description     string `json:"description"`
 	ParentID        *uint  `json:"parentId"`
 }
+
+type UpdateGroup struct {
+	Name            string `json:"name" binding:"required"`
+	VisibilityLevel string `json:"visibilityLevel" binding:"required"`
+	Description     string `json:"description"`
+}

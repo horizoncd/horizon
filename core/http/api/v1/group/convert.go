@@ -23,3 +23,11 @@ func convertNewGroupToGroup(newGroup *NewGroup) *models.Group {
 		ParentID:        newGroup.ParentID,
 	}
 }
+
+func convertUpdateGroupToGroup(updateGroup *UpdateGroup) *models.Group {
+	return &models.Group{
+		Name:            updateGroup.Name,
+		VisibilityLevel: updateGroup.VisibilityLevel,
+		Description:     updateGroup.Description,
+	}
+}
