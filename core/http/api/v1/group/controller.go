@@ -26,7 +26,6 @@ const (
 	QueryParentID       = "parentId"
 	ParentID            = "parent_id"
 	Group               = "group"
-	GroupID             = "groupId"
 )
 
 type Controller struct {
@@ -222,7 +221,7 @@ func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*m
 
 // url pattern: api/vi/groups/:groupId/subgroups
 func formatQuerySubGroups(c *gin.Context) *q.Query {
-	parentID := c.Param(GroupID)
+	parentID := c.Param(ParamGroupID)
 	k := q.KeyWords{
 		ParentID: nil,
 	}

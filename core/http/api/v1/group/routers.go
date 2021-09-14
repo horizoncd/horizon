@@ -1,6 +1,7 @@
 package group
 
 import (
+	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/server/route"
@@ -23,12 +24,12 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 		},
 		{
 			Method:      http.MethodDelete,
-			Pattern:     "/:groupID",
+			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
 			HandlerFunc: c.DeleteGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/:groupID",
+			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
 			HandlerFunc: c.GetGroup,
 		},
 		{
@@ -37,17 +38,17 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 		},
 		{
 			Method:      http.MethodPut,
-			Pattern:     "/:groupID",
+			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
 			HandlerFunc: c.UpdateGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/:groupID/children",
+			Pattern:     fmt.Sprintf("/:%s/children", ParamGroupID),
 			HandlerFunc: c.GetChildren,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/:groupID/subgroups",
+			Pattern:     fmt.Sprintf("/:%s/subgroups", ParamGroupID),
 			HandlerFunc: c.GetSubGroups,
 		},
 	}
