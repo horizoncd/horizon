@@ -1,16 +1,16 @@
 -- group table
 CREATE TABLE `group` (
-     `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-     `name` varchar(128) NOT NULL DEFAULT '',
-     `full_name` varchar(512) NOT NULL DEFAULT '',
-     `path` varchar(256) NOT NULL DEFAULT '',
-     `description` varchar(256) DEFAULT NULL,
-     `visibility_level` varchar(16) NOT NULL,
-     `parent_id` int(11) NULL,
-     `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-     `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-     `deleted_at` datetime DEFAULT NULL,
-     PRIMARY KEY (`id`)
+    `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(128) NOT NULL DEFAULT '',
+    `full_name` varchar(512) NOT NULL DEFAULT 'name from roots, for example: 1 / 2 / 3',
+    `path` varchar(256) NOT NULL DEFAULT '' COMMENT 'path from roots, for example: a/b/c',
+    `description` varchar(256) DEFAULT NULL,
+    `visibility_level` varchar(16) NOT NULL COMMENT 'public or private',
+    `parent_id` int(11) NOT NULL DEFAULT -1 COMMENT 'ID of the parent group',
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` datetime DEFAULT NULL,
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
 
 -- user table

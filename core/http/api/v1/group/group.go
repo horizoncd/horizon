@@ -7,7 +7,7 @@ type Child struct {
 	Path            string  `json:"path"`
 	VisibilityLevel string  `json:"visibilityLevel"`
 	Description     string  `json:"description"`
-	ParentID        *uint   `json:"parentId"`
+	ParentID        int     `json:"parentId"`
 	Type            string  `json:"type"`
 	ChildrenCount   int     `json:"childrenCount"`
 	Children        []Child `json:"children"`
@@ -18,7 +18,7 @@ type NewGroup struct {
 	Path            string `json:"path" binding:"required"`
 	VisibilityLevel string `json:"visibilityLevel" binding:"required"`
 	Description     string `json:"description"`
-	ParentID        *uint  `json:"parentId"`
+	ParentID        int    `json:"parentId"`
 }
 
 type UpdateGroup struct {

@@ -218,12 +218,12 @@ func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*m
 			fmt.Sprintf("get subgroups failed: %v", err))
 		return nil
 	}
-	childrenCountMap := map[uint]int{}
+	childrenCountMap := map[int]int{}
 	for _, subgroup := range subGroups {
-		if v, ok := childrenCountMap[*subgroup.ParentID]; ok {
-			childrenCountMap[*subgroup.ParentID] = v + 1
+		if v, ok := childrenCountMap[subgroup.ParentID]; ok {
+			childrenCountMap[subgroup.ParentID] = v + 1
 		} else {
-			childrenCountMap[*subgroup.ParentID] = 1
+			childrenCountMap[subgroup.ParentID] = 1
 		}
 	}
 
@@ -232,7 +232,7 @@ func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*m
 		detail := ConvertGroupToGroupDetail(tmp)
 		// todo currently using fixed type: group
 		detail.Type = Group
-		detail.ChildrenCount = childrenCountMap[detail.ID]
+		detail.ChildrenCount = childrenCountMap[int(detail.ID)]
 		details[idx] = detail
 	}
 
@@ -243,7 +243,7 @@ func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*m
 func formatQuerySubGroups(c *gin.Context) *q.Query {
 	parentID := c.Param(ParamGroupID)
 	k := q.KeyWords{
-		ParentID: nil,
+		ParentID: -1,
 	}
 	if parentID != "" {
 		k[ParentID], _ = strconv.Atoi(parentID)
@@ -263,7 +263,7 @@ func formatQuerySubGroups(c *gin.Context) *q.Query {
 func formatSearchGroups(c *gin.Context) *q.Query {
 	parentID := c.Query(QueryParentID)
 	k := q.KeyWords{
-		ParentID: nil,
+		ParentID: -1,
 	}
 	if parentID != "" {
 		k[ParentID], _ = strconv.Atoi(parentID)
