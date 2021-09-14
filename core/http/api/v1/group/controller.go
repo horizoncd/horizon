@@ -46,6 +46,7 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 		response.AbortWithRequestError(c, CreateGroupError, fmt.Sprintf("create group failed: %v", err))
 		return
 	}
+
 	create, err := controller.manager.Create(c, convertNewGroupToGroup(newGroup))
 	if err != nil {
 		response.AbortWithInternalError(c, CreateGroupError, fmt.Sprintf("create group failed: %v", err))
@@ -114,16 +115,16 @@ func (controller *Controller) UpdateGroup(c *gin.Context) {
 		return
 	}
 
-	var updatedGroup *models.Group
+	var updatedGroup *UpdateGroup
 	err = c.ShouldBindJSON(&updatedGroup)
 	if err != nil {
 		response.AbortWithRequestError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
 		return
 	}
-	// 以URL path中的id为准
-	updatedGroup.ID = uint(idInt)
 
-	err = controller.manager.Update(c, updatedGroup)
+	_group := convertUpdateGroupToGroup(updatedGroup)
+	_group.ID = uint(idInt)
+	err = controller.manager.Update(c, _group)
 	if err != nil {
 		response.AbortWithInternalError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
 		return
