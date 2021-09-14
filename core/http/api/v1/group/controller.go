@@ -115,11 +115,8 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 	response.SuccessWithData(c, detail)
 }
 
-
-
 // TODO(wurongjun) support transfer group
 // func (controller *Controller) TransferGroup(c *gin.Context)
-
 
 // TODO(wurongjun) change to UpdateGroupBasic (also change the openapi)
 func (controller *Controller) UpdateGroup(c *gin.Context) {
@@ -184,7 +181,7 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		groups, count, err := controller.groupManager.List(c, formatSearchGroups(c))
 		if err != nil {
 			response.AbortWithInternalError(c, SearchGroupsError,
-					fmt.Sprintf("search groups failed: %v", err))
+				fmt.Sprintf("search groups failed: %v", err))
 			return
 		}
 		response.SuccessWithData(c, response.DataWithTotal{
@@ -205,7 +202,7 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 
 	//TODO(wurongjun): not implemented yet.
 	response.AbortWithRequestError(c, NotImplemented,
-			fmt.Sprintf("search groups by name have not implemented"))
+		fmt.Sprintf("search groups by name have not implemented"))
 }
 
 func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*models.Group) []*Child {
@@ -219,7 +216,7 @@ func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*m
 	subGroups, err := controller.groupManager.ListWithoutPage(c, query)
 	if err != nil {
 		response.AbortWithInternalError(c, GetSubGroupsError,
-				fmt.Sprintf("get subgroups failed: %v", err))
+			fmt.Sprintf("get subgroups failed: %v", err))
 		return nil
 	}
 	childrenCountMap := map[uint]int{}
