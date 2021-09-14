@@ -202,7 +202,7 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 
 	//TODO(wurongjun): not implemented yet.
 	response.AbortWithRequestError(c, NotImplemented,
-		fmt.Sprintf("search groups by name have not implemented"))
+		"search groups by name have not implemented")
 }
 
 func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*models.Group) []*Child {
