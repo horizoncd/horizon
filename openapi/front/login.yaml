@@ -1,0 +1,92 @@
+openapi: 3.0.1
+info:
+  title: Horizon-login
+  version: 1.0.0
+servers:
+  - url: 'http://horizon.mockserver.org/'
+paths:
+  /api/v1/login:
+    post:
+      description: login with OpenID
+      summary: login
+      operationId: login
+      tags:
+        - login
+      parameters:
+        - name: redirectUrl
+          in: query
+          description: redirect url after logining
+          schema:
+            type: string
+        - name: fromHost
+          in: query
+          description: redirect host after logining
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+  /api/v1/logout:
+    post:
+      description: logout, user session expires
+      summary: logout
+      operationId: logout
+      tags:
+        - login
+      parameters:
+        - name: sessionid
+          in: cookie
+      responses:
+        '200':
+          description: Success
+          headers:
+            requestId:
+              schema:
+                type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+  /api/v1/login/status:
+    get:
+      tags:
+        - login
+      description: used to decide whether to redirect to login page
+      summary: get status of the currentUser
+      operationId: currentUser
+      parameters:
+        - name: sessionid
+          in: cookie
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CurrentUser'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    CurrentUser:
+      type: object
+      properties:
+        name:
+          type: string

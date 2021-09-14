@@ -1,0 +1,139 @@
+openapi: 3.0.1
+info:
+  title: Horizon-group-front
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /api/v1/groups/search?parentId={parentId}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+    get:
+      tags:
+        - group
+      description: query groups
+      summary: query groups
+      operationId: queryGroups
+      parameters:
+        - name: parentId
+          in: query
+        - name: filter
+          in: query
+        - $ref: '../core.yaml/#/components/parameters/pageNumber'
+        - $ref: '../core.yaml/#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchGroupResult'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+  /api/v1/groups/children?parentId={groupId}&pageNumber=${pageNumber}&pageSize={pageSize}:
+    get:
+      tags:
+        - group
+      operationId: queryGroupChildren
+      summary: query children of a group
+      parameters:
+        - name: groupId
+          in: query
+        - $ref: '../core.yaml/#/components/parameters/pageNumber'
+        - $ref: '../core.yaml/#/components/parameters/pageSize'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupChild'
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+
+    GroupChild:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        fullName:
+          type: string
+        description:
+          type: string
+        path:
+          type: string
+        type:
+          $ref: '#/components/schemas/GroupChildType'
+        childrenCount:
+          type: integer
+        subGroupCount:
+          type: integer
+        applicationCount:
+          type: integer
+        parentId:
+          type: integer
+        createdAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+        updatedAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+
+    SearchGroupResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        fullName:
+          type: string
+        description:
+          type: string
+        path:
+          type: string
+        type:
+          $ref: '#/components/schemas/GroupChildType'
+        childrenCount:
+          type: integer
+        subGroupCount:
+          type: integer
+        applicationCount:
+          type: integer
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchGroupResult'
+        parentId:
+          type: integer
+        createdAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+        updatedAt:
+          $ref: "../core.yaml#/components/schemas/Date"
+
+    GroupChildType:
+      type: string
+      enum:
+        - group
+        - application
+
+
+
