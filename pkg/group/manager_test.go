@@ -35,21 +35,21 @@ func getGroup1() *models.Group {
 	}
 }
 
-func getGroup2(pid uint) *models.Group {
+func getGroup2(pid int) *models.Group {
 	return &models.Group{
 		Name:            "2",
 		Path:            "b",
 		VisibilityLevel: "public",
-		ParentID:        &pid,
+		ParentID:        pid,
 	}
 }
 
-func getGroup3(pid uint) *models.Group {
+func getGroup3(pid int) *models.Group {
 	return &models.Group{
 		Name:            "3",
 		Path:            "c",
 		VisibilityLevel: "public",
-		ParentID:        &pid,
+		ParentID:        pid,
 	}
 }
 
@@ -73,14 +73,14 @@ func TestCreate(t *testing.T) {
 	assert.Equal(t, common.ErrNameConflict, err)
 
 	// normal create, parent: 1
-	group2 := getGroup2(id)
+	group2 := getGroup2(int(id))
 	_, err = Mgr.Create(ctx, group2)
 	assert.Nil(t, err)
 	assert.Equal(t, "/a/b", group2.Path)
 	assert.Equal(t, "1 / 2", group2.FullName)
 
 	// name conflict, parentId: 1
-	_, err = Mgr.Create(ctx, getGroup2(id))
+	_, err = Mgr.Create(ctx, getGroup2(int(id)))
 	assert.Equal(t, common.ErrNameConflict, err)
 
 	// drop table
@@ -165,9 +165,9 @@ func TestList(t *testing.T) {
 	pid, err := Mgr.Create(ctx, getGroup1())
 	assert.Nil(t, err)
 	var group2Id, group3Id uint
-	group2Id, err = Mgr.Create(ctx, getGroup2(pid))
+	group2Id, err = Mgr.Create(ctx, getGroup2(int(pid)))
 	assert.Nil(t, err)
-	group3Id, err = Mgr.Create(ctx, getGroup3(pid))
+	group3Id, err = Mgr.Create(ctx, getGroup3(int(pid)))
 	assert.Nil(t, err)
 
 	// page with keywords, items: 1, total: 1
