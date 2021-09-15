@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"strings"
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -17,6 +18,7 @@ type DAO interface {
 	Get(ctx context.Context, id uint) (*models.Group, error)
 	GetByPath(ctx context.Context, path string) (*models.Group, error)
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error)
 	Update(ctx context.Context, group *models.Group) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
@@ -28,6 +30,24 @@ func New() DAO {
 }
 
 type dao struct{}
+
+func (d *dao) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error) {
+	if names == nil || (len(*names)) == 0 {
+		return nil, common.ErrParameterNotValid
+	}
+
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []*models.Group
+	namesRegexp := strings.Join(*names, "|")
+
+	result := db.Where("full_name regexp ?", namesRegexp).Find(&groups)
+
+	return groups, result.Error
+}
 
 func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
 	db, err := orm.FromContext(ctx)
@@ -149,8 +169,8 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 	sort := orm.FormatSortExp(query)
 	offset := (query.PageNumber - 1) * query.PageSize
 	var count int64
-	result := db.Order(sort).Where(query.Keywords).Limit(query.PageSize).Offset(offset).Find(&groups).Count(&count)
-
+	result := db.Order(sort).Where(query.Keywords).Offset(offset).Limit(query.PageSize).Find(&groups).
+		Offset(-1).Count(&count)
 	return groups, count, result.Error
 }
 

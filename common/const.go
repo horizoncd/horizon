@@ -12,5 +12,6 @@ const (
 )
 
 var (
-	ErrNameConflict = errors.New("name conflict")
+	ErrNameConflict      = errors.New("name conflict")
+	ErrParameterNotValid = errors.New("parameter not valid")
 )

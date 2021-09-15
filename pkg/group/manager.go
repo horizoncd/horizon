@@ -19,6 +19,7 @@ type Manager interface {
 	Get(ctx context.Context, id uint) (*models.Group, error)
 	GetByPath(ctx context.Context, path string) (*models.Group, error)
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error)
 	Update(ctx context.Context, group *models.Group) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
@@ -26,6 +27,10 @@ type Manager interface {
 
 type manager struct {
 	dao dao.DAO
+}
+
+func (m manager) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error) {
+	return m.dao.GetByFullNamesRegexpFuzzily(ctx, names)
 }
 
 func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
