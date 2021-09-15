@@ -1,0 +1,275 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Template-Restful
+  description: Restful API About Template
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /api/v1/templates:
+    get:
+      tags:
+        - template
+      operationId: listTemplates
+      summary: List all templates
+      description: |
+        List all templates in specified template git group, except for some special template.
+        These special templates can be filtered by code config.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Template'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+  /api/v1/templates/{templateID}/releases:
+    parameters:
+    - name: templateID
+      in: path
+      description: id of template
+      required: true
+    get:
+      tags:
+        - template
+      operationId: listTemplateReleases
+      summary: List releases for a specified template
+      description: |
+        List releases for a specified template. Maybe there are so many releases
+        for a template, but this API will only return 3 recently releases. And the most
+        recently release is the most recommended release.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TemplateRelease'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+
+  /api/v1/templates/{templateID}/releases/{releaseName}/input.schema.json:
+    parameters:
+    - name: templateID
+      in: path
+      description: id of template
+      required: true
+    - name: releaseName
+      in: path
+      description: releaseName of template
+      required: true
+    get:
+      tags:
+        - template
+      operationId: getTemplateInputSchema
+      summary: Get input schema for a specified template
+      description: |
+        Get input schema for a specified template. This API will return the template's input.schema.json file.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "type": "object",
+                    "properties": {
+                      "app": {
+                        "title": "App Config",
+                        "type": "object",
+                        "properties": {
+                          "params": {
+                            "title": "参数",
+                            "type": "object",
+                            "properties": {
+                              "mainClassName": {
+                                "type": "string"
+                              },
+                              "xmx": {
+                                "type": "string",
+                                "default": "512"
+                              },
+                              "xms": {
+                                "type": "string",
+                                "default": "512"
+                              },
+                              "maxPerm": {
+                                "type": "string",
+                                "default": "128"
+                              },
+                              "xdebugAddress": {
+                                "type": "string"
+                              },
+                              "jvmExtra": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["mainClassName"]
+                          },
+                          "health": {
+                            "title": "健康检查",
+                            "type": "object",
+                            "properties": {
+                              "port": {
+                                "type": "integer"
+                              },
+                              "lifecycle":{
+                                "title": "优雅启停",
+                                "type": "object",
+                                "properties": {
+                                  "online":{
+                                    "title": "上线",
+                                    "description": "上线接口会在应用启动之后进行调用，如果调用失败，则应用启动失败",
+                                    "$ref": "#/$defs/lifecycle"
+                                  },
+                                  "offline":{
+                                    "title": "下线",
+                                    "description": "下线接口会在应用停止之前进行调用，如果调用失败，则忽略",
+                                    "$ref": "#/$defs/lifecycle"
+                                  }
+                                }
+                              },
+                              "probe":{
+                                "title": "健康检查",
+                                "type": "object",
+                                "properties": {
+                                  "check":{
+                                    "title": "存活状态",
+                                    "description": "存活状态会在应用运行期间检测应用健康情况，检测失败时会对应用进行重启",
+                                    "$ref": "#/$defs/probe"
+                                  },
+                                  "status":{
+                                    "title": "就绪状态",
+                                    "description": "就绪状态会在应用运行期间检测应用是否处于上线状态，检测失败时显示下线状态",
+                                    "$ref": "#/$defs/probe"
+                                  }
+                                }
+                              }
+                            },
+                            "dependencies": {
+                              "lifecycle": ["port"],
+                              "probe": ["port"]
+                            }
+                          }
+                        }
+                      }
+                    },
+
+                    "$defs": {
+                      "lifecycle": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "title": "接口",
+                            "description": "接口路径",
+                            "type": "string"
+                          },
+                          "timeoutSeconds": {
+                            "title": "超时时间",
+                            "description": "请求接口的超时时间(单位为s)",
+                            "type": "integer"
+                          },
+                          "periodSeconds": {
+                            "title": "检测周期",
+                            "description": "连续两次检测之间的时间间隔(单位为s)",
+                            "type": "integer"
+                          },
+                          "retry": {
+                            "title": "重试次数",
+                            "description": "检测失败后重试的次数",
+                            "type": "integer"
+                          }
+                        }
+                      },
+                      "probe": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "title": "接口",
+                            "description": "接口路径",
+                            "type": "string"
+                          },
+                          "initialDelaySeconds": {
+                            "title": "延迟启动",
+                            "description": "应用启动延迟等待该时间再进行检测",
+                            "type": "integer"
+                          },
+                          "timeoutSeconds": {
+                            "title": "超时时间",
+                            "description": "请求接口的超时时间(单位为s)",
+                            "type": "integer"
+                          },
+                          "periodSeconds": {
+                            "title": "重试次数",
+                            "description": "连续两次检测之间的时间间隔(单位为s)",
+                            "type": "integer"
+                          },
+                          "failureThreshold": {
+                            "title": "失败阈值",
+                            "description": "连续检测失败超过该次数，才认为最终检测失败",
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+  
+
+components:
+  schemas:
+    Template:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/TemplateName'
+        description:
+          $ref: '#/components/schemas/TemplateDescription'
+
+    TemplateName:
+      type: string
+      description: the template name
+
+    TemplateDescription:
+      type: string
+      description: the template description
+
+    TemplateRelease:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/ReleaseName'
+        description:
+          $ref: '#/components/schemas/ReleaseDescription'
+
+    ReleaseName:
+      type: string
+      description: the release name
+
+    ReleaseDescription:
+      type: string
+      description: the release description
