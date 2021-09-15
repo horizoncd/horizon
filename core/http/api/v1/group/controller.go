@@ -169,7 +169,7 @@ func (controller *Controller) GetSubGroups(c *gin.Context) {
 }
 
 func (controller *Controller) SearchChildren(c *gin.Context) {
-	//TODO(wurongjun): also query application
+	// TODO(wurongjun): also query application
 	controller.SearchGroups(c)
 }
 
@@ -213,7 +213,7 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		namesMap[split[0]] = 1
 	}
 	var names []string
-	for s, _ := range namesMap {
+	for s := range namesMap {
 		names = append(names, s)
 	}
 	regexpQueryGroups, err := controller.groupManager.GetByFullNamesRegexpFuzzily(c, &names)

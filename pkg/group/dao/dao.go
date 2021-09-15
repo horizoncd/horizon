@@ -169,7 +169,8 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 	sort := orm.FormatSortExp(query)
 	offset := (query.PageNumber - 1) * query.PageSize
 	var count int64
-	result := db.Order(sort).Where(query.Keywords).Offset(offset).Limit(query.PageSize).Find(&groups).Offset(-1).Count(&count)
+	result := db.Order(sort).Where(query.Keywords).Offset(offset).Limit(query.PageSize).Find(&groups).
+		Offset(-1).Count(&count)
 	return groups, count, result.Error
 }
 
