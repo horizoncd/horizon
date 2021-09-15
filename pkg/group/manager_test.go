@@ -203,21 +203,3 @@ func TestList(t *testing.T) {
 	// drop table
 	db.Where("1 = 1").Delete(&models.Group{})
 }
-
-func TestGetByNamesRegexpFuzzily(t *testing.T) {
-	pid, err := Mgr.Create(ctx, getGroup1())
-	assert.Nil(t, err)
-	_, err = Mgr.Create(ctx, getGroup2(int(pid)))
-	assert.Nil(t, err)
-	_, err = Mgr.Create(ctx, getGroup3(int(pid)))
-	assert.Nil(t, err)
-
-	names := []string{
-		"1",
-		"3",
-	}
-	groups, err := Mgr.GetByFullNamesRegexpFuzzily(ctx, &names)
-	assert.Nil(t, err)
-	assert.Len(t, groups, 3)
-	assert.Equal(t, "3", groups[len(groups)-1].Name)
-}
