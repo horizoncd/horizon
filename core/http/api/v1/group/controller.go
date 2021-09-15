@@ -3,6 +3,7 @@ package group
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/q"
@@ -191,17 +192,61 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 	}
 
 	// filter is too short will be ignore
-	if len(filter) < 3 {
-		response.SuccessWithData(c, response.DataWithTotal{
-			Total: 0,
-			Items: []*models.Group{},
-		})
+	// if len(filter) < 3 {
+	// 	response.SuccessWithData(c, response.DataWithTotal{
+	// 		Total: 0,
+	// 		Items: []*models.Group{},
+	// 	})
+	// 	return
+	// }
+
+	queryGroups, err := controller.groupManager.GetByNameFuzzily(c, filter)
+	if err != nil {
+		response.AbortWithInternalError(c, SearchGroupsError,
+			fmt.Sprintf("search groups failed: %v", err))
 		return
 	}
 
-	//TODO(wurongjun): not implemented yet.
-	response.AbortWithRequestError(c, NotImplemented,
-		"search groups by name have not implemented")
+	namesMap := make(map[string]int)
+	for _, g := range queryGroups {
+		split := strings.Split(g.FullName, " /")
+		namesMap[split[0]] = 1
+	}
+	var names []string
+	for s, _ := range namesMap {
+		names = append(names, s)
+	}
+	regexpQueryGroups, err := controller.groupManager.GetByFullNamesRegexpFuzzily(c, &names)
+	if err != nil {
+		response.AbortWithInternalError(c, SearchGroupsError,
+			fmt.Sprintf("search groups failed: %v", err))
+		return
+	}
+	// organize struct of search result
+	parentIDToGroupsMap := make(map[int][]*Child)
+	var rootGroupsDetails []*Child
+	var groupsDetails []*Child
+	for _, g := range regexpQueryGroups {
+		detail := ConvertGroupToGroupDetail(g)
+		detail.Type = Group
+		groupsDetails = append(groupsDetails, detail)
+		parentID := g.ParentID
+		if parentID == -1 {
+			rootGroupsDetails = append(rootGroupsDetails, detail)
+		}
+		parentIDToGroupsMap[parentID] = append(parentIDToGroupsMap[parentID], detail)
+	}
+	for _, gt := range groupsDetails {
+		if v, ok := parentIDToGroupsMap[int(gt.ID)]; ok {
+			gt.Children = v
+			gt.ChildrenCount = len(v)
+		}
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: int64(len(rootGroupsDetails)),
+		Items: rootGroupsDetails,
+	})
 }
 
 func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*models.Group) []*Child {
@@ -249,12 +294,8 @@ func formatQuerySubGroups(c *gin.Context) *q.Query {
 		k[ParentID], _ = strconv.Atoi(parentID)
 	}
 
-	query := formatDefaultQuery()
+	query := formatDefaultQuery(c)
 	query.Keywords = k
-	pageNumber, _ := strconv.Atoi(c.Query(common.PageNumber))
-	if pageNumber > 0 {
-		query.PageNumber = pageNumber
-	}
 
 	return query
 }
@@ -269,22 +310,26 @@ func formatSearchGroups(c *gin.Context) *q.Query {
 		k[ParentID], _ = strconv.Atoi(parentID)
 	}
 
-	query := formatDefaultQuery()
+	query := formatDefaultQuery(c)
 	query.Keywords = k
-	pageNumber, _ := strconv.Atoi(c.Query(common.PageNumber))
-	if pageNumber > 0 {
-		query.PageNumber = pageNumber
-	}
 
 	return query
 }
 
-func formatDefaultQuery() *q.Query {
-	// sort by updated_at desc，let newer items be in head
-	s := q.NewSort("updated_at", true)
+func formatDefaultQuery(c *gin.Context) *q.Query {
 	query := q.New(q.KeyWords{})
 	query.PageNumber = common.DefaultPageNumber
 	query.PageSize = common.DefaultPageSize
+	pageNumber, _ := strconv.Atoi(c.Query(common.PageNumber))
+	pageSize, _ := strconv.Atoi(c.Query(common.PageSize))
+	if pageNumber > 0 {
+		query.PageNumber = pageNumber
+	}
+	if pageSize > 0 {
+		query.PageSize = pageSize
+	}
+	// sort by updated_at desc default，let newer items be in head
+	s := q.NewSort("updated_at", true)
 	query.Sorts = []*q.Sort{s}
 
 	return query
