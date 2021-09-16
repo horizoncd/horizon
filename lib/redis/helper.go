@@ -27,7 +27,6 @@ type Helper struct {
 }
 
 func NewHelper(redisURL, poolName string, param *PoolParam, opts *Options) (*Helper, error) {
-
 	pool, err := GetRedisPool(poolName, redisURL, param)
 	if err != nil {
 		return nil, err
@@ -42,7 +41,6 @@ func NewHelper(redisURL, poolName string, param *PoolParam, opts *Options) (*Hel
 }
 
 func NewHelperWithPool(pool *redis.Pool, opts *Options) (*Helper, error) {
-
 	if pool == nil {
 		return nil, errors.New("pool cannot be nil")
 	}
