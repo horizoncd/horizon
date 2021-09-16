@@ -216,15 +216,12 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 
 	// organize struct of search result
 	parentIDToGroupsMap := make(map[int][]*Child)
-	// whole group details
-	var groupsDetails []*Child
 	// group in the first level, must return in search
 	firstLevelGroupsDetails := make([]*Child, 0)
 	for _, g := range regexpQueryGroups {
 		detail := ConvertGroupToGroupDetail(g)
 		// current only query group table
 		detail.Type = Group
-		groupsDetails = append(groupsDetails, detail)
 		// group in the first level
 		if g.ParentID == -1 {
 			firstLevelGroupsDetails = append(firstLevelGroupsDetails, detail)

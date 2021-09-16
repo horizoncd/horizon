@@ -201,13 +201,17 @@ func (d *dao) Update(ctx context.Context, group *models.Group) error {
 
 	// update self & children's fullNames
 	var oldGroup *models.Group
-	result = db.First(&oldGroup, group.ID)
+	db.First(&oldGroup, group.ID)
 	oldFullName := oldGroup.FullName
 	split := strings.Split(strings.ReplaceAll(oldFullName, " ", ""), "/")
 	split = append(split[:len(split)-1], group.Name)
 	newFullName := strings.Join(split, " / ")
-	// update `group` set full_name=replace(full_name, full_name, concat('a / e', substring(full_name, 6))) where full_name regexp '^(a / d)'
-	updateSQL := fmt.Sprintf("update `group` set full_name=replace(full_name, full_name, concat('%s', substring(full_name, %d))) where full_name regexp '^(%s)'", newFullName, len(oldFullName)+1, oldFullName)
+	// update `group` set full_name=
+	// replace(full_name, full_name, concat('a / e', substring(full_name, 6)))
+	// where full_name regexp '^(a / d)'
+	updateSQL := fmt.Sprintf("update `group` set full_name="+
+		"replace(full_name, full_name, concat('%s', substring(full_name, %d))) "+
+		"where full_name regexp '^(%s)'", newFullName, len(oldFullName)+1, oldFullName)
 	result = db.Exec(updateSQL)
 
 	return result.Error
