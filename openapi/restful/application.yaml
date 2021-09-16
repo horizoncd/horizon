@@ -1,0 +1,142 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Application-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/applications:
+    post:
+      tags:
+        - application
+      operationId: createApplication
+      summary: create a application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                  "groupID": 1000,
+                  "//name": "name is unique in the whole system, ",
+                  "name": "app",
+                  "//description": "asdfasdfsdf",
+                  "description": "xxxxxxxxxxxx",
+                  "template": {
+                    "name": "javaapp",
+                    "release": "v1.1.0"
+                  },
+                  "gitRepo": {
+                    "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                    "subfolder": "/"
+                  },
+                  "resource": "x-small",
+                  "templateInput": {
+                    "app": {
+                      "params": {
+                        "xmx": "512",
+                        "xms": "512",
+                        "maxPerm": "128",
+                        "mainClassName": "com.netease.horizon.WebApplication",
+                        "jvmExtra": "-Dserver.port=8080"
+                      },
+                      "health": {
+                        "lifecycle": {
+                          "online": {
+                            "url": "/online"
+                          },
+                          "offline": {
+                            "url": "/offline"
+                          }
+                        },
+                        "probe": {
+                          "check": {
+                            "url": "/check"
+                          },
+                          "status": {
+                            "url": "/status"
+                          }
+                        },
+                        "port": 8080
+                      }
+                    }
+                  }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
+  /apis/core/v1/applications/{application}:
+    parameters:
+      - name: application
+        in: path
+        description: name of application
+        required: true
+    put:
+      tags:
+        - application
+      operationId: updateApplication
+      summary: update a application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                  "description": "xxxxxxxxxxxx",
+                  "template": {
+                    "name": "javaapp",
+                    "release": "v1.1.0"
+                  },
+                  "gitRepo": {
+                    "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                    "subfolder": "/"
+                  },
+                  "resource": "x-small",
+                  "templateInput": {
+                    "app": {
+                      "params": {
+                        "xmx": "512",
+                        "xms": "512",
+                        "maxPerm": "128",
+                        "mainClassName": "com.netease.horizon.WebApplication",
+                        "jvmExtra": "-Dserver.port=8080"
+                      },
+                      "health": {
+                        "lifecycle": {
+                          "online": {
+                            "url": "/online"
+                          },
+                          "offline": {
+                            "url": "/offline"
+                          }
+                        },
+                        "probe": {
+                          "check": {
+                            "url": "/check"
+                          },
+                          "status": {
+                            "url": "/status"
+                          }
+                        },
+                        "port": 8080
+                      }
+                    }
+                  }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
