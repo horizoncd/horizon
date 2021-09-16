@@ -17,8 +17,8 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(context.TODO(), db)
+	db  = orm.DefaultMySQLDBForUnitTest()
+	ctx = orm.NewContext(context.TODO(), db)
 
 	group1Id   = uint(1)
 	group1Path = "/a"

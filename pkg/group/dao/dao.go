@@ -45,12 +45,13 @@ func (d *dao) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) 
 	var groups []*models.Group
 	regNames := make([]string, len(*names))
 	for i, n := range *names {
-		regNames[i] = "^" + n
+		regNames[i] = fmt.Sprintf("full_name like '%s%%'", n)
 	}
 
-	namesRegexp := strings.Join(regNames, "|")
-
-	result := db.Where("full_name regexp ?", "^"+namesRegexp).Order("id desc").Find(&groups)
+	query := strings.Join(regNames, " or ")
+	// select * from `group` where full_name like '1%' or full_name like '2%' order by id desc
+	qSql := fmt.Sprintf("select * from `group` where %s order by id desc", query)
+	result := db.Raw(qSql).Scan(&groups)
 
 	return groups, result.Error
 }
@@ -211,7 +212,7 @@ func (d *dao) Update(ctx context.Context, group *models.Group) error {
 	// where full_name regexp '^(a / d)'
 	updateSQL := fmt.Sprintf("update `group` set full_name="+
 		"replace(full_name, full_name, concat('%s', substring(full_name, %d))) "+
-		"where full_name regexp '^(%s)'", newFullName, len(oldFullName)+1, oldFullName)
+		"where full_name like '%s%%'", newFullName, len(oldFullName)+1, oldFullName)
 	result = db.Exec(updateSQL)
 
 	return result.Error
