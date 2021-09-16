@@ -6,7 +6,7 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /api/v1/templates:
+  /apis/core/v1/templates:
     get:
       tags:
         - template
@@ -32,11 +32,11 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/v1/templates/{templateID}/releases:
+  /apis/core/v1/templates/{templateName}/releases:
     parameters:
-    - name: templateID
+    - name: templateName
       in: path
-      description: id of template
+      description: name of template
       required: true
     get:
       tags:
@@ -65,11 +65,11 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/v1/templates/{templateID}/releases/{releaseName}/input.schema.json:
+  /apis/core/v1/templates/{templateName}/releases/{releaseName}/input.schema.json:
     parameters:
-    - name: templateID
+    - name: templateName
       in: path
-      description: id of template
+      description: name of template
       required: true
     - name: releaseName
       in: path

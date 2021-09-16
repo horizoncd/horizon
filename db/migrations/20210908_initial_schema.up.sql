@@ -28,3 +28,33 @@ CREATE TABLE `user` (
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+
+-- gitlab table
+CREATE TABLE `gitlab` (
+    `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(64) NOT NULL DEFAULT '' COMMENT 'the name of gitlab',
+    `url` varchar(128) NOT NULL DEFAULT '' COMMENT 'gitlab base url',
+    `token` varchar(128) NOT NULL DEFAULT '' COMMENT 'gitlab token',
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` datetime DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+
+-- template table
+CREATE TABLE `template` (
+    `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(64) NOT NULL DEFAULT '' COMMENT 'the name of template',
+    `gitlab_id` int(11) NOT NULL COMMENT 'the id of gitlab',
+    `gitlab_project` varchar(256) NOT NULL COMMENT 'project ID or relative path in gitlab',
+    `release` varchar(64) NOT NULL COMMENT 'template release',
+    `description` varchar(256) NOT NULL COMMENT 'description about this template release',
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` datetime DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_name_version` (`name`, `version`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
