@@ -3,6 +3,7 @@ package group
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/q"
@@ -15,24 +16,27 @@ import (
 const (
 	CreateGroupError    = "CreateGroupError"
 	GetSubGroupsError   = "GetSubGroupsError"
+	SearchGroupsError   = "SearchGroupsError"
+	NotImplemented      = "NotImplemented"
 	DeleteGroupError    = "DeleteGroupError"
 	GetGroupError       = "GetGroupError"
 	GetGroupByPathError = "GetGroupByPathError"
 	UpdateGroupError    = "UpdateGroupError"
-	ParamGroupId        = "groupId"
+	ParamGroupID        = "groupID"
 	ParamPath           = "path"
 	ParamFilter         = "filter"
-	ParamParentId       = "parentId"
-	ParentId            = "parent_id"
+	QueryParentID       = "parentId"
+	ParentID            = "parent_id"
+	Group               = "group"
 )
 
 type Controller struct {
-	manager group.Manager
+	groupManager group.Manager
 }
 
 func NewController() *Controller {
 	return &Controller{
-		manager: group.Mgr,
+		groupManager: group.Mgr,
 	}
 }
 
@@ -40,12 +44,15 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 	var newGroup *NewGroup
 	err := c.ShouldBindJSON(&newGroup)
 	if err != nil {
-		response.AbortWithRequestError(c, CreateGroupError, fmt.Sprintf("create group failed: %v", err))
+		response.AbortWithRequestError(c, CreateGroupError,
+			fmt.Sprintf("create group failed: %v", err))
 		return
 	}
-	create, err := controller.manager.Create(c, convertNewGroupToGroup(newGroup))
+
+	create, err := controller.groupManager.Create(c, convertNewGroupToGroup(newGroup))
 	if err != nil {
-		response.AbortWithInternalError(c, CreateGroupError, fmt.Sprintf("create group failed: %v", err))
+		response.AbortWithInternalError(c, CreateGroupError,
+			fmt.Sprintf("create group failed: %v", err))
 		return
 	}
 
@@ -53,76 +60,89 @@ func (controller *Controller) CreateGroup(c *gin.Context) {
 }
 
 func (controller *Controller) DeleteGroup(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
+	groupID := c.Param(ParamGroupID)
 
-	idInt, err := strconv.ParseUint(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupID, 10, 64)
 	if err != nil {
-		response.AbortWithRequestError(c, DeleteGroupError, fmt.Sprintf("delete group failed: %v", err))
+		response.AbortWithRequestError(c, DeleteGroupError,
+			fmt.Sprintf("delete group failed: %v", err))
 		return
 	}
-	err = controller.manager.Delete(c, uint(idInt))
+	err = controller.groupManager.Delete(c, uint(idInt))
 	if err != nil {
-		response.AbortWithInternalError(c, DeleteGroupError, fmt.Sprintf("delete group failed: %v", err))
+		response.AbortWithInternalError(c, DeleteGroupError,
+			fmt.Sprintf("delete group failed: %v", err))
 		return
 	}
 	response.Success(c)
 }
 
 func (controller *Controller) GetGroup(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
+	groupID := c.Param(ParamGroupID)
 
-	idInt, err := strconv.ParseUint(groupId, 10, 64)
+	idInt, err := strconv.ParseUint(groupID, 10, 64)
 	if err != nil {
-		response.AbortWithRequestError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
+		response.AbortWithRequestError(c, GetGroupError,
+			fmt.Sprintf("get group failed: %v", err))
 		return
 	}
 
-	_group, err := controller.manager.Get(c, uint(idInt))
+	groupEntry, err := controller.groupManager.Get(c, uint(idInt))
 	if err != nil {
-		response.AbortWithInternalError(c, GetGroupError, fmt.Sprintf("get group failed: %v", err))
+		response.AbortWithInternalError(c, GetGroupError,
+			fmt.Sprintf("get group failed: %v", err))
 		return
 	}
-	detail := ConvertGroupToGroupDetail(_group)
+	detail := ConvertGroupToGroupDetail(groupEntry)
 	response.SuccessWithData(c, detail)
 }
 
 func (controller *Controller) GetGroupByPath(c *gin.Context) {
 	path := c.Query(ParamPath)
 
-	_group, err := controller.manager.GetByPath(c, path)
+	groupEntry, err := controller.groupManager.GetByPath(c, path)
 	if err != nil {
-		response.AbortWithInternalError(c, GetGroupByPathError, fmt.Sprintf("get group by path failed: %v", err))
+		response.AbortWithInternalError(c, GetGroupByPathError,
+			fmt.Sprintf("get group by path failed: %v", err))
 		return
 	}
-	if _group == nil {
-		response.AbortWithNotFoundError(c, GetGroupByPathError, fmt.Sprintf("get group by path failed: %v", err))
+	if groupEntry == nil {
+		response.AbortWithNotFoundError(c, GetGroupByPathError,
+			fmt.Sprintf("get group by path failed: %v", err))
 		return
 	}
-	detail := ConvertGroupToGroupDetail(_group)
+	detail := ConvertGroupToGroupDetail(groupEntry)
 	response.SuccessWithData(c, detail)
 }
 
-func (controller *Controller) UpdateGroup(c *gin.Context) {
-	groupId := c.Param(ParamGroupId)
+// TODO(wurongjun) support transfer group
+// func (controller *Controller) TransferGroup(c *gin.Context)
 
-	idInt, err := strconv.ParseUint(groupId, 10, 64)
+// TODO(wurongjun) change to UpdateGroupBasic (also change the openapi)
+func (controller *Controller) UpdateGroup(c *gin.Context) {
+	groupID := c.Param(ParamGroupID)
+
+	idInt, err := strconv.ParseUint(groupID, 10, 64)
 	if err != nil {
-		response.AbortWithRequestError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
+		response.AbortWithRequestError(c, UpdateGroupError,
+			fmt.Sprintf("upate group failed: %v", err))
 		return
 	}
 
-	var updatedGroup *models.Group
+	var updatedGroup *UpdateGroup
 	err = c.ShouldBindJSON(&updatedGroup)
 	if err != nil {
-		response.AbortWithRequestError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
+		response.AbortWithRequestError(c, UpdateGroupError,
+			fmt.Sprintf("upate group failed: %v", err))
 		return
 	}
-	// 以URL path中的id为准
-	updatedGroup.ID = uint(idInt)
 
-	err = controller.manager.Update(c, updatedGroup)
+	groupEntry := convertUpdateGroupToGroup(updatedGroup)
+	groupEntry.ID = uint(idInt)
+	err = controller.groupManager.Update(c, groupEntry)
 	if err != nil {
-		response.AbortWithInternalError(c, UpdateGroupError, fmt.Sprintf("upate group failed: %v", err))
+		response.AbortWithInternalError(c, UpdateGroupError,
+			fmt.Sprintf("upate group failed: %v", err))
 		return
 	}
 
@@ -135,59 +155,181 @@ func (controller *Controller) GetChildren(c *gin.Context) {
 }
 
 func (controller *Controller) GetSubGroups(c *gin.Context) {
-	groups, count, err := controller.manager.List(c, formatQuerySubGroups(c))
+	groups, count, err := controller.groupManager.List(c, formatQuerySubGroups(c))
 	if err != nil {
-		response.AbortWithInternalError(c, GetSubGroupsError, fmt.Sprintf("get subgroups failed: %v", err))
+		response.AbortWithInternalError(c, GetSubGroupsError,
+			fmt.Sprintf("get subgroups failed: %v", err))
 		return
 	}
 
-	var details = make([]*GroupDetail, len(groups))
-	for idx, tmp := range groups {
-		detail := ConvertGroupToGroupDetail(tmp)
-		details[idx] = detail
-	}
 	response.SuccessWithData(c, response.DataWithTotal{
 		Total: count,
-		Items: details,
+		Items: controller.formatPageGroupDetails(c, groups),
 	})
 }
 
-func (controller *Controller) SearchGroups(c *gin.Context) {
-	filter := c.Param(ParamFilter)
-	// 检索字符串为空，只展示 parent_id = null 的group
-	if filter == "" {
-		controller.GetSubGroups(c)
-		return
-	}
-	// 检索字符串过短，返回空数组回去
-	if len(filter) < 3 {
-		response.SuccessWithData(c, []*models.Group{})
-		return
-	}
-	// 正常检索
-
+func (controller *Controller) SearchChildren(c *gin.Context) {
+	// TODO(wurongjun): also query application
+	controller.SearchGroups(c)
 }
 
-func formatQuerySubGroups(c *gin.Context) *q.Query {
-	paramParentId := c.Query(ParamParentId)
-	k := q.KeyWords{
-		ParentId: nil,
-	}
-	if paramParentId != "" {
-		k[ParentId], _ = strconv.Atoi(paramParentId)
+func (controller *Controller) SearchGroups(c *gin.Context) {
+	filter := c.Query(ParamFilter)
+
+	// filter is empty, just list the group
+	if filter == "" {
+		groups, count, err := controller.groupManager.List(c, formatSearchGroups(c))
+		if err != nil {
+			response.AbortWithInternalError(c, SearchGroupsError,
+				fmt.Sprintf("search groups failed: %v", err))
+			return
+		}
+		response.SuccessWithData(c, response.DataWithTotal{
+			Total: count,
+			Items: controller.formatPageGroupDetails(c, groups),
+		})
+		return
 	}
 
-	// sort by updated_at desc，let newer items be in head
+	// filter is too short will be ignore
+	// if len(filter) < 3 {
+	// 	response.SuccessWithData(c, response.DataWithTotal{
+	// 		Total: 0,
+	// 		Items: []*models.Group{},
+	// 	})
+	// 	return
+	// }
+
+	queryGroups, err := controller.groupManager.GetByNameFuzzily(c, filter)
+	if err != nil {
+		response.AbortWithInternalError(c, SearchGroupsError,
+			fmt.Sprintf("search groups failed: %v", err))
+		return
+	}
+
+	namesMap := make(map[string]int)
+	for _, g := range queryGroups {
+		split := strings.Split(g.FullName, " /")
+		namesMap[split[0]] = 1
+	}
+	var names []string
+	for s := range namesMap {
+		names = append(names, s)
+	}
+	regexpQueryGroups, err := controller.groupManager.GetByFullNamesRegexpFuzzily(c, &names)
+	if err != nil {
+		response.AbortWithInternalError(c, SearchGroupsError,
+			fmt.Sprintf("search groups failed: %v", err))
+		return
+	}
+	// organize struct of search result
+	parentIDToGroupsMap := make(map[int][]*Child)
+	var rootGroupsDetails []*Child
+	var groupsDetails []*Child
+	for _, g := range regexpQueryGroups {
+		detail := ConvertGroupToGroupDetail(g)
+		detail.Type = Group
+		groupsDetails = append(groupsDetails, detail)
+		parentID := g.ParentID
+		if parentID == -1 {
+			rootGroupsDetails = append(rootGroupsDetails, detail)
+		}
+		parentIDToGroupsMap[parentID] = append(parentIDToGroupsMap[parentID], detail)
+	}
+	for _, gt := range groupsDetails {
+		if v, ok := parentIDToGroupsMap[int(gt.ID)]; ok {
+			gt.Children = v
+			gt.ChildrenCount = len(v)
+		}
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: int64(len(rootGroupsDetails)),
+		Items: rootGroupsDetails,
+	})
+}
+
+func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*models.Group) []*Child {
+	var parentIds []uint
+	for _, m := range groups {
+		parentIds = append(parentIds, m.ID)
+	}
+	query := q.New(q.KeyWords{
+		ParentID: parentIds,
+	})
+	subGroups, err := controller.groupManager.ListWithoutPage(c, query)
+	if err != nil {
+		response.AbortWithInternalError(c, GetSubGroupsError,
+			fmt.Sprintf("get subgroups failed: %v", err))
+		return nil
+	}
+	childrenCountMap := map[int]int{}
+	for _, subgroup := range subGroups {
+		if v, ok := childrenCountMap[subgroup.ParentID]; ok {
+			childrenCountMap[subgroup.ParentID] = v + 1
+		} else {
+			childrenCountMap[subgroup.ParentID] = 1
+		}
+	}
+
+	var details = make([]*Child, len(groups))
+	for idx, tmp := range groups {
+		detail := ConvertGroupToGroupDetail(tmp)
+		// todo currently using fixed type: group
+		detail.Type = Group
+		detail.ChildrenCount = childrenCountMap[int(detail.ID)]
+		details[idx] = detail
+	}
+
+	return details
+}
+
+// url pattern: api/vi/groups/:groupId/subgroups
+func formatQuerySubGroups(c *gin.Context) *q.Query {
+	parentID := c.Param(ParamGroupID)
+	k := q.KeyWords{
+		ParentID: -1,
+	}
+	if parentID != "" {
+		k[ParentID], _ = strconv.Atoi(parentID)
+	}
+
+	query := formatDefaultQuery(c)
+	query.Keywords = k
+
+	return query
+}
+
+// url pattern: api/vi/groups/search?parentId=?
+func formatSearchGroups(c *gin.Context) *q.Query {
+	parentID := c.Query(QueryParentID)
+	k := q.KeyWords{
+		ParentID: -1,
+	}
+	if parentID != "" {
+		k[ParentID], _ = strconv.Atoi(parentID)
+	}
+
+	query := formatDefaultQuery(c)
+	query.Keywords = k
+
+	return query
+}
+
+func formatDefaultQuery(c *gin.Context) *q.Query {
+	query := q.New(q.KeyWords{})
+	query.PageNumber = common.DefaultPageNumber
+	query.PageSize = common.DefaultPageSize
+	pageNumber, _ := strconv.Atoi(c.Query(common.PageNumber))
+	pageSize, _ := strconv.Atoi(c.Query(common.PageSize))
+	if pageNumber > 0 {
+		query.PageNumber = pageNumber
+	}
+	if pageSize > 0 {
+		query.PageSize = pageSize
+	}
+	// sort by updated_at desc default，let newer items be in head
 	s := q.NewSort("updated_at", true)
-	query := q.New(k)
-	query.PageNumber, _ = strconv.Atoi(c.Query(common.PageNumber))
-	if query.PageNumber == 0 {
-		query.PageNumber = common.DefaultPageNumber
-	}
-	query.PageSize, _ = strconv.Atoi(c.Query(common.PageSize))
-	if query.PageSize == 0 {
-		query.PageSize = common.DefaultPageSize
-	}
 	query.Sorts = []*q.Sort{s}
 
 	return query

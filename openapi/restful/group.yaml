@@ -188,6 +188,8 @@ components:
           $ref: '#/components/schemas/GroupId'
         name:
           $ref: '#/components/schemas/GroupName'
+        fullName:
+          $ref: '#/components/schemas/GroupFullName'
         path:
           $ref: '#/components/schemas/GroupPath'
         description:
@@ -208,6 +210,11 @@ components:
       type: string
       maxLength: 64
       description: the group Name
+
+    GroupFullName:
+      type: string
+      maxLength: 512
+      description: the group full name
 
     GroupPath:
       type: string

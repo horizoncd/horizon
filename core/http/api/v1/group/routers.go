@@ -1,6 +1,7 @@
 package group
 
 import (
+	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/server/route"
@@ -13,44 +14,42 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 
 	var routes = route.Routes{
 		{
-			http.MethodGet,
-			"/search",
-			c.SearchGroups,
+			Method:      http.MethodGet,
+			Pattern:     "/search",
+			HandlerFunc: c.SearchGroups,
 		},
 		{
-			http.MethodPost,
-			"",
-			c.CreateGroup,
+			Method:      http.MethodPost,
+			HandlerFunc: c.CreateGroup,
 		},
 		{
-			http.MethodDelete,
-			"/:groupId",
-			c.DeleteGroup,
+			Method:      http.MethodDelete,
+			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
+			HandlerFunc: c.DeleteGroup,
 		},
 		{
-			http.MethodGet,
-			"/:groupId",
-			c.GetGroup,
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
+			HandlerFunc: c.GetGroup,
 		},
 		{
-			http.MethodGet,
-			"",
-			c.GetGroupByPath,
+			Method:      http.MethodGet,
+			HandlerFunc: c.GetGroupByPath,
 		},
 		{
-			http.MethodPut,
-			"/:groupId",
-			c.UpdateGroup,
+			Method:      http.MethodPut,
+			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
+			HandlerFunc: c.UpdateGroup,
 		},
 		{
-			http.MethodGet,
-			"/:groupId/children",
-			c.GetChildren,
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%s/children", ParamGroupID),
+			HandlerFunc: c.GetChildren,
 		},
 		{
-			http.MethodGet,
-			"/:groupId/subgroups",
-			c.GetSubGroups,
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%s/subgroups", ParamGroupID),
+			HandlerFunc: c.GetSubGroups,
 		},
 	}
 	route.RegisterRoutes(api, routes)

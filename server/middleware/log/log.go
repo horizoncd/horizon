@@ -1,9 +1,11 @@
 package log
 
 import (
-	"g.hz.netease.com/horizon/lib/log"
+	"fmt"
+
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
+	"g.hz.netease.com/horizon/util/log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,10 +14,7 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		rid := c.Value(requestid.HeaderXRequestID)
 		if rid != "" {
-			logger := log.DefaultLogger()
-			logger.Debugf("attach request id %s to the logger for the request %s %s",
-				rid, c.Request.Method, c.Request.URL.Path)
-			c.Set(log.LoggerKey(), logger.WithField("requestID", rid))
+			c.Set(log.Key(), fmt.Sprintf("[%v] ", rid))
 		}
 		c.Next()
 	}, skippers...)

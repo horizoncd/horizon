@@ -18,7 +18,10 @@ type Manager interface {
 	Delete(ctx context.Context, id uint) error
 	Get(ctx context.Context, id uint) (*models.Group, error)
 	GetByPath(ctx context.Context, path string) (*models.Group, error)
+	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error)
 	Update(ctx context.Context, group *models.Group) error
+	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
 }
 
@@ -26,10 +29,18 @@ type manager struct {
 	dao dao.DAO
 }
 
+func (m manager) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error) {
+	return m.dao.GetByFullNamesRegexpFuzzily(ctx, names)
+}
+
+func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
+	return m.dao.GetByNameFuzzily(ctx, name)
+}
+
 func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) {
 	// query parent group info
-	if group.ParentId != nil {
-		pgroup, err := m.dao.Get(ctx, *(group.ParentId))
+	if group.ParentID > 0 {
+		pgroup, err := m.dao.Get(ctx, uint(group.ParentID))
 		if err != nil {
 			return 0, err
 		}
@@ -58,6 +69,10 @@ func (m manager) GetByPath(ctx context.Context, path string) (*models.Group, err
 
 func (m manager) Update(ctx context.Context, group *models.Group) error {
 	return m.dao.Update(ctx, group)
+}
+
+func (m manager) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error) {
+	return m.dao.ListWithoutPage(ctx, query)
 }
 
 func (m manager) List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error) {

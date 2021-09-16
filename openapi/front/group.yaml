@@ -76,6 +76,8 @@ components:
           type: integer
         name:
           type: string
+        fullName:
+          type: string
         description:
           type: string
         path:
@@ -101,6 +103,8 @@ components:
         id:
           type: integer
         name:
+          type: string
+        fullName:
           type: string
         description:
           type: string

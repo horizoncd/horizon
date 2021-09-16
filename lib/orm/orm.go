@@ -45,7 +45,7 @@ func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
 		},
 	})
 
-	if db.PrometheusEnabled{
+	if db.PrometheusEnabled {
 		if err := orm.Use(prometheus.New(prometheus.Config{
 			DBName: "mysql",
 			MetricsCollector: []prometheus.MetricsCollector{

@@ -91,7 +91,4 @@ func (m *MySQLMetricsCollector) collect(p *gormprom.Prometheus) {
 			gauge.Set(value)
 		}
 	}
-
-	return
 }
-
