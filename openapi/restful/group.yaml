@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /api/rest/v1/groups?path={path}:
+  /apis/core/v1/groups?path={path}:
     get:
       tags:
         - group
@@ -29,7 +29,7 @@ paths:
             application/json:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
-  /api/rest/v1/groups:
+  /apis/core/v1/groups:
     post:
       tags:
         - group
@@ -51,7 +51,7 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/rest/v1/groups/{groupId}:
+  /apis/core/v1/groups/{groupId}:
     parameters:
       - name: groupId
         in: path
@@ -112,7 +112,7 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/rest/v1/groups/{groupId}/subgroups:
+  /apis/core/v1/groups/{groupId}/subgroups:
     parameters:
       - name: groupId
         in: path
@@ -137,7 +137,7 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/rest/v1/groups/{groupId}/applications:
+  /apis/core/v1/groups/{groupId}/applications:
     parameters:
       - $ref: "#/components/schemas/GroupId"
     get:
