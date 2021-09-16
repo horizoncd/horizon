@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"g.hz.netease.com/horizon/common"
@@ -42,9 +43,14 @@ func (d *dao) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) 
 	}
 
 	var groups []*models.Group
-	namesRegexp := strings.Join(*names, "|")
+	regNames := make([]string, len(*names))
+	for i, n := range *names {
+		regNames[i] = "^" + n
+	}
 
-	result := db.Where("full_name regexp ?", namesRegexp).Order("id desc").Find(&groups)
+	namesRegexp := strings.Join(regNames, "|")
+
+	result := db.Where("full_name regexp ?", "^"+namesRegexp).Order("id desc").Find(&groups)
 
 	return groups, result.Error
 }
@@ -187,11 +193,22 @@ func (d *dao) Update(ctx context.Context, group *models.Group) error {
 	}
 
 	result := db.Model(group).Select("Name", "Description", "VisibilityLevel").Where("deleted_at is null").Updates(group)
-
-	// todo modify children's path & fullName
-
 	if result.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound
 	}
+
+	// todo modify children's path
+
+	// update self & children's fullNames
+	var oldGroup *models.Group
+	result = db.First(&oldGroup, group.ID)
+	oldFullName := oldGroup.FullName
+	split := strings.Split(strings.ReplaceAll(oldFullName, " ", ""), "/")
+	split = append(split[:len(split)-1], group.Name)
+	newFullName := strings.Join(split, " / ")
+	// update `group` set full_name=replace(full_name, full_name, concat('a / e', substring(full_name, 6))) where full_name regexp '^(a / d)'
+	updateSQL := fmt.Sprintf("update `group` set full_name=replace(full_name, full_name, concat('%s', substring(full_name, %d))) where full_name regexp '^(%s)'", newFullName, len(oldFullName)+1, oldFullName)
+	result = db.Exec(updateSQL)
+
 	return result.Error
 }

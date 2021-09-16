@@ -218,31 +218,27 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 	parentIDToGroupsMap := make(map[int][]*Child)
 	// whole group details
 	var groupsDetails []*Child
+	// group in the first level, must return in search
+	firstLevelGroupsDetails := make([]*Child, 0)
 	for _, g := range regexpQueryGroups {
 		detail := ConvertGroupToGroupDetail(g)
 		// current only query group table
 		detail.Type = Group
 		groupsDetails = append(groupsDetails, detail)
+		// group in the first level
+		if g.ParentID == -1 {
+			firstLevelGroupsDetails = append(firstLevelGroupsDetails, detail)
+		}
+
 		parentID := g.ParentID
 		// name match or children's names match
 		if strings.Contains(g.Name, filter) || len(parentIDToGroupsMap[int(g.ID)]) > 0 {
 			parentIDToGroupsMap[parentID] = append(parentIDToGroupsMap[parentID], detail)
 		}
 
-	}
-	// group in the first level, must return in search
-	firstLevelGroupsDetails := make([]*Child, 0)
-	for _, gt := range groupsDetails {
-		childrenMatched := false
-		if v, ok := parentIDToGroupsMap[int(gt.ID)]; ok {
-			gt.ChildrenCount = len(v)
-			gt.Children = v
-			childrenMatched = true
-		}
-
-		// group in the first level
-		if gt.ParentID == -1 && (childrenMatched || strings.Contains(gt.Name, filter)) {
-			firstLevelGroupsDetails = append(firstLevelGroupsDetails, gt)
+		if v, ok := parentIDToGroupsMap[int(detail.ID)]; ok {
+			detail.ChildrenCount = len(v)
+			detail.Children = v
 		}
 	}
 
