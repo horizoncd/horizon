@@ -10,14 +10,8 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, c *Controller) {
-	api := engine.Group("/api/v1/groups")
-
+	restAPI := engine.Group("/api/rest/v1/groups")
 	var routes = route.Routes{
-		{
-			Method:      http.MethodGet,
-			Pattern:     "/search",
-			HandlerFunc: c.SearchGroups,
-		},
 		{
 			Method:      http.MethodPost,
 			HandlerFunc: c.CreateGroup,
@@ -43,14 +37,25 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 		},
 		{
 			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%s/subgroups", ParamGroupID),
+			HandlerFunc: c.GetSubGroups,
+		},
+	}
+
+	frontAPI := engine.Group("/api/front/v1/groups")
+	var frontRoutes = route.Routes{
+		{
+			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%s/children", ParamGroupID),
 			HandlerFunc: c.GetChildren,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%s/subgroups", ParamGroupID),
-			HandlerFunc: c.GetSubGroups,
+			Pattern:     "/search",
+			HandlerFunc: c.SearchGroups,
 		},
 	}
-	route.RegisterRoutes(api, routes)
+
+	route.RegisterRoutes(restAPI, routes)
+	route.RegisterRoutes(frontAPI, frontRoutes)
 }

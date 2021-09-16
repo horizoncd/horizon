@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /api/v1/groups/search?parentId={parentId}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /api/front/v1/groups/search?parentId={parentId}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
@@ -37,7 +37,7 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /api/v1/groups/children?parentId={groupId}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /api/front/v1/groups/children?parentId={groupId}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
