@@ -10,6 +10,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.6.1
 	github.com/vmihailenco/msgpack/v5 v5.3.4
+	github.com/xanzy/go-gitlab v0.50.4
 	gopkg.in/yaml.v2 v2.3.0
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/driver/sqlite v1.1.5
