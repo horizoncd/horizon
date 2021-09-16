@@ -14,7 +14,8 @@ import (
 
 const (
 	// baseURL & token is the parameters for a specified gitlab used for unit test
-	token   = ""
+	// token can be set by environment variable
+	// token   = ""
 	baseURL = "http://cicd.mockserver.org/"
 
 	// rootGroupName & rootGroupID is the root group. Our unit tests will do some operations under this group.
@@ -34,6 +35,7 @@ func intToPtr(i int) *int {
 
 func TestMain(m *testing.M) {
 	var err error
+	token := os.Getenv("GITLAB_TOKEN_FOR_TEST")
 	g, err = New(token, baseURL)
 	if err != nil {
 		panic(err)
