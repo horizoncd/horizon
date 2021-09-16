@@ -7,6 +7,7 @@ stages:
 variables:
   COVERAGE_STANDARD: 70
   REPOSITORY_PREFIX: harbor.mock.org/cloudnative/horizon/
+  GOPROXY: https://goproxycn,direct
 
 before_script:
   - export APP_REVISION="${CI_COMMIT_TAG:-${CI_COMMIT_REF_NAME##*/}-r$CI_PIPELINE_ID}"
