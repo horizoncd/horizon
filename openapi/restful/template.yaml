@@ -13,8 +13,7 @@ paths:
       operationId: listTemplates
       summary: List all templates
       description: |
-        List all templates in specified template git group, except for some special template.
-        These special templates can be filtered by code config.
+        List all available templates.
       responses:
         '200':
           description: Success
