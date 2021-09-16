@@ -11,7 +11,7 @@ import (
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, c *Controller) {
 	restAPI := engine.Group("/api/rest/v1/groups")
-	var routes = route.Routes{
+	var restRoutes = route.Routes{
 		{
 			Method:      http.MethodPost,
 			HandlerFunc: c.CreateGroup,
@@ -56,6 +56,6 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 		},
 	}
 
-	route.RegisterRoutes(restAPI, routes)
+	route.RegisterRoutes(restAPI, restRoutes)
 	route.RegisterRoutes(frontAPI, frontRoutes)
 }
