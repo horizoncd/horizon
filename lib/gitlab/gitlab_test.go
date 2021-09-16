@@ -12,34 +12,72 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-const (
-	// baseURL & token is the parameters for a specified gitlab used for unit test
-	// token can be set by environment variable
-	// token   = ""
-	baseURL = "http://cicd.mockserver.org/"
+/*
+NOTE: gitlab params must set by environment variable.
+env name is GITLAB_PARAMS_FOR_TEST, and the value is a json string, look like:
+{
+	"token": "xxx",
+	"baseURL": "http://cicd.mockserver.org",
+	"rootGroupName": "xxx",
+	"rootGroupID": xxx
+}
 
-	// rootGroupName & rootGroupID is the root group. Our unit tests will do some operations under this group.
-	// http://cicd.mockserver.org/subgroup-for-unit-test
-	rootGroupName = "subgroup-for-unit-test"
-	rootGroupID   = 3512
-)
+1. token is used for auth, see https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html for more information.
+2. baseURL is the basic URL for gitlab.
+3. rootGroupName is a root group, our unit tests will do some operations under this group.
+4. rootGroupID is the ID for this root group.
+
+
+You can run this unit test just like this:
+
+export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
+{
+	"token": "xxx",
+	"baseURL": "http://cicd.mockserver.org",
+	"rootGroupName": "xxx",
+	"rootGroupID": xxx
+}
+EOF
+)"
+go test -v ./lib/gitlab/
+
+*/
 
 var (
 	ctx = context.Background()
 	g   Gitlab
+
+	rootGroupName string
+	rootGroupID   int
 )
 
 func intToPtr(i int) *int {
 	return &i
 }
 
+type Param struct {
+	Token         string `json:"token"`
+	BaseURL       string `json:"baseURL"`
+	RootGroupName string `json:"rootGroupName"`
+	RootGroupID   int    `json:"rootGroupId"`
+}
+
 func TestMain(m *testing.M) {
 	var err error
-	token := os.Getenv("GITLAB_TOKEN_FOR_TEST")
-	g, err = New(token, baseURL)
+	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
+	fmt.Println(param)
+	var p *Param
+	if err := json.Unmarshal([]byte(param), &p); err != nil {
+		panic(err)
+	}
+	g, err = New(p.Token, p.BaseURL)
 	if err != nil {
 		panic(err)
 	}
+
+	rootGroupName = p.RootGroupName
+	rootGroupID = p.RootGroupID
+
 	os.Exit(m.Run())
 }
 
