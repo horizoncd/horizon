@@ -33,7 +33,7 @@ type dao struct{}
 
 func (d *dao) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error) {
 	if names == nil || (len(*names)) == 0 {
-		return nil, common.ErrParameterNotValid
+		return []*models.Group{}, nil
 	}
 
 	db, err := orm.FromContext(ctx)
@@ -44,7 +44,7 @@ func (d *dao) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) 
 	var groups []*models.Group
 	namesRegexp := strings.Join(*names, "|")
 
-	result := db.Where("full_name regexp ?", namesRegexp).Find(&groups)
+	result := db.Where("full_name regexp ?", namesRegexp).Order("id desc").Find(&groups)
 
 	return groups, result.Error
 }

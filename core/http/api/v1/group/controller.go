@@ -191,15 +191,6 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		return
 	}
 
-	// filter is too short will be ignore
-	// if len(filter) < 3 {
-	// 	response.SuccessWithData(c, response.DataWithTotal{
-	// 		Total: 0,
-	// 		Items: []*models.Group{},
-	// 	})
-	// 	return
-	// }
-
 	queryGroups, err := controller.groupManager.GetByNameFuzzily(c, filter)
 	if err != nil {
 		response.AbortWithInternalError(c, SearchGroupsError,
@@ -222,30 +213,42 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 			fmt.Sprintf("search groups failed: %v", err))
 		return
 	}
+
 	// organize struct of search result
 	parentIDToGroupsMap := make(map[int][]*Child)
-	var rootGroupsDetails []*Child
+	// whole group details
 	var groupsDetails []*Child
 	for _, g := range regexpQueryGroups {
 		detail := ConvertGroupToGroupDetail(g)
+		// current only query group table
 		detail.Type = Group
 		groupsDetails = append(groupsDetails, detail)
 		parentID := g.ParentID
-		if parentID == -1 {
-			rootGroupsDetails = append(rootGroupsDetails, detail)
+		// name match or children's names match
+		if strings.Contains(g.Name, filter) || len(parentIDToGroupsMap[int(g.ID)]) > 0 {
+			parentIDToGroupsMap[parentID] = append(parentIDToGroupsMap[parentID], detail)
 		}
-		parentIDToGroupsMap[parentID] = append(parentIDToGroupsMap[parentID], detail)
+
 	}
+	// group in the first level, must return in search
+	firstLevelGroupsDetails := make([]*Child, 0)
 	for _, gt := range groupsDetails {
+		childrenMatched := false
 		if v, ok := parentIDToGroupsMap[int(gt.ID)]; ok {
-			gt.Children = v
 			gt.ChildrenCount = len(v)
+			gt.Children = v
+			childrenMatched = true
+		}
+
+		// group in the first level
+		if gt.ParentID == -1 && (childrenMatched || strings.Contains(gt.Name, filter)) {
+			firstLevelGroupsDetails = append(firstLevelGroupsDetails, gt)
 		}
 	}
 
 	response.SuccessWithData(c, response.DataWithTotal{
-		Total: int64(len(rootGroupsDetails)),
-		Items: rootGroupsDetails,
+		Total: int64(len(firstLevelGroupsDetails)),
+		Items: firstLevelGroupsDetails,
 	})
 }
 
