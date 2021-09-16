@@ -112,7 +112,7 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /apis/core/v1/groups/{groupId}/subgroups:
+  /apis/core/v1/groups/{groupId}/groups:
     parameters:
       - name: groupId
         in: path

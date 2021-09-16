@@ -37,7 +37,7 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%s/subgroups", ParamGroupID),
+			Pattern:     fmt.Sprintf("/:%s/groups", ParamGroupID),
 			HandlerFunc: c.GetSubGroups,
 		},
 	}
