@@ -70,7 +70,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
   /apis/core/v1/applications/{application}:
     parameters:
       - name: application
@@ -138,4 +138,4 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"

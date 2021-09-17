@@ -1,0 +1,42 @@
+components:
+  parameters:
+    pageNumber:
+      name: pageNumber
+      in: query
+    pageSize:
+      name: pageSize
+      in: query
+
+  schemas:
+    PageParams:
+      type: object
+      properties:
+        current:
+          type: number
+        pageSize:
+          type: number
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+
+    resourceType:
+      type: string
+      enum:
+        - group
+        - application
+        - applicationInstance
+
+    Date:
+      type: string
+      format: date
+      pattern: full-date

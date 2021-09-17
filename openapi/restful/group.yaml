@@ -28,7 +28,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
   /api/v1/groups:
     post:
       tags:
@@ -49,7 +49,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
   /api/v1/groups/{groupId}:
     parameters:
@@ -72,7 +72,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
     put:
       tags:
         - group
@@ -96,7 +96,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
     delete:
       tags:
         - group
@@ -110,7 +110,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
   /api/v1/groups/{groupId}/subgroups:
     parameters:
@@ -135,7 +135,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
   /api/v1/groups/{groupId}/applications:
     parameters:
@@ -159,7 +159,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
 components:
   schemas:
@@ -197,9 +197,9 @@ components:
         visibilityLevel:
           $ref: '#/components/schemas/VisibilityLevel'
         createdAt:
-          $ref: "../core.yaml#/components/schemas/Date"
+          $ref: "common.yaml#/components/schemas/Date"
         updatedAt:
-          $ref: "../core.yaml#/components/schemas/Date"
+          $ref: "common.yaml#/components/schemas/Date"
 
     GroupId:
       type: integer

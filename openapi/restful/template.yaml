@@ -30,7 +30,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
   /apis/core/v1/templates/{templateName}/releases:
     parameters:
@@ -63,7 +63,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
   /apis/core/v1/templates/{templateName}/releases/{releaseName}/input.schema.json:
     parameters:
@@ -236,7 +236,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
   
 
 components:
