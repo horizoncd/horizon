@@ -26,7 +26,8 @@ CREATE TABLE `user` (
     `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` datetime DEFAULT NULL,
     PRIMARY KEY (`id`),
-    KEY `idx_deleted_at` (`deleted_at`)
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_name`(`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
 
 -- gitlab table
@@ -38,8 +39,8 @@ CREATE TABLE `gitlab` (
     `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` datetime DEFAULT NULL,
-    `created_by` int(11) NOT NULL DEFAULT 0 COMMENT 'creator user id',
-    `updated_by` int(11) NOT NULL DEFAULT 0 COMMENT 'updater user id',
+    `created_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -49,15 +50,15 @@ CREATE TABLE `gitlab` (
 CREATE TABLE `template` (
     `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
     `name` varchar(64) NOT NULL DEFAULT '' COMMENT 'the name of template',
-    `gitlab_id` int(11) NOT NULL COMMENT 'the id of gitlab',
+    `gitlab_name` int(11) NOT NULL COMMENT 'the name of gitlab',
     `gitlab_project` varchar(256) NOT NULL COMMENT 'project ID or relative path in gitlab',
     `release` varchar(64) NOT NULL COMMENT 'template release',
     `description` varchar(256) NOT NULL COMMENT 'description about this template release',
     `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` datetime DEFAULT NULL,
-    `created_by` int(11) NOT NULL DEFAULT 0 COMMENT 'creator user id',
-    `updated_by` int(11) NOT NULL DEFAULT 0 COMMENT 'updater user id',
+    `created_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name_version` (`name`, `version`)
@@ -72,8 +73,8 @@ CREATE TABLE `resource_enum` (
    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
    `deleted_at` datetime DEFAULT NULL,
-   `created_by` int(11) NOT NULL DEFAULT 0 COMMENT 'creator user id',
-   `updated_by` int(11) NOT NULL DEFAULT 0 COMMENT 'updater user id',
+   `created_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'creator',
+   `updated_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'updater',
    PRIMARY KEY (`id`),
    KEY `idx_deleted_at` (`deleted_at`),
    UNIQUE KEY `idx_name` (`name`)
@@ -94,8 +95,8 @@ CREATE TABLE `application` (
     `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` datetime DEFAULT NULL,
-    `created_by` int(11) NOT NULL DEFAULT 0 COMMENT 'creator user id',
-    `updated_by` int(11) NOT NULL DEFAULT 0 COMMENT 'updater user id',
+    `created_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
