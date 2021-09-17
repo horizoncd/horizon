@@ -19,15 +19,14 @@ paths:
               example: |
                 {
                   "groupID": 1000,
-                  "//name": "name is unique in the whole system, ",
+                  "//name": "name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
                   "name": "app",
-                  "//description": "asdfasdfsdf",
                   "description": "xxxxxxxxxxxx",
                   "template": {
                     "name": "javaapp",
                     "release": "v1.1.0"
                   },
-                  "gitRepo": {
+                  "git": {
                     "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
                     "subfolder": "/"
                   },
@@ -95,7 +94,7 @@ paths:
                     "name": "javaapp",
                     "release": "v1.1.0"
                   },
-                  "gitRepo": {
+                  "git": {
                     "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
                     "subfolder": "/"
                   },
