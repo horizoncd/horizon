@@ -20,7 +20,6 @@ var (
 	db  = orm.DefaultMySQLDBForUnitTest()
 	ctx = orm.NewContext(context.TODO(), db)
 
-	group1Id   = uint(1)
 	group1Path = "/a"
 
 	notExistID   = uint(100)
@@ -66,7 +65,6 @@ func TestCreate(t *testing.T) {
 	// normal create
 	id, err := Mgr.Create(ctx, getGroup1())
 	assert.Nil(t, err)
-	assert.Equal(t, id, group1Id)
 
 	// name conflict, parentId: nil
 	_, err = Mgr.Create(ctx, getGroup1())
@@ -84,7 +82,8 @@ func TestCreate(t *testing.T) {
 	assert.Equal(t, common.ErrNameConflict, err)
 
 	// drop table
-	db.Where("1 = 1").Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
 }
 
 func TestDelete(t *testing.T) {
@@ -103,7 +102,8 @@ func TestDelete(t *testing.T) {
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// drop table
-	db.Where("1 = 1").Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
 }
 
 func TestGet(t *testing.T) {
@@ -120,7 +120,8 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// drop table
-	db.Where("1 = 1").Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
 }
 
 func TestGetByPath(t *testing.T) {
@@ -137,7 +138,8 @@ func TestGetByPath(t *testing.T) {
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// drop table
-	db.Where("1 = 1").Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
 }
 
 func TestUpdate(t *testing.T) {
@@ -158,7 +160,8 @@ func TestUpdate(t *testing.T) {
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// drop table
-	db.Where("1 = 1").Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
 }
 
 func TestList(t *testing.T) {
@@ -201,5 +204,6 @@ func TestList(t *testing.T) {
 	assert.Equal(t, group3Id, items[1].ID)
 
 	// drop table
-	db.Where("1 = 1").Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
 }
