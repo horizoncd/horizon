@@ -24,7 +24,11 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Template'
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: the template name
         default:
           description: Unexpected error
           content:
@@ -241,22 +245,6 @@ paths:
 
 components:
   schemas:
-    Template:
-      type: object
-      properties:
-        name:
-          $ref: '#/components/schemas/TemplateName'
-        description:
-          $ref: '#/components/schemas/TemplateDescription'
-
-    TemplateName:
-      type: string
-      description: the template name
-
-    TemplateDescription:
-      type: string
-      description: the template description
-
     TemplateRelease:
       type: object
       properties:

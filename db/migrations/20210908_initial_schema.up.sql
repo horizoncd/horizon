@@ -50,10 +50,10 @@ CREATE TABLE `gitlab` (
 CREATE TABLE `template` (
     `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
     `name` varchar(64) NOT NULL DEFAULT '' COMMENT 'the name of template',
-    `gitlab_name` int(11) NOT NULL COMMENT 'the name of gitlab',
-    `gitlab_project` varchar(256) NOT NULL COMMENT 'project ID or relative path in gitlab',
     `release` varchar(64) NOT NULL COMMENT 'template release',
     `description` varchar(256) NOT NULL COMMENT 'description about this template release',
+    `gitlab_name` int(11) NOT NULL COMMENT 'the name of gitlab',
+    `gitlab_project` varchar(256) NOT NULL COMMENT 'project ID or relative path in gitlab',
     `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` datetime DEFAULT NULL,

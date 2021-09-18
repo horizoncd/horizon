@@ -28,9 +28,9 @@ paths:
                   },
                   "git": {
                     "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
-                    "subfolder": "/"
+                    "subfolder": "/",
+                    "branch": "develop"
                   },
-                  "resource": "x-small",
                   "templateInput": {
                     "app": {
                       "params": {
@@ -40,21 +40,36 @@ paths:
                         "mainClassName": "com.netease.horizon.WebApplication",
                         "jvmExtra": "-Dserver.port=8080"
                       },
+                      "resource": "x-small",
                       "health": {
                         "lifecycle": {
                           "online": {
-                            "url": "/online"
+                            "url": "/online",
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "retry": 20
                           },
                           "offline": {
-                            "url": "/offline"
+                            "url": "/offline",
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "retry": 20
                           }
                         },
                         "probe": {
                           "check": {
-                            "url": "/check"
+                            "url": "/check",
+                            "initialDelaySeconds": 200,
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "failureThreshold": 3
                           },
                           "status": {
-                            "url": "/status"
+                            "url": "/status",
+                            "initialDelaySeconds": 200,
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "failureThreshold": 3
                           }
                         },
                         "port": 8080
@@ -96,9 +111,9 @@ paths:
                   },
                   "git": {
                     "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
-                    "subfolder": "/"
+                    "subfolder": "/",
+                    "branch": "develop"
                   },
-                  "resource": "x-small",
                   "templateInput": {
                     "app": {
                       "params": {
@@ -108,21 +123,36 @@ paths:
                         "mainClassName": "com.netease.horizon.WebApplication",
                         "jvmExtra": "-Dserver.port=8080"
                       },
+                      "resource": "x-small",
                       "health": {
                         "lifecycle": {
                           "online": {
-                            "url": "/online"
+                            "url": "/online",
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "retry": 20
                           },
                           "offline": {
-                            "url": "/offline"
+                            "url": "/offline",
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "retry": 20
                           }
                         },
                         "probe": {
                           "check": {
-                            "url": "/check"
+                            "url": "/check",
+                            "initialDelaySeconds": 200,
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "failureThreshold": 3
                           },
                           "status": {
-                            "url": "/status"
+                            "url": "/status",
+                            "initialDelaySeconds": 200,
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "failureThreshold": 3
                           }
                         },
                         "port": 8080
@@ -139,3 +169,74 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+      - application
+      operationId: getApplication
+      summary: get a application
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "groupID": 1000,
+                    "name": "app",
+                    "description": "xxxxxxxxxxxx",
+                    "template": {
+                      "name": "javaapp",
+                      "release": "v1.1.0"
+                    },
+                    "git": {
+                      "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                      "subfolder": "/",
+                      "branch": "develop"
+                    },
+                    "templateInput": {
+                      "app": {
+                        "params": {
+                          "xmx": "512",
+                          "xms": "512",
+                          "maxPerm": "128",
+                          "mainClassName": "com.netease.horizon.WebApplication",
+                          "jvmExtra": "-Dserver.port=8080"
+                        },
+                        "resource": "x-small",
+                        "health": {
+                          "lifecycle": {
+                            "online": {
+                              "url": "/online",
+                              "timeoutSeconds": 3,
+                              "periodSeconds": 15,
+                              "retry": 20
+                            },
+                            "offline": {
+                              "url": "/offline",
+                              "timeoutSeconds": 3,
+                              "periodSeconds": 15,
+                              "retry": 20
+                            }
+                          },
+                          "probe": {
+                            "check": {
+                              "url": "/check",
+                              "initialDelaySeconds": 200,
+                              "timeoutSeconds": 3,
+                              "periodSeconds": 15,
+                              "failureThreshold": 3
+                            },
+                            "status": {
+                              "url": "/status",
+                              "initialDelaySeconds": 200,
+                              "timeoutSeconds": 3,
+                              "periodSeconds": 15,
+                              "failureThreshold": 3
+                            }
+                          },
+                          "port": 8080
+                        }
+                      }
+                    }
+                  }
