@@ -191,15 +191,6 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		return
 	}
 
-	// filter is too short will be ignore
-	// if len(filter) < 3 {
-	// 	response.SuccessWithData(c, response.DataWithTotal{
-	// 		Total: 0,
-	// 		Items: []*models.Group{},
-	// 	})
-	// 	return
-	// }
-
 	queryGroups, err := controller.groupManager.GetByNameFuzzily(c, filter)
 	if err != nil {
 		response.AbortWithInternalError(c, SearchGroupsError,
@@ -222,30 +213,35 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 			fmt.Sprintf("search groups failed: %v", err))
 		return
 	}
+
 	// organize struct of search result
 	parentIDToGroupsMap := make(map[int][]*Child)
-	var rootGroupsDetails []*Child
-	var groupsDetails []*Child
+	// group in the first level, must return in search
+	firstLevelGroupsDetails := make([]*Child, 0)
 	for _, g := range regexpQueryGroups {
 		detail := ConvertGroupToGroupDetail(g)
+		// current only query group table
 		detail.Type = Group
-		groupsDetails = append(groupsDetails, detail)
-		parentID := g.ParentID
-		if parentID == -1 {
-			rootGroupsDetails = append(rootGroupsDetails, detail)
+		// group in the first level
+		if g.ParentID == -1 {
+			firstLevelGroupsDetails = append(firstLevelGroupsDetails, detail)
 		}
-		parentIDToGroupsMap[parentID] = append(parentIDToGroupsMap[parentID], detail)
-	}
-	for _, gt := range groupsDetails {
-		if v, ok := parentIDToGroupsMap[int(gt.ID)]; ok {
-			gt.Children = v
-			gt.ChildrenCount = len(v)
+
+		parentID := g.ParentID
+		// name match or children's names match
+		if strings.Contains(g.Name, filter) || len(parentIDToGroupsMap[int(g.ID)]) > 0 {
+			parentIDToGroupsMap[parentID] = append(parentIDToGroupsMap[parentID], detail)
+		}
+
+		if v, ok := parentIDToGroupsMap[int(detail.ID)]; ok {
+			detail.ChildrenCount = len(v)
+			detail.Children = v
 		}
 	}
 
 	response.SuccessWithData(c, response.DataWithTotal{
-		Total: int64(len(rootGroupsDetails)),
-		Items: rootGroupsDetails,
+		Total: int64(len(firstLevelGroupsDetails)),
+		Items: firstLevelGroupsDetails,
 	})
 }
 

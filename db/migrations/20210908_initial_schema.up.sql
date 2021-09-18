@@ -10,7 +10,9 @@ CREATE TABLE `group` (
      `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
      `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
      `deleted_at` datetime DEFAULT NULL,
-     PRIMARY KEY (`id`)
+     PRIMARY KEY (`id`),
+     UNIQUE KEY `idx_full_name` (`full_name`),
+     UNIQUE KEY `idx_path` (`path`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
 
 -- user table
