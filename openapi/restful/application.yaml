@@ -1,0 +1,242 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Application-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/applications:
+    post:
+      tags:
+        - application
+      operationId: createApplication
+      summary: create a application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                  "groupID": 1000,
+                  "//name": "name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
+                  "name": "app",
+                  "description": "xxxxxxxxxxxx",
+                  "template": {
+                    "name": "javaapp",
+                    "release": "v1.1.0"
+                  },
+                  "git": {
+                    "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                    "subfolder": "/",
+                    "branch": "develop"
+                  },
+                  "templateInput": {
+                    "app": {
+                      "params": {
+                        "xmx": "512",
+                        "xms": "512",
+                        "maxPerm": "128",
+                        "mainClassName": "com.netease.horizon.WebApplication",
+                        "jvmExtra": "-Dserver.port=8080"
+                      },
+                      "resource": "x-small",
+                      "health": {
+                        "lifecycle": {
+                          "online": {
+                            "url": "/online",
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "retry": 20
+                          },
+                          "offline": {
+                            "url": "/offline",
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "retry": 20
+                          }
+                        },
+                        "probe": {
+                          "check": {
+                            "url": "/check",
+                            "initialDelaySeconds": 200,
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "failureThreshold": 3
+                          },
+                          "status": {
+                            "url": "/status",
+                            "initialDelaySeconds": 200,
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "failureThreshold": 3
+                          }
+                        },
+                        "port": 8080
+                      }
+                    }
+                  }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/applications/{application}:
+    parameters:
+      - name: application
+        in: path
+        description: name of application
+        required: true
+    put:
+      tags:
+        - application
+      operationId: updateApplication
+      summary: update a application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                  "description": "xxxxxxxxxxxx",
+                  "template": {
+                    "name": "javaapp",
+                    "release": "v1.1.0"
+                  },
+                  "git": {
+                    "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                    "subfolder": "/",
+                    "branch": "develop"
+                  },
+                  "templateInput": {
+                    "app": {
+                      "params": {
+                        "xmx": "512",
+                        "xms": "512",
+                        "maxPerm": "128",
+                        "mainClassName": "com.netease.horizon.WebApplication",
+                        "jvmExtra": "-Dserver.port=8080"
+                      },
+                      "resource": "x-small",
+                      "health": {
+                        "lifecycle": {
+                          "online": {
+                            "url": "/online",
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "retry": 20
+                          },
+                          "offline": {
+                            "url": "/offline",
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "retry": 20
+                          }
+                        },
+                        "probe": {
+                          "check": {
+                            "url": "/check",
+                            "initialDelaySeconds": 200,
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "failureThreshold": 3
+                          },
+                          "status": {
+                            "url": "/status",
+                            "initialDelaySeconds": 200,
+                            "timeoutSeconds": 3,
+                            "periodSeconds": 15,
+                            "failureThreshold": 3
+                          }
+                        },
+                        "port": 8080
+                      }
+                    }
+                  }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+      - application
+      operationId: getApplication
+      summary: get a application
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "groupID": 1000,
+                    "name": "app",
+                    "description": "xxxxxxxxxxxx",
+                    "template": {
+                      "name": "javaapp",
+                      "release": "v1.1.0"
+                    },
+                    "git": {
+                      "url": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                      "subfolder": "/",
+                      "branch": "develop"
+                    },
+                    "templateInput": {
+                      "app": {
+                        "params": {
+                          "xmx": "512",
+                          "xms": "512",
+                          "maxPerm": "128",
+                          "mainClassName": "com.netease.horizon.WebApplication",
+                          "jvmExtra": "-Dserver.port=8080"
+                        },
+                        "resource": "x-small",
+                        "health": {
+                          "lifecycle": {
+                            "online": {
+                              "url": "/online",
+                              "timeoutSeconds": 3,
+                              "periodSeconds": 15,
+                              "retry": 20
+                            },
+                            "offline": {
+                              "url": "/offline",
+                              "timeoutSeconds": 3,
+                              "periodSeconds": 15,
+                              "retry": 20
+                            }
+                          },
+                          "probe": {
+                            "check": {
+                              "url": "/check",
+                              "initialDelaySeconds": 200,
+                              "timeoutSeconds": 3,
+                              "periodSeconds": 15,
+                              "failureThreshold": 3
+                            },
+                            "status": {
+                              "url": "/status",
+                              "initialDelaySeconds": 200,
+                              "timeoutSeconds": 3,
+                              "periodSeconds": 15,
+                              "failureThreshold": 3
+                            }
+                          },
+                          "port": 8080
+                        }
+                      }
+                    }
+                  }
