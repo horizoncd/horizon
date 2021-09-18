@@ -61,23 +61,7 @@ CREATE TABLE `template` (
     `updated_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name_version` (`name`, `version`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
-
--- resource_enum table
-CREATE TABLE `resource_enum` (
-   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-   `name` varchar(64) NOT NULL DEFAULT '' COMMENT 'resource name',
-   `cpu` int(11) NOT NULL DEFAULT 100 COMMENT 'cpu core, the unit is millicores',
-   `memory` int(11) NOT NULL DEFAULT 128 COMMENT 'memory size, the unit is MiB',
-   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-   `deleted_at` datetime DEFAULT NULL,
-   `created_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'creator',
-   `updated_by` varchar(64) NOT NULL DEFAULT '' COMMENT 'updater',
-   PRIMARY KEY (`id`),
-   KEY `idx_deleted_at` (`deleted_at`),
-   UNIQUE KEY `idx_name` (`name`)
+    UNIQUE KEY `idx_name_release` (`name`, `release`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
 
 -- application table
@@ -89,9 +73,9 @@ CREATE TABLE `application` (
     `priority` varchar(16) NOT NULL DEFAULT 'P3' COMMENT 'the priority of application',
     `git_url` varchar(128) DEFAULT NULL COMMENT 'git repo url',
     `git_subfolder` varchar(128) DEFAULT NULL COMMENT 'git repo subfolder',
+    `git_branch` varchar(128) DEFAULT NULL COMMENT 'git default branch',
     `template` varchar(64) NOT NULL COMMENT 'template name',
     `template_release` varchar(64) NOT NULL COMMENT 'template release',
-    `resource_enum_id` int(11) unsigned NOT NULL COMMENT 'resource_enum id',
     `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` datetime DEFAULT NULL,
