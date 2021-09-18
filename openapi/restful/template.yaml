@@ -32,9 +32,9 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/templates/{templateName}/releases:
+  /apis/core/v1/templates/{template}/releases:
     parameters:
-    - name: templateName
+    - name: template
       in: path
       description: name of template
       required: true
@@ -65,15 +65,15 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/templates/{templateName}/releases/{releaseName}/input.schema.json:
+  /apis/core/v1/templates/{template}/releases/{release}/input.schema.json:
     parameters:
-    - name: templateName
+    - name: template
       in: path
       description: name of template
       required: true
-    - name: releaseName
+    - name: release
       in: path
-      description: releaseName of template
+      description: release name of template
       required: true
     get:
       tags:
