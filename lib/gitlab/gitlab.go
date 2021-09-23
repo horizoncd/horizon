@@ -3,8 +3,8 @@ package gitlab
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"net/http"
+	"strings"
 
 	"g.hz.netease.com/horizon/util/errors"
 	"g.hz.netease.com/horizon/util/log"
@@ -329,7 +329,6 @@ func parseError(op errors.Op, resp *gitlab.Response, err error) error {
 	if resp == nil {
 		return errors.E(op, err)
 	}
-	b, _ := json.Marshal(resp)
-	log.Errorf(context.TODO(), "resp: %v", string(b))
-	return errors.E(op, resp.StatusCode, err)
+	return errors.E(op, resp.StatusCode,
+		errors.ErrorCode(strings.ReplaceAll(http.StatusText(resp.StatusCode), " ", "")), err)
 }

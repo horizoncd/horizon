@@ -2,9 +2,8 @@ package template
 
 import (
 	"encoding/json"
-	"fmt"
 
-	"g.hz.netease.com/horizon/controller/gitlab"
+	templatectl "g.hz.netease.com/horizon/controller/template"
 	"g.hz.netease.com/horizon/pkg/template"
 	"g.hz.netease.com/horizon/pkg/templaterelease"
 	"g.hz.netease.com/horizon/server/response"
@@ -15,21 +14,19 @@ const (
 	// param
 	templateParam = "template"
 	releaseParam  = "release"
-	// error code
-	releaseNotFound = "ReleaseNotFound"
 )
 
 type API struct {
 	templateMgr        template.Manager
 	templateReleaseMgr templaterelease.Manager
-	gitlabCtl          gitlab.Controller
+	templateCtl        templatectl.Controller
 }
 
 func NewAPI() *API {
 	return &API{
 		templateMgr:        template.Mgr,
 		templateReleaseMgr: templaterelease.Mgr,
-		gitlabCtl:          gitlab.Ctl,
+		templateCtl:        templatectl.Ctl,
 	}
 }
 
@@ -52,33 +49,16 @@ func (a *API) ListTemplateRelease(c *gin.Context) {
 	response.SuccessWithData(c, toReleases(templates))
 }
 
-const (
-	schemaPath = "schema/input.schema.json"
-)
-
 func (a *API) GetTemplateSchema(c *gin.Context) {
 	t := c.Param(templateParam)
 	r := c.Param(releaseParam)
-	tr, err := a.templateReleaseMgr.GetByTemplateNameAndRelease(c, t, r)
+	// get template schema by templateName and releaseName
+	b, err := a.templateCtl.GetTemplateSchema(c, t, r)
 	if err != nil {
-		response.AbortWithInternalError(c, err.Error())
+		response.AbortWithError(c, err)
 		return
 	}
-	if tr == nil {
-		response.AbortWithNotFoundError(c, releaseNotFound,
-			fmt.Sprintf("the release %v of template %v is not found", r, t))
-		return
-	}
-	gitlabLib, err := a.gitlabCtl.GetByName(c, tr.GitlabName)
-	if err != nil {
-		response.AbortWithInternalError(c, err.Error())
-		return
-	}
-	b, err := gitlabLib.GetFile(c, tr.GitlabProject, tr.Name, schemaPath)
-	if err != nil {
-		response.AbortWithInternalError(c, err.Error())
-		return
-	}
+	// convert template json schema to map[string]interface{}
 	var jsonSchema map[string]interface{}
 	if err := json.Unmarshal(b, &jsonSchema); err != nil {
 		response.AbortWithInternalError(c, err.Error())

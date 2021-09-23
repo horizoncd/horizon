@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/template/models"
 )
@@ -36,7 +37,7 @@ func (d dao) List(ctx context.Context) ([]models.Template, error) {
 	}
 
 	var templates []models.Template
-	result := db.Raw("select * from template").Scan(&templates)
+	result := db.Raw(common.TemplateQuery).Scan(&templates)
 	if result.Error != nil {
 		return nil, result.Error
 	}

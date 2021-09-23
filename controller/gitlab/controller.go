@@ -8,6 +8,7 @@ import (
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/gitlab"
 	"g.hz.netease.com/horizon/util/errors"
+	"g.hz.netease.com/horizon/util/wlog"
 )
 
 var (
@@ -35,8 +36,10 @@ func NewController() Controller {
 	}
 }
 
-func (g *controller) GetByName(ctx context.Context, name string) (gitlablib.Interface, error) {
+func (g *controller) GetByName(ctx context.Context, name string) (_ gitlablib.Interface, err error) {
 	const op = "gitlab controller: get gitlab instance by name"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
 	var ret interface{}
 	var ok bool
 	// get from cache first
