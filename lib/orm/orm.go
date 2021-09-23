@@ -3,9 +3,12 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/config/db"
+	"gopkg.in/yaml.v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -21,6 +24,38 @@ type MySQL struct {
 	Password          string `json:"password,omitempty"`
 	Database          string `json:"database"`
 	PrometheusEnabled bool   `json:"prometheusEnabled"`
+}
+
+type config struct {
+	DBConfig db.Config `yaml:"dbConfig"`
+}
+
+const configPath = "../../config.yaml"
+
+func DefaultMySQLDBForUnitTest() *gorm.DB {
+	var config config
+	data, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		panic(err)
+	}
+
+	if err = yaml.Unmarshal(data, &config); err != nil {
+		panic(err)
+	}
+
+	// init db
+	mySQLDB, err := NewMySQLDBForUnitTests(&MySQL{
+		Host:     config.DBConfig.Host,
+		Port:     config.DBConfig.Port,
+		Username: config.DBConfig.Username,
+		Password: config.DBConfig.Password,
+		Database: config.DBConfig.Database,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return mySQLDB
 }
 
 func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
@@ -55,6 +90,32 @@ func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
 			return nil, err
 		}
 	}
+
+	return orm, err
+}
+
+func NewMySQLDBForUnitTests(db *MySQL) (*gorm.DB, error) {
+	conn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", db.Username,
+		db.Password, db.Host, db.Port, db.Database)
+
+	sqlDB, err := sql.Open("mysql", conn)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetConnMaxIdleTime(time.Hour)
+
+	orm, err := gorm.Open(mysql.New(mysql.Config{
+		Conn: sqlDB,
+	}), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,
+			TablePrefix:   "unit_test_",
+		},
+	})
 
 	return orm, err
 }

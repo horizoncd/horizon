@@ -48,6 +48,7 @@ func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) 
 		group.Path = pgroup.Path + "/" + group.Path
 	} else {
 		// root group
+		group.ParentID = -1
 		group.FullName = group.Name
 		group.Path = "/" + group.Path
 	}
