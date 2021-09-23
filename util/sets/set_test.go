@@ -79,7 +79,6 @@ func TestStringSetDeleteMultiples(t *testing.T) {
 	if !s.Has("b") {
 		t.Errorf("Missing contents: %#v", s)
 	}
-
 }
 
 func TestNewStringSet(t *testing.T) {
@@ -264,7 +263,8 @@ func TestStringIntersection(t *testing.T) {
 		}
 
 		if !intersection.Equal(test.expected) {
-			t.Errorf("Expected intersection.Equal(expected) but not true.  intersection:%v expected:%v", intersection.List(), test.expected.List())
+			t.Errorf("Expected intersection.Equal(expected) but not true.  intersection:%v expected:%v",
+				intersection.List(), test.expected.List())
 		}
 	}
 }

@@ -21,11 +21,10 @@ func RequestInfoMiddleWare(matchers ...middleware.Matcher) gin.HandlerFunc {
 		if err != nil {
 			response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
 			return
-		} else {
-			// attach request info to context
-			c.Set(contextRequestInfoKey, requestInfo)
-			c.Next()
 		}
+		// attach request info to context
+		c.Set(contextRequestInfoKey, requestInfo)
+		c.Next()
 	}, matchers...)
 }
 
