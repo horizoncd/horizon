@@ -8,7 +8,6 @@ import (
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/gitlab"
 	"g.hz.netease.com/horizon/util/errors"
-	"g.hz.netease.com/horizon/util/log"
 )
 
 var (
@@ -22,7 +21,7 @@ type Controller interface {
 }
 
 type controller struct {
-	// use sync.Map for cache
+	// m use sync.Map for cache
 	m *sync.Map
 	// gitlabMgr to query gitlab db
 	gitlabMgr gitlab.Manager
@@ -53,7 +52,6 @@ func (g *controller) GetByName(ctx context.Context, name string) (gitlablib.Inte
 	if gitlabModel == nil {
 		// not in db
 		errMsg := fmt.Sprintf("the gitlab instance for name: %s is not found. ", name)
-		log.Error(ctx, errMsg)
 		return nil, errors.E(op, errMsg)
 	}
 
