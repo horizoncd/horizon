@@ -8,10 +8,10 @@ import (
 	"regexp"
 
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
+	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
 	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
@@ -64,13 +64,14 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	// init controller
-	var controller = group.NewController()
+	var (
+		// init API
+		groupCt     = group.NewController()
+		templateAPI = template.NewAPI()
+	)
 
 	// init server
-	log.Printf("Server started")
 	r := gin.New()
-
 	// use middleware
 	r.Use(
 		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
@@ -78,9 +79,9 @@ func Run(flags *Flags) {
 		requestid.Middleware(),        // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(),        // log middleware, attach a logger to context
 		ormmiddle.Middleware(mySQLDB), // orm db middleware, attach a db to context
-		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+		// user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
+		// 	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
+		// 	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
@@ -91,7 +92,9 @@ func Run(flags *Flags) {
 	// register routes
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
-	group.RegisterRoutes(r, controller)
+	group.RegisterRoutes(r, groupCt)
+	template.RegisterRoutes(r, templateAPI)
 
+	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
 }

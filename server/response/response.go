@@ -3,6 +3,7 @@ package response
 import (
 	"net/http"
 
+	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"g.hz.netease.com/horizon/util/log"
 	"github.com/gin-gonic/gin"
@@ -56,8 +57,8 @@ func AbortWithRequestError(c *gin.Context, errorCode, errorMessage string) {
 	Abort(c, http.StatusBadRequest, errorCode, errorMessage)
 }
 
-func AbortWithInternalError(c *gin.Context, errorCode, message string) {
-	Abort(c, http.StatusInternalServerError, errorCode, message)
+func AbortWithInternalError(c *gin.Context, message string) {
+	Abort(c, http.StatusInternalServerError, common.InternalError, message)
 }
 
 func AbortWithNotFoundError(c *gin.Context, errorCode, message string) {

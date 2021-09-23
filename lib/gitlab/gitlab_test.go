@@ -45,7 +45,7 @@ go test -v ./lib/gitlab/
 
 var (
 	ctx = context.Background()
-	g   Gitlab
+	g   Interface
 
 	rootGroupName string
 	rootGroupID   int
