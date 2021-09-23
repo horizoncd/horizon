@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
-
 )
 
 func TestRequestInfo(t *testing.T) {
