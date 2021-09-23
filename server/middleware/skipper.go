@@ -22,3 +22,20 @@ func MethodAndPathSkipper(method string, re *regexp.Regexp) func(r *http.Request
 		return false
 	}
 }
+
+// Matcher defines a function to allow middleware.
+// Returning true allow processing the middleware.
+type Matcher func(r *http.Request) bool
+
+// MethodAndPathMatcher returns  matcher which
+// will allow the middleware when r.Method equals the method and r.URL.Path matches the re
+// when method is "*" it equals all http method
+func MethodAndPathMatcher(method string, re *regexp.Regexp) func(r *http.Request) bool {
+	return func(r *http.Request) bool {
+		path := path.Clean(r.URL.EscapedPath())
+		if (method == "*" || r.Method == method) && re.MatchString(path) {
+			return true
+		}
+		return false
+	}
+}

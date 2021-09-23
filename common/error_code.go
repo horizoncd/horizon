@@ -8,4 +8,6 @@ const (
 	FindUserError = "FindUserError"
 	// CreateUserError error to create user
 	CreateUserError = "CreateUserError"
+	// RequestInfoError error to format the request
+	RequestInfoError = "RequestInfoError"
 )

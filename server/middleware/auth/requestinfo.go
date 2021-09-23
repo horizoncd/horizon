@@ -1,15 +1,37 @@
 package auth
 
 import (
+	"g.hz.netease.com/horizon/common"
+	"g.hz.netease.com/horizon/server/middleware"
+	"g.hz.netease.com/horizon/server/response"
 	"g.hz.netease.com/horizon/util/sets"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
 )
 
+const contextRequestInfoKey = "contextRequestInfo"
+
+func RequestInfoMiddleWare(matchers ...middleware.Matcher) gin.HandlerFunc {
+	return middleware.NewMatcher(func(c *gin.Context) {
+		requestInfoFactory := RequestInfoFactory{
+			APIPrefixes: sets.NewString("apis"),
+		}
+		requestInfo, err := requestInfoFactory.NewRequestInfo(c.Request)
+		if err != nil {
+			response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
+			return
+		} else {
+			// attach request info to context
+			c.Set(contextRequestInfoKey, requestInfo)
+			c.Next()
+		}
+	}, matchers...)
+}
+
 type RequestInfoResolver interface {
 	NewRequestInfo(req *http.Request) (*RequestInfo, error)
 }
-
 
 type RequestInfo struct {
 	// IsResourceRequest indicates whether or not the request is
@@ -17,7 +39,7 @@ type RequestInfo struct {
 	IsResourceRequest bool
 
 	// Path is the URL path of the request
-	Path  			  string
+	Path string
 
 	// Verb is the verb associated with the request for API requests.
 	// ot the http verb.  This includes things like list and watch.
@@ -30,13 +52,13 @@ type RequestInfo struct {
 
 	// Resource is the name of the resource being requested.
 	// This is not the kind.  For example: pods
-	Resource  string
-	Name      string
+	Resource string
+	Name     string
 
 	// Subresource is the name of the subresource being requested.
-	Scope string
+	Scope       string
 	Subresource string
-	Parts []string
+	Parts       []string
 }
 
 type RequestInfoFactory struct {
@@ -45,11 +67,11 @@ type RequestInfoFactory struct {
 
 func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, error) {
 
-	requestInfo :=  RequestInfo{
+	requestInfo := RequestInfo{
 		IsResourceRequest: false,
-		Path: 		req.URL.Path,
-		Verb:       strings.ToLower(req.Method),
-		Scope:      req.URL.Query().Get("scope"),
+		Path:              req.URL.Path,
+		Verb:              strings.ToLower(req.Method),
+		Scope:             req.URL.Query().Get("scope"),
 	}
 
 	currentParts := splitPath(req.URL.Path)
@@ -110,7 +132,7 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 	// get the scope from the query
 	requestInfo.Scope = req.URL.Query().Get("scope")
 
-	return  &requestInfo, nil
+	return &requestInfo, nil
 }
 
 // splitPath returns the segments for a URL path.

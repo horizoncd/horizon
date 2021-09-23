@@ -3,6 +3,7 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"g.hz.netease.com/horizon/server/middleware/auth"
 	"io/ioutil"
 	"log"
 	"regexp"
@@ -78,6 +79,7 @@ func Run(flags *Flags) {
 		requestid.Middleware(),        // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(),        // log middleware, attach a logger to context
 		ormmiddle.Middleware(mySQLDB), // orm db middleware, attach a db to context
+		auth.RequestInfoMiddleWare(middleware.MethodAndPathMatcher("*", regexp.MustCompile("^/apis/core/.*"))),
 		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
