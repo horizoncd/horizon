@@ -36,7 +36,7 @@ func (d dao) List(ctx context.Context) ([]models.Template, error) {
 	}
 
 	var templates []models.Template
-	result := db.Raw("SELECT * from template").Scan(&templates)
+	result := db.Raw("select * from template").Scan(&templates)
 	if result.Error != nil {
 		return nil, result.Error
 	}

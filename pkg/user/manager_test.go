@@ -46,6 +46,11 @@ func Test(t *testing.T) {
 	}
 	assert.Equal(t, name, u2.Name)
 	assert.Equal(t, email, u2.Email)
+
+	// user not exits
+	u3, err := Mgr.GetByOIDCMeta(ctx, "not-exist", "not-exist")
+	assert.Nil(t, err)
+	assert.Nil(t, u3)
 }
 
 func TestMain(m *testing.M) {

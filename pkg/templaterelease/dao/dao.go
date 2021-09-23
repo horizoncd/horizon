@@ -37,7 +37,7 @@ func (d dao) ListByTemplateName(ctx context.Context, templateName string) ([]mod
 	}
 
 	var trs []models.TemplateRelease
-	result := db.Raw("SELECT * from template_release where template_name = ?", templateName).Scan(&trs)
+	result := db.Raw("select * from template_release where template_name = ?", templateName).Scan(&trs)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -52,10 +52,13 @@ func (d dao) GetByTemplateNameAndRelease(ctx context.Context,
 	}
 
 	var tr models.TemplateRelease
-	result := db.Raw("SELECT * from template_release where template_name = ? and name = ?",
+	result := db.Raw("select * from template_release where template_name = ? and name = ?",
 		templateName, release).Scan(&tr)
 	if result.Error != nil {
 		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
 	}
 	return &tr, nil
 }

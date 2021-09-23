@@ -37,7 +37,7 @@ func (d *dao) List(ctx context.Context) ([]models.Gitlab, error) {
 	}
 
 	var gitlabs []models.Gitlab
-	result := db.Raw("SELECT * from gitlab").Scan(&gitlabs)
+	result := db.Raw("select * from gitlab").Scan(&gitlabs)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -51,9 +51,12 @@ func (d *dao) GetByName(ctx context.Context, name string) (*models.Gitlab, error
 	}
 
 	var gitlab models.Gitlab
-	result := db.Raw("SELECT * from gitlab where name = ?", name).Scan(&gitlab)
+	result := db.Raw("select * from gitlab where name = ?", name).Scan(&gitlab)
 	if result.Error != nil {
 		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
 	}
 	return &gitlab, nil
 }

@@ -54,6 +54,16 @@ func Test(t *testing.T) {
 	assert.Equal(t, name, templates[0].Name)
 	assert.Equal(t, description, templates[0].Description)
 	assert.Equal(t, 1, int(templates[0].ID))
+
+	template, err := Mgr.GetByTemplateNameAndRelease(ctx, templateName, name)
+	assert.Nil(t, err)
+	assert.NotNil(t, template)
+	assert.Equal(t, name, templateRelease.Name)
+
+	// template release not exists
+	template, err = Mgr.GetByTemplateNameAndRelease(ctx, templateName, "not-exist")
+	assert.Nil(t, err)
+	assert.Nil(t, template)
 }
 
 func TestMain(m *testing.M) {

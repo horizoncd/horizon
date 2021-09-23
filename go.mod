@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/alicebob/miniredis/v2 v2.15.1
 	github.com/gin-gonic/gin v1.7.3
+	github.com/golang/mock v1.6.0
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/prometheus/client_golang v1.11.0
 	github.com/satori/go.uuid v1.2.0

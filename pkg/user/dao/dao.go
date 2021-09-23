@@ -38,9 +38,12 @@ func (d *dao) GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*mode
 	}
 
 	var user models.User
-	result := db.Raw("SELECT * FROM user WHERE oidc_id = ? and oidc_type = ?", oidcID, oidcType).Scan(&user)
+	result := db.Raw("select * from user where oidc_id = ? and oidc_type = ?", oidcID, oidcType).Scan(&user)
 	if result.Error != nil {
 		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
 	}
 	return &user, nil
 }

@@ -2,6 +2,7 @@ package template
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"g.hz.netease.com/horizon/controller/gitlab"
 	"g.hz.netease.com/horizon/pkg/template"
@@ -11,8 +12,11 @@ import (
 )
 
 const (
+	// param
 	templateParam = "template"
 	releaseParam  = "release"
+	// error code
+	releaseNotFound = "ReleaseNotFound"
 )
 
 type API struct {
@@ -58,6 +62,11 @@ func (a *API) GetTemplateSchema(c *gin.Context) {
 	tr, err := a.templateReleaseMgr.GetByTemplateNameAndRelease(c, t, r)
 	if err != nil {
 		response.AbortWithInternalError(c, err.Error())
+		return
+	}
+	if tr == nil {
+		response.AbortWithNotFoundError(c, releaseNotFound,
+			fmt.Sprintf("the release %v of template %v is not found", r, t))
 		return
 	}
 	gitlabLib, err := a.gitlabCtl.GetByName(c, tr.GitlabName)
