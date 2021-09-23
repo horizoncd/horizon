@@ -49,6 +49,7 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 		IsResourceRequest: false,
 		Path: 		req.URL.Path,
 		Verb:       strings.ToLower(req.Method),
+		Scope:      req.URL.Query().Get("scope"),
 	}
 
 	currentParts := splitPath(req.URL.Path)
@@ -107,7 +108,7 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 
 	// TODO(tom): the subresource name
 	// get the scope from the query
-	requestInfo.Scope = req.URL.Query().Get("Scope")
+	requestInfo.Scope = req.URL.Query().Get("scope")
 
 	return  &requestInfo, nil
 }
