@@ -65,7 +65,6 @@ type RequestInfoFactory struct {
 }
 
 func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, error) {
-
 	requestInfo := RequestInfo{
 		IsResourceRequest: false,
 		Path:              req.URL.Path,
