@@ -1,12 +1,36 @@
 package group
 
-import "g.hz.netease.com/horizon/pkg/group/models"
+import (
+	"strings"
+
+	groupMgr "g.hz.netease.com/horizon/pkg/group"
+	"g.hz.netease.com/horizon/pkg/group/models"
+	"github.com/gin-gonic/gin"
+)
+
+func formatFullPathAndFullName(c *gin.Context, group *models.Group) (string, string, error) {
+	groups, err := groupMgr.Mgr.GetByTraversalIDs(c, group.TraversalIDs)
+	if err != nil {
+		return "", "", err
+	}
+	var fullPath, fullName string
+	paths := make([]string, len(groups))
+	names := make([]string, len(groups))
+	for i, model := range groups {
+		paths[i] = model.Path
+		names[i] = model.Name
+	}
+
+	fullPath = "/" + strings.Join(paths, "/")
+	fullName = strings.Join(names, " / ")
+
+	return fullPath, fullName, nil
+}
 
 func ConvertGroupToGroupDetail(group *models.Group) *Child {
 	return &Child{
 		ID:              group.ID,
 		Name:            group.Name,
-		FullName:        group.FullName,
 		Path:            group.Path,
 		VisibilityLevel: group.VisibilityLevel,
 		Description:     group.Description,

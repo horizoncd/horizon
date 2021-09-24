@@ -93,26 +93,64 @@ func (controller *Controller) GetGroup(c *gin.Context) {
 			fmt.Sprintf("get group failed: %v", err))
 		return
 	}
+
 	detail := ConvertGroupToGroupDetail(groupEntry)
+	fullPath, fullName, err := formatFullPathAndFullName(c, groupEntry)
+	if err != nil {
+		response.AbortWithInternalError(c, GetGroupError,
+			fmt.Sprintf("get group failed: %v", err))
+		return
+	}
+	detail.FullPath = fullPath
+	detail.FullName = fullName
+
 	response.SuccessWithData(c, detail)
 }
 
 func (controller *Controller) GetGroupByPath(c *gin.Context) {
 	path := c.Query(ParamPath)
 
-	groupEntry, err := controller.groupManager.GetByPath(c, path)
+	paths := strings.Split(c.Query(ParamPath)[1:], "/")
+	groups, err := controller.groupManager.GetByPaths(c, paths)
 	if err != nil {
 		response.AbortWithInternalError(c, GetGroupByPathError,
 			fmt.Sprintf("get group by path failed: %v", err))
 		return
 	}
-	if groupEntry == nil {
-		response.AbortWithNotFoundError(c, GetGroupByPathError,
-			fmt.Sprintf("get group by path failed: %v", err))
-		return
+
+	idToGroup := make(map[uint]*models.Group)
+	fullPathToGroup := make(map[string]*models.Group)
+	idToFullName := make(map[uint]string)
+	for _, m := range groups {
+		idToGroup[m.ID] = m
+		tIDs := strings.Split(m.TraversalIDs, ",")
+		_paths := make([]string, len(tIDs))
+		names := make([]string, len(tIDs))
+		for i, d := range tIDs {
+			ind, _ := strconv.Atoi(d)
+			if v, ok := idToGroup[uint(ind)]; !ok {
+				response.AbortWithInternalError(c, GetGroupByPathError, "get group by path failed")
+				return
+			} else {
+				_paths[i] = v.Path
+				names[i] = v.Name
+			}
+		}
+		fullPath := "/" + strings.Join(_paths, "/")
+		fullPathToGroup[fullPath] = m
+		fullName := strings.Join(names, " / ")
+		idToFullName[m.ID] = fullName
 	}
-	detail := ConvertGroupToGroupDetail(groupEntry)
-	response.SuccessWithData(c, detail)
+
+	// path pointing to a group
+	if groupEntity, ok := fullPathToGroup[path]; ok {
+		detail := ConvertGroupToGroupDetail(groupEntity)
+		detail.Type = Group
+		detail.FullPath = path
+		detail.FullName = idToFullName[groupEntity.ID]
+
+		response.SuccessWithData(c, detail)
+	}
 }
 
 // TODO(wurongjun) support transfer group
@@ -155,6 +193,25 @@ func (controller *Controller) GetChildren(c *gin.Context) {
 }
 
 func (controller *Controller) GetSubGroups(c *gin.Context) {
+	parentID := c.Param(ParamGroupID)
+	atoi, err := strconv.Atoi(parentID)
+	if err != nil {
+		response.AbortWithRequestError(c, GetSubGroupsError,
+			fmt.Sprintf("get subgroups failed: %v", err))
+		return
+	}
+	pGroup, err := controller.groupManager.Get(c, uint(atoi))
+	if err != nil {
+		response.AbortWithInternalError(c, GetSubGroupsError,
+			fmt.Sprintf("get subgroups failed: %v", err))
+		return
+	}
+	if pGroup == nil {
+		response.AbortWithNotFoundError(c, GetSubGroupsError,
+			fmt.Sprintf("get subgroups failed: %v", err))
+		return
+	}
+
 	groups, count, err := controller.groupManager.List(c, formatQuerySubGroups(c))
 	if err != nil {
 		response.AbortWithInternalError(c, GetSubGroupsError,
@@ -164,7 +221,7 @@ func (controller *Controller) GetSubGroups(c *gin.Context) {
 
 	response.SuccessWithData(c, response.DataWithTotal{
 		Total: count,
-		Items: controller.formatPageGroupDetails(c, groups),
+		Items: controller.formatPageGroupDetails(c, pGroup, groups),
 	})
 }
 
@@ -178,6 +235,23 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 
 	// filter is empty, just list the group
 	if filter == "" {
+		parentID := c.Query(QueryParentID)
+		var pGroup *models.Group
+		if parentID != "" {
+			atoi, err := strconv.Atoi(parentID)
+			if err != nil {
+				response.AbortWithRequestError(c, SearchGroupsError,
+					fmt.Sprintf("get subgroups failed: %v", err))
+				return
+			}
+			pGroup, err = controller.groupManager.Get(c, uint(atoi))
+			if err != nil {
+				response.AbortWithInternalError(c, SearchGroupsError,
+					fmt.Sprintf("get subgroups failed: %v", err))
+				return
+			}
+		}
+
 		groups, count, err := controller.groupManager.List(c, formatSearchGroups(c))
 		if err != nil {
 			response.AbortWithInternalError(c, SearchGroupsError,
@@ -186,7 +260,7 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		}
 		response.SuccessWithData(c, response.DataWithTotal{
 			Total: count,
-			Items: controller.formatPageGroupDetails(c, groups),
+			Items: controller.formatPageGroupDetails(c, pGroup, groups),
 		})
 		return
 	}
@@ -198,16 +272,16 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		return
 	}
 
-	namesMap := make(map[string]int)
+	var ids []int
 	for _, g := range queryGroups {
-		split := strings.Split(g.FullName, " /")
-		namesMap[split[0]] = 1
+		split := strings.Split(g.TraversalIDs, ",")
+		for _, s := range split {
+			i, _ := strconv.Atoi(s)
+			ids = append(ids, i)
+		}
 	}
-	var names []string
-	for s := range namesMap {
-		names = append(names, s)
-	}
-	regexpQueryGroups, err := controller.groupManager.GetByFullNamesRegexpFuzzily(c, &names)
+
+	groups, err := controller.groupManager.GetByIDsOrderByIDDesc(c, ids)
 	if err != nil {
 		response.AbortWithInternalError(c, SearchGroupsError,
 			fmt.Sprintf("search groups failed: %v", err))
@@ -218,8 +292,21 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 	parentIDToGroupsMap := make(map[int][]*Child)
 	// group in the first level, must return in search
 	firstLevelGroupsDetails := make([]*Child, 0)
-	for _, g := range regexpQueryGroups {
+	idsToFullPath := make(map[string]string)
+	idsToFullName := make(map[string]string)
+	for _, g := range groups {
 		detail := ConvertGroupToGroupDetail(g)
+		if g.ParentID == -1 {
+			detail.FullPath = "/" + g.Path
+			detail.FullName = g.Name
+		} else {
+			prefixIds := g.TraversalIDs[:len(g.TraversalIDs)-2]
+			detail.FullPath = idsToFullPath[prefixIds] + "/" + g.Path
+			detail.FullName = idsToFullName[prefixIds] + " / " + g.Name
+		}
+		idsToFullPath[g.TraversalIDs] = detail.FullPath
+		idsToFullName[g.TraversalIDs] = detail.FullName
+
 		// current only query group table
 		detail.Type = Group
 		// group in the first level
@@ -245,7 +332,7 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 	})
 }
 
-func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*models.Group) []*Child {
+func (controller *Controller) formatPageGroupDetails(c *gin.Context, pGroup *models.Group, groups []*models.Group) []*Child {
 	var parentIds []uint
 	for _, m := range groups {
 		parentIds = append(parentIds, m.ID)
@@ -260,6 +347,7 @@ func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*m
 		return nil
 	}
 	childrenCountMap := map[int]int{}
+	// update childrenCount field
 	for _, subgroup := range subGroups {
 		if v, ok := childrenCountMap[subgroup.ParentID]; ok {
 			childrenCountMap[subgroup.ParentID] = v + 1
@@ -268,12 +356,23 @@ func (controller *Controller) formatPageGroupDetails(c *gin.Context, groups []*m
 		}
 	}
 
+	fullPath := ""
+	fullName := ""
+	if pGroup != nil {
+		fullPath, fullName, _ = formatFullPathAndFullName(c, pGroup)
+	}
 	var details = make([]*Child, len(groups))
 	for idx, tmp := range groups {
 		detail := ConvertGroupToGroupDetail(tmp)
 		// todo currently using fixed type: group
 		detail.Type = Group
 		detail.ChildrenCount = childrenCountMap[int(detail.ID)]
+		detail.FullPath = fullPath + "/" + detail.Path
+		if fullName == "" {
+			detail.FullName = detail.Name
+		} else {
+			detail.FullName = fullName + " / " + detail.Name
+		}
 		details[idx] = detail
 	}
 

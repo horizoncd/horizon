@@ -3,8 +3,9 @@ package group
 type Child struct {
 	ID              uint     `json:"id"`
 	Name            string   `json:"name"`
-	FullName        string   `json:"fullName"`
 	Path            string   `json:"path"`
+	FullName        string   `json:"fullName"`
+	FullPath        string   `json:"fullPath"`
 	VisibilityLevel string   `json:"visibilityLevel"`
 	Description     string   `json:"description"`
 	ParentID        int      `json:"parentId"`
