@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
 	"g.hz.netease.com/horizon/pkg/user"
 	"g.hz.netease.com/horizon/pkg/user/models"
@@ -36,7 +35,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 		mgr := user.Mgr
 		u, err := mgr.GetByOIDCMeta(c, oidcID, oidcType)
 		if err != nil {
-			response.AbortWithInternalError(c, common.FindUserError, fmt.Sprintf("error to find user: %v", err))
+			response.AbortWithInternalError(c, fmt.Sprintf("error to find user: %v", err))
 			return
 		}
 		if u == nil {
@@ -47,7 +46,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 				OIDCType: oidcType,
 			})
 			if err != nil {
-				response.AbortWithInternalError(c, common.CreateUserError, fmt.Sprintf("error to create user: %v", err))
+				response.AbortWithInternalError(c, fmt.Sprintf("error to create user: %v", err))
 				return
 			}
 		}

@@ -3,8 +3,8 @@ package gitlab
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"net/http"
+	"strings"
 
 	"g.hz.netease.com/horizon/util/errors"
 	"g.hz.netease.com/horizon/util/log"
@@ -12,8 +12,8 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-// Gitlab interface to interact with gitlab
-type Gitlab interface {
+// Interface to interact with gitlab
+type Interface interface {
 	// GetGroup gets a group's detail with the given gid.
 	// The gid can be the group's ID or relative path such as first/second/third.
 	// See https://docs.gitlab.com/ee/api/groups.html#details-of-a-group for more information.
@@ -85,7 +85,7 @@ type Gitlab interface {
 	GetFile(ctx context.Context, pid interface{}, ref, filepath string) ([]byte, error)
 }
 
-var _ Gitlab = (*helper)(nil)
+var _ Interface = (*helper)(nil)
 
 type FileAction string
 
@@ -112,8 +112,8 @@ type helper struct {
 	client *gitlab.Client
 }
 
-// New new a instance of Gitlab
-func New(token, baseURL string) (Gitlab, error) {
+// New an instance of Gitlab
+func New(token, baseURL string) (Interface, error) {
 	client, err := gitlab.NewClient(token,
 		gitlab.WithBaseURL(baseURL),
 		gitlab.WithHTTPClient(&http.Client{
@@ -329,7 +329,6 @@ func parseError(op errors.Op, resp *gitlab.Response, err error) error {
 	if resp == nil {
 		return errors.E(op, err)
 	}
-	b, _ := json.Marshal(resp)
-	log.Errorf(context.TODO(), "resp: %v", string(b))
-	return errors.E(op, resp.StatusCode, err)
+	return errors.E(op, resp.StatusCode,
+		errors.ErrorCode(strings.ReplaceAll(http.StatusText(resp.StatusCode), " ", "")), err)
 }
