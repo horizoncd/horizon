@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"g.hz.netease.com/horizon/common"
@@ -33,7 +34,7 @@ type dao struct{}
 
 func (d *dao) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error) {
 	if names == nil || (len(*names)) == 0 {
-		return nil, common.ErrParameterNotValid
+		return []*models.Group{}, nil
 	}
 
 	db, err := orm.FromContext(ctx)
@@ -42,9 +43,15 @@ func (d *dao) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) 
 	}
 
 	var groups []*models.Group
-	namesRegexp := strings.Join(*names, "|")
+	formatNames := make([]string, len(*names))
+	for i, n := range *names {
+		formatNames[i] = fmt.Sprintf("full_name like '%s%%'", n)
+	}
 
-	result := db.Where("full_name regexp ?", namesRegexp).Find(&groups)
+	query := strings.Join(formatNames, " or ")
+	// select * from `group` where full_name like '1%' or full_name like '2%' order by id desc
+	qSQL := fmt.Sprintf("select * from `group` where %s order by id desc", query)
+	result := db.Raw(qSQL).Scan(&groups)
 
 	return groups, result.Error
 }
@@ -187,11 +194,26 @@ func (d *dao) Update(ctx context.Context, group *models.Group) error {
 	}
 
 	result := db.Model(group).Select("Name", "Description", "VisibilityLevel").Where("deleted_at is null").Updates(group)
-
-	// todo modify children's path & fullName
-
 	if result.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound
 	}
+
+	// todo modify children's path
+
+	// update self & children's fullNames
+	var oldGroup *models.Group
+	db.First(&oldGroup, group.ID)
+	oldFullName := oldGroup.FullName
+	split := strings.Split(strings.ReplaceAll(oldFullName, " ", ""), "/")
+	split = append(split[:len(split)-1], group.Name)
+	newFullName := strings.Join(split, " / ")
+	// update `group` set full_name=
+	// replace(full_name, full_name, concat('a / e', substring(full_name, 6)))
+	// where full_name regexp '^(a / d)'
+	updateSQL := fmt.Sprintf("update `group` set full_name="+
+		"replace(full_name, full_name, concat('%s', substring(full_name, %d))) "+
+		"where full_name like '%s%%'", newFullName, len(oldFullName)+1, oldFullName)
+	result = db.Exec(updateSQL)
+
 	return result.Error
 }

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	gitlabmock "g.hz.netease.com/horizon/pkg/gitlab/mock"
+	gitlabmock "g.hz.netease.com/horizon/mock/pkg/gitlab"
 	"g.hz.netease.com/horizon/pkg/gitlab/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

@@ -8,7 +8,7 @@ import (
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/gitlab"
 	"g.hz.netease.com/horizon/util/errors"
-	"g.hz.netease.com/horizon/util/log"
+	"g.hz.netease.com/horizon/util/wlog"
 )
 
 var (
@@ -22,7 +22,7 @@ type Controller interface {
 }
 
 type controller struct {
-	// use sync.Map for cache
+	// m use sync.Map for cache
 	m *sync.Map
 	// gitlabMgr to query gitlab db
 	gitlabMgr gitlab.Manager
@@ -36,8 +36,10 @@ func NewController() Controller {
 	}
 }
 
-func (g *controller) GetByName(ctx context.Context, name string) (gitlablib.Interface, error) {
+func (g *controller) GetByName(ctx context.Context, name string) (_ gitlablib.Interface, err error) {
 	const op = "gitlab controller: get gitlab instance by name"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
 	var ret interface{}
 	var ok bool
 	// get from cache first
@@ -53,7 +55,6 @@ func (g *controller) GetByName(ctx context.Context, name string) (gitlablib.Inte
 	if gitlabModel == nil {
 		// not in db
 		errMsg := fmt.Sprintf("the gitlab instance for name: %s is not found. ", name)
-		log.Error(ctx, errMsg)
 		return nil, errors.E(op, errMsg)
 	}
 

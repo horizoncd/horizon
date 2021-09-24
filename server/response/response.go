@@ -5,6 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
+	"g.hz.netease.com/horizon/util/errors"
 	"g.hz.netease.com/horizon/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -63,4 +64,8 @@ func AbortWithInternalError(c *gin.Context, message string) {
 
 func AbortWithNotFoundError(c *gin.Context, errorCode, message string) {
 	Abort(c, http.StatusNotFound, errorCode, message)
+}
+
+func AbortWithError(c *gin.Context, err error) {
+	Abort(c, errors.Status(err), errors.Code(err), err.Error())
 }

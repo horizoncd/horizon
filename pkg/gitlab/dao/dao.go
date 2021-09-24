@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/gitlab/models"
 )
@@ -37,7 +38,7 @@ func (d *dao) List(ctx context.Context) ([]models.Gitlab, error) {
 	}
 
 	var gitlabs []models.Gitlab
-	result := db.Raw("select * from gitlab").Scan(&gitlabs)
+	result := db.Raw(common.GitlabQuery).Scan(&gitlabs)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -51,7 +52,7 @@ func (d *dao) GetByName(ctx context.Context, name string) (*models.Gitlab, error
 	}
 
 	var gitlab models.Gitlab
-	result := db.Raw("select * from gitlab where name = ?", name).Scan(&gitlab)
+	result := db.Raw(common.GitlabQueryByName, name).Scan(&gitlab)
 	if result.Error != nil {
 		return nil, result.Error
 	}
