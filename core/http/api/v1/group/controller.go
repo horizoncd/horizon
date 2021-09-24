@@ -147,7 +147,30 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 }
 
 // TODO(wurongjun) support transfer group
-// func (controller *Controller) TransferGroup(c *gin.Context)
+func (controller *Controller) TransferGroup(c *gin.Context) {
+	groupID := c.Param(ParamGroupID)
+	parentID := c.Query(QueryParentID)
+	gInt, err := strconv.ParseUint(groupID, 10, 64)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("transfer group failed: %v", err))
+		return
+	}
+	pgInt, err := strconv.ParseUint(parentID, 10, 64)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("transfer group failed: %v", err))
+		return
+	}
+
+	err = controller.groupManager.Transfer(c, uint(gInt), uint(pgInt))
+	if err != nil {
+		response.AbortWithInternalError(c, fmt.Sprintf("transfer subgroups failed: %v", err))
+		return
+	}
+
+	response.Success(c)
+}
 
 // TODO(wurongjun) change to UpdateGroupBasic (also change the openapi)
 func (controller *Controller) UpdateGroup(c *gin.Context) {

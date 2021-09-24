@@ -54,6 +54,11 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 			Pattern:     "/search",
 			HandlerFunc: c.SearchGroups,
 		},
+		{
+			Method:      http.MethodPut,
+			Pattern:     fmt.Sprintf("/:%s/transfer", ParamGroupID),
+			HandlerFunc: c.TransferGroup,
+		},
 	}
 
 	route.RegisterRoutes(coreAPI, coreRoutes)

@@ -34,4 +34,6 @@ const (
 	GroupQueryByNameFuzzily      = "select * from `group` where name like ? and deleted_at is null"
 	GroupUpdateTraversalIDs      = "update `group` set traversal_ids = ? where id = ? and deleted_at is null"
 	GroupCountByParentID         = "select count(1) from `group` where parent_id = ? and deleted_at is null"
+	GroupTransfer                = "update `group` set traversal_ids = replace(traversal_ids, ?, ?) " +
+		"where traversal_ids like ? and deleted_at is null"
 )

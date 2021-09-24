@@ -30,6 +30,7 @@ type DAO interface {
 	UpdateTraversalIDs(ctx context.Context, id uint, traversalIDs string) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
+	Transfer(ctx context.Context, oldTraversalIDs, newTraversalIDs string) error
 }
 
 // New returns an instance of the default DAO
@@ -38,6 +39,17 @@ func New() DAO {
 }
 
 type dao struct{}
+
+func (d *dao) Transfer(ctx context.Context, oldTraversalIDs, newTraversalIDs string) error {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	result := db.Exec(common.GroupTransfer, oldTraversalIDs, newTraversalIDs, oldTraversalIDs+"%")
+
+	return result.Error
+}
 
 func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error) {
 	db, err := orm.FromContext(ctx)
@@ -228,7 +240,7 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 		return err
 	}
 
-	result := db.Raw(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel)
+	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel)
 
 	return result.Error
 }

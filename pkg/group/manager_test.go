@@ -176,6 +176,9 @@ func TestUpdateBasic(t *testing.T) {
 	group1.Name = "update1"
 	err = Mgr.UpdateBasic(ctx, group1)
 	assert.Nil(t, err)
+	group, err := Mgr.GetByID(ctx, id)
+	assert.Nil(t, err)
+	assert.Equal(t, "update1", group.Name)
 
 	// update not exist record
 	group1.ID = notExistID
@@ -230,4 +233,21 @@ func TestList(t *testing.T) {
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 	assert.Nil(t, res.Error)
+}
+
+func TestTransferGroup(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
+	assert.Nil(t, err)
+	id2, err := Mgr.Create(ctx, getGroup(int(id), "2", "b"))
+	assert.Nil(t, err)
+	id3, err := Mgr.Create(ctx, getGroup(0, "3", "c"))
+	assert.Nil(t, err)
+
+	err = Mgr.Transfer(ctx, id, id3)
+	assert.Nil(t, err)
+
+	group, err := Mgr.GetByID(ctx, id2)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "3,1,2", group.TraversalIDs)
 }

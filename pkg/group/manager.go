@@ -33,10 +33,24 @@ type Manager interface {
 	UpdateBasic(ctx context.Context, group *models.Group) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
+	Transfer(ctx context.Context, id, newParentID uint) error
 }
 
 type manager struct {
 	dao dao.DAO
+}
+
+func (m manager) Transfer(ctx context.Context, id, newParentID uint) error {
+	group, err := m.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	pGroup, err := m.GetByID(ctx, newParentID)
+	if err != nil {
+		return err
+	}
+
+	return m.dao.Transfer(ctx, group.TraversalIDs, fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID))
 }
 
 func (m manager) GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error) {
