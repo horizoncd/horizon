@@ -20,7 +20,7 @@ func Key() string {
 }
 
 func WithContext(parent context.Context, traceID string) context.Context {
-	return context.WithValue(parent, logKey, fmt.Sprintf("[%v] ", traceID))
+	return context.WithValue(parent, Key(), fmt.Sprintf("[%v] ", traceID)) // nolint
 }
 
 func Info(ctx context.Context, args ...interface{}) {
@@ -28,7 +28,7 @@ func Info(ctx context.Context, args ...interface{}) {
 }
 
 func InfoDepth(ctx context.Context, depth int, args ...interface{}) {
-	val, ok := ctx.Value(logKey).(string)
+	val, ok := ctx.Value(string(logKey)).(string)
 	if !ok {
 		klog.InfoDepth(depth, args...)
 		return
@@ -39,7 +39,7 @@ func InfoDepth(ctx context.Context, depth int, args ...interface{}) {
 }
 
 func Infof(ctx context.Context, format string, args ...interface{}) {
-	val, ok := ctx.Value(logKey).(string)
+	val, ok := ctx.Value(string(logKey)).(string)
 	if !ok {
 		msg := fmt.Sprintf(format, args...)
 		klog.InfoDepth(_depth, msg)
@@ -52,7 +52,7 @@ func Infof(ctx context.Context, format string, args ...interface{}) {
 }
 
 func Error(ctx context.Context, args ...interface{}) {
-	val, ok := ctx.Value(logKey).(string)
+	val, ok := ctx.Value(string(logKey)).(string)
 	if !ok {
 		klog.ErrorDepth(_depth, args...)
 		return
@@ -63,7 +63,7 @@ func Error(ctx context.Context, args ...interface{}) {
 }
 
 func Errorf(ctx context.Context, format string, args ...interface{}) {
-	val, ok := ctx.Value(logKey).(string)
+	val, ok := ctx.Value(string(logKey)).(string)
 	if !ok {
 		msg := fmt.Sprintf(format, args...)
 		klog.ErrorDepth(_depth, msg)

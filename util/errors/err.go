@@ -3,24 +3,25 @@ package errors
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 )
 
-type Op string
+type (
+	Op        string
+	ErrorCode string
+)
 
 const (
-	ENil        = 0
-	EBadRequest = http.StatusBadRequest
-	ENotFound   = http.StatusNotFound
-	EInternal   = http.StatusInternalServerError
+	ErrCodeInternalError = ErrorCode("InternalError")
 
-	EDuplicate = 600
+	StatusInternalError = 500
 )
 
 type Error struct {
+	// status for status code
+	status int
 	// code for machine-readable error code.
-	code int
+	code ErrorCode
 	// msg for human-readable message.
 	msg string
 	// Op and err for logical operation and nested error.
@@ -37,8 +38,10 @@ func E(op Op, args ...interface{}) error {
 			e.err = arg
 		case string:
 			e.msg = arg
-		case int:
+		case ErrorCode:
 			e.code = arg
+		case int:
+			e.status = arg
 		default:
 			panic("bad call to E")
 		}
@@ -55,17 +58,21 @@ func (e *Error) Error() string {
 	var builder strings.Builder
 	for err := error(e); err != nil; err = errors.Unwrap(err) {
 		if ne, ok := err.(*Error); ok {
-			_, _ = fmt.Fprintf(&builder, "%v: ", ne.op)
+			_, _ = fmt.Fprintf(&builder, "%v - ", ne.op)
 		}
 	}
 	for err := error(e); err != nil; err = errors.Unwrap(err) {
 		if e, ok := err.(*Error); ok {
-			if e.code != ENil || e.msg != "" {
+			if e.status != 0 || e.code != "" || e.msg != "" {
 				code := e.code
-				if e.code == ENil {
-					code = EInternal
+				if e.code == "" {
+					code = ErrCodeInternalError
 				}
-				_, _ = fmt.Fprintf(&builder, "<%v %v> ", code, e.msg)
+				status := e.status
+				if e.status == 0 {
+					status = StatusInternalError
+				}
+				_, _ = fmt.Fprintf(&builder, "<%v %v - %v> ", status, code, e.msg)
 			}
 		} else {
 			str := builder.String()
@@ -79,17 +86,28 @@ func (e *Error) Error() string {
 	return builder.String()
 }
 
-// ErrorCode returns the code of the root error, if available. Otherwise returns EInternal.
-func ErrorCode(err error) int {
+// Status return the status of the root error, if available. Otherwise, returns the StatusInternalError.
+func Status(err error) int {
 	for ; err != nil; err = errors.Unwrap(err) {
-		if e, ok := err.(*Error); ok && e.code != ENil {
-			return e.code
+		if e, ok := err.(*Error); ok && e.status != 0 {
+			return e.status
 		}
 	}
-	return EInternal
+	return StatusInternalError
 }
 
-func ErrorMsg(err error) string {
+// Code returns the code of the root error, if available. Otherwise, returns ErrCodeInternalError.
+func Code(err error) string {
+	for ; err != nil; err = errors.Unwrap(err) {
+		if e, ok := err.(*Error); ok && e.code != "" {
+			return string(e.code)
+		}
+	}
+	return string(ErrCodeInternalError)
+}
+
+// Message returns the message of the root error, if available.
+func Message(err error) string {
 	for ; err != nil; err = errors.Unwrap(err) {
 		if e, ok := err.(*Error); ok {
 			if e.msg != "" {

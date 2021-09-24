@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
@@ -45,7 +46,7 @@ go test -v ./lib/gitlab/
 
 var (
 	ctx = context.Background()
-	g   Gitlab
+	g   Interface
 
 	rootGroupName string
 	rootGroupID   int
@@ -100,7 +101,7 @@ func Test(t *testing.T) {
 	// 1. get group first. will return 404 error
 	_, err = g.GetGroup(ctx, groupPath)
 	assert.NotNil(t, err)
-	assert.Equal(t, errors.ENotFound, errors.ErrorCode(err))
+	assert.Equal(t, http.StatusNotFound, errors.Status(err))
 
 	// 2. create this group
 	group, err = g.CreateGroup(ctx, groupName, groupName, intToPtr(rootGroupID))
@@ -152,7 +153,7 @@ func Test(t *testing.T) {
 	// 10. get this branch again, will return 404 error
 	_, err = g.GetBranch(ctx, pid, newBranch)
 	assert.NotNil(t, err)
-	assert.Equal(t, errors.ENotFound, errors.ErrorCode(err))
+	assert.Equal(t, http.StatusNotFound, errors.Status(err))
 
 	// 11. write files to new branch
 	projectBytes, err := json.MarshalIndent(project, "", "    ")

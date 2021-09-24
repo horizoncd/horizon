@@ -8,14 +8,15 @@ import (
 	"regexp"
 
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
+	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
-	metricsMiddle "g.hz.netease.com/horizon/core/middleware/metrics"
+	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/auth"
-	logMiddle "g.hz.netease.com/horizon/server/middleware/log"
+	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
@@ -65,26 +66,27 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	// init controller
-	var controller = group.NewController()
+	var (
+		// init API
+		groupCt     = group.NewController()
+		templateAPI = template.NewAPI()
+	)
 
 	// init server
-	log.Printf("Server started")
 	r := gin.New()
-
 	// use middleware
 	r.Use(
 		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
 		requestid.Middleware(),        // requestID middleware, attach a requestID to context
-		logMiddle.Middleware(),        // log middleware, attach a logger to context
+		logmiddle.Middleware(),        // log middleware, attach a logger to context
 		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
 		auth.Middleware(middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
 		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-		metricsMiddle.Middleware( // metrics middleware
+		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 	)
@@ -94,7 +96,9 @@ func Run(flags *Flags) {
 	// register routes
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
-	group.RegisterRoutes(r, controller)
+	group.RegisterRoutes(r, groupCt)
+	template.RegisterRoutes(r, templateAPI)
 
+	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
 }
