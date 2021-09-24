@@ -3,7 +3,6 @@ package cmd
 import (
 	"flag"
 	"fmt"
-	"g.hz.netease.com/horizon/server/middleware/auth"
 	"io/ioutil"
 	"log"
 	"regexp"
@@ -11,16 +10,17 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
-	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
+	metricsMiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
-	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
+	"g.hz.netease.com/horizon/server/middleware/auth"
+	logMiddle "g.hz.netease.com/horizon/server/middleware/log"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 
-	ormmiddle "g.hz.netease.com/horizon/server/middleware/orm"
+	ormMiddle "g.hz.netease.com/horizon/server/middleware/orm"
 )
 
 // Flags defines agent CLI flags.
@@ -53,7 +53,7 @@ func Run(flags *Flags) {
 	}
 
 	// init db
-	mySQLDB, err := orm.NewMySQLDB(&orm.MySQL{
+	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
 		Host:              config.DBConfig.Host,
 		Port:              config.DBConfig.Port,
 		Username:          config.DBConfig.Username,
@@ -77,13 +77,14 @@ func Run(flags *Flags) {
 		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
 		requestid.Middleware(),        // requestID middleware, attach a requestID to context
-		logmiddle.Middleware(),        // log middleware, attach a logger to context
-		ormmiddle.Middleware(mySQLDB), // orm db middleware, attach a db to context
-		auth.RequestInfoMiddleWare(middleware.MethodAndPathMatcher("*", regexp.MustCompile("^/apis/core/.*"))),
+		logMiddle.Middleware(),        // log middleware, attach a logger to context
+		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
+		auth.Middleware(middleware.MethodAndPathSkipper("*",
+			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
 		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-		metricsmiddle.Middleware( // metrics middleware
+		metricsMiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 	)

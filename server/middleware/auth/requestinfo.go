@@ -1,19 +1,20 @@
 package auth
 
 import (
+	"net/http"
+	"strings"
+
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/response"
 	"g.hz.netease.com/horizon/util/sets"
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"strings"
 )
 
 const contextRequestInfoKey = "contextRequestInfo"
 
-func RequestInfoMiddleWare(matchers ...middleware.Matcher) gin.HandlerFunc {
-	return middleware.NewMatcher(func(c *gin.Context) {
+func Middleware(skipMatchers ...middleware.Skipper) gin.HandlerFunc {
+	return middleware.New(func(c *gin.Context) {
 		requestInfoFactory := RequestInfoFactory{
 			APIPrefixes: sets.NewString("apis"),
 		}
@@ -25,7 +26,7 @@ func RequestInfoMiddleWare(matchers ...middleware.Matcher) gin.HandlerFunc {
 		// attach request info to context
 		c.Set(contextRequestInfoKey, requestInfo)
 		c.Next()
-	}, matchers...)
+	}, skipMatchers...)
 }
 
 type RequestInfoResolver interface {
@@ -41,7 +42,7 @@ type RequestInfo struct {
 	Path string
 
 	// Verb is the verb associated with the request for API requests.
-	// ot the http verb.  This includes things like list and watch.
+	// not the http verb.  This includes things like list and watch.
 	// for non-resource requests, this is the lowercase http verb
 	Verb string
 
@@ -110,7 +111,7 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 
 	requestInfo.Parts = currentParts
 
-	// parts  resource/resourceName/subsource
+	// parts  resource/resourceName/subresource
 	switch {
 	case len(requestInfo.Parts) >= 3:
 		requestInfo.Subresource = requestInfo.Parts[2]

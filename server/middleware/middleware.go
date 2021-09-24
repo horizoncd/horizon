@@ -16,16 +16,3 @@ func New(handler gin.HandlerFunc, skippers ...Skipper) gin.HandlerFunc {
 		handler(c)
 	}
 }
-
-// NewMatcher make a Matcher middleware
-func NewMatcher(handler gin.HandlerFunc, matchers ...Matcher) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		for _, matcher := range matchers {
-			if matcher(c.Request) {
-				handler(c)
-				return
-			}
-		}
-		c.Next()
-	}
-}
