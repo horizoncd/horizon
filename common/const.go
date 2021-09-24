@@ -23,6 +23,9 @@ const (
 
 	// NotImplemented not implemented error code
 	NotImplemented = "NotImplemented"
+
+	// RequestInfoError error to format the request
+	RequestInfoError = "RequestInfoError"
 )
 
 var (
