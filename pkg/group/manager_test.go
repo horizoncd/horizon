@@ -45,7 +45,7 @@ func TestCreate(t *testing.T) {
 	// normal create
 	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
-	get, err := Mgr.Get(ctx, id)
+	get, _ := Mgr.GetByID(ctx, id)
 	assert.Equal(t, fmt.Sprintf("%d", id), get.TraversalIDs)
 
 	// name conflict, parentId: nil
@@ -60,7 +60,7 @@ func TestCreate(t *testing.T) {
 	group2 := getGroup(int(id), "2", "b")
 	id2, err := Mgr.Create(ctx, group2)
 	assert.Nil(t, err)
-	get, err = Mgr.Get(ctx, id2)
+	get, _ = Mgr.GetByID(ctx, id2)
 	assert.Equal(t, fmt.Sprintf("%d,%d", id, id2), get.TraversalIDs)
 
 	// drop table
@@ -76,7 +76,7 @@ func TestDelete(t *testing.T) {
 	err = Mgr.Delete(ctx, id)
 	assert.Nil(t, err)
 
-	_, err = Mgr.Get(ctx, id)
+	_, err = Mgr.GetByID(ctx, id)
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// delete not exist record
@@ -88,17 +88,17 @@ func TestDelete(t *testing.T) {
 	assert.Nil(t, res.Error)
 }
 
-func TestGet(t *testing.T) {
+func TestGetByID(t *testing.T) {
 	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
 
 	// query exist record
-	group1, err := Mgr.Get(ctx, id)
+	group1, err := Mgr.GetByID(ctx, id)
 	assert.Nil(t, err)
 	assert.NotNil(t, group1.ID)
 
 	// query not exist record
-	_, err = Mgr.Get(ctx, notExistID)
+	_, err = Mgr.GetByID(ctx, notExistID)
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// drop table
@@ -106,7 +106,67 @@ func TestGet(t *testing.T) {
 	assert.Nil(t, res.Error)
 }
 
-func TestUpdate(t *testing.T) {
+func TestGetByIDs(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
+	assert.Nil(t, err)
+	id2, _ := Mgr.Create(ctx, getGroup(0, "2", "b"))
+
+	groups, err := Mgr.GetByIDs(ctx, []uint{id, id2})
+	assert.Nil(t, err)
+	assert.Equal(t, id, groups[0].ID)
+	assert.Equal(t, id2, groups[1].ID)
+
+	// drop table
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
+}
+
+func TestGetByPaths(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
+	assert.Nil(t, err)
+	id2, _ := Mgr.Create(ctx, getGroup(0, "2", "b"))
+
+	groups, err := Mgr.GetByPaths(ctx, []string{"a", "b"})
+	assert.Nil(t, err)
+	assert.Equal(t, id, groups[0].ID)
+	assert.Equal(t, id2, groups[1].ID)
+
+	// drop table
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
+}
+
+func TestGetByNameFuzzily(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
+	assert.Nil(t, err)
+	id2, _ := Mgr.Create(ctx, getGroup(0, "21", "b"))
+
+	groups, err := Mgr.GetByNameFuzzily(ctx, "1")
+	assert.Nil(t, err)
+	assert.Equal(t, id, groups[0].ID)
+	assert.Equal(t, id2, groups[1].ID)
+
+	// drop table
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
+}
+
+func TestGetByIDsOrderByIDDesc(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
+	assert.Nil(t, err)
+	id2, _ := Mgr.Create(ctx, getGroup(0, "2", "b"))
+
+	groups, err := Mgr.GetByIDsOrderByIDDesc(ctx, []uint{id, id2})
+	assert.Nil(t, err)
+	assert.Equal(t, id, groups[1].ID)
+	assert.Equal(t, id2, groups[0].ID)
+
+	// drop table
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
+}
+
+func TestUpdateBasic(t *testing.T) {
 	group1 := getGroup(0, "1", "a")
 	id, err := Mgr.Create(ctx, group1)
 	assert.Nil(t, err)

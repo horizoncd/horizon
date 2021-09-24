@@ -79,7 +79,7 @@ func (controller *Controller) GetGroup(c *gin.Context) {
 		return
 	}
 
-	groupEntry, err := controller.groupManager.Get(c, uint(idInt))
+	groupEntry, err := controller.groupManager.GetByID(c, uint(idInt))
 	if err != nil {
 		response.AbortWithInternalError(c, fmt.Sprintf("get group failed: %v", err))
 		return
@@ -118,19 +118,18 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 	for _, m := range groups {
 		idToGroup[m.ID] = m
 		tIDs := strings.Split(m.TraversalIDs, ",")
-		_paths := make([]string, len(tIDs))
+		paths := make([]string, len(tIDs))
 		names := make([]string, len(tIDs))
 		for i, d := range tIDs {
 			ind, _ := strconv.Atoi(d)
-			if v, ok := idToGroup[uint(ind)]; !ok {
+			if _, ok := idToGroup[uint(ind)]; !ok {
 				response.AbortWithInternalError(c, "get group by path failed")
 				return
-			} else {
-				_paths[i] = v.Path
-				names[i] = v.Name
 			}
+			paths[i] = idToGroup[uint(ind)].Path
+			names[i] = idToGroup[uint(ind)].Name
 		}
-		fullPath := "/" + strings.Join(_paths, "/")
+		fullPath := "/" + strings.Join(paths, "/")
 		fullPathToGroup[fullPath] = m
 		fullName := strings.Join(names, " / ")
 		idToFullName[m.ID] = fullName
@@ -193,7 +192,7 @@ func (controller *Controller) GetSubGroups(c *gin.Context) {
 			fmt.Sprintf("get subgroups failed: %v", err))
 		return
 	}
-	pGroup, err := controller.groupManager.Get(c, uint(atoi))
+	pGroup, err := controller.groupManager.GetByID(c, uint(atoi))
 	if err != nil {
 		response.AbortWithInternalError(c, fmt.Sprintf("get subgroups failed: %v", err))
 		return
@@ -207,7 +206,7 @@ func (controller *Controller) GetSubGroups(c *gin.Context) {
 
 	response.SuccessWithData(c, response.DataWithTotal{
 		Total: count,
-		Items: controller.formatPageGroupDetails(c, pGroup, groups),
+		Items: controller.formatGroupDetails(c, pGroup, groups),
 	})
 }
 
@@ -230,7 +229,7 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 					fmt.Sprintf("get subgroups failed: %v", err))
 				return
 			}
-			pGroup, err = controller.groupManager.Get(c, uint(atoi))
+			pGroup, err = controller.groupManager.GetByID(c, uint(atoi))
 			if err != nil {
 				response.AbortWithInternalError(c, fmt.Sprintf("get subgroups failed: %v", err))
 				return
@@ -244,7 +243,7 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		}
 		response.SuccessWithData(c, response.DataWithTotal{
 			Total: count,
-			Items: controller.formatPageGroupDetails(c, pGroup, groups),
+			Items: controller.formatGroupDetails(c, pGroup, groups),
 		})
 		return
 	}
@@ -255,12 +254,12 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		return
 	}
 
-	var ids []int
+	var ids []uint
 	for _, g := range queryGroups {
 		split := strings.Split(g.TraversalIDs, ",")
 		for _, s := range split {
 			i, _ := strconv.Atoi(s)
-			ids = append(ids, i)
+			ids = append(ids, uint(i))
 		}
 	}
 
@@ -314,7 +313,8 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 	})
 }
 
-func (controller *Controller) formatPageGroupDetails(c *gin.Context, pGroup *models.Group, groups []*models.Group) []*Child {
+func (controller *Controller) formatGroupDetails(c *gin.Context,
+	pGroup *models.Group, groups []*models.Group) []*Child {
 	var parentIds []uint
 	for _, m := range groups {
 		parentIds = append(parentIds, m.ID)

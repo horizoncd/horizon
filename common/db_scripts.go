@@ -23,15 +23,15 @@ const (
 
 /* sql about group */
 const (
-	GroupQueryByParentIDAndNameLimit1 = "select * from `group` where parent_id = ? and name = ? and deleted_at is null limit 1"
-	GroupQueryByParentIDAndPathLimit1 = "select * from `group` where parent_id = ? and path = ? and deleted_at is null limit 1"
-	GroupDelete                       = "update `group` set deleted_at = CURRENT_TIMESTAMP where id = ?"
-	GroupUpdateBasic                  = "update `group` set name = ?, path = ?, description = ?, visibility_level = ?"
-	GroupQueryByID                    = "select * from `group` where id = ? and deleted_at is null"
-	GroupQueryByIDs                   = "select * from `group` where id in ? and deleted_at is null"
-	GroupQueryByIDsOrderByIDDesc      = "select * from `group` where id in (?) and deleted_at is null order by id desc"
-	GroupQueryByPaths                 = "select * from `group` where path in (?) and deleted_at is null"
-	GroupQueryByNameFuzzily           = "select * from `group` where name like %?% and deleted_at is null"
-	GroupUpdateTraversalIDs           = "update `group` set traversal_ids = ? where id = ? and deleted_at is null"
-	GroupCountByParentID              = "select count(1) from `group` where parent_id = ? and deleted_at is null"
+	GroupQueryByParentIDAndName  = "select * from `group` where parent_id = ? and name = ? and deleted_at is null"
+	GroupQueryByParentIDAndPath  = "select * from `group` where parent_id = ? and path = ? and deleted_at is null"
+	GroupDelete                  = "update `group` set deleted_at = CURRENT_TIMESTAMP where id = ?"
+	GroupUpdateBasic             = "update `group` set name = ?, path = ?, description = ?, visibility_level = ?"
+	GroupQueryByID               = "select * from `group` where id = ? and deleted_at is null"
+	GroupQueryByIDs              = "select * from `group` where id in ? and deleted_at is null"
+	GroupQueryByIDsOrderByIDDesc = "select * from `group` where id in ? and deleted_at is null order by id desc"
+	GroupQueryByPaths            = "select * from `group` where path in ? and deleted_at is null"
+	GroupQueryByNameFuzzily      = "select * from `group` where name like ? and deleted_at is null"
+	GroupUpdateTraversalIDs      = "update `group` set traversal_ids = ? where id = ? and deleted_at is null"
+	GroupCountByParentID         = "select count(1) from `group` where parent_id = ? and deleted_at is null"
 )

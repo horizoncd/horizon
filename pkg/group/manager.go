@@ -24,9 +24,9 @@ var (
 type Manager interface {
 	Create(ctx context.Context, group *models.Group) (uint, error)
 	Delete(ctx context.Context, id uint) error
-	Get(ctx context.Context, id uint) (*models.Group, error)
-	GetByIDs(ctx context.Context, ids []int) ([]*models.Group, error)
-	GetByIDsOrderByIDDesc(ctx context.Context, ids []int) ([]*models.Group, error)
+	GetByID(ctx context.Context, id uint) (*models.Group, error)
+	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
+	GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error)
 	GetByTraversalIDs(ctx context.Context, traversalIDs string) ([]*models.Group, error)
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
@@ -39,7 +39,7 @@ type manager struct {
 	dao dao.DAO
 }
 
-func (m manager) GetByIDsOrderByIDDesc(ctx context.Context, ids []int) ([]*models.Group, error) {
+func (m manager) GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error) {
 	return m.dao.GetByIDsOrderByIDDesc(ctx, ids)
 }
 
@@ -47,16 +47,17 @@ func (m manager) GetByPaths(ctx context.Context, paths []string) ([]*models.Grou
 	return m.dao.GetByPaths(ctx, paths)
 }
 
-func (m manager) GetByIDs(ctx context.Context, ids []int) ([]*models.Group, error) {
+func (m manager) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error) {
 	return m.dao.GetByIDs(ctx, ids)
 }
 
 // GetByTraversalIDs traversalIDs: 1,2,3
 func (m manager) GetByTraversalIDs(ctx context.Context, traversalIDs string) ([]*models.Group, error) {
 	splitIds := strings.Split(traversalIDs, ",")
-	var ids = make([]int, len(splitIds))
+	var ids = make([]uint, len(splitIds))
 	for i, id := range splitIds {
-		ids[i], _ = strconv.Atoi(id)
+		ii, _ := strconv.Atoi(id)
+		ids[i] = uint(ii)
 	}
 
 	return m.GetByIDs(ctx, ids)
@@ -73,7 +74,7 @@ func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) 
 		group.ParentID = -1
 	} else {
 		// check if parent exists
-		pGroup, err = m.dao.Get(ctx, uint(group.ParentID))
+		pGroup, err = m.dao.GetByID(ctx, uint(group.ParentID))
 		if err != nil {
 			return 0, err
 		}
@@ -111,7 +112,7 @@ func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) 
 }
 
 func (m manager) Delete(ctx context.Context, id uint) error {
-	record, err := m.Get(ctx, id)
+	record, err := m.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -131,12 +132,12 @@ func (m manager) Delete(ctx context.Context, id uint) error {
 	return m.dao.Delete(ctx, id)
 }
 
-func (m manager) Get(ctx context.Context, id uint) (*models.Group, error) {
-	return m.dao.Get(ctx, id)
+func (m manager) GetByID(ctx context.Context, id uint) (*models.Group, error) {
+	return m.dao.GetByID(ctx, id)
 }
 
 func (m manager) UpdateBasic(ctx context.Context, group *models.Group) error {
-	record, err := m.Get(ctx, group.ID)
+	record, err := m.GetByID(ctx, group.ID)
 	if err != nil {
 		return err
 	}

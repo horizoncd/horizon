@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -19,12 +20,12 @@ type DAO interface {
 	CheckPathUnique(ctx context.Context, group *models.Group) error
 	Create(ctx context.Context, group *models.Group) (uint, error)
 	Delete(ctx context.Context, id uint) error
-	Get(ctx context.Context, id uint) (*models.Group, error)
+	GetByID(ctx context.Context, id uint) (*models.Group, error)
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
-	GetByIDs(ctx context.Context, ids []int) ([]*models.Group, error)
-	GetByIDsOrderByIDDesc(ctx context.Context, ids []int) ([]*models.Group, error)
+	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
+	GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error)
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
-	CountByParentID(ctx context.Context, parentId uint) (int64, error)
+	CountByParentID(ctx context.Context, parentID uint) (int64, error)
 	UpdateBasic(ctx context.Context, group *models.Group) error
 	UpdateTraversalIDs(ctx context.Context, id uint, traversalIDs string) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
@@ -38,14 +39,14 @@ func New() DAO {
 
 type dao struct{}
 
-func (d *dao) CountByParentID(ctx context.Context, parentId uint) (int64, error) {
+func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, err
 	}
 
 	var count int64
-	result := db.Raw(common.GroupCountByParentID, parentId).Scan(&count)
+	result := db.Raw(common.GroupCountByParentID, parentID).Scan(&count)
 
 	return count, result.Error
 }
@@ -61,7 +62,7 @@ func (d *dao) UpdateTraversalIDs(ctx context.Context, id uint, traversalIDs stri
 	return result.Error
 }
 
-func (d *dao) GetByIDsOrderByIDDesc(ctx context.Context, ids []int) ([]*models.Group, error) {
+func (d *dao) GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -85,7 +86,7 @@ func (d *dao) GetByPaths(ctx context.Context, paths []string) ([]*models.Group, 
 	return groups, result.Error
 }
 
-func (d *dao) GetByIDs(ctx context.Context, ids []int) ([]*models.Group, error) {
+func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -105,7 +106,7 @@ func (d *dao) CheckPathUnique(ctx context.Context, group *models.Group) error {
 	}
 
 	queryResult := models.Group{}
-	result := db.Raw(common.GroupQueryByParentIDAndPathLimit1, group.ParentID, group.Path).Scan(&queryResult)
+	result := db.Raw(common.GroupQueryByParentIDAndPath, group.ParentID, group.Path).First(&queryResult)
 
 	// update group conflict, has another record with the same parentId & path
 	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
@@ -127,7 +128,7 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Grou
 	}
 
 	var groups []*models.Group
-	result := db.Raw(common.GroupQueryByNameFuzzily, name).Scan(groups)
+	result := db.Raw(common.GroupQueryByNameFuzzily, fmt.Sprintf("%%%s%%", name)).Scan(&groups)
 
 	return groups, result.Error
 }
@@ -140,7 +141,7 @@ func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 	}
 
 	queryResult := models.Group{}
-	result := db.Raw(common.GroupQueryByParentIDAndNameLimit1, group.ParentID, group.Name).Scan(&queryResult)
+	result := db.Raw(common.GroupQueryByParentIDAndName, group.ParentID, group.Name).First(&queryResult)
 
 	// update group conflict, has another record with the same parentId & name
 	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
@@ -178,7 +179,7 @@ func (d *dao) Delete(ctx context.Context, id uint) error {
 	return result.Error
 }
 
-func (d *dao) Get(ctx context.Context, id uint) (*models.Group, error) {
+func (d *dao) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
