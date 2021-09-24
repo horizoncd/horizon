@@ -2,17 +2,23 @@ package group
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	"gorm.io/gorm"
 )
 
 var (
 	// Mgr is the global group manager
 	Mgr = New()
+
+	ErrPathConflict = errors.New("path conflict")
+	ErrHasChildren  = errors.New("children exist, cannot be deleted")
 )
 
 type Manager interface {
@@ -22,11 +28,9 @@ type Manager interface {
 	GetByIDs(ctx context.Context, ids []int) ([]*models.Group, error)
 	GetByIDsOrderByIDDesc(ctx context.Context, ids []int) ([]*models.Group, error)
 	GetByTraversalIDs(ctx context.Context, traversalIDs string) ([]*models.Group, error)
-	GetByPath(ctx context.Context, path string) (*models.Group, error)
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
-	GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error)
-	Update(ctx context.Context, group *models.Group) error
+	UpdateBasic(ctx context.Context, group *models.Group) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
 }
@@ -58,19 +62,72 @@ func (m manager) GetByTraversalIDs(ctx context.Context, traversalIDs string) ([]
 	return m.GetByIDs(ctx, ids)
 }
 
-func (m manager) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error) {
-	return m.dao.GetByFullNamesRegexpFuzzily(ctx, names)
-}
-
 func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
 	return m.dao.GetByNameFuzzily(ctx, name)
 }
 
 func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) {
-	return m.dao.Create(ctx, group)
+	var pGroup *models.Group
+	var err error
+	if group.ParentID == 0 {
+		group.ParentID = -1
+	} else {
+		// check if parent exists
+		pGroup, err = m.dao.Get(ctx, uint(group.ParentID))
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	// check if there's a record with the same parentId and name
+	err = m.dao.CheckNameUnique(ctx, group)
+	if err != nil {
+		return 0, err
+	}
+	// check if there's a record with the same parentId and path
+	err = m.dao.CheckPathUnique(ctx, group)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := m.dao.Create(ctx, group)
+	if err != nil {
+		return 0, err
+	}
+
+	// update traversal_ids, like 1; 1,2,3
+	var traversalIDs string
+	if group.ParentID == -1 {
+		traversalIDs = strconv.Itoa(int(id))
+	} else {
+		traversalIDs = fmt.Sprintf("%s,%d", pGroup.TraversalIDs, id)
+	}
+	err = m.dao.UpdateTraversalIDs(ctx, id, traversalIDs)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }
 
 func (m manager) Delete(ctx context.Context, id uint) error {
+	record, err := m.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if record == nil {
+		return gorm.ErrRecordNotFound
+	}
+
+	count, err := m.dao.CountByParentID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return ErrHasChildren
+	}
+	// todo check application children exist
+
 	return m.dao.Delete(ctx, id)
 }
 
@@ -78,12 +135,27 @@ func (m manager) Get(ctx context.Context, id uint) (*models.Group, error) {
 	return m.dao.Get(ctx, id)
 }
 
-func (m manager) GetByPath(ctx context.Context, path string) (*models.Group, error) {
-	return m.dao.GetByPath(ctx, path)
-}
+func (m manager) UpdateBasic(ctx context.Context, group *models.Group) error {
+	record, err := m.Get(ctx, group.ID)
+	if err != nil {
+		return err
+	}
+	if record == nil {
+		return gorm.ErrRecordNotFound
+	}
 
-func (m manager) Update(ctx context.Context, group *models.Group) error {
-	return m.dao.Update(ctx, group)
+	// check if there's record with the same parentId and name
+	err = m.dao.CheckNameUnique(ctx, group)
+	if err != nil {
+		return err
+	}
+	// check if there's a record with the same parentId and path
+	err = m.dao.CheckPathUnique(ctx, group)
+	if err != nil {
+		return err
+	}
+
+	return m.dao.UpdateBasic(ctx, group)
 }
 
 func (m manager) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error) {

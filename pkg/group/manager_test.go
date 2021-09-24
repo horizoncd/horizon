@@ -17,38 +17,18 @@ import (
 
 var (
 	// use tmp sqlite
-	db  = orm.DefaultMySQLDBForUnitTest()
-	ctx = orm.NewContext(context.TODO(), db)
+	db, _ = orm.NewSqliteDB("")
+	ctx   = orm.NewContext(context.TODO(), db)
 
-	group1Path = "/a"
-
-	notExistID   = uint(100)
-	notExistPath = "x"
+	notExistID = uint(100)
 )
 
-func getGroup1() *models.Group {
+func getGroup(parentID int, name, path string) *models.Group {
 	return &models.Group{
-		Name:            "1",
-		Path:            "a",
+		Name:            name,
+		Path:            path,
 		VisibilityLevel: "private",
-	}
-}
-
-func getGroup2(pid int) *models.Group {
-	return &models.Group{
-		Name:            "2",
-		Path:            "b",
-		VisibilityLevel: "public",
-		ParentID:        pid,
-	}
-}
-
-func getGroup3(pid int) *models.Group {
-	return &models.Group{
-		Name:            "3",
-		Path:            "c",
-		VisibilityLevel: "public",
-		ParentID:        pid,
+		ParentID:        parentID,
 	}
 }
 
@@ -63,23 +43,25 @@ func init() {
 
 func TestCreate(t *testing.T) {
 	// normal create
-	id, err := Mgr.Create(ctx, getGroup1())
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
+	get, err := Mgr.Get(ctx, id)
+	assert.Equal(t, fmt.Sprintf("%d", id), get.TraversalIDs)
 
 	// name conflict, parentId: nil
-	_, err = Mgr.Create(ctx, getGroup1())
+	_, err = Mgr.Create(ctx, getGroup(0, "1", "b"))
 	assert.Equal(t, common.ErrNameConflict, err)
+
+	// path conflict, parentId: nil
+	_, err = Mgr.Create(ctx, getGroup(0, "2", "a"))
+	assert.Equal(t, ErrPathConflict, err)
 
 	// normal create, parent: 1
-	group2 := getGroup2(int(id))
-	_, err = Mgr.Create(ctx, group2)
+	group2 := getGroup(int(id), "2", "b")
+	id2, err := Mgr.Create(ctx, group2)
 	assert.Nil(t, err)
-	assert.Equal(t, "/a/b", group2.Path)
-	assert.Equal(t, "1 / 2", group2.FullName)
-
-	// name conflict, parentId: 1
-	_, err = Mgr.Create(ctx, getGroup2(int(id)))
-	assert.Equal(t, common.ErrNameConflict, err)
+	get, err = Mgr.Get(ctx, id2)
+	assert.Equal(t, fmt.Sprintf("%d,%d", id, id2), get.TraversalIDs)
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
@@ -87,7 +69,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	id, err := Mgr.Create(ctx, getGroup1())
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
 
 	// delete exist record
@@ -107,7 +89,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	id, err := Mgr.Create(ctx, getGroup1())
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
 
 	// query exist record
@@ -124,39 +106,21 @@ func TestGet(t *testing.T) {
 	assert.Nil(t, res.Error)
 }
 
-func TestGetByPath(t *testing.T) {
-	_, err := Mgr.Create(ctx, getGroup1())
-	assert.Nil(t, err)
-
-	// query exist record
-	group1, err := Mgr.GetByPath(ctx, group1Path)
-	assert.Nil(t, err)
-	assert.NotNil(t, group1)
-
-	// query not exist record
-	_, err = Mgr.GetByPath(ctx /**/, notExistPath)
-	assert.Equal(t, err, gorm.ErrRecordNotFound)
-
-	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	assert.Nil(t, res.Error)
-}
-
 func TestUpdate(t *testing.T) {
-	group1 := getGroup1()
+	group1 := getGroup(0, "1", "a")
 	id, err := Mgr.Create(ctx, group1)
 	assert.Nil(t, err)
 
 	// update exist record
 	group1.ID = id
 	group1.Name = "update1"
-	err = Mgr.Update(ctx, group1)
+	err = Mgr.UpdateBasic(ctx, group1)
 	assert.Nil(t, err)
 
 	// update not exist record
 	group1.ID = notExistID
 	group1.Name = "update2"
-	err = Mgr.Update(ctx, group1)
+	err = Mgr.UpdateBasic(ctx, group1)
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// drop table
@@ -165,12 +129,12 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	pid, err := Mgr.Create(ctx, getGroup1())
+	pid, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
 	var group2Id, group3Id uint
-	group2Id, err = Mgr.Create(ctx, getGroup2(int(pid)))
+	group2Id, err = Mgr.Create(ctx, getGroup(int(pid), "2", "b"))
 	assert.Nil(t, err)
-	group3Id, err = Mgr.Create(ctx, getGroup3(int(pid)))
+	group3Id, err = Mgr.Create(ctx, getGroup(int(pid), "3", "c"))
 	assert.Nil(t, err)
 
 	// page with keywords, items: 1, total: 1

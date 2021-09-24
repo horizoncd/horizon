@@ -85,6 +85,11 @@ func (controller *Controller) GetGroup(c *gin.Context) {
 		return
 	}
 
+	if groupEntry == nil {
+		response.AbortWithRequestError(c, ErrCodeNotFound, "group not found")
+		return
+	}
+
 	detail := ConvertGroupToGroupDetail(groupEntry)
 	fullPath, fullName, err := formatFullPathAndFullName(c, groupEntry)
 	if err != nil {
@@ -103,8 +108,7 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 	paths := strings.Split(c.Query(ParamPath)[1:], "/")
 	groups, err := controller.groupManager.GetByPaths(c, paths)
 	if err != nil {
-		response.AbortWithInternalError(c, GetGroupByPathError,
-			fmt.Sprintf("get group by path failed: %v", err))
+		response.AbortWithInternalError(c, fmt.Sprintf("get group by path failed: %v", err))
 		return
 	}
 
@@ -119,7 +123,7 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 		for i, d := range tIDs {
 			ind, _ := strconv.Atoi(d)
 			if v, ok := idToGroup[uint(ind)]; !ok {
-				response.AbortWithInternalError(c, GetGroupByPathError, "get group by path failed")
+				response.AbortWithInternalError(c, "get group by path failed")
 				return
 			} else {
 				_paths[i] = v.Path
@@ -167,7 +171,7 @@ func (controller *Controller) UpdateGroup(c *gin.Context) {
 
 	groupEntry := convertUpdateGroupToGroup(updatedGroup)
 	groupEntry.ID = uint(idInt)
-	err = controller.groupManager.Update(c, groupEntry)
+	err = controller.groupManager.UpdateBasic(c, groupEntry)
 	if err != nil {
 		response.AbortWithInternalError(c, fmt.Sprintf("upate group failed: %v", err))
 		return
@@ -185,19 +189,13 @@ func (controller *Controller) GetSubGroups(c *gin.Context) {
 	parentID := c.Param(ParamGroupID)
 	atoi, err := strconv.Atoi(parentID)
 	if err != nil {
-		response.AbortWithRequestError(c, GetSubGroupsError,
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			fmt.Sprintf("get subgroups failed: %v", err))
 		return
 	}
 	pGroup, err := controller.groupManager.Get(c, uint(atoi))
 	if err != nil {
-		response.AbortWithInternalError(c, GetSubGroupsError,
-			fmt.Sprintf("get subgroups failed: %v", err))
-		return
-	}
-	if pGroup == nil {
-		response.AbortWithNotFoundError(c, GetSubGroupsError,
-			fmt.Sprintf("get subgroups failed: %v", err))
+		response.AbortWithInternalError(c, fmt.Sprintf("get subgroups failed: %v", err))
 		return
 	}
 
@@ -228,14 +226,13 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		if parentID != "" {
 			atoi, err := strconv.Atoi(parentID)
 			if err != nil {
-				response.AbortWithRequestError(c, SearchGroupsError,
+				response.AbortWithRequestError(c, common.InvalidRequestParam,
 					fmt.Sprintf("get subgroups failed: %v", err))
 				return
 			}
 			pGroup, err = controller.groupManager.Get(c, uint(atoi))
 			if err != nil {
-				response.AbortWithInternalError(c, SearchGroupsError,
-					fmt.Sprintf("get subgroups failed: %v", err))
+				response.AbortWithInternalError(c, fmt.Sprintf("get subgroups failed: %v", err))
 				return
 			}
 		}
