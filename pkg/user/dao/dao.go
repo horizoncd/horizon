@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/user/models"
 )
@@ -38,9 +39,12 @@ func (d *dao) GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*mode
 	}
 
 	var user models.User
-	result := db.Raw("SELECT * FROM user WHERE oidc_id = ? and oidc_type = ?", oidcID, oidcType).Scan(&user)
+	result := db.Raw(common.UserQueryByOIDC, oidcID, oidcType).Scan(&user)
 	if result.Error != nil {
 		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
 	}
 	return &user, nil
 }

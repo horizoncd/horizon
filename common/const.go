@@ -11,6 +11,20 @@ const (
 	DefaultPageSize   = 20
 )
 
+const (
+	// InternalError internal server error code
+	InternalError = "InternalError"
+
+	// InvalidRequestParam invalid request param error code
+	InvalidRequestParam = "InvalidRequestParam"
+
+	// InvalidRequestBody invalid request body error code
+	InvalidRequestBody = "InvalidRequestBody"
+
+	// NotImplemented not implemented error code
+	NotImplemented = "NotImplemented"
+)
+
 var (
 	ErrNameConflict      = errors.New("name conflict")
 	ErrParameterNotValid = errors.New("parameter not valid")
