@@ -2,15 +2,17 @@ package common
 
 /* sql about gitlab */
 const (
-	GitlabQuery       = "select * from gitlab"
-	GitlabQueryByName = "select * from gitlab where name = ?"
+	GitlabQuery       = "select * from gitlab where deleted_at is null"
+	GitlabQueryByName = "select * from gitlab where name = ? and deleted_at is null"
 )
 
 /* sql about template */
 const (
-	TemplateQuery                             = "select * from template"
-	TemplateReleaseQueryByTemplateName        = "select * from template_release where template_name = ?"
-	TemplateReleaseQueryByTemplateNameAndName = "select * from template_release where template_name = ? and name = ?"
+	TemplateQuery                      = "select * from template where deleted_at is null"
+	TemplateReleaseQueryByTemplateName = "select * from template_release " +
+		"where template_name = ? and deleted_at is null"
+	TemplateReleaseQueryByTemplateNameAndName = "select * from template_release " +
+		"where template_name = ? and name = ? and deleted_at is null"
 )
 
 /* sql about user */
