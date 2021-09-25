@@ -240,7 +240,7 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 		return err
 	}
 
-	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel)
+	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel, group.ID)
 
 	return result.Error
 }

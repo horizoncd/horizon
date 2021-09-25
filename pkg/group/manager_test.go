@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	"g.hz.netease.com/horizon/common"
@@ -180,11 +182,14 @@ func TestUpdateBasic(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "update1", group.Name)
 
-	// update not exist record
-	group1.ID = notExistID
-	group1.Name = "update2"
-	err = Mgr.UpdateBasic(ctx, group1)
-	assert.Equal(t, err, gorm.ErrRecordNotFound)
+	// update fail because of conflict
+	group2 := getGroup(0, "2", "b")
+	id2, err := Mgr.Create(ctx, group2)
+	assert.Nil(t, err)
+	group2.ID = id2
+	group2.Name = "update1"
+	err = Mgr.UpdateBasic(ctx, group2)
+	assert.Equal(t, common.ErrNameConflict, err)
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
@@ -249,5 +254,10 @@ func TestTransferGroup(t *testing.T) {
 	group, err := Mgr.GetByID(ctx, id2)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "3,1,2", group.TraversalIDs)
+	expect := []string{
+		strconv.Itoa(int(id3)),
+		strconv.Itoa(int(id)),
+		strconv.Itoa(int(id2)),
+	}
+	assert.Equal(t, strings.Join(expect, ","), group.TraversalIDs)
 }

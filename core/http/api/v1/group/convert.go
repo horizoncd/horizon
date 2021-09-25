@@ -51,6 +51,7 @@ func convertNewGroupToGroup(newGroup *NewGroup) *models.Group {
 func convertUpdateGroupToGroup(updateGroup *UpdateGroup) *models.Group {
 	return &models.Group{
 		Name:            updateGroup.Name,
+		Path:            updateGroup.Path,
 		VisibilityLevel: updateGroup.VisibilityLevel,
 		Description:     updateGroup.Description,
 	}

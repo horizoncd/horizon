@@ -23,10 +23,11 @@ const (
 
 /* sql about group */
 const (
-	GroupQueryByParentIDAndName  = "select * from `group` where parent_id = ? and name = ? and deleted_at is null"
-	GroupQueryByParentIDAndPath  = "select * from `group` where parent_id = ? and path = ? and deleted_at is null"
-	GroupDelete                  = "update `group` set deleted_at = CURRENT_TIMESTAMP where id = ?"
-	GroupUpdateBasic             = "update `group` set name = ?, path = ?, description = ?, visibility_level = ?"
+	GroupQueryByParentIDAndName = "select * from `group` where parent_id = ? and name = ? and deleted_at is null"
+	GroupQueryByParentIDAndPath = "select * from `group` where parent_id = ? and path = ? and deleted_at is null"
+	GroupDelete                 = "update `group` set deleted_at = CURRENT_TIMESTAMP where id = ?"
+	GroupUpdateBasic            = "update `group` set name = ?, path = ?, description = ?, visibility_level = ? " +
+		"where id = ?"
 	GroupQueryByID               = "select * from `group` where id = ? and deleted_at is null"
 	GroupQueryByIDs              = "select * from `group` where id in ? and deleted_at is null"
 	GroupQueryByIDsOrderByIDDesc = "select * from `group` where id in ? and deleted_at is null order by id desc"

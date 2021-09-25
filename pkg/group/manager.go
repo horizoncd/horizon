@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
@@ -84,10 +85,8 @@ func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.G
 func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) {
 	var pGroup *models.Group
 	var err error
-	if group.ParentID == 0 {
-		group.ParentID = -1
-	} else {
-		// check if parent exists
+	// check if parent exists
+	if group.ParentID > 0 {
 		pGroup, err = m.dao.GetByID(ctx, uint(group.ParentID))
 		if err != nil {
 			return 0, err
@@ -112,7 +111,7 @@ func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) 
 
 	// update traversal_ids, like 1; 1,2,3
 	var traversalIDs string
-	if group.ParentID == -1 {
+	if group.ParentID == common.RootGroupID {
 		traversalIDs = strconv.Itoa(int(id))
 	} else {
 		traversalIDs = fmt.Sprintf("%s,%d", pGroup.TraversalIDs, id)
@@ -159,6 +158,7 @@ func (m manager) UpdateBasic(ctx context.Context, group *models.Group) error {
 		return gorm.ErrRecordNotFound
 	}
 
+	group.ParentID = record.ParentID
 	// check if there's record with the same parentId and name
 	err = m.dao.CheckNameUnique(ctx, group)
 	if err != nil {

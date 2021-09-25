@@ -9,6 +9,8 @@ const (
 
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20
+
+	RootGroupID = 0
 )
 
 const (

@@ -102,6 +102,30 @@ func (controller *Controller) GetGroup(c *gin.Context) {
 	response.SuccessWithData(c, detail)
 }
 
+// formatFull {1,2,3} -> /a/b/c (fullPath) & w / r / j (fullName)
+func formatFull(groups []*models.Group) (map[string]*Full, map[string]*models.Group) {
+	traversalIDsToFull := make(map[string]*Full)
+	traversalIDsToGroup := make(map[string]*models.Group)
+	for _, m := range groups {
+		traversalIDsToGroup[m.TraversalIDs] = m
+		if m.ParentID == common.RootGroupID {
+			traversalIDsToFull[m.TraversalIDs] = &Full{
+				FullName: m.Name,
+				FullPath: "/" + m.Path,
+			}
+		} else {
+			split := strings.Split(m.TraversalIDs, ",")
+			prefixIds := strings.Join(split[:len(split)-1], ",")
+			traversalIDsToFull[m.TraversalIDs] = &Full{
+				FullName: traversalIDsToFull[prefixIds].FullName + " / " + m.Name,
+				FullPath: traversalIDsToFull[prefixIds].FullPath + "/" + m.Path,
+			}
+		}
+	}
+
+	return traversalIDsToFull, traversalIDsToGroup
+}
+
 func (controller *Controller) GetGroupByPath(c *gin.Context) {
 	path := c.Query(ParamPath)
 
@@ -112,37 +136,20 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 		return
 	}
 
-	idToGroup := make(map[uint]*models.Group)
-	fullPathToGroup := make(map[string]*models.Group)
-	idToFullName := make(map[uint]string)
-	for _, m := range groups {
-		idToGroup[m.ID] = m
-		tIDs := strings.Split(m.TraversalIDs, ",")
-		paths := make([]string, len(tIDs))
-		names := make([]string, len(tIDs))
-		for i, d := range tIDs {
-			ind, _ := strconv.Atoi(d)
-			if _, ok := idToGroup[uint(ind)]; !ok {
-				response.AbortWithInternalError(c, "get group by path failed")
-				return
-			}
-			paths[i] = idToGroup[uint(ind)].Path
-			names[i] = idToGroup[uint(ind)].Name
+	// {1,2,3} -> /a/b/c (fullPath) & w / r / j (fullName)
+	traversalIDsToFull, traversalIDsToGroup := formatFull(groups)
+
+	for k, v := range traversalIDsToFull {
+		// path pointing to a group
+		if v.FullPath == path {
+			m := traversalIDsToGroup[k]
+			detail := ConvertGroupToGroupDetail(m)
+			detail.Type = Group
+			detail.FullPath = v.FullPath
+			detail.FullName = v.FullName
+
+			response.SuccessWithData(c, detail)
 		}
-		fullPath := "/" + strings.Join(paths, "/")
-		fullPathToGroup[fullPath] = m
-		fullName := strings.Join(names, " / ")
-		idToFullName[m.ID] = fullName
-	}
-
-	// path pointing to a group
-	if groupEntity, ok := fullPathToGroup[path]; ok {
-		detail := ConvertGroupToGroupDetail(groupEntity)
-		detail.Type = Group
-		detail.FullPath = path
-		detail.FullName = idToFullName[groupEntity.ID]
-
-		response.SuccessWithData(c, detail)
 	}
 }
 
@@ -239,26 +246,29 @@ func (controller *Controller) SearchChildren(c *gin.Context) {
 }
 
 func (controller *Controller) SearchGroups(c *gin.Context) {
-	filter := c.Query(ParamFilter)
-
-	// filter is empty, just list the group
-	if filter == "" {
-		parentID := c.Query(QueryParentID)
-		var pGroup *models.Group
-		if parentID != "" {
-			atoi, err := strconv.Atoi(parentID)
-			if err != nil {
-				response.AbortWithRequestError(c, common.InvalidRequestParam,
-					fmt.Sprintf("get subgroups failed: %v", err))
-				return
-			}
-			pGroup, err = controller.groupManager.GetByID(c, uint(atoi))
+	parentID := c.Query(QueryParentID)
+	var pGroup *models.Group
+	pGroupID := common.RootGroupID
+	if parentID != "" {
+		a, err := strconv.Atoi(parentID)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam,
+				fmt.Sprintf("get subgroups failed: %v", err))
+			return
+		}
+		pGroupID = a
+		if a > 0 {
+			pGroup, err = controller.groupManager.GetByID(c, uint(a))
 			if err != nil {
 				response.AbortWithInternalError(c, fmt.Sprintf("get subgroups failed: %v", err))
 				return
 			}
 		}
+	}
 
+	filter := c.Query(ParamFilter)
+	// filter is empty, just list the group
+	if filter == "" {
 		groups, count, err := controller.groupManager.List(c, formatSearchGroups(c))
 		if err != nil {
 			response.AbortWithInternalError(c, fmt.Sprintf("search groups failed: %v", err))
@@ -286,35 +296,25 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		}
 	}
 
-	groups, err := controller.groupManager.GetByIDsOrderByIDDesc(c, ids)
+	groups, err := controller.groupManager.GetByIDs(c, ids)
 	if err != nil {
 		response.AbortWithInternalError(c, fmt.Sprintf("search groups failed: %v", err))
 		return
 	}
 
+	// {1,2,3} -> /a/b/c (fullPath) & w / r / j (fullName)
+	traversalIDsToFull, _ := formatFull(groups)
 	// organize struct of search result
 	parentIDToGroupsMap := make(map[int][]*Child)
 	// group in the first level, must return in search
 	firstLevelGroupsDetails := make([]*Child, 0)
-	idsToFullPath := make(map[string]string)
-	idsToFullName := make(map[string]string)
-	for _, g := range groups {
+	for i := range groups {
+		// reverse order
+		g := groups[len(groups)-i-1]
 		detail := ConvertGroupToGroupDetail(g)
-		if g.ParentID == -1 {
-			detail.FullPath = "/" + g.Path
-			detail.FullName = g.Name
-		} else {
-			prefixIds := g.TraversalIDs[:len(g.TraversalIDs)-2]
-			detail.FullPath = idsToFullPath[prefixIds] + "/" + g.Path
-			detail.FullName = idsToFullName[prefixIds] + " / " + g.Name
-		}
-		idsToFullPath[g.TraversalIDs] = detail.FullPath
-		idsToFullName[g.TraversalIDs] = detail.FullName
 
-		// current only query group table
-		detail.Type = Group
-		// group in the first level
-		if g.ParentID == -1 {
+		// groups under the parent group
+		if g.ParentID == pGroupID {
 			firstLevelGroupsDetails = append(firstLevelGroupsDetails, detail)
 		}
 
@@ -323,6 +323,11 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 		if strings.Contains(g.Name, filter) || len(parentIDToGroupsMap[int(g.ID)]) > 0 {
 			parentIDToGroupsMap[parentID] = append(parentIDToGroupsMap[parentID], detail)
 		}
+
+		// current only query group table
+		detail.Type = Group
+		detail.FullPath = traversalIDsToFull[g.TraversalIDs].FullPath
+		detail.FullName = traversalIDsToFull[g.TraversalIDs].FullName
 
 		if v, ok := parentIDToGroupsMap[int(detail.ID)]; ok {
 			detail.ChildrenCount = len(v)
@@ -387,7 +392,7 @@ func (controller *Controller) formatGroupDetails(c *gin.Context,
 func formatQuerySubGroups(c *gin.Context) *q.Query {
 	parentID := c.Param(ParamGroupID)
 	k := q.KeyWords{
-		ParentID: -1,
+		ParentID: common.RootGroupID,
 	}
 	if parentID != "" {
 		k[ParentID], _ = strconv.Atoi(parentID)
@@ -403,7 +408,7 @@ func formatQuerySubGroups(c *gin.Context) *q.Query {
 func formatSearchGroups(c *gin.Context) *q.Query {
 	parentID := c.Query(QueryParentID)
 	k := q.KeyWords{
-		ParentID: -1,
+		ParentID: common.RootGroupID,
 	}
 	if parentID != "" {
 		k[ParentID], _ = strconv.Atoi(parentID)
