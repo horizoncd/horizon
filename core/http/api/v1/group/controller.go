@@ -151,9 +151,10 @@ func (controller *Controller) GetGroupByPath(c *gin.Context) {
 			response.SuccessWithData(c, detail)
 		}
 	}
+
+	response.AbortWithNotFoundError(c, ErrCodeNotFound, ErrCodeNotFound)
 }
 
-// TODO(wurongjun) support transfer group
 func (controller *Controller) TransferGroup(c *gin.Context) {
 	groupID := c.Param(ParamGroupID)
 	parentID := c.Query(QueryParentID)
@@ -179,7 +180,6 @@ func (controller *Controller) TransferGroup(c *gin.Context) {
 	response.Success(c)
 }
 
-// TODO(wurongjun) change to UpdateGroupBasic (also change the openapi)
 func (controller *Controller) UpdateGroup(c *gin.Context) {
 	groupID := c.Param(ParamGroupID)
 
@@ -216,19 +216,24 @@ func (controller *Controller) GetChildren(c *gin.Context) {
 
 func (controller *Controller) GetSubGroups(c *gin.Context) {
 	parentID := c.Param(ParamGroupID)
-	atoi, err := strconv.Atoi(parentID)
+	intPID, err := strconv.Atoi(parentID)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			fmt.Sprintf("get subgroups failed: %v", err))
 		return
 	}
-	pGroup, err := controller.groupManager.GetByID(c, uint(atoi))
+	query, err := formatListGroupQuery(c, intPID)
 	if err != nil {
 		response.AbortWithInternalError(c, fmt.Sprintf("get subgroups failed: %v", err))
 		return
 	}
 
-	groups, count, err := controller.groupManager.List(c, formatQuerySubGroups(c))
+	pGroup, err := controller.groupManager.GetByID(c, uint(intPID))
+	if err != nil {
+		response.AbortWithInternalError(c, fmt.Sprintf("get subgroups failed: %v", err))
+		return
+	}
+	groups, count, err := controller.groupManager.List(c, query)
 	if err != nil {
 		response.AbortWithInternalError(c, fmt.Sprintf("get subgroups failed: %v", err))
 		return
@@ -250,17 +255,17 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 	var pGroup *models.Group
 	pGroupID := common.RootGroupID
 	if parentID != "" {
-		a, err := strconv.Atoi(parentID)
+		intPID, err := strconv.Atoi(parentID)
 		if err != nil {
 			response.AbortWithRequestError(c, common.InvalidRequestParam,
-				fmt.Sprintf("get subgroups failed: %v", err))
+				fmt.Sprintf("search groups failed: %v", err))
 			return
 		}
-		pGroupID = a
-		if a > 0 {
-			pGroup, err = controller.groupManager.GetByID(c, uint(a))
+		pGroupID = intPID
+		if intPID > 0 {
+			pGroup, err = controller.groupManager.GetByID(c, uint(intPID))
 			if err != nil {
-				response.AbortWithInternalError(c, fmt.Sprintf("get subgroups failed: %v", err))
+				response.AbortWithInternalError(c, fmt.Sprintf("search groups failed: %v", err))
 				return
 			}
 		}
@@ -269,7 +274,13 @@ func (controller *Controller) SearchGroups(c *gin.Context) {
 	filter := c.Query(ParamFilter)
 	// filter is empty, just list the group
 	if filter == "" {
-		groups, count, err := controller.groupManager.List(c, formatSearchGroups(c))
+		query, err := formatListGroupQuery(c, pGroupID)
+		if err != nil {
+			response.AbortWithInternalError(c, fmt.Sprintf("search groups failed: %v", err))
+			return
+		}
+
+		groups, count, err := controller.groupManager.List(c, query)
 		if err != nil {
 			response.AbortWithInternalError(c, fmt.Sprintf("search groups failed: %v", err))
 			return
@@ -388,46 +399,22 @@ func (controller *Controller) formatGroupDetails(c *gin.Context,
 	return details
 }
 
-// url pattern: api/vi/groups/:groupId/subgroups
-func formatQuerySubGroups(c *gin.Context) *q.Query {
-	parentID := c.Param(ParamGroupID)
-	k := q.KeyWords{
-		ParentID: common.RootGroupID,
-	}
-	if parentID != "" {
-		k[ParentID], _ = strconv.Atoi(parentID)
-	}
-
-	query := formatDefaultQuery(c)
-	query.Keywords = k
-
-	return query
-}
-
-// url pattern: api/vi/groups/search?parentId=?
-func formatSearchGroups(c *gin.Context) *q.Query {
-	parentID := c.Query(QueryParentID)
-	k := q.KeyWords{
-		ParentID: common.RootGroupID,
-	}
-	if parentID != "" {
-		k[ParentID], _ = strconv.Atoi(parentID)
-	}
-
-	query := formatDefaultQuery(c)
-	query.Keywords = k
-
-	return query
-}
-
-func formatDefaultQuery(c *gin.Context) *q.Query {
-	query := q.New(q.KeyWords{})
+func formatListGroupQuery(c *gin.Context, parentID int) (*q.Query, error) {
+	query := q.New(q.KeyWords{
+		ParentID: parentID,
+	})
 	query.PageNumber = common.DefaultPageNumber
-	query.PageSize = common.DefaultPageSize
-	pageNumber, _ := strconv.Atoi(c.Query(common.PageNumber))
-	pageSize, _ := strconv.Atoi(c.Query(common.PageSize))
+	pageNumber, err := strconv.Atoi(c.Query(common.PageNumber))
+	if err != nil {
+		return nil, err
+	}
 	if pageNumber > 0 {
 		query.PageNumber = pageNumber
+	}
+	query.PageSize = common.DefaultPageSize
+	pageSize, err := strconv.Atoi(c.Query(common.PageSize))
+	if err != nil {
+		return nil, err
 	}
 	if pageSize > 0 {
 		query.PageSize = pageSize
@@ -436,5 +423,5 @@ func formatDefaultQuery(c *gin.Context) *q.Query {
 	s := q.NewSort("updated_at", true)
 	query.Sorts = []*q.Sort{s}
 
-	return query
+	return query, nil
 }
