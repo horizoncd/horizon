@@ -35,7 +35,8 @@ func (m *manager) Create(ctx context.Context, application *models.Application) (
 	return m.dao.Create(ctx, application)
 }
 
-func (m *manager) UpdateByName(ctx context.Context, name string, application *models.Application) (*models.Application, error) {
+func (m *manager) UpdateByName(ctx context.Context, name string,
+	application *models.Application) (*models.Application, error) {
 	return m.dao.UpdateByName(ctx, name, application)
 }
 

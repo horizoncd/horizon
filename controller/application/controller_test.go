@@ -209,6 +209,7 @@ type Param struct {
 	RootGroupID   int    `json:"rootGroupId"`
 }
 
+// nolint
 func TestMain(m *testing.M) {
 	var err error
 	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
@@ -237,6 +238,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+// nolint
 func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	gitlabCtl := gitlabctlmock.NewMockController(mockCtl)

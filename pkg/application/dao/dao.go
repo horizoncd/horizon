@@ -54,7 +54,8 @@ func (d *dao) Create(ctx context.Context, application *models.Application) (*mod
 	return application, result.Error
 }
 
-func (d *dao) UpdateByName(ctx context.Context, name string, application *models.Application) (*models.Application, error) {
+func (d *dao) UpdateByName(ctx context.Context, name string,
+	application *models.Application) (*models.Application, error) {
 	const op = "application dao: update by name"
 
 	db, err := orm.FromContext(ctx)

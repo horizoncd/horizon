@@ -12,24 +12,24 @@ import (
 func Validate(schema, document interface{}) error {
 	var schemaLoader, documentLoader gojsonschema.JSONLoader
 
-	switch schema.(type) {
+	switch schema := schema.(type) {
 	case string:
-		schemaLoader = gojsonschema.NewStringLoader(schema.(string))
+		schemaLoader = gojsonschema.NewStringLoader(schema)
 	case []byte:
-		schemaLoader = gojsonschema.NewBytesLoader(schema.([]byte))
+		schemaLoader = gojsonschema.NewBytesLoader(schema)
 	case map[string]interface{}:
-		schemaLoader = gojsonschema.NewGoLoader(schema.(map[string]interface{}))
+		schemaLoader = gojsonschema.NewGoLoader(schema)
 	default:
 		return fmt.Errorf("unsported type: %T for schema", schema)
 	}
 
-	switch document.(type) {
+	switch document := document.(type) {
 	case string:
-		documentLoader = gojsonschema.NewStringLoader(document.(string))
+		documentLoader = gojsonschema.NewStringLoader(document)
 	case []byte:
-		documentLoader = gojsonschema.NewBytesLoader(document.([]byte))
+		documentLoader = gojsonschema.NewBytesLoader(document)
 	case map[string]interface{}:
-		documentLoader = gojsonschema.NewGoLoader(document.(map[string]interface{}))
+		documentLoader = gojsonschema.NewGoLoader(document)
 	default:
 		return fmt.Errorf("unsported type: %T for document", document)
 	}
@@ -41,11 +41,10 @@ func Validate(schema, document interface{}) error {
 
 	if result.Valid() {
 		return nil
-	} else {
-		errMsg := ""
-		for index, err := range result.Errors() {
-			errMsg += fmt.Sprintf("[%d] %v. ", index, err)
-		}
-		return errors.New(errMsg)
 	}
+	errMsg := ""
+	for index, err := range result.Errors() {
+		errMsg += fmt.Sprintf("[%d] %v. ", index, err)
+	}
+	return errors.New(errMsg)
 }

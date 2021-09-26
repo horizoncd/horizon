@@ -145,12 +145,12 @@ func (c *controller) CreateApplication(ctx context.Context, request *CreateAppli
 
 	// 4. write files to gitlab
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, request.Name)
-	templateJson, err := json.MarshalIndent(request.TemplateInput, "", "  ")
+	templateJSON, err := json.MarshalIndent(request.TemplateInput, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
 	}
-	pipelineJson, err := json.MarshalIndent(request.PipelineInput, "", "  ")
+	pipelineJSON, err := json.MarshalIndent(request.PipelineInput, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -159,11 +159,11 @@ func (c *controller) CreateApplication(ctx context.Context, request *CreateAppli
 		{
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathTemplate,
-			Content:  string(templateJson),
+			Content:  string(templateJSON),
 		}, {
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathPipeline,
-			Content:  string(pipelineJson),
+			Content:  string(pipelineJSON),
 		},
 	}
 
@@ -190,7 +190,8 @@ func (c *controller) CreateApplication(ctx context.Context, request *CreateAppli
 	return nil
 }
 
-func (c *controller) UpdateApplication(ctx context.Context, name string, request *UpdateApplicationRequest) (err error) {
+func (c *controller) UpdateApplication(ctx context.Context, name string,
+	request *UpdateApplicationRequest) (err error) {
 	const op = "application controller: create application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -216,12 +217,12 @@ func (c *controller) UpdateApplication(ctx context.Context, name string, request
 
 	// 3. write files to gitlab
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, name)
-	templateJson, err := json.MarshalIndent(request.TemplateInput, "", "  ")
+	templateJSON, err := json.MarshalIndent(request.TemplateInput, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
 	}
-	pipelineJson, err := json.MarshalIndent(request.PipelineInput, "", "  ")
+	pipelineJSON, err := json.MarshalIndent(request.PipelineInput, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -230,11 +231,11 @@ func (c *controller) UpdateApplication(ctx context.Context, name string, request
 		{
 			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathTemplate,
-			Content:  string(templateJson),
+			Content:  string(templateJSON),
 		}, {
 			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathPipeline,
-			Content:  string(pipelineJson),
+			Content:  string(pipelineJSON),
 		},
 	}
 
