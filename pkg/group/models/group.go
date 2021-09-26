@@ -8,6 +8,6 @@ type Group struct {
 	Path            string
 	VisibilityLevel string
 	Description     string
-	ParentID        int
+	ParentID        uint
 	TraversalIDs    string
 }

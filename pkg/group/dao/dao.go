@@ -13,20 +13,21 @@ import (
 
 var (
 	ErrPathConflict = errors.New("path conflict")
+	ErrNameConflict = errors.New("name conflict")
 )
 
 type DAO interface {
 	CheckNameUnique(ctx context.Context, group *models.Group) error
 	CheckPathUnique(ctx context.Context, group *models.Group) error
 	Create(ctx context.Context, group *models.Group) (uint, error)
-	Delete(ctx context.Context, id uint) error
+	Delete(ctx context.Context, id uint) (int64, error)
 	GetByID(ctx context.Context, id uint) (*models.Group, error)
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 	GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error)
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	CountByParentID(ctx context.Context, parentID uint) (int64, error)
-	UpdateBasic(ctx context.Context, group *models.Group) error
+	UpdateBasic(ctx context.Context, group *models.Group) (int64, error)
 	UpdateTraversalIDs(ctx context.Context, id uint, traversalIDs string) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
@@ -157,12 +158,12 @@ func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 
 	// update group conflict, has another record with the same parentId & name
 	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
-		return common.ErrNameConflict
+		return ErrNameConflict
 	}
 
 	// create group conflict
 	if group.ID == 0 && result.RowsAffected > 0 {
-		return common.ErrNameConflict
+		return ErrNameConflict
 	}
 
 	return nil
@@ -180,15 +181,15 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
 }
 
 // Delete can only delete a group that doesn't have any children
-func (d *dao) Delete(ctx context.Context, id uint) error {
+func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	result := db.Exec(common.GroupDelete, id)
 
-	return result.Error
+	return result.RowsAffected, result.Error
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Group, error) {
@@ -234,13 +235,13 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 }
 
 // UpdateBasic just update base info, not including transfer function
-func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
+func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) (int64, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel, group.ID)
 
-	return result.Error
+	return result.RowsAffected, result.Error
 }

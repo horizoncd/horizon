@@ -11,27 +11,25 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
-	"gorm.io/gorm"
 )
 
 var (
 	// Mgr is the global group manager
 	Mgr = New()
 
-	ErrPathConflict = errors.New("path conflict")
-	ErrHasChildren  = errors.New("children exist, cannot be deleted")
+	ErrHasChildren = errors.New("children exist, cannot be deleted")
 )
 
 type Manager interface {
 	Create(ctx context.Context, group *models.Group) (uint, error)
-	Delete(ctx context.Context, id uint) error
+	Delete(ctx context.Context, id uint) (int64, error)
 	GetByID(ctx context.Context, id uint) (*models.Group, error)
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 	GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error)
 	GetByTraversalIDs(ctx context.Context, traversalIDs string) ([]*models.Group, error)
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
-	UpdateBasic(ctx context.Context, group *models.Group) error
+	UpdateBasic(ctx context.Context, group *models.Group) (int64, error)
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
 	Transfer(ctx context.Context, id, newParentID uint) error
@@ -124,21 +122,13 @@ func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) 
 	return id, nil
 }
 
-func (m manager) Delete(ctx context.Context, id uint) error {
-	record, err := m.GetByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	if record == nil {
-		return gorm.ErrRecordNotFound
-	}
-
+func (m manager) Delete(ctx context.Context, id uint) (int64, error) {
 	count, err := m.dao.CountByParentID(ctx, id)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if count > 0 {
-		return ErrHasChildren
+		return 0, ErrHasChildren
 	}
 	// todo check application children exist
 
@@ -149,25 +139,16 @@ func (m manager) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 	return m.dao.GetByID(ctx, id)
 }
 
-func (m manager) UpdateBasic(ctx context.Context, group *models.Group) error {
-	record, err := m.GetByID(ctx, group.ID)
-	if err != nil {
-		return err
-	}
-	if record == nil {
-		return gorm.ErrRecordNotFound
-	}
-
-	group.ParentID = record.ParentID
+func (m manager) UpdateBasic(ctx context.Context, group *models.Group) (int64, error) {
 	// check if there's record with the same parentId and name
-	err = m.dao.CheckNameUnique(ctx, group)
+	err := m.dao.CheckNameUnique(ctx, group)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	// check if there's a record with the same parentId and path
 	err = m.dao.CheckPathUnique(ctx, group)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	return m.dao.UpdateBasic(ctx, group)

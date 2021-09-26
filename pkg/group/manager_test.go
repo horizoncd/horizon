@@ -2,6 +2,7 @@ package group
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"gorm.io/gorm"
 
@@ -25,7 +27,16 @@ var (
 	notExistID = uint(100)
 )
 
-func getGroup(parentID int, name, path string) *models.Group {
+func TestUint(t *testing.T) {
+	g := models.Group{
+		ParentID: 0,
+	}
+
+	_, err := json.Marshal(g)
+	assert.Nil(t, err)
+}
+
+func getGroup(parentID uint, name, path string) *models.Group {
 	return &models.Group{
 		Name:            name,
 		Path:            path,
@@ -56,10 +67,10 @@ func TestCreate(t *testing.T) {
 
 	// path conflict, parentId: nil
 	_, err = Mgr.Create(ctx, getGroup(0, "2", "a"))
-	assert.Equal(t, ErrPathConflict, err)
+	assert.Equal(t, dao.ErrPathConflict, err)
 
 	// normal create, parent: 1
-	group2 := getGroup(int(id), "2", "b")
+	group2 := getGroup(id, "2", "b")
 	id2, err := Mgr.Create(ctx, group2)
 	assert.Nil(t, err)
 	get, _ = Mgr.GetByID(ctx, id2)
@@ -75,15 +86,17 @@ func TestDelete(t *testing.T) {
 	assert.Nil(t, err)
 
 	// delete exist record
-	err = Mgr.Delete(ctx, id)
+	_, err = Mgr.Delete(ctx, id)
 	assert.Nil(t, err)
 
 	_, err = Mgr.GetByID(ctx, id)
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// delete not exist record
-	err = Mgr.Delete(ctx, notExistID)
-	assert.Equal(t, err, gorm.ErrRecordNotFound)
+	var count int64
+	count, err = Mgr.Delete(ctx, notExistID)
+	assert.Equal(t, 0, int(count))
+	assert.Nil(t, err)
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
@@ -176,7 +189,7 @@ func TestUpdateBasic(t *testing.T) {
 	// update exist record
 	group1.ID = id
 	group1.Name = "update1"
-	err = Mgr.UpdateBasic(ctx, group1)
+	_, err = Mgr.UpdateBasic(ctx, group1)
 	assert.Nil(t, err)
 	group, err := Mgr.GetByID(ctx, id)
 	assert.Nil(t, err)
@@ -188,7 +201,7 @@ func TestUpdateBasic(t *testing.T) {
 	assert.Nil(t, err)
 	group2.ID = id2
 	group2.Name = "update1"
-	err = Mgr.UpdateBasic(ctx, group2)
+	_, err = Mgr.UpdateBasic(ctx, group2)
 	assert.Equal(t, common.ErrNameConflict, err)
 
 	// drop table
@@ -200,9 +213,9 @@ func TestList(t *testing.T) {
 	pid, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
 	var group2Id, group3Id uint
-	group2Id, err = Mgr.Create(ctx, getGroup(int(pid), "2", "b"))
+	group2Id, err = Mgr.Create(ctx, getGroup(pid, "2", "b"))
 	assert.Nil(t, err)
-	group3Id, err = Mgr.Create(ctx, getGroup(int(pid), "3", "c"))
+	group3Id, err = Mgr.Create(ctx, getGroup(pid, "3", "c"))
 	assert.Nil(t, err)
 
 	// page with keywords, items: 1, total: 1
@@ -243,7 +256,7 @@ func TestList(t *testing.T) {
 func TestTransferGroup(t *testing.T) {
 	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
-	id2, err := Mgr.Create(ctx, getGroup(int(id), "2", "b"))
+	id2, err := Mgr.Create(ctx, getGroup(id, "2", "b"))
 	assert.Nil(t, err)
 	id3, err := Mgr.Create(ctx, getGroup(0, "3", "c"))
 	assert.Nil(t, err)

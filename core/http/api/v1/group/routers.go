@@ -9,36 +9,36 @@ import (
 )
 
 // RegisterRoutes register routes
-func RegisterRoutes(engine *gin.Engine, c *Controller) {
+func RegisterRoutes(engine *gin.Engine, a *API) {
 	coreAPI := engine.Group("/apis/core/v1/groups")
 	var coreRoutes = route.Routes{
 		{
 			Method:      http.MethodPost,
-			HandlerFunc: c.CreateGroup,
+			HandlerFunc: a.CreateGroup,
 		},
 		{
 			Method:      http.MethodDelete,
 			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
-			HandlerFunc: c.DeleteGroup,
+			HandlerFunc: a.DeleteGroup,
 		},
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
-			HandlerFunc: c.GetGroup,
+			HandlerFunc: a.GetGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			HandlerFunc: c.GetGroupByPath,
+			HandlerFunc: a.GetGroupByPath,
 		},
 		{
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
-			HandlerFunc: c.UpdateGroup,
+			HandlerFunc: a.UpdateGroup,
 		},
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%s/groups", ParamGroupID),
-			HandlerFunc: c.GetSubGroups,
+			HandlerFunc: a.GetSubGroups,
 		},
 	}
 
@@ -47,17 +47,17 @@ func RegisterRoutes(engine *gin.Engine, c *Controller) {
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%s/children", ParamGroupID),
-			HandlerFunc: c.GetChildren,
+			HandlerFunc: a.GetChildren,
 		},
 		{
 			Method:      http.MethodGet,
 			Pattern:     "/search",
-			HandlerFunc: c.SearchGroups,
+			HandlerFunc: a.SearchGroups,
 		},
 		{
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/:%s/transfer", ParamGroupID),
-			HandlerFunc: c.TransferGroup,
+			HandlerFunc: a.TransferGroup,
 		},
 	}
 

@@ -68,7 +68,7 @@ func Run(flags *Flags) {
 
 	var (
 		// init API
-		groupCt     = group.NewController()
+		groupCt     = group.NewAPI()
 		templateAPI = template.NewAPI()
 	)
 
