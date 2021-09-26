@@ -20,3 +20,7 @@ const (
 	// UserQueryByOIDC ...
 	UserQueryByOIDC = "select * from user where oidc_id = ? and oidc_type = ?"
 )
+
+const (
+	ApplicationQueryByName = "select * from application where name = ? and deleted_at is null"
+)

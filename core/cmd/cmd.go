@@ -7,12 +7,13 @@ import (
 	"log"
 	"regexp"
 
+	applicationctl "g.hz.netease.com/horizon/controller/application"
+	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/auth"
@@ -67,9 +68,15 @@ func Run(flags *Flags) {
 	}
 
 	var (
+		// init controller
+		applicationCtl = applicationctl.NewController(config.GitlabConfig)
+	)
+
+	var (
 		// init API
-		groupCt     = group.NewController()
-		templateAPI = template.NewAPI()
+		groupCt        = group.NewController()
+		templateAPI    = template.NewAPI()
+		applicationAPI = application.NewAPI(applicationCtl)
 	)
 
 	// init server
@@ -83,9 +90,9 @@ func Run(flags *Flags) {
 		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
 		auth.Middleware(middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
-		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+		// user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
+		// 	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
+		// 	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
@@ -98,6 +105,7 @@ func Run(flags *Flags) {
 	metrics.RegisterRoutes(r)
 	group.RegisterRoutes(r, groupCt)
 	template.RegisterRoutes(r, templateAPI)
+	application.RegisterRoutes(r, applicationAPI)
 
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))

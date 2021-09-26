@@ -33,6 +33,8 @@ type controller struct {
 	gitlabCtl          gitlab.Controller
 }
 
+var _ Controller = (*controller)(nil)
+
 // NewController initializes a new controller
 func NewController() Controller {
 	return &controller{

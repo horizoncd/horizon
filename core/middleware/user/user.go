@@ -63,3 +63,7 @@ func FromContext(ctx context.Context) (*models.User, error) {
 	}
 	return u, nil
 }
+
+func Key() string {
+	return contextUserKey
+}

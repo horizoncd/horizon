@@ -28,6 +28,8 @@ type controller struct {
 	gitlabMgr gitlab.Manager
 }
 
+var _ Controller = (*controller)(nil)
+
 // NewController initializes a new controller
 func NewController() Controller {
 	return &controller{

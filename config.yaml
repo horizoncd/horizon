@@ -13,3 +13,14 @@ oidcConfig:
   emailHeader: X-HORIZON-OIDC-EMAIL
   oidcIDHeader: X-HORIZON-OIDC-ID
   oidcTypeHeader: X-HORIZON-OIDC-TYPE
+gitlabConfig:
+  application:
+    gitlabName: compute
+    parent:
+      path: music-cloud-native/applications
+      id: 4278
+  applicationInstance:
+    gitlabName: compute
+    parent:
+      path: music-cloud-native/application-instances
+      id: 4279
