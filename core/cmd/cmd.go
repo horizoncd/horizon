@@ -15,12 +15,13 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
+	"g.hz.netease.com/horizon/server/middleware/auth"
 	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 
-	ormmiddle "g.hz.netease.com/horizon/server/middleware/orm"
+	ormMiddle "g.hz.netease.com/horizon/server/middleware/orm"
 )
 
 // Flags defines agent CLI flags.
@@ -53,7 +54,7 @@ func Run(flags *Flags) {
 	}
 
 	// init db
-	mySQLDB, err := orm.NewMySQLDB(&orm.MySQL{
+	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
 		Host:              config.DBConfig.Host,
 		Port:              config.DBConfig.Port,
 		Username:          config.DBConfig.Username,
@@ -79,7 +80,9 @@ func Run(flags *Flags) {
 		gin.Recovery(),
 		requestid.Middleware(),        // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(),        // log middleware, attach a logger to context
-		ormmiddle.Middleware(mySQLDB), // orm db middleware, attach a db to context
+		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
+		auth.Middleware(middleware.MethodAndPathSkipper("*",
+			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
 		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
