@@ -84,7 +84,7 @@ paths:
                     "//dockerfile": "dockerfile, required when type is dockerfile",
                     "dockerfile": {
                       "//type": "dockerfile type, path or content",
-                      "type": "path/content",
+                      "type": "path | content",
                       "//path": "dockerfile path in repo",
                       "path": "/path/to/dockerfile",
                       "//content": "dockerfile content",
@@ -173,6 +173,15 @@ paths:
                         "port": 8080
                       }
                     }
+                  },
+                  "pipelineInput": {
+                    "type": "build.xml",
+                    "buildxml": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHByb2plY3QgWzwhRU5USVRZIGJ1aWxkZmlsZSBTWVNURU0gImZpbGU6Li9idWlsZC11c2VyLnhtbCI+XT4KPHByb2plY3QgYmFzZWRpcj0iLiIgZGVmYXVsdD0iZGVwbG95IiBuYW1lPSJkZW1vIj4KICAgIDxwcm9wZXJ0eSBuYW1lPSJhbnQiIHZhbHVlPSJhbnQiIC8+CiAgICA8cHJvcGVydHkgbmFtZT0iYmFzZWxpbmUuZGlyIiB2YWx1ZT0iJHtiYXNlZGlyfSIvPgoKICAgIDx0YXJnZXQgbmFtZT0icGFja2FnZSI+CiAgICAgICAgPGV4ZWMgZGlyPSIke2Jhc2VsaW5lLmRpcn0iIGV4ZWN1dGFibGU9IiR7YW50fSIgZmFpbG9uZXJyb3I9InRydWUiPgogICAgICAgICAgICA8YXJnIGxpbmU9Ii1idWlsZGZpbGUgb3Zlcm1pbmRfYnVpbGQueG1sIC1EZW52PXRlc3QgLURlbnZOYW1lPXFhLWFsbGFuLmlnYW1lLjE2My5jb20iLz4KICAgICAgICA8L2V4ZWM+CiAgICA8L3RhcmdldD4KCiAgICA8dGFyZ2V0IG5hbWU9ImRlcGxveSI+CiAgICAgICAgPGVjaG8gbWVzc2FnZT0iYmVnaW4gYXV0byBkZXBsb3kuLi4uLi4iLz4KICAgICAgICA8YW50Y2FsbCB0YXJnZXQ9InBhY2thZ2UiLz4KICAgIDwvdGFyZ2V0Pgo8L3Byb2plY3Q+",
+                    "dockerfile": {
+                      "type": "path | content",
+                      "path": "/path/to/dockerfile",
+                      "content": "RlJPTSBodWIuY24tZWFzdC1wMS5uZXRlYXNlLmNvbS9zdGFmZnl1bjE2M211c2ljL2Nsb3VkbmF0aXZlL3Rla3Rvbi9idWlsZGVyOmRldmVsb3AtcjIwMjEwMzMwMTUxMCBhcyBidWlsZGVyCgpDT1BZIC4gL2J1aWxkcwoKV09SS0RJUiAvYnVpbGRzCgpSVU4gbXZuSkRLOCBwYWNrYWdlIC1EbWF2ZW4udGVzdC5za2lwPXRydWUKCkZST00gb3Blbmpkazo4dTE1MS1qZGsKCkNPUFkgLS1mcm9tPWJ1aWxkZXIgL2J1aWxkcy90YXJnZXQvbmRwLWRlcGxveS10ZXMqLmphciBhcHAuamFyCgpDTUQgZXhlYyBqYXZhICRKQVZBX09QVFMgLWphciAvYXBwLmphcg=="
+                    }
                   }
                 }
       responses:
@@ -252,6 +261,15 @@ paths:
                           },
                           "port": 8080
                         }
+                      }
+                    },
+                    "pipelineInput": {
+                      "type": "build.xml",
+                      "buildxml": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHByb2plY3QgWzwhRU5USVRZIGJ1aWxkZmlsZSBTWVNURU0gImZpbGU6Li9idWlsZC11c2VyLnhtbCI+XT4KPHByb2plY3QgYmFzZWRpcj0iLiIgZGVmYXVsdD0iZGVwbG95IiBuYW1lPSJkZW1vIj4KICAgIDxwcm9wZXJ0eSBuYW1lPSJhbnQiIHZhbHVlPSJhbnQiIC8+CiAgICA8cHJvcGVydHkgbmFtZT0iYmFzZWxpbmUuZGlyIiB2YWx1ZT0iJHtiYXNlZGlyfSIvPgoKICAgIDx0YXJnZXQgbmFtZT0icGFja2FnZSI+CiAgICAgICAgPGV4ZWMgZGlyPSIke2Jhc2VsaW5lLmRpcn0iIGV4ZWN1dGFibGU9IiR7YW50fSIgZmFpbG9uZXJyb3I9InRydWUiPgogICAgICAgICAgICA8YXJnIGxpbmU9Ii1idWlsZGZpbGUgb3Zlcm1pbmRfYnVpbGQueG1sIC1EZW52PXRlc3QgLURlbnZOYW1lPXFhLWFsbGFuLmlnYW1lLjE2My5jb20iLz4KICAgICAgICA8L2V4ZWM+CiAgICA8L3RhcmdldD4KCiAgICA8dGFyZ2V0IG5hbWU9ImRlcGxveSI+CiAgICAgICAgPGVjaG8gbWVzc2FnZT0iYmVnaW4gYXV0byBkZXBsb3kuLi4uLi4iLz4KICAgICAgICA8YW50Y2FsbCB0YXJnZXQ9InBhY2thZ2UiLz4KICAgIDwvdGFyZ2V0Pgo8L3Byb2plY3Q+",
+                      "dockerfile": {
+                        "type": "path | content",
+                        "path": "/path/to/dockerfile",
+                        "content": "RlJPTSBodWIuY24tZWFzdC1wMS5uZXRlYXNlLmNvbS9zdGFmZnl1bjE2M211c2ljL2Nsb3VkbmF0aXZlL3Rla3Rvbi9idWlsZGVyOmRldmVsb3AtcjIwMjEwMzMwMTUxMCBhcyBidWlsZGVyCgpDT1BZIC4gL2J1aWxkcwoKV09SS0RJUiAvYnVpbGRzCgpSVU4gbXZuSkRLOCBwYWNrYWdlIC1EbWF2ZW4udGVzdC5za2lwPXRydWUKCkZST00gb3Blbmpkazo4dTE1MS1qZGsKCkNPUFkgLS1mcm9tPWJ1aWxkZXIgL2J1aWxkcy90YXJnZXQvbmRwLWRlcGxveS10ZXMqLmphciBhcHAuamFyCgpDTUQgZXhlYyBqYXZhICRKQVZBX09QVFMgLWphciAvYXBwLmphcg=="
                       }
                     }
                   }

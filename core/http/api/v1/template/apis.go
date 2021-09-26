@@ -12,8 +12,8 @@ import (
 
 const (
 	// param
-	templateParam = "template"
-	releaseParam  = "release"
+	_templateParam = "template"
+	_releaseParam  = "release"
 )
 
 type API struct {
@@ -40,7 +40,7 @@ func (a *API) ListTemplate(c *gin.Context) {
 }
 
 func (a *API) ListTemplateRelease(c *gin.Context) {
-	t := c.Param(templateParam)
+	t := c.Param(_templateParam)
 	templates, err := a.templateReleaseMgr.ListByTemplateName(c, t)
 	if err != nil {
 		response.AbortWithInternalError(c, err.Error())
@@ -50,8 +50,8 @@ func (a *API) ListTemplateRelease(c *gin.Context) {
 }
 
 func (a *API) GetTemplateSchema(c *gin.Context) {
-	t := c.Param(templateParam)
-	r := c.Param(releaseParam)
+	t := c.Param(_templateParam)
+	r := c.Param(_releaseParam)
 	// get template schema by templateName and releaseName
 	b, err := a.templateCtl.GetTemplateSchema(c, t, r)
 	if err != nil {
