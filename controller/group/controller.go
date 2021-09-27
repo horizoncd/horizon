@@ -55,6 +55,9 @@ func (c *controller) SearchGroups(ctx context.Context, id uint, filter string) (
 	if err != nil {
 		return nil, 0, err
 	}
+	if groupsByNames == nil {
+		return []*GChild{}, 0, nil
+	}
 
 	var ids []uint
 	for _, g := range groupsByNames {
@@ -75,9 +78,9 @@ func (c *controller) SearchGroups(ctx context.Context, id uint, filter string) (
 	// organize struct of search result
 	parentIDToGChildMap := make(map[uint][]*GChild)
 	firstLevelGChildren := make([]*GChild, 0)
-	for i := range groupsByIDs {
+	for i := len(groupsByIDs) - 1; i >= 0; i-- {
 		// reverse order because of the match logic
-		g := groupsByIDs[len(groupsByIDs)-i-1]
+		g := groupsByIDs[i]
 		gChild := traversalIDsToGChildMap[g.TraversalIDs]
 
 		// name match or children's names match

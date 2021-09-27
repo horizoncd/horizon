@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/group/models"
 )
 
+// formatFullPathAndFullName format fullPath which looks like /a/b/c, and fullName which looks like 1 / 2
 func formatFullPathAndFullName(groups []*models.Group) (string, string) {
 	var fullPath, fullName string
 	paths := make([]string, len(groups))
@@ -23,6 +24,7 @@ func formatFullPathAndFullName(groups []*models.Group) (string, string) {
 	return fullPath, fullName
 }
 
+// convertGroupToGChild format GChild based on group model、fullName、fullPath and resourceType
 func convertGroupToGChild(group *models.Group, fullName, fullPath, resourceType string) *GChild {
 	return &GChild{
 		ID:              group.ID,
@@ -38,6 +40,7 @@ func convertGroupToGChild(group *models.Group, fullName, fullPath, resourceType 
 	}
 }
 
+// convertNewGroupToGroup convert newGroup model to group model
 func convertNewGroupToGroup(newGroup *NewGroup) *models.Group {
 	return &models.Group{
 		Name:            newGroup.Name,
@@ -48,6 +51,7 @@ func convertNewGroupToGroup(newGroup *NewGroup) *models.Group {
 	}
 }
 
+// convertUpdateGroupToGroup convert updateGroup model to group model
 func convertUpdateGroupToGroup(updateGroup *UpdateGroup) *models.Group {
 	return &models.Group{
 		Name:            updateGroup.Name,
@@ -112,6 +116,7 @@ func mappingTraversalIDsToGChild(groups []*models.Group) map[string]*GChild {
 	return traversalIDsToGChild
 }
 
+// formatListGroupQuery query info for listing groups under a parent group, order by updated_at desc by default
 func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
 	query := q.New(q.KeyWords{
 		ParentID: id,

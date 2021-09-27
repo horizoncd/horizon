@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -31,49 +30,80 @@ func init() {
 }
 
 func TestControllerCreateGroup(t *testing.T) {
-	newRootGroup := &NewGroup{
-		Name:            "1",
-		Path:            "a",
-		VisibilityLevel: "private",
+	type args struct {
+		ctx      context.Context
+		newGroup *NewGroup
 	}
-
-	id, err := Ctl.CreateGroup(ctx, newRootGroup)
-	assert.Nil(t, err)
-	assert.Greater(t, id, uint(0))
-
-	g, err := Ctl.GetByID(ctx, id)
-	assert.Nil(t, err)
-	assert.Equal(t, strconv.Itoa(int(id)), g.TraversalIDs)
-
-	newRootGroup2 := &NewGroup{
-		Name:            "1",
-		Path:            "b",
-		VisibilityLevel: "private",
+	tests := []struct {
+		name    string
+		args    args
+		want    uint
+		wantErr bool
+	}{
+		{
+			name: "createRootGroup",
+			args: args{
+				ctx: ctx,
+				newGroup: &NewGroup{
+					Name:            "1",
+					Path:            "a",
+					VisibilityLevel: "private",
+				},
+			},
+			want:    1,
+			wantErr: false,
+		},
+		{
+			name: "nameConflict",
+			args: args{
+				ctx: ctx,
+				newGroup: &NewGroup{
+					Name:            "1",
+					Path:            "aa",
+					VisibilityLevel: "private",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "pathConflict",
+			args: args{
+				ctx: ctx,
+				newGroup: &NewGroup{
+					Name:            "11",
+					Path:            "a",
+					VisibilityLevel: "private",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "createSubGroup",
+			args: args{
+				ctx: ctx,
+				newGroup: &NewGroup{
+					Name:            "1",
+					Path:            "a",
+					VisibilityLevel: "private",
+					ParentID:        1,
+				},
+			},
+			want:    2,
+			wantErr: false,
+		},
 	}
-
-	_, err = Ctl.CreateGroup(ctx, newRootGroup2)
-	assert.Equal(t, dao.ErrNameConflict, err)
-
-	newRootGroup3 := &NewGroup{
-		Name:            "2",
-		Path:            "a",
-		VisibilityLevel: "private",
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Ctl.CreateGroup(tt.args.ctx, tt.args.newGroup)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateGroup() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("CreateGroup() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
-
-	_, err = Ctl.CreateGroup(ctx, newRootGroup3)
-	assert.Equal(t, dao.ErrPathConflict, err)
-
-	newGroup := &NewGroup{
-		Name:            "1",
-		Path:            "a",
-		VisibilityLevel: "private",
-		ParentID:        id,
-	}
-	id2, err := Ctl.CreateGroup(ctx, newGroup)
-	assert.Nil(t, err)
-	g, err = Ctl.GetByID(ctx, id2)
-	assert.Nil(t, err)
-	assert.Equal(t, strconv.Itoa(int(id))+","+strconv.Itoa(int(id2)), g.TraversalIDs)
 
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
@@ -401,6 +431,15 @@ func TestControllerSearchGroups(t *testing.T) {
 				},
 			},
 			want1: 1,
+		},
+		{
+			name: "noMatch",
+			args: args{
+				ctx:    ctx,
+				filter: "3",
+			},
+			want:  []*GChild{},
+			want1: 0,
 		},
 		{
 			name: "matchFirstLevel",

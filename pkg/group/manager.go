@@ -93,7 +93,7 @@ func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) 
 	var err error
 	// check if parent exists
 	if group.ParentID > 0 {
-		pGroup, err = m.dao.GetByID(ctx, uint(group.ParentID))
+		pGroup, err = m.dao.GetByID(ctx, group.ParentID)
 		if err != nil {
 			return 0, err
 		}
