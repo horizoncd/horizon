@@ -6,7 +6,7 @@ type GChild struct {
 	Path            string    `json:"path"`
 	VisibilityLevel string    `json:"visibilityLevel"`
 	Description     string    `json:"description"`
-	ParentID        uint      `json:"parentId"`
+	ParentID        uint      `json:"parentID"`
 	TraversalIDs    string    `json:"traversalIDs"`
 	FullName        string    `json:"fullName"`
 	FullPath        string    `json:"fullPath"`
@@ -20,7 +20,7 @@ type NewGroup struct {
 	Path            string `json:"path" binding:"required"`
 	VisibilityLevel string `json:"visibilityLevel" binding:"required"`
 	Description     string `json:"description"`
-	ParentID        uint   `json:"parentId"`
+	ParentID        uint   `json:"parentID"`
 }
 
 type UpdateGroup struct {

@@ -161,17 +161,12 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 }
 
 func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *UpdateGroup) error {
-	const op = "group *controller: update group basic info by id"
-
 	groupEntity := convertUpdateGroupToGroup(updateGroup)
 	groupEntity.ID = id
 
-	rowsAffected, err := c.groupManager.UpdateBasic(ctx, groupEntity)
+	_, err := c.groupManager.UpdateBasic(ctx, groupEntity)
 	if err != nil {
 		return err
-	}
-	if rowsAffected == 0 {
-		return errors.E(op, http.StatusNotFound, ErrCodeNotFound, fmt.Sprintf("no group matching the id: %d", id))
 	}
 
 	return nil

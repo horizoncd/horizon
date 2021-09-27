@@ -99,12 +99,12 @@ func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) 
 		}
 	}
 
-	// check if there's a record with the same parentId and name
+	// check if there's a record with the same parentID and name
 	err = m.dao.CheckNameUnique(ctx, group)
 	if err != nil {
 		return 0, err
 	}
-	// check if there's a record with the same parentId and path
+	// check if there's a record with the same parentID and path
 	err = m.dao.CheckPathUnique(ctx, group)
 	if err != nil {
 		return 0, err
@@ -148,12 +148,12 @@ func (m manager) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 }
 
 func (m manager) UpdateBasic(ctx context.Context, group *models.Group) (int64, error) {
-	// check if there's record with the same parentId and name
+	// check if there's record with the same parentID and name
 	err := m.dao.CheckNameUnique(ctx, group)
 	if err != nil {
 		return 0, err
 	}
-	// check if there's a record with the same parentId and path
+	// check if there's a record with the same parentID and path
 	err = m.dao.CheckPathUnique(ctx, group)
 	if err != nil {
 		return 0, err

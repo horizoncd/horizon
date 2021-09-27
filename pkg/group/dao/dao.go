@@ -133,7 +133,7 @@ func (d *dao) CheckPathUnique(ctx context.Context, group *models.Group) error {
 	queryResult := models.Group{}
 	result := db.Raw(common.GroupQueryByParentIDAndPath, group.ParentID, group.Path).First(&queryResult)
 
-	// update group conflict, has another record with the same parentId & path
+	// update group conflict, has another record with the same parentID & path
 	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
 		return ErrPathConflict
 	}
@@ -168,7 +168,7 @@ func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 	queryResult := models.Group{}
 	result := db.Raw(common.GroupQueryByParentIDAndName, group.ParentID, group.Name).First(&queryResult)
 
-	// update group conflict, has another record with the same parentId & name
+	// update group conflict, has another record with the same parentID & name
 	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
 		return ErrNameConflict
 	}

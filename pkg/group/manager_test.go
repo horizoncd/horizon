@@ -61,11 +61,11 @@ func TestCreate(t *testing.T) {
 	get, _ := Mgr.GetByID(ctx, id)
 	assert.Equal(t, fmt.Sprintf("%d", id), get.TraversalIDs)
 
-	// name conflict, parentId: nil
+	// name conflict, parentID: nil
 	_, err = Mgr.Create(ctx, getGroup(0, "1", "b"))
 	assert.Equal(t, common.ErrNameConflict, err)
 
-	// path conflict, parentId: nil
+	// path conflict, parentID: nil
 	_, err = Mgr.Create(ctx, getGroup(0, "2", "a"))
 	assert.Equal(t, dao.ErrPathConflict, err)
 
