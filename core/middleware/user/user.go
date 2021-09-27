@@ -23,10 +23,12 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 		oidcID := c.Request.Header.Get(config.OIDCIDHeader)
 		oidcType := c.Request.Header.Get(config.OIDCTypeHeader)
 		userName := c.Request.Header.Get(config.UserHeader)
+		fullName := c.Request.Header.Get(config.FullNameHeader)
 		email := c.Request.Header.Get(config.EmailHeader)
 
 		// if one of the fields is empty, return 401 Unauthorized
-		if len(oidcID) == 0 || len(oidcType) == 0 || len(userName) == 0 || len(email) == 0 {
+		if len(oidcID) == 0 || len(oidcType) == 0 ||
+			len(userName) == 0 || len(email) == 0 || len(fullName) == 0 {
 			response.Abort(c, http.StatusUnauthorized,
 				http.StatusText(http.StatusUnauthorized), http.StatusText(http.StatusUnauthorized))
 			return
@@ -41,6 +43,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 		if u == nil {
 			u, err = mgr.Create(c, &models.User{
 				Name:     userName,
+				FullName: fullName,
 				Email:    email,
 				OIDCId:   oidcID,
 				OIDCType: oidcType,
