@@ -9,10 +9,11 @@ import (
 
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
+	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
-	"g.hz.netease.com/horizon/core/middleware/user"
+	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/auth"
@@ -70,6 +71,7 @@ func Run(flags *Flags) {
 		// init API
 		groupCt     = group.NewController()
 		templateAPI = template.NewAPI()
+		userAPI     = user.NewAPI()
 	)
 
 	// init server
@@ -83,7 +85,7 @@ func Run(flags *Flags) {
 		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
 		auth.Middleware(middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
-		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
+		usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		metricsmiddle.Middleware( // metrics middleware
@@ -98,6 +100,7 @@ func Run(flags *Flags) {
 	metrics.RegisterRoutes(r)
 	group.RegisterRoutes(r, groupCt)
 	template.RegisterRoutes(r, templateAPI)
+	user.RegisterRoutes(r, userAPI)
 
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
