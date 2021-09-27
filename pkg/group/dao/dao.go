@@ -28,6 +28,7 @@ type DAO interface {
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	CountByParentID(ctx context.Context, parentID uint) (int64, error)
 	UpdateBasic(ctx context.Context, group *models.Group) (int64, error)
+	UpdateParentID(ctx context.Context, id, parentID uint) (int64, error)
 	UpdateTraversalIDs(ctx context.Context, id uint, traversalIDs string) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
@@ -40,6 +41,17 @@ func New() DAO {
 }
 
 type dao struct{}
+
+func (d *dao) UpdateParentID(ctx context.Context, id, parentID uint) (int64, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	result := db.Exec(common.GroupUpdateParentID, parentID, id)
+
+	return result.RowsAffected, result.Error
+}
 
 func (d *dao) Transfer(ctx context.Context, oldTraversalIDs, newTraversalIDs string) error {
 	db, err := orm.FromContext(ctx)

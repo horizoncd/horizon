@@ -15,7 +15,6 @@ const (
 	ParamPath     = "path"
 	ParamFilter   = "filter"
 	QueryParentID = "parentID"
-	Group         = "group"
 )
 
 type API struct {
@@ -160,7 +159,7 @@ func (a *API) GetSubGroups(c *gin.Context) {
 	}
 	pSize := c.Query(common.PageSize)
 	pageSize, err := strconv.Atoi(pSize)
-	if err != nil || pageSize > common.MaxPageSize {
+	if err != nil || pageNumber <= 0 || pageSize > common.MaxPageSize {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, pageSize: %s", pSize))
 		return
 	}

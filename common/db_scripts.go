@@ -28,6 +28,7 @@ const (
 	GroupDelete                 = "update `group` set deleted_at = CURRENT_TIMESTAMP where id = ?"
 	GroupUpdateBasic            = "update `group` set name = ?, path = ?, description = ?, visibility_level = ? " +
 		"where id = ?"
+	GroupUpdateParentID          = "update `group` set parent_id = ? where id = ?"
 	GroupQueryByID               = "select * from `group` where id = ? and deleted_at is null"
 	GroupQueryByIDs              = "select * from `group` where id in ? and deleted_at is null"
 	GroupQueryByIDsOrderByIDDesc = "select * from `group` where id in ? and deleted_at is null order by id desc"

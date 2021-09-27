@@ -31,6 +31,7 @@ func convertGroupToGChild(group *models.Group, fullName, fullPath, resourceType 
 		VisibilityLevel: group.VisibilityLevel,
 		Description:     group.Description,
 		ParentID:        group.ParentID,
+		TraversalIDs:    group.TraversalIDs,
 		FullName:        fullName,
 		FullPath:        fullPath,
 		Type:            resourceType,
@@ -87,7 +88,7 @@ after the function executed, we get a map:
   },
 }
 */
-func formatTraversalIDsToGChildMap(groups []*models.Group) map[string]*GChild {
+func mappingTraversalIDsToGChild(groups []*models.Group) map[string]*GChild {
 	traversalIDsToGChild := make(map[string]*GChild)
 	for _, g := range groups {
 		traversalIDs := g.TraversalIDs

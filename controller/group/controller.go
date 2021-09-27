@@ -70,7 +70,7 @@ func (c *controller) SearchGroups(ctx context.Context, id uint, filter string) (
 		return nil, 0, err
 	}
 
-	traversalIDsToGChildMap := formatTraversalIDsToGChildMap(groupsByIDs)
+	traversalIDsToGChildMap := mappingTraversalIDsToGChild(groupsByIDs)
 
 	// organize struct of search result
 	parentIDToGChildMap := make(map[uint][]*GChild)
@@ -199,7 +199,7 @@ func (c *controller) GetByPath(ctx context.Context, path string) (*GChild, error
 		return nil, err
 	}
 
-	traversalIDsToGChildMap := formatTraversalIDsToGChildMap(groups)
+	traversalIDsToGChildMap := mappingTraversalIDsToGChild(groups)
 
 	for _, v := range traversalIDsToGChildMap {
 		// path pointing to a group

@@ -40,6 +40,7 @@ type manager struct {
 }
 
 func (m manager) Transfer(ctx context.Context, id, newParentID uint) error {
+	// check records exist
 	group, err := m.GetByID(ctx, id)
 	if err != nil {
 		return err
@@ -49,6 +50,13 @@ func (m manager) Transfer(ctx context.Context, id, newParentID uint) error {
 		return err
 	}
 
+	// change parentID
+	_, err = m.dao.UpdateParentID(ctx, id, newParentID)
+	if err != nil {
+		return err
+	}
+
+	// change traversalIDs
 	return m.dao.Transfer(ctx, group.TraversalIDs, fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID))
 }
 
