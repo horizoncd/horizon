@@ -6,7 +6,6 @@ import (
 	"errors"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
 	usermock "g.hz.netease.com/horizon/mock/pkg/user"
 	"g.hz.netease.com/horizon/pkg/user/models"
 
@@ -62,22 +61,4 @@ func Test(t *testing.T) {
 
 	_, _, err = c.SearchUser(ctx, filter+"1", nil)
 	assert.NotNil(t, err)
-
-	_, err = c.GetName(ctx)
-	assert.NotNil(t, err)
-
-	ctx = context.WithValue(ctx, user.Key(), &models.User{
-		Model: gorm.Model{
-			ID: 1,
-		},
-		Name: "tony",
-	})
-
-	name, err := c.GetName(ctx)
-	assert.Nil(t, err)
-	assert.Equal(t, "tony", name)
-
-	id, err := c.GetID(ctx)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, id)
 }
