@@ -11,6 +11,7 @@ import (
 
 const (
 	// param
+	_groupIDParam     = "groupID"
 	_applicationParam = "application"
 )
 

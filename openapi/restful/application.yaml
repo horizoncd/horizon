@@ -5,7 +5,12 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/applications:
+  /apis/core/v1/groups/{groupID}/applications:
+    parameters:
+      - name: groupID
+        in: path
+        description: group id
+        required: true
     post:
       tags:
         - application

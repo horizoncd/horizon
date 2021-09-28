@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	// Mgr is the global gitlab manager
+	// Mgr is the global application manager
 	Mgr = New()
 )
 
