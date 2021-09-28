@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
 	"g.hz.netease.com/horizon/pkg/user"
 	"g.hz.netease.com/horizon/pkg/user/models"
@@ -54,15 +55,19 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 			}
 		}
 		// attach user to context
-		c.Set(contextUserKey, u)
+		c.Set(contextUserKey, &userauth.DefaultInfo{
+			Name:     u.Name,
+			FullName: u.FullName,
+			ID:       int(u.ID),
+		})
 		c.Next()
 	}, skippers...)
 }
 
-func FromContext(ctx context.Context) (*models.User, error) {
-	u, ok := ctx.Value(contextUserKey).(*models.User)
+func FromContext(ctx context.Context) (userauth.User, error) {
+	u, ok := ctx.Value(contextUserKey).(userauth.User)
 	if !ok {
-		return nil, errors.New("cannot get the user from context")
+		return nil, errors.New("cannot get the authenticated user from context")
 	}
 	return u, nil
 }
