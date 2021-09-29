@@ -18,26 +18,26 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 		},
 		{
 			Method:      http.MethodDelete,
-			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
+			Pattern:     fmt.Sprintf("/:%s", _paramGroupID),
 			HandlerFunc: a.DeleteGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
+			Pattern:     fmt.Sprintf("/:%s", _paramGroupID),
 			HandlerFunc: a.GetGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			HandlerFunc: a.GetGroupByPath,
+			HandlerFunc: a.GetGroupByFullPath,
 		},
 		{
 			Method:      http.MethodPut,
-			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
+			Pattern:     fmt.Sprintf("/:%s", _paramGroupID),
 			HandlerFunc: a.UpdateGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%s/groups", ParamGroupID),
+			Pattern:     fmt.Sprintf("/:%s/groups", _paramGroupID),
 			HandlerFunc: a.GetSubGroups,
 		},
 	}
@@ -46,7 +46,7 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 	var frontRoutes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%s/children", ParamGroupID),
+			Pattern:     fmt.Sprintf("/:%s/children", _paramGroupID),
 			HandlerFunc: a.GetChildren,
 		},
 		{
@@ -56,7 +56,7 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 		},
 		{
 			Method:      http.MethodPut,
-			Pattern:     fmt.Sprintf("/:%s/transfer", ParamGroupID),
+			Pattern:     fmt.Sprintf("/:%s/transfer", _paramGroupID),
 			HandlerFunc: a.TransferGroup,
 		},
 	}

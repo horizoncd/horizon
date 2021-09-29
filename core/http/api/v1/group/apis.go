@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	ParamGroupID  = "groupID"
-	ParamPath     = "path"
-	QueryParentID = "parentID"
+	_paramGroupID  = "groupID"
+	_paramPath     = "path"
+	_queryParentID = "parentID"
 )
 
 type API struct {
@@ -44,7 +44,7 @@ func (a *API) CreateGroup(c *gin.Context) {
 }
 
 func (a *API) DeleteGroup(c *gin.Context) {
-	groupID := c.Param(ParamGroupID)
+	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.Atoi(groupID)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
@@ -61,7 +61,7 @@ func (a *API) DeleteGroup(c *gin.Context) {
 }
 
 func (a *API) GetGroup(c *gin.Context) {
-	groupID := c.Param(ParamGroupID)
+	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.Atoi(groupID)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
@@ -77,10 +77,10 @@ func (a *API) GetGroup(c *gin.Context) {
 	response.SuccessWithData(c, gChild)
 }
 
-func (a *API) GetGroupByPath(c *gin.Context) {
-	path := c.Query(ParamPath)
+func (a *API) GetGroupByFullPath(c *gin.Context) {
+	path := c.Query(_paramPath)
 
-	gChild, err := a.groupCtl.GetByPath(c, path)
+	gChild, err := a.groupCtl.GetByFullPath(c, path)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
@@ -90,8 +90,8 @@ func (a *API) GetGroupByPath(c *gin.Context) {
 }
 
 func (a *API) TransferGroup(c *gin.Context) {
-	groupID := c.Param(ParamGroupID)
-	parentID := c.Query(QueryParentID)
+	groupID := c.Param(_paramGroupID)
+	parentID := c.Query(_queryParentID)
 	intID, err := strconv.Atoi(groupID)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
@@ -113,7 +113,7 @@ func (a *API) TransferGroup(c *gin.Context) {
 }
 
 func (a *API) UpdateGroup(c *gin.Context) {
-	groupID := c.Param(ParamGroupID)
+	groupID := c.Param(_paramGroupID)
 
 	intID, err := strconv.Atoi(groupID)
 	if err != nil {
@@ -143,7 +143,7 @@ func (a *API) GetChildren(c *gin.Context) {
 }
 
 func (a *API) GetSubGroups(c *gin.Context) {
-	parentID := c.Param(ParamGroupID)
+	parentID := c.Param(_paramGroupID)
 	intID, err := strconv.Atoi(parentID)
 	if err != nil || intID < -1 {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", parentID))
@@ -181,7 +181,7 @@ func (a *API) SearchChildren(c *gin.Context) {
 }
 
 func (a *API) SearchGroups(c *gin.Context) {
-	parentID := c.Query(QueryParentID)
+	parentID := c.Query(_queryParentID)
 	intID, err := strconv.Atoi(parentID)
 	if err != nil || intID < -1 {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, parentID: %s", parentID))

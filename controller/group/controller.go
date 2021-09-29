@@ -15,30 +15,46 @@ import (
 )
 
 const (
+	// RootGroupID id of the root group, which is not actually exists in the group table
 	RootGroupID = 0
 )
 
 var (
+	// Ctl global instance of the group controller
 	Ctl = NewController()
 )
 
 const (
-	ErrCodeNotFound     = errors.ErrorCode("GroupNotFound")
+	// ErrCodeNotFound a kind of error code, returned when there's no group matching the given id
+	ErrCodeNotFound = errors.ErrorCode("GroupNotFound")
+	// ErrGroupHasChildren a kind of error code, returned when deleting a group which still has some children
 	ErrGroupHasChildren = errors.ErrorCode("GroupHasChildren")
-	Type                = "group"
-	ParentID            = "parent_id"
+	// Type used to indicate the 'Child' is a group
+	Type = "group"
+	// ParentID used in formatting query of the 'ListGroup'
+	ParentID = "parent_id"
 )
 
 type Controller interface {
+	// CreateGroup add a group
 	CreateGroup(ctx context.Context, newGroup *NewGroup) (uint, error)
+	// Delete remove a group by the id
 	Delete(ctx context.Context, id uint) error
+	// GetByID get a group by the id
 	GetByID(ctx context.Context, id uint) (*GChild, error)
-	GetByPath(ctx context.Context, path string) (*GChild, error)
+	// GetByFullPath get a group by the URLPath
+	GetByFullPath(ctx context.Context, path string) (*GChild, error)
+	// Transfer put a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
+	// UpdateBasic update basic info of a group, including name, path, description and visibilityLevel
 	UpdateBasic(ctx context.Context, id uint, updateGroup *UpdateGroup) error
+	// GetSubGroups get subgroups of a group
 	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*GChild, int64, error)
+	// GetChildren get children of a group, including subgroups and applications
 	GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*GChild, int64, error)
+	// SearchGroups search subGroups of a group
 	SearchGroups(ctx context.Context, id uint, filter string) ([]*GChild, int64, error)
+	// SearchChildren search children of a group, including subgroups and applications
 	SearchChildren(ctx context.Context, id uint, filter string) ([]*GChild, int64, error)
 }
 
@@ -46,10 +62,19 @@ type controller struct {
 	groupManager group.Manager
 }
 
+// NewController initializes a new group controller
+func NewController() Controller {
+	return &controller{
+		groupManager: group.Mgr,
+	}
+}
+
+// GetChildren get children of a group, including subgroups and applications
 func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*GChild, int64, error) {
 	return c.GetSubGroups(ctx, id, pageNumber, pageSize)
 }
 
+// SearchGroups search subGroups of a group
 func (c *controller) SearchGroups(ctx context.Context, id uint, filter string) ([]*GChild, int64, error) {
 	if filter == "" {
 		return c.GetSubGroups(ctx, id, common.DefaultPageNumber, common.DefaultPageSize)
@@ -106,10 +131,12 @@ func (c *controller) SearchGroups(ctx context.Context, id uint, filter string) (
 	return firstLevelGChildren, int64(len(firstLevelGChildren)), nil
 }
 
+// SearchChildren search children of a group, including subgroups and applications
 func (c *controller) SearchChildren(ctx context.Context, id uint, filter string) ([]*GChild, int64, error) {
 	return c.SearchGroups(ctx, id, filter)
 }
 
+// GetSubGroups get subgroups of a group
 func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*GChild, int64, error) {
 	var pGChild *GChild
 	if id > 0 {
@@ -164,6 +191,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 	return gChildren, count, nil
 }
 
+// UpdateBasic update basic info of a group, including name, path, description and visibilityLevel
 func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *UpdateGroup) error {
 	groupEntity := convertUpdateGroupToGroup(updateGroup)
 	groupEntity.ID = id
@@ -176,6 +204,7 @@ func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *Upda
 	return nil
 }
 
+// Transfer put a group under another parent group
 func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 	err := c.groupManager.Transfer(ctx, id, newParentID)
 	if err != nil {
@@ -185,13 +214,15 @@ func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 	return nil
 }
 
+// CreateGroup add a group
 func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint, error) {
 	groupEntity := convertNewGroupToGroup(newGroup)
 
 	return c.groupManager.Create(ctx, groupEntity)
 }
 
-func (c *controller) GetByPath(ctx context.Context, path string) (*GChild, error) {
+// GetByFullPath get a group by the URLPath
+func (c *controller) GetByFullPath(ctx context.Context, path string) (*GChild, error) {
 	const op = "group *controller: get group by path"
 
 	// path: /a/b => {a, b}
@@ -213,6 +244,7 @@ func (c *controller) GetByPath(ctx context.Context, path string) (*GChild, error
 	return nil, errors.E(op, http.StatusNotFound, ErrCodeNotFound, fmt.Sprintf("no group matching the path: %s", path))
 }
 
+// GetByID get a group by the id
 func (c *controller) GetByID(ctx context.Context, id uint) (*GChild, error) {
 	const op = "group *controller: get group by id"
 
@@ -233,6 +265,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*GChild, error) {
 	return convertGroupToGChild(groupEntity, fullName, fullPath, Type), nil
 }
 
+// Delete remove a group by the id
 func (c *controller) Delete(ctx context.Context, id uint) error {
 	const op = "group *controller: delete group by id"
 
@@ -248,10 +281,4 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 	}
 
 	return nil
-}
-
-func NewController() Controller {
-	return &controller{
-		groupManager: group.Mgr,
-	}
 }

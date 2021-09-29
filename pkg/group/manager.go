@@ -3,8 +3,6 @@ package group
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strconv"
 
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/dao"
@@ -36,6 +34,10 @@ type manager struct {
 	dao dao.DAO
 }
 
+func New() Manager {
+	return &manager{dao: dao.New()}
+}
+
 func (m manager) Transfer(ctx context.Context, id, newParentID uint) error {
 	return m.dao.Transfer(ctx, id, newParentID)
 }
@@ -57,40 +59,7 @@ func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.G
 }
 
 func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) {
-	var pGroup *models.Group
-	var err error
-	// check if parent exists
-	if group.ParentID > 0 {
-		pGroup, err = m.dao.GetByID(ctx, group.ParentID)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	// check if there's a record with the same parentID and name
-	err = m.dao.CheckNameUnique(ctx, group)
-	if err != nil {
-		return 0, err
-	}
-	// check if there's a record with the same parentID and path
-	err = m.dao.CheckPathUnique(ctx, group)
-	if err != nil {
-		return 0, err
-	}
-
 	id, err := m.dao.Create(ctx, group)
-	if err != nil {
-		return 0, err
-	}
-
-	// update traversal_ids, like 1; 1,2,3
-	var traversalIDs string
-	if pGroup == nil {
-		traversalIDs = strconv.Itoa(int(id))
-	} else {
-		traversalIDs = fmt.Sprintf("%s,%d", pGroup.TraversalIDs, id)
-	}
-	err = m.dao.UpdateTraversalIDs(ctx, id, traversalIDs)
 	if err != nil {
 		return 0, err
 	}
@@ -142,8 +111,4 @@ func (m manager) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models
 
 func (m manager) List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error) {
 	return m.dao.List(ctx, query)
-}
-
-func New() Manager {
-	return &manager{dao: dao.New()}
 }

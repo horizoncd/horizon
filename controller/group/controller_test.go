@@ -270,13 +270,13 @@ func TestControllerGetByPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Ctl.GetByPath(tt.args.ctx, tt.args.path)
+			got, err := Ctl.GetByFullPath(tt.args.ctx, tt.args.path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetByPath() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetByFullPath() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetByPath() got = %v, want %v", got, tt.want)
+				t.Errorf("GetByFullPath() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

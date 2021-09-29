@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -29,7 +30,6 @@ type DAO interface {
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	CountByParentID(ctx context.Context, parentID uint) (int64, error)
 	UpdateBasic(ctx context.Context, group *models.Group) error
-	UpdateTraversalIDs(ctx context.Context, id uint, traversalIDs string) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
 	Transfer(ctx context.Context, id, newParentID uint) error
@@ -61,7 +61,6 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 	err = db.Transaction(func(tx *gorm.DB) error {
 		// change parentID
 		if err := tx.Exec(common.GroupUpdateParentID, newParentID, id).Error; err != nil {
-			// rollback when error
 			return err
 		}
 
@@ -93,17 +92,6 @@ func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error)
 	result := db.Raw(common.GroupCountByParentID, parentID).Scan(&count)
 
 	return count, result.Error
-}
-
-func (d *dao) UpdateTraversalIDs(ctx context.Context, id uint, traversalIDs string) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	result := db.Exec(common.GroupUpdateTraversalIDs, traversalIDs, id)
-
-	return result.Error
 }
 
 func (d *dao) GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error) {
@@ -206,9 +194,56 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
 		return 0, err
 	}
 
-	result := db.Create(group)
+	var pGroup *models.Group
+	// check if parent exists
+	if group.ParentID > 0 {
+		pGroup, err = d.GetByID(ctx, group.ParentID)
+		if err != nil {
+			return 0, err
+		}
+	}
 
-	return group.ID, result.Error
+	// check if there's a record with the same parentID and name
+	err = d.CheckNameUnique(ctx, group)
+	if err != nil {
+		return 0, err
+	}
+	// check if there's a record with the same parentID and path
+	err = d.CheckPathUnique(ctx, group)
+	if err != nil {
+		return 0, err
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// create, get id returned by the database
+		if err := tx.Create(group).Error; err != nil {
+			// rollback when error
+			return err
+		}
+
+		// update traversalIDs
+		id := group.ID
+		var traversalIDs string
+		if pGroup == nil {
+			traversalIDs = strconv.Itoa(int(id))
+		} else {
+			traversalIDs = fmt.Sprintf("%s,%d", pGroup.TraversalIDs, id)
+		}
+
+		if err := tx.Exec(common.GroupUpdateTraversalIDs, traversalIDs, id).Error; err != nil {
+			// rollback when error
+			return err
+		}
+
+		// commit when return nil
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	return group.ID, nil
 }
 
 // Delete can only delete a group that doesn't have any children
