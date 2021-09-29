@@ -14,6 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	RootGroupID = 0
+)
+
 var (
 	Ctl = NewController()
 )

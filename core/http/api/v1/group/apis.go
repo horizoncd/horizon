@@ -14,8 +14,6 @@ const (
 	ParamGroupID  = "groupID"
 	ParamPath     = "path"
 	QueryParentID = "parentID"
-
-	RootGroupID = 0
 )
 
 type API struct {
