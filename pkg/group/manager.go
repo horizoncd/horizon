@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
@@ -86,7 +85,7 @@ func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) 
 
 	// update traversal_ids, like 1; 1,2,3
 	var traversalIDs string
-	if group.ParentID == common.RootGroupID {
+	if pGroup == nil {
 		traversalIDs = strconv.Itoa(int(id))
 	} else {
 		traversalIDs = fmt.Sprintf("%s,%d", pGroup.TraversalIDs, id)

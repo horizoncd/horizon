@@ -55,21 +55,21 @@ func init() {
 }
 
 func TestCreate(t *testing.T) {
-	// normal create
+	// normal create, parentID is nil
 	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
 	get, _ := Mgr.GetByID(ctx, id)
 	assert.Equal(t, fmt.Sprintf("%d", id), get.TraversalIDs)
 
-	// name conflict, parentID: nil
+	// name conflict, parentID is nil
 	_, err = Mgr.Create(ctx, getGroup(0, "1", "b"))
 	assert.Equal(t, common.ErrNameConflict, err)
 
-	// path conflict, parentID: nil
+	// path conflict, with parentID is nil
 	_, err = Mgr.Create(ctx, getGroup(0, "2", "a"))
 	assert.Equal(t, dao.ErrPathConflict, err)
 
-	// normal create, parent: 1
+	// normal create, parentID: not nil
 	group2 := getGroup(id, "2", "b")
 	id2, err := Mgr.Create(ctx, group2)
 	assert.Nil(t, err)

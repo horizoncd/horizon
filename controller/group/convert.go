@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"g.hz.netease.com/horizon/common"
+	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/models"
 )
@@ -99,7 +99,7 @@ func mappingTraversalIDsToGChild(groups []*models.Group) map[string]*GChild {
 		traversalIDs := g.TraversalIDs
 
 		var fullName, fullPath string
-		if g.ParentID == common.RootGroupID {
+		if g.ParentID == group.RootGroupID {
 			fullName = g.Name
 			fullPath = "/" + g.Path
 		} else {

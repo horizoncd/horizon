@@ -13,8 +13,9 @@ import (
 const (
 	ParamGroupID  = "groupID"
 	ParamPath     = "path"
-	ParamFilter   = "filter"
 	QueryParentID = "parentID"
+
+	RootGroupID = 0
 )
 
 type API struct {
@@ -189,7 +190,7 @@ func (a *API) SearchGroups(c *gin.Context) {
 		return
 	}
 
-	filter := c.Query(ParamFilter)
+	filter := c.Query(common.Filter)
 
 	searchGroups, count, err := a.groupCtl.SearchGroups(c, uint(intID), filter)
 	if err != nil {
