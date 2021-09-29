@@ -66,9 +66,9 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 		}
 
 		// update traversalIDs
-		oldTraversalIDs := group.TraversalIDs
-		newTraversalIDs := fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID)
-		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTraversalIDs, newTraversalIDs, oldTraversalIDs+"%").Error; err != nil {
+		oldTIDs := group.TraversalIDs
+		newTIDs := fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID)
+		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs, oldTIDs+"%").Error; err != nil {
 			return err
 		}
 
