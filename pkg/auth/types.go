@@ -1,17 +1,20 @@
 package auth
 
-import "context"
+import (
+	"context"
+
+	"g.hz.netease.com/horizon/pkg/authentication/user"
+)
 
 // attention: authorization is refers to the kubernetes rbac
 // we just copy core struct and logics from the kubernetes code
 // and do same modify
 
-
 // Attributes is an interface used by an Authorizer to get information about a request
 // that is used to make an authorization decision.
 type Attributes interface {
 	// GetUser return the user.Info object to authorize
-	GetUser() string
+	GetUser() user.User
 
 	// GetVerb returns the kube verb associated with API requests
 	// (this includes get, list,  create, update, patch, delete),
@@ -46,11 +49,11 @@ type Attributes interface {
 	IsResourceRequest() bool
 
 	// GetPath returns the path of the request
-	GetPath()  string
+	GetPath() string
 }
 
 type Authorizer interface {
-	Authorize(ctx context.Context, a Attributes) (Decision, reason string, err  error)
+	Authorize(ctx context.Context, a Attributes) (Decision, reason string, err error)
 }
 
 type Decision int
@@ -64,23 +67,36 @@ const (
 
 // AttributesRecord implements Attributes interface.
 type AttributesRecord struct {
-	User            string
+	User            user.User
 	Verb            string
 	APIGroup        string
 	APIVersion      string
 	Resource        string
 	SubResource     string
 	Name            string
+	Scope           string
 	ResourceRequest bool
 	Path            string
 }
 
-func (a AttributesRecord) GetUser() string {
-	return  a.User
+func (a AttributesRecord) GetUser() user.User {
+	return a.User
 }
 
 func (a AttributesRecord) GetVerb() string {
 	return a.Verb
+}
+
+func (a AttributesRecord) GetScope() string {
+	return a.Scope
+}
+
+func (a AttributesRecord) GetAPIVersion() string {
+	return a.APIVersion
+}
+
+func (a AttributesRecord) GetAPIGroup() string {
+	return a.APIGroup
 }
 
 func (a AttributesRecord) IsReadOnly() bool {
@@ -104,5 +120,5 @@ func (a AttributesRecord) IsResourceRequest() bool {
 }
 
 func (a AttributesRecord) GetPath() string {
-	return  a.Path
+	return a.Path
 }

@@ -44,7 +44,6 @@ func APIGroupMatches(rule *PolicyRule, requestedAPIGroup string) bool {
 	return false
 }
 
-
 func ResourceMatches(rule *PolicyRule, combinedRequestedResource, requestedSubresource string) bool {
 	for _, ruleResource := range rule.Resources {
 		// if everything is allowed, we match
@@ -64,7 +63,7 @@ func ResourceMatches(rule *PolicyRule, combinedRequestedResource, requestedSubre
 
 		// if the rule isn't the format */subresource,
 		// then we don't match, continue
-		if len(ruleResource) == len(requestedSubresource) + 2 &&
+		if len(ruleResource) == len(requestedSubresource)+2 &&
 			strings.HasPrefix(ruleResource, "*/") &&
 			strings.HasSuffix(ruleResource, requestedSubresource) {
 			return true
@@ -73,7 +72,6 @@ func ResourceMatches(rule *PolicyRule, combinedRequestedResource, requestedSubre
 
 	return false
 }
-
 
 func ScopeMatches(rule *PolicyRule, requestScope string) bool {
 	for _, scopeRule := range rule.Scopes {
@@ -91,8 +89,7 @@ func ScopeMatches(rule *PolicyRule, requestScope string) bool {
 	return false
 }
 
-
-func NonResourceURLMatches( rule *PolicyRule, requestedURL string) bool {
+func NonResourceURLMatches(rule *PolicyRule, requestedURL string) bool {
 	for _, ruleURL := range rule.NonResourceURLs {
 		if ruleURL == NonResourceAll {
 			return true

@@ -5,20 +5,19 @@ import (
 	"fmt"
 
 	"g.hz.netease.com/horizon/pkg/auth"
+	"g.hz.netease.com/horizon/pkg/authentication/user"
 )
 
 // attention: rbac is refers to the kubernetes rbac
 // we just copy core struct and logics from the kubernetes code
 // and do same modify
-
 const (
-	APIGroupAll     = "*"
-	ResourceAll     = "*"
-	VerbAll         = "*"
-	ScopeAll        = "*"
-	NonResourceAll  = "*"
+	APIGroupAll    = "*"
+	ResourceAll    = "*"
+	VerbAll        = "*"
+	ScopeAll       = "*"
+	NonResourceAll = "*"
 )
-
 
 type Role struct {
 	Name        string
@@ -33,7 +32,7 @@ type PolicyRule struct {
 	NonResourceURLs []string
 }
 
-func RuleAllow( attribute auth.Attributes, rule *PolicyRule) bool {
+func RuleAllow(attribute auth.Attributes, rule *PolicyRule) bool {
 	if attribute.IsResourceRequest() {
 		combinedResource := attribute.GetResource()
 		if len(attribute.GetSubResource()) > 0 {
@@ -48,7 +47,6 @@ func RuleAllow( attribute auth.Attributes, rule *PolicyRule) bool {
 		NonResourceURLMatches(rule, attribute.GetPath())
 }
 
-
 // authorizingVisitor short-circuits once allowed, and collects any resolution errors encountered
 type authorizingVisitor struct {
 	requestAttributes auth.Attributes
@@ -61,7 +59,9 @@ type authorizingVisitor struct {
 func (v *authorizingVisitor) visit(source fmt.Stringer, rule *PolicyRule, err error) bool {
 	if rule != nil && RuleAllow(v.requestAttributes, rule) {
 		v.allowed = true
-		v.reason = source.String()
+		if source != nil {
+			v.reason = source.String()
+		}
 	}
 	if err != nil {
 		v.errors = append(v.errors, err)
@@ -72,18 +72,17 @@ func (v *authorizingVisitor) visit(source fmt.Stringer, rule *PolicyRule, err er
 // RBACAuthorizer use the basic rbac rules to check if the user
 // have the permission
 type RBACAuthorizer struct {
-	authorizationRuleResolver RequestToRuleGetter
+	authorizationRuleResolver RequestToRuleResolver
 }
 
 type VisitorFunc func(fmt.Stringer, *PolicyRule, error) bool
 
-
-type RequestToRuleGetter interface {
+type RequestToRuleResolver interface {
 	// VisitRulesFor invokes visitor() with each rule that applies to a given user
-	VisitRulesFor(user string, visitor VisitorFunc)
+	VisitRulesFor(user user.User, visitor VisitorFunc)
 }
 
-func (r *RBACAuthorizer) Authorize(ctx context.Context, attributes auth.Attributes) ( auth.Decision,
+func (r *RBACAuthorizer) Authorize(ctx context.Context, attributes auth.Attributes) (auth.Decision,
 	string, error) {
 
 	ruleCheckingVisitor := &authorizingVisitor{requestAttributes: attributes}
@@ -91,16 +90,10 @@ func (r *RBACAuthorizer) Authorize(ctx context.Context, attributes auth.Attribut
 	r.authorizationRuleResolver.VisitRulesFor(attributes.GetUser(), ruleCheckingVisitor.visit)
 
 	if ruleCheckingVisitor.allowed {
-		return auth.DecisionAllow,  ruleCheckingVisitor.reason, nil
+		return auth.DecisionAllow, ruleCheckingVisitor.reason, nil
 	}
 
 	// Build a detailed log of the denial.
 	reason := ""
 	return auth.DecisionDeny, reason, nil
 }
-
-
-
-
-
-
