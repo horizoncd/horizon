@@ -23,6 +23,7 @@ CREATE TABLE `user`
 (
     `id`         int(11) unsigned NOT NULL AUTO_INCREMENT,
     `name`       varchar(64)      NOT NULL DEFAULT '',
+    `full_name`  varchar(128)              DEFAULT '',
     `email`      varchar(64)      NOT NULL DEFAULT '',
     `phone`      varchar(32)               DEFAULT NULL COMMENT '',
     `oidc_id`    varchar(64)      NOT NULL COMMENT 'oidc id, which is a unique key in oidc system.',

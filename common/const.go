@@ -6,6 +6,7 @@ import "errors"
 const (
 	PageNumber = "pageNumber"
 	PageSize   = "pageSize"
+	Filter     = "filter"
 
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20
