@@ -1,4 +1,4 @@
-package requestInfo
+package requestinfo
 
 import (
 	"net/http"
