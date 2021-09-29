@@ -189,7 +189,7 @@ func TestUpdateBasic(t *testing.T) {
 	// update exist record
 	group1.ID = id
 	group1.Name = "update1"
-	_, err = Mgr.UpdateBasic(ctx, group1)
+	err = Mgr.UpdateBasic(ctx, group1)
 	assert.Nil(t, err)
 	group, err := Mgr.GetByID(ctx, id)
 	assert.Nil(t, err)
@@ -201,7 +201,7 @@ func TestUpdateBasic(t *testing.T) {
 	assert.Nil(t, err)
 	group2.ID = id2
 	group2.Name = "update1"
-	_, err = Mgr.UpdateBasic(ctx, group2)
+	err = Mgr.UpdateBasic(ctx, group2)
 	assert.Equal(t, common.ErrNameConflict, err)
 
 	// drop table

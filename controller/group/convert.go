@@ -1,6 +1,7 @@
 package group
 
 import (
+	"strconv"
 	"strings"
 
 	"g.hz.netease.com/horizon/common"
@@ -128,4 +129,15 @@ func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
 	query.Sorts = []*q.Sort{s}
 
 	return query
+}
+
+// formatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
+func formatIDsFromTraversalIDs(traversalIDs string) []uint {
+	splitIds := strings.Split(traversalIDs, ",")
+	var ids = make([]uint, len(splitIds))
+	for i, id := range splitIds {
+		ii, _ := strconv.Atoi(id)
+		ids[i] = uint(ii)
+	}
+	return ids
 }

@@ -164,7 +164,7 @@ func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *Upda
 	groupEntity := convertUpdateGroupToGroup(updateGroup)
 	groupEntity.ID = id
 
-	_, err := c.groupManager.UpdateBasic(ctx, groupEntity)
+	err := c.groupManager.UpdateBasic(ctx, groupEntity)
 	if err != nil {
 		return err
 	}
@@ -220,7 +220,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*GChild, error) {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
 
-	groups, err := c.groupManager.GetByTraversalIDs(ctx, groupEntity.TraversalIDs)
+	groups, err := c.groupManager.GetByIDs(ctx, formatIDsFromTraversalIDs(groupEntity.TraversalIDs))
 	if err != nil {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}

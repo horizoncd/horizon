@@ -6,7 +6,7 @@ dbConfig:
   port: 3331
   username: horizon
   password: O{AyroRA@
-  database: horizon
+  database: horizon_local
   prometheusEnabled: true
 oidcConfig:
   userHeader: X-HORIZON-OIDC-USER

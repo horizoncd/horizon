@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/q"
@@ -26,10 +25,9 @@ type Manager interface {
 	GetByID(ctx context.Context, id uint) (*models.Group, error)
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 	GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error)
-	GetByTraversalIDs(ctx context.Context, traversalIDs string) ([]*models.Group, error)
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
-	UpdateBasic(ctx context.Context, group *models.Group) (int64, error)
+	UpdateBasic(ctx context.Context, group *models.Group) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
 	Transfer(ctx context.Context, id, newParentID uint) error
@@ -70,18 +68,6 @@ func (m manager) GetByPaths(ctx context.Context, paths []string) ([]*models.Grou
 
 func (m manager) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error) {
 	return m.dao.GetByIDs(ctx, ids)
-}
-
-// GetByTraversalIDs traversalIDs: 1,2,3
-func (m manager) GetByTraversalIDs(ctx context.Context, traversalIDs string) ([]*models.Group, error) {
-	splitIds := strings.Split(traversalIDs, ",")
-	var ids = make([]uint, len(splitIds))
-	for i, id := range splitIds {
-		ii, _ := strconv.Atoi(id)
-		ids[i] = uint(ii)
-	}
-
-	return m.GetByIDs(ctx, ids)
 }
 
 func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
@@ -147,16 +133,22 @@ func (m manager) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 	return m.dao.GetByID(ctx, id)
 }
 
-func (m manager) UpdateBasic(ctx context.Context, group *models.Group) (int64, error) {
-	// check if there's record with the same parentID and name
-	err := m.dao.CheckNameUnique(ctx, group)
+func (m manager) UpdateBasic(ctx context.Context, group *models.Group) error {
+	// check record exist
+	_, err := m.dao.GetByID(ctx, group.ID)
 	if err != nil {
-		return 0, err
+		return err
+	}
+
+	// check if there's record with the same parentID and name
+	err = m.dao.CheckNameUnique(ctx, group)
+	if err != nil {
+		return err
 	}
 	// check if there's a record with the same parentID and path
 	err = m.dao.CheckPathUnique(ctx, group)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	return m.dao.UpdateBasic(ctx, group)

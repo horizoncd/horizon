@@ -27,7 +27,7 @@ type DAO interface {
 	GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error)
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	CountByParentID(ctx context.Context, parentID uint) (int64, error)
-	UpdateBasic(ctx context.Context, group *models.Group) (int64, error)
+	UpdateBasic(ctx context.Context, group *models.Group) error
 	UpdateParentID(ctx context.Context, id, parentID uint) (int64, error)
 	UpdateTraversalIDs(ctx context.Context, id uint, traversalIDs string) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
@@ -247,13 +247,13 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 }
 
 // UpdateBasic just update base info, not including transfer function
-func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) (int64, error) {
+func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel, group.ID)
 
-	return result.RowsAffected, result.Error
+	return result.Error
 }
