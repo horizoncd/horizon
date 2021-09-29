@@ -10,6 +10,7 @@ dbConfig:
   prometheusEnabled: true
 oidcConfig:
   userHeader: X-HORIZON-OIDC-USER
+  fullNameHeader: X-HORIZON-OIDC-FULLNAME
   emailHeader: X-HORIZON-OIDC-EMAIL
   oidcIDHeader: X-HORIZON-OIDC-ID
   oidcTypeHeader: X-HORIZON-OIDC-TYPE

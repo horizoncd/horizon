@@ -1,0 +1,57 @@
+openapi: 3.0.1
+info:
+  title: Horizon User Front
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v1/users/search?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+    get:
+      tags:
+        - user
+      description: search users
+      operationId: searchUsers
+      parameters:
+        - name: filter
+          in: query
+        - name: pageNumber
+          in: query
+        - name: pageSize
+          in: query
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        description: the total result
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: user id
+                            name:
+                              type: string
+                              description: user name, unique in system
+                            fullName:
+                              type: string
+                              description: user fullName
+                            email:
+                              type: string
+                              description: email
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
