@@ -15,9 +15,9 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
-	"g.hz.netease.com/horizon/server/middleware/auth"
 	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
 	"g.hz.netease.com/horizon/server/middleware/requestid"
+	requestInfo "g.hz.netease.com/horizon/server/middleware/rquestinfo"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 
@@ -81,7 +81,7 @@ func Run(flags *Flags) {
 		requestid.Middleware(),        // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(),        // log middleware, attach a logger to context
 		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
-		auth.Middleware(middleware.MethodAndPathSkipper("*",
+		requestInfo.Middleware(middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
 		user.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
