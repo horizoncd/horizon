@@ -19,8 +19,9 @@ CREATE TABLE `group` (
 CREATE TABLE `user` (
     `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
     `name` varchar(64) NOT NULL DEFAULT '',
+    `full_name` varchar(128) DEFAULT '',
     `email` varchar(64) NOT NULL DEFAULT '',
-    `phone` varchar(32) DEFAULT NULL COMMENT,
+    `phone` varchar(32) DEFAULT NULL,
     `oidc_id` varchar(64) NOT NULL COMMENT 'oidc id, which is a unique key in oidc system.',
     `oidc_type` varchar(64) NOT NULL COMMENT 'oidc type, such as google, github, gitlab etc.',
     `admin`  tinyint(1) NOT NULL COMMENT 'is system admin，0-false，1-true',
