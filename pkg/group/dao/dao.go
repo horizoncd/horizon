@@ -9,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	"gorm.io/gorm"
 )
 
 var (
@@ -28,11 +29,10 @@ type DAO interface {
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	CountByParentID(ctx context.Context, parentID uint) (int64, error)
 	UpdateBasic(ctx context.Context, group *models.Group) error
-	UpdateParentID(ctx context.Context, id, parentID uint) (int64, error)
 	UpdateTraversalIDs(ctx context.Context, id uint, traversalIDs string) error
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
-	Transfer(ctx context.Context, oldTraversalIDs, newTraversalIDs string) error
+	Transfer(ctx context.Context, id, newParentID uint) error
 }
 
 // New returns an instance of the default DAO
@@ -42,26 +42,45 @@ func New() DAO {
 
 type dao struct{}
 
-func (d *dao) UpdateParentID(ctx context.Context, id, parentID uint) (int64, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	result := db.Exec(common.GroupUpdateParentID, parentID, id)
-
-	return result.RowsAffected, result.Error
-}
-
-func (d *dao) Transfer(ctx context.Context, oldTraversalIDs, newTraversalIDs string) error {
+func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	result := db.Exec(common.GroupTransfer, oldTraversalIDs, newTraversalIDs, oldTraversalIDs+"%")
+	// check records exist
+	group, err := d.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	pGroup, err := d.GetByID(ctx, newParentID)
+	if err != nil {
+		return err
+	}
 
-	return result.Error
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// change parentID
+		if err := tx.Exec(common.GroupUpdateParentID, newParentID, id).Error; err != nil {
+			// rollback when error
+			return err
+		}
+
+		// update traversalIDs
+		oldTraversalIDs := group.TraversalIDs
+		newTraversalIDs := fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID)
+		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTraversalIDs, newTraversalIDs, oldTraversalIDs+"%").Error; err != nil {
+			return err
+		}
+
+		// commit when return nil
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error) {
