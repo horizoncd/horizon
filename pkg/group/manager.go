@@ -44,15 +44,15 @@ type Manager interface {
 	GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uint) ([]*models.Group, error)
 	// Transfer move a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
-	// GetSubGroupsOrderByUpdateTimeDesc get subgroups of a parent group, order by updateTime desc by default with paging
-	GetSubGroupsOrderByUpdateTimeDesc(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error)
+	// GetSubGroups get subgroups of a parent group, order by updateTime desc by default with paging
+	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error)
 }
 
 type manager struct {
 	dao dao.DAO
 }
 
-func (m manager) GetSubGroupsOrderByUpdateTimeDesc(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error) {
+func (m manager) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error) {
 	query := formatListGroupQuery(id, pageNumber, pageSize)
 	return m.dao.List(ctx, query)
 }

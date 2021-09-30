@@ -115,7 +115,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 	}
 
 	// query subGroups
-	subGroups, count, err := c.groupManager.GetSubGroupsOrderByUpdateTimeDesc(ctx, id, pageNumber, pageSize)
+	subGroups, count, err := c.groupManager.GetSubGroups(ctx, id, pageNumber, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}
