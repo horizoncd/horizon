@@ -38,6 +38,7 @@ func (r Releases) Len() int {
 }
 
 func (r Releases) Less(i, j int) bool {
+	// recommended first
 	if r[i].Recommended {
 		return true
 	}
@@ -62,4 +63,9 @@ func toReleases(trs []trmodels.TemplateRelease) Releases {
 	}
 	sort.Sort(releases)
 	return releases
+}
+
+type Schema struct {
+	CD map[string]interface{} `json:"cd"`
+	CI map[string]interface{} `json:"ci"`
 }
