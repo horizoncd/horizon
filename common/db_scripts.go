@@ -22,3 +22,21 @@ const (
 	UserSearch      = "select * from user where name like ? or full_name like ? or email like ? limit ? offset ?"
 	UserSearchCount = "select count(1) from user where name like ? or full_name like ? or email like ?"
 )
+
+/* sql about group */
+const (
+	GroupQueryByParentIDAndName = "select * from `group` where parent_id = ? and name = ? and deleted_at is null"
+	GroupQueryByParentIDAndPath = "select * from `group` where parent_id = ? and path = ? and deleted_at is null"
+	GroupDelete                 = "update `group` set deleted_at = CURRENT_TIMESTAMP where id = ?"
+	GroupUpdateBasic            = "update `group` set name = ?, path = ?, description = ?, visibility_level = ? " +
+		"where id = ?"
+	GroupUpdateParentID           = "update `group` set parent_id = ? where id = ?"
+	GroupQueryByID                = "select * from `group` where id = ? and deleted_at is null"
+	GroupQueryByIDs               = "select * from `group` where id in ? and deleted_at is null"
+	GroupQueryByPaths             = "select * from `group` where path in ? and deleted_at is null"
+	GroupQueryByNameFuzzily       = "select * from `group` where name like ? and deleted_at is null"
+	GroupUpdateTraversalIDs       = "update `group` set traversal_ids = ? where id = ? and deleted_at is null"
+	GroupCountByParentID          = "select count(1) from `group` where parent_id = ? and deleted_at is null"
+	GroupUpdateTraversalIDsPrefix = "update `group` set traversal_ids = replace(traversal_ids, ?, ?) " +
+		"where traversal_ids like ? and deleted_at is null"
+)

@@ -2,13 +2,16 @@ package group
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"gorm.io/gorm"
 
@@ -17,38 +20,27 @@ import (
 
 var (
 	// use tmp sqlite
-	db  = orm.DefaultMySQLDBForUnitTest()
-	ctx = orm.NewContext(context.TODO(), db)
+	db, _ = orm.NewSqliteDB("")
+	ctx   = orm.NewContext(context.TODO(), db)
 
-	group1Path = "/a"
-
-	notExistID   = uint(100)
-	notExistPath = "x"
+	notExistID = uint(100)
 )
 
-func getGroup1() *models.Group {
+func TestUint(t *testing.T) {
+	g := models.Group{
+		ParentID: 0,
+	}
+
+	_, err := json.Marshal(g)
+	assert.Nil(t, err)
+}
+
+func getGroup(parentID uint, name, path string) *models.Group {
 	return &models.Group{
-		Name:            "1",
-		Path:            "a",
+		Name:            name,
+		Path:            path,
 		VisibilityLevel: "private",
-	}
-}
-
-func getGroup2(pid int) *models.Group {
-	return &models.Group{
-		Name:            "2",
-		Path:            "b",
-		VisibilityLevel: "public",
-		ParentID:        pid,
-	}
-}
-
-func getGroup3(pid int) *models.Group {
-	return &models.Group{
-		Name:            "3",
-		Path:            "c",
-		VisibilityLevel: "public",
-		ParentID:        pid,
+		ParentID:        parentID,
 	}
 }
 
@@ -62,24 +54,26 @@ func init() {
 }
 
 func TestCreate(t *testing.T) {
-	// normal create
-	id, err := Mgr.Create(ctx, getGroup1())
+	// normal create, parentID is nil
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
+	get, _ := Mgr.GetByID(ctx, id)
+	assert.Equal(t, fmt.Sprintf("%d", id), get.TraversalIDs)
 
-	// name conflict, parentId: nil
-	_, err = Mgr.Create(ctx, getGroup1())
+	// name conflict, parentID is nil
+	_, err = Mgr.Create(ctx, getGroup(0, "1", "b"))
 	assert.Equal(t, common.ErrNameConflict, err)
 
-	// normal create, parent: 1
-	group2 := getGroup2(int(id))
-	_, err = Mgr.Create(ctx, group2)
-	assert.Nil(t, err)
-	assert.Equal(t, "/a/b", group2.Path)
-	assert.Equal(t, "1 / 2", group2.FullName)
+	// path conflict, with parentID is nil
+	_, err = Mgr.Create(ctx, getGroup(0, "2", "a"))
+	assert.Equal(t, dao.ErrPathConflict, err)
 
-	// name conflict, parentId: 1
-	_, err = Mgr.Create(ctx, getGroup2(int(id)))
-	assert.Equal(t, common.ErrNameConflict, err)
+	// normal create, parentID: not nil
+	group2 := getGroup(id, "2", "b")
+	id2, err := Mgr.Create(ctx, group2)
+	assert.Nil(t, err)
+	get, _ = Mgr.GetByID(ctx, id2)
+	assert.Equal(t, fmt.Sprintf("%d,%d", id, id2), get.TraversalIDs)
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
@@ -87,36 +81,38 @@ func TestCreate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	id, err := Mgr.Create(ctx, getGroup1())
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
 
 	// delete exist record
-	err = Mgr.Delete(ctx, id)
+	_, err = Mgr.Delete(ctx, id)
 	assert.Nil(t, err)
 
-	_, err = Mgr.Get(ctx, id)
+	_, err = Mgr.GetByID(ctx, id)
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// delete not exist record
-	err = Mgr.Delete(ctx, notExistID)
-	assert.Equal(t, err, gorm.ErrRecordNotFound)
+	var count int64
+	count, err = Mgr.Delete(ctx, notExistID)
+	assert.Equal(t, 0, int(count))
+	assert.Nil(t, err)
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
-func TestGet(t *testing.T) {
-	id, err := Mgr.Create(ctx, getGroup1())
+func TestGetByID(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
 
 	// query exist record
-	group1, err := Mgr.Get(ctx, id)
+	group1, err := Mgr.GetByID(ctx, id)
 	assert.Nil(t, err)
 	assert.NotNil(t, group1.ID)
 
 	// query not exist record
-	_, err = Mgr.Get(ctx, notExistID)
+	_, err = Mgr.GetByID(ctx, notExistID)
 	assert.Equal(t, err, gorm.ErrRecordNotFound)
 
 	// drop table
@@ -124,86 +120,97 @@ func TestGet(t *testing.T) {
 	assert.Nil(t, res.Error)
 }
 
-func TestGetByPath(t *testing.T) {
-	_, err := Mgr.Create(ctx, getGroup1())
+func TestGetByIDs(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
+	id2, _ := Mgr.Create(ctx, getGroup(0, "2", "b"))
 
-	// query exist record
-	group1, err := Mgr.GetByPath(ctx, group1Path)
+	groups, err := Mgr.GetByIDs(ctx, []uint{id, id2})
 	assert.Nil(t, err)
-	assert.NotNil(t, group1)
-
-	// query not exist record
-	_, err = Mgr.GetByPath(ctx /**/, notExistPath)
-	assert.Equal(t, err, gorm.ErrRecordNotFound)
+	assert.Equal(t, id, groups[0].ID)
+	assert.Equal(t, id2, groups[1].ID)
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
-func TestUpdate(t *testing.T) {
-	group1 := getGroup1()
+func TestGetByPaths(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
+	assert.Nil(t, err)
+	id2, _ := Mgr.Create(ctx, getGroup(0, "2", "b"))
+
+	groups, err := Mgr.GetByPaths(ctx, []string{"a", "b"})
+	assert.Nil(t, err)
+	assert.Equal(t, id, groups[0].ID)
+	assert.Equal(t, id2, groups[1].ID)
+
+	// drop table
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
+}
+
+func TestGetByNameFuzzily(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
+	assert.Nil(t, err)
+	id2, _ := Mgr.Create(ctx, getGroup(0, "21", "b"))
+
+	groups, err := Mgr.GetByNameFuzzily(ctx, "1")
+	assert.Nil(t, err)
+	assert.Equal(t, id, groups[0].ID)
+	assert.Equal(t, id2, groups[1].ID)
+
+	// drop table
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
+}
+
+func TestUpdateBasic(t *testing.T) {
+	group1 := getGroup(0, "1", "a")
 	id, err := Mgr.Create(ctx, group1)
 	assert.Nil(t, err)
 
 	// update exist record
 	group1.ID = id
 	group1.Name = "update1"
-	err = Mgr.Update(ctx, group1)
+	err = Mgr.UpdateBasic(ctx, group1)
 	assert.Nil(t, err)
+	group, err := Mgr.GetByID(ctx, id)
+	assert.Nil(t, err)
+	assert.Equal(t, "update1", group.Name)
 
-	// update not exist record
-	group1.ID = notExistID
-	group1.Name = "update2"
-	err = Mgr.Update(ctx, group1)
-	assert.Equal(t, err, gorm.ErrRecordNotFound)
+	// update fail because of conflict
+	group2 := getGroup(0, "2", "b")
+	id2, err := Mgr.Create(ctx, group2)
+	assert.Nil(t, err)
+	group2.ID = id2
+	group2.Name = "update1"
+	err = Mgr.UpdateBasic(ctx, group2)
+	assert.Equal(t, common.ErrNameConflict, err)
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
-func TestList(t *testing.T) {
-	pid, err := Mgr.Create(ctx, getGroup1())
+func TestTransferGroup(t *testing.T) {
+	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)
-	var group2Id, group3Id uint
-	group2Id, err = Mgr.Create(ctx, getGroup2(int(pid)))
+	id2, err := Mgr.Create(ctx, getGroup(id, "2", "b"))
 	assert.Nil(t, err)
-	group3Id, err = Mgr.Create(ctx, getGroup3(int(pid)))
+	id3, err := Mgr.Create(ctx, getGroup(0, "3", "c"))
 	assert.Nil(t, err)
 
-	// page with keywords, items: 1, total: 1
-	query := q.New(q.KeyWords{
-		"name": "2",
-	})
-	query.PageNumber = 1
-	query.PageSize = 1
-	items, total, err := Mgr.List(ctx, query)
+	err = Mgr.Transfer(ctx, id, id3)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(items))
-	assert.Equal(t, int64(1), total)
 
-	// page without keywords, items: 1, total: 2
-	query.Keywords = q.KeyWords{}
-	items, total, err = Mgr.List(ctx, query)
+	group, err := Mgr.GetByID(ctx, id2)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(items))
-	assert.Equal(t, int64(3), total)
 
-	// list by parentIdList
-	query.Keywords = q.KeyWords{
-		"parent_id": []uint{
-			pid,
-		},
+	expect := []string{
+		strconv.Itoa(int(id3)),
+		strconv.Itoa(int(id)),
+		strconv.Itoa(int(id2)),
 	}
-	query.PageSize = 10
-	items, _, err = Mgr.List(ctx, query)
-	assert.Nil(t, err)
-	assert.Equal(t, group2Id, items[0].ID)
-	assert.Equal(t, group3Id, items[1].ID)
-
-	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	assert.Nil(t, res.Error)
+	assert.Equal(t, strings.Join(expect, ","), group.TraversalIDs)
 }

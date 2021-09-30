@@ -10,6 +10,7 @@ const (
 
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20
+	MaxPageSize       = 50
 )
 
 const (
