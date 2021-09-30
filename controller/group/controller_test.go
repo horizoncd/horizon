@@ -655,6 +655,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 		Type:            ChildType,
 	}
 	g, _ := Ctl.GetByID(ctx, id)
+	expect.UpdatedAt = g.UpdatedAt
 	if !reflect.DeepEqual(g, expect) {
 		t.Errorf("UpdateBasic() got = %v, want %v", g, expect)
 	}
