@@ -95,6 +95,10 @@ func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]
 	// generate children with level struct
 	childrenWithLevelStruct := generateChildrenWithLevelStruct(params.GroupID, groups)
 
+	// sort children by updatedAt desc
+	sort.SliceStable(childrenWithLevelStruct, func(i, j int) bool {
+		return childrenWithLevelStruct[i].UpdatedAt.After(childrenWithLevelStruct[j].UpdatedAt)
+	})
 	return childrenWithLevelStruct, int64(len(childrenWithLevelStruct)), nil
 }
 
@@ -296,6 +300,7 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Ch
 		full := idToFull[g.ID]
 		child := convertGroupToChild(g, full)
 
+		// record children of the group whose id is g.parentID
 		parentIDToChildren[g.ParentID] = append(parentIDToChildren[g.ParentID], child)
 
 		if v, ok := parentIDToChildren[g.ID]; ok {
@@ -307,11 +312,6 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Ch
 			firstLevelChildren = append(firstLevelChildren, child)
 		}
 	}
-
-	// sort children by updatedAt desc
-	sort.SliceStable(firstLevelChildren, func(i, j int) bool {
-		return firstLevelChildren[i].UpdatedAt.After(firstLevelChildren[j].UpdatedAt)
-	})
 
 	return firstLevelChildren
 }

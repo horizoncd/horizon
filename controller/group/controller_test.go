@@ -658,3 +658,142 @@ func TestControllerUpdateBasic(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateChildrenWithLevelStruct(t *testing.T) {
+	type args struct {
+		groupID uint
+		groups  []*models.Group
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*Child
+	}{
+		{
+			name: "noMatch",
+			args: args{
+				groupID: 10,
+				groups: []*models.Group{
+					{
+						Model: gorm.Model{
+							ID: 1,
+						},
+						Name:         "1",
+						Path:         "a",
+						TraversalIDs: "1",
+						ParentID:     0,
+					},
+				},
+			},
+			want: []*Child{},
+		},
+		{
+			name: "match",
+			args: args{
+				groupID: 1,
+				groups: []*models.Group{
+					{
+						Model: gorm.Model{
+							ID: 1,
+						},
+						Name:         "1",
+						Path:         "a",
+						TraversalIDs: "1",
+						ParentID:     0,
+					},
+					{
+						Model: gorm.Model{
+							ID: 2,
+						},
+						Name:         "2",
+						Path:         "b",
+						TraversalIDs: "1,2",
+						ParentID:     1,
+					},
+					{
+						Model: gorm.Model{
+							ID: 3,
+						},
+						Name:         "3",
+						Path:         "c",
+						TraversalIDs: "1,2,3",
+						ParentID:     2,
+					},
+					{
+						Model: gorm.Model{
+							ID: 4,
+						},
+						Name:         "4",
+						Path:         "d",
+						TraversalIDs: "1,4",
+						ParentID:     1,
+					},
+					{
+						Model: gorm.Model{
+							ID: 5,
+						},
+						Name:         "5",
+						Path:         "e",
+						TraversalIDs: "1,4,5",
+						ParentID:     4,
+					},
+				},
+			},
+			want: []*Child{
+				{
+					ID:            2,
+					Name:          "2",
+					Path:          "b",
+					TraversalIDs:  "1,2",
+					ParentID:      1,
+					FullPath:      "/a/b",
+					FullName:      "1 / 2",
+					ChildrenCount: 1,
+					Type:          ChildType,
+					Children: []*Child{
+						{
+							ID:           3,
+							Name:         "3",
+							Path:         "c",
+							TraversalIDs: "1,2,3",
+							ParentID:     2,
+							FullPath:     "/a/b/c",
+							FullName:     "1 / 2 / 3",
+							Type:         ChildType,
+						},
+					},
+				},
+				{
+					ID:            4,
+					Name:          "4",
+					Path:          "d",
+					TraversalIDs:  "1,4",
+					ParentID:      1,
+					FullPath:      "/a/d",
+					FullName:      "1 / 4",
+					ChildrenCount: 1,
+					Type:          ChildType,
+					Children: []*Child{
+						{
+							ID:           5,
+							Name:         "5",
+							Path:         "e",
+							TraversalIDs: "1,4,5",
+							ParentID:     4,
+							FullPath:     "/a/d/e",
+							FullName:     "1 / 4 / 5",
+							Type:         ChildType,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := generateChildrenWithLevelStruct(tt.args.groupID, tt.args.groups); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("generateChildrenWithLevelStruct() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
