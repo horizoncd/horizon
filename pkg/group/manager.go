@@ -16,6 +16,14 @@ var (
 	ErrHasChildren = errors.New("children exist, cannot be deleted")
 )
 
+const (
+	// _updateAt one of the field of the group table
+	_updateAt = "updated_at"
+
+	// _parentID one of the field of the group table
+	_parentID = "parent_id"
+)
+
 type Manager interface {
 	Create(ctx context.Context, group *models.Group) (uint, error)
 	Delete(ctx context.Context, id uint) (int64, error)
@@ -25,13 +33,19 @@ type Manager interface {
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
 	UpdateBasic(ctx context.Context, group *models.Group) error
-	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
+	GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uint) ([]*models.Group, error)
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
 	Transfer(ctx context.Context, id, newParentID uint) error
+	GetSubGroupsOrderByUpdateTimeDesc(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error)
 }
 
 type manager struct {
 	dao dao.DAO
+}
+
+func (m manager) GetSubGroupsOrderByUpdateTimeDesc(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error) {
+	query := formatListGroupQuery(id, pageNumber, pageSize)
+	return m.List(ctx, query)
 }
 
 func New() Manager {
@@ -105,10 +119,27 @@ func (m manager) UpdateBasic(ctx context.Context, group *models.Group) error {
 	return m.dao.UpdateBasic(ctx, group)
 }
 
-func (m manager) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error) {
+func (m manager) GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uint) ([]*models.Group, error) {
+	query := q.New(q.KeyWords{
+		_parentID: parentIDs,
+	})
 	return m.dao.ListWithoutPage(ctx, query)
 }
 
 func (m manager) List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error) {
 	return m.dao.List(ctx, query)
+}
+
+// formatListGroupQuery query info for listing groups under a parent group, order by updated_at desc by default
+func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
+	query := q.New(q.KeyWords{
+		_parentID: id,
+	})
+	query.PageNumber = pageNumber
+	query.PageSize = pageSize
+	// sort by updated_at desc default，let newer items be in head
+	s := q.NewSort(_updateAt, true)
+	query.Sorts = []*q.Sort{s}
+
+	return query
 }

@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
+	"sort"
 	"strings"
 
 	"g.hz.netease.com/horizon/common"
-	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group"
+	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/util/errors"
 	"gorm.io/gorm"
 )
@@ -29,10 +29,8 @@ const (
 	ErrCodeNotFound = errors.ErrorCode("GroupNotFound")
 	// ErrGroupHasChildren a kind of error code, returned when deleting a group which still has some children
 	ErrGroupHasChildren = errors.ErrorCode("GroupHasChildren")
-	// Type used to indicate the 'Child' is a group
-	Type = "group"
-	// ParentID used in formatting query of the 'ListGroup'
-	ParentID = "parent_id"
+	// ChildType used to indicate the 'Child' is a group
+	ChildType = "group"
 )
 
 type Controller interface {
@@ -41,21 +39,21 @@ type Controller interface {
 	// Delete remove a group by the id
 	Delete(ctx context.Context, id uint) error
 	// GetByID get a group by the id
-	GetByID(ctx context.Context, id uint) (*GChild, error)
+	GetByID(ctx context.Context, id uint) (*Child, error)
 	// GetByFullPath get a group by the URLPath
-	GetByFullPath(ctx context.Context, path string) (*GChild, error)
+	GetByFullPath(ctx context.Context, path string) (*Child, error)
 	// Transfer put a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
 	// UpdateBasic update basic info of a group, including name, path, description and visibilityLevel
 	UpdateBasic(ctx context.Context, id uint, updateGroup *UpdateGroup) error
 	// GetSubGroups get subgroups of a group
-	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*GChild, int64, error)
+	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error)
 	// GetChildren get children of a group, including subgroups and applications
-	GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*GChild, int64, error)
+	GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error)
 	// SearchGroups search subGroups of a group
-	SearchGroups(ctx context.Context, id uint, filter string) ([]*GChild, int64, error)
+	SearchGroups(ctx context.Context, id uint, filter string) ([]*Child, int64, error)
 	// SearchChildren search children of a group, including subgroups and applications
-	SearchChildren(ctx context.Context, id uint, filter string) ([]*GChild, int64, error)
+	SearchChildren(ctx context.Context, id uint, filter string) ([]*Child, int64, error)
 }
 
 type controller struct {
@@ -70,75 +68,44 @@ func NewController() Controller {
 }
 
 // GetChildren get children of a group, including subgroups and applications
-func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*GChild, int64, error) {
+func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
 	return c.GetSubGroups(ctx, id, pageNumber, pageSize)
 }
 
 // SearchGroups search subGroups of a group
-func (c *controller) SearchGroups(ctx context.Context, id uint, filter string) ([]*GChild, int64, error) {
+func (c *controller) SearchGroups(ctx context.Context, id uint, filter string) ([]*Child, int64, error) {
 	if filter == "" {
 		return c.GetSubGroups(ctx, id, common.DefaultPageNumber, common.DefaultPageSize)
 	}
 
+	// query groups by the name fuzzily
 	groupsByNames, err := c.groupManager.GetByNameFuzzily(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
 	if groupsByNames == nil {
-		return []*GChild{}, 0, nil
+		return []*Child{}, 0, nil
 	}
 
-	var ids []uint
-	for _, g := range groupsByNames {
-		split := strings.Split(g.TraversalIDs, ",")
-		for _, s := range split {
-			i, _ := strconv.Atoi(s)
-			ids = append(ids, uint(i))
-		}
-	}
-
-	groupsByIDs, err := c.groupManager.GetByIDs(ctx, ids)
+	// query groups in ids (split groupsByNames's traversalIDs by ',')
+	groups, err := c.formatGroupsInTraversalIDs(ctx, groupsByNames)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	traversalIDsToGChildMap := mappingTraversalIDsToGChild(groupsByIDs)
+	childrenWithLevelStruct := generateChildrenWithLevelStruct(id, groups)
 
-	// organize struct of search result
-	parentIDToGChildMap := make(map[uint][]*GChild)
-	firstLevelGChildren := make([]*GChild, 0)
-	for i := len(groupsByIDs) - 1; i >= 0; i-- {
-		// reverse order because of the match logic
-		g := groupsByIDs[i]
-		gChild := traversalIDsToGChildMap[g.TraversalIDs]
-
-		// name match or children's names match
-		if strings.Contains(g.Name, filter) || len(parentIDToGChildMap[g.ID]) > 0 {
-			parentIDToGChildMap[g.ParentID] = append(parentIDToGChildMap[g.ParentID], gChild)
-		}
-
-		if v, ok := parentIDToGChildMap[gChild.ID]; ok {
-			gChild.ChildrenCount = len(v)
-			gChild.Children = v
-		}
-
-		// groups under the parent group
-		if g.ParentID == id {
-			firstLevelGChildren = append(firstLevelGChildren, gChild)
-		}
-	}
-
-	return firstLevelGChildren, int64(len(firstLevelGChildren)), nil
+	return childrenWithLevelStruct, int64(len(childrenWithLevelStruct)), nil
 }
 
 // SearchChildren search children of a group, including subgroups and applications
-func (c *controller) SearchChildren(ctx context.Context, id uint, filter string) ([]*GChild, int64, error) {
+func (c *controller) SearchChildren(ctx context.Context, id uint, filter string) ([]*Child, int64, error) {
 	return c.SearchGroups(ctx, id, filter)
 }
 
 // GetSubGroups get subgroups of a group
-func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*GChild, int64, error) {
-	var pGChild *GChild
+func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
+	var pGChild *Child
 	if id > 0 {
 		var err error
 		pGChild, err = c.GetByID(ctx, id)
@@ -148,8 +115,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 	}
 
 	// query subGroups
-	query := formatListGroupQuery(id, pageNumber, pageSize)
-	subGroups, count, err := c.groupManager.List(ctx, query)
+	subGroups, count, err := c.groupManager.GetSubGroupsOrderByUpdateTimeDesc(ctx, id, pageNumber, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -159,10 +125,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 	for i, g := range subGroups {
 		parentIDs[i] = g.ID
 	}
-	query = q.New(q.KeyWords{
-		ParentID: parentIDs,
-	})
-	groups, err := c.groupManager.ListWithoutPage(ctx, query)
+	groups, err := c.groupManager.GetSubGroupsUnderParentIDs(ctx, parentIDs)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -172,7 +135,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 	}
 
 	// format GroupChild
-	var gChildren = make([]*GChild, len(subGroups))
+	var gChildren = make([]*Child, len(subGroups))
 	for i, s := range subGroups {
 		var fName, fPath string
 		if id == 0 {
@@ -182,10 +145,13 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 			fName = fmt.Sprintf("%s / %s", pGChild.FullName, s.Name)
 			fPath = fmt.Sprintf("%s/%s", pGChild.FullPath, s.Path)
 		}
-		gChild := convertGroupToGChild(s, fName, fPath, Type)
-		gChild.ChildrenCount = childrenCountMap[gChild.ID]
+		child := convertGroupToChild(s, &Full{
+			FullName: fName,
+			FullPath: fPath,
+		})
+		child.ChildrenCount = childrenCountMap[child.ID]
 
-		gChildren[i] = gChild
+		gChildren[i] = child
 	}
 
 	return gChildren, count, nil
@@ -222,7 +188,7 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 }
 
 // GetByFullPath get a group by the URLPath
-func (c *controller) GetByFullPath(ctx context.Context, path string) (*GChild, error) {
+func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, error) {
 	const op = "group *controller: get group by path"
 
 	// path: /a/b => {a, b}
@@ -232,20 +198,31 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*GChild, e
 		return nil, err
 	}
 
-	traversalIDsToGChildMap := mappingTraversalIDsToGChild(groups)
+	// get mapping between id and group
+	idToGroup := generateIDToGroup(groups)
 
-	for _, v := range traversalIDsToGChildMap {
+	// get mapping between id and full
+	idToFull := generateIDToFull(groups)
+
+	// match group
+	for k, v := range idToFull {
 		// path pointing to a group
 		if v.FullPath == path {
-			return v, nil
+			g := idToGroup[k]
+			child := convertGroupToChild(g, v)
+			return child, nil
 		}
 	}
+
+	// todo match application
+
+	// todo match applicationInstance
 
 	return nil, errors.E(op, http.StatusNotFound, ErrCodeNotFound, fmt.Sprintf("no group matching the path: %s", path))
 }
 
 // GetByID get a group by the id
-func (c *controller) GetByID(ctx context.Context, id uint) (*GChild, error) {
+func (c *controller) GetByID(ctx context.Context, id uint) (*Child, error) {
 	const op = "group *controller: get group by id"
 
 	groupEntity, err := c.groupManager.GetByID(ctx, id)
@@ -261,8 +238,11 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*GChild, error) {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
 
-	fullPath, fullName := formatFullPathAndFullName(groups)
-	return convertGroupToGChild(groupEntity, fullName, fullPath, Type), nil
+	fullPath, fullName := generateFullPathAndFullName(groups)
+	return convertGroupToChild(groupEntity, &Full{
+		FullName: fullName,
+		FullPath: fullPath,
+	}), nil
 }
 
 // Delete remove a group by the id
@@ -272,13 +252,64 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 	rowsAffected, err := c.groupManager.Delete(ctx, id)
 	if err != nil {
 		if err == group.ErrHasChildren {
-			return errors.E(op, http.StatusBadRequest, ErrGroupHasChildren, group.ErrHasChildren.Error())
+			return errors.E(op, http.StatusBadRequest, ErrGroupHasChildren, group.ErrHasChildren)
 		}
-		return errors.E(op, fmt.Sprintf("failed to delete the group matching the id: %d", id))
+		return errors.E(op, fmt.Sprintf("failed to delete the group matching the id: %d", id), err)
 	}
 	if rowsAffected == 0 {
 		return errors.E(op, http.StatusNotFound, ErrCodeNotFound, fmt.Sprintf("no group matching the id: %d", id))
 	}
 
 	return nil
+}
+
+// formatGroupsInTraversalIDs query groups by ids (split traversalIDs by ',')
+func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*models.Group) ([]*models.Group, error) {
+	var ids []uint
+	for _, g := range groups {
+		ids = append(ids, formatIDsFromTraversalIDs(g.TraversalIDs)...)
+	}
+
+	groupsByIDs, err := c.groupManager.GetByIDs(ctx, ids)
+	if err != nil {
+		return []*models.Group{}, err
+	}
+
+	return groupsByIDs, nil
+}
+
+// generateChildrenWithLevelStruct generate subgroups with level struct
+func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Child {
+	// sort groups by the size of the traversalIDs array after split by ','
+	sort.Sort(models.Groups(groups))
+
+	// get mapping between id and full
+	idToFull := generateIDToFull(groups)
+
+	// first level children under the group
+	firstLevelChildren := make([]*Child, 0)
+
+	// record the mapping between parentID and children
+	parentIDToChildren := make(map[uint][]*Child)
+
+	// reverse the order
+	sort.Sort(sort.Reverse(models.Groups(groups)))
+	for _, g := range groups {
+		// get fullName&fullPath by id
+		full := idToFull[g.ID]
+		child := convertGroupToChild(g, full)
+
+		parentIDToChildren[g.ParentID] = append(parentIDToChildren[g.ParentID], child)
+
+		if v, ok := parentIDToChildren[g.ID]; ok {
+			child.ChildrenCount = len(v)
+			child.Children = v
+		}
+
+		if g.ParentID == groupID {
+			firstLevelChildren = append(firstLevelChildren, child)
+		}
+	}
+
+	return firstLevelChildren
 }

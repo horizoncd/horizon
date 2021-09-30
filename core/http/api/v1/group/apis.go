@@ -68,25 +68,25 @@ func (a *API) GetGroup(c *gin.Context) {
 		return
 	}
 
-	gChild, err := a.groupCtl.GetByID(c, uint(intID))
+	child, err := a.groupCtl.GetByID(c, uint(intID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
 	}
 
-	response.SuccessWithData(c, gChild)
+	response.SuccessWithData(c, child)
 }
 
 func (a *API) GetGroupByFullPath(c *gin.Context) {
 	path := c.Query(_paramPath)
 
-	gChild, err := a.groupCtl.GetByFullPath(c, path)
+	child, err := a.groupCtl.GetByFullPath(c, path)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
 	}
 
-	response.SuccessWithData(c, gChild)
+	response.SuccessWithData(c, child)
 }
 
 func (a *API) TransferGroup(c *gin.Context) {

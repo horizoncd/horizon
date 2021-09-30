@@ -174,7 +174,7 @@ func TestControllerGetByID(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *GChild
+		want    *Child
 		wantErr bool
 	}{
 		{
@@ -183,7 +183,7 @@ func TestControllerGetByID(t *testing.T) {
 				ctx: ctx,
 				id:  id,
 			},
-			want: &GChild{
+			want: &Child{
 				ID:              id,
 				Name:            "1",
 				Path:            "a",
@@ -192,7 +192,7 @@ func TestControllerGetByID(t *testing.T) {
 				TraversalIDs:    strconv.Itoa(int(id)),
 				FullPath:        "/a",
 				FullName:        "1",
-				Type:            Type,
+				Type:            ChildType,
 			},
 		},
 		{
@@ -238,7 +238,7 @@ func TestControllerGetByPath(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *GChild
+		want    *Child
 		wantErr bool
 	}{
 		{
@@ -247,7 +247,7 @@ func TestControllerGetByPath(t *testing.T) {
 				ctx:  ctx,
 				path: "/a",
 			},
-			want: &GChild{
+			want: &Child{
 				ID:              id,
 				Name:            "1",
 				Path:            "a",
@@ -256,7 +256,7 @@ func TestControllerGetByPath(t *testing.T) {
 				TraversalIDs:    strconv.Itoa(int(id)),
 				FullPath:        "/a",
 				FullName:        "1",
-				Type:            Type,
+				Type:            ChildType,
 			},
 		},
 		{
@@ -312,7 +312,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*GChild
+		want    []*Child
 		want1   int64
 		wantErr bool
 	}{
@@ -321,7 +321,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 			args: args{
 				ctx: ctx,
 			},
-			want: []*GChild{
+			want: []*Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -331,7 +331,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            Type,
+					Type:            ChildType,
 					ChildrenCount:   1,
 				},
 			},
@@ -343,7 +343,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 				ctx: ctx,
 				id:  id,
 			},
-			want: []*GChild{
+			want: []*Child{
 				{
 					ID:              id2,
 					Name:            "2",
@@ -353,7 +353,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)) + "," + strconv.Itoa(int(id2)),
 					FullPath:        "/a/b",
 					FullName:        "1 / 2",
-					Type:            Type,
+					Type:            ChildType,
 					ChildrenCount:   0,
 				},
 			},
@@ -406,7 +406,7 @@ func TestControllerSearchGroups(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*GChild
+		want    []*Child
 		want1   int64
 		wantErr bool
 	}{
@@ -416,7 +416,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "",
 			},
-			want: []*GChild{
+			want: []*Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -426,7 +426,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            Type,
+					Type:            ChildType,
 					ChildrenCount:   1,
 				},
 			},
@@ -438,7 +438,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "3",
 			},
-			want:  []*GChild{},
+			want:  []*Child{},
 			want1: 0,
 		},
 		{
@@ -447,7 +447,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "1",
 			},
-			want: []*GChild{
+			want: []*Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -457,7 +457,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            Type,
+					Type:            ChildType,
 				},
 			},
 			want1: 1,
@@ -468,7 +468,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "2",
 			},
-			want: []*GChild{
+			want: []*Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -478,9 +478,9 @@ func TestControllerSearchGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            Type,
+					Type:            ChildType,
 					ChildrenCount:   1,
-					Children: []*GChild{
+					Children: []*Child{
 						{
 							ID:              id2,
 							Name:            "2",
@@ -490,7 +490,7 @@ func TestControllerSearchGroups(t *testing.T) {
 							TraversalIDs:    strconv.Itoa(int(id)) + "," + strconv.Itoa(int(id2)),
 							FullPath:        "/a/b",
 							FullName:        "1 / 2",
-							Type:            Type,
+							Type:            ChildType,
 							ChildrenCount:   0,
 						},
 					},
@@ -636,7 +636,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 	}
 
 	// check update success
-	expect := &GChild{
+	expect := &Child{
 		ID:              id,
 		Name:            "2",
 		Path:            "b",
@@ -646,7 +646,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 		TraversalIDs:    strconv.Itoa(int(id)),
 		FullPath:        "/b",
 		FullName:        "2",
-		Type:            Type,
+		Type:            ChildType,
 	}
 	g, _ := Ctl.GetByID(ctx, id)
 	if !reflect.DeepEqual(g, expect) {
