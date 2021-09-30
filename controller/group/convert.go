@@ -33,6 +33,7 @@ func convertGroupToChild(group *models.Group, full *Full) *Child {
 		Description:     group.Description,
 		ParentID:        group.ParentID,
 		TraversalIDs:    group.TraversalIDs,
+		UpdatedAt:       group.UpdatedAt,
 		FullName:        full.FullName,
 		FullPath:        full.FullPath,
 		Type:            ChildType,

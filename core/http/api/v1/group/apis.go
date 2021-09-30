@@ -1,6 +1,7 @@
 package group
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -11,21 +12,22 @@ import (
 )
 
 const (
-	_paramGroupID  = "groupID"
-	_paramPath     = "path"
-	_queryParentID = "parentID"
+	_paramGroupID = "groupID"
+	_paramPath    = "path"
 )
 
 type API struct {
 	groupCtl groupctl.Controller
 }
 
+// NewAPI initializes a new group api
 func NewAPI() *API {
 	return &API{
 		groupCtl: groupctl.Ctl,
 	}
 }
 
+// CreateGroup create a group
 func (a *API) CreateGroup(c *gin.Context) {
 	var newGroup *groupctl.NewGroup
 	err := c.ShouldBindJSON(&newGroup)
@@ -43,6 +45,7 @@ func (a *API) CreateGroup(c *gin.Context) {
 	response.SuccessWithData(c, id)
 }
 
+// DeleteGroup delete a group by id
 func (a *API) DeleteGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.Atoi(groupID)
@@ -60,6 +63,7 @@ func (a *API) DeleteGroup(c *gin.Context) {
 	response.Success(c)
 }
 
+// GetGroup get a group child by id
 func (a *API) GetGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.Atoi(groupID)
@@ -77,6 +81,7 @@ func (a *API) GetGroup(c *gin.Context) {
 	response.SuccessWithData(c, child)
 }
 
+// GetGroupByFullPath get a group child by fullPath
 func (a *API) GetGroupByFullPath(c *gin.Context) {
 	path := c.Query(_paramPath)
 
@@ -89,9 +94,10 @@ func (a *API) GetGroupByFullPath(c *gin.Context) {
 	response.SuccessWithData(c, child)
 }
 
+// TransferGroup transfer a group to another parent group
 func (a *API) TransferGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
-	parentID := c.Query(_queryParentID)
+	parentID := c.Query(_paramGroupID)
 	intID, err := strconv.Atoi(groupID)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
@@ -112,6 +118,7 @@ func (a *API) TransferGroup(c *gin.Context) {
 	response.Success(c)
 }
 
+// UpdateGroup update basic info of a group
 func (a *API) UpdateGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 
@@ -137,29 +144,23 @@ func (a *API) UpdateGroup(c *gin.Context) {
 	response.Success(c)
 }
 
+// GetChildren get children of a group, including groups and applications
 func (a *API) GetChildren(c *gin.Context) {
 	// todo also query application
 	a.GetSubGroups(c)
 }
 
+// GetSubGroups get subGroups of a group
 func (a *API) GetSubGroups(c *gin.Context) {
-	parentID := c.Param(_paramGroupID)
-	intID, err := strconv.Atoi(parentID)
+	groupID := c.Param(_paramGroupID)
+	intID, err := strconv.Atoi(groupID)
 	if err != nil || intID < -1 {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", parentID))
-		return
+		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	pNumber := c.Query(common.PageNumber)
-	pageNumber, err := strconv.Atoi(pNumber)
-	if err != nil || pageNumber < 0 {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, pageNumber: %s", pNumber))
-		return
-	}
-	pSize := c.Query(common.PageSize)
-	pageSize, err := strconv.Atoi(pSize)
-	if err != nil || pageNumber <= 0 || pageSize > common.MaxPageSize {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, pageSize: %s", pSize))
+	pageNumber, pageSize, err := checkPageParamsOnListingGroups(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
 
@@ -175,22 +176,34 @@ func (a *API) GetSubGroups(c *gin.Context) {
 	})
 }
 
+// SearchChildren search children of a group, including groups and applications
 func (a *API) SearchChildren(c *gin.Context) {
 	// TODO(wurongjun): also query application
 	a.SearchGroups(c)
 }
 
+// SearchGroups search subgroups of a group
 func (a *API) SearchGroups(c *gin.Context) {
-	parentID := c.Query(_queryParentID)
-	intID, err := strconv.Atoi(parentID)
+	groupID := c.Query(_paramGroupID)
+	intID, err := strconv.Atoi(groupID)
 	if err != nil || intID < -1 {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, parentID: %s", parentID))
+		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
+	}
+
+	pageNumber, pageSize, err := checkPageParamsOnListingGroups(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
 
 	filter := c.Query(common.Filter)
 
-	searchGroups, count, err := a.groupCtl.SearchGroups(c, uint(intID), filter)
+	searchGroups, count, err := a.groupCtl.SearchGroups(c, &groupctl.SearchParams{
+		GroupID:    uint(intID),
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+		Filter:     filter,
+	})
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
@@ -200,4 +213,20 @@ func (a *API) SearchGroups(c *gin.Context) {
 		Total: count,
 		Items: searchGroups,
 	})
+}
+
+// checkPageParamsOnListingGroups check whether the params for listing groups is valid
+func checkPageParamsOnListingGroups(c *gin.Context) (int, int, error) {
+	pNumber := c.Query(common.PageNumber)
+	pageNumber, err := strconv.Atoi(pNumber)
+	if err != nil || pageNumber <= 0 {
+		return 0, 0, errors.New(fmt.Sprintf("invalid param, pageNumber: %d", pageNumber))
+	}
+	pSize := c.Query(common.PageSize)
+	pageSize, err := strconv.Atoi(pSize)
+	if err != nil || pageSize <= 0 || pageSize > common.MaxPageSize {
+		return 0, 0, errors.New(fmt.Sprintf("invalid param, pageSize: %d", pageSize))
+	}
+
+	return pageNumber, pageSize, nil
 }

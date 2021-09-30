@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/pkg/group"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/util/errors"
@@ -51,9 +50,9 @@ type Controller interface {
 	// GetChildren get children of a group, including subgroups and applications
 	GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error)
 	// SearchGroups search subGroups of a group
-	SearchGroups(ctx context.Context, id uint, filter string) ([]*Child, int64, error)
+	SearchGroups(ctx context.Context, params *SearchParams) ([]*Child, int64, error)
 	// SearchChildren search children of a group, including subgroups and applications
-	SearchChildren(ctx context.Context, id uint, filter string) ([]*Child, int64, error)
+	SearchChildren(ctx context.Context, params *SearchParams) ([]*Child, int64, error)
 }
 
 type controller struct {
@@ -73,13 +72,13 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 }
 
 // SearchGroups search subGroups of a group
-func (c *controller) SearchGroups(ctx context.Context, id uint, filter string) ([]*Child, int64, error) {
-	if filter == "" {
-		return c.GetSubGroups(ctx, id, common.DefaultPageNumber, common.DefaultPageSize)
+func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]*Child, int64, error) {
+	if params.Filter == "" {
+		return c.GetSubGroups(ctx, params.GroupID, params.PageNumber, params.PageSize)
 	}
 
 	// query groups by the name fuzzily
-	groupsByNames, err := c.groupManager.GetByNameFuzzily(ctx, filter)
+	groupsByNames, err := c.groupManager.GetByNameFuzzily(ctx, params.Filter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -93,14 +92,15 @@ func (c *controller) SearchGroups(ctx context.Context, id uint, filter string) (
 		return nil, 0, err
 	}
 
-	childrenWithLevelStruct := generateChildrenWithLevelStruct(id, groups)
+	// generate children with level struct
+	childrenWithLevelStruct := generateChildrenWithLevelStruct(params.GroupID, groups)
 
 	return childrenWithLevelStruct, int64(len(childrenWithLevelStruct)), nil
 }
 
 // SearchChildren search children of a group, including subgroups and applications
-func (c *controller) SearchChildren(ctx context.Context, id uint, filter string) ([]*Child, int64, error) {
-	return c.SearchGroups(ctx, id, filter)
+func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) ([]*Child, int64, error) {
+	return c.SearchGroups(ctx, params)
 }
 
 // GetSubGroups get subgroups of a group
@@ -295,7 +295,7 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Ch
 	// reverse the order
 	sort.Sort(sort.Reverse(models.Groups(groups)))
 	for _, g := range groups {
-		// get fullName&fullPath by id
+		// get fullName and fullPath by id
 		full := idToFull[g.ID]
 		child := convertGroupToChild(g, full)
 
@@ -310,6 +310,11 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Ch
 			firstLevelChildren = append(firstLevelChildren, child)
 		}
 	}
+
+	// sort children by updatedAt desc
+	sort.SliceStable(firstLevelChildren, func(i, j int) bool {
+		return firstLevelChildren[i].UpdatedAt.After(firstLevelChildren[j].UpdatedAt)
+	})
 
 	return firstLevelChildren
 }

@@ -11,7 +11,6 @@ import (
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"gorm.io/gorm"
@@ -166,21 +165,6 @@ func TestGetByNameFuzzily(t *testing.T) {
 	assert.Nil(t, res.Error)
 }
 
-func TestGetByIDsOrderByIDDesc(t *testing.T) {
-	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
-	assert.Nil(t, err)
-	id2, _ := Mgr.Create(ctx, getGroup(0, "2", "b"))
-
-	groups, err := Mgr.GetByIDsOrderByIDDesc(ctx, []uint{id, id2})
-	assert.Nil(t, err)
-	assert.Equal(t, id, groups[1].ID)
-	assert.Equal(t, id2, groups[0].ID)
-
-	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	assert.Nil(t, res.Error)
-}
-
 func TestUpdateBasic(t *testing.T) {
 	group1 := getGroup(0, "1", "a")
 	id, err := Mgr.Create(ctx, group1)
@@ -203,50 +187,6 @@ func TestUpdateBasic(t *testing.T) {
 	group2.Name = "update1"
 	err = Mgr.UpdateBasic(ctx, group2)
 	assert.Equal(t, common.ErrNameConflict, err)
-
-	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	assert.Nil(t, res.Error)
-}
-
-func TestList(t *testing.T) {
-	pid, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
-	assert.Nil(t, err)
-	var group2Id, group3Id uint
-	group2Id, err = Mgr.Create(ctx, getGroup(pid, "2", "b"))
-	assert.Nil(t, err)
-	group3Id, err = Mgr.Create(ctx, getGroup(pid, "3", "c"))
-	assert.Nil(t, err)
-
-	// page with keywords, items: 1, total: 1
-	query := q.New(q.KeyWords{
-		"name": "2",
-	})
-	query.PageNumber = 1
-	query.PageSize = 1
-	items, total, err := Mgr.List(ctx, query)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(items))
-	assert.Equal(t, int64(1), total)
-
-	// page without keywords, items: 1, total: 2
-	query.Keywords = q.KeyWords{}
-	items, total, err = Mgr.List(ctx, query)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(items))
-	assert.Equal(t, int64(3), total)
-
-	// list by parentIdList
-	query.Keywords = q.KeyWords{
-		"parent_id": []uint{
-			pid,
-		},
-	}
-	query.PageSize = 10
-	items, _, err = Mgr.List(ctx, query)
-	assert.Nil(t, err)
-	assert.Equal(t, group2Id, items[0].ID)
-	assert.Equal(t, group3Id, items[1].ID)
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})

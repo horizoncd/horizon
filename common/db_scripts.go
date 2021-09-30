@@ -33,7 +33,6 @@ const (
 	GroupUpdateParentID           = "update `group` set parent_id = ? where id = ?"
 	GroupQueryByID                = "select * from `group` where id = ? and deleted_at is null"
 	GroupQueryByIDs               = "select * from `group` where id in ? and deleted_at is null"
-	GroupQueryByIDsOrderByIDDesc  = "select * from `group` where id in ? and deleted_at is null order by id desc"
 	GroupQueryByPaths             = "select * from `group` where path in ? and deleted_at is null"
 	GroupQueryByNameFuzzily       = "select * from `group` where name like ? and deleted_at is null"
 	GroupUpdateTraversalIDs       = "update `group` set traversal_ids = ? where id = ? and deleted_at is null"

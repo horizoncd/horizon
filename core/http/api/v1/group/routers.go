@@ -51,8 +51,13 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/search",
+			Pattern:     "/search-groups",
 			HandlerFunc: a.SearchGroups,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     "/search-children",
+			HandlerFunc: a.SearchChildren,
 		},
 		{
 			Method:      http.MethodPut,

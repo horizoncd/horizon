@@ -19,19 +19,31 @@ var (
 )
 
 type DAO interface {
+	// CheckNameUnique check whether the name is unique
 	CheckNameUnique(ctx context.Context, group *models.Group) error
+	// CheckPathUnique check whether the path is unique
 	CheckPathUnique(ctx context.Context, group *models.Group) error
+	// Create a group
 	Create(ctx context.Context, group *models.Group) (uint, error)
+	// Delete a group by id
 	Delete(ctx context.Context, id uint) (int64, error)
+	// GetByID get a group by id
 	GetByID(ctx context.Context, id uint) (*models.Group, error)
+	// GetByNameFuzzily get groups that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	// GetByIDs get groups by ids
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
-	GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error)
+	// GetByPaths get groups by paths
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
+	// CountByParentID get the count of the records matching the given parentID
 	CountByParentID(ctx context.Context, parentID uint) (int64, error)
+	// UpdateBasic update basic info of a group
 	UpdateBasic(ctx context.Context, group *models.Group) error
+	// ListWithoutPage query groups without paging
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
+	// List query groups with paging
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
+	// Transfer move a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
 }
 
@@ -92,18 +104,6 @@ func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error)
 	result := db.Raw(common.GroupCountByParentID, parentID).Scan(&count)
 
 	return count, result.Error
-}
-
-func (d *dao) GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var groups []*models.Group
-	result := db.Raw(common.GroupQueryByIDsOrderByIDDesc, ids).Scan(&groups)
-
-	return groups, result.Error
 }
 
 func (d *dao) GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error) {
@@ -300,7 +300,7 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 	return groups, count, result.Error
 }
 
-// UpdateBasic just update base info, not including transfer function
+// UpdateBasic just update base info, not contains transfer logic
 func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {

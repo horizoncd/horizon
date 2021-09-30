@@ -13,6 +13,7 @@ var (
 	// Mgr is the global group manager
 	Mgr = New()
 
+	// ErrHasChildren used when delete a group which still has some children
 	ErrHasChildren = errors.New("children exist, cannot be deleted")
 )
 
@@ -25,17 +26,25 @@ const (
 )
 
 type Manager interface {
+	// Create a group
 	Create(ctx context.Context, group *models.Group) (uint, error)
+	// Delete a group by id
 	Delete(ctx context.Context, id uint) (int64, error)
+	// GetByID get a group by id
 	GetByID(ctx context.Context, id uint) (*models.Group, error)
+	// GetByIDs get groups by ids
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
-	GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error)
+	// GetByPaths get groups by paths
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
+	// GetByNameFuzzily get groups that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	// UpdateBasic update basic info of a group
 	UpdateBasic(ctx context.Context, group *models.Group) error
+	// GetSubGroupsUnderParentIDs get subgroups under the given parent groups without paging
 	GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uint) ([]*models.Group, error)
-	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
+	// Transfer move a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
+	// GetSubGroupsOrderByUpdateTimeDesc get subgroups of a parent group, order by updateTime desc by default with paging
 	GetSubGroupsOrderByUpdateTimeDesc(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error)
 }
 
@@ -45,7 +54,7 @@ type manager struct {
 
 func (m manager) GetSubGroupsOrderByUpdateTimeDesc(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error) {
 	query := formatListGroupQuery(id, pageNumber, pageSize)
-	return m.List(ctx, query)
+	return m.dao.List(ctx, query)
 }
 
 func New() Manager {
@@ -54,10 +63,6 @@ func New() Manager {
 
 func (m manager) Transfer(ctx context.Context, id, newParentID uint) error {
 	return m.dao.Transfer(ctx, id, newParentID)
-}
-
-func (m manager) GetByIDsOrderByIDDesc(ctx context.Context, ids []uint) ([]*models.Group, error) {
-	return m.dao.GetByIDsOrderByIDDesc(ctx, ids)
 }
 
 func (m manager) GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error) {
@@ -124,10 +129,6 @@ func (m manager) GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uin
 		_parentID: parentIDs,
 	})
 	return m.dao.ListWithoutPage(ctx, query)
-}
-
-func (m manager) List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error) {
-	return m.dao.List(ctx, query)
 }
 
 // formatListGroupQuery query info for listing groups under a parent group, order by updated_at desc by default

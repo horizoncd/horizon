@@ -13,7 +13,6 @@ import (
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
-	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/auth"
@@ -85,9 +84,9 @@ func Run(flags *Flags) {
 		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
 		auth.Middleware(middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
-		usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+		// usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
+		// 	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
+		// 	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),

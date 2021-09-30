@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"testing"
 
+	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"github.com/stretchr/testify/assert"
@@ -501,7 +502,12 @@ func TestControllerSearchGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := Ctl.SearchGroups(tt.args.ctx, tt.args.id, tt.args.filter)
+			got, got1, err := Ctl.SearchGroups(tt.args.ctx, &SearchParams{
+				GroupID:    tt.args.id,
+				Filter:     tt.args.filter,
+				PageNumber: common.DefaultPageNumber,
+				PageSize:   common.MaxPageSize,
+			})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SearchGroups() error = %v, wantErr %v", err, tt.wantErr)
 				return
