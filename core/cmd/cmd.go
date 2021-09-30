@@ -13,6 +13,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
+	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/server/middleware"
 	"g.hz.netease.com/horizon/server/middleware/auth"
@@ -27,6 +28,7 @@ import (
 // Flags defines agent CLI flags.
 type Flags struct {
 	ConfigFile string
+	Dev        bool
 }
 
 // ParseFlags parses agent CLI flags.
@@ -35,6 +37,9 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.ConfigFile, "config", "", "configuration file path")
+
+	flag.BoolVar(
+		&flags.Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
 
 	flag.Parse()
 	return &flags
@@ -76,7 +81,7 @@ func Run(flags *Flags) {
 	// init server
 	r := gin.New()
 	// use middleware
-	r.Use(
+	middlewares := []gin.HandlerFunc{
 		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
 		requestid.Middleware(),        // requestID middleware, attach a requestID to context
@@ -84,13 +89,19 @@ func Run(flags *Flags) {
 		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
 		auth.Middleware(middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
-		// usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
-		// 	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-		// 	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-	)
+	}
+	// enable usermiddle when current env is not dev
+	if !flags.Dev {
+		middlewares = append(middlewares,
+			usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
+				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
+				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+		)
+	}
+	r.Use(middlewares...)
 
 	gin.ForceConsoleColor()
 
