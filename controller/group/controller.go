@@ -238,11 +238,8 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*Child, error) {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
 
-	fullPath, fullName := generateFullPathAndFullName(groups)
-	return convertGroupToChild(groupEntity, &Full{
-		FullName: fullName,
-		FullPath: fullPath,
-	}), nil
+	full := generateFullFromGroups(groups)
+	return convertGroupToChild(groupEntity, full), nil
 }
 
 // Delete remove a group by the id

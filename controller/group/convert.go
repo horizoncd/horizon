@@ -7,8 +7,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/group/models"
 )
 
-// generateFullPathAndFullName generate fullPath which looks like /a/b/c, and fullName which looks like 1 / 2
-func generateFullPathAndFullName(groups []*models.Group) (string, string) {
+// generateFullFromGroups generate fullPath which looks like /a/b/c, and fullName which looks like 1 / 2
+func generateFullFromGroups(groups []*models.Group) *Full {
 	var fullPath, fullName string
 	paths := make([]string, len(groups))
 	names := make([]string, len(groups))
@@ -20,7 +20,10 @@ func generateFullPathAndFullName(groups []*models.Group) (string, string) {
 	fullPath = "/" + strings.Join(paths, "/")
 	fullName = strings.Join(names, " / ")
 
-	return fullPath, fullName
+	return &Full{
+		FullName: fullName,
+		FullPath: fullPath,
+	}
 }
 
 // convertGroupToChild format Child based on group model、fullName、fullPath and resourceType

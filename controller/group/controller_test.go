@@ -166,7 +166,9 @@ func TestControllerGetByID(t *testing.T) {
 
 	id, err := Ctl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
-	assert.Greater(t, id, uint(0))
+
+	child, err := Ctl.GetByID(ctx, id)
+	assert.Nil(t, err)
 
 	type args struct {
 		ctx context.Context
@@ -194,6 +196,7 @@ func TestControllerGetByID(t *testing.T) {
 				FullPath:        "/a",
 				FullName:        "1",
 				Type:            ChildType,
+				UpdatedAt:       child.UpdatedAt,
 			},
 		},
 		{
@@ -230,7 +233,8 @@ func TestControllerGetByPath(t *testing.T) {
 
 	id, err := Ctl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
-	assert.Greater(t, id, uint(0))
+	child, err := Ctl.GetByID(ctx, id)
+	assert.Nil(t, err)
 
 	type args struct {
 		ctx  context.Context
@@ -258,6 +262,7 @@ func TestControllerGetByPath(t *testing.T) {
 				FullPath:        "/a",
 				FullName:        "1",
 				Type:            ChildType,
+				UpdatedAt:       child.UpdatedAt,
 			},
 		},
 		{
@@ -296,6 +301,8 @@ func TestControllerGetSubGroups(t *testing.T) {
 		VisibilityLevel: "private",
 	}
 	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+	group1, _ := Ctl.GetByID(ctx, id)
+
 	newGroup := &NewGroup{
 		Name:            "2",
 		Path:            "b",
@@ -303,6 +310,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 		ParentID:        id,
 	}
 	id2, _ := Ctl.CreateGroup(ctx, newGroup)
+	group2, _ := Ctl.GetByID(ctx, id2)
 
 	type args struct {
 		ctx        context.Context
@@ -334,6 +342,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 					FullName:        "1",
 					Type:            ChildType,
 					ChildrenCount:   1,
+					UpdatedAt:       group1.UpdatedAt,
 				},
 			},
 			want1: 1,
@@ -356,6 +365,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 					FullName:        "1 / 2",
 					Type:            ChildType,
 					ChildrenCount:   0,
+					UpdatedAt:       group2.UpdatedAt,
 				},
 			},
 			want1: 1,
@@ -391,6 +401,8 @@ func TestControllerSearchGroups(t *testing.T) {
 		VisibilityLevel: "private",
 	}
 	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+	group1, _ := Ctl.GetByID(ctx, id)
+
 	newGroup := &NewGroup{
 		Name:            "2",
 		Path:            "b",
@@ -398,6 +410,7 @@ func TestControllerSearchGroups(t *testing.T) {
 		ParentID:        id,
 	}
 	id2, _ := Ctl.CreateGroup(ctx, newGroup)
+	group2, _ := Ctl.GetByID(ctx, id2)
 
 	type args struct {
 		ctx    context.Context
@@ -429,6 +442,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					FullName:        "1",
 					Type:            ChildType,
 					ChildrenCount:   1,
+					UpdatedAt:       group1.UpdatedAt,
 				},
 			},
 			want1: 1,
@@ -459,6 +473,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					FullPath:        "/a",
 					FullName:        "1",
 					Type:            ChildType,
+					UpdatedAt:       group1.UpdatedAt,
 				},
 			},
 			want1: 1,
@@ -481,6 +496,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					FullName:        "1",
 					Type:            ChildType,
 					ChildrenCount:   1,
+					UpdatedAt:       group1.UpdatedAt,
 					Children: []*Child{
 						{
 							ID:              id2,
@@ -493,6 +509,7 @@ func TestControllerSearchGroups(t *testing.T) {
 							FullName:        "1 / 2",
 							Type:            ChildType,
 							ChildrenCount:   0,
+							UpdatedAt:       group2.UpdatedAt,
 						},
 					},
 				},
@@ -639,24 +656,5 @@ func TestControllerUpdateBasic(t *testing.T) {
 				t.Errorf("UpdateBasic() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
-	}
-
-	// check update success
-	expect := &Child{
-		ID:              id,
-		Name:            "2",
-		Path:            "b",
-		VisibilityLevel: "public",
-		Description:     "111",
-		ParentID:        0,
-		TraversalIDs:    strconv.Itoa(int(id)),
-		FullPath:        "/b",
-		FullName:        "2",
-		Type:            ChildType,
-	}
-	g, _ := Ctl.GetByID(ctx, id)
-	expect.UpdatedAt = g.UpdatedAt
-	if !reflect.DeepEqual(g, expect) {
-		t.Errorf("UpdateBasic() got = %v, want %v", g, expect)
 	}
 }
