@@ -6,6 +6,7 @@ package mock_template
 
 import (
 	context "context"
+	template "g.hz.netease.com/horizon/controller/template"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
@@ -33,11 +34,41 @@ func (m *MockController) EXPECT() *MockControllerMockRecorder {
 	return m.recorder
 }
 
+// ListTemplate mocks base method
+func (m *MockController) ListTemplate(ctx context.Context) (template.Templates, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTemplate", ctx)
+	ret0, _ := ret[0].(template.Templates)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTemplate indicates an expected call of ListTemplate
+func (mr *MockControllerMockRecorder) ListTemplate(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTemplate", reflect.TypeOf((*MockController)(nil).ListTemplate), ctx)
+}
+
+// ListTemplateRelease mocks base method
+func (m *MockController) ListTemplateRelease(ctx context.Context, templateName string) (template.Releases, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTemplateRelease", ctx, templateName)
+	ret0, _ := ret[0].(template.Releases)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTemplateRelease indicates an expected call of ListTemplateRelease
+func (mr *MockControllerMockRecorder) ListTemplateRelease(ctx, templateName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTemplateRelease", reflect.TypeOf((*MockController)(nil).ListTemplateRelease), ctx, templateName)
+}
+
 // GetTemplateSchema mocks base method
-func (m *MockController) GetTemplateSchema(ctx context.Context, templateName, releaseName string) ([]byte, error) {
+func (m *MockController) GetTemplateSchema(ctx context.Context, templateName, releaseName string) (*template.Schema, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTemplateSchema", ctx, templateName, releaseName)
-	ret0, _ := ret[0].([]byte)
+	ret0, _ := ret[0].(*template.Schema)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

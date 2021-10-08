@@ -6,20 +6,23 @@ import (
 
 // Base holds the parameters which can be updated of an application
 type Base struct {
-	Description   string                 `json:"description"`
-	Priority      string                 `json:"priority"`
-	Template      *Template              `json:"template"`
-	Git           *Git                   `json:"git"`
-	TemplateInput map[string]interface{} `json:"templateInput"`
-	PipelineInput map[string]interface{} `json:"pipelineInput"`
+	Description   string         `json:"description"`
+	Priority      string         `json:"priority"`
+	Template      *Template      `json:"template"`
+	Git           *Git           `json:"git"`
+	TemplateInput *TemplateInput `json:"templateInput"`
+}
+
+type TemplateInput struct {
+	CD map[string]interface{} `json:"cd"`
+	CI map[string]interface{} `json:"ci"`
 }
 
 // CreateApplicationRequest holds the parameters required to create an application
 type CreateApplicationRequest struct {
 	Base
 
-	Name    string `json:"name"`
-	GroupID uint   `json:"groupID"`
+	Name string `json:"name"`
 }
 
 // UpdateApplicationRequest holds the parameters required to update an application
@@ -29,6 +32,8 @@ type UpdateApplicationRequest struct {
 
 type GetApplicationResponse struct {
 	CreateApplicationRequest
+
+	GroupID uint `json:"groupID"`
 }
 
 // Template struct about template
@@ -45,9 +50,9 @@ type Git struct {
 }
 
 // toApplicationModel transfer CreateApplicationRequest to models.Application
-func (m *CreateApplicationRequest) toApplicationModel() *models.Application {
+func (m *CreateApplicationRequest) toApplicationModel(groupID uint) *models.Application {
 	return &models.Application{
-		GroupID:         m.GroupID,
+		GroupID:         groupID,
 		Name:            m.Name,
 		Description:     m.Description,
 		Priority:        models.Priority(m.Priority),
@@ -74,7 +79,7 @@ func (m *UpdateApplicationRequest) toApplicationModel() *models.Application {
 
 // ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse
 func ofApplicationModel(app *models.Application,
-	templateInput, pipelineInput map[string]interface{}) *GetApplicationResponse {
+	cd, ci map[string]interface{}) *GetApplicationResponse {
 	return &GetApplicationResponse{
 		CreateApplicationRequest: CreateApplicationRequest{
 			Base: Base{
@@ -89,11 +94,13 @@ func ofApplicationModel(app *models.Application,
 					Subfolder: app.GitSubfolder,
 					Branch:    app.GitBranch,
 				},
-				TemplateInput: templateInput,
-				PipelineInput: pipelineInput,
+				TemplateInput: &TemplateInput{
+					CD: cd,
+					CI: ci,
+				},
 			},
-			Name:    app.Name,
-			GroupID: app.GroupID,
+			Name: app.Name,
 		},
+		GroupID: app.GroupID,
 	}
 }

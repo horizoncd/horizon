@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	templatectl "g.hz.netease.com/horizon/controller/template"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -14,8 +15,8 @@ import (
 	templatectlmock "g.hz.netease.com/horizon/mock/controller/template"
 	"g.hz.netease.com/horizon/pkg/application"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -55,9 +56,12 @@ var (
 	g   gitlablib.Interface
 	c   Controller
 
-	rootGroupName string
+	rootGroupName      string
+	cdSchema, ciSchema map[string]interface{}
 
-	schema = `{
+	groupID = 1000
+
+	cdSchemaJSON = `{
   "type": "object",
   "properties": {
     "app": {
@@ -200,6 +204,17 @@ var (
   }
 }
 `
+	ciSchemaJSON = `{
+  "type": "object",
+  "title": "Ant",
+  "properties": {
+    "buildxml": {
+      "title": "build.xml",
+      "type": "string",
+      "default": "xxxxxxxxxxxxxxxxxxx"
+    }
+  }
+}`
 )
 
 type Param struct {
@@ -229,11 +244,18 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
-	ctx = context.WithValue(ctx, user.Key(), &usermodels.User{
-		Name: "tony",
+	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+		Name: "Tony",
 	})
 
 	rootGroupName = p.RootGroupName
+
+	if err := json.Unmarshal([]byte(cdSchemaJSON), &cdSchema); err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal([]byte(ciSchemaJSON), &ciSchema); err != nil {
+		panic(err)
+	}
 
 	os.Exit(m.Run())
 }
@@ -246,7 +268,9 @@ func Test(t *testing.T) {
 
 	templateCtl := templatectlmock.NewMockController(mockCtl)
 	templateCtl.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0").
-		Return([]byte(schema), nil).AnyTimes()
+		Return(&templatectl.Schema{
+			CD: cdSchema, CI: ciSchema,
+		}, nil).AnyTimes()
 
 	c = &controller{
 		gitlabConfig: gitlab.Config{
@@ -268,7 +292,6 @@ func Test(t *testing.T) {
 	defer func() { _ = c.DeleteApplication(ctx, appName) }()
 
 	requestStr := `{
-    "groupID":1000,
     "name":"app",
     "description":"this is description",
     "template":{
@@ -282,53 +305,54 @@ func Test(t *testing.T) {
     },
     "priority":"P0",
     "templateInput":{
-        "app":{
-            "params":{
-                "xmx":"512",
-                "xms":"512",
-                "maxPerm":"128",
-                "mainClassName":"com.netease.horizon.WebApplication",
-                "jvmExtra":"-Dserver.port=8080"
-            },
-            "resource":"x-small",
-            "health":{
-                "lifecycle":{
-                    "online":{
-                        "url":"/online",
-                        "timeoutSeconds":3,
-                        "periodSeconds":15,
-                        "retry":20
-                    },
-                    "offline":{
-                        "url":"/offline",
-                        "timeoutSeconds":3,
-                        "periodSeconds":15,
-                        "retry":20
-                    }
+        "cd":{
+            "app":{
+                "params":{
+                    "xmx":"512",
+                    "xms":"512",
+                    "maxPerm":"128",
+                    "mainClassName":"com.netease.horizon.WebApplication",
+                    "jvmExtra":"-Dserver.port=8080"
                 },
-                "probe":{
-                    "check":{
-                        "url":"/check",
-                        "initialDelaySeconds":200,
-                        "timeoutSeconds":3,
-                        "periodSeconds":15,
-                        "failureThreshold":3
+                "resource":"x-small",
+                "health":{
+                    "lifecycle":{
+                        "online":{
+                            "url":"/online",
+                            "timeoutSeconds":3,
+                            "periodSeconds":15,
+                            "retry":20
+                        },
+                        "offline":{
+                            "url":"/offline",
+                            "timeoutSeconds":3,
+                            "periodSeconds":15,
+                            "retry":20
+                        }
                     },
-                    "status":{
-                        "url":"/status",
-                        "initialDelaySeconds":200,
-                        "timeoutSeconds":3,
-                        "periodSeconds":15,
-                        "failureThreshold":3
-                    }
-                },
-                "port":8080
+                    "probe":{
+                        "check":{
+                            "url":"/check",
+                            "initialDelaySeconds":200,
+                            "timeoutSeconds":3,
+                            "periodSeconds":15,
+                            "failureThreshold":3
+                        },
+                        "status":{
+                            "url":"/status",
+                            "initialDelaySeconds":200,
+                            "timeoutSeconds":3,
+                            "periodSeconds":15,
+                            "failureThreshold":3
+                        }
+                    },
+                    "port":8080
+                }
             }
+        },
+        "ci":{
+            "buildxml":"PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHByb2plY3QgWzwhRU5USVRZIGJ1aWxkZmlsZSBTWVNURU0gImZpbGU6Li9idWlsZC11c2VyLnhtbCI+XT4KPHByb2plY3QgYmFzZWRpcj0iLiIgZGVmYXVsdD0iZGVwbG95IiBuYW1lPSJkZW1vIj4KICAgIDxwcm9wZXJ0eSBuYW1lPSJhbnQiIHZhbHVlPSJhbnQiIC8+CiAgICA8cHJvcGVydHkgbmFtZT0iYmFzZWxpbmUuZGlyIiB2YWx1ZT0iJHtiYXNlZGlyfSIvPgoKICAgIDx0YXJnZXQgbmFtZT0icGFja2FnZSI+CiAgICAgICAgPGV4ZWMgZGlyPSIke2Jhc2VsaW5lLmRpcn0iIGV4ZWN1dGFibGU9IiR7YW50fSIgZmFpbG9uZXJyb3I9InRydWUiPgogICAgICAgICAgICA8YXJnIGxpbmU9Ii1idWlsZGZpbGUgb3Zlcm1pbmRfYnVpbGQueG1sIC1EZW52PXRlc3QgLURlbnZOYW1lPXFhLWFsbGFuLmlnYW1lLjE2My5jb20iLz4KICAgICAgICA8L2V4ZWM+CiAgICA8L3RhcmdldD4KCiAgICA8dGFyZ2V0IG5hbWU9ImRlcGxveSI+CiAgICAgICAgPGVjaG8gbWVzc2FnZT0iYmVnaW4gYXV0byBkZXBsb3kuLi4uLi4iLz4KICAgICAgICA8YW50Y2FsbCB0YXJnZXQ9InBhY2thZ2UiLz4KICAgIDwvdGFyZ2V0Pgo8L3Byb2plY3Q+"
         }
-    },
-    "pipelineInput":{
-        "type":"build.xml",
-        "buildxml":"PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHByb2plY3QgWzwhRU5USVRZIGJ1aWxkZmlsZSBTWVNURU0gImZpbGU6Li9idWlsZC11c2VyLnhtbCI+XT4KPHByb2plY3QgYmFzZWRpcj0iLiIgZGVmYXVsdD0iZGVwbG95IiBuYW1lPSJkZW1vIj4KICAgIDxwcm9wZXJ0eSBuYW1lPSJhbnQiIHZhbHVlPSJhbnQiIC8+CiAgICA8cHJvcGVydHkgbmFtZT0iYmFzZWxpbmUuZGlyIiB2YWx1ZT0iJHtiYXNlZGlyfSIvPgoKICAgIDx0YXJnZXQgbmFtZT0icGFja2FnZSI+CiAgICAgICAgPGV4ZWMgZGlyPSIke2Jhc2VsaW5lLmRpcn0iIGV4ZWN1dGFibGU9IiR7YW50fSIgZmFpbG9uZXJyb3I9InRydWUiPgogICAgICAgICAgICA8YXJnIGxpbmU9Ii1idWlsZGZpbGUgb3Zlcm1pbmRfYnVpbGQueG1sIC1EZW52PXRlc3QgLURlbnZOYW1lPXFhLWFsbGFuLmlnYW1lLjE2My5jb20iLz4KICAgICAgICA8L2V4ZWM+CiAgICA8L3RhcmdldD4KCiAgICA8dGFyZ2V0IG5hbWU9ImRlcGxveSI+CiAgICAgICAgPGVjaG8gbWVzc2FnZT0iYmVnaW4gYXV0byBkZXBsb3kuLi4uLi4iLz4KICAgICAgICA8YW50Y2FsbCB0YXJnZXQ9InBhY2thZ2UiLz4KICAgIDwvdGFyZ2V0Pgo8L3Byb2plY3Q+"
     }
 }`
 
@@ -338,12 +362,12 @@ func Test(t *testing.T) {
 	}
 
 	// create application
-	if err := c.CreateApplication(ctx, createRequest); err != nil {
+	if err := c.CreateApplication(ctx, uint(groupID), createRequest); err != nil {
 		t.Fatal(err)
 	}
 
 	// create application again, end with error
-	err := c.CreateApplication(ctx, createRequest)
+	err := c.CreateApplication(ctx, uint(groupID), createRequest)
 	assert.NotNil(t, err)
 
 	var updateRequest *UpdateApplicationRequest

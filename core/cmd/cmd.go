@@ -80,11 +80,9 @@ func Run(flags *Flags) {
 
 	var (
 		// init API
-		groupCt     = group.NewAPI()
-		templateAPI = template.NewAPI()
-		userAPI     = user.NewAPI()
-		groupCt        = group.NewController()
+		groupCt        = group.NewAPI()
 		templateAPI    = template.NewAPI()
+		userAPI        = user.NewAPI()
 		applicationAPI = application.NewAPI(applicationCtl)
 	)
 

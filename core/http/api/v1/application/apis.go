@@ -2,10 +2,12 @@ package application
 
 import (
 	"fmt"
+	"strconv"
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/controller/application"
 	"g.hz.netease.com/horizon/server/response"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,13 +39,20 @@ func (a *API) Get(c *gin.Context) {
 }
 
 func (a *API) Create(c *gin.Context) {
+	groupIDStr := c.Param(_groupIDParam)
+	groupID, err := strconv.ParseUint(groupIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
 	var request *application.CreateApplicationRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	if err := a.applicationCtl.CreateApplication(c, request); err != nil {
+	if err := a.applicationCtl.CreateApplication(c, uint(groupID), request); err != nil {
 		response.AbortWithError(c, err)
 		return
 	}

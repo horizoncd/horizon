@@ -24,8 +24,8 @@ import (
 const (
 	_branchMaster = "master"
 
-	_filePathTemplate = "template.json"
-	_filePathPipeline = "pipeline.json"
+	_filePathCD = "cd.json"
+	_filePathCI = "ci.json"
 )
 
 const _errCodeApplicationNotFound = errors.ErrorCode("ApplicationNotFound")
@@ -34,7 +34,7 @@ type Controller interface {
 	// GetApplication get an application
 	GetApplication(ctx context.Context, name string) (*GetApplicationResponse, error)
 	// CreateApplication create an application
-	CreateApplication(ctx context.Context, request *CreateApplicationRequest) error
+	CreateApplication(ctx context.Context, groupID uint, request *CreateApplicationRequest) error
 	// UpdateApplication update an application
 	UpdateApplication(ctx context.Context, name string, request *UpdateApplicationRequest) error
 	// DeleteApplication delete an application by name
@@ -74,18 +74,18 @@ func (c *controller) GetApplication(ctx context.Context, name string) (_ *GetApp
 
 	// 2. get template and pipeline from gitlab
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, name)
-	var templateBytes, pipelineBytes []byte
+	var cdBytes, ciBytes []byte
 	var err1, err2 error
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		templateBytes, err1 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathTemplate)
+		cdBytes, err1 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathCD)
 	}()
 	go func() {
 		defer wg.Done()
-		pipelineBytes, err2 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
+		ciBytes, err2 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathCI)
 	}()
 	wg.Wait()
 
@@ -96,11 +96,11 @@ func (c *controller) GetApplication(ctx context.Context, name string) (_ *GetApp
 		return nil, errors.E(op, err2)
 	}
 
-	var templateInput, pipelineInput map[string]interface{}
-	if err := json.Unmarshal(templateBytes, &templateInput); err != nil {
+	var cd, ci map[string]interface{}
+	if err := json.Unmarshal(cdBytes, &cd); err != nil {
 		return nil, errors.E(op, err)
 	}
-	if err := json.Unmarshal(pipelineBytes, &pipelineInput); err != nil {
+	if err := json.Unmarshal(ciBytes, &ci); err != nil {
 		return nil, errors.E(op, err)
 	}
 	app, err := c.applicationMgr.GetByName(ctx, name)
@@ -110,10 +110,10 @@ func (c *controller) GetApplication(ctx context.Context, name string) (_ *GetApp
 	if app == nil {
 		return nil, errors.E(op, http.StatusNotFound, _errCodeApplicationNotFound)
 	}
-	return ofApplicationModel(app, templateInput, pipelineInput), nil
+	return ofApplicationModel(app, cd, ci), nil
 }
 
-func (c *controller) CreateApplication(ctx context.Context, request *CreateApplicationRequest) (err error) {
+func (c *controller) CreateApplication(ctx context.Context, groupID uint, request *CreateApplicationRequest) (err error) {
 	const op = "application controller: create application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -145,12 +145,12 @@ func (c *controller) CreateApplication(ctx context.Context, request *CreateAppli
 
 	// 4. write files to gitlab
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, request.Name)
-	templateJSON, err := json.MarshalIndent(request.TemplateInput, "", "  ")
+	cdJSON, err := json.MarshalIndent(request.TemplateInput.CD, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
 	}
-	pipelineJSON, err := json.MarshalIndent(request.PipelineInput, "", "  ")
+	ciJSON, err := json.MarshalIndent(request.TemplateInput.CI, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -158,17 +158,17 @@ func (c *controller) CreateApplication(ctx context.Context, request *CreateAppli
 	actions := []gitlablib.CommitAction{
 		{
 			Action:   gitlablib.FileCreate,
-			FilePath: _filePathTemplate,
-			Content:  string(templateJSON),
+			FilePath: _filePathCD,
+			Content:  string(cdJSON),
 		}, {
 			Action:   gitlablib.FileCreate,
-			FilePath: _filePathPipeline,
-			Content:  string(pipelineJSON),
+			FilePath: _filePathCI,
+			Content:  string(ciJSON),
 		},
 	}
 
 	commitMsg := angular.CommitMessage("application", angular.Subject{
-		Operator:    currentUser.Name,
+		Operator:    currentUser.GetName(),
 		Action:      "create application",
 		Application: angular.StringPtr(request.Name),
 	}, request)
@@ -179,9 +179,9 @@ func (c *controller) CreateApplication(ctx context.Context, request *CreateAppli
 	}
 
 	// 5. write to db
-	applicationModel := request.toApplicationModel()
-	applicationModel.CreatedBy = currentUser.Name
-	applicationModel.UpdatedBy = currentUser.Name
+	applicationModel := request.toApplicationModel(groupID)
+	applicationModel.CreatedBy = currentUser.GetName()
+	applicationModel.UpdatedBy = currentUser.GetName()
 	if _, err := c.applicationMgr.Create(ctx, applicationModel); err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -217,12 +217,12 @@ func (c *controller) UpdateApplication(ctx context.Context, name string,
 
 	// 3. write files to gitlab
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, name)
-	templateJSON, err := json.MarshalIndent(request.TemplateInput, "", "  ")
+	cdJSON, err := json.MarshalIndent(request.TemplateInput.CD, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
 	}
-	pipelineJSON, err := json.MarshalIndent(request.PipelineInput, "", "  ")
+	ciJSON, err := json.MarshalIndent(request.TemplateInput.CI, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -230,17 +230,17 @@ func (c *controller) UpdateApplication(ctx context.Context, name string,
 	actions := []gitlablib.CommitAction{
 		{
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathTemplate,
-			Content:  string(templateJSON),
+			FilePath: _filePathCD,
+			Content:  string(cdJSON),
 		}, {
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathPipeline,
-			Content:  string(pipelineJSON),
+			FilePath: _filePathCI,
+			Content:  string(ciJSON),
 		},
 	}
 
 	commitMsg := angular.CommitMessage("application", angular.Subject{
-		Operator:    currentUser.Name,
+		Operator:    currentUser.GetName(),
 		Action:      "update application",
 		Application: angular.StringPtr(name),
 	}, request)
@@ -252,7 +252,7 @@ func (c *controller) UpdateApplication(ctx context.Context, name string,
 
 	// 5. write to db
 	applicationModel := request.toApplicationModel()
-	applicationModel.UpdatedBy = currentUser.Name
+	applicationModel.UpdatedBy = currentUser.GetName()
 	if _, err := c.applicationMgr.UpdateByName(ctx, name, applicationModel); err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -303,12 +303,15 @@ func (c *controller) validate(ctx context.Context, b Base) error {
 
 // validateTemplateInput validate templateInput is valid for template schema
 func (c *controller) validateTemplateInput(ctx context.Context,
-	template, release string, templateInput map[string]interface{}) error {
+	template, release string, templateInput *TemplateInput) error {
 	schema, err := c.templateCtl.GetTemplateSchema(ctx, template, release)
 	if err != nil {
 		return err
 	}
-	return jsonschema.Validate(schema, templateInput)
+	if err := jsonschema.Validate(schema.CD, templateInput.CD); err != nil {
+		return err
+	}
+	return jsonschema.Validate(schema.CI, templateInput.CI)
 }
 
 // validatePriority validate priority

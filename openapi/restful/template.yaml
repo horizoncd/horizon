@@ -98,7 +98,7 @@ paths:
       operationId: getTemplateInputSchema
       summary: Get input schema for a specified template
       description: |
-        Get input schema for a specified template. This API will return the template's input.schema.json file.
+        Get input schema for a specified template. This API will return the template's cd.schema.json file and ci.schema.json file.
       responses:
         '200':
           description: Success
