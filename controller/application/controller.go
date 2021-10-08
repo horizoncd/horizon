@@ -113,7 +113,8 @@ func (c *controller) GetApplication(ctx context.Context, name string) (_ *GetApp
 	return ofApplicationModel(app, cd, ci), nil
 }
 
-func (c *controller) CreateApplication(ctx context.Context, groupID uint, request *CreateApplicationRequest) (err error) {
+func (c *controller) CreateApplication(ctx context.Context, groupID uint,
+	request *CreateApplicationRequest) (err error) {
 	const op = "application controller: create application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
