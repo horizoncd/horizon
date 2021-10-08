@@ -18,12 +18,12 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%v/releases", templateParam),
+			Pattern:     fmt.Sprintf("/:%v/releases", _templateParam),
 			HandlerFunc: api.ListTemplateRelease,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%v/releases/:%v/schema", templateParam, releaseParam),
+			Pattern:     fmt.Sprintf("/:%v/releases/:%v/schema", _templateParam, _releaseParam),
 			HandlerFunc: api.GetTemplateSchema,
 		},
 	}
