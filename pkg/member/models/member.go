@@ -35,7 +35,7 @@ type Member struct {
 	// Role: owner/maintainer/...
 	Role       string
 	// MemberType: user/group
-	MemberType `gorm:"column:member_type"`
+	MemberType MemberType `gorm:"column:member_type"`
 	//MemberInfo username or groupid
 	MemberInfo string `gorm:"column:member_info"`
 	GrantBy    string `gorm:"column:grant_by"`

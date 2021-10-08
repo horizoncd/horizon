@@ -23,8 +23,10 @@ var _defaultQuery = &q.Query{
 
 type DAO interface {
 	Create(ctx context.Context, member *models.Member) (*models.Member, error)
-	GetByUserName(ctx context.Context, userName string) (*models.Member, error)
-	UpdateByID(ctx context.Context, id uint16, member *models.Member) (*models.Member, error)
+	Get(ctx context.Context, resourceType  models.ResourceType , resourceID uint ,
+		memberType models.MemberType, memberInfo string) (*models.Member, error)
+	Delete(ctx context.Context,  memerID uint) error
+	UpdateByID(ctx context.Context, id uint, member *models.Member) (*models.Member, error)
 	ListMember(ctx context.Context, query *q.Query) (int, []models.Member, error)
 }
 
@@ -44,11 +46,25 @@ func (d *dao) Create(ctx context.Context, member *models.Member) (*models.Member
 	return member, result.Error
 }
 
-func (d *dao) GetByUserName(ctx context.Context, userName string) (*models.Member, error) {
-	return nil, nil
+func (d *dao) 	Get(ctx context.Context, resourceType  models.ResourceType , resourceID uint ,
+	memberType models.MemberType, memberInfo string) (*models.Member, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var member models.Member
+	result := db.Raw(common.MemberSingleQuery, resourceType, resourceID, memberType, memberInfo).Scan(&member)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+ 	return &member, nil
 }
 
-func (d *dao) UpdateByID(ctx context.Context, id uint16,  member *models.Member) (*models.Member, error) {
+func (d *dao) UpdateByID(ctx context.Context, id uint,  member *models.Member) (*models.Member, error) {
 	const op = "member dao: update by ID"
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -56,7 +72,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint16,  member *models.Member)
 	}
 
 	user, err := user2.FromContext(ctx)
-	if user != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -84,6 +100,18 @@ func (d *dao) UpdateByID(ctx context.Context, id uint16,  member *models.Member)
 
 	return &memberInDB, nil
 }
+
+
+func (d *dao) 	Delete(ctx context.Context,  memerID uint) error {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	result := db.Exec(common.MemberSingleDelete, memerID)
+	return result.Error
+}
+
 
 func (d *dao) ListMember(ctx context.Context, query *q.Query) (int, []models.Member, error) {
 	return 0, nil, nil
