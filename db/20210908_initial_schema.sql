@@ -104,3 +104,24 @@ CREATE TABLE `application` (
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+
+
+-- member table
+CREATE TABLE `Member` (
+    `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `resource_type` varchar(64) NOT NULL COMMENT 'group\application\applicationinstance',
+    `resource_id`  int(11) unsigned NOT NULL COMMENT 'resource id',
+
+    `role` varchar(64)   NOT NULL  COMMENT 'binding role name',
+    `member_type` tinyint(1)  COMMENT '0-USER, 1-group',
+    `member_info` varchar(512) NOT NULL COMMENT 'UserName or GroupID',
+
+    `grant_by`   varchar(512)  NOT NULL COMMNET 'who grand the role',
+    `created_by` varchar(512) NOT NULL COMMENT 'who create the role',
+
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIME,
+    `updated_at` datetime NOT NULL CURRENT_TIMESTAMP  ON UPDATE CURRENT_TIMESTAMP,
+
+    `deleted_at` datetime DEFAULT  NULL,
+) ENGINE=InnoDB  AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+

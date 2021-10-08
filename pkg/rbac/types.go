@@ -94,6 +94,6 @@ func (r *RBACAuthorizer) Authorize(ctx context.Context, attributes auth.Attribut
 	}
 
 	// Build a detailed log of the denial.
-	reason := ""
+	reason := ruleCheckingVisitor.reason
 	return auth.DecisionDeny, reason, nil
 }

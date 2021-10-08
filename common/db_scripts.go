@@ -22,3 +22,8 @@ const (
 	UserSearch      = "select * from user where name like ? or full_name like ? or email like ? limit ? offset ?"
 	UserSearchCount = "select count(1) from user where name like ? or full_name like ? or email like ?"
 )
+
+/* sql about member */
+const (
+	MemberUpdate = "select * from member where id = ? and deleted_at is null"
+)
