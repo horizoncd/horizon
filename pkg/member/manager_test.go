@@ -14,7 +14,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 var (
 	db  *gorm.DB
 	ctx context.Context
@@ -22,25 +21,25 @@ var (
 
 func MemberValueEqual(member1, member2 *models.Member) bool {
 
-	if member2.ResourceType == member1.ResourceType  &&
+	if member2.ResourceType == member1.ResourceType &&
 		member1.ResourceID == member2.ResourceID &&
-		member1.Role == member2.Role  &&
-		member1.MemberType ==  member2.MemberType &&
-		member1.MemberInfo ==  member2.MemberInfo &&
+		member1.Role == member2.Role &&
+		member1.MemberType == member2.MemberType &&
+		member1.MemberInfo == member2.MemberInfo &&
 		member1.GrantBy == member2.GrantBy {
 		return true
 	}
 	return false
 }
 
-func TestCreate( t *testing.T) {
+func TestBasic(t *testing.T) {
 	member1 := &models.Member{
 		ResourceType: "group",
-		ResourceID: 1234324,
-		Role: "owner",
-		MemberType: models.MemberUser,
-		MemberInfo: "tom",
-		GrantBy: "admin",
+		ResourceID:   1234324,
+		Role:         "owner",
+		MemberType:   models.MemberUser,
+		MemberInfo:   "tom",
+		GrantBy:      "admin",
 	}
 
 	// test create
@@ -59,7 +58,7 @@ func TestCreate( t *testing.T) {
 	// test update
 	member1.Role = "maintainer"
 	member1.GrantBy = "tom"
-	var grandUser  userauth.User = &userauth.DefaultInfo{
+	var grandUser userauth.User = &userauth.DefaultInfo{
 		Name:     "cat",
 		FullName: "cat",
 		ID:       123,
@@ -85,7 +84,40 @@ func TestCreate( t *testing.T) {
 	return
 }
 
+func TestList(t *testing.T) {
+	member1 := &models.Member{
+		ResourceType: "group",
+		ResourceID:   123456,
+		Role:         "owner",
+		MemberType:   models.MemberUser,
+		MemberInfo:   "tom",
+		GrantBy:      "admin",
+	}
 
+	// create 1
+	retMember1, err := Mgr.Create(ctx, member1)
+	assert.Nil(t, err)
+	assert.True(t, MemberValueEqual(member1, retMember1))
+
+	// create 2
+	member2 := &models.Member{
+		ResourceType: "group",
+		ResourceID:   123456,
+		Role:         "owner",
+		MemberType:   models.MemberUser,
+		MemberInfo:   "jerry",
+		GrantBy:      "admin",
+	}
+	retMember2, err := Mgr.Create(ctx, member2)
+	assert.Nil(t, err)
+	assert.True(t, MemberValueEqual(member2, retMember2))
+
+	members, err := Mgr.ListDirectMember(ctx, member1.ResourceType, member1.ResourceID)
+	assert.Nil(t, err)
+	assert.Equal(t, len(members), 2)
+	assert.True(t, MemberValueEqual(&members[0], retMember1))
+	assert.True(t, MemberValueEqual(&members[1], retMember2))
+}
 
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")

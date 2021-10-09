@@ -13,28 +13,28 @@ import (
 	"gorm.io/gorm"
 )
 
-
 // _defaultQuery default query params
 var _defaultQuery = &q.Query{
 	// PageNumber start with 1
 	PageNumber: 1,
-	PageSize: 20,
+	PageSize:   20,
 }
 
 type DAO interface {
 	Create(ctx context.Context, member *models.Member) (*models.Member, error)
-	Get(ctx context.Context, resourceType  models.ResourceType , resourceID uint ,
+	Get(ctx context.Context, resourceType models.ResourceType, resourceID uint,
 		memberType models.MemberType, memberInfo string) (*models.Member, error)
-	Delete(ctx context.Context,  memerID uint) error
+	Delete(ctx context.Context, memberID uint) error
 	UpdateByID(ctx context.Context, id uint, member *models.Member) (*models.Member, error)
-	ListMember(ctx context.Context, query *q.Query) (int, []models.Member, error)
+	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
+		resourceID uint) ([]models.Member, error)
 }
 
 func New() DAO {
 	return &dao{}
 }
 
-type dao struct {}
+type dao struct{}
 
 func (d *dao) Create(ctx context.Context, member *models.Member) (*models.Member, error) {
 	db, err := orm.FromContext(ctx)
@@ -46,7 +46,7 @@ func (d *dao) Create(ctx context.Context, member *models.Member) (*models.Member
 	return member, result.Error
 }
 
-func (d *dao) 	Get(ctx context.Context, resourceType  models.ResourceType , resourceID uint ,
+func (d *dao) Get(ctx context.Context, resourceType models.ResourceType, resourceID uint,
 	memberType models.MemberType, memberInfo string) (*models.Member, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -61,10 +61,10 @@ func (d *dao) 	Get(ctx context.Context, resourceType  models.ResourceType , reso
 	if result.RowsAffected == 0 {
 		return nil, nil
 	}
- 	return &member, nil
+	return &member, nil
 }
 
-func (d *dao) UpdateByID(ctx context.Context, id uint,  member *models.Member) (*models.Member, error) {
+func (d *dao) UpdateByID(ctx context.Context, id uint, member *models.Member) (*models.Member, error) {
 	const op = "member dao: update by ID"
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -76,8 +76,8 @@ func (d *dao) UpdateByID(ctx context.Context, id uint,  member *models.Member) (
 		return nil, err
 	}
 
-	var  memberInDB models.Member
-	if err := db.Transaction(func(tx *gorm.DB) error  {
+	var memberInDB models.Member
+	if err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. get member in db first
 		result := tx.Raw(common.MemberUpdate, id).Scan(&memberInDB)
 		if result.Error != nil {
@@ -101,18 +101,28 @@ func (d *dao) UpdateByID(ctx context.Context, id uint,  member *models.Member) (
 	return &memberInDB, nil
 }
 
-
-func (d *dao) 	Delete(ctx context.Context,  memerID uint) error {
+func (d *dao) Delete(ctx context.Context, memberID uint) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	result := db.Exec(common.MemberSingleDelete, memerID)
+	result := db.Exec(common.MemberSingleDelete, memberID)
 	return result.Error
 }
 
+func (d *dao) ListDirectMember(ctx context.Context, resourceType models.ResourceType,
+	resourceID uint) ([]models.Member, error) {
 
-func (d *dao) ListMember(ctx context.Context, query *q.Query) (int, []models.Member, error) {
-	return 0, nil, nil
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var members []models.Member
+	result := db.Raw(common.MemberSelectAll, resourceType, resourceID).Scan(&members)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return members, nil
 }
