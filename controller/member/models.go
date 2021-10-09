@@ -50,7 +50,7 @@ type Member struct {
 	GrantTime   time.Time
 }
 
-func ConverMember(member models.Member, sourceInfo string) Member {
+func ConvertMember(member *models.Member, sourceInfo string) Member {
 	return Member{
 		ID: member.ID,
 		MemberType: member.MemberType,

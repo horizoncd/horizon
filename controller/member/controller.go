@@ -61,8 +61,15 @@ func (c *controller) CreateMember(ctx context.Context, postMember PostMember) (_
 		return nil, err
 	}
 
-	var userMemberInfo models.Member
-	userMemberInfo, err = c.manager.GetByUserName(ctx, currentUser.GetName())
+	// 2. convert and add the member
+	member, err := ConvertPostMemberToMember(postMember, currentUser)
+	if err != nil {
+		return nil, horizonerror.E(op, http.StatusBadRequest, _errCodeResourceType,
+			err.Error())
+	}
+
+	var userMemberInfo *models.Member
+	userMemberInfo, err = c.manager.GetByUserName(ctx, member.ResourceType, postMember.ResourceID, currentUser.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -73,19 +80,13 @@ func (c *controller) CreateMember(ctx context.Context, postMember PostMember) (_
 				currentUser.GetName(), postMember.Role, userMemberInfo.Role))
 	}
 
-	// 2. convert and add the member
-	member, err := ConvertPostMemberToMember(postMember, currentUser)
-	if err != nil {
-		return nil, horizonerror.E(op, http.StatusBadRequest, _errCodeResourceType,
-			err.Error())
-	}
 
 	ret, err := c.manager.Create(ctx, member)
 	if err != nil {
 		return nil, horizonerror.E(op, http.StatusInternalServerError, err.Error())
 	}
 
-	memberResponse := ConverMember(ret, "direct")
+	memberResponse := ConvertMember(ret, "direct")
 	return &memberResponse, nil
 }
 
