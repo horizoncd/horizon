@@ -2,8 +2,9 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
+	"strconv"
 
 	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -12,17 +13,38 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	ErrPathConflict = errors.New("path conflict")
+	ErrNameConflict = errors.New("name conflict")
+)
+
 type DAO interface {
-	CheckUnique(ctx context.Context, group *models.Group) error
+	// CheckNameUnique check whether the name is unique
+	CheckNameUnique(ctx context.Context, group *models.Group) error
+	// CheckPathUnique check whether the path is unique
+	CheckPathUnique(ctx context.Context, group *models.Group) error
+	// Create a group
 	Create(ctx context.Context, group *models.Group) (uint, error)
-	Delete(ctx context.Context, id uint) error
-	Get(ctx context.Context, id uint) (*models.Group, error)
-	GetByPath(ctx context.Context, path string) (*models.Group, error)
+	// Delete a group by id
+	Delete(ctx context.Context, id uint) (int64, error)
+	// GetByID get a group by id
+	GetByID(ctx context.Context, id uint) (*models.Group, error)
+	// GetByNameFuzzily get groups that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
-	GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error)
-	Update(ctx context.Context, group *models.Group) error
+	// GetByIDs get groups by ids
+	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
+	// GetByPaths get groups by paths
+	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
+	// CountByParentID get the count of the records matching the given parentID
+	CountByParentID(ctx context.Context, parentID uint) (int64, error)
+	// UpdateBasic update basic info of a group
+	UpdateBasic(ctx context.Context, group *models.Group) error
+	// ListWithoutPage query groups without paging
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
+	// List query groups with paging
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
+	// Transfer move a group under another parent group
+	Transfer(ctx context.Context, id, newParentID uint) error
 }
 
 // New returns an instance of the default DAO
@@ -32,28 +54,103 @@ func New() DAO {
 
 type dao struct{}
 
-func (d *dao) GetByFullNamesRegexpFuzzily(ctx context.Context, names *[]string) ([]*models.Group, error) {
-	if names == nil || (len(*names)) == 0 {
-		return []*models.Group{}, nil
+func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
 	}
 
+	// check records exist
+	group, err := d.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	pGroup, err := d.GetByID(ctx, newParentID)
+	if err != nil {
+		return err
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// change parentID
+		if err := tx.Exec(common.GroupUpdateParentID, newParentID, id).Error; err != nil {
+			return err
+		}
+
+		// update traversalIDs
+		oldTIDs := group.TraversalIDs
+		newTIDs := fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID)
+		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs, oldTIDs+"%").Error; err != nil {
+			return err
+		}
+
+		// commit when return nil
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	var count int64
+	result := db.Raw(common.GroupCountByParentID, parentID).Scan(&count)
+
+	return count, result.Error
+}
+
+func (d *dao) GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var groups []*models.Group
-	formatNames := make([]string, len(*names))
-	for i, n := range *names {
-		formatNames[i] = fmt.Sprintf("full_name like '%s%%'", n)
-	}
-
-	query := strings.Join(formatNames, " or ")
-	// select * from `group` where full_name like '1%' or full_name like '2%' order by id desc
-	qSQL := fmt.Sprintf("select * from `group` where %s order by id desc", query)
-	result := db.Raw(qSQL).Scan(&groups)
+	result := db.Raw(common.GroupQueryByPaths, paths).Scan(&groups)
 
 	return groups, result.Error
+}
+
+func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []*models.Group
+	result := db.Raw(common.GroupQueryByIDs, ids).Scan(&groups)
+
+	return groups, result.Error
+}
+
+// CheckPathUnique todo check application table too
+func (d *dao) CheckPathUnique(ctx context.Context, group *models.Group) error {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	queryResult := models.Group{}
+	result := db.Raw(common.GroupQueryByParentIDAndPath, group.ParentID, group.Path).First(&queryResult)
+
+	// update group conflict, has another record with the same parentID & path
+	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
+		return ErrPathConflict
+	}
+
+	// create group conflict
+	if group.ID == 0 && result.RowsAffected > 0 {
+		return ErrPathConflict
+	}
+
+	return nil
 }
 
 func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
@@ -63,33 +160,29 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Grou
 	}
 
 	var groups []*models.Group
-	result := db.Where("name LIKE ?", "%"+name+"%").Find(&groups)
+	result := db.Raw(common.GroupQueryByNameFuzzily, fmt.Sprintf("%%%s%%", name)).Scan(&groups)
 
 	return groups, result.Error
 }
 
-func (d *dao) CheckUnique(ctx context.Context, group *models.Group) error {
+// CheckNameUnique todo check application table too
+func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	query := map[string]interface{}{
-		"parent_id": group.ParentID,
-		"name":      group.Name,
-	}
+	queryResult := models.Group{}
+	result := db.Raw(common.GroupQueryByParentIDAndName, group.ParentID, group.Name).First(&queryResult)
 
-	queryResult := &models.Group{}
-	result := db.Model(&models.Group{}).Where(query).Find(queryResult)
-
-	// update group conflict, has another record with the same parentId & name
+	// update group conflict, has another record with the same parentID & name
 	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
-		return common.ErrNameConflict
+		return ErrNameConflict
 	}
 
 	// create group conflict
 	if group.ID == 0 && result.RowsAffected > 0 {
-		return common.ErrNameConflict
+		return ErrNameConflict
 	}
 
 	return nil
@@ -100,55 +193,81 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
 	if err != nil {
 		return 0, err
 	}
-	// conflict if there's record with the same parentId and name
-	err = d.CheckUnique(ctx, group)
+
+	var pGroup *models.Group
+	// check if parent exists
+	if group.ParentID > 0 {
+		pGroup, err = d.GetByID(ctx, group.ParentID)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	// check if there's a record with the same parentID and name
+	err = d.CheckNameUnique(ctx, group)
+	if err != nil {
+		return 0, err
+	}
+	// check if there's a record with the same parentID and path
+	err = d.CheckPathUnique(ctx, group)
 	if err != nil {
 		return 0, err
 	}
 
-	result := db.Create(group)
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// create, get id returned by the database
+		if err := tx.Create(group).Error; err != nil {
+			// rollback when error
+			return err
+		}
 
-	return group.ID, result.Error
+		// update traversalIDs
+		id := group.ID
+		var traversalIDs string
+		if pGroup == nil {
+			traversalIDs = strconv.Itoa(int(id))
+		} else {
+			traversalIDs = fmt.Sprintf("%s,%d", pGroup.TraversalIDs, id)
+		}
+
+		if err := tx.Exec(common.GroupUpdateTraversalIDs, traversalIDs, id).Error; err != nil {
+			// rollback when error
+			return err
+		}
+
+		// commit when return nil
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	return group.ID, nil
 }
 
-func (d *dao) Delete(ctx context.Context, id uint) error {
+// Delete can only delete a group that doesn't have any children
+func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	result := db.Where("id = ?", id).Delete(&models.Group{})
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
+	result := db.Exec(common.GroupDelete, id)
 
-	// todo delete children
-
-	return result.Error
+	return result.RowsAffected, result.Error
 }
 
-func (d *dao) Get(ctx context.Context, id uint) (*models.Group, error) {
+func (d *dao) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var group *models.Group
-	result := db.First(&group, id)
+	var group models.Group
+	result := db.Raw(common.GroupQueryByID, id).First(&group)
 
-	return group, result.Error
-}
-
-func (d *dao) GetByPath(ctx context.Context, path string) (*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var group *models.Group
-	result := db.First(&group, "path = ?", path)
-
-	return group, result.Error
+	return &group, result.Error
 }
 
 func (d *dao) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error) {
@@ -181,39 +300,14 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 	return groups, count, result.Error
 }
 
-func (d *dao) Update(ctx context.Context, group *models.Group) error {
+// UpdateBasic just update base info, not contains transfer logic
+func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	// conflict if there's record with the same parentId and name
-	err = d.CheckUnique(ctx, group)
-	if err != nil {
-		return err
-	}
-
-	result := db.Model(group).Select("Name", "Description", "VisibilityLevel").Where("deleted_at is null").Updates(group)
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-
-	// todo modify children's path
-
-	// update self & children's fullNames
-	var oldGroup *models.Group
-	db.First(&oldGroup, group.ID)
-	oldFullName := oldGroup.FullName
-	split := strings.Split(strings.ReplaceAll(oldFullName, " ", ""), "/")
-	split = append(split[:len(split)-1], group.Name)
-	newFullName := strings.Join(split, " / ")
-	// update `group` set full_name=
-	// replace(full_name, full_name, concat('a / e', substring(full_name, 6)))
-	// where full_name regexp '^(a / d)'
-	updateSQL := fmt.Sprintf("update `group` set full_name="+
-		"replace(full_name, full_name, concat('%s', substring(full_name, %d))) "+
-		"where full_name like '%s%%'", newFullName, len(oldFullName)+1, oldFullName)
-	result = db.Exec(updateSQL)
+	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel, group.ID)
 
 	return result.Error
 }
