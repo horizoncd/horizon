@@ -14,8 +14,8 @@ type Base struct {
 }
 
 type TemplateInput struct {
-	CD map[string]interface{} `json:"cd"`
-	CI map[string]interface{} `json:"ci"`
+	Application map[string]interface{} `json:"application"`
+	Pipeline    map[string]interface{} `json:"pipeline"`
 }
 
 // CreateApplicationRequest holds the parameters required to create an application
@@ -79,7 +79,7 @@ func (m *UpdateApplicationRequest) toApplicationModel() *application.Application
 
 // ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse
 func ofApplicationModel(app *application.Application,
-	ci, cd map[string]interface{}) *GetApplicationResponse {
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetApplicationResponse {
 	return &GetApplicationResponse{
 		CreateApplicationRequest: CreateApplicationRequest{
 			Base: Base{
@@ -95,8 +95,8 @@ func ofApplicationModel(app *application.Application,
 					Branch:    app.GitBranch,
 				},
 				TemplateInput: &TemplateInput{
-					CI: ci,
-					CD: cd,
+					Application: pipelineJSONBlob,
+					Pipeline:    applicationJSONBlob,
 				},
 			},
 			Name: app.Name,

@@ -57,12 +57,12 @@ var (
 	rootGroupName string
 	app           = "app"
 
-	ciJSONBlob, cdJSONBlob map[string]interface{}
-	ciJSONStr              = `{
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{}
+	pipelineJSONStr                       = `{
             "buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
         }`
 
-	cdJSONStr = `{
+	applicationJSONStr = `{
     "app":{
         "params":{
             "xmx":"512",
@@ -137,10 +137,10 @@ func TestMain(m *testing.M) {
 
 	rootGroupName = p.RootGroupName
 
-	if err := json.Unmarshal([]byte(ciJSONStr), &ciJSONBlob); err != nil {
+	if err := json.Unmarshal([]byte(pipelineJSONStr), &pipelineJSONBlob); err != nil {
 		panic(err)
 	}
-	if err := json.Unmarshal([]byte(cdJSONStr), &cdJSONBlob); err != nil {
+	if err := json.Unmarshal([]byte(applicationJSONStr), &applicationJSONBlob); err != nil {
 		panic(err)
 	}
 
@@ -167,23 +167,23 @@ func Test(t *testing.T) {
 
 	defer func() { _ = r.DeleteApplication(ctx, app) }()
 
-	err := r.CreateApplication(ctx, app, ciJSONBlob, cdJSONBlob)
+	err := r.CreateApplication(ctx, app, pipelineJSONBlob, applicationJSONBlob)
 	assert.Nil(t, err)
 
-	err = r.CreateApplication(ctx, app, ciJSONBlob, cdJSONBlob)
+	err = r.CreateApplication(ctx, app, pipelineJSONBlob, applicationJSONBlob)
 	assert.NotNil(t, err)
 
-	// update, exchange ciJSONBlob and cdJSONBlob
-	err = r.UpdateApplication(ctx, app, cdJSONBlob, ciJSONBlob)
+	// update, exchange pipelineJSONBlob and applicationJSONBlob
+	err = r.UpdateApplication(ctx, app, applicationJSONBlob, pipelineJSONBlob)
 	assert.Nil(t, err)
 
-	ci, cd, err := r.GetApplication(ctx, app)
+	pipelineJSON, applicationJSON, err := r.GetApplication(ctx, app)
 	assert.Nil(t, err)
-	if reflect.DeepEqual(ci, cdJSONBlob) {
-		t.Fatal("wrong ci")
+	if reflect.DeepEqual(pipelineJSON, applicationJSONBlob) {
+		t.Fatal("wrong pipelineJSON")
 	}
 
-	if reflect.DeepEqual(cd, ciJSONBlob) {
-		t.Fatal("wrong cd")
+	if reflect.DeepEqual(applicationJSON, pipelineJSONBlob) {
+		t.Fatal("wrong applicationJSON")
 	}
 }

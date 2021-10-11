@@ -67,8 +67,8 @@ func toReleases(trs []trmodels.TemplateRelease) Releases {
 }
 
 type Schemas struct {
-	CD *Schema `json:"cd"`
-	CI *Schema `json:"ci"`
+	Application *Schema `json:"application"`
+	Pipeline    *Schema `json:"pipeline"`
 }
 
 type Schema struct {
@@ -81,13 +81,13 @@ func toSchemas(schemas *templatesvc.Schemas) *Schemas {
 		return nil
 	}
 	return &Schemas{
-		CD: &Schema{
-			JSONSchema: schemas.CD.JSONSchema,
-			UISchema:   schemas.CD.UISchema,
+		Application: &Schema{
+			JSONSchema: schemas.Application.JSONSchema,
+			UISchema:   schemas.Application.UISchema,
 		},
-		CI: &Schema{
-			JSONSchema: schemas.CI.JSONSchema,
-			UISchema:   schemas.CI.UISchema,
+		Pipeline: &Schema{
+			JSONSchema: schemas.Pipeline.JSONSchema,
+			UISchema:   schemas.Pipeline.UISchema,
 		},
 	}
 }

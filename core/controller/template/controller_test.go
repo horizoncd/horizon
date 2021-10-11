@@ -94,11 +94,11 @@ func TestGetSchema(t *testing.T) {
 		"type": "object",
 	}
 	schemas := &tsvc.Schemas{
-		CD: &tsvc.Schema{
+		Application: &tsvc.Schema{
 			JSONSchema: schema,
 			UISchema:   schema,
 		},
-		CI: &tsvc.Schema{
+		Pipeline: &tsvc.Schema{
 			JSONSchema: schema,
 			UISchema:   schema,
 		},
@@ -112,11 +112,11 @@ func TestGetSchema(t *testing.T) {
 	ss, err := ctl.GetTemplateSchema(ctx, templateName, releaseName)
 	assert.Nil(t, err)
 	if !reflect.DeepEqual(ss, &Schemas{
-		CD: &Schema{
+		Application: &Schema{
 			JSONSchema: schema,
 			UISchema:   schema,
 		},
-		CI: &Schema{
+		Pipeline: &Schema{
 			JSONSchema: schema,
 			UISchema:   schema,
 		},

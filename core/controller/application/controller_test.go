@@ -24,13 +24,13 @@ var (
 	ctx context.Context
 	c   Controller
 
-	cdSchema, ciSchema     map[string]interface{}
-	ciJSONBlob, cdJSONBlob map[string]interface{}
+	applicationSchema, pipelineSchema     map[string]interface{}
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{}
 
 	groupID = 1000
 	appName = "app"
 
-	cdSchemaJSON = `{
+	applicationSchemaJSON = `{
   "type": "object",
   "properties": {
     "app": {
@@ -173,7 +173,7 @@ var (
   }
 }
 `
-	ciSchemaJSON = `{
+	pipelineSchemaJSON = `{
   "type": "object",
   "title": "Ant",
   "properties": {
@@ -185,10 +185,10 @@ var (
   }
 }`
 
-	ciJSONStr = `{
+	pipelineJSONStr = `{
             "buildxml":"PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHByb2plY3QgWzwhRU5USVRZIGJ1aWxkZmlsZSBTWVNURU0gImZpbGU6Li9idWlsZC11c2VyLnhtbCI+XT4KPHByb2plY3QgYmFzZWRpcj0iLiIgZGVmYXVsdD0iZGVwbG95IiBuYW1lPSJkZW1vIj4KICAgIDxwcm9wZXJ0eSBuYW1lPSJhbnQiIHZhbHVlPSJhbnQiIC8+CiAgICA8cHJvcGVydHkgbmFtZT0iYmFzZWxpbmUuZGlyIiB2YWx1ZT0iJHtiYXNlZGlyfSIvPgoKICAgIDx0YXJnZXQgbmFtZT0icGFja2FnZSI+CiAgICAgICAgPGV4ZWMgZGlyPSIke2Jhc2VsaW5lLmRpcn0iIGV4ZWN1dGFibGU9IiR7YW50fSIgZmFpbG9uZXJyb3I9InRydWUiPgogICAgICAgICAgICA8YXJnIGxpbmU9Ii1idWlsZGZpbGUgb3Zlcm1pbmRfYnVpbGQueG1sIC1EZW52PXRlc3QgLURlbnZOYW1lPXFhLWFsbGFuLmlnYW1lLjE2My5jb20iLz4KICAgICAgICA8L2V4ZWM+CiAgICA8L3RhcmdldD4KCiAgICA8dGFyZ2V0IG5hbWU9ImRlcGxveSI+CiAgICAgICAgPGVjaG8gbWVzc2FnZT0iYmVnaW4gYXV0byBkZXBsb3kuLi4uLi4iLz4KICAgICAgICA8YW50Y2FsbCB0YXJnZXQ9InBhY2thZ2UiLz4KICAgIDwvdGFyZ2V0Pgo8L3Byb2plY3Q+"
         }`
-	cdJSONStr = `{
+	applicationJSONStr = `{
     "app":{
         "params":{
             "xmx":"512",
@@ -246,16 +246,16 @@ func TestMain(m *testing.M) {
 		Name: "Tony",
 	})
 
-	if err := json.Unmarshal([]byte(cdSchemaJSON), &cdSchema); err != nil {
+	if err := json.Unmarshal([]byte(applicationSchemaJSON), &applicationSchema); err != nil {
 		panic(err)
 	}
-	if err := json.Unmarshal([]byte(ciSchemaJSON), &ciSchema); err != nil {
+	if err := json.Unmarshal([]byte(pipelineSchemaJSON), &pipelineSchema); err != nil {
 		panic(err)
 	}
-	if err := json.Unmarshal([]byte(ciJSONStr), &ciJSONBlob); err != nil {
+	if err := json.Unmarshal([]byte(pipelineJSONStr), &pipelineJSONBlob); err != nil {
 		panic(err)
 	}
-	if err := json.Unmarshal([]byte(cdJSONStr), &cdJSONBlob); err != nil {
+	if err := json.Unmarshal([]byte(applicationJSONStr), &applicationJSONBlob); err != nil {
 		panic(err)
 	}
 
@@ -266,20 +266,20 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	applicationGitRepo := gitreposvcmock.NewMockApplicationGitRepo(mockCtl)
-	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, ciJSONBlob, cdJSONBlob).Times(1).Return(nil)
-	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, ciJSONBlob, cdJSONBlob).Times(1).Return(errors.New("409 conflict"))
-	applicationGitRepo.EXPECT().UpdateApplication(ctx, appName, ciJSONBlob, cdJSONBlob).Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(1).Return(nil)
+	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(1).Return(errors.New("409 conflict"))
+	applicationGitRepo.EXPECT().UpdateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Return(nil).AnyTimes()
 	applicationGitRepo.EXPECT().DeleteApplication(ctx, appName).Return(nil).AnyTimes()
-	applicationGitRepo.EXPECT().GetApplication(ctx, appName).Return(ciJSONBlob, cdJSONBlob, nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, appName).Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
 
 	templateSvc := templatesvcmock.NewMockInterface(mockCtl)
 	templateSvc.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0").
 		Return(&templatesvc.Schemas{
-			CD: &templatesvc.Schema{
-				JSONSchema: cdSchema,
+			Application: &templatesvc.Schema{
+				JSONSchema: applicationSchema,
 			},
-			CI: &templatesvc.Schema{
-				JSONSchema: ciSchema,
+			Pipeline: &templatesvc.Schema{
+				JSONSchema: pipelineSchema,
 			},
 		}, nil).AnyTimes()
 
@@ -303,8 +303,8 @@ func Test(t *testing.T) {
 				Branch:    "develop",
 			},
 			TemplateInput: &TemplateInput{
-				CD: cdJSONBlob,
-				CI: ciJSONBlob,
+				Application: applicationJSONBlob,
+				Pipeline:    pipelineJSONBlob,
 			},
 		},
 		Name: appName,
@@ -334,8 +334,8 @@ func Test(t *testing.T) {
 				Branch:    "develop",
 			},
 			TemplateInput: &TemplateInput{
-				CD: cdJSONBlob,
-				CI: ciJSONBlob,
+				Application: applicationJSONBlob,
+				Pipeline:    pipelineJSONBlob,
 			},
 		},
 	}

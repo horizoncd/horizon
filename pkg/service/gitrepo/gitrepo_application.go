@@ -20,18 +20,21 @@ import (
 const (
 	_branchMaster = "master"
 
-	_filePathCD = "cd.json"
-	_filePathCI = "ci.json"
+	_filePathApplication = "application.json"
+	_filePathPipeline    = "pipeline.json"
 )
 
 // ApplicationGitRepo interface to provide the management functions with git repo for applications
 type ApplicationGitRepo interface {
-	// CreateApplication create an application, with the ci formData and cd formData
-	CreateApplication(ctx context.Context, application string, ciJSONBlob, cdJSONBlob map[string]interface{}) error
-	// UpdateApplication update an application, with the updated ci formData and updated cd formData
-	UpdateApplication(ctx context.Context, application string, ciJSONBlob, cdJSONBlob map[string]interface{}) error
-	// GetApplication get an application, return the ci formData and cd formData
-	GetApplication(ctx context.Context, application string) (ciJSONBlob, cdJSONBlob map[string]interface{}, err error)
+	// CreateApplication create an application, with the pipeline jsonBlob and application jsonBlob
+	CreateApplication(ctx context.Context, application string,
+		pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error
+	// UpdateApplication update an application, with the updated pipeline jsonBlob and updated application jsonBlob
+	UpdateApplication(ctx context.Context, application string,
+		pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error
+	// GetApplication get an application, return the pipeline jsonBlob and application jsonBlob
+	GetApplication(ctx context.Context, application string) (pipelineJSONBlob,
+		applicationJSONBlob map[string]interface{}, err error)
 	// DeleteApplication delete an application by the specified application name
 	DeleteApplication(ctx context.Context, application string) error
 }
@@ -49,7 +52,7 @@ func NewApplicationGitlabRepo(gitlabConfig gitlabconf.Config) ApplicationGitRepo
 }
 
 func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, application string,
-	ciJSONBlob, cdJSONBlob map[string]interface{}) (err error) {
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) (err error) {
 	const op = "gitlab repo: create application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -74,12 +77,12 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 
 	// 2. write files to application repo
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
-	cdJSON, err := json.MarshalIndent(cdJSONBlob, "", "  ")
+	applicationJSON, err := json.MarshalIndent(applicationJSONBlob, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
 	}
-	ciJSON, err := json.MarshalIndent(ciJSONBlob, "", "  ")
+	pipelineJSON, err := json.MarshalIndent(pipelineJSONBlob, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -87,12 +90,12 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 	actions := []gitlablib.CommitAction{
 		{
 			Action:   gitlablib.FileCreate,
-			FilePath: _filePathCD,
-			Content:  string(cdJSON),
+			FilePath: _filePathApplication,
+			Content:  string(applicationJSON),
 		}, {
 			Action:   gitlablib.FileCreate,
-			FilePath: _filePathCI,
-			Content:  string(ciJSON),
+			FilePath: _filePathPipeline,
+			Content:  string(pipelineJSON),
 		},
 	}
 
@@ -101,11 +104,11 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 		Action:      "create application",
 		Application: angular.StringPtr(application),
 	}, struct {
-		CD map[string]interface{} `json:"cd"`
-		CI map[string]interface{} `json:"ci"`
+		Application map[string]interface{} `json:"application"`
+		Pipeline    map[string]interface{} `json:"pipeline"`
 	}{
-		CD: cdJSONBlob,
-		CI: ciJSONBlob,
+		Application: applicationJSONBlob,
+		Pipeline:    pipelineJSONBlob,
 	})
 
 	if _, err := gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
@@ -116,7 +119,7 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 }
 
 func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, application string,
-	ciJSONBlob, cdJSONBlob map[string]interface{}) (err error) {
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) (err error) {
 	const op = "gitlab repo: update application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -136,12 +139,12 @@ func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, applicati
 
 	// 3. write files to gitlab
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
-	cdJSON, err := json.MarshalIndent(cdJSONBlob, "", "  ")
+	applicationJSON, err := json.MarshalIndent(applicationJSONBlob, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
 	}
-	ciJSON, err := json.MarshalIndent(ciJSONBlob, "", "  ")
+	pipelineJSON, err := json.MarshalIndent(pipelineJSONBlob, "", "  ")
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -149,12 +152,12 @@ func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, applicati
 	actions := []gitlablib.CommitAction{
 		{
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathCD,
-			Content:  string(cdJSON),
+			FilePath: _filePathApplication,
+			Content:  string(applicationJSON),
 		}, {
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathCI,
-			Content:  string(ciJSON),
+			FilePath: _filePathPipeline,
+			Content:  string(pipelineJSON),
 		},
 	}
 
@@ -163,11 +166,11 @@ func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, applicati
 		Action:      "update application",
 		Application: angular.StringPtr(application),
 	}, struct {
-		CD map[string]interface{} `json:"cd"`
-		CI map[string]interface{} `json:"ci"`
+		Application map[string]interface{} `json:"application"`
+		Pipeline    map[string]interface{} `json:"pipeline"`
 	}{
-		CD: cdJSONBlob,
-		CI: ciJSONBlob,
+		Application: applicationJSONBlob,
+		Pipeline:    pipelineJSONBlob,
 	})
 
 	if _, err := gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
@@ -178,7 +181,7 @@ func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, applicati
 }
 
 func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
-	application string) (ciJSONBlob, cdJSONBlob map[string]interface{}, err error) {
+	application string) (pipelineJSONBlob, applicationJSONBlob map[string]interface{}, err error) {
 	const op = "gitlab repo: get application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -192,18 +195,18 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 
 	// 2. get template and pipeline from gitlab
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
-	var cdBytes, ciBytes []byte
+	var applicationBytes, pipelineBytes []byte
 	var err1, err2 error
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		ciBytes, err1 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathCI)
+		pipelineBytes, err1 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
 	}()
 	go func() {
 		defer wg.Done()
-		cdBytes, err2 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathCD)
+		applicationBytes, err2 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
 	}()
 	wg.Wait()
 
@@ -213,14 +216,14 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 		}
 	}
 
-	if err := json.Unmarshal(ciBytes, &ciJSONBlob); err != nil {
+	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
 		return nil, nil, errors.E(op, err)
 	}
-	if err := json.Unmarshal(cdBytes, &ciJSONBlob); err != nil {
+	if err := json.Unmarshal(applicationBytes, &pipelineJSONBlob); err != nil {
 		return nil, nil, errors.E(op, err)
 	}
 
-	return ciJSONBlob, cdJSONBlob, nil
+	return pipelineJSONBlob, applicationJSONBlob, nil
 }
 
 func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context, application string) (err error) {

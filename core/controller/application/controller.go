@@ -49,7 +49,7 @@ func (c *controller) GetApplication(ctx context.Context, name string) (_ *GetApp
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	// 1. get application jsonBlob in git repo
-	ciJSONBlob, cdJSONBlob, err := c.applicationGitRepo.GetApplication(ctx, name)
+	pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.GetApplication(ctx, name)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -62,7 +62,7 @@ func (c *controller) GetApplication(ctx context.Context, name string) (_ *GetApp
 	if app == nil {
 		return nil, errors.E(op, http.StatusNotFound, _errCodeApplicationNotFound)
 	}
-	return ofApplicationModel(app, ciJSONBlob, cdJSONBlob), nil
+	return ofApplicationModel(app, pipelineJSONBlob, applicationJSONBlob), nil
 }
 
 func (c *controller) CreateApplication(ctx context.Context, groupID uint,
@@ -84,7 +84,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 
 	// 2. create application in git repo
 	if err := c.applicationGitRepo.CreateApplication(ctx, request.Name,
-		request.TemplateInput.CI, request.TemplateInput.CD); err != nil {
+		request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
 		return errors.E(op, err)
 	}
 
@@ -119,7 +119,7 @@ func (c *controller) UpdateApplication(ctx context.Context, name string,
 
 	// 2. update application in git repo
 	if err := c.applicationGitRepo.UpdateApplication(ctx, name,
-		request.TemplateInput.CI, request.TemplateInput.CD); err != nil {
+		request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
 		return errors.E(op, err)
 	}
 
@@ -170,10 +170,10 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if err := jsonschema.Validate(schema.CD.JSONSchema, templateInput.CD); err != nil {
+	if err := jsonschema.Validate(schema.Application.JSONSchema, templateInput.Application); err != nil {
 		return err
 	}
-	return jsonschema.Validate(schema.CI.JSONSchema, templateInput.CI)
+	return jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline)
 }
 
 // validatePriority validate priority

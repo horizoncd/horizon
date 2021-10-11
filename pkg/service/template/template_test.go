@@ -50,13 +50,13 @@ func Test(t *testing.T) {
 	jsonSchema := `{"type": "object"}`
 	var jsonSchemaMap map[string]interface{}
 	_ = json.Unmarshal([]byte(jsonSchema), &jsonSchemaMap)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _ciSchemaPath).Return(
+	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _pipelineSchemaPath).Return(
 		[]byte(jsonSchema), nil)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _cdSchemaPath).Return(
+	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _applicationSchemaPath).Return(
 		[]byte(jsonSchema), nil)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _ciUISchemaPath).Return(
+	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _pipelineUISchemaPath).Return(
 		[]byte(jsonSchema), nil)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _cdUISchemaPath).Return(
+	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _applicationUISchemaPath).Return(
 		[]byte(jsonSchema), nil)
 
 	svc := &templateService{
@@ -68,10 +68,10 @@ func Test(t *testing.T) {
 	schema, err := svc.GetTemplateSchema(ctx, templateName, releaseName)
 	assert.Nil(t, err)
 	assert.NotNil(t, schema)
-	assert.Equal(t, jsonSchemaMap, schema.CD.JSONSchema)
-	assert.Equal(t, jsonSchemaMap, schema.CD.UISchema)
-	assert.Equal(t, jsonSchemaMap, schema.CI.JSONSchema)
-	assert.Equal(t, jsonSchemaMap, schema.CI.UISchema)
+	assert.Equal(t, jsonSchemaMap, schema.Application.JSONSchema)
+	assert.Equal(t, jsonSchemaMap, schema.Application.UISchema)
+	assert.Equal(t, jsonSchemaMap, schema.Pipeline.JSONSchema)
+	assert.Equal(t, jsonSchemaMap, schema.Pipeline.UISchema)
 
 	// release not exists
 	schema, err = svc.GetTemplateSchema(ctx, templateName, "release-not-exists")

@@ -24,8 +24,8 @@ type Interface interface {
 }
 
 type Schemas struct {
-	CD *Schema
-	CI *Schema
+	Application *Schema
+	Pipeline    *Schema
 }
 
 type Schema struct {
@@ -35,11 +35,11 @@ type Schema struct {
 
 const (
 	// json schema file path
-	_ciSchemaPath = "schema/ci.schema.json"
-	_cdSchemaPath = "schema/cd.schema.json"
+	_pipelineSchemaPath    = "schema/pipeline.schema.json"
+	_applicationSchemaPath = "schema/application.schema.json"
 	// ui schema file path
-	_ciUISchemaPath = "schema/ci.ui.schema.json"
-	_cdUISchemaPath = "schema/cd.ui.schema.json"
+	_pipelineUISchemaPath    = "schema/pipeline.ui.schema.json"
+	_applicationUISchemaPath = "schema/application.ui.schema.json"
 
 	// ErrCodeReleaseNotFound  ReleaseNotFound error code
 	_errCodeReleaseNotFound = errors.ErrorCode("ReleaseNotFound")
@@ -77,7 +77,7 @@ func (t *templateService) GetTemplateSchema(ctx context.Context,
 
 	// 1. read file concurrently
 	var err1, err2, err3, err4 error
-	var ciSchemaBytes, cdSchemaBytes, ciUISchemaBytes, cdUISchemaBytes []byte
+	var pipelineSchemaBytes, applicationSchemaBytes, pipelineUISchemaBytes, applicationUISchemaBytes []byte
 	var wgReadFile sync.WaitGroup
 	wgReadFile.Add(4)
 	readFile := func(b *[]byte, err *error, filePath string) {
@@ -86,10 +86,10 @@ func (t *templateService) GetTemplateSchema(ctx context.Context,
 		*b = bytes
 		*err = e
 	}
-	go readFile(&ciSchemaBytes, &err1, _ciSchemaPath)
-	go readFile(&cdSchemaBytes, &err2, _cdSchemaPath)
-	go readFile(&ciUISchemaBytes, &err3, _ciUISchemaPath)
-	go readFile(&cdUISchemaBytes, &err4, _cdUISchemaPath)
+	go readFile(&pipelineSchemaBytes, &err1, _pipelineSchemaPath)
+	go readFile(&applicationSchemaBytes, &err2, _applicationSchemaPath)
+	go readFile(&pipelineUISchemaBytes, &err3, _pipelineUISchemaPath)
+	go readFile(&applicationUISchemaBytes, &err4, _applicationUISchemaPath)
 	wgReadFile.Wait()
 
 	for _, err := range []error{err1, err2, err3, err4} {
@@ -99,7 +99,7 @@ func (t *templateService) GetTemplateSchema(ctx context.Context,
 	}
 
 	// 2. unmarshal concurrently
-	var ciSchema, cdSchema, ciUISchema, cdUISchema map[string]interface{}
+	var pipelineSchema, applicationSchema, pipelineUISchema, applicationUISchema map[string]interface{}
 	var wgUnmarshal sync.WaitGroup
 	wgUnmarshal.Add(4)
 	unmarshal := func(b []byte, m *map[string]interface{}, err *error) {
@@ -108,10 +108,10 @@ func (t *templateService) GetTemplateSchema(ctx context.Context,
 			*err = e
 		}
 	}
-	go unmarshal(ciSchemaBytes, &ciSchema, &err1)
-	go unmarshal(cdSchemaBytes, &cdSchema, &err2)
-	go unmarshal(ciUISchemaBytes, &ciUISchema, &err3)
-	go unmarshal(cdUISchemaBytes, &cdUISchema, &err4)
+	go unmarshal(pipelineSchemaBytes, &pipelineSchema, &err1)
+	go unmarshal(applicationSchemaBytes, &applicationSchema, &err2)
+	go unmarshal(pipelineUISchemaBytes, &pipelineUISchema, &err3)
+	go unmarshal(applicationUISchemaBytes, &applicationUISchema, &err4)
 	wgUnmarshal.Wait()
 
 	for _, err := range []error{err1, err2, err3, err4} {
@@ -121,13 +121,13 @@ func (t *templateService) GetTemplateSchema(ctx context.Context,
 	}
 
 	return &Schemas{
-		CD: &Schema{
-			JSONSchema: cdSchema,
-			UISchema:   cdUISchema,
+		Application: &Schema{
+			JSONSchema: applicationSchema,
+			UISchema:   applicationUISchema,
 		},
-		CI: &Schema{
-			JSONSchema: ciSchema,
-			UISchema:   ciUISchema,
+		Pipeline: &Schema{
+			JSONSchema: pipelineSchema,
+			UISchema:   pipelineUISchema,
 		},
 	}, nil
 }
