@@ -8,10 +8,9 @@ import (
 
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
-	"g.hz.netease.com/horizon/pkg/user"
-	"g.hz.netease.com/horizon/pkg/user/models"
-	"g.hz.netease.com/horizon/server/middleware"
-	"g.hz.netease.com/horizon/server/response"
+	"g.hz.netease.com/horizon/pkg/dao/user"
+	middleware2 "g.hz.netease.com/horizon/pkg/server/middleware"
+	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,8 +18,8 @@ const contextUserKey = "contextUser"
 
 // Middleware check user is exists in db. If not, add user into db.
 // Then attach a User object into context.
-func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
-	return middleware.New(func(c *gin.Context) {
+func Middleware(config oidc.Config, skippers ...middleware2.Skipper) gin.HandlerFunc {
+	return middleware2.New(func(c *gin.Context) {
 		oidcID := c.Request.Header.Get(config.OIDCIDHeader)
 		oidcType := c.Request.Header.Get(config.OIDCTypeHeader)
 		userName := c.Request.Header.Get(config.UserHeader)
@@ -42,7 +41,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 			return
 		}
 		if u == nil {
-			u, err = mgr.Create(c, &models.User{
+			u, err = mgr.Create(c, &user.User{
 				Name:     userName,
 				FullName: fullName,
 				Email:    email,

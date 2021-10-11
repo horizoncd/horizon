@@ -3,10 +3,10 @@ package user
 import (
 	"strconv"
 
-	"g.hz.netease.com/horizon/common"
-	"g.hz.netease.com/horizon/controller/user"
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/server/response"
+	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/controller/user"
+	"g.hz.netease.com/horizon/pkg/lib/q"
+	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
 )
 
