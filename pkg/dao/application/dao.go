@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"g.hz.netease.com/horizon/pkg/dao/common"
 	"g.hz.netease.com/horizon/pkg/lib/orm"
@@ -99,7 +98,7 @@ func (d *dao) DeleteByName(ctx context.Context, name string) error {
 		return err
 	}
 
-	result := db.Model(&Application{}).Where("name = ?", name).Update("deleted_at", time.Now())
+	result := db.Exec(common.ApplicationDeleteByName, name)
 	if result.Error != nil {
 		return result.Error
 	}

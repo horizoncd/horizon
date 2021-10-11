@@ -44,5 +44,6 @@ const (
 /* sql about application */
 const (
 	// ApplicationQueryByName ...
-	ApplicationQueryByName = "select * from application where name = ? and deleted_at is null"
+	ApplicationQueryByName  = "select * from application where name = ? and deleted_at is null"
+	ApplicationDeleteByName = "update application set deleted_at = CURRENT_TIMESTAMP where name = ?"
 )
