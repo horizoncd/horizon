@@ -62,33 +62,3 @@ func Test(t *testing.T) {
 	_, _, err = c.SearchUser(ctx, filter+"1", nil)
 	assert.NotNil(t, err)
 }
-
-func TestT(t *testing.T) {
-	readFile := func(b *[]byte, err *error) {
-		bytes, e := []byte("asdf"), errors.New("asdf")
-		*b = bytes
-		*err = e
-	}
-	b := []byte("123")
-	e := errors.New("123")
-	t.Logf("b: %v", string(b))
-	t.Logf("e: %v", e)
-
-	readFile(&b, &e)
-	t.Logf("b: %v", string(b))
-	t.Logf("e: %v", e)
-
-	unmarshal := func(b []byte, m *map[string]interface{}, err *error) {
-		if e := json.Unmarshal(b, m); e != nil {
-			*err = e
-		}
-	}
-	bytes := []byte(`{"1": "2"}`)
-	var m map[string]interface{}
-	var err1 error
-	t.Logf("m: %v", m)
-	t.Logf("err1: %v", err1)
-	unmarshal(bytes, &m, &err1)
-	t.Logf("m: %v", m)
-	t.Logf("err1: %v", err1)
-}
