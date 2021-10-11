@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 
-	middleware2 "g.hz.netease.com/horizon/pkg/server/middleware"
+	"g.hz.netease.com/horizon/pkg/server/middleware"
+
 	"github.com/gin-gonic/gin"
 	"github.com/satori/go.uuid"
 )
@@ -13,8 +14,8 @@ import (
 const HeaderXRequestID = "X-Request-ID"
 
 // Middleware add X-Request-ID header in the http request when not exist
-func Middleware(skippers ...middleware2.Skipper) gin.HandlerFunc {
-	return middleware2.New(func(c *gin.Context) {
+func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
+	return middleware.New(func(c *gin.Context) {
 		rid := c.Request.Header.Get(HeaderXRequestID)
 		if rid == "" {
 			rid = uuid.NewV4().String()

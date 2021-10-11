@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
-	middleware2 "g.hz.netease.com/horizon/pkg/server/middleware"
+	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/util/sets"
 	"github.com/gin-gonic/gin"
@@ -13,8 +13,8 @@ import (
 
 const contextRequestInfoKey = "contextRequestInfo"
 
-func Middleware(skipMatchers ...middleware2.Skipper) gin.HandlerFunc {
-	return middleware2.New(func(c *gin.Context) {
+func Middleware(skipMatchers ...middleware.Skipper) gin.HandlerFunc {
+	return middleware.New(func(c *gin.Context) {
 		requestInfoFactory := RequestInfoFactory{
 			APIPrefixes: sets.NewString("apis"),
 		}

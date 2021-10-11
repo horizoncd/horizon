@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/pkg/util/sets"
+
 	"github.com/stretchr/testify/assert"
 )
 

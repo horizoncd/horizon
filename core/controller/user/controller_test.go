@@ -8,6 +8,7 @@ import (
 
 	usermock "g.hz.netease.com/horizon/mock/pkg/dao/user"
 	"g.hz.netease.com/horizon/pkg/dao/user"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"

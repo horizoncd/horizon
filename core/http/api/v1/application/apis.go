@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
-	application2 "g.hz.netease.com/horizon/core/controller/application"
+	"g.hz.netease.com/horizon/core/controller/application"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
 )
@@ -17,10 +17,10 @@ const (
 )
 
 type API struct {
-	applicationCtl application2.Controller
+	applicationCtl application.Controller
 }
 
-func NewAPI(applicationCtl application2.Controller) *API {
+func NewAPI(applicationCtl application.Controller) *API {
 	return &API{
 		applicationCtl: applicationCtl,
 	}
@@ -28,7 +28,7 @@ func NewAPI(applicationCtl application2.Controller) *API {
 
 func (a *API) Get(c *gin.Context) {
 	name := c.Param(_applicationParam)
-	var res *application2.GetApplicationResponse
+	var res *application.GetApplicationResponse
 	var err error
 	if res, err = a.applicationCtl.GetApplication(c, name); err != nil {
 		response.AbortWithError(c, err)
@@ -45,7 +45,7 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 
-	var request *application2.CreateApplicationRequest
+	var request *application.CreateApplicationRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
@@ -59,7 +59,7 @@ func (a *API) Create(c *gin.Context) {
 }
 
 func (a *API) Update(c *gin.Context) {
-	var request *application2.UpdateApplicationRequest
+	var request *application.UpdateApplicationRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))

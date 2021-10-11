@@ -5,8 +5,9 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
-	group2 "g.hz.netease.com/horizon/core/controller/group"
+	"g.hz.netease.com/horizon/core/controller/group"
 	"g.hz.netease.com/horizon/pkg/server/response"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,19 +17,19 @@ const (
 )
 
 type API struct {
-	groupCtl group2.Controller
+	groupCtl group.Controller
 }
 
 // NewAPI initializes a new group api
 func NewAPI() *API {
 	return &API{
-		groupCtl: group2.Ctl,
+		groupCtl: group.Ctl,
 	}
 }
 
 // CreateGroup create a group
 func (a *API) CreateGroup(c *gin.Context) {
-	var newGroup *group2.NewGroup
+	var newGroup *group.NewGroup
 	err := c.ShouldBindJSON(&newGroup)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody, fmt.Sprintf("%v", err))
@@ -127,7 +128,7 @@ func (a *API) UpdateGroup(c *gin.Context) {
 		return
 	}
 
-	var updatedGroup *group2.UpdateGroup
+	var updatedGroup *group.UpdateGroup
 	err = c.ShouldBindJSON(&updatedGroup)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody, fmt.Sprintf("%v", err))
@@ -197,7 +198,7 @@ func (a *API) SearchGroups(c *gin.Context) {
 
 	filter := c.Query(common.Filter)
 
-	searchGroups, count, err := a.groupCtl.SearchGroups(c, &group2.SearchParams{
+	searchGroups, count, err := a.groupCtl.SearchGroups(c, &group.SearchParams{
 		GroupID:    uint(intID),
 		PageSize:   pageSize,
 		PageNumber: pageNumber,

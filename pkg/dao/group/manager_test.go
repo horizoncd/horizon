@@ -10,16 +10,16 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
-	orm2 "g.hz.netease.com/horizon/pkg/lib/orm"
-	"gorm.io/gorm"
+	"g.hz.netease.com/horizon/pkg/lib/orm"
 
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 )
 
 var (
 	// use tmp sqlite
-	db, _ = orm2.NewSqliteDB("")
-	ctx   = orm2.NewContext(context.TODO(), db)
+	db, _ = orm.NewSqliteDB("")
+	ctx   = orm.NewContext(context.TODO(), db)
 
 	notExistID = uint(100)
 )

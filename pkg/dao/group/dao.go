@@ -7,8 +7,9 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/pkg/dao/common"
-	orm2 "g.hz.netease.com/horizon/pkg/lib/orm"
+	"g.hz.netease.com/horizon/pkg/lib/orm"
 	"g.hz.netease.com/horizon/pkg/lib/q"
+
 	"gorm.io/gorm"
 )
 
@@ -54,7 +55,7 @@ func newDAO() DAO {
 type dao struct{}
 
 func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -94,7 +95,7 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 }
 
 func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error) {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -106,7 +107,7 @@ func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error)
 }
 
 func (d *dao) GetByPaths(ctx context.Context, paths []string) ([]*Group, error) {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +119,7 @@ func (d *dao) GetByPaths(ctx context.Context, paths []string) ([]*Group, error) 
 }
 
 func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*Group, error) {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +132,7 @@ func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*Group, error) {
 
 // CheckPathUnique todo check application table too
 func (d *dao) CheckPathUnique(ctx context.Context, group *Group) error {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -153,7 +154,7 @@ func (d *dao) CheckPathUnique(ctx context.Context, group *Group) error {
 }
 
 func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*Group, error) {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +167,7 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*Group, erro
 
 // CheckNameUnique todo check application table too
 func (d *dao) CheckNameUnique(ctx context.Context, group *Group) error {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -188,7 +189,7 @@ func (d *dao) CheckNameUnique(ctx context.Context, group *Group) error {
 }
 
 func (d *dao) Create(ctx context.Context, group *Group) (uint, error) {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -247,7 +248,7 @@ func (d *dao) Create(ctx context.Context, group *Group) (uint, error) {
 
 // Delete can only delete a group that doesn't have any children
 func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -258,7 +259,7 @@ func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*Group, error) {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -270,28 +271,28 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*Group, error) {
 }
 
 func (d *dao) ListWithoutPage(ctx context.Context, query *q.Query) ([]*Group, error) {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var groups []*Group
 
-	sort := orm2.FormatSortExp(query)
+	sort := orm.FormatSortExp(query)
 	result := db.Order(sort).Where(query.Keywords).Find(&groups)
 
 	return groups, result.Error
 }
 
 func (d *dao) List(ctx context.Context, query *q.Query) ([]*Group, int64, error) {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	var groups []*Group
 
-	sort := orm2.FormatSortExp(query)
+	sort := orm.FormatSortExp(query)
 	offset := (query.PageNumber - 1) * query.PageSize
 	var count int64
 	result := db.Order(sort).Where(query.Keywords).Offset(offset).Limit(query.PageSize).Find(&groups).
@@ -301,7 +302,7 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*Group, int64, error)
 
 // UpdateBasic just update base info, not contains transfer logic
 func (d *dao) UpdateBasic(ctx context.Context, group *Group) error {
-	db, err := orm2.FromContext(ctx)
+	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}

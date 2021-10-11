@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
+
 	"github.com/gin-gonic/gin"
 )
 

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"time"
 
-	middleware2 "g.hz.netease.com/horizon/pkg/server/middleware"
+	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -26,8 +26,8 @@ var apiHistogram = promauto.NewHistogramVec(
 )
 
 // Middleware report metrics of handler
-func Middleware(skippers ...middleware2.Skipper) gin.HandlerFunc {
-	return middleware2.New(func(c *gin.Context) {
+func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
+	return middleware.New(func(c *gin.Context) {
 		// start timer
 		start := time.Now()
 

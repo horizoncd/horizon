@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	orm2 "g.hz.netease.com/horizon/pkg/lib/orm"
+	"g.hz.netease.com/horizon/pkg/lib/orm"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -55,10 +55,10 @@ func Test(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	db, _ = orm2.NewSqliteDB("")
+	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&Application{}); err != nil {
 		panic(err)
 	}
-	ctx = orm2.NewContext(context.TODO(), db)
+	ctx = orm.NewContext(context.TODO(), db)
 	os.Exit(m.Run())
 }
