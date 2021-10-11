@@ -6,8 +6,9 @@ type Config struct {
 }
 
 type Gitlab struct {
-	GitlabName string  `yaml:"gitlabName"`
-	Parent     *Parent `yaml:"parent"`
+	GitlabName      string  `yaml:"gitlabName"`
+	Parent          *Parent `yaml:"parent"`
+	RecyclingParent *Parent `yaml:"recyclingParent"`
 }
 
 type Parent struct {

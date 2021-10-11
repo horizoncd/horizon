@@ -161,11 +161,18 @@ func Test(t *testing.T) {
 					Path: fmt.Sprintf("%v/%v", rootGroupName, "applications"),
 					ID:   4280,
 				},
+				RecyclingParent: &gitlab.Parent{
+					Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-applications"),
+					ID:   4592,
+				},
 			},
 		},
 	}
 
-	defer func() { _ = r.DeleteApplication(ctx, app) }()
+	defer func() {
+		_ = r.DeleteApplication(ctx, app, 1)
+		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v-%v", rootGroupName, "recycling-applications", app, 1))
+	}()
 
 	err := r.CreateApplication(ctx, app, pipelineJSONBlob, applicationJSONBlob)
 	assert.Nil(t, err)
@@ -174,16 +181,16 @@ func Test(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// update, exchange pipelineJSONBlob and applicationJSONBlob
-	err = r.UpdateApplication(ctx, app, applicationJSONBlob, pipelineJSONBlob)
+	err = r.UpdateApplication(ctx, app, pipelineJSONBlob, applicationJSONBlob)
 	assert.Nil(t, err)
 
 	pipelineJSON, applicationJSON, err := r.GetApplication(ctx, app)
 	assert.Nil(t, err)
 	if reflect.DeepEqual(pipelineJSON, applicationJSONBlob) {
-		t.Fatal("wrong pipelineJSON")
+		t.Fatal("wrong pipeline")
 	}
 
 	if reflect.DeepEqual(applicationJSON, pipelineJSONBlob) {
-		t.Fatal("wrong applicationJSON")
+		t.Fatal("wrong application")
 	}
 }

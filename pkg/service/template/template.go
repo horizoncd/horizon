@@ -59,7 +59,7 @@ func newTemplateService() Interface {
 
 func (t *templateService) GetTemplateSchema(ctx context.Context,
 	templateName, releaseName string) (_ *Schemas, err error) {
-	const op = "template git: getTemplateSchema"
+	const op = "template service: getTemplateSchema"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	tr, err := t.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, releaseName)

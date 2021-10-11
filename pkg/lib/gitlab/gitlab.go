@@ -84,6 +84,15 @@ type Interface interface {
 	// The ref can be the name of branch, tag or commit.
 	// See https://docs.gitlab.com/ee/api/repository_files.html#get-file-from-repository for more information.
 	GetFile(ctx context.Context, pid interface{}, ref, filepath string) ([]byte, error)
+
+	// TransferProject transfer a project with the specified pid to the new group with the gid.
+	// The pid can be the project's ID or relative path such as fist/second.
+	// The gid can be the group's ID or relative path such as first/third.
+	TransferProject(ctx context.Context, pid interface{}, gid interface{}) error
+
+	// EditNameAndPathForProject update name and path for a specified project.
+	// The pid can be the project's ID or relative path such as fist/second.
+	EditNameAndPathForProject(ctx context.Context, pid interface{}, newName, newPath *string) error
 }
 
 var _ Interface = (*helper)(nil)
@@ -321,6 +330,33 @@ func (h *helper) GetFile(ctx context.Context, pid interface{}, ref, filepath str
 	}
 
 	return content, nil
+}
+
+func (h *helper) TransferProject(ctx context.Context, pid interface{}, gid interface{}) (err error) {
+	const op = "gitlab: transfer project"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	if _, resp, err := h.client.Projects.TransferProject(pid, &gitlab.TransferProjectOptions{
+		Namespace: gid,
+	}, gitlab.WithContext(ctx)); err != nil {
+		return parseError(op, resp, err)
+	}
+
+	return nil
+}
+
+func (h *helper) EditNameAndPathForProject(ctx context.Context, pid interface{}, newName, newPath *string) (err error) {
+	const op = "gitlab: edit name and path for project"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	if _, resp, err := h.client.Projects.EditProject(pid, &gitlab.EditProjectOptions{
+		Name: newName,
+		Path: newPath,
+	}, gitlab.WithContext(ctx)); err != nil {
+		return parseError(op, resp, err)
+	}
+
+	return nil
 }
 
 func parseError(op errors.Op, resp *gitlab.Response, err error) error {

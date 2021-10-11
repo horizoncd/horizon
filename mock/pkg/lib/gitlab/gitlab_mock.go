@@ -226,3 +226,31 @@ func (mr *MockInterfaceMockRecorder) GetFile(ctx, pid, ref, filepath interface{}
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFile", reflect.TypeOf((*MockInterface)(nil).GetFile), ctx, pid, ref, filepath)
 }
+
+// TransferProject mocks base method
+func (m *MockInterface) TransferProject(ctx context.Context, pid, gid interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TransferProject", ctx, pid, gid)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TransferProject indicates an expected call of TransferProject
+func (mr *MockInterfaceMockRecorder) TransferProject(ctx, pid, gid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransferProject", reflect.TypeOf((*MockInterface)(nil).TransferProject), ctx, pid, gid)
+}
+
+// EditNameAndPathForProject mocks base method
+func (m *MockInterface) EditNameAndPathForProject(ctx context.Context, pid interface{}, newName, newPath *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EditNameAndPathForProject", ctx, pid, newName, newPath)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EditNameAndPathForProject indicates an expected call of EditNameAndPathForProject
+func (mr *MockInterfaceMockRecorder) EditNameAndPathForProject(ctx, pid, newName, newPath interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EditNameAndPathForProject", reflect.TypeOf((*MockInterface)(nil).EditNameAndPathForProject), ctx, pid, newName, newPath)
+}

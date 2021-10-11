@@ -137,8 +137,17 @@ func (c *controller) DeleteApplication(ctx context.Context, name string) (err er
 	const op = "application controller: delete application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	// 1. delete application in git repo
-	if err := c.applicationGitRepo.DeleteApplication(ctx, name); err != nil {
+	// 1. get application in db
+	app, err := c.applicationMgr.GetByName(ctx, name)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	if app == nil {
+		return errors.E(op, http.StatusNotFound, _errCodeApplicationNotFound)
+	}
+
+	// 2. delete application in git repo
+	if err := c.applicationGitRepo.DeleteApplication(ctx, name, app.ID); err != nil {
 		return errors.E(op, err)
 	}
 

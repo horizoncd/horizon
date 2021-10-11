@@ -36,7 +36,7 @@ type ApplicationGitRepo interface {
 	GetApplication(ctx context.Context, application string) (pipelineJSONBlob,
 		applicationJSONBlob map[string]interface{}, err error)
 	// DeleteApplication delete an application by the specified application name
-	DeleteApplication(ctx context.Context, application string) error
+	DeleteApplication(ctx context.Context, application string, applicationID uint) error
 }
 
 type applicationGitlabRepo struct {
@@ -226,7 +226,8 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 	return pipelineJSONBlob, applicationJSONBlob, nil
 }
 
-func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context, application string) (err error) {
+func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
+	application string, applicationID uint) (err error) {
 	const op = "gitlab repo: get application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -241,7 +242,15 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context, applicati
 
 	// 2. delete gitlab project
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
-	if err := gitlabLib.DeleteProject(ctx, pid); err != nil {
+	// 2.1 transfer project to RecyclingParent
+	if err := gitlabLib.TransferProject(ctx, pid, applicationConf.RecyclingParent.Path); err != nil {
+		return errors.E(op, err)
+	}
+	// 2.2 edit project's name and path to {application}-{applicationID}
+	newPid := fmt.Sprintf("%v/%v", applicationConf.RecyclingParent.Path, application)
+	newName := fmt.Sprintf("%v-%d", application, applicationID)
+	newPath := newName
+	if err := gitlabLib.EditNameAndPathForProject(ctx, newPid, &newName, &newPath); err != nil {
 		return errors.E(op, err)
 	}
 
