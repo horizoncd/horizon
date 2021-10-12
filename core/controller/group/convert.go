@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/models"
 )
 
@@ -39,8 +40,21 @@ func convertGroupToChild(group *models.Group, full *Full) *Child {
 		UpdatedAt:       group.UpdatedAt,
 		FullName:        full.FullName,
 		FullPath:        full.FullPath,
-		Type:            ChildType,
+		Type:            ChildTypeGroup,
 	}
+}
+
+func convertApplicationToChild(app *appmodels.Application, full *Full) (*Child, error) {
+	return &Child{
+		ID:          app.ID,
+		Name:        app.Name,
+		Path:        app.Name,
+		Description: app.Description,
+		ParentID:    app.GroupID,
+		FullName:    full.FullName,
+		FullPath:    full.FullPath,
+		Type:        ChildTypeApplication,
+	}, nil
 }
 
 // convertNewGroupToGroup convert newGroup model to group model
