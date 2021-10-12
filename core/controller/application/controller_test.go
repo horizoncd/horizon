@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"os"
 	"testing"
 
@@ -14,6 +13,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
+	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 
 	"github.com/golang/mock/gomock"
@@ -242,6 +243,9 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&models.Application{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
+		panic(err)
+	}
 	ctx = orm.NewContext(context.TODO(), db)
 	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -268,7 +272,6 @@ func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo(mockCtl)
 	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(1).Return(nil)
-	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(1).Return(errors.New("409 conflict"))
 	applicationGitRepo.EXPECT().UpdateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Return(nil).AnyTimes()
 	applicationGitRepo.EXPECT().DeleteApplication(ctx, appName, uint(1)).Return(nil).AnyTimes()
 	applicationGitRepo.EXPECT().GetApplication(ctx, appName).Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
@@ -288,6 +291,7 @@ func Test(t *testing.T) {
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
 		applicationMgr:       manager.Mgr,
+		groupMgr:             groupmanager.Mgr,
 	}
 
 	createRequest := &CreateApplicationRequest{

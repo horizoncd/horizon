@@ -10,6 +10,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/models"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +26,11 @@ var (
 func init() {
 	// create table
 	err := db.AutoMigrate(&models.Group{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	err = db.AutoMigrate(&appmodels.Application{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)

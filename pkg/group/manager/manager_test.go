@@ -11,6 +11,8 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
+	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
 
@@ -51,6 +53,11 @@ func init() {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
+	err = db.AutoMigrate(&appmodels.Application{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
 }
 
 func TestCreate(t *testing.T) {
@@ -67,6 +74,15 @@ func TestCreate(t *testing.T) {
 	// path conflict, with parentID is nil
 	_, err = Mgr.Create(ctx, getGroup(0, "2", "a"))
 	assert.Equal(t, dao.ErrPathConflict, err)
+
+	// name conflict with application
+	name := "app"
+	_, err = applicationdao.NewDAO().Create(ctx, &appmodels.Application{
+		Name: name,
+	})
+	assert.Nil(t, err)
+	_, err = Mgr.Create(ctx, getGroup(0, name, "a"))
+	assert.Equal(t, err, ErrConflictWithApplication)
 
 	// normal create, parentID: not nil
 	group2 := getGroup(id, "2", "b")

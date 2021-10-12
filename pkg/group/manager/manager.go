@@ -16,6 +16,8 @@ var (
 
 	// ErrHasChildren used when delete a group which still has some children
 	ErrHasChildren = errors.New("children exist, cannot be deleted")
+	// ErrConflictWithApplication conflict with the application
+	ErrConflictWithApplication = errors.New("name or path conflict with application")
 )
 
 const (
@@ -47,6 +49,8 @@ type Manager interface {
 	Transfer(ctx context.Context, id, newParentID uint) error
 	// GetSubGroups get subgroups of a parent group, order by updateTime desc by default with paging
 	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error)
+	// GetByNameOrPathUnderParent get by name or path under a specified parent
+	GetByNameOrPathUnderParent(ctx context.Context, nameOrPath string, parentID uint) ([]*models.Group, error)
 }
 
 type manager struct {
@@ -83,6 +87,10 @@ func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.G
 }
 
 func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) {
+	if err := m.checkApplicationExists(ctx, group); err != nil {
+		return 0, err
+	}
+
 	id, err := m.groupDAO.Create(ctx, group)
 	if err != nil {
 		return 0, err
@@ -109,6 +117,10 @@ func (m manager) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 }
 
 func (m manager) UpdateBasic(ctx context.Context, group *models.Group) error {
+	if err := m.checkApplicationExists(ctx, group); err != nil {
+		return err
+	}
+
 	// check record exist
 	_, err := m.groupDAO.GetByID(ctx, group.ID)
 	if err != nil {
@@ -137,17 +149,22 @@ func (m manager) GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uin
 }
 
 // checkApplicationExists check application is already exists under the same parent
-// func (m manager) checkApplicationExists(ctx context.Context, group *models.Group) error {
-// 	apps, err := m.applicationDAO.GetByNamesUnderGroup(ctx,
-// 		group.ParentID, []string{group.Name, group.Path})
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if len(apps) > 0 {
-// 		return errors.New("conflict")
-// 	}
-// 	return nil
-// }
+func (m manager) checkApplicationExists(ctx context.Context, group *models.Group) error {
+	apps, err := m.applicationDAO.GetByNamesUnderGroup(ctx,
+		group.ParentID, []string{group.Name, group.Path})
+	if err != nil {
+		return err
+	}
+	if len(apps) > 0 {
+		return ErrConflictWithApplication
+	}
+	return nil
+}
+
+func (m manager) GetByNameOrPathUnderParent(ctx context.Context,
+	nameOrPath string, parentID uint) ([]*models.Group, error) {
+	return m.groupDAO.GetByNameOrPathUnderParent(ctx, nameOrPath, parentID)
+}
 
 // formatListGroupQuery query info for listing groups under a parent group, order by updated_at desc by default
 func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
