@@ -137,17 +137,17 @@ func (m manager) GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uin
 }
 
 // checkApplicationExists check application is already exists under the same parent
-func (m manager) checkApplicationExists(ctx context.Context, group *models.Group) error {
-	apps, err := m.applicationDAO.GetByNamesUnderGroup(ctx,
-		group.ParentID, []string{group.Name, group.Path})
-	if err != nil {
-		return err
-	}
-	if len(apps) > 0 {
-		return errors.New("conflict")
-	}
-	return nil
-}
+// func (m manager) checkApplicationExists(ctx context.Context, group *models.Group) error {
+// 	apps, err := m.applicationDAO.GetByNamesUnderGroup(ctx,
+// 		group.ParentID, []string{group.Name, group.Path})
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if len(apps) > 0 {
+// 		return errors.New("conflict")
+// 	}
+// 	return nil
+// }
 
 // formatListGroupQuery query info for listing groups under a parent group, order by updated_at desc by default
 func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
