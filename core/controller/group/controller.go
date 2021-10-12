@@ -310,9 +310,6 @@ func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*m
 
 // generateChildrenWithLevelStruct generate subgroups with level struct
 func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Child {
-	// sort groups by the size of the traversalIDs array after split by ','
-	sort.Sort(models.Groups(groups))
-
 	// get mapping between id and full
 	idToFull := generateIDToFull(groups)
 

@@ -1,6 +1,7 @@
 package group
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
@@ -101,6 +102,9 @@ after the function executed, we get a map:
 }
 */
 func generateIDToFull(groups []*models.Group) map[uint]*Full {
+	// sort groups by the size of the traversalIDs array after split by ','
+	sort.Sort(models.Groups(groups))
+
 	idToFull := make(map[uint]*Full)
 
 	for _, g := range groups {
