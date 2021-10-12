@@ -12,7 +12,7 @@ import (
 )
 var (
 	db  *gorm.DB
-	ctx context.Context
+	ctx           context.Context
 	memberService Service
 )
 
@@ -21,7 +21,7 @@ func TestList(t *testing.T) {
 	// mock the groupManager
 	ctrl := gomock.NewController(t)
 	defer  ctrl.Finish()
-	NewMock
+	//NewMock
 
 	t.Fatal("123")
 }
