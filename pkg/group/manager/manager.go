@@ -17,7 +17,7 @@ var (
 	// ErrHasChildren used when delete a group which still has some children
 	ErrHasChildren = errors.New("children exist, cannot be deleted")
 	// ErrConflictWithApplication conflict with the application
-	ErrConflictWithApplication = errors.New("name or path conflict with application")
+	ErrConflictWithApplication = errors.New("name or path is in conflict with application")
 )
 
 const (
@@ -50,7 +50,7 @@ type Manager interface {
 	// GetSubGroups get subgroups of a parent group, order by updateTime desc by default with paging
 	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error)
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
-	GetByNameOrPathUnderParent(ctx context.Context, nameOrPath string, parentID uint) ([]*models.Group, error)
+	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 }
 
 type manager struct {
@@ -162,8 +162,8 @@ func (m manager) checkApplicationExists(ctx context.Context, group *models.Group
 }
 
 func (m manager) GetByNameOrPathUnderParent(ctx context.Context,
-	nameOrPath string, parentID uint) ([]*models.Group, error) {
-	return m.groupDAO.GetByNameOrPathUnderParent(ctx, nameOrPath, parentID)
+	name, path string, parentID uint) ([]*models.Group, error) {
+	return m.groupDAO.GetByNameOrPathUnderParent(ctx, name, path, parentID)
 }
 
 // formatListGroupQuery query info for listing groups under a parent group, order by updated_at desc by default

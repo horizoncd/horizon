@@ -46,7 +46,7 @@ type DAO interface {
 	// Transfer move a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
-	GetByNameOrPathUnderParent(ctx context.Context, nameOrPath string, parentID uint) ([]*models.Group, error)
+	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -315,14 +315,14 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 }
 
 func (d *dao) GetByNameOrPathUnderParent(ctx context.Context,
-	nameOrPath string, parentID uint) ([]*models.Group, error) {
+	name, path string, parentID uint) ([]*models.Group, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var groups []*models.Group
-	result := db.Raw(common.GroupQueryByNameOrPathUnderParent, parentID, nameOrPath, nameOrPath).Scan(&groups)
+	result := db.Raw(common.GroupQueryByNameOrPathUnderParent, parentID, name, path).Scan(&groups)
 
 	return groups, result.Error
 }

@@ -92,14 +92,14 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	}
 
 	// 2. check groups or applications with the same name exists
-	groups, err := c.groupMgr.GetByNameOrPathUnderParent(ctx, request.Name, groupID)
+	groups, err := c.groupMgr.GetByNameOrPathUnderParent(ctx, request.Name, request.Name, groupID)
 	if err != nil {
 		return errors.E(op, err)
 	}
 	if len(groups) > 0 {
 		return errors.E(op, http.StatusConflict,
 			errors.ErrorCode(common.InvalidRequestBody),
-			fmt.Sprintf("appliction name is conflict with group under the same groupID: %v", groupID))
+			fmt.Sprintf("appliction name is in conflict with group under the same groupID: %v", groupID))
 	}
 
 	app, err := c.applicationMgr.GetByName(ctx, request.Name)
