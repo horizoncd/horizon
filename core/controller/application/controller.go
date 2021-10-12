@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"regexp"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
@@ -33,6 +35,7 @@ type controller struct {
 	applicationGitRepo   gitrepo.ApplicationGitRepo
 	templateSchemaGetter templateschema.Getter
 	applicationMgr       manager.Manager
+	groupMgr             groupmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -42,6 +45,7 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo) Controller {
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateschema.Gtr,
 		applicationMgr:       manager.Mgr,
+		groupMgr:             groupmanager.Mgr,
 	}
 }
 
@@ -78,18 +82,43 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	}
 
 	// 1. validate
-	if err := c.validate(ctx, request.Base); err != nil {
+	if err := validateApplicationName(request.Name); err != nil {
+		return errors.E(op, http.StatusBadRequest,
+			errors.ErrorCode(common.InvalidRequestBody), err)
+	}
+	if err := c.validateBase(ctx, request.Base); err != nil {
 		return errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
 	}
 
-	// 2. create application in git repo
+	// 2. check groups or applications with the same name exists
+	groups, err := c.groupMgr.GetByNameOrPathUnderParent(ctx, request.Name, request.Name, groupID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	if len(groups) > 0 {
+		return errors.E(op, http.StatusConflict,
+			errors.ErrorCode(common.InvalidRequestBody),
+			fmt.Sprintf("appliction name is in conflict with group under the same groupID: %v", groupID))
+	}
+
+	app, err := c.applicationMgr.GetByName(ctx, request.Name)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	if app != nil {
+		return errors.E(op, http.StatusConflict,
+			errors.ErrorCode(common.InvalidRequestBody),
+			fmt.Sprintf("application name: %v is already be taken", request.Name))
+	}
+
+	// 3. create application in git repo
 	if err := c.applicationGitRepo.CreateApplication(ctx, request.Name,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
 		return errors.E(op, err)
 	}
 
-	// 3. create application in db
+	// 4. create application in db
 	applicationModel := request.toApplicationModel(groupID)
 	applicationModel.CreatedBy = currentUser.GetName()
 	applicationModel.UpdatedBy = currentUser.GetName()
@@ -113,7 +142,7 @@ func (c *controller) UpdateApplication(ctx context.Context, name string,
 	}
 
 	// 1. validate
-	if err := c.validate(ctx, request.Base); err != nil {
+	if err := c.validateBase(ctx, request.Base); err != nil {
 		return errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
 	}
@@ -161,10 +190,10 @@ func (c *controller) DeleteApplication(ctx context.Context, name string) (err er
 	return nil
 }
 
-func (c *controller) validate(ctx context.Context, b Base) error {
+func (c *controller) validateBase(ctx context.Context, b Base) error {
 	t := b.Template
 	tInput := b.TemplateInput
-	if err := c.validatePriority(b.Priority); err != nil {
+	if err := validatePriority(b.Priority); err != nil {
 		return err
 	}
 	if err := c.validateTemplateInput(ctx, t.Name, t.Release, tInput); err != nil {
@@ -187,11 +216,32 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 }
 
 // validatePriority validate priority
-func (c *controller) validatePriority(priority string) error {
+func validatePriority(priority string) error {
 	switch models.Priority(priority) {
 	case models.P0, models.P1, models.P2, models.P3:
 	default:
 		return fmt.Errorf("invalid priority")
 	}
+	return nil
+}
+
+// validateApplicationName validate application name
+// 1. name length must be less than 40
+// 2. name must match pattern ^(([a-z][-a-z0-9]*)?[a-z0-9])?$
+func validateApplicationName(name string) error {
+	if len(name) == 0 {
+		return fmt.Errorf("name cannot be empty")
+	}
+
+	if len(name) == 0 || len(name) > 40 {
+		return fmt.Errorf("name must not exceed 40 characters")
+	}
+
+	pattern := `^(([a-z][-a-z0-9]*)?[a-z0-9])?$`
+	r := regexp.MustCompile(pattern)
+	if !r.MatchString(name) {
+		return fmt.Errorf("invalid application name, regex used for validation is %v", pattern)
+	}
+
 	return nil
 }

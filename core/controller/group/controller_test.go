@@ -10,6 +10,8 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
+	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/models"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +27,11 @@ var (
 func init() {
 	// create table
 	err := db.AutoMigrate(&models.Group{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	err = db.AutoMigrate(&appmodels.Application{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
@@ -196,7 +203,7 @@ func TestControllerGetByID(t *testing.T) {
 				TraversalIDs:    strconv.Itoa(int(id)),
 				FullPath:        "/a",
 				FullName:        "1",
-				Type:            ChildType,
+				Type:            ChildTypeGroup,
 				UpdatedAt:       child.UpdatedAt,
 			},
 		},
@@ -236,6 +243,14 @@ func TestControllerGetByPath(t *testing.T) {
 	assert.Nil(t, err)
 	child, err := Ctl.GetByID(ctx, id)
 	assert.Nil(t, err)
+	applicationDAO := applicationdao.NewDAO()
+	app, err := applicationDAO.Create(ctx, &appmodels.Application{
+		GroupID:     id,
+		Name:        "app",
+		Description: "this is a description",
+		Priority:    "P0",
+	})
+	assert.Nil(t, err)
 
 	type args struct {
 		ctx  context.Context
@@ -262,7 +277,7 @@ func TestControllerGetByPath(t *testing.T) {
 				TraversalIDs:    strconv.Itoa(int(id)),
 				FullPath:        "/a",
 				FullName:        "1",
-				Type:            ChildType,
+				Type:            ChildTypeGroup,
 				UpdatedAt:       child.UpdatedAt,
 			},
 		},
@@ -271,6 +286,29 @@ func TestControllerGetByPath(t *testing.T) {
 			args: args{
 				ctx:  ctx,
 				path: "b",
+			},
+			wantErr: true,
+		}, {
+			name: "applicationExist",
+			args: args{
+				ctx:  ctx,
+				path: "/a/app",
+			},
+			want: &Child{
+				ID:          app.ID,
+				Name:        "app",
+				Path:        "app",
+				Description: "this is a description",
+				ParentID:    id,
+				FullName:    "1 / app",
+				FullPath:    "/a/app",
+				Type:        ChildTypeApplication,
+			},
+		}, {
+			name: "applicationNotExist",
+			args: args{
+				ctx:  ctx,
+				path: "/a/app-not-exists",
 			},
 			wantErr: true,
 		},
@@ -341,7 +379,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            ChildType,
+					Type:            ChildTypeGroup,
 					ChildrenCount:   1,
 					UpdatedAt:       group1.UpdatedAt,
 				},
@@ -364,7 +402,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)) + "," + strconv.Itoa(int(id2)),
 					FullPath:        "/a/b",
 					FullName:        "1 / 2",
-					Type:            ChildType,
+					Type:            ChildTypeGroup,
 					ChildrenCount:   0,
 					UpdatedAt:       group2.UpdatedAt,
 				},
@@ -441,7 +479,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            ChildType,
+					Type:            ChildTypeGroup,
 					ChildrenCount:   1,
 					UpdatedAt:       group1.UpdatedAt,
 				},
@@ -473,7 +511,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            ChildType,
+					Type:            ChildTypeGroup,
 					UpdatedAt:       group1.UpdatedAt,
 				},
 			},
@@ -495,7 +533,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            ChildType,
+					Type:            ChildTypeGroup,
 					ChildrenCount:   1,
 					UpdatedAt:       group1.UpdatedAt,
 					Children: []*Child{
@@ -508,7 +546,7 @@ func TestControllerSearchGroups(t *testing.T) {
 							TraversalIDs:    strconv.Itoa(int(id)) + "," + strconv.Itoa(int(id2)),
 							FullPath:        "/a/b",
 							FullName:        "1 / 2",
-							Type:            ChildType,
+							Type:            ChildTypeGroup,
 							ChildrenCount:   0,
 							UpdatedAt:       group2.UpdatedAt,
 						},
@@ -750,7 +788,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					FullPath:      "/a/b",
 					FullName:      "1 / 2",
 					ChildrenCount: 1,
-					Type:          ChildType,
+					Type:          ChildTypeGroup,
 					Children: []*Child{
 						{
 							ID:           3,
@@ -760,7 +798,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 							ParentID:     2,
 							FullPath:     "/a/b/c",
 							FullName:     "1 / 2 / 3",
-							Type:         ChildType,
+							Type:         ChildTypeGroup,
 						},
 					},
 				},
@@ -773,7 +811,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					FullPath:      "/a/d",
 					FullName:      "1 / 4",
 					ChildrenCount: 1,
-					Type:          ChildType,
+					Type:          ChildTypeGroup,
 					Children: []*Child{
 						{
 							ID:           5,
@@ -783,7 +821,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 							ParentID:     4,
 							FullPath:     "/a/d/e",
 							FullName:     "1 / 4 / 5",
-							Type:         ChildType,
+							Type:         ChildTypeGroup,
 						},
 					},
 				},

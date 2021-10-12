@@ -37,7 +37,6 @@ func (m *manager) GetByName(ctx context.Context, name string) (*models.Applicati
 }
 
 func (m *manager) Create(ctx context.Context, application *models.Application) (*models.Application, error) {
-	// TODO（gjq） 校验group
 	return m.applicationDAO.Create(ctx, application)
 }
 

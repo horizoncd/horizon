@@ -39,6 +39,8 @@ const (
 	GroupCountByParentID          = "select count(1) from `group` where parent_id = ? and deleted_at is null"
 	GroupUpdateTraversalIDsPrefix = "update `group` set traversal_ids = replace(traversal_ids, ?, ?) " +
 		"where traversal_ids like ? and deleted_at is null"
+	GroupQueryByNameOrPathUnderParent = "select * from `group` where parent_id = ? " +
+		"and (name = ? or path = ?) and deleted_at is null"
 )
 
 /* sql about application */

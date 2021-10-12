@@ -28,6 +28,9 @@ const (
 
 	// RequestInfoError error to format the request
 	RequestInfoError = "RequestInfoError"
+
+	// Forbidden 403 Forbidden error code
+	Forbidden = "Forbidden"
 )
 
 var (
