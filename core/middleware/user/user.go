@@ -8,9 +8,10 @@ import (
 
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
-	"g.hz.netease.com/horizon/pkg/dao/user"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/user/manager"
+	"g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -35,14 +36,14 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 			return
 		}
 
-		mgr := user.Mgr
+		mgr := manager.Mgr
 		u, err := mgr.GetByOIDCMeta(c, oidcID, oidcType)
 		if err != nil {
 			response.AbortWithInternalError(c, fmt.Sprintf("error to find user: %v", err))
 			return
 		}
 		if u == nil {
-			u, err = mgr.Create(c, &user.User{
+			u, err = mgr.Create(c, &models.User{
 				Name:     userName,
 				FullName: fullName,
 				Email:    email,

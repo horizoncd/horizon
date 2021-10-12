@@ -1,7 +1,7 @@
 package application
 
 import (
-	"g.hz.netease.com/horizon/pkg/dao/application"
+	"g.hz.netease.com/horizon/pkg/application/models"
 )
 
 // Base holds the parameters which can be updated of an application
@@ -50,12 +50,12 @@ type Git struct {
 }
 
 // toApplicationModel transfer CreateApplicationRequest to models.Application
-func (m *CreateApplicationRequest) toApplicationModel(groupID uint) *application.Application {
-	return &application.Application{
+func (m *CreateApplicationRequest) toApplicationModel(groupID uint) *models.Application {
+	return &models.Application{
 		GroupID:         groupID,
 		Name:            m.Name,
 		Description:     m.Description,
-		Priority:        application.Priority(m.Priority),
+		Priority:        models.Priority(m.Priority),
 		GitURL:          m.Git.URL,
 		GitSubfolder:    m.Git.Subfolder,
 		GitBranch:       m.Git.Branch,
@@ -65,10 +65,10 @@ func (m *CreateApplicationRequest) toApplicationModel(groupID uint) *application
 }
 
 // toApplicationModel transfer UpdateApplicationRequest to models.Application
-func (m *UpdateApplicationRequest) toApplicationModel() *application.Application {
-	return &application.Application{
+func (m *UpdateApplicationRequest) toApplicationModel() *models.Application {
+	return &models.Application{
 		Description:     m.Description,
-		Priority:        application.Priority(m.Priority),
+		Priority:        models.Priority(m.Priority),
 		GitURL:          m.Git.URL,
 		GitSubfolder:    m.Git.Subfolder,
 		GitBranch:       m.Git.Branch,
@@ -78,7 +78,7 @@ func (m *UpdateApplicationRequest) toApplicationModel() *application.Application
 }
 
 // ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse
-func ofApplicationModel(app *application.Application,
+func ofApplicationModel(app *models.Application,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetApplicationResponse {
 	return &GetApplicationResponse{
 		CreateApplicationRequest: CreateApplicationRequest{

@@ -5,12 +5,12 @@ import (
 	"reflect"
 	"testing"
 
-	tmock "g.hz.netease.com/horizon/mock/pkg/dao/template"
-	trmock "g.hz.netease.com/horizon/mock/pkg/dao/templaterelease"
-	tsvcmock "g.hz.netease.com/horizon/mock/pkg/service/template"
-	"g.hz.netease.com/horizon/pkg/dao/template"
-	trmodels "g.hz.netease.com/horizon/pkg/dao/templaterelease"
-	tsvc "g.hz.netease.com/horizon/pkg/service/template"
+	tmock "g.hz.netease.com/horizon/mock/pkg/template/manager"
+	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
+	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	"g.hz.netease.com/horizon/pkg/template/models"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
+	tsvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +28,7 @@ func TestList(t *testing.T) {
 	templateMgr := tmock.NewMockManager(mockCtl)
 	templateReleaseMgr := trmock.NewMockManager(mockCtl)
 
-	templateMgr.EXPECT().List(ctx).Return([]template.Template{
+	templateMgr.EXPECT().List(ctx).Return([]models.Template{
 		{
 			Model: gorm.Model{
 				ID: 1,
@@ -89,7 +89,7 @@ func TestList(t *testing.T) {
 
 func TestGetSchema(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	templateSvc := tsvcmock.NewMockInterface(mockCtl)
+	templateSchemaGetter := trschemamock.NewMockSchemaGetter(mockCtl)
 	schema := map[string]interface{}{
 		"type": "object",
 	}
@@ -103,10 +103,10 @@ func TestGetSchema(t *testing.T) {
 			UISchema:   schema,
 		},
 	}
-	templateSvc.EXPECT().GetTemplateSchema(ctx, templateName, releaseName).Return(schemas, nil)
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, templateName, releaseName).Return(schemas, nil)
 
 	ctl := &controller{
-		templateSvc: templateSvc,
+		templateSchemaGetter: templateSchemaGetter,
 	}
 
 	ss, err := ctl.GetTemplateSchema(ctx, templateName, releaseName)

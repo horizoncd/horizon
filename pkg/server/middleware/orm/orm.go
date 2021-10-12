@@ -1,7 +1,7 @@
 package orm
 
 import (
-	"g.hz.netease.com/horizon/pkg/lib/orm"
+	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 
 	"github.com/gin-gonic/gin"

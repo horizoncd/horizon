@@ -3,8 +3,8 @@ package user
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/dao/user"
-	"g.hz.netease.com/horizon/pkg/lib/q"
+	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -19,12 +19,12 @@ type Controller interface {
 }
 
 type controller struct {
-	userMgr user.Manager
+	userMgr manager.Manager
 }
 
 func NewController() Controller {
 	return &controller{
-		userMgr: user.Mgr,
+		userMgr: manager.Mgr,
 	}
 }
 

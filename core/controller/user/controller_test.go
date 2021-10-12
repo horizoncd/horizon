@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	usermock "g.hz.netease.com/horizon/mock/pkg/dao/user"
-	"g.hz.netease.com/horizon/pkg/dao/user"
+	usermock "g.hz.netease.com/horizon/mock/pkg/user/manager"
+	"g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,7 @@ func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	userMgr := usermock.NewMockManager(mockCtl)
 
-	users := []user.User{
+	users := []models.User{
 		{
 			Model: gorm.Model{
 				ID: 1,
