@@ -237,6 +237,11 @@ func validateApplicationName(name string) error {
 		return fmt.Errorf("name must not exceed 40 characters")
 	}
 
+	// cannot start with a digit.
+	if name[0] >= '0' && name[0] <= '9' {
+		return fmt.Errorf("name cannot start with a digit")
+	}
+
 	pattern := `^(([a-z][-a-z0-9]*)?[a-z0-9])?$`
 	r := regexp.MustCompile(pattern)
 	if !r.MatchString(name) {

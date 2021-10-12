@@ -360,3 +360,52 @@ func Test(t *testing.T) {
 	err = c.DeleteApplication(ctx, appName)
 	assert.Nil(t, err)
 }
+
+func Test_validateApplicationName(t *testing.T) {
+	var (
+		name string
+		err  error
+	)
+
+	name = "a"
+	err = validateApplicationName(name)
+	assert.Nil(t, err)
+
+	name = "a1"
+	err = validateApplicationName(name)
+	assert.Nil(t, err)
+
+	name = "a-1"
+	err = validateApplicationName(name)
+	assert.Nil(t, err)
+
+	name = "1"
+	err = validateApplicationName(name)
+	assert.NotNil(t, err)
+	t.Logf("%v", err)
+
+	name = "0a"
+	err = validateApplicationName(name)
+	assert.NotNil(t, err)
+	t.Logf("%v", err)
+
+	name = "9a"
+	err = validateApplicationName(name)
+	assert.NotNil(t, err)
+	t.Logf("%v", err)
+
+	name = "1aaa"
+	err = validateApplicationName(name)
+	assert.NotNil(t, err)
+	t.Logf("%v", err)
+
+	name = "a-"
+	err = validateApplicationName(name)
+	assert.NotNil(t, err)
+	t.Logf("%v", err)
+
+	name = "a-A"
+	err = validateApplicationName(name)
+	assert.NotNil(t, err)
+	t.Logf("%v", err)
+}
