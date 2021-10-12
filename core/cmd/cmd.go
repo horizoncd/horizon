@@ -7,6 +7,8 @@ import (
 	"log"
 	"regexp"
 
+	applicationctl "g.hz.netease.com/horizon/core/controller/application"
+	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
@@ -14,15 +16,16 @@ import (
 	"g.hz.netease.com/horizon/core/http/metrics"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
-	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/server/middleware"
-	"g.hz.netease.com/horizon/server/middleware/auth"
-	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
-	"g.hz.netease.com/horizon/server/middleware/requestid"
+	"g.hz.netease.com/horizon/pkg/lib/orm"
+	"g.hz.netease.com/horizon/pkg/server/middleware"
+	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
+	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
+	ormMiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
+	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	"g.hz.netease.com/horizon/pkg/service/gitrepo"
+
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
-
-	ormMiddle "g.hz.netease.com/horizon/server/middleware/orm"
 )
 
 // Flags defines agent CLI flags.
@@ -72,10 +75,21 @@ func Run(flags *Flags) {
 	}
 
 	var (
+		// init service
+		applicationGitRepo = gitrepo.NewApplicationGitlabRepo(config.GitlabConfig)
+	)
+
+	var (
+		// init controller
+		applicationCtl = applicationctl.NewController(applicationGitRepo)
+	)
+
+	var (
 		// init API
-		groupCt     = group.NewAPI()
-		templateAPI = template.NewAPI()
-		userAPI     = user.NewAPI()
+		groupAPI       = group.NewAPI()
+		templateAPI    = template.NewAPI()
+		userAPI        = user.NewAPI()
+		applicationAPI = application.NewAPI(applicationCtl)
 	)
 
 	// init server
@@ -108,9 +122,10 @@ func Run(flags *Flags) {
 	// register routes
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
-	group.RegisterRoutes(r, groupCt)
+	group.RegisterRoutes(r, groupAPI)
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
+	application.RegisterRoutes(r, applicationAPI)
 
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))

@@ -8,10 +8,10 @@ import (
 
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
-	"g.hz.netease.com/horizon/pkg/user"
-	"g.hz.netease.com/horizon/pkg/user/models"
-	"g.hz.netease.com/horizon/server/middleware"
-	"g.hz.netease.com/horizon/server/response"
+	"g.hz.netease.com/horizon/pkg/dao/user"
+	"g.hz.netease.com/horizon/pkg/server/middleware"
+	"g.hz.netease.com/horizon/pkg/server/response"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,7 +42,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 			return
 		}
 		if u == nil {
-			u, err = mgr.Create(c, &models.User{
+			u, err = mgr.Create(c, &user.User{
 				Name:     userName,
 				FullName: fullName,
 				Email:    email,

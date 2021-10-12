@@ -1,9 +1,8 @@
 package template
 
 import (
-	templatectl "g.hz.netease.com/horizon/controller/template"
-	"g.hz.netease.com/horizon/server/response"
-
+	templatectl "g.hz.netease.com/horizon/core/controller/template"
+	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
 )
 

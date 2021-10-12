@@ -5,7 +5,12 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/applications:
+  /apis/core/v1/groups/{groupID}/applications:
+    parameters:
+      - name: groupID
+        in: path
+        description: group id
+        required: true
     post:
       tags:
         - application
@@ -18,10 +23,10 @@ paths:
             schema:
               example: |
                 {
-                  "groupID": 1000,
                   "//name": "name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
                   "name": "app",
                   "description": "xxxxxxxxxxxx",
+                  "priority": "P0",
                   "template": {
                     "name": "javaapp",
                     "release": "v1.1.0"
@@ -31,50 +36,55 @@ paths:
                     "subfolder": "/",
                     "branch": "develop"
                   },
-                  "templateInput": {
-                    "app": {
-                      "params": {
-                        "xmx": "512",
-                        "xms": "512",
-                        "maxPerm": "128",
-                        "mainClassName": "com.netease.horizon.WebApplication",
-                        "jvmExtra": "-Dserver.port=8080"
+                  "templateInput":{
+                      "application":{
+                          "app":{
+                              "params":{
+                                  "xmx":"512",
+                                  "xms":"512",
+                                  "maxPerm":"128",
+                                  "mainClassName":"com.netease.horizon.WebApplication",
+                                  "jvmExtra":"-Dserver.port=8080"
+                              },
+                              "resource":"x-small",
+                              "health":{
+                                  "lifecycle":{
+                                      "online":{
+                                          "url":"/online",
+                                          "timeoutSeconds":3,
+                                          "periodSeconds":15,
+                                          "retry":20
+                                      },
+                                      "offline":{
+                                          "url":"/offline",
+                                          "timeoutSeconds":3,
+                                          "periodSeconds":15,
+                                          "retry":20
+                                      }
+                                  },
+                                  "probe":{
+                                      "check":{
+                                          "url":"/check",
+                                          "initialDelaySeconds":200,
+                                          "timeoutSeconds":3,
+                                          "periodSeconds":15,
+                                          "failureThreshold":3
+                                      },
+                                      "status":{
+                                          "url":"/status",
+                                          "initialDelaySeconds":200,
+                                          "timeoutSeconds":3,
+                                          "periodSeconds":15,
+                                          "failureThreshold":3
+                                      }
+                                  },
+                                  "port":8080
+                              }
+                          }
                       },
-                      "resource": "x-small",
-                      "health": {
-                        "lifecycle": {
-                          "online": {
-                            "url": "/online",
-                            "timeoutSeconds": 3,
-                            "periodSeconds": 15,
-                            "retry": 20
-                          },
-                          "offline": {
-                            "url": "/offline",
-                            "timeoutSeconds": 3,
-                            "periodSeconds": 15,
-                            "retry": 20
-                          }
-                        },
-                        "probe": {
-                          "check": {
-                            "url": "/check",
-                            "initialDelaySeconds": 200,
-                            "timeoutSeconds": 3,
-                            "periodSeconds": 15,
-                            "failureThreshold": 3
-                          },
-                          "status": {
-                            "url": "/status",
-                            "initialDelaySeconds": 200,
-                            "timeoutSeconds": 3,
-                            "periodSeconds": 15,
-                            "failureThreshold": 3
-                          }
-                        },
-                        "port": 8080
+                      "pipeline":{
+                          "buildxml":"PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHByb2plY3QgWzwhRU5USVRZIGJ1aWxkZmlsZSBTWVNURU0gImZpbGU6Li9idWlsZC11c2VyLnhtbCI+XT4KPHByb2plY3QgYmFzZWRpcj0iLiIgZGVmYXVsdD0iZGVwbG95IiBuYW1lPSJkZW1vIj4KICAgIDxwcm9wZXJ0eSBuYW1lPSJhbnQiIHZhbHVlPSJhbnQiIC8+CiAgICA8cHJvcGVydHkgbmFtZT0iYmFzZWxpbmUuZGlyIiB2YWx1ZT0iJHtiYXNlZGlyfSIvPgoKICAgIDx0YXJnZXQgbmFtZT0icGFja2FnZSI+CiAgICAgICAgPGV4ZWMgZGlyPSIke2Jhc2VsaW5lLmRpcn0iIGV4ZWN1dGFibGU9IiR7YW50fSIgZmFpbG9uZXJyb3I9InRydWUiPgogICAgICAgICAgICA8YXJnIGxpbmU9Ii1idWlsZGZpbGUgb3Zlcm1pbmRfYnVpbGQueG1sIC1EZW52PXRlc3QgLURlbnZOYW1lPXFhLWFsbGFuLmlnYW1lLjE2My5jb20iLz4KICAgICAgICA8L2V4ZWM+CiAgICA8L3RhcmdldD4KCiAgICA8dGFyZ2V0IG5hbWU9ImRlcGxveSI+CiAgICAgICAgPGVjaG8gbWVzc2FnZT0iYmVnaW4gYXV0byBkZXBsb3kuLi4uLi4iLz4KICAgICAgICA8YW50Y2FsbCB0YXJnZXQ9InBhY2thZ2UiLz4KICAgIDwvdGFyZ2V0Pgo8L3Byb2plY3Q+"
                       }
-                    }
                   }
                 }
       responses:
@@ -105,6 +115,7 @@ paths:
               example: |
                 {
                   "description": "xxxxxxxxxxxx",
+                  "priority": "P0",
                   "template": {
                     "name": "javaapp",
                     "release": "v1.1.0"
@@ -114,50 +125,55 @@ paths:
                     "subfolder": "/",
                     "branch": "develop"
                   },
-                  "templateInput": {
-                    "app": {
-                      "params": {
-                        "xmx": "512",
-                        "xms": "512",
-                        "maxPerm": "128",
-                        "mainClassName": "com.netease.horizon.WebApplication",
-                        "jvmExtra": "-Dserver.port=8080"
+                  "templateInput":{
+                      "application":{
+                          "app":{
+                              "params":{
+                                  "xmx":"512",
+                                  "xms":"512",
+                                  "maxPerm":"128",
+                                  "mainClassName":"com.netease.horizon.WebApplication",
+                                  "jvmExtra":"-Dserver.port=8080"
+                              },
+                              "resource":"x-small",
+                              "health":{
+                                  "lifecycle":{
+                                      "online":{
+                                          "url":"/online",
+                                          "timeoutSeconds":3,
+                                          "periodSeconds":15,
+                                          "retry":20
+                                      },
+                                      "offline":{
+                                          "url":"/offline",
+                                          "timeoutSeconds":3,
+                                          "periodSeconds":15,
+                                          "retry":20
+                                      }
+                                  },
+                                  "probe":{
+                                      "check":{
+                                          "url":"/check",
+                                          "initialDelaySeconds":200,
+                                          "timeoutSeconds":3,
+                                          "periodSeconds":15,
+                                          "failureThreshold":3
+                                      },
+                                      "status":{
+                                          "url":"/status",
+                                          "initialDelaySeconds":200,
+                                          "timeoutSeconds":3,
+                                          "periodSeconds":15,
+                                          "failureThreshold":3
+                                      }
+                                  },
+                                  "port":8080
+                              }
+                          }
                       },
-                      "resource": "x-small",
-                      "health": {
-                        "lifecycle": {
-                          "online": {
-                            "url": "/online",
-                            "timeoutSeconds": 3,
-                            "periodSeconds": 15,
-                            "retry": 20
-                          },
-                          "offline": {
-                            "url": "/offline",
-                            "timeoutSeconds": 3,
-                            "periodSeconds": 15,
-                            "retry": 20
-                          }
-                        },
-                        "probe": {
-                          "check": {
-                            "url": "/check",
-                            "initialDelaySeconds": 200,
-                            "timeoutSeconds": 3,
-                            "periodSeconds": 15,
-                            "failureThreshold": 3
-                          },
-                          "status": {
-                            "url": "/status",
-                            "initialDelaySeconds": 200,
-                            "timeoutSeconds": 3,
-                            "periodSeconds": 15,
-                            "failureThreshold": 3
-                          }
-                        },
-                        "port": 8080
+                      "pipeline":{
+                          "buildxml":"PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHByb2plY3QgWzwhRU5USVRZIGJ1aWxkZmlsZSBTWVNURU0gImZpbGU6Li9idWlsZC11c2VyLnhtbCI+XT4KPHByb2plY3QgYmFzZWRpcj0iLiIgZGVmYXVsdD0iZGVwbG95IiBuYW1lPSJkZW1vIj4KICAgIDxwcm9wZXJ0eSBuYW1lPSJhbnQiIHZhbHVlPSJhbnQiIC8+CiAgICA8cHJvcGVydHkgbmFtZT0iYmFzZWxpbmUuZGlyIiB2YWx1ZT0iJHtiYXNlZGlyfSIvPgoKICAgIDx0YXJnZXQgbmFtZT0icGFja2FnZSI+CiAgICAgICAgPGV4ZWMgZGlyPSIke2Jhc2VsaW5lLmRpcn0iIGV4ZWN1dGFibGU9IiR7YW50fSIgZmFpbG9uZXJyb3I9InRydWUiPgogICAgICAgICAgICA8YXJnIGxpbmU9Ii1idWlsZGZpbGUgb3Zlcm1pbmRfYnVpbGQueG1sIC1EZW52PXRlc3QgLURlbnZOYW1lPXFhLWFsbGFuLmlnYW1lLjE2My5jb20iLz4KICAgICAgICA8L2V4ZWM+CiAgICA8L3RhcmdldD4KCiAgICA8dGFyZ2V0IG5hbWU9ImRlcGxveSI+CiAgICAgICAgPGVjaG8gbWVzc2FnZT0iYmVnaW4gYXV0byBkZXBsb3kuLi4uLi4iLz4KICAgICAgICA8YW50Y2FsbCB0YXJnZXQ9InBhY2thZ2UiLz4KICAgIDwvdGFyZ2V0Pgo8L3Byb2plY3Q+"
                       }
-                    }
                   }
                 }
       responses:
@@ -182,9 +198,12 @@ paths:
               schema:
                 example: |
                   {
+                    "//groupID": "the groupID of this application",
                     "groupID": 1000,
+                    "//name": "name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
                     "name": "app",
                     "description": "xxxxxxxxxxxx",
+                    "priority": "P0",
                     "template": {
                       "name": "javaapp",
                       "release": "v1.1.0"
@@ -194,49 +213,54 @@ paths:
                       "subfolder": "/",
                       "branch": "develop"
                     },
-                    "templateInput": {
-                      "app": {
-                        "params": {
-                          "xmx": "512",
-                          "xms": "512",
-                          "maxPerm": "128",
-                          "mainClassName": "com.netease.horizon.WebApplication",
-                          "jvmExtra": "-Dserver.port=8080"
+                    "templateInput":{
+                        "application":{
+                            "app":{
+                                "params":{
+                                    "xmx":"512",
+                                    "xms":"512",
+                                    "maxPerm":"128",
+                                    "mainClassName":"com.netease.horizon.WebApplication",
+                                    "jvmExtra":"-Dserver.port=8080"
+                                },
+                                "resource":"x-small",
+                                "health":{
+                                    "lifecycle":{
+                                        "online":{
+                                            "url":"/online",
+                                            "timeoutSeconds":3,
+                                            "periodSeconds":15,
+                                            "retry":20
+                                        },
+                                        "offline":{
+                                            "url":"/offline",
+                                            "timeoutSeconds":3,
+                                            "periodSeconds":15,
+                                            "retry":20
+                                        }
+                                    },
+                                    "probe":{
+                                        "check":{
+                                            "url":"/check",
+                                            "initialDelaySeconds":200,
+                                            "timeoutSeconds":3,
+                                            "periodSeconds":15,
+                                            "failureThreshold":3
+                                        },
+                                        "status":{
+                                            "url":"/status",
+                                            "initialDelaySeconds":200,
+                                            "timeoutSeconds":3,
+                                            "periodSeconds":15,
+                                            "failureThreshold":3
+                                        }
+                                    },
+                                    "port":8080
+                                }
+                            }
                         },
-                        "resource": "x-small",
-                        "health": {
-                          "lifecycle": {
-                            "online": {
-                              "url": "/online",
-                              "timeoutSeconds": 3,
-                              "periodSeconds": 15,
-                              "retry": 20
-                            },
-                            "offline": {
-                              "url": "/offline",
-                              "timeoutSeconds": 3,
-                              "periodSeconds": 15,
-                              "retry": 20
-                            }
-                          },
-                          "probe": {
-                            "check": {
-                              "url": "/check",
-                              "initialDelaySeconds": 200,
-                              "timeoutSeconds": 3,
-                              "periodSeconds": 15,
-                              "failureThreshold": 3
-                            },
-                            "status": {
-                              "url": "/status",
-                              "initialDelaySeconds": 200,
-                              "timeoutSeconds": 3,
-                              "periodSeconds": 15,
-                              "failureThreshold": 3
-                            }
-                          },
-                          "port": 8080
+                        "pipeline":{
+                            "buildxml":"PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHByb2plY3QgWzwhRU5USVRZIGJ1aWxkZmlsZSBTWVNURU0gImZpbGU6Li9idWlsZC11c2VyLnhtbCI+XT4KPHByb2plY3QgYmFzZWRpcj0iLiIgZGVmYXVsdD0iZGVwbG95IiBuYW1lPSJkZW1vIj4KICAgIDxwcm9wZXJ0eSBuYW1lPSJhbnQiIHZhbHVlPSJhbnQiIC8+CiAgICA8cHJvcGVydHkgbmFtZT0iYmFzZWxpbmUuZGlyIiB2YWx1ZT0iJHtiYXNlZGlyfSIvPgoKICAgIDx0YXJnZXQgbmFtZT0icGFja2FnZSI+CiAgICAgICAgPGV4ZWMgZGlyPSIke2Jhc2VsaW5lLmRpcn0iIGV4ZWN1dGFibGU9IiR7YW50fSIgZmFpbG9uZXJyb3I9InRydWUiPgogICAgICAgICAgICA8YXJnIGxpbmU9Ii1idWlsZGZpbGUgb3Zlcm1pbmRfYnVpbGQueG1sIC1EZW52PXRlc3QgLURlbnZOYW1lPXFhLWFsbGFuLmlnYW1lLjE2My5jb20iLz4KICAgICAgICA8L2V4ZWM+CiAgICA8L3RhcmdldD4KCiAgICA8dGFyZ2V0IG5hbWU9ImRlcGxveSI+CiAgICAgICAgPGVjaG8gbWVzc2FnZT0iYmVnaW4gYXV0byBkZXBsb3kuLi4uLi4iLz4KICAgICAgICA8YW50Y2FsbCB0YXJnZXQ9InBhY2thZ2UiLz4KICAgIDwvdGFyZ2V0Pgo8L3Byb2plY3Q+"
                         }
-                      }
                     }
                   }
