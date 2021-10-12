@@ -3,7 +3,7 @@ package member
 import (
 	"context"
 	"errors"
-	"sort"
+	"strconv"
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	ErrRoleReduced   = errors.New("RoleReduced")     // "Role Reduced"
-	ErrMemberExist   = errors.New("MemberExist")     // "Member Exist"
-	ErrGrantHighRole = errors.New("GrantHigherRole") // "Grant higher role"
+	ErrMemberExist    = errors.New("MemberExist")     // "Member Exist"
+	ErrNotPermitted   = errors.New("NotPermitted")    // "Not Permitted"
+	ErrMemberNotExist = errors.New("MemberNotExist")  // "Member not exists"
+	ErrGrantHighRole  = errors.New("GrantHigherRole") // "Grant higher role"
 )
 
 var (
@@ -29,9 +30,12 @@ type Service interface {
 	CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error)
 	// UpdateMember update exist member entry
 	// user can only attach a role not higher than self
-	UpdateMember(ctx context.Context, groupID uint, memberID uint, Role string) (*models.Member, error)
+	UpdateMember(ctx context.Context, resourceType string, resourceID uint,
+		memberInfo string, memberType models.MemberType, role string) (*models.Member, error)
 	// ListMember list all the member of the resource
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
+
+	// Remove/Level
 }
 
 type service struct {
@@ -54,6 +58,26 @@ func (s *service) GetMember(ctx context.Context) (*models.Member, error) {
 	return nil, nil
 }
 
+func (s *service) getMemberByDetail(ctx context.Context,
+	resourceType string, resourceID uint,
+	memberInfo string, memberType models.MemberType) (*models.Member, error) {
+
+	// 2. If member exist in check if Role Can Create
+	members, err := s.ListMember(ctx, resourceType, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range members {
+		if string(item.ResourceType) == resourceType &&
+			item.ResourceID == resourceID &&
+			item.MemberType == memberType &&
+			item.MemberInfo == memberInfo {
+			return &item, nil
+		}
+	}
+	return nil, nil
+}
+
 func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error) {
 	var currentUser userauth.User
 	currentUser, err := user.FromContext(ctx)
@@ -67,39 +91,27 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 		return nil, err
 	}
 
-	// 2. If member exist in check if Role Can Create
-	members, err := s.ListMember(ctx, models.TypeGroupStr, postMember.ResourceID)
-	if err != nil {
-		return nil, nil
-	}
-
-	index := sort.Search(len(members), func(i int) bool {
-		return members[i].MemberType == postMember.MemberType &&
-			members[i].MemberInfo == postMember.MemberInfo
-	})
-
-	// TODO(tom): if exist change to update
-	if members[index].ResourceType == models.ResourceType(postMember.ResourceType) &&
-		members[index].ResourceID == postMember.ResourceID {
-		return nil, ErrMemberExist
-	}
-
-	RoleBigger := func(role1, role2 string) bool {
-		return true
-	}
-	if index < len(members) {
-		// only higher role grant is permitted
-		if !RoleBigger(postMember.Role, members[index].Role) {
-			return nil, ErrRoleReduced
-		}
-	}
-
-	// 3. check if the grant higher
-	var userMemberInfo *models.Member
-	userMemberInfo, err = s.memberManager.GetByUserName(ctx, member.ResourceType, postMember.ResourceID, currentUser.GetName())
+	// 2. If member exist return error TODO(tom): change to updateMember
+	memberItem, err := s.getMemberByDetail(ctx, postMember.ResourceType, postMember.ResourceID,
+		postMember.MemberInfo, postMember.MemberType)
 	if err != nil {
 		return nil, err
 	}
+	if memberItem != nil {
+		return nil, ErrMemberExist
+	}
+
+	// 3. check if the grant current user can grant the role
+	var userMemberInfo *models.Member
+	userMemberInfo, err = s.getMemberByDetail(ctx, postMember.ResourceType, postMember.ResourceID,
+		currentUser.GetName(), models.MemberUser)
+	if err != nil {
+		return nil, err
+	}
+	if userMemberInfo == nil {
+		return nil, ErrNotPermitted
+	}
+
 	RoleEqualOrBigger := func(role1, role2 string) bool {
 		return true
 	}
@@ -110,9 +122,26 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 	return s.memberManager.Create(ctx, member)
 }
 
+// createMemberDirect for unit test
+func (s *service) createMemberDirect(ctx context.Context, postMember PostMember) (*models.Member, error) {
+	var currentUser userauth.User
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// 1. convert member
+	member, err := ConvertPostMemberToMember(postMember, currentUser)
+	if err != nil {
+		return nil, err
+	}
+	return s.memberManager.Create(ctx, member)
+}
+
 // UpdateMember update exist member entry
 // user can only attach a role not higher than self
-func (s *service) UpdateMember(ctx context.Context, groupID uint, memberID uint, Role string) (*models.Member, error) {
+func (s *service) UpdateMember(ctx context.Context, resourceType string, resourceID uint,
+	memberInfo string, memberType models.MemberType, role string) (*models.Member, error) {
 	// 1. get current user and check the permission
 	var currentUser userauth.User
 	currentUser, err := user.FromContext(ctx)
@@ -120,37 +149,33 @@ func (s *service) UpdateMember(ctx context.Context, groupID uint, memberID uint,
 		return nil, err
 	}
 
-	var userMemberInfo *models.Member
-	userMemberInfo, err = s.memberManager.GetByUserName(ctx, models.TypeGroup, groupID, currentUser.GetName())
+	// 2. If member not exist return
+	memberItem, err := s.getMemberByDetail(ctx, resourceType, resourceID,
+		memberInfo, memberType)
 	if err != nil {
 		return nil, err
 	}
-
-	if !grantRoleCheck(userMemberInfo.Role, Role) {
-		return nil, nil
+	if memberItem == nil {
+		return nil, ErrMemberNotExist
 	}
-	return nil, nil
-}
 
-func DeduplicateMemberBasedOnRole(members []models.Member) []models.Member {
-	var retMember []models.Member
-
-	RoleBigger := func(role1, role2 string) bool {
+	// 3. check if the grant current user can grant the role
+	var userMemberInfo *models.Member
+	userMemberInfo, err = s.getMemberByDetail(ctx, resourceType, resourceID,
+		currentUser.GetName(), models.MemberUser)
+	if err != nil {
+		return nil, err
+	}
+	RoleEqualOrBigger := func(role1, role2 string) bool {
 		return true
 	}
-
-	for _, member := range members {
-		index := sort.Search(len(retMember), func(i int) bool {
-			return retMember[i].MemberType == member.MemberType &&
-				retMember[i].MemberInfo == member.MemberInfo &&
-				RoleBigger(retMember[i].Role, member.Role)
-		})
-
-		if index < len(retMember) {
-			retMember[index] = member
-		}
+	if !RoleEqualOrBigger(userMemberInfo.Role, role) {
+		return nil, ErrGrantHighRole
 	}
-	return retMember
+
+	return s.memberManager.UpdateByID(ctx, memberItem.ResourceID, role)
+
+	return nil, nil
 }
 
 func (s *service) ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error) {
@@ -170,9 +195,7 @@ func (s *service) ListMember(ctx context.Context, resourceType string, resourceI
 	if err != nil {
 		return nil, err
 	}
-
-	// deduplicate based on the highest role
-	return DeduplicateMemberBasedOnRole(allMembers), nil
+	return allMembers, nil
 }
 
 func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
@@ -185,14 +208,34 @@ func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]mode
 
 	// 2. get all the direct member of group
 	var retMembers []models.Member
-	for _, groupID := range groupIDs {
-		members, err := s.memberManager.ListDirectMember(ctx, models.TypeGroup, groupID)
+
+	for i := len(groupIDs) - 1; i >= 0; i-- {
+		members, err := s.memberManager.ListDirectMember(ctx, models.TypeGroup, groupIDs[i])
 		if err != nil {
 			return nil, err
 		}
 		retMembers = append(retMembers, members...)
 	}
-	return retMembers, nil
+
+	return DeduplicateMember(retMembers), nil
+}
+
+func DeduplicateMember(members []models.Member) []models.Member {
+	// deduplicate by memberType, memberInfo
+	memberMap := make(map[string]models.Member)
+
+	for _, item := range members {
+		key := strconv.Itoa(int(item.MemberType)) + "-" + item.MemberInfo
+		_, ok := memberMap[key]
+		if !ok {
+			memberMap[key] = item
+		}
+	}
+	var retMembers []models.Member
+	for _, item := range memberMap {
+		retMembers = append(retMembers, item)
+	}
+	return retMembers
 }
 
 func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {

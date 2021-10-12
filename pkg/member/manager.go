@@ -21,9 +21,8 @@ type Manager interface {
 		resourceID uint, userName string) (*models.Member, error)
 	// TODO(tom) GetByGroupID
 
-
 	// UpdateByID  update a member by memberID
-	UpdateByID(ctx context.Context, id uint, member *models.Member) (*models.Member, error)
+	UpdateByID(ctx context.Context, id uint, role string) (*models.Member, error)
 
 	// DeleteMember Delete a member by memberID
 	DeleteMember(ctx context.Context, memberID uint) error
@@ -50,8 +49,8 @@ func (m *manager) GetByUserName(ctx context.Context, resourceType models.Resourc
 	return m.dao.Get(ctx, resourceType, resourceID, models.MemberUser, userName)
 }
 
-func (m *manager) UpdateByID(ctx context.Context, memberID uint, member *models.Member) (*models.Member, error) {
-	return m.dao.UpdateByID(ctx, memberID, member)
+func (m *manager) UpdateByID(ctx context.Context, memberID uint, role string) (*models.Member, error) {
+	return m.dao.UpdateByID(ctx, memberID, role)
 }
 
 func (m *manager) DeleteMember(ctx context.Context, memberID uint) error {

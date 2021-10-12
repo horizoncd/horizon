@@ -25,7 +25,7 @@ type DAO interface {
 	Get(ctx context.Context, resourceType models.ResourceType, resourceID uint,
 		memberType models.MemberType, memberInfo string) (*models.Member, error)
 	Delete(ctx context.Context, memberID uint) error
-	UpdateByID(ctx context.Context, id uint, member *models.Member) (*models.Member, error)
+	UpdateByID(ctx context.Context, id uint, role string) (*models.Member, error)
 	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
 }
@@ -64,7 +64,7 @@ func (d *dao) Get(ctx context.Context, resourceType models.ResourceType, resourc
 	return &member, nil
 }
 
-func (d *dao) UpdateByID(ctx context.Context, id uint, member *models.Member) (*models.Member, error) {
+func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Member, error) {
 	const op = "member dao: update by ID"
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -88,7 +88,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, member *models.Member) (*
 		}
 
 		// 2. update value
-		memberInDB.Role = member.Role
+		memberInDB.Role = role
 		memberInDB.GrantBy = user.GetName()
 
 		// 3. save member after updated
