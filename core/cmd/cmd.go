@@ -7,6 +7,8 @@ import (
 	"log"
 	"regexp"
 
+	applicationctl "g.hz.netease.com/horizon/core/controller/application"
+	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
@@ -15,14 +17,14 @@ import (
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/server/middleware"
-	logmiddle "g.hz.netease.com/horizon/server/middleware/log"
-	"g.hz.netease.com/horizon/server/middleware/requestid"
-	"g.hz.netease.com/horizon/server/middleware/requestinfo"
+	"g.hz.netease.com/horizon/pkg/application/gitrepo"
+	"g.hz.netease.com/horizon/pkg/server/middleware"
+	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
+	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
+	ormMiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
+	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
-
-	ormMiddle "g.hz.netease.com/horizon/server/middleware/orm"
 )
 
 // Flags defines agent CLI flags.
@@ -72,10 +74,21 @@ func Run(flags *Flags) {
 	}
 
 	var (
+		// init service
+		applicationGitRepo = gitrepo.NewApplicationGitlabRepo(config.GitlabConfig)
+	)
+
+	var (
+		// init controller
+		applicationCtl = applicationctl.NewController(applicationGitRepo)
+	)
+
+	var (
 		// init API
-		groupCt     = group.NewAPI()
-		templateAPI = template.NewAPI()
-		userAPI     = user.NewAPI()
+		groupAPI       = group.NewAPI()
+		templateAPI    = template.NewAPI()
+		userAPI        = user.NewAPI()
+		applicationAPI = application.NewAPI(applicationCtl)
 	)
 
 	// init server
@@ -87,7 +100,7 @@ func Run(flags *Flags) {
 		requestid.Middleware(),        // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(),        // log middleware, attach a logger to context
 		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
-		requestinfo.Middleware(middleware.MethodAndPathSkipper("*",
+		auth.Middleware(middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
@@ -108,9 +121,10 @@ func Run(flags *Flags) {
 	// register routes
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
-	group.RegisterRoutes(r, groupCt)
+	group.RegisterRoutes(r, groupAPI)
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
+	application.RegisterRoutes(r, applicationAPI)
 
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))

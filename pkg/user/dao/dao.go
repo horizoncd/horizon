@@ -3,9 +3,9 @@ package dao
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/user/models"
 )
 
@@ -26,8 +26,8 @@ type DAO interface {
 	SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error)
 }
 
-// New returns an instance of the default DAO
-func New() DAO {
+// NewDAO returns an instance of the default DAO
+func NewDAO() DAO {
 	return &dao{}
 }
 

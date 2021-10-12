@@ -3,8 +3,8 @@ package dao
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/templaterelease/models"
 )
 
@@ -14,8 +14,8 @@ type DAO interface {
 	GetByTemplateNameAndRelease(ctx context.Context, templateName, release string) (*models.TemplateRelease, error)
 }
 
-// New returns an instance of the default DAO
-func New() DAO {
+// NewDAO returns an instance of the default DAO
+func NewDAO() DAO {
 	return &dao{}
 }
 

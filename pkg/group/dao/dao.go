@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"gorm.io/gorm"
 )
@@ -47,8 +47,8 @@ type DAO interface {
 	Transfer(ctx context.Context, id, newParentID uint) error
 }
 
-// New returns an instance of the default DAO
-func New() DAO {
+// NewDAO returns an instance of the default DAO
+func NewDAO() DAO {
 	return &dao{}
 }
 

@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/xanzy/go-gitlab"
 )
@@ -40,8 +40,9 @@ export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
 }
 EOF
 )"
-go test -v ./lib/gitlab/
+go test -v ./pkg/lib/gitlab/
 
+NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this test.
 */
 
 var (
@@ -65,8 +66,12 @@ type Param struct {
 
 func TestMain(m *testing.M) {
 	var err error
+
 	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
-	fmt.Println(param)
+	if param == "" {
+		return
+	}
+
 	var p *Param
 	if err := json.Unmarshal([]byte(param), &p); err != nil {
 		panic(err)
@@ -191,7 +196,28 @@ func Test(t *testing.T) {
 	_, err = g.AcceptMR(ctx, pid, mr.IID, nil, nil)
 	assert.Nil(t, err)
 
-	// 15. delete project
+	// 15. transfer a project
+	newGroupName := "newGroup"
+	_, err = g.CreateGroup(ctx, newGroupName, newGroupName, intToPtr(rootGroupID))
+	assert.Nil(t, err)
+
+	newGroupPath := fmt.Sprintf("%v/%v", rootGroupName, newGroupName)
+	err = g.TransferProject(ctx, pid, newGroupPath)
+	assert.Nil(t, err)
+
+	defer func() {
+		_ = g.DeleteGroup(ctx, newGroupPath)
+	}()
+
+	// 16. edit a project's name and path
+	pid = fmt.Sprintf("%v/%v", newGroupPath, projectName)
+	newProjectName := fmt.Sprintf("%v-%d", projectName, 1)
+	newProjectPath := newProjectName
+	err = g.EditNameAndPathForProject(ctx, pid, &newProjectName, &newProjectPath)
+	assert.Nil(t, err)
+
+	// 17. delete project
+	pid = fmt.Sprintf("%v/%v", newGroupPath, newProjectPath)
 	err = g.DeleteProject(ctx, pid)
 	assert.Nil(t, err)
 }

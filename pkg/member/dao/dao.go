@@ -4,12 +4,12 @@ import (
 	"context"
 	"net/http"
 
-	"g.hz.netease.com/horizon/common"
 	user2 "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/member/models"
-	"g.hz.netease.com/horizon/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/errors"
 	"gorm.io/gorm"
 )
 

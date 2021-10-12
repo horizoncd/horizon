@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"g.hz.netease.com/horizon/server/route"
+	"g.hz.netease.com/horizon/pkg/server/route"
+
 	"github.com/gin-gonic/gin"
 )
 
