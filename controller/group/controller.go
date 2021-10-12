@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"g.hz.netease.com/horizon/controller/member"
 	"g.hz.netease.com/horizon/pkg/group"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/util/errors"
@@ -53,16 +54,29 @@ type Controller interface {
 	SearchGroups(ctx context.Context, params *SearchParams) ([]*Child, int64, error)
 	// SearchChildren search children of a group, including subgroups and applications
 	SearchChildren(ctx context.Context, params *SearchParams) ([]*Child, int64, error)
+
+	// CreateMember create a member of the group
+	// CreateMember(ctx context.Context, member member.Member) (*member.Member, error)
+	// UpdateMember update a member of the group
+	// UpdateMember(ctx context.Context, postMember member.PostMember) (*member.Member, error)
+
+	// DeleteMember()
+
+	// ListGroup()
+
+
 }
 
 type controller struct {
 	groupManager group.Manager
+	memberControl member.Controller
 }
 
 // NewController initializes a new group controller
 func NewController() Controller {
 	return &controller{
 		groupManager: group.Mgr,
+		memberControl: member.Ctl,
 	}
 }
 
@@ -237,7 +251,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*Child, error) {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
 
-	groups, err := c.groupManager.GetByIDs(ctx, formatIDsFromTraversalIDs(groupEntity.TraversalIDs))
+	groups, err := c.groupManager.GetByIDs(ctx, FormatIDsFromTraversalIDs(groupEntity.TraversalIDs))
 	if err != nil {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
@@ -268,7 +282,7 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*models.Group) ([]*models.Group, error) {
 	var ids []uint
 	for _, g := range groups {
-		ids = append(ids, formatIDsFromTraversalIDs(g.TraversalIDs)...)
+		ids = append(ids, FormatIDsFromTraversalIDs(g.TraversalIDs)...)
 	}
 
 	groupsByIDs, err := c.groupManager.GetByIDs(ctx, ids)

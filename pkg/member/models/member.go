@@ -5,12 +5,18 @@ import "gorm.io/gorm"
 type ResourceType string
 
 const (
+
+	TypeGroupStr string = "group"
 	// TypeGroup represent the group member entry.
-	TypeGroup ResourceType = "group"
+	TypeGroup ResourceType = (ResourceType)(TypeGroupStr)
+
+	TypeApplicationStr string = "application"
 	// TypeApplication represent the application  member entry.
-	TypeApplication  ResourceType =  "application"
+	TypeApplication  ResourceType =  (ResourceType)(TypeApplicationStr)
+
+	TypeApplicationInstanceStr string = "applicationinstance"
 	// TypeApplicationInstance represent the application instance member entry
-	TypeApplicationInstance ResourceType = "applicationinstance"
+	TypeApplicationInstance ResourceType = (ResourceType)(TypeApplicationInstanceStr)
 )
 
 type MemberType uint8

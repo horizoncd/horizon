@@ -34,6 +34,12 @@ type Member struct {
 	// MemberInfo username or groupID
 	MemberInfo string
 
+	// MemberName
+	MemberName  string
+
+	// MemberPath the path of the member
+	MemberPath string
+
 	// MemberType user or group
 	MemberType models.MemberType
 
@@ -51,6 +57,8 @@ type Member struct {
 }
 
 func ConvertMember(member *models.Member, sourceInfo string) Member {
+
+	//TODO(tom): change ID to name ,and add the path
 	return Member{
 		ID: member.ID,
 		MemberType: member.MemberType,

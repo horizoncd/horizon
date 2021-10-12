@@ -120,12 +120,12 @@ func generateIDToGroup(groups []*models.Group) map[uint]*models.Group {
 	return idToGroup
 }
 
-// formatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
-func formatIDsFromTraversalIDs(traversalIDs string) []uint {
+// FormatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
+func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
 	splitIds := strings.Split(traversalIDs, ",")
 	var ids = make([]uint, len(splitIds))
 	for i, id := range splitIds {
-		ii, _ := strconv.Atoi(id)
+		ii, _ := strconv.ParseUint(id, 10, 0)
 		ids[i] = uint(ii)
 	}
 	return ids
