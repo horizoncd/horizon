@@ -47,6 +47,8 @@ EOF
 )"
 go test -v ./pkg/service/gitrepo
 
+NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this test.
+
 */
 // nolint
 var (
@@ -120,6 +122,10 @@ type Param struct {
 func TestMain(m *testing.M) {
 	var err error
 	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
+
+	if param == "" {
+		return
+	}
 
 	var p *Param
 	if err := json.Unmarshal([]byte(param), &p); err != nil {

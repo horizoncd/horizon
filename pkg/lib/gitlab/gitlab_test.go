@@ -42,6 +42,7 @@ EOF
 )"
 go test -v ./pkg/lib/gitlab/
 
+NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this test.
 */
 
 var (
@@ -65,8 +66,12 @@ type Param struct {
 
 func TestMain(m *testing.M) {
 	var err error
+
 	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
-	fmt.Println(param)
+	if param == "" {
+		return
+	}
+
 	var p *Param
 	if err := json.Unmarshal([]byte(param), &p); err != nil {
 		panic(err)
