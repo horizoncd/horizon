@@ -16,14 +16,13 @@ import (
 	"g.hz.netease.com/horizon/core/http/metrics"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
-	"g.hz.netease.com/horizon/pkg/lib/orm"
+	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
 	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
 	ormMiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
-	"g.hz.netease.com/horizon/pkg/service/gitrepo"
-
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 )

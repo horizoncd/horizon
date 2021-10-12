@@ -7,8 +7,10 @@ import (
 	"sort"
 	"strings"
 
-	"g.hz.netease.com/horizon/pkg/dao/group"
+	"g.hz.netease.com/horizon/pkg/group/manager"
+	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+
 	"gorm.io/gorm"
 )
 
@@ -55,13 +57,13 @@ type Controller interface {
 }
 
 type controller struct {
-	groupManager group.Manager
+	groupManager manager.Manager
 }
 
 // NewController initializes a new group controller
 func NewController() Controller {
 	return &controller{
-		groupManager: group.Mgr,
+		groupManager: manager.Mgr,
 	}
 }
 
@@ -251,8 +253,8 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 
 	rowsAffected, err := c.groupManager.Delete(ctx, id)
 	if err != nil {
-		if err == group.ErrHasChildren {
-			return errors.E(op, http.StatusBadRequest, ErrGroupHasChildren, group.ErrHasChildren)
+		if err == manager.ErrHasChildren {
+			return errors.E(op, http.StatusBadRequest, ErrGroupHasChildren, manager.ErrHasChildren)
 		}
 		return errors.E(op, fmt.Sprintf("failed to delete the group matching the id: %d", id), err)
 	}
@@ -264,7 +266,7 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 }
 
 // formatGroupsInTraversalIDs query groups by ids (split traversalIDs by ',')
-func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*group.Group) ([]*group.Group, error) {
+func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*models.Group) ([]*models.Group, error) {
 	var ids []uint
 	for _, g := range groups {
 		ids = append(ids, formatIDsFromTraversalIDs(g.TraversalIDs)...)
@@ -272,16 +274,16 @@ func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*g
 
 	groupsByIDs, err := c.groupManager.GetByIDs(ctx, ids)
 	if err != nil {
-		return []*group.Group{}, err
+		return []*models.Group{}, err
 	}
 
 	return groupsByIDs, nil
 }
 
 // generateChildrenWithLevelStruct generate subgroups with level struct
-func generateChildrenWithLevelStruct(groupID uint, groups []*group.Group) []*Child {
+func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Child {
 	// sort groups by the size of the traversalIDs array after split by ','
-	sort.Sort(group.Groups(groups))
+	sort.Sort(models.Groups(groups))
 
 	// get mapping between id and full
 	idToFull := generateIDToFull(groups)
@@ -293,7 +295,7 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*group.Group) []*Chi
 	parentIDToChildren := make(map[uint][]*Child)
 
 	// reverse the order
-	sort.Sort(sort.Reverse(group.Groups(groups)))
+	sort.Sort(sort.Reverse(models.Groups(groups)))
 	for _, g := range groups {
 		// get fullName and fullPath by id
 		full := idToFull[g.ID]

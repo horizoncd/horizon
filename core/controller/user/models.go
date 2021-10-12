@@ -1,7 +1,7 @@
 package user
 
 import (
-	"g.hz.netease.com/horizon/pkg/dao/user"
+	"g.hz.netease.com/horizon/pkg/user/models"
 )
 
 type SearchUserResponse struct {
@@ -11,7 +11,7 @@ type SearchUserResponse struct {
 	Email    string `json:"email"`
 }
 
-func ofUsers(users []user.User) []*SearchUserResponse {
+func ofUsers(users []models.User) []*SearchUserResponse {
 	resp := make([]*SearchUserResponse, 0, len(users))
 	for _, u := range users {
 		resp = append(resp, &SearchUserResponse{

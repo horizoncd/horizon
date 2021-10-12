@@ -9,8 +9,9 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/pkg/dao/group"
-	"g.hz.netease.com/horizon/pkg/lib/orm"
+	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/pkg/group/models"
+
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -23,7 +24,7 @@ var (
 
 func init() {
 	// create table
-	err := db.AutoMigrate(&group.Group{})
+	err := db.AutoMigrate(&models.Group{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
@@ -106,7 +107,7 @@ func TestControllerCreateGroup(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&group.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerDelete(t *testing.T) {
@@ -154,7 +155,7 @@ func TestControllerDelete(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&group.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerGetByID(t *testing.T) {
@@ -221,7 +222,7 @@ func TestControllerGetByID(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&group.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerGetByPath(t *testing.T) {
@@ -287,7 +288,7 @@ func TestControllerGetByPath(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&group.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerGetChildren(t *testing.T) {
@@ -387,7 +388,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&group.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerSearchChildren(t *testing.T) {
@@ -538,7 +539,7 @@ func TestControllerSearchGroups(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&group.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerTransfer(t *testing.T) {
@@ -601,7 +602,7 @@ func TestControllerTransfer(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id))+","+strconv.Itoa(int(id2)), g.TraversalIDs)
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&group.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerUpdateBasic(t *testing.T) {
@@ -662,7 +663,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 	type args struct {
 		groupID uint
-		groups  []*group.Group
+		groups  []*models.Group
 	}
 	tests := []struct {
 		name string
@@ -673,7 +674,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 			name: "noMatch",
 			args: args{
 				groupID: 10,
-				groups: []*group.Group{
+				groups: []*models.Group{
 					{
 						Model: gorm.Model{
 							ID: 1,
@@ -691,7 +692,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 			name: "match",
 			args: args{
 				groupID: 1,
-				groups: []*group.Group{
+				groups: []*models.Group{
 					{
 						Model: gorm.Model{
 							ID: 1,

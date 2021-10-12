@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"strings"
 
-	"g.hz.netease.com/horizon/pkg/dao/group"
+	"g.hz.netease.com/horizon/pkg/group/models"
 )
 
 // generateFullFromGroups generate fullPath which looks like /a/b/c, and fullName which looks like 1 / 2
-func generateFullFromGroups(groups []*group.Group) *Full {
+func generateFullFromGroups(groups []*models.Group) *Full {
 	var fullPath, fullName string
 	paths := make([]string, len(groups))
 	names := make([]string, len(groups))
@@ -27,7 +27,7 @@ func generateFullFromGroups(groups []*group.Group) *Full {
 }
 
 // convertGroupToChild format Child based on group model、fullName、fullPath and resourceType
-func convertGroupToChild(group *group.Group, full *Full) *Child {
+func convertGroupToChild(group *models.Group, full *Full) *Child {
 	return &Child{
 		ID:              group.ID,
 		Name:            group.Name,
@@ -44,8 +44,8 @@ func convertGroupToChild(group *group.Group, full *Full) *Child {
 }
 
 // convertNewGroupToGroup convert newGroup model to group model
-func convertNewGroupToGroup(newGroup *NewGroup) *group.Group {
-	return &group.Group{
+func convertNewGroupToGroup(newGroup *NewGroup) *models.Group {
+	return &models.Group{
 		Name:            newGroup.Name,
 		Path:            newGroup.Path,
 		VisibilityLevel: newGroup.VisibilityLevel,
@@ -55,8 +55,8 @@ func convertNewGroupToGroup(newGroup *NewGroup) *group.Group {
 }
 
 // convertUpdateGroupToGroup convert updateGroup model to group model
-func convertUpdateGroupToGroup(updateGroup *UpdateGroup) *group.Group {
-	return &group.Group{
+func convertUpdateGroupToGroup(updateGroup *UpdateGroup) *models.Group {
+	return &models.Group{
 		Name:            updateGroup.Name,
 		Path:            updateGroup.Path,
 		VisibilityLevel: updateGroup.VisibilityLevel,
@@ -86,7 +86,7 @@ after the function executed, we get a map:
   },
 }
 */
-func generateIDToFull(groups []*group.Group) map[uint]*Full {
+func generateIDToFull(groups []*models.Group) map[uint]*Full {
 	idToFull := make(map[uint]*Full)
 
 	for _, g := range groups {
@@ -110,8 +110,8 @@ func generateIDToFull(groups []*group.Group) map[uint]*Full {
 }
 
 // generateIDToGroup map id to group
-func generateIDToGroup(groups []*group.Group) map[uint]*group.Group {
-	idToGroup := make(map[uint]*group.Group)
+func generateIDToGroup(groups []*models.Group) map[uint]*models.Group {
+	idToGroup := make(map[uint]*models.Group)
 
 	for _, g := range groups {
 		idToGroup[g.ID] = g

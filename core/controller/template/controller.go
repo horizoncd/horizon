@@ -3,9 +3,9 @@ package template
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/dao/template"
-	"g.hz.netease.com/horizon/pkg/dao/templaterelease"
-	templatesvc "g.hz.netease.com/horizon/pkg/service/template"
+	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
+	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -23,9 +23,9 @@ type Controller interface {
 }
 
 type controller struct {
-	templateMgr        template.Manager
-	templateReleaseMgr templaterelease.Manager
-	templateSvc        templatesvc.Interface
+	templateMgr          tmanager.Manager
+	templateReleaseMgr   trmanager.Manager
+	templateSchemaGetter templateschema.Getter
 }
 
 var _ Controller = (*controller)(nil)
@@ -33,9 +33,9 @@ var _ Controller = (*controller)(nil)
 // NewController initializes a new controller
 func NewController() Controller {
 	return &controller{
-		templateMgr:        template.Mgr,
-		templateReleaseMgr: templaterelease.Mgr,
-		templateSvc:        templatesvc.Service,
+		templateMgr:          tmanager.Mgr,
+		templateReleaseMgr:   trmanager.Mgr,
+		templateSchemaGetter: templateschema.Gtr,
 	}
 }
 
@@ -65,7 +65,7 @@ func (c *controller) GetTemplateSchema(ctx context.Context, templateName, releas
 	const op = "template controller: getTemplateSchema"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	schemas, err := c.templateSvc.GetTemplateSchema(ctx, templateName, releaseName)
+	schemas, err := c.templateSchemaGetter.GetTemplateSchema(ctx, templateName, releaseName)
 	if err != nil {
 		return nil, err
 	}

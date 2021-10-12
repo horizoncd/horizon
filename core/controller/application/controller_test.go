@@ -8,12 +8,13 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/middleware/user"
-	gitreposvcmock "g.hz.netease.com/horizon/mock/pkg/service/gitrepo"
-	templatesvcmock "g.hz.netease.com/horizon/mock/pkg/service/template"
+	"g.hz.netease.com/horizon/lib/orm"
+	appgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
+	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	"g.hz.netease.com/horizon/pkg/application/manager"
+	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/dao/application"
-	"g.hz.netease.com/horizon/pkg/lib/orm"
-	templatesvc "g.hz.netease.com/horizon/pkg/service/template"
+	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -238,7 +239,7 @@ var (
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&application.Application{}); err != nil {
+	if err := db.AutoMigrate(&models.Application{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
@@ -265,15 +266,15 @@ func TestMain(m *testing.M) {
 // nolint
 func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	applicationGitRepo := gitreposvcmock.NewMockApplicationGitRepo(mockCtl)
+	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo(mockCtl)
 	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(1).Return(nil)
 	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(1).Return(errors.New("409 conflict"))
 	applicationGitRepo.EXPECT().UpdateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Return(nil).AnyTimes()
 	applicationGitRepo.EXPECT().DeleteApplication(ctx, appName, uint(1)).Return(nil).AnyTimes()
 	applicationGitRepo.EXPECT().GetApplication(ctx, appName).Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
 
-	templateSvc := templatesvcmock.NewMockInterface(mockCtl)
-	templateSvc.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0").
+	templateSchemaGetter := trschemamock.NewMockSchemaGetter(mockCtl)
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0").
 		Return(&templatesvc.Schemas{
 			Application: &templatesvc.Schema{
 				JSONSchema: applicationSchema,
@@ -284,9 +285,9 @@ func Test(t *testing.T) {
 		}, nil).AnyTimes()
 
 	c = &controller{
-		applicationGitRepo: applicationGitRepo,
-		templateSvc:        templateSvc,
-		applicationMgr:     application.Mgr,
+		applicationGitRepo:   applicationGitRepo,
+		templateSchemaGetter: templateSchemaGetter,
+		applicationMgr:       manager.Mgr,
 	}
 
 	createRequest := &CreateApplicationRequest{

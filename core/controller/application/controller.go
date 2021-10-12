@@ -7,9 +7,10 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
-	"g.hz.netease.com/horizon/pkg/dao/application"
-	"g.hz.netease.com/horizon/pkg/service/gitrepo"
-	templatesvc "g.hz.netease.com/horizon/pkg/service/template"
+	"g.hz.netease.com/horizon/pkg/application/gitrepo"
+	"g.hz.netease.com/horizon/pkg/application/manager"
+	"g.hz.netease.com/horizon/pkg/application/models"
+	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -29,18 +30,18 @@ type Controller interface {
 }
 
 type controller struct {
-	applicationGitRepo gitrepo.ApplicationGitRepo
-	templateSvc        templatesvc.Interface
-	applicationMgr     application.Manager
+	applicationGitRepo   gitrepo.ApplicationGitRepo
+	templateSchemaGetter templateschema.Getter
+	applicationMgr       manager.Manager
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(applicationGitRepo gitrepo.ApplicationGitRepo) Controller {
 	return &controller{
-		applicationGitRepo: applicationGitRepo,
-		templateSvc:        templatesvc.Service,
-		applicationMgr:     application.Mgr,
+		applicationGitRepo:   applicationGitRepo,
+		templateSchemaGetter: templateschema.Gtr,
+		applicationMgr:       manager.Mgr,
 	}
 }
 
@@ -175,7 +176,7 @@ func (c *controller) validate(ctx context.Context, b Base) error {
 // validateTemplateInput validate templateInput is valid for template schema
 func (c *controller) validateTemplateInput(ctx context.Context,
 	template, release string, templateInput *TemplateInput) error {
-	schema, err := c.templateSvc.GetTemplateSchema(ctx, template, release)
+	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release)
 	if err != nil {
 		return err
 	}
@@ -187,8 +188,8 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 
 // validatePriority validate priority
 func (c *controller) validatePriority(priority string) error {
-	switch application.Priority(priority) {
-	case application.P0, application.P1, application.P2, application.P3:
+	switch models.Priority(priority) {
+	case models.P0, models.P1, models.P2, models.P3:
 	default:
 		return fmt.Errorf("invalid priority")
 	}

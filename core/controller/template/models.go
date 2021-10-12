@@ -3,9 +3,9 @@ package template
 import (
 	"sort"
 
-	"g.hz.netease.com/horizon/pkg/dao/template"
-	trmodels "g.hz.netease.com/horizon/pkg/dao/templaterelease"
-	templatesvc "g.hz.netease.com/horizon/pkg/service/template"
+	"g.hz.netease.com/horizon/pkg/template/models"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
+	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 )
 
 type Template struct {
@@ -15,7 +15,7 @@ type Template struct {
 
 type Templates []Template
 
-func toTemplates(mts []template.Template) Templates {
+func toTemplates(mts []models.Template) Templates {
 	templates := make(Templates, 0)
 	for _, mt := range mts {
 		templates = append(templates, Template{
