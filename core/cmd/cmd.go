@@ -86,7 +86,7 @@ func Run(flags *Flags) {
 
 	var (
 		// init API
-		groupCt        = group.NewAPI()
+		groupAPI       = group.NewAPI()
 		templateAPI    = template.NewAPI()
 		userAPI        = user.NewAPI()
 		applicationAPI = application.NewAPI(applicationCtl)
@@ -122,7 +122,7 @@ func Run(flags *Flags) {
 	// register routes
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
-	group.RegisterRoutes(r, groupCt)
+	group.RegisterRoutes(r, groupAPI)
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
 	application.RegisterRoutes(r, applicationAPI)
