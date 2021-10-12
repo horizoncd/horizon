@@ -15,7 +15,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var routes = route.Routes{
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/groups/:%v/applications/%v", _groupIDParam, _applicationParam),
+			Pattern:     fmt.Sprintf("/groups/:%v/applications", _groupIDParam),
 			HandlerFunc: api.Create,
 		},
 		{
