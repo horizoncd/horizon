@@ -233,7 +233,7 @@ func validateApplicationName(name string) error {
 		return fmt.Errorf("name cannot be empty")
 	}
 
-	if len(name) == 0 || len(name) > 40 {
+	if len(name) > 40 {
 		return fmt.Errorf("name must not exceed 40 characters")
 	}
 
