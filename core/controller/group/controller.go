@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -29,8 +30,11 @@ const (
 	ErrCodeNotFound = errors.ErrorCode("GroupNotFound")
 	// ErrGroupHasChildren a kind of error code, returned when deleting a group which still has some children
 	ErrGroupHasChildren = errors.ErrorCode("GroupHasChildren")
-	// ChildType used to indicate the 'Child' is a group
-	ChildType = "group"
+
+	// ChildTypeGroup used to indicate the 'Child' is a group
+	ChildTypeGroup = "group"
+	// ChildTypeApplication ...
+	ChildTypeApplication = "application"
 )
 
 type Controller interface {
@@ -57,13 +61,15 @@ type Controller interface {
 }
 
 type controller struct {
-	groupManager manager.Manager
+	groupManager       manager.Manager
+	applicationManager appmanager.Manager
 }
 
 // NewController initializes a new group controller
 func NewController() Controller {
 	return &controller{
-		groupManager: manager.Mgr,
+		groupManager:       manager.Mgr,
+		applicationManager: appmanager.Mgr,
 	}
 }
 
@@ -196,6 +202,9 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, error) {
 	const op = "group *controller: get group by path"
 
+	var errNotMatch = errors.E(op, http.StatusNotFound, ErrCodeNotFound,
+		fmt.Sprintf("no resource matching the path: %s", path))
+
 	// path: /a/b => {a, b}
 	paths := strings.Split(path[1:], "/")
 	groups, err := c.groupManager.GetByPaths(ctx, paths)
@@ -209,7 +218,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, er
 	// get mapping between id and full
 	idToFull := generateIDToFull(groups)
 
-	// match group
+	// 1. match group
 	for k, v := range idToFull {
 		// path pointing to a group
 		if v.FullPath == path {
@@ -219,11 +228,30 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, er
 		}
 	}
 
-	// todo match application
+	// 2. match application
+	if len(paths) < 2 {
+		return nil, errNotMatch
+	}
+	app, err := c.applicationManager.GetByName(ctx, paths[len(paths)-1])
+	if err != nil {
+		return nil, err
+	}
+	if app != nil {
+		appParentFull, ok := idToFull[app.GroupID]
+		if ok && fmt.Sprintf("%v/%v", appParentFull.FullPath, app.Name) == path {
+			return convertApplicationToChild(app, &Full{
+				FullName: fmt.Sprintf("%v / %v", appParentFull.FullName, app.Name),
+				FullPath: fmt.Sprintf("%v/%v", appParentFull.FullPath, app.Name),
+			})
+		}
+	}
 
-	// todo match applicationInstance
+	// 3. todo match cluster
+	if len(paths) < 3 {
+		return nil, errNotMatch
+	}
 
-	return nil, errors.E(op, http.StatusNotFound, ErrCodeNotFound, fmt.Sprintf("no group matching the path: %s", path))
+	return nil, errNotMatch
 }
 
 // GetByID get a group by the id
@@ -282,9 +310,6 @@ func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*m
 
 // generateChildrenWithLevelStruct generate subgroups with level struct
 func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Child {
-	// sort groups by the size of the traversalIDs array after split by ','
-	sort.Sort(models.Groups(groups))
-
 	// get mapping between id and full
 	idToFull := generateIDToFull(groups)
 

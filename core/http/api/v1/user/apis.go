@@ -1,10 +1,12 @@
 package user
 
 import (
+	"net/http"
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/user"
+	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
@@ -63,5 +65,19 @@ func (a *API) Search(c *gin.Context) {
 	response.SuccessWithData(c, response.DataWithTotal{
 		Total: int64(count),
 		Items: res,
+	})
+}
+
+func (a *API) Status(c *gin.Context) {
+	u, err := usermiddle.FromContext(c)
+	if err != nil {
+		response.Abort(c, http.StatusForbidden, common.Forbidden, "user not logged in")
+	}
+	response.SuccessWithData(c, struct {
+		Name string `json:"name"`
+		ID   int    `json:"id"`
+	}{
+		Name: u.GetFullName(),
+		ID:   u.GetID(),
 	})
 }

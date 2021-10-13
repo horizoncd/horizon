@@ -45,6 +45,8 @@ type DAO interface {
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
 	// Transfer move a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
+	// GetByNameOrPathUnderParent get by name or path under a specified parent
+	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -310,4 +312,17 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel, group.ID)
 
 	return result.Error
+}
+
+func (d *dao) GetByNameOrPathUnderParent(ctx context.Context,
+	name, path string, parentID uint) ([]*models.Group, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []*models.Group
+	result := db.Raw(common.GroupQueryByNameOrPathUnderParent, parentID, name, path).Scan(&groups)
+
+	return groups, result.Error
 }
