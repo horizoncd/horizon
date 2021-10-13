@@ -6,7 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/auth"
 	"g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/errors"
 	"github.com/stretchr/testify/assert"
 )
 
