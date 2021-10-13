@@ -252,7 +252,7 @@ func (s *service) ListMember(ctx context.Context, resourceType string, resourceI
 	case models.TypeApplicationStr:
 		allMembers, err = s.listApplicationMembers(ctx, resourceID)
 	case models.TypeApplicationInstanceStr:
-		allMembers, err = s.listApplicationMembers(ctx, resourceID)
+		allMembers, err = s.listApplicationInstanceMembers(ctx, resourceID)
 	default:
 		err = errors.New("unsupported resourceType")
 	}

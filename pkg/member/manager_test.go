@@ -20,7 +20,6 @@ var (
 )
 
 func MemberValueEqual(member1, member2 *models.Member) bool {
-
 	if member2.ResourceType == member1.ResourceType &&
 		member1.ResourceID == member2.ResourceID &&
 		member1.Role == member2.Role &&

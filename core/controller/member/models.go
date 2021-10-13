@@ -22,9 +22,8 @@ type PostMember struct {
 	MemberType models.MemberType
 
 	// Role owner/maintainer/develop/...
-	Role       string
+	Role string
 }
-
 
 type Member struct {
 	// ID the uniq id of the member entry
@@ -34,7 +33,7 @@ type Member struct {
 	MemberInfo string
 
 	// MemberName
-	MemberName  string
+	MemberName string
 
 	// MemberPath the path of the member
 	MemberPath string
@@ -52,25 +51,23 @@ type Member struct {
 	GrantBy string
 
 	// GrantTime
-	GrantTime   time.Time
+	GrantTime time.Time
 }
 
 func ConvertMember(member *models.Member, sourceInfo string) Member {
-
 	//TODO(tom): change ID to name ,and add the path
 	return Member{
-		ID: member.ID,
+		ID:         member.ID,
 		MemberType: member.MemberType,
 		MemberInfo: member.MemberInfo,
 		SourceInfo: sourceInfo,
-		Role: member.Role,
-		GrantBy: member.GrantBy,
-		GrantTime: member.UpdatedAt,
+		Role:       member.Role,
+		GrantBy:    member.GrantBy,
+		GrantTime:  member.UpdatedAt,
 	}
 }
 
-
-func ConvertResourceType( resourceTypeStr string) (models.ResourceType, bool) {
+func ConvertResourceType(resourceTypeStr string) (models.ResourceType, bool) {
 
 	var convertOk bool = true
 	var resourceType models.ResourceType
@@ -104,4 +101,3 @@ func ConvertPostMemberToMember(postMember PostMember, currentUser userauth.User)
 		GrantBy:      currentUser.GetName(),
 	}, nil
 }
-
