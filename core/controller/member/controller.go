@@ -25,15 +25,15 @@ var (
 )
 
 type Service interface {
-	// GetUserMember get the member of the current user of the resource(group\application\cluster)
+	// GetUserMember get the member of the current user
 	GetUserMember(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error)
 	// CreateMember post a new member
 	CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error)
 	// UpdateMember update exist member entry
-	// user can only attach a role not higher than self
+	// user can only update a role not higher than self
 	UpdateMember(ctx context.Context, resourceType string, resourceID uint,
 		memberInfo string, memberType models.MemberType, role string) (*models.Member, error)
-	// RemoveMember Remove the member (self leave/ remove a member)
+	// RemoveMember Remove the member (self leave/remove other member)
 	RemoveMember(ctx context.Context, resourceType string, resourceID uint, memberInfo string,
 		memberType models.MemberType) error
 	// ListMember list all the member of the resource
