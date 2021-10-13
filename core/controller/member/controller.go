@@ -68,7 +68,6 @@ func (s *service) GetGroupMember(ctx context.Context, resourceType string,
 
 func (s *service) getMember(ctx context.Context, resourceType string, resourceID uint,
 	memberInfo string, memberType models.MemberType) (*models.Member, error) {
-
 	members, err := s.ListMember(ctx, resourceType, resourceID)
 	if err != nil {
 		return nil, err

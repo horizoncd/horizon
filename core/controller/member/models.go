@@ -68,7 +68,6 @@ func ConvertMember(member *models.Member, sourceInfo string) Member {
 }
 
 func ConvertResourceType(resourceTypeStr string) (models.ResourceType, bool) {
-
 	var convertOk bool = true
 	var resourceType models.ResourceType
 

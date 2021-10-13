@@ -334,7 +334,6 @@ func TestListApplicationInstanceMember(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-
 	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Member{}); err != nil {
 		panic(err)
