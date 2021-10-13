@@ -31,7 +31,7 @@ func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
 		postMember.Role == member.Role
 }
 
-func TestCreateGroupMember(t *testing.T) {
+func TestCreateAndUpdateGroupMember(t *testing.T) {
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -48,6 +48,7 @@ func TestCreateGroupMember(t *testing.T) {
 	//    group2 member: tom(2), jerry(2)
 	var group2ID uint = 4
 	var group1ID uint = 3
+	var traversalIDs string = "3,4"
 	var grandUser userauth.User = &userauth.DefaultInfo{
 		Name:     "tom",
 		FullName: "tom",
@@ -122,7 +123,7 @@ func TestCreateGroupMember(t *testing.T) {
 			VisibilityLevel: "",
 			Description:     "",
 			ParentID:        0,
-			TraversalIDs:    "3,4",
+			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(2)
 
@@ -131,7 +132,7 @@ func TestCreateGroupMember(t *testing.T) {
 		ResourceID:   group2ID,
 		MemberInfo:   "cat",
 		MemberType:   models.MemberUser,
-		Role:         "maintainer",
+		Role:         "develop",
 	}
 	member, err = s.CreateMember(ctx, postMemberCat2)
 	assert.Nil(t, err)
@@ -147,7 +148,7 @@ func TestCreateGroupMember(t *testing.T) {
 			VisibilityLevel: "",
 			Description:     "",
 			ParentID:        0,
-			TraversalIDs:    "3,4",
+			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
 	member, err = s.CreateMember(ctx, postMemberCat2)
@@ -163,7 +164,7 @@ func TestCreateGroupMember(t *testing.T) {
 			VisibilityLevel: "",
 			Description:     "",
 			ParentID:        0,
-			TraversalIDs:    "3,4",
+			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
 	member, err = s.UpdateMember(ctx, "group", 3, "tom", models.MemberUser, "owner")
@@ -185,6 +186,38 @@ func TestCreateGroupMember(t *testing.T) {
 	member, err = s.UpdateMember(ctx, "group", group2ID, "tom", models.MemberUser, "maintainer")
 	assert.Nil(t, err)
 	assert.Equal(t, member.Role, "maintainer")
+
+	// remove member not exist
+	groupManager.EXPECT().GetByID(gomock.Any(),
+		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
+		return &groupModels.Group{
+			Model:           gorm.Model{},
+			Name:            "",
+			Path:            "",
+			VisibilityLevel: "",
+			Description:     "",
+			ParentID:        0,
+			TraversalIDs:    "3,4",
+		}, nil
+	}).Times(1)
+	err = s.RemoveMember(ctx, "group", group2ID, "Jim", models.MemberUser)
+	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
+
+	// remove member ok
+	groupManager.EXPECT().GetByID(gomock.Any(),
+		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
+		return &groupModels.Group{
+			Model:           gorm.Model{},
+			Name:            "",
+			Path:            "",
+			VisibilityLevel: "",
+			Description:     "",
+			ParentID:        0,
+			TraversalIDs:    "3,4",
+		}, nil
+	}).Times(2)
+	err = s.RemoveMember(ctx, "group", group2ID, "cat", models.MemberUser)
+	assert.Nil(t, err)
 }
 
 func TestListGroupMember(t *testing.T) {
@@ -205,6 +238,7 @@ func TestListGroupMember(t *testing.T) {
 	//    ret: tom(2), jerry(2), cat(1)
 	var group2ID uint = 2
 	var group1ID uint = 1
+	var traversalIDs string = "1,2"
 	var grandUser userauth.User = &userauth.DefaultInfo{
 		Name:     "tom",
 		FullName: "tom",
@@ -279,7 +313,7 @@ func TestListGroupMember(t *testing.T) {
 			VisibilityLevel: "",
 			Description:     "",
 			ParentID:        0,
-			TraversalIDs:    "1,2",
+			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
 	members, err := s.ListMember(ctx, models.TypeGroupStr, group2ID)
@@ -306,6 +340,5 @@ func TestMain(m *testing.M) {
 	}
 
 	ctx = orm.NewContext(context.TODO(), db)
-
 	os.Exit(m.Run())
 }
