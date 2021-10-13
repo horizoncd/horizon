@@ -109,248 +109,240 @@ paths:
                   {
                       "data":{
                           "application":{
-                              "jsonSchema": {
-                                "type": "object",
-                                "properties": {
-                                  "app": {
-                                    "title": "负载配置",
-                                    "type": "object",
-                                    "properties": {
-                                      "resource":{
-                                        "type": "string",
-                                        "title": "规格",
-                                        "oneOf": [
-                                          {
-                                            "enum": [
-                                              "x-small"
-                                            ],
-                                            "title": "x-small(1C2G)"
-                                          },{
-                                            "enum": [
-                                              "small"
-                                            ],
-                                            "title": "small(2C4G)"
-                                          },{
-                                            "enum": [
-                                              "middle"
-                                            ],
-                                            "title": "middle(4C8G)"
-                                          },{
-                                            "enum": [
-                                              "large"
-                                            ],
-                                            "title": "large(8C16G)"
-                                          },{
-                                            "enum": [
-                                              "x-large"
-                                            ],
-                                            "title": "x-large(16C32G)"
-                                          }
-                                        ]
-                                      },
-                                      "params": {
-                                        "title": "参数",
-                                        "type": "object",
-                                        "properties": {
-                                          "mainClassName": {
-                                            "type": "string"
-                                          },
-                                          "xmx": {
-                                            "type": "string",
-                                            "default": "512",
-                                            "pattern": "^\\d*$"
-                                          },
-                                          "xms": {
-                                            "type": "string",
-                                            "default": "512",
-                                            "pattern": "^\\d*$"
-                                          },
-                                          "xdebugAddress": {
-                                            "type": "string",
-                                            "pattern": "^\\d*$"
-                                          },
-                                          "jvmExtra": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": ["mainClassName"]
-                                      },
-                                      "health": {
-                                        "title": "健康检查",
-                                        "type": "object",
-                                        "properties": {
-                                          "port": {
-                                            "type": "integer",
-                                            "minimum": 1024,
-                                            "maximum": 65535
-                                          },
-                                          "lifecycle":{
-                                            "title": "优雅启停",
-                                            "type": "object",
-                                            "properties": {
-                                              "online":{
-                                                "title": "上线",
-                                                "description": "上线接口会在应用启动之后进行调用，如果调用失败，则应用启动失败",
-                                                "$ref": "#/$defs/lifecycle"
+                              "jsonSchema":{
+                                  "properties":{
+                                      "app":{
+                                          "properties":{
+                                              "health":{
+                                                  "dependencies":{
+                                                      "check":[
+                                                          "port"
+                                                      ],
+                                                      "offline":[
+                                                          "port"
+                                                      ],
+                                                      "online":[
+                                                          "port"
+                                                      ],
+                                                      "status":[
+                                                          "port"
+                                                      ]
+                                                  },
+                                                  "properties":{
+                                                      "check":{
+                                                          "description":"存活状态会在应用运行期间检测应用健康情况，检测失败时会对应用进行重启",
+                                                          "pattern":"^/.*$",
+                                                          "title":"存活状态",
+                                                          "type":"string"
+                                                      },
+                                                      "offline":{
+                                                          "description":"下线接口会在应用停止之前进行调用，如果调用失败，则忽略",
+                                                          "pattern":"^/.*$",
+                                                          "title":"下线",
+                                                          "type":"string"
+                                                      },
+                                                      "online":{
+                                                          "description":"上线接口会在应用启动之后进行调用，如果调用失败，则应用启动失败",
+                                                          "pattern":"^/.*$",
+                                                          "title":"上线",
+                                                          "type":"string"
+                                                      },
+                                                      "port":{
+                                                          "maximum":65535,
+                                                          "minimum":1024,
+                                                          "type":"integer"
+                                                      },
+                                                      "status":{
+                                                          "description":"就绪状态会在应用运行期间检测应用是否处于上线状态，检测失败时显示下线状态",
+                                                          "pattern":"^/.*$",
+                                                          "title":"就绪状态",
+                                                          "type":"string"
+                                                      }
+                                                  },
+                                                  "title":"健康检查",
+                                                  "type":"object"
                                               },
-                                              "offline":{
-                                                "title": "下线",
-                                                "description": "下线接口会在应用停止之前进行调用，如果调用失败，则忽略",
-                                                "$ref": "#/$defs/lifecycle"
-                                              }
-                                            }
-                                          },
-                                          "probe":{
-                                            "title": "状态检查",
-                                            "type": "object",
-                                            "properties": {
-                                              "check":{
-                                                "title": "存活状态",
-                                                "description": "存活状态会在应用运行期间检测应用健康情况，检测失败时会对应用进行重启",
-                                                "$ref": "#/$defs/probe"
+                                              "params":{
+                                                  "properties":{
+                                                      "jvmExtra":{
+                                                          "type":"string"
+                                                      },
+                                                      "mainClassName":{
+                                                          "type":"string"
+                                                      },
+                                                      "xdebugAddress":{
+                                                          "pattern":"^\\d*$",
+                                                          "type":"string"
+                                                      },
+                                                      "xms":{
+                                                          "default":"512",
+                                                          "pattern":"^\\d*$",
+                                                          "type":"string"
+                                                      },
+                                                      "xmx":{
+                                                          "default":"512",
+                                                          "pattern":"^\\d*$",
+                                                          "type":"string"
+                                                      }
+                                                  },
+                                                  "required":[
+                                                      "mainClassName"
+                                                  ],
+                                                  "title":"参数",
+                                                  "type":"object"
                                               },
-                                              "status":{
-                                                "title": "就绪状态",
-                                                "description": "就绪状态会在应用运行期间检测应用是否处于上线状态，检测失败时显示下线状态",
-                                                "$ref": "#/$defs/probe"
+                                              "spec":{
+                                                  "properties":{
+                                                      "replicas":{
+                                                          "title":"副本数",
+                                                          "type":"integer"
+                                                      },
+                                                      "resource":{
+                                                          "oneOf":[
+                                                              {
+                                                                  "enum":[
+                                                                      "x-small"
+                                                                  ],
+                                                                  "title":"x-small(1C2G)"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "small"
+                                                                  ],
+                                                                  "title":"small(2C4G)"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "middle"
+                                                                  ],
+                                                                  "title":"middle(4C8G)"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "large"
+                                                                  ],
+                                                                  "title":"large(8C16G)"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "x-large"
+                                                                  ],
+                                                                  "title":"x-large(16C32G)"
+                                                              }
+                                                          ],
+                                                          "title":"规格",
+                                                          "type":"string"
+                                                      }
+                                                  },
+                                                  "title":"规格",
+                                                  "type":"object"
+                                              },
+                                              "strategy":{
+                                                  "properties":{
+                                                      "pauseType":{
+                                                          "oneOf":[
+                                                              {
+                                                                  "enum":[
+                                                                      "first"
+                                                                  ],
+                                                                  "title":"第一批暂停"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "all"
+                                                                  ],
+                                                                  "title":"全部暂停"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "none"
+                                                                  ],
+                                                                  "title":"全不暂停"
+                                                              }
+                                                          ],
+                                                          "title":"暂停策略",
+                                                          "type":"string"
+                                                      },
+                                                      "stepsTotal":{
+                                                          "enum":[
+                                                              1,
+                                                              2,
+                                                              3,
+                                                              4,
+                                                              5
+                                                          ],
+                                                          "title":"发布批次（多批次情况下，第一批默认为1个实例）",
+                                                          "type":"integer"
+                                                      }
+                                                  },
+                                                  "title":"发布策略",
+                                                  "type":"object"
                                               }
-                                            }
-                                          }
-                                        },
-                                        "dependencies": {
-                                          "lifecycle": ["port"],
-                                          "probe": ["port"]
-                                        }
+                                          },
+                                          "title":"",
+                                          "type":"object"
                                       }
-                                    }
-                                  }
-                                },
-
-                                "$defs": {
-                                  "lifecycle": {
-                                    "type": "object",
-                                    "properties": {
-                                      "url": {
-                                        "title": "接口",
-                                        "description": "接口路径",
-                                        "type": "string"
-                                      },
-                                      "timeoutSeconds": {
-                                        "title": "超时时间",
-                                        "description": "请求接口的超时时间(单位为s)",
-                                        "type": "integer"
-                                      },
-                                      "periodSeconds": {
-                                        "title": "检测周期",
-                                        "description": "连续两次检测之间的时间间隔(单位为s)",
-                                        "type": "integer"
-                                      },
-                                      "retry": {
-                                        "title": "重试次数",
-                                        "description": "检测失败后重试的次数",
-                                        "type": "integer"
-                                      }
-                                    }
                                   },
-                                  "probe": {
-                                    "type": "object",
-                                    "properties": {
-                                      "url": {
-                                        "title": "接口",
-                                        "description": "接口路径",
-                                        "type": "string"
-                                      },
-                                      "initialDelaySeconds": {
-                                        "title": "延迟启动",
-                                        "description": "应用启动延迟等待该时间再进行检测",
-                                        "type": "integer"
-                                      },
-                                      "timeoutSeconds": {
-                                        "title": "超时时间",
-                                        "description": "请求接口的超时时间(单位为s)",
-                                        "type": "integer"
-                                      },
-                                      "periodSeconds": {
-                                        "title": "重试次数",
-                                        "description": "连续两次检测之间的时间间隔(单位为s)",
-                                        "type": "integer"
-                                      },
-                                      "failureThreshold": {
-                                        "title": "失败阈值",
-                                        "description": "连续检测失败超过该次数，才认为最终检测失败",
-                                        "type": "integer"
-                                      }
-                                    }
-                                  }
-                                }
+                                  "type":"object"
                               },
                               "uiSchema":{
-                                 "app": {
-                                   "ui:order":[
-                                     "resource", "params", "health"
-                                   ],
-                                   "params": {
-                                     "ui:order":[
-                                       "mainClassName", "*", "xdebugAddress"
-                                     ]
-                                   },
-                                   "health": {
-                                     "ui:order":[
-                                       "port", "lifecycle", "probe"
-                                     ],
-                                     "lifecycle":{
-                                       "ui:order":[
-                                         "online", "offline"
-                                       ],
-                                       "online":{
-                                         "ui:order":[
-                                           "url", "*"
-                                         ]
-                                       },
-                                       "offline":{
-                                         "ui:order":[
-                                           "url", "*"
-                                         ]
-                                       }
-                                     },
-                                     "probe":{
-                                       "ui:order":[
-                                         "check", "status"
-                                       ],
-                                       "check":{
-                                         "ui:order":[
-                                           "url", "*"
-                                         ]
-                                       },
-                                       "status":{
-                                         "ui:order":[
-                                           "url", "*"
-                                         ]
-                                       }
-                                     }
-                                   }
-                                 }
-                               }
-
+                                  "app":{
+                                      "health":{
+                                          "check":{
+                                              "ui:placeholder":"如: /api/test"
+                                          },
+                                          "offline":{
+                                              "ui:placeholder":"如: /health/offline"
+                                          },
+                                          "online":{
+                                              "ui:placeholder":"如: /health/online"
+                                          },
+                                          "status":{
+                                              "ui:placeholder":"如: /health/status"
+                                          },
+                                          "ui:order":[
+                                              "port",
+                                              "check",
+                                              "status",
+                                              "online",
+                                              "offline"
+                                          ]
+                                      },
+                                      "params":{
+                                          "ui:order":[
+                                              "mainClassName",
+                                              "*",
+                                              "xdebugAddress"
+                                          ]
+                                      },
+                                      "ui:order":[
+                                          "spec",
+                                          "strategy",
+                                          "params",
+                                          "health"
+                                      ]
+                                  }
+                              }
                           },
                           "pipeline":{
                               "jsonSchema":{
-                                  "type":"object",
-                                  "title":"构建",
                                   "properties":{
                                       "buildxml":{
+                                          "default":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>",
                                           "title":"build.xml",
                                           "type":"string"
                                       }
-                                  }
+                                  },
+                                  "title":"Ant",
+                                  "type":"object"
                               },
                               "uiSchema":{
-                                 "buildxml":{
-                                   "ui:widget": "textarea",
-                                   "ui:options": {
-                                     "rows": 18
-                                   }
-                                 }
+                                  "buildxml":{
+                                      "ui:options":{
+                                          "rows":18
+                                      },
+                                      "ui:widget":"textarea"
+                                  }
                               }
                           }
                       }
