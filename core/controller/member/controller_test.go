@@ -18,7 +18,6 @@ import (
 )
 
 var (
-	db  *gorm.DB
 	ctx context.Context
 	s   Service
 )
@@ -31,6 +30,7 @@ func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
 		postMember.Role == member.Role
 }
 
+// nolint
 func TestCreateAndUpdateGroupMember(t *testing.T) {
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)
@@ -220,6 +220,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// nolint
 func TestListGroupMember(t *testing.T) {
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)

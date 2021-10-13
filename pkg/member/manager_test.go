@@ -32,6 +32,7 @@ func MemberValueEqual(member1, member2 *models.Member) bool {
 	return false
 }
 
+// nolint
 func TestBasic(t *testing.T) {
 	member1 := &models.Member{
 		ResourceType: "group",
@@ -80,8 +81,6 @@ func TestBasic(t *testing.T) {
 	retMember4, err := Mgr.GetByUserName(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
 	assert.Nil(t, err)
 	assert.Nil(t, retMember4)
-
-	return
 }
 
 func TestList(t *testing.T) {

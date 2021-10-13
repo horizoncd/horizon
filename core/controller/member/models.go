@@ -1,7 +1,6 @@
 package member
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -92,9 +91,9 @@ func ConvertResourceType( resourceTypeStr string) (models.ResourceType, bool) {
 
 func ConvertPostMemberToMember(postMember PostMember, currentUser userauth.User) (*models.Member, error) {
 	resourceType, err := ConvertResourceType(postMember.ResourceType)
-	if err != true {
-		return nil, errors.New(fmt.Sprintf("cannot convert ResourceType{%v}",
-			postMember.ResourceType))
+	if !err {
+		return nil, fmt.Errorf("cannot convert ResourceType{%v}",
+			postMember.ResourceType)
 	}
 	return &models.Member{
 		ResourceType: resourceType,

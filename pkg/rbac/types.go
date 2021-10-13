@@ -69,9 +69,9 @@ func (v *authorizingVisitor) visit(source fmt.Stringer, rule *PolicyRule, err er
 	return true
 }
 
-// RBACAuthorizer use the basic rbac rules to check if the user
+// Authorizer use the basic rbac rules to check if the user
 // have the permission
-type RBACAuthorizer struct {
+type Authorizer struct {
 	authorizationRuleResolver RequestToRuleResolver
 }
 
@@ -82,9 +82,8 @@ type RequestToRuleResolver interface {
 	VisitRulesFor(user user.User, visitor VisitorFunc)
 }
 
-func (r *RBACAuthorizer) Authorize(ctx context.Context, attributes auth.Attributes) (auth.Decision,
+func (r *Authorizer) Authorize(ctx context.Context, attributes auth.Attributes) (auth.Decision,
 	string, error) {
-
 	ruleCheckingVisitor := &authorizingVisitor{requestAttributes: attributes}
 
 	r.authorizationRuleResolver.VisitRulesFor(attributes.GetUser(), ruleCheckingVisitor.visit)

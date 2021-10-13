@@ -271,12 +271,10 @@ func (r *TestAuthorizationRuleResolver) VisitRulesFor(user user.User, visitor Vi
 	}
 	var err errors.Error
 	visitor(nil, &policy, &err)
-	return
 }
 
 func TestRuleAllowFrameWork(t *testing.T) {
-
-	authorizer := RBACAuthorizer{
+	authorizer := Authorizer{
 		authorizationRuleResolver: &TestAuthorizationRuleResolver{},
 	}
 

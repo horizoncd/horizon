@@ -6,19 +6,11 @@ import (
 
 	user2 "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"gorm.io/gorm"
 )
-
-// _defaultQuery default query params
-var _defaultQuery = &q.Query{
-	// PageNumber start with 1
-	PageNumber: 1,
-	PageSize:   20,
-}
 
 type DAO interface {
 	Create(ctx context.Context, member *models.Member) (*models.Member, error)
@@ -113,7 +105,6 @@ func (d *dao) Delete(ctx context.Context, memberID uint) error {
 
 func (d *dao) ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 	resourceID uint) ([]models.Member, error) {
-
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err

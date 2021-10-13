@@ -52,10 +52,6 @@ func NewService() Service {
 	}
 }
 
-func grantRoleCheck(currentUserRole, grantRole string) bool {
-	return true
-}
-
 func (s *service) GetUserMember(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error) {
 	var currentUser userauth.User
 	currentUser, err := user.FromContext(ctx)
@@ -244,8 +240,6 @@ func (s *service) UpdateMember(ctx context.Context, resourceType string, resourc
 	}
 
 	return s.memberManager.UpdateByID(ctx, memberItem.ResourceID, role)
-
-	return nil, nil
 }
 
 func (s *service) ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error) {
