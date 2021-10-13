@@ -24,7 +24,7 @@ type DAO interface {
 	// CheckPathUnique check whether the path is unique
 	CheckPathUnique(ctx context.Context, group *models.Group) error
 	// Create a group
-	Create(ctx context.Context, group *models.Group) (uint, error)
+	Create(ctx context.Context, group *models.Group) (*models.Group, error)
 	// Delete a group by id
 	Delete(ctx context.Context, id uint) (int64, error)
 	// GetByID get a group by id
@@ -43,6 +43,8 @@ type DAO interface {
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	// List query groups with paging
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
+	// ListChildren children of a group
+	ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error)
 	// Transfer move a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
@@ -55,6 +57,25 @@ func NewDAO() DAO {
 }
 
 type dao struct{}
+
+func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var gas []*models.GroupOrApplication
+	var count int64
+
+	result := db.Raw(common.GroupQueryGroupChildren, parentID, parentID, pageSize, (pageNumber-1)*pageSize).Scan(&gas)
+	if result.Error != nil {
+		return nil, 0, err
+	}
+
+	result = db.Raw(common.GroupQueryGroupChildrenCount, parentID, parentID).Scan(&count)
+
+	return gas, count, result.Error
+}
 
 func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 	db, err := orm.FromContext(ctx)
@@ -190,10 +211,10 @@ func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 	return nil
 }
 
-func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
+func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	var pGroup *models.Group
@@ -201,19 +222,19 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
 	if group.ParentID > 0 {
 		pGroup, err = d.GetByID(ctx, group.ParentID)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 	}
 
 	// check if there's a record with the same parentID and name
 	err = d.CheckNameUnique(ctx, group)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	// check if there's a record with the same parentID and path
 	err = d.CheckPathUnique(ctx, group)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
@@ -242,10 +263,10 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
 	})
 
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return group.ID, nil
+	return group, nil
 }
 
 // Delete can only delete a group that doesn't have any children

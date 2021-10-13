@@ -330,7 +330,108 @@ func TestControllerGetByPath(t *testing.T) {
 }
 
 func TestControllerGetChildren(t *testing.T) {
-	// todo including application
+	newRootGroup := &NewGroup{
+		Name:            "1",
+		Path:            "a",
+		VisibilityLevel: "private",
+	}
+	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+	group1, _ := Ctl.GetByID(ctx, id)
+
+	newGroup := &NewGroup{
+		Name:            "2",
+		Path:            "b",
+		VisibilityLevel: "private",
+		ParentID:        id,
+	}
+	id2, _ := Ctl.CreateGroup(ctx, newGroup)
+	group2, _ := Ctl.GetByID(ctx, id2)
+
+	applicationDAO := applicationdao.NewDAO()
+	app, err := applicationDAO.Create(ctx, &appmodels.Application{
+		GroupID:     id,
+		Name:        "app",
+		Description: "this is a description",
+		Priority:    "P0",
+	})
+	assert.Nil(t, err)
+
+	type args struct {
+		ctx        context.Context
+		id         uint
+		pageNumber int
+		pageSize   int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Child
+		want1   int64
+		wantErr bool
+	}{
+		{
+			name: "getRootSubGroups",
+			args: args{
+				ctx: ctx,
+			},
+			want: []*Child{
+				{
+					ID:              id,
+					Name:            "1",
+					Path:            "a",
+					VisibilityLevel: "private",
+					ParentID:        0,
+					TraversalIDs:    strconv.Itoa(int(id)),
+					FullPath:        "/a",
+					FullName:        "1",
+					Type:            ChildTypeGroup,
+					ChildrenCount:   1,
+					UpdatedAt:       group1.UpdatedAt,
+				},
+			},
+			want1: 1,
+		},
+		{
+			name: "getSubGroups",
+			args: args{
+				ctx: ctx,
+				id:  id,
+			},
+			want: []*Child{
+				{
+					ID:              id2,
+					Name:            "2",
+					Path:            "b",
+					VisibilityLevel: "private",
+					ParentID:        id,
+					TraversalIDs:    strconv.Itoa(int(id)) + "," + strconv.Itoa(int(id2)),
+					FullPath:        "/a/b",
+					FullName:        "1 / 2",
+					Type:            ChildTypeGroup,
+					ChildrenCount:   0,
+					UpdatedAt:       group2.UpdatedAt,
+				},
+			},
+			want1: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := Ctl.GetSubGroups(tt.args.ctx, tt.args.id, tt.args.pageNumber, tt.args.pageSize)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetSubGroups() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetSubGroups() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("GetSubGroups() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerGetSubGroups(t *testing.T) {

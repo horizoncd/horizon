@@ -45,6 +45,20 @@ func convertGroupToChild(group *models.Group, full *Full) *Child {
 	}
 }
 
+// convertGroupOrApplicationToChild format Child based on groupOrApplication
+func convertGroupOrApplicationToChild(groupOrApplication *models.GroupOrApplication, full *Full) *Child {
+	return &Child{
+		ID:          groupOrApplication.ID,
+		Name:        groupOrApplication.Name,
+		Path:        groupOrApplication.Path,
+		Description: groupOrApplication.Description,
+		UpdatedAt:   groupOrApplication.UpdatedAt,
+		FullName:    full.FullName,
+		FullPath:    full.FullPath,
+		Type:        groupOrApplication.Type,
+	}
+}
+
 func convertApplicationToChild(app *appmodels.Application, full *Full) (*Child, error) {
 	return &Child{
 		ID:          app.ID,

@@ -41,6 +41,13 @@ const (
 		"where traversal_ids like ? and deleted_at is null"
 	GroupQueryByNameOrPathUnderParent = "select * from `group` where parent_id = ? " +
 		"and (name = ? or path = ?) and deleted_at is null"
+	GroupQueryGroupChildren = "select * from (select g.id, g.name, g.path, description, updated_at, " +
+		"'group' as type from `group` g where g.parent_id=? union select a.id, a.name, a.name as path, " +
+		"description, updated_at, 'application' as type from `application` a where a.group_id=?) ga " +
+		"order by ga.type desc,ga.updated_at desc limit ? offset ?"
+	GroupQueryGroupChildrenCount = "select count(1) from (select g.id, g.name, g.path, description, updated_at, " +
+		"'group' as type from `group` g where g.parent_id=? union select a.id, a.name, a.name as path, " +
+		"description, updated_at, 'application' as type from `application` a where a.group_id=?) ga"
 )
 
 /* sql about application */

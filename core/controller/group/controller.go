@@ -75,7 +75,58 @@ func NewController() Controller {
 
 // GetChildren get children of a group, including subgroups and applications
 func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
-	return c.GetSubGroups(ctx, id, pageNumber, pageSize)
+	var parent *Child
+	if id > 0 {
+		var err error
+		parent, err = c.GetByID(ctx, id)
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+
+	// query children
+	children, count, err := c.groupManager.GetChildren(ctx, id, pageNumber, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// calculate childrenCount
+	parentIDs := make([]uint, len(children))
+	for i, g := range children {
+		if g.Type == ChildTypeGroup {
+			parentIDs[i] = g.ID
+		}
+	}
+	groups, err := c.groupManager.GetSubGroupsUnderParentIDs(ctx, parentIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+	childrenCountMap := map[uint]int{}
+	for _, g := range groups {
+		childrenCountMap[g.ParentID]++
+	}
+
+	// format GroupChild
+	var gChildren = make([]*Child, len(children))
+	for i, val := range children {
+		var fName, fPath string
+		if id == 0 {
+			fName = val.Name
+			fPath = fmt.Sprintf("/%val", val.Path)
+		} else {
+			fName = fmt.Sprintf("%val / %val", parent.FullName, val.Name)
+			fPath = fmt.Sprintf("%val/%val", parent.FullPath, val.Path)
+		}
+		child := convertGroupOrApplicationToChild(val, &Full{
+			FullName: fName,
+			FullPath: fPath,
+		})
+		child.ChildrenCount = childrenCountMap[child.ID]
+
+		gChildren[i] = child
+	}
+
+	return gChildren, count, nil
 }
 
 // SearchGroups search subGroups of a group
@@ -116,10 +167,10 @@ func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) (
 
 // GetSubGroups get subgroups of a group
 func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
-	var pGChild *Child
+	var parent *Child
 	if id > 0 {
 		var err error
-		pGChild, err = c.GetByID(ctx, id)
+		parent, err = c.GetByID(ctx, id)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -153,8 +204,8 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 			fName = s.Name
 			fPath = fmt.Sprintf("/%s", s.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", pGChild.FullName, s.Name)
-			fPath = fmt.Sprintf("%s/%s", pGChild.FullPath, s.Path)
+			fName = fmt.Sprintf("%s / %s", parent.FullName, s.Name)
+			fPath = fmt.Sprintf("%s/%s", parent.FullPath, s.Path)
 		}
 		child := convertGroupToChild(s, &Full{
 			FullName: fName,
@@ -194,8 +245,11 @@ func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 // CreateGroup add a group
 func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint, error) {
 	groupEntity := convertNewGroupToGroup(newGroup)
-
-	return c.groupManager.Create(ctx, groupEntity)
+	group, err := c.groupManager.Create(ctx, groupEntity)
+	if group == nil {
+		return 0, err
+	}
+	return group.ID, err
 }
 
 // GetByFullPath get a group by the URLPath

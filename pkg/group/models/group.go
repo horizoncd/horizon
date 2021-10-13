@@ -16,6 +16,14 @@ type Group struct {
 	TraversalIDs    string
 }
 
+type GroupOrApplication struct {
+	gorm.Model
+	Name        string
+	Path        string
+	Description string
+	Type        string
+}
+
 type Groups []*Group
 
 // Len the length of the groups
