@@ -219,7 +219,7 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
 		return nil, nil, errors.E(op, err)
 	}
-	if err := json.Unmarshal(applicationBytes, &pipelineJSONBlob); err != nil {
+	if err := json.Unmarshal(applicationBytes, &applicationJSONBlob); err != nil {
 		return nil, nil, errors.E(op, err)
 	}
 
