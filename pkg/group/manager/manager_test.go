@@ -234,6 +234,7 @@ func TestTransferGroup(t *testing.T) {
 
 func TestManagerGetChildren(t *testing.T) {
 	g0, err := Mgr.Create(ctx, getGroup(0, "0", "0"))
+	assert.Nil(t, err)
 	g1, err := Mgr.Create(ctx, getGroup(g0.ID, "1", "a"))
 	assert.Nil(t, err)
 	g2, err := Mgr.Create(ctx, getGroup(g0.ID, "2", "b"))

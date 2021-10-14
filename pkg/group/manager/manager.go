@@ -41,6 +41,8 @@ type Manager interface {
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	// GetByNameFuzzily get groups that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	// GetByIDNameFuzzily get groups that fuzzily matching the given name and id
+	GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error)
 	// UpdateBasic update basic info of a group
 	UpdateBasic(ctx context.Context, group *models.Group) error
 	// GetSubGroupsUnderParentIDs get subgroups under the given parent groups without paging
@@ -60,6 +62,10 @@ type manager struct {
 	applicationDAO applicationdao.DAO
 }
 
+func (m manager) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error) {
+	return m.groupDAO.GetByIDNameFuzzily(ctx, id, name)
+}
+
 func New() Manager {
 	return &manager{
 		groupDAO:       groupdao.NewDAO(),
@@ -67,7 +73,8 @@ func New() Manager {
 	}
 }
 
-func (m manager) GetChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error) {
+func (m manager) GetChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) (
+	[]*models.GroupOrApplication, int64, error) {
 	return m.groupDAO.ListChildren(ctx, parentID, pageNumber, pageSize)
 }
 
@@ -113,7 +120,14 @@ func (m manager) Delete(ctx context.Context, id uint) (int64, error) {
 	if count > 0 {
 		return 0, ErrHasChildren
 	}
-	// todo check application children exist
+
+	count, err = m.applicationDAO.CountByGroupID(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+	if count > 0 {
+		return 0, ErrHasChildren
+	}
 
 	return m.groupDAO.Delete(ctx, id)
 }

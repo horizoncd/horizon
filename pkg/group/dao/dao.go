@@ -31,6 +31,8 @@ type DAO interface {
 	GetByID(ctx context.Context, id uint) (*models.Group, error)
 	// GetByNameFuzzily get groups that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	// GetByIDNameFuzzily get groups that fuzzily matching the given name and id
+	GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error)
 	// GetByIDs get groups by ids
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 	// GetByPaths get groups by paths
@@ -58,7 +60,21 @@ func NewDAO() DAO {
 
 type dao struct{}
 
-func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error) {
+func (d *dao) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []*models.Group
+	result := db.Raw(common.GroupQueryByIDNameFuzzily, fmt.Sprintf("%%%d%%", id),
+		fmt.Sprintf("%%%s%%", name)).Scan(&groups)
+
+	return groups, result.Error
+}
+
+func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) (
+	[]*models.GroupOrApplication, int64, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -153,7 +169,6 @@ func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 	return groups, result.Error
 }
 
-// CheckPathUnique todo check application table too
 func (d *dao) CheckPathUnique(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -188,7 +203,6 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Grou
 	return groups, result.Error
 }
 
-// CheckNameUnique todo check application table too
 func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {

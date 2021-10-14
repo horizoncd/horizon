@@ -59,7 +59,7 @@ func convertGroupOrApplicationToChild(groupOrApplication *models.GroupOrApplicat
 	}
 }
 
-func convertApplicationToChild(app *appmodels.Application, full *Full) (*Child, error) {
+func convertApplicationToChild(app *appmodels.Application, full *Full) *Child {
 	return &Child{
 		ID:          app.ID,
 		Name:        app.Name,
@@ -69,7 +69,7 @@ func convertApplicationToChild(app *appmodels.Application, full *Full) (*Child, 
 		FullName:    full.FullName,
 		FullPath:    full.FullPath,
 		Type:        ChildTypeApplication,
-	}, nil
+	}
 }
 
 // convertNewGroupToGroup convert newGroup model to group model
