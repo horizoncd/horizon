@@ -2,7 +2,6 @@ package group
 
 import (
 	"sort"
-	"strconv"
 	"strings"
 
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -136,15 +135,4 @@ func generateIDToGroup(groups []*models.Group) map[uint]*models.Group {
 	}
 
 	return idToGroup
-}
-
-// formatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
-func formatIDsFromTraversalIDs(traversalIDs string) []uint {
-	splitIds := strings.Split(traversalIDs, ",")
-	var ids = make([]uint, len(splitIds))
-	for i, id := range splitIds {
-		ii, _ := strconv.Atoi(id)
-		ids[i] = uint(ii)
-	}
-	return ids
 }

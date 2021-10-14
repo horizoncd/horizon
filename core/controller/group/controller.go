@@ -266,7 +266,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*Child, error) {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
 
-	groups, err := c.groupManager.GetByIDs(ctx, formatIDsFromTraversalIDs(groupEntity.TraversalIDs))
+	groups, err := c.groupManager.GetByIDs(ctx, manager.FormatIDsFromTraversalIDs(groupEntity.TraversalIDs))
 	if err != nil {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
@@ -297,7 +297,7 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*models.Group) ([]*models.Group, error) {
 	var ids []uint
 	for _, g := range groups {
-		ids = append(ids, formatIDsFromTraversalIDs(g.TraversalIDs)...)
+		ids = append(ids, manager.FormatIDsFromTraversalIDs(g.TraversalIDs)...)
 	}
 
 	groupsByIDs, err := c.groupManager.GetByIDs(ctx, ids)

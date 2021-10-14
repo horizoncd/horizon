@@ -3,6 +3,8 @@ package manager
 import (
 	"context"
 	"errors"
+	"strconv"
+	"strings"
 
 	"g.hz.netease.com/horizon/lib/q"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
@@ -178,4 +180,15 @@ func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
 	query.Sorts = []*q.Sort{s}
 
 	return query
+}
+
+// FormatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
+func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
+	splitIds := strings.Split(traversalIDs, ",")
+	var ids = make([]uint, len(splitIds))
+	for i, id := range splitIds {
+		ii, _ := strconv.Atoi(id)
+		ids[i] = uint(ii)
+	}
+	return ids
 }
