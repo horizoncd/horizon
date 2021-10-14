@@ -122,3 +122,97 @@ CREATE TABLE `application`
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
+
+-- k8s cluster table
+CREATE TABLE `k8s_cluster`
+(
+    `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `name`             varchar(128)     NOT NULL DEFAULT '' COMMENT 'k8s name',
+    `certificate`      text             NOT NULL DEFAULT '' COMMENT 'k8s certificate',
+    `domain_suffix`    varchar(128)              DEFAULT NULL COMMENT 'domain suffix',
+    `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`       datetime                  DEFAULT NULL,
+    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_env` (`env`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4;
+
+-- environment table
+CREATE TABLE `environment`
+(
+    `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `env`              varchar(128)     NOT NULL DEFAULT '' COMMENT 'env',
+    `name`             varchar(128)     NOT NULL DEFAULT '' COMMENT 'env name',
+    `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`       datetime                  DEFAULT NULL,
+    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_env` (`env`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4;
+
+-- region table
+CREATE TABLE `region`
+(
+    `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `region`           varchar(128)     NOT NULL DEFAULT '' COMMENT 'region',
+    `k8s_cluster`      int(11) unsigned NOT NULL COMMENT 'k8s cluster id',
+    `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`       datetime                  DEFAULT NULL,
+    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_region` (`region`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4;
+
+-- scope table
+CREATE TABLE `scope`
+(
+    `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `env`              varchar(128)     NOT NULL DEFAULT '' COMMENT 'env',
+    `region`           varchar(128)     NOT NULL DEFAULT '' COMMENT 'region',
+    `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`       datetime                  DEFAULT NULL,
+    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_env_region` (`env`, `region`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4;
+
+-- cluster table
+CREATE TABLE `cluster`
+(
+    `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `application`      varchar(64)      NOT NULL COMMENT 'application name',
+    `name`             varchar(64)      NOT NULL DEFAULT '' COMMENT 'the name of cluster',
+    `description`      varchar(256)              DEFAULT NULL COMMENT 'the description of cluster',
+    `git_branch`       varchar(128)              DEFAULT NULL COMMENT 'git default branch',
+    `scope`            int(11) unsigned NOT NULL DEFAULT '' COMMENT 'scope id',
+    `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`       datetime                  DEFAULT NULL,
+    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_name` (`name`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4;

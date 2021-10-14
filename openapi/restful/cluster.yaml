@@ -5,17 +5,21 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/applications/{application}/clusters:
+  /apis/core/v1/applications/{application}/clusters?scope={scope}:
     parameters:
       - name: application
         in: path
         description: application name
         required: true
+      - name: scope
+        in: query
+        description: scope is env/region, this value can not be edited after created.
+        required: true
     post:
       tags:
         - cluster
       operationId: createCluster
-      summary: create a cluster
+      summary: Create a cluster
       requestBody:
         required: true
         content:
@@ -81,7 +85,7 @@ paths:
       tags:
         - cluster
       operationId: updateCluster
-      summary: update a cluster
+      summary: Update a cluster
       requestBody:
         required: true
         content:
@@ -139,7 +143,7 @@ paths:
       tags:
         - cluster
       operationId: getCluster
-      summary: get a cluster
+      summary: Get a cluster
       responses:
         '200':
           description: Success
@@ -161,6 +165,10 @@ paths:
                               "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
                               "subfolder":"/",
                               "branch":"develop"
+                          },
+                          "scope": {
+                            "env": "test",
+                            "region": "hz"
                           },
                           "templateInput":{
                               "application":{
@@ -199,7 +207,7 @@ paths:
       tags:
         - cluster
       operationId: deleteCluster
-      summary: delete a cluster
+      summary: Delete a cluster
       responses:
         "200":
           description: Success
@@ -220,7 +228,7 @@ paths:
       tags:
         - cluster
       operationId: deployCluster
-      summary: deploy a cluster
+      summary: Deploy a cluster
       requestBody:
         required: true
         content:
@@ -251,7 +259,7 @@ paths:
       tags:
         - cluster
       operationId: nextCluster
-      summary: promote a cluster to next step
+      summary: Promote a cluster to next step
       responses:
         "200":
           description: Success
@@ -272,7 +280,7 @@ paths:
       tags:
         - cluster
       operationId: restartCluster
-      summary: restart a cluster
+      summary: Restart a cluster
       responses:
         "200":
           description: Success
@@ -292,8 +300,11 @@ paths:
     post:
       tags:
         - cluster
-      operationId: createPipelineruns
-      summary: create pipelineruns, used to do build and deploy for a cluster
+      operationId: createPipelineRuns
+      summary: |
+        Create pipelineRuns, used to do build and deploy for a cluster.
+        A cluster can only has one running pipelineRun.
+        Return error if there exists a running pipelineRun already.
       requestBody:
         required: true
         content:
@@ -308,6 +319,55 @@ paths:
       responses:
         "200":
           description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//id": "pipelineRun record id",
+                      "id": 1000
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+    get:
+      tags:
+        - cluster
+      operationId: getPipelineRuns
+      summary: |
+        List pipelineRuns of a cluster.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data": {
+                        "total": 100,
+                        "items": [
+                          {
+                            "id": 1,
+                            "//status": "running/ok/failed/cancelled",
+                            "status": "ok",
+                            "branch": "develop",
+                            "commit": "239b7aeedc1d2b3023871a85d1cd2b11590c6ba9",
+                            "createdBy": "Tony",
+                            "//createdAt": "unix timestamp",
+                            "createdAt": 1634182718327,
+                            "//duration": "pipelinerun duration, seconds",
+                            "durationSeconds": 100
+                          }
+                        ]
+                      }
+                    }
         default:
           description: Unexpected error
           content:
@@ -324,8 +384,10 @@ paths:
     post:
       tags:
         - cluster
-      operationId: stopPipelineruns
-      summary: stop the running pipelineruns for a cluster
+      operationId: stopPipelinerun
+      summary: |
+        Stop the running pipelinerun for a cluster.
+        If there is no running pipelinerun, do nothing and return success.
       responses:
         "200":
           description: Success
@@ -336,17 +398,23 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/pipelineruns/log:
+  /apis/core/v1/clusters/{cluster}/pipelineruns/log?recordID={recordID}:
     parameters:
       - name: cluster
         in: path
         description: name of cluster
         required: true
+      - name: recordID
+        in: query
+        description: the record ID of pipelinerun
+        required: false
     get:
       tags:
         - cluster
       operationId: getPipelinerunsLog
-      summary: got the running pipelineruns' log for a cluster
+      summary: |
+        Get the pipelineruns' log for a cluster.
+        If no recordID is provided, will get the newest pipelineruns' log.
       responses:
         "200":
           description: Success
@@ -364,6 +432,51 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
+  /apis/core/v1/clusters/{cluster}/pipelineruns/status?recordID={recordID}:
+    parameters:
+      - name: cluster
+        in: path
+        description: name of cluster
+        required: true
+      - name: recordID
+        in: query
+        description: the record ID of pipelinerun
+        required: false
+    get:
+      tags:
+        - cluster
+      operationId: getPipelinerunsStatus
+      summary: |
+        Get the pipelineruns' status for a cluster.
+        If no recordID is provided, will get the newest pipelineruns' status.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "id":1,
+                          "//status":"running/ok/failed/cancelled",
+                          "status":"ok",
+                          "branch":"develop",
+                          "commit":"239b7aeedc1d2b3023871a85d1cd2b11590c6ba9",
+                          "createdBy":"Tony",
+                          "//createdAt":"unix timestamp",
+                          "createdAt":1634182718327,
+                          "//duration":"pipelinerun duration, seconds",
+                          "durationSeconds":100
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
   /apis/core/v1/clusters/{cluster}/status:
     parameters:
       - name: cluster
@@ -374,7 +487,7 @@ paths:
       tags:
         - cluster
       operationId: getClusterStatus
-      summary: get status of a cluster
+      summary: Get status of a cluster, return the pods and status
       responses:
         '200':
           description: Success
@@ -387,6 +500,8 @@ paths:
                           "runningTask":{
                               "//task":"build: building, deploy: deploying, none: no building and deploying",
                               "task":"build",
+                              "//recordID": "if task is build, return recordID. This recordID can be used to get log, etc.",
+                              "recordID": 1000,
                               "//taskStatus":"Running, Pending, Succeeded, Cancelled, Failed. When task is none，this field is empty",
                               "taskStatus":"Running"
                           },
@@ -394,6 +509,13 @@ paths:
                           "clusterStatus":{
                               "//status":"Progressing(正在部署), Healthy(部署完成), Suspended(已暂停), Degraded(已降级/失败), NotFound(未部署)",
                               "status":"Progressing",
+                              "//step": "step represents the progress of the cluster",
+                              "step": {
+                                "//index": "current step index",
+                                "index": 1,
+                                "//total": "total step index",
+                                "total": 3
+                              },
                               "//podTemplateHash":"当前最新的ReplicaSet对象的pod template hash",
                               "podTemplateHash":"7b5c8d976d",
                               "//replicas":"集群中实际运行的副本数",
