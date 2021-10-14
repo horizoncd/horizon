@@ -41,7 +41,7 @@ type Member struct {
 	Role string
 	// MemberType: user/group
 	MemberType MemberType `gorm:"column:member_type"`
-	//MemberInfo username or groupid
-	MemberInfo string `gorm:"column:member_info"`
+	// userID or groupID
+	MemberInfo uint   `gorm:"column:member_info"`
 	GrantBy    string `gorm:"column:grant_by"`
 }

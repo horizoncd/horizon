@@ -125,14 +125,14 @@ CREATE TABLE `application`
 
 
 -- member table
-CREATE TABLE `Member` (
+CREATE TABLE `member` (
     `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `resource_type` varchar(64) NOT NULL COMMENT 'group\application\applicationinstance',
+    `resource_type` varchar(64) NOT NULL COMMENT 'group\application\cluster',
     `resource_id`  int(11) unsigned NOT NULL COMMENT 'resource id',
 
     `role` varchar(64)   NOT NULL  COMMENT 'binding role name',
     `member_type` tinyint(1)  COMMENT '0-USER, 1-group',
-    `member_info` varchar(512) NOT NULL COMMENT 'UserName or GroupID',
+    `member_info` int(11) unsigned NOT NULL COMMENT 'UserID or GroupID',
 
     `grant_by`   varchar(512)  NOT NULL COMMNET 'who grand the role',
     `created_by` varchar(512) NOT NULL COMMENT 'who create the role',

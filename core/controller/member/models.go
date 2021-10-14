@@ -16,7 +16,7 @@ type PostMember struct {
 	ResourceID uint
 
 	// MemberInfo group id / username
-	MemberInfo string
+	MemberInfo uint
 
 	// MemberType user or group
 	MemberType models.MemberType
@@ -54,34 +54,20 @@ type Member struct {
 	GrantTime time.Time
 }
 
-func ConvertMember(member *models.Member, sourceInfo string) Member {
-	//TODO(tom): change ID to name ,and add the path
-	return Member{
-		ID:         member.ID,
-		MemberType: member.MemberType,
-		MemberInfo: member.MemberInfo,
-		SourceInfo: sourceInfo,
-		Role:       member.Role,
-		GrantBy:    member.GrantBy,
-		GrantTime:  member.UpdatedAt,
-	}
-}
-
 func ConvertResourceType(resourceTypeStr string) (models.ResourceType, bool) {
 	var convertOk bool = true
 	var resourceType models.ResourceType
 
 	switch resourceTypeStr {
-	case "group":
+	case models.TypeGroupStr:
 		resourceType = models.TypeGroup
-	case "application":
+	case models.TypeApplicationStr:
 		resourceType = models.TypeApplication
-	case "applicationInstance":
+	case models.TypeApplicationInstanceStr:
 		resourceType = models.TypeApplicationInstance
 	default:
 		convertOk = false
 	}
-
 	return resourceType, convertOk
 }
 

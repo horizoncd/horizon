@@ -49,18 +49,21 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	var group2ID uint = 4
 	var group1ID uint = 3
 	var traversalIDs string = "3,4"
+	var tomID uint = 1
+	var jerryID uint = 2
+	var catID uint = 3
+	var jimID uint = 4
 	var grandUser userauth.User = &userauth.DefaultInfo{
 		Name:     "tom",
 		FullName: "tom",
-		ID:       123,
+		ID:       tomID,
 	}
-	ctx = context.WithValue(ctx, user.Key(), grandUser)
-
+	var ctx = context.WithValue(ctx, user.Key(), grandUser)
 	// insert member to group2
 	postMemberTom2 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group2ID,
-		MemberInfo:   "tom",
+		MemberInfo:   tomID,
 		MemberType:   models.MemberUser,
 		Role:         "owner",
 	}
@@ -71,7 +74,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	postMemberJerry2 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group2ID,
-		MemberInfo:   "jerry",
+		MemberInfo:   jerryID,
 		MemberType:   models.MemberUser,
 		Role:         "owner",
 	}
@@ -83,7 +86,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	postMemberTom1 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group1ID,
-		MemberInfo:   "tom",
+		MemberInfo:   tomID,
 		MemberType:   models.MemberUser,
 		Role:         "owner",
 	}
@@ -94,7 +97,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	postMemberJerry1 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group1ID,
-		MemberInfo:   "jerry",
+		MemberInfo:   jerryID,
 		MemberType:   models.MemberUser,
 		Role:         "maintainer",
 	}
@@ -105,7 +108,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	postMemberCat1 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group1ID,
-		MemberInfo:   "cat",
+		MemberInfo:   catID,
 		MemberType:   models.MemberUser,
 		Role:         "maintainer",
 	}
@@ -130,7 +133,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	postMemberCat2 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group2ID,
-		MemberInfo:   "cat",
+		MemberInfo:   catID,
 		MemberType:   models.MemberUser,
 		Role:         "develop",
 	}
@@ -167,7 +170,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
-	member, err = s.UpdateMember(ctx, "group", 3, "tom", models.MemberUser, "owner")
+	member, err = s.UpdateMember(ctx, "group", 3, tomID, models.MemberUser, "owner")
 	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
 
 	// update member correct
@@ -180,10 +183,10 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			VisibilityLevel: "",
 			Description:     "",
 			ParentID:        0,
-			TraversalIDs:    "3,4",
+			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(2)
-	member, err = s.UpdateMember(ctx, "group", group2ID, "tom", models.MemberUser, "maintainer")
+	member, err = s.UpdateMember(ctx, "group", group2ID, tomID, models.MemberUser, "maintainer")
 	assert.Nil(t, err)
 	assert.Equal(t, member.Role, "maintainer")
 
@@ -197,10 +200,10 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			VisibilityLevel: "",
 			Description:     "",
 			ParentID:        0,
-			TraversalIDs:    "3,4",
+			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
-	err = s.RemoveMember(ctx, "group", group2ID, "Jim", models.MemberUser)
+	err = s.RemoveMember(ctx, "group", group2ID, jimID, models.MemberUser)
 	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
 
 	// remove member ok
@@ -213,10 +216,10 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			VisibilityLevel: "",
 			Description:     "",
 			ParentID:        0,
-			TraversalIDs:    "3,4",
+			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(2)
-	err = s.RemoveMember(ctx, "group", group2ID, "cat", models.MemberUser)
+	err = s.RemoveMember(ctx, "group", group2ID, catID, models.MemberUser)
 	assert.Nil(t, err)
 }
 
@@ -240,10 +243,13 @@ func TestListGroupMember(t *testing.T) {
 	var group2ID uint = 2
 	var group1ID uint = 1
 	var traversalIDs string = "1,2"
+	var tomID uint = 1
+	var jerryID uint = 2
+	var catID uint = 3
 	var grandUser userauth.User = &userauth.DefaultInfo{
 		Name:     "tom",
 		FullName: "tom",
-		ID:       123,
+		ID:       tomID,
 	}
 	ctx = context.WithValue(ctx, user.Key(), grandUser)
 
@@ -251,7 +257,7 @@ func TestListGroupMember(t *testing.T) {
 	postMemberTom2 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group2ID,
-		MemberInfo:   "tom",
+		MemberInfo:   tomID,
 		MemberType:   models.MemberUser,
 		Role:         "owner",
 	}
@@ -262,7 +268,7 @@ func TestListGroupMember(t *testing.T) {
 	postMemberJerry2 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group2ID,
-		MemberInfo:   "jerry",
+		MemberInfo:   jerryID,
 		MemberType:   models.MemberUser,
 		Role:         "owner",
 	}
@@ -274,7 +280,7 @@ func TestListGroupMember(t *testing.T) {
 	postMemberTom1 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group1ID,
-		MemberInfo:   "tom",
+		MemberInfo:   tomID,
 		MemberType:   models.MemberUser,
 		Role:         "owner",
 	}
@@ -285,7 +291,7 @@ func TestListGroupMember(t *testing.T) {
 	postMemberJerry1 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group1ID,
-		MemberInfo:   "jerry",
+		MemberInfo:   jerryID,
 		MemberType:   models.MemberUser,
 		Role:         "maintainer",
 	}
@@ -296,7 +302,7 @@ func TestListGroupMember(t *testing.T) {
 	postMemberCat1 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group1ID,
-		MemberInfo:   "cat",
+		MemberInfo:   catID,
 		MemberType:   models.MemberUser,
 		Role:         "maintainer",
 	}

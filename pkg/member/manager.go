@@ -16,9 +16,9 @@ type Manager interface {
 	// Create a new member
 	Create(ctx context.Context, member *models.Member) (*models.Member, error)
 
-	// GetByUserName get the direct Member of resource by the userName
-	GetByUserName(ctx context.Context, resourceType models.ResourceType,
-		resourceID uint, userName string) (*models.Member, error)
+	// GetByUserID get the direct Member of resource by the userID
+	GetByUserID(ctx context.Context, resourceType models.ResourceType,
+		resourceID uint, userName uint) (*models.Member, error)
 	// TODO(tom) GetByGroupID
 
 	// UpdateByID  update a member by memberID
@@ -44,8 +44,8 @@ func (m *manager) Create(ctx context.Context, member *models.Member) (*models.Me
 	return m.dao.Create(ctx, member)
 }
 
-func (m *manager) GetByUserName(ctx context.Context, resourceType models.ResourceType, resourceID uint,
-	userName string) (*models.Member, error) {
+func (m *manager) GetByUserID(ctx context.Context, resourceType models.ResourceType, resourceID uint,
+	userName uint) (*models.Member, error) {
 	return m.dao.Get(ctx, resourceType, resourceID, models.MemberUser, userName)
 }
 

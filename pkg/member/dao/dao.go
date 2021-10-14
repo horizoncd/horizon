@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	user2 "g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/member/models"
@@ -15,9 +15,9 @@ import (
 type DAO interface {
 	Create(ctx context.Context, member *models.Member) (*models.Member, error)
 	Get(ctx context.Context, resourceType models.ResourceType, resourceID uint,
-		memberType models.MemberType, memberInfo string) (*models.Member, error)
+		memberType models.MemberType, memberInfo uint) (*models.Member, error)
 	Delete(ctx context.Context, memberID uint) error
-	UpdateByID(ctx context.Context, id uint, role string) (*models.Member, error)
+	UpdateByID(ctx context.Context, memberID uint, role string) (*models.Member, error)
 	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
 }
@@ -39,7 +39,7 @@ func (d *dao) Create(ctx context.Context, member *models.Member) (*models.Member
 }
 
 func (d *dao) Get(ctx context.Context, resourceType models.ResourceType, resourceID uint,
-	memberType models.MemberType, memberInfo string) (*models.Member, error) {
+	memberType models.MemberType, memberInfo uint) (*models.Member, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Mem
 		return nil, err
 	}
 
-	user, err := user2.FromContext(ctx)
+	currentUser, err := user.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Mem
 	var memberInDB models.Member
 	if err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. get member in db first
-		result := tx.Raw(common.MemberUpdate, id).Scan(&memberInDB)
+		result := tx.Raw(common.MemberQuerybyID, id).Scan(&memberInDB)
 		if result.Error != nil {
 			return result.Error
 		}
@@ -81,7 +81,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Mem
 
 		// 2. update value
 		memberInDB.Role = role
-		memberInDB.GrantBy = user.GetName()
+		memberInDB.GrantBy = currentUser.GetName()
 
 		// 3. save member after updated
 		tx.Save(&memberInDB)

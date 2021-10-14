@@ -53,7 +53,7 @@ type Attributes interface {
 }
 
 type Authorizer interface {
-	Authorize(ctx context.Context, a Attributes) (Decision, reason string, err error)
+	Authorize(ctx context.Context, a Attributes) (decision Decision, reason string, err error)
 }
 
 type Decision int

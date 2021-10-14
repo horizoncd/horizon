@@ -182,7 +182,7 @@ func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
 	return query
 }
 
-// formatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
+// FormatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
 func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
 	splitIds := strings.Split(traversalIDs, ",")
 	var ids = make([]uint, len(splitIds))

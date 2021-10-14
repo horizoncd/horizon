@@ -38,7 +38,7 @@ func TestBasic(t *testing.T) {
 		ResourceID:   1234324,
 		Role:         "owner",
 		MemberType:   models.MemberUser,
-		MemberInfo:   "tom",
+		MemberInfo:   1,
 		GrantBy:      "admin",
 	}
 
@@ -51,7 +51,7 @@ func TestBasic(t *testing.T) {
 
 	t.Logf(string(b))
 
-	retMember, err := Mgr.GetByUserName(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
+	retMember, err := Mgr.GetByUserID(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(retMember, member1))
 
@@ -71,13 +71,13 @@ func TestBasic(t *testing.T) {
 	member1.GrantBy = "cat"
 	assert.True(t, MemberValueEqual(retMember2, member1))
 
-	retMember3, err := Mgr.GetByUserName(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
+	retMember3, err := Mgr.GetByUserID(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(retMember2, retMember3))
 
 	// test delete
 	assert.Nil(t, Mgr.DeleteMember(ctx, retMember3.ID))
-	retMember4, err := Mgr.GetByUserName(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
+	retMember4, err := Mgr.GetByUserID(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
 	assert.Nil(t, err)
 	assert.Nil(t, retMember4)
 }
@@ -88,7 +88,7 @@ func TestList(t *testing.T) {
 		ResourceID:   123456,
 		Role:         "owner",
 		MemberType:   models.MemberUser,
-		MemberInfo:   "tom",
+		MemberInfo:   1,
 		GrantBy:      "admin",
 	}
 
@@ -103,7 +103,7 @@ func TestList(t *testing.T) {
 		ResourceID:   123456,
 		Role:         "owner",
 		MemberType:   models.MemberUser,
-		MemberInfo:   "jerry",
+		MemberInfo:   2,
 		GrantBy:      "admin",
 	}
 	retMember2, err := Mgr.Create(ctx, member2)

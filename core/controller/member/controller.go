@@ -32,9 +32,9 @@ type Service interface {
 	// UpdateMember update exist member entry
 	// user can only update a role not higher than self
 	UpdateMember(ctx context.Context, resourceType string, resourceID uint,
-		memberInfo string, memberType models.MemberType, role string) (*models.Member, error)
+		memberInfo uint, memberType models.MemberType, role string) (*models.Member, error)
 	// RemoveMember Remove the member (self leave/remove other member)
-	RemoveMember(ctx context.Context, resourceType string, resourceID uint, memberInfo string,
+	RemoveMember(ctx context.Context, resourceType string, resourceID uint, memberInfo uint,
 		memberType models.MemberType) error
 	// ListMember list all the member of the resource
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
@@ -58,16 +58,16 @@ func (s *service) GetUserMember(ctx context.Context, resourceType string, resour
 	if err != nil {
 		return nil, err
 	}
-	return s.getMember(ctx, resourceType, resourceID, currentUser.GetName(), models.MemberUser)
+	return s.getMember(ctx, resourceType, resourceID, currentUser.GetID(), models.MemberUser)
 }
 
 func (s *service) GetGroupMember(ctx context.Context, resourceType string,
-	resourceID uint, groupID string) (*models.Member, error) {
+	resourceID uint, groupID uint) (*models.Member, error) {
 	return s.getMember(ctx, resourceType, resourceID, groupID, models.MemberGroup)
 }
 
 func (s *service) getMember(ctx context.Context, resourceType string, resourceID uint,
-	memberInfo string, memberType models.MemberType) (*models.Member, error) {
+	memberInfo uint, memberType models.MemberType) (*models.Member, error) {
 	members, err := s.ListMember(ctx, resourceType, resourceID)
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (s *service) getMember(ctx context.Context, resourceType string, resourceID
 
 func (s *service) getDirectMemberByDetail(ctx context.Context,
 	resourceType string, resourceID uint,
-	memberInfo string, memberType models.MemberType) (*models.Member, error) {
+	memberInfo uint, memberType models.MemberType) (*models.Member, error) {
 	members, err := s.ListMember(ctx, resourceType, resourceID)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func (s *service) createMemberDirect(ctx context.Context, postMember PostMember)
 	return s.memberManager.Create(ctx, member)
 }
 
-func (s *service) RemoveMember(ctx context.Context, resourceType string, resourceID uint, memberInfo string,
+func (s *service) RemoveMember(ctx context.Context, resourceType string, resourceID uint, memberInfo uint,
 	memberType models.MemberType) error {
 	// 1. get current user and check the permission
 	var currentUser userauth.User
@@ -179,7 +179,7 @@ func (s *service) RemoveMember(ctx context.Context, resourceType string, resourc
 
 	// 3. self level the group
 	if memberType == models.MemberUser &&
-		memberInfo == currentUser.GetName() {
+		memberInfo == currentUser.GetID() {
 		return s.memberManager.DeleteMember(ctx, resourceID)
 	}
 
@@ -206,7 +206,7 @@ func (s *service) RemoveMember(ctx context.Context, resourceType string, resourc
 // UpdateMember update exist member entry
 // user can only attach a role not higher than self
 func (s *service) UpdateMember(ctx context.Context, resourceType string, resourceID uint,
-	memberInfo string, memberType models.MemberType, role string) (*models.Member, error) {
+	memberInfo uint, memberType models.MemberType, role string) (*models.Member, error) {
 	// 1. get current user and check the permission
 	var currentUser userauth.User
 	currentUser, err := user.FromContext(ctx)
@@ -227,7 +227,7 @@ func (s *service) UpdateMember(ctx context.Context, resourceType string, resourc
 	// 3. check if the grant current user can grant the role
 	var userMemberInfo *models.Member
 	userMemberInfo, err = s.getDirectMemberByDetail(ctx, resourceType, resourceID,
-		currentUser.GetName(), models.MemberUser)
+		currentUser.GetID(), models.MemberUser)
 	if err != nil {
 		return nil, err
 	}
@@ -287,16 +287,14 @@ func DeduplicateMember(members []models.Member) []models.Member {
 	// deduplicate by memberType, memberInfo
 	memberMap := make(map[string]models.Member)
 
+	var retMembers []models.Member
 	for _, item := range members {
-		key := strconv.Itoa(int(item.MemberType)) + "-" + item.MemberInfo
+		key := strconv.Itoa(int(item.MemberType)) + "-" + strconv.FormatUint(uint64(item.MemberInfo), 10)
 		_, ok := memberMap[key]
 		if !ok {
 			memberMap[key] = item
+			retMembers = append(retMembers, item)
 		}
-	}
-	var retMembers []models.Member
-	for _, item := range memberMap {
-		retMembers = append(retMembers, item)
 	}
 	return retMembers
 }

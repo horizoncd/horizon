@@ -75,7 +75,7 @@ func (a *API) Status(c *gin.Context) {
 	}
 	response.SuccessWithData(c, struct {
 		Name string `json:"name"`
-		ID   int    `json:"id"`
+		ID   uint   `json:"id"`
 	}{
 		Name: u.GetFullName(),
 		ID:   u.GetID(),
