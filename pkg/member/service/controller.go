@@ -1,4 +1,4 @@
-package member
+package service
 
 import (
 	"context"
@@ -25,18 +25,18 @@ var (
 )
 
 type Service interface {
-	// GetUserMember get the member of the current user
+	// GetUserMember get the service of the current user
 	GetUserMember(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error)
-	// CreateMember post a new member
+	// CreateMember post a new service
 	CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error)
-	// UpdateMember update exist member entry
+	// UpdateMember update exist service entry
 	// user can only update a role not higher than self
 	UpdateMember(ctx context.Context, resourceType string, resourceID uint,
 		memberInfo uint, memberType models.MemberType, role string) (*models.Member, error)
-	// RemoveMember Remove the member (self leave/remove other member)
+	// RemoveMember Remove the service (self leave/remove other service)
 	RemoveMember(ctx context.Context, resourceType string, resourceID uint, memberInfo uint,
 		memberType models.MemberType) error
-	// ListMember list all the member of the resource
+	// ListMember list all the service of the resource
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
 }
 
@@ -59,11 +59,6 @@ func (s *service) GetUserMember(ctx context.Context, resourceType string, resour
 		return nil, err
 	}
 	return s.getMember(ctx, resourceType, resourceID, currentUser.GetID(), models.MemberUser)
-}
-
-func (s *service) GetGroupMember(ctx context.Context, resourceType string,
-	resourceID uint, groupID uint) (*models.Member, error) {
-	return s.getMember(ctx, resourceType, resourceID, groupID, models.MemberGroup)
 }
 
 func (s *service) getMember(ctx context.Context, resourceType string, resourceID uint,
@@ -106,13 +101,13 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 		return nil, err
 	}
 
-	// 1. convert member
+	// 1. convert service
 	member, err := ConvertPostMemberToMember(postMember, currentUser)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. If member exist return error TODO(tom): change to updateMember
+	// 2. If service exist return error TODO(tom): change to updateMember
 	memberItem, err := s.getDirectMemberByDetail(ctx, postMember.ResourceType, postMember.ResourceID,
 		postMember.MemberInfo, postMember.MemberType)
 	if err != nil {
@@ -150,7 +145,7 @@ func (s *service) createMemberDirect(ctx context.Context, postMember PostMember)
 		return nil, err
 	}
 
-	// 1. convert member
+	// 1. convert service
 	member, err := ConvertPostMemberToMember(postMember, currentUser)
 	if err != nil {
 		return nil, err
@@ -167,7 +162,7 @@ func (s *service) RemoveMember(ctx context.Context, resourceType string, resourc
 		return err
 	}
 
-	// 2. If member not exist return error
+	// 2. If service not exist return error
 	memberItem, err := s.getDirectMemberByDetail(ctx, resourceType, resourceID,
 		memberInfo, memberType)
 	if err != nil {
@@ -203,7 +198,7 @@ func (s *service) RemoveMember(ctx context.Context, resourceType string, resourc
 	return s.memberManager.DeleteMember(ctx, memberItem.ID)
 }
 
-// UpdateMember update exist member entry
+// UpdateMember update exist service entry
 // user can only attach a role not higher than self
 func (s *service) UpdateMember(ctx context.Context, resourceType string, resourceID uint,
 	memberInfo uint, memberType models.MemberType, role string) (*models.Member, error) {
@@ -214,7 +209,7 @@ func (s *service) UpdateMember(ctx context.Context, resourceType string, resourc
 		return nil, err
 	}
 
-	// 2. If member not exist return
+	// 2. If service not exist return
 	memberItem, err := s.getDirectMemberByDetail(ctx, resourceType, resourceID,
 		memberInfo, memberType)
 	if err != nil {
@@ -269,7 +264,7 @@ func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]mode
 	}
 	groupIDs := groupManager.FormatIDsFromTraversalIDs(groupInfo.TraversalIDs)
 
-	// 2. get all the direct member of group
+	// 2. get all the direct service of group
 	var retMembers []models.Member
 
 	for i := len(groupIDs) - 1; i >= 0; i-- {
@@ -301,8 +296,8 @@ func DeduplicateMember(members []models.Member) []models.Member {
 
 func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
 	// TODO(tom)
-	// 1. query the application's member
-	// 2. query the group's member
+	// 1. query the application's service
+	// 2. query the group's service
 	// 3. merge and return
 	err := errors.New("Unimplement yet")
 	return nil, err
@@ -310,8 +305,8 @@ func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) (
 
 func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
 	// TODO(tom)
-	// 1. query the applicationinstance's member
-	// 2. query the application's member
+	// 1. query the applicationinstance's service
+	// 2. query the application's service
 	// 3. merge and return
 	err := errors.New("Unimplement yet")
 	return nil, err

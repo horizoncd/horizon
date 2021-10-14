@@ -1,4 +1,4 @@
-package member
+package service
 
 import (
 	"fmt"

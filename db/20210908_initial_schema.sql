@@ -141,4 +141,7 @@ CREATE TABLE `member` (
     `updated_at` datetime NOT NULL CURRENT_TIMESTAMP  ON UPDATE CURRENT_TIMESTAMP,
 
     `deleted_at` datetime DEFAULT  NULL,
+    PRIMARY KEY(`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_resource_member` (`resource_type`, `resource_id`, `member_type`, `member_info`)
 ) ENGINE=InnoDB  AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;

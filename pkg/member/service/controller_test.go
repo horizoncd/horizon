@@ -1,4 +1,4 @@
-package member
+package service
 
 import (
 	"context"
@@ -44,8 +44,8 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	s = originService
 
 	//  case  /group1/group2
-	//    group1 member: tom(1), jerry(1), cat(1)
-	//    group2 member: tom(2), jerry(2)
+	//    group1 service: tom(1), jerry(1), cat(1)
+	//    group2 service: tom(2), jerry(2)
 	var group2ID uint = 4
 	var group1ID uint = 3
 	var traversalIDs string = "3,4"
@@ -59,7 +59,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		ID:       tomID,
 	}
 	var ctx = context.WithValue(ctx, user.Key(), grandUser)
-	// insert member to group2
+	// insert service to group2
 	postMemberTom2 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group2ID,
@@ -82,7 +82,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMemberJerry2, member))
 
-	// insert member to group1
+	// insert service to group1
 	postMemberTom1 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group1ID,
@@ -116,7 +116,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMemberCat1, member))
 
-	// create member success
+	// create service success
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
@@ -141,7 +141,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMemberCat2, member))
 
-	// create member exist err
+	// create service exist err
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
@@ -157,7 +157,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	member, err = s.CreateMember(ctx, postMemberCat2)
 	assert.Equal(t, err.Error(), ErrMemberExist.Error())
 
-	// update member not exist
+	// update service not exist
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
@@ -173,7 +173,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	member, err = s.UpdateMember(ctx, "group", 3, tomID, models.MemberUser, "owner")
 	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
 
-	// update member correct
+	// update service correct
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
@@ -190,7 +190,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, member.Role, "maintainer")
 
-	// remove member not exist
+	// remove service not exist
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
@@ -206,7 +206,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	err = s.RemoveMember(ctx, "group", group2ID, jimID, models.MemberUser)
 	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
 
-	// remove member ok
+	// remove service ok
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
@@ -237,8 +237,8 @@ func TestListGroupMember(t *testing.T) {
 	s = originService
 
 	//  case  /group1/group2
-	//    group1 member: tom(1), jerry(1), cat(1)
-	//    group2 member: tom(2), jerry(2)
+	//    group1 service: tom(1), jerry(1), cat(1)
+	//    group2 service: tom(2), jerry(2)
 	//    ret: tom(2), jerry(2), cat(1)
 	var group2ID uint = 2
 	var group1ID uint = 1
@@ -253,7 +253,7 @@ func TestListGroupMember(t *testing.T) {
 	}
 	ctx = context.WithValue(ctx, user.Key(), grandUser)
 
-	// insert member to group2
+	// insert service to group2
 	postMemberTom2 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group2ID,
@@ -276,7 +276,7 @@ func TestListGroupMember(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMemberJerry2, member))
 
-	// insert member to group1
+	// insert service to group1
 	postMemberTom1 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group1ID,
