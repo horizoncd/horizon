@@ -223,6 +223,7 @@ CREATE TABLE `cluster`
 CREATE TABLE `pipelinerun`
 (
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `cluster`          varchar(64)      NOT NULL COMMENT 'cluster name',
     `action`           varchar(64)      NOT NULL COMMENT 'action',
     `status`           varchar(64)      NOT NULL DEFAULT '' COMMENT 'the pipelinerun status',
     `title`            varchar(256)     NOT NULL DEFAULT '' COMMENT 'the title of pipelinerun',
@@ -237,11 +238,25 @@ CREATE TABLE `pipelinerun`
     `rollback_from`    int(11) unsigned NULL COMMENT 'the pipelinerun id that this pipelinerun rollback from',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`       datetime                  DEFAULT NULL,
     `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
-    KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
+    KEY `idx_cluster_action` (`cluster`, `action`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4;
+
+-- cluster history table
+CREATE TABLE `cluster_history`
+(
+    `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `cluster`          varchar(64)      NOT NULL COMMENT 'cluster name',
+    `action`           varchar(64)      NOT NULL COMMENT 'action',
+    `pipelinerun_id`   int(11) unsigned NULL COMMENT 'pipelinerun_id if related to a pipelinerun',
+    `description`      varchar(2048)    NULL COMMENT 'the history description',
+    `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
+    PRIMARY KEY (`id`),
+    KEY `idx_action` (`cluster`, `action`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
