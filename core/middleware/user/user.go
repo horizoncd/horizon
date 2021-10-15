@@ -59,7 +59,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 		c.Set(contextUserKey, &userauth.DefaultInfo{
 			Name:     u.Name,
 			FullName: u.FullName,
-			ID:       int(u.ID),
+			ID:       u.ID,
 		})
 		c.Next()
 	}, skippers...)
