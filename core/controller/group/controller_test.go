@@ -216,7 +216,7 @@ func TestControllerGetByID(t *testing.T) {
 	id, err := Ctl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
 
-	child, err := Ctl.GetByID(ctx, id)
+	group, err := Ctl.GetByID(ctx, id)
 	assert.Nil(t, err)
 
 	type args struct {
@@ -226,7 +226,7 @@ func TestControllerGetByID(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *Child
+		want    *models.Group
 		wantErr bool
 	}{
 		{
@@ -235,17 +235,19 @@ func TestControllerGetByID(t *testing.T) {
 				ctx: ctx,
 				id:  id,
 			},
-			want: &Child{
-				ID:              id,
+			want: &models.Group{
+				Model: gorm.Model{
+					ID:        id,
+					CreatedAt: group.CreatedAt,
+					UpdatedAt: group.UpdatedAt,
+				},
 				Name:            "1",
 				Path:            "a",
 				VisibilityLevel: "private",
 				ParentID:        0,
 				TraversalIDs:    strconv.Itoa(int(id)),
-				FullPath:        "/a",
-				FullName:        "1",
-				Type:            ChildTypeGroup,
-				UpdatedAt:       child.UpdatedAt,
+				CreatedBy:       1,
+				UpdatedBy:       1,
 			},
 		},
 		{

@@ -79,17 +79,18 @@ func NewController() Controller {
 // GetChildren get children of a group, including subgroups and applications
 func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
 	var parent *models.Group
+	var full *Full
 	if id > 0 {
 		var err error
 		parent, err = c.GetByID(ctx, id)
 		if err != nil {
 			return nil, 0, err
 		}
-	}
 
-	full, err := c.formatFullFromGroup(ctx, parent)
-	if err != nil {
-		return nil, 0, err
+		full, err = c.formatFullFromGroup(ctx, parent)
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 
 	// query children
@@ -122,8 +123,8 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 			fName = val.Name
 			fPath = fmt.Sprintf("/%s", val.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", full, val.Name)
-			fPath = fmt.Sprintf("%s/%s", full, val.Path)
+			fName = fmt.Sprintf("%s / %s", full.FullName, val.Name)
+			fPath = fmt.Sprintf("%s/%s", full.FullPath, val.Path)
 		}
 		child := convertGroupOrApplicationToChild(val, &Full{
 			FullName: fName,
@@ -226,17 +227,18 @@ func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) (
 // GetSubGroups get subgroups of a group
 func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
 	var parent *models.Group
+	var full *Full
 	if id > 0 {
 		var err error
 		parent, err = c.GetByID(ctx, id)
 		if err != nil {
 			return nil, 0, err
 		}
-	}
 
-	full, err := c.formatFullFromGroup(ctx, parent)
-	if err != nil {
-		return nil, 0, err
+		full, err = c.formatFullFromGroup(ctx, parent)
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 
 	// query subGroups
@@ -267,8 +269,8 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 			fName = s.Name
 			fPath = fmt.Sprintf("/%s", s.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", full, s.Name)
-			fPath = fmt.Sprintf("%s/%s", full, s.Path)
+			fName = fmt.Sprintf("%s / %s", full.FullName, s.Name)
+			fPath = fmt.Sprintf("%s/%s", full.FullPath, s.Path)
 		}
 		child := convertGroupToChild(s, &Full{
 			FullName: fName,
