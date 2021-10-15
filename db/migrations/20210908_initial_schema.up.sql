@@ -178,8 +178,8 @@ CREATE TABLE `region`
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
 
--- scope table
-CREATE TABLE `scope`
+-- environment_region table
+CREATE TABLE `environment_region`
 (
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
     `env`              varchar(128)     NOT NULL DEFAULT '' COMMENT 'env',
@@ -204,12 +204,36 @@ CREATE TABLE `cluster`
     `name`             varchar(64)      NOT NULL DEFAULT '' COMMENT 'the name of cluster',
     `description`      varchar(256)              DEFAULT NULL COMMENT 'the description of cluster',
     `git_branch`       varchar(128)              DEFAULT NULL COMMENT 'git default branch',
-    `scope`            int(11) unsigned NOT NULL DEFAULT '' COMMENT 'scope id',
+    `env`              varchar(128)     NOT NULL DEFAULT '' COMMENT 'env',
+    `region`           varchar(128)     NOT NULL DEFAULT '' COMMENT 'region',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
     `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
     `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_name` (`name`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4;
+
+-- pipeline_run table
+CREATE TABLE `pipeline_run`
+(
+    `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `action`           varchar(64)      NOT NULL COMMENT 'action',
+    `status`           varchar(64)      NOT NULL DEFAULT '' COMMENT 'the pipelineRun status',
+    `title`            varchar(256)     DEFAULT NULL COMMENT 'the title of pipelineRun',
+    `description`      varchar(2048)    DEFAULT NULL COMMENT 'the description of pipelineRun',
+    `log_bucket`       varchar(128)     NOT NULL DEFAULT '' COMMENT 's3 bucket to storage this pipelineRun log',
+    `log_object`       varchar(258)     NOT NULL DEFAULT '' COMMENT 's3 object for log',
+    `started_at`       datetime         DEFAULT NULL COMMENT 'start time of this pipelineRun',
+    `finished_at`      datetime         DEFAULT NULL COMMENT 'finish time of this pipelineRun',
+    `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`       datetime                  DEFAULT NULL,
+    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
