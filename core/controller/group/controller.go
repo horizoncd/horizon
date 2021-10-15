@@ -338,7 +338,7 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 	groupEntity.UpdatedBy = currentUser.GetID()
 
 	group, err := c.groupManager.Create(ctx, groupEntity)
-	if group == nil {
+	if err != nil {
 		return 0, err
 	}
 
