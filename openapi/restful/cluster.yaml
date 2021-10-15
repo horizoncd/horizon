@@ -273,7 +273,7 @@ paths:
     post:
       tags:
         - cluster
-      operationId: buildAndDeploy
+      operationId: builddeploy
       summary: |
         Build and deploy for a cluster.
         This operation will create a pipelinerun for cluster.
@@ -286,6 +286,8 @@ paths:
             schema:
               example: |
                 {
+                    "title": "1.1 版本发布",
+                    "description": "xxxxxxxxxxxxxxx",
                     "git": {
                         "branch": "develop"
                     }
@@ -322,6 +324,16 @@ paths:
       operationId: deploy
       summary: |
         Deploy for a cluster with no build.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "title": "1.1 版本发布",
+                    "description": "xxxxxxxxxxxxxxx"
+                }
       responses:
         "200":
           description: Success
@@ -360,8 +372,8 @@ paths:
             schema:
               example: |
                 {
-                    "//image":"required, the image to rollback",
-                    "image":"harbor.musiccloudnative.com/test-application/test-cluster:develop-sd8ask3f-20201015143526"
+                    "//pipelinerunID":"the pipelinerunID to rollback",
+                    "pipelinerunID": 1000
                 }
       responses:
         "200":
@@ -504,27 +516,33 @@ paths:
               schema:
                 example: |
                   {
-                      "data": {
-                        "total": 100,
-                        "items": [
-                          {
-                            "id": 1,
-                            "//status": "running/ok/failed/cancelled",
-                            "status": "ok",
-                            "//action": "buildAndDeploy/deploy/rollback/restart",
-                            "action": "buildAndDeploy",
-                            "//branch": "branch and commit exists only when action is buildAndDeploy",
-                            "branch": "develop",
-                            "commit": "239b7aeedc1d2b3023871a85d1cd2b11590c6ba9",
-                            "createdBy": "Tony",
-                            "//startedAt": "unix timestamp",
-                            "startedAt": 1634182718327,
-                            "//finishedAt": "unix timestamp",
-                            "finishedAt": 163418378923,
-                          }
-                        ]
+                      "data":{
+                          "total":100,
+                          "items":[
+                              {
+                                  "id":1,
+                                  "//status":"running/ok/failed/cancelled",
+                                  "status":"ok",
+                                  "//action":"builddeploy/deploy/rollback/restart",
+                                  "action":"builddeploy",
+                                  "title":"v1.0版本发布",
+                                  "description":"This is a beautiful description",
+                                  "//code_branch":"code_branch and code_commit exists only when action is buildAndDeploy",
+                                  "code_branch":"develop",
+                                  "code_commit":"239b7aeedc1d2b3023871a85d1cd2b11590c6ba9",
+                                  "//config_commit":"cluster config commit",
+                                  "config_commit":"0ae7266acc62d7c2bacd74e3f0ef3edacc04c459",
+                                  "//rollback_from":"pipelinerun this pipelinerun rollback from",
+                                  "rollback_from":1000,
+                                  "createdBy":"Tony",
+                                  "//startedAt":"unix timestamp",
+                                  "startedAt":1634182718327,
+                                  "//finishedAt":"unix timestamp",
+                                  "finishedAt":163418378923
+                              }
+                          ]
                       }
-                    }
+                  }
         default:
           description: Unexpected error
           content:

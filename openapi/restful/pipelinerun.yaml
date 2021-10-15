@@ -82,15 +82,22 @@ paths:
                           "id":1,
                           "//status":"running/ok/failed/cancelled",
                           "status":"ok",
-                          "//action": "buildAndDeploy/deploy/rollback/restart",
-                          "action": "buildAndDeploy",
-                          "branch":"develop",
-                          "commit":"239b7aeedc1d2b3023871a85d1cd2b11590c6ba9",
+                          "//action":"builddeploy/deploy/rollback/restart",
+                          "action":"builddeploy",
+                          "title":"v1.0版本发布",
+                          "description":"This is a beautiful description",
+                          "//code_branch":"code_branch and code_commit exists only when action is buildAndDeploy",
+                          "code_branch":"develop",
+                          "code_commit":"239b7aeedc1d2b3023871a85d1cd2b11590c6ba9",
+                          "//config_commit":"cluster config commit",
+                          "config_commit":"0ae7266acc62d7c2bacd74e3f0ef3edacc04c459",
+                          "//rollback_from":"pipelinerun this pipelinerun rollback from",
+                          "rollback_from":1000,
                           "createdBy":"Tony",
-                          "//createdAt":"unix timestamp",
-                          "createdAt":1634182718327,
-                          "//duration":"pipelinerun duration, seconds",
-                          "durationSeconds":100
+                          "//startedAt":"unix timestamp",
+                          "startedAt":1634182718327,
+                          "//finishedAt":"unix timestamp",
+                          "finishedAt":163418378923
                       }
                   }
         default:
