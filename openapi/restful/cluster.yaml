@@ -264,7 +264,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/buildAndDeploy:
+  /apis/core/v1/clusters/{cluster}/builddeploy:
     parameters:
       - name: cluster
         in: path
@@ -276,9 +276,9 @@ paths:
       operationId: buildAndDeploy
       summary: |
         Build and deploy for a cluster.
-        This operation will create a pipelineRun for cluster.
-        A cluster can only has one running pipelineRun.
-        Return error if there exists a running pipelineRun already.
+        This operation will create a pipelinerun for cluster.
+        A cluster can only has one running pipelinerun.
+        Return error if there exists a running pipelinerun already.
       requestBody:
         required: true
         content:
@@ -299,7 +299,7 @@ paths:
                 example: |
                   {
                     "data": {
-                      "//id": "pipelineRun id",
+                      "//id": "pipelinerun id",
                       "id": 1000
                     }
                   }
@@ -331,7 +331,7 @@ paths:
                 example: |
                   {
                     "data": {
-                      "//id": "pipelineRun record id",
+                      "//id": "pipelinerun record id",
                       "id": 1000
                     }
                   }
@@ -372,7 +372,7 @@ paths:
                 example: |
                   {
                     "data": {
-                      "//id": "pipelineRun record id",
+                      "//id": "pipelinerun record id",
                       "id": 1000
                     }
                   }
@@ -403,7 +403,7 @@ paths:
                 example: |
                   {
                     "data": {
-                      "//id": "pipelineRun record id",
+                      "//id": "pipelinerun record id",
                       "id": 1000
                     }
                   }
@@ -436,7 +436,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/diffs/code?targetBranch={targetBranch}:
+  /apis/core/v1/clusters/{cluster}/diffs?targetBranch={targetBranch}:
     parameters:
       - name: cluster
         in: path
@@ -460,38 +460,21 @@ paths:
               schema:
                 example: |
                   {
-                    "data": {
-                      "commitID": {
-                        "source": "6cb5e13a2d3c59f2283fc6b52771729691aa9fc3",
-                        "//target": "target is the target commit of targetBranch",
-                        "target": "d75b5902eb3b4bc8bda333bfd27e73ee3dd52ec9"
-                      }
-                      "link": "https://g.hz.netease.com/music-cloud-native/horizon/horizon/-/compare/6cb5e13a2d3c59f2283fc6b52771729691aa9fc3...d75b5902eb3b4bc8bda333bfd27e73ee3dd52ec9"
-                    }
-                  }
-
-  /apis/core/v1/clusters/{cluster}/diffs/config:
-    parameters:
-      - name: cluster
-        in: path
-        description: name of cluster
-        required: true
-    get:
-      tags:
-        - cluster
-      operationId: diffsOfCode
-      summary: |
-        Get config diffs of a cluster,
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                example: |
-                  {
                       "data":{
-                          "changes":[
+                          "codeDiff":{
+                              "commit":{
+                                  "source":{
+                                      "id":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
+                                  },
+                                  "//target":"target is the target commit id and log of targetBranch",
+                                  "target":{
+                                      "id":"d75b5902eb3b4bc8bda333bfd27e73ee3dd52ec9",
+                                      "log":"xxxxxx"
+                                  }
+                              },
+                              "link":"https://g.hz.netease.com/music-cloud-native/horizon/horizon/-/compare/6cb5e13a2d3c59f2283fc6b52771729691aa9fc3...d75b5902eb3b4bc8bda333bfd27e73ee3dd52ec9"
+                          },
+                          "configDiff":[
                               {
                                   "old_path":"values.yaml",
                                   "new_path":"values.yaml",
@@ -512,7 +495,7 @@ paths:
         - cluster
       operationId: getPipelineRuns
       summary: |
-        List pipelineRuns of a cluster.
+        List pipelineruns of a cluster.
       responses:
         "200":
           description: Success
@@ -549,20 +532,20 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/pipelineruns/stop:
+  /apis/core/v1/pipelineruns/{pipelinerunID}/stop:
     parameters:
-      - name: cluster
-        in: path
-        description: name of cluster
+      - name: pipelinerunID
+        in: query
+        description: the pipelinerun ID
         required: true
     post:
       tags:
-        - cluster
+        - pipelinerun
       operationId: stopPipelinerun
       summary: |
-        Stop the running pipelineRun for a cluster.
-        If there is no running pipelineRun, do nothing and return success.
-        A cluster can only have one running pipelineRun.
+        Stop the running pipelinerun for a cluster.
+        If there is no running pipelinerun, do nothing and return success.
+        A cluster can only have one running pipelinerun.
       responses:
         "200":
           description: Success
@@ -573,22 +556,18 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/pipelineruns/{pipelineRunID}/log:
+  /apis/core/v1/pipelineruns/{pipelinerunID}/log:
     parameters:
-      - name: cluster
-        in: path
-        description: name of cluster
-        required: true
-      - name: pipelineRunID
+      - name: pipelinerunID
         in: query
-        description: the pipelineRun ID
+        description: the pipelinerun ID
         required: true
     get:
       tags:
-        - cluster
+        - pipelinerun
       operationId: getPipelineRunLog
       summary: |
-        Get the specified pipelineRun's log for a cluster.
+        Get the specified pipelinerun's log for a cluster.
       responses:
         "200":
           description: Success
@@ -606,22 +585,18 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/pipelineruns/{pipelineRunID}/status:
+  /apis/core/v1/pipelineruns/{pipelinerunID}/status:
     parameters:
-      - name: cluster
-        in: path
-        description: name of cluster
-        required: true
-      - name: pipelineRunID
+      - name: pipelinerunID
         in: query
-        description: the pipelineRun ID
+        description: the pipelinerun ID
         required: true
     get:
       tags:
-        - cluster
+        - pipelinerun
       operationId: getPipelinerunsStatus
       summary: |
-        Get the specified pipelineRun's status for a cluster.
+        Get the specified pipelinerun's status for a cluster.
       responses:
         "200":
           description: Success
@@ -675,8 +650,8 @@ paths:
                           "runningTask":{
                               "//task":"build: building, deploy: deploying, none: no building and deploying",
                               "task":"build",
-                              "//pipelineRunID": "This pipelineRunID can be used to get log, get status, etc.",
-                              "pipelineRunID": 1000,
+                              "//pipelinerunID": "This pipelinerunID can be used to get log, get status, etc.",
+                              "pipelinerunID": 1000,
                               "//taskStatus":"Running, Pending, Succeeded, Cancelled, Failed. When task is none，this field is empty",
                               "taskStatus":"Running"
                           },

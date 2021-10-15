@@ -184,6 +184,7 @@ CREATE TABLE `environment_region`
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
     `env`              varchar(128)     NOT NULL DEFAULT '' COMMENT 'env',
     `region`           varchar(128)     NOT NULL DEFAULT '' COMMENT 'region',
+    `disabled`         tinyint(1)       NOT NULL DEFAULT 0 COMMENT 'is system admin，0-false，1-true',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
@@ -218,20 +219,22 @@ CREATE TABLE `cluster`
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
 
--- pipeline_run table
-CREATE TABLE `pipeline_run`
+-- pipelinerun table
+CREATE TABLE `pipelinerun`
 (
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
     `action`           varchar(64)      NOT NULL COMMENT 'action',
-    `status`           varchar(64)      NOT NULL DEFAULT '' COMMENT 'the pipelineRun status',
-    `title`            varchar(256)     DEFAULT NULL COMMENT 'the title of pipelineRun',
-    `description`      varchar(2048)    DEFAULT NULL COMMENT 'the description of pipelineRun',
-    `branch`           varchar(128)     DEFAULT NULL COMMENT 'the branch to build of this pipelineRun',
-    `commit`           varchar(128)     DEFAULT NULL COMMENT 'the commit to build of this pipelineRun',
-    `log_bucket`       varchar(128)     NOT NULL DEFAULT '' COMMENT 's3 bucket to storage this pipelineRun log',
+    `status`           varchar(64)      NOT NULL DEFAULT '' COMMENT 'the pipelinerun status',
+    `title`            varchar(256)     NOT NULL DEFAULT '' COMMENT 'the title of pipelinerun',
+    `description`      varchar(2048)    DEFAULT NULL COMMENT 'the description of pipelinerun',
+    `code_branch`      varchar(128)     DEFAULT NULL COMMENT 'the branch to build of this pipelinerun',
+    `code_commit`      varchar(128)     DEFAULT NULL COMMENT 'the commit to build of this pipelinerun',
+    `config_commit`    varchar(128)     DEFAULT NULL COMMENT 'the commit of cluster config',
+    `log_bucket`       varchar(128)     NOT NULL DEFAULT '' COMMENT 's3 bucket to storage this pipelinerun log',
     `log_object`       varchar(258)     NOT NULL DEFAULT '' COMMENT 's3 object for log',
-    `started_at`       datetime         DEFAULT NULL COMMENT 'start time of this pipelineRun',
-    `finished_at`      datetime         DEFAULT NULL COMMENT 'finish time of this pipelineRun',
+    `started_at`       datetime         DEFAULT NULL COMMENT 'start time of this pipelinerun',
+    `finished_at`      datetime         DEFAULT NULL COMMENT 'finish time of this pipelinerun',
+    `rollback_from`    int(11) unsigned NULL COMMENT 'the pipelinerun id that this pipelinerun rollback from',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
