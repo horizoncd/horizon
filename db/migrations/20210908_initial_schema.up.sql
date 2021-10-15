@@ -226,6 +226,8 @@ CREATE TABLE `pipeline_run`
     `status`           varchar(64)      NOT NULL DEFAULT '' COMMENT 'the pipelineRun status',
     `title`            varchar(256)     DEFAULT NULL COMMENT 'the title of pipelineRun',
     `description`      varchar(2048)    DEFAULT NULL COMMENT 'the description of pipelineRun',
+    `branch`           varchar(128)     DEFAULT NULL COMMENT 'the branch to build of this pipelineRun',
+    `commit`           varchar(128)     DEFAULT NULL COMMENT 'the commit to build of this pipelineRun',
     `log_bucket`       varchar(128)     NOT NULL DEFAULT '' COMMENT 's3 bucket to storage this pipelineRun log',
     `log_object`       varchar(258)     NOT NULL DEFAULT '' COMMENT 's3 object for log',
     `started_at`       datetime         DEFAULT NULL COMMENT 'start time of this pipelineRun',

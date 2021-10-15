@@ -530,13 +530,14 @@ paths:
                             "status": "ok",
                             "//action": "buildAndDeploy/deploy/rollback/restart",
                             "action": "buildAndDeploy",
+                            "//branch": "branch and commit exists only when action is buildAndDeploy",
                             "branch": "develop",
                             "commit": "239b7aeedc1d2b3023871a85d1cd2b11590c6ba9",
                             "createdBy": "Tony",
-                            "//createdAt": "unix timestamp",
-                            "createdAt": 1634182718327,
-                            "//duration": "pipelinerun duration, seconds",
-                            "durationSeconds": 100
+                            "//startedAt": "unix timestamp",
+                            "startedAt": 1634182718327,
+                            "//finishedAt": "unix timestamp",
+                            "finishedAt": 163418378923,
                           }
                         ]
                       }
