@@ -8,9 +8,11 @@ import (
 	"strconv"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/group/models"
 
 	"github.com/stretchr/testify/assert"
@@ -23,7 +25,11 @@ var (
 	ctx   = orm.NewContext(context.TODO(), db)
 )
 
+// nolint
 func init() {
+	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+		Name: "Tony",
+	})
 	// create table
 	err := db.AutoMigrate(&models.Group{})
 	if err != nil {

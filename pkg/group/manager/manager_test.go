@@ -218,7 +218,7 @@ func TestTransferGroup(t *testing.T) {
 	g3, err := Mgr.Create(ctx, getGroup(0, "3", "c"))
 	assert.Nil(t, err)
 
-	err = Mgr.Transfer(ctx, g1.ID, g3.ID)
+	err = Mgr.Transfer(ctx, g1.ID, g3.ID, "")
 	assert.Nil(t, err)
 
 	group, err := Mgr.GetByID(ctx, g2.ID)

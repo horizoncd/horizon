@@ -48,7 +48,7 @@ type DAO interface {
 	// ListChildren children of a group
 	ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error)
 	// Transfer move a group under another parent group
-	Transfer(ctx context.Context, id, newParentID uint) error
+	Transfer(ctx context.Context, id, newParentID uint, userName string) error
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 }
@@ -93,7 +93,7 @@ func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageS
 	return gas, count, result.Error
 }
 
-func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
+func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userName string) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
@@ -111,14 +111,14 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		// change parentID
-		if err := tx.Exec(common.GroupUpdateParentID, newParentID, id).Error; err != nil {
+		if err := tx.Exec(common.GroupUpdateParentID, newParentID, userName, id).Error; err != nil {
 			return err
 		}
 
 		// update traversalIDs
 		oldTIDs := group.TraversalIDs
 		newTIDs := fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID)
-		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs, oldTIDs+"%").Error; err != nil {
+		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs, userName, oldTIDs+"%").Error; err != nil {
 			return err
 		}
 
@@ -344,7 +344,8 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 		return err
 	}
 
-	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel, group.ID)
+	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description,
+		group.VisibilityLevel, group.UpdatedBy, group.ID)
 
 	return result.Error
 }

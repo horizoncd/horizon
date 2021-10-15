@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/manager"
@@ -273,10 +274,19 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 
 // UpdateBasic update basic info of a group, including name, path, description and visibilityLevel
 func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *UpdateGroup) error {
-	groupEntity := convertUpdateGroupToGroup(updateGroup)
-	groupEntity.ID = id
+	const op = "group controller: update group basic"
 
-	err := c.groupManager.UpdateBasic(ctx, groupEntity)
+	group := convertUpdateGroupToGroup(updateGroup)
+	group.ID = id
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+	group.UpdatedBy = currentUser.GetName()
+
+	err = c.groupManager.UpdateBasic(ctx, group)
 	if err != nil {
 		return err
 	}
@@ -286,7 +296,15 @@ func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *Upda
 
 // Transfer put a group under another parent group
 func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
-	err := c.groupManager.Transfer(ctx, id, newParentID)
+	const op = "group controller: transfer group"
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+
+	err = c.groupManager.Transfer(ctx, id, newParentID, currentUser.GetName())
 	if err != nil {
 		return err
 	}
@@ -296,11 +314,19 @@ func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 
 // CreateGroup add a group
 func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint, error) {
+	const op = "group controller: create group"
 	groupEntity := convertNewGroupToGroup(newGroup)
 	group, err := c.groupManager.Create(ctx, groupEntity)
 	if group == nil {
 		return 0, err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return 0, errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+	group.CreatedBy = currentUser.GetName()
+	group.UpdatedBy = currentUser.GetName()
 	return group.ID, err
 }
 
