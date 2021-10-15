@@ -3,11 +3,11 @@ package group
 import (
 	"context"
 	"fmt"
-	"g.hz.netease.com/horizon/core/common"
 	"net/http"
 	"sort"
 	"strings"
 
+	"g.hz.netease.com/horizon/core/common"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/manager"
@@ -114,10 +114,10 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 		var fName, fPath string
 		if id == 0 {
 			fName = val.Name
-			fPath = fmt.Sprintf("/%v", val.Path)
+			fPath = fmt.Sprintf("/%s", val.Path)
 		} else {
-			fName = fmt.Sprintf("%v / %v", parent.FullName, val.Name)
-			fPath = fmt.Sprintf("%v/%v", parent.FullPath, val.Path)
+			fName = fmt.Sprintf("%s / %s", parent.FullName, val.Name)
+			fPath = fmt.Sprintf("%s/%s", parent.FullPath, val.Path)
 		}
 		child := convertGroupOrApplicationToChild(val, &Full{
 			FullName: fName,

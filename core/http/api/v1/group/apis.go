@@ -146,8 +146,28 @@ func (a *API) UpdateGroup(c *gin.Context) {
 
 // GetChildren get children of a group, including groups and applications
 func (a *API) GetChildren(c *gin.Context) {
-	// todo also query application
-	a.GetSubGroups(c)
+	groupID := c.Param(_paramGroupID)
+	intID, err := strconv.Atoi(groupID)
+	if err != nil || intID < -1 {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
+	}
+
+	pageNumber, pageSize, err := checkPageParamsOnListingGroups(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	children, count, err := a.groupCtl.GetChildren(c, uint(intID), pageNumber, pageSize)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: count,
+		Items: children,
+	})
 }
 
 // GetSubGroups get subGroups of a group
@@ -178,8 +198,35 @@ func (a *API) GetSubGroups(c *gin.Context) {
 
 // SearchChildren search children of a group, including groups and applications
 func (a *API) SearchChildren(c *gin.Context) {
-	// TODO(wurongjun): also query application
-	a.SearchGroups(c)
+	groupID := c.Query(_paramGroupID)
+	intID, err := strconv.Atoi(groupID)
+	if err != nil || intID < -1 {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
+	}
+
+	pageNumber, pageSize, err := checkPageParamsOnListingGroups(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	filter := c.Query(common.Filter)
+
+	searchChildren, count, err := a.groupCtl.SearchChildren(c, &group.SearchParams{
+		GroupID:    uint(intID),
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+		Filter:     filter,
+	})
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: count,
+		Items: searchChildren,
+	})
 }
 
 // SearchGroups search subgroups of a group
