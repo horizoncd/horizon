@@ -481,7 +481,7 @@ paths:
         - cluster
       operationId: diffsOfCode
       summary: |
-        Get code diffs of a cluster,
+        Get config diffs of a cluster,
       responses:
         '200':
           description: Success
@@ -560,8 +560,9 @@ paths:
         - cluster
       operationId: stopPipelinerun
       summary: |
-        Stop the running pipelinerun for a cluster.
-        If there is no running pipelinerun, do nothing and return success.
+        Stop the running pipelineRun for a cluster.
+        If there is no running pipelineRun, do nothing and return success.
+        A cluster can only have one running pipelineRun.
       responses:
         "200":
           description: Success
