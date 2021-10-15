@@ -16,6 +16,10 @@ var (
 	Converter = New()
 )
 
+var (
+	Owner string = "Owner"
+)
+
 type UpdateMember struct {
 	ID         uint
 	MemberType models.MemberType
@@ -57,7 +61,7 @@ type Member struct {
 	// Role the role name that bind
 	Role string
 	// GrantBy user who grant the role
-	GrantBy string
+	GrantBy uint
 	// GrantTime
 	GrantTime time.Time
 }

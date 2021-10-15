@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"gorm.io/gorm"
 )
 
@@ -24,13 +25,15 @@ type DAO interface {
 	// CheckPathUnique check whether the path is unique
 	CheckPathUnique(ctx context.Context, group *models.Group) error
 	// Create a group
-	Create(ctx context.Context, group *models.Group) (uint, error)
+	Create(ctx context.Context, group *models.Group) (*models.Group, error)
 	// Delete a group by id
 	Delete(ctx context.Context, id uint) (int64, error)
 	// GetByID get a group by id
 	GetByID(ctx context.Context, id uint) (*models.Group, error)
 	// GetByNameFuzzily get groups that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	// GetByIDNameFuzzily get groups that fuzzily matching the given name and id
+	GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error)
 	// GetByIDs get groups by ids
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 	// GetByPaths get groups by paths
@@ -43,8 +46,10 @@ type DAO interface {
 	ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error)
 	// List query groups with paging
 	List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error)
+	// ListChildren children of a group
+	ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error)
 	// Transfer move a group under another parent group
-	Transfer(ctx context.Context, id, newParentID uint) error
+	Transfer(ctx context.Context, id, newParentID uint, userID uint) error
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 }
@@ -56,7 +61,40 @@ func NewDAO() DAO {
 
 type dao struct{}
 
-func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
+func (d *dao) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []*models.Group
+	result := db.Raw(common.GroupQueryByIDNameFuzzily, fmt.Sprintf("%%%d%%", id),
+		fmt.Sprintf("%%%s%%", name)).Scan(&groups)
+
+	return groups, result.Error
+}
+
+func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) (
+	[]*models.GroupOrApplication, int64, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var gas []*models.GroupOrApplication
+	var count int64
+
+	result := db.Raw(common.GroupQueryGroupChildren, parentID, parentID, pageSize, (pageNumber-1)*pageSize).Scan(&gas)
+	if result.Error != nil {
+		return nil, 0, err
+	}
+
+	result = db.Raw(common.GroupQueryGroupChildrenCount, parentID, parentID).Scan(&count)
+
+	return gas, count, result.Error
+}
+
+func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userID uint) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
@@ -74,14 +112,14 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		// change parentID
-		if err := tx.Exec(common.GroupUpdateParentID, newParentID, id).Error; err != nil {
+		if err := tx.Exec(common.GroupUpdateParentID, newParentID, userID, id).Error; err != nil {
 			return err
 		}
 
 		// update traversalIDs
 		oldTIDs := group.TraversalIDs
 		newTIDs := fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID)
-		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs, oldTIDs+"%").Error; err != nil {
+		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs, userID, oldTIDs+"%").Error; err != nil {
 			return err
 		}
 
@@ -132,7 +170,6 @@ func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 	return groups, result.Error
 }
 
-// CheckPathUnique todo check application table too
 func (d *dao) CheckPathUnique(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -167,7 +204,6 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Grou
 	return groups, result.Error
 }
 
-// CheckNameUnique todo check application table too
 func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -190,10 +226,10 @@ func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 	return nil
 }
 
-func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
+func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	var pGroup *models.Group
@@ -201,19 +237,19 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
 	if group.ParentID > 0 {
 		pGroup, err = d.GetByID(ctx, group.ParentID)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 	}
 
 	// check if there's a record with the same parentID and name
 	err = d.CheckNameUnique(ctx, group)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	// check if there's a record with the same parentID and path
 	err = d.CheckPathUnique(ctx, group)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
@@ -237,15 +273,33 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (uint, error) {
 			return err
 		}
 
+		// insert a record to member table
+		member := &membermodels.Member{
+			ResourceType: membermodels.TypeGroup,
+			ResourceID:   id,
+			//TODO(tom): where to place the role
+			Role:       membermodels.Owner,
+			MemberType: membermodels.MemberUser,
+			MemberInfo: group.CreatedBy,
+			GrantBy:    group.UpdatedBy,
+		}
+		result := tx.Create(member)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("create member error")
+		}
+
 		// commit when return nil
 		return nil
 	})
 
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return group.ID, nil
+	return group, nil
 }
 
 // Delete can only delete a group that doesn't have any children
@@ -309,7 +363,8 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 		return err
 	}
 
-	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description, group.VisibilityLevel, group.ID)
+	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description,
+		group.VisibilityLevel, group.UpdatedBy, group.ID)
 
 	return result.Error
 }

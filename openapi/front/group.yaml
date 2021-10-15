@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v1/groups/search?parentId={parentId}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v1/groups/searchgroups?parentID={parentID}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
@@ -13,7 +13,7 @@ paths:
       summary: query groups
       operationId: queryGroups
       parameters:
-        - name: parentId
+        - name: parentID
           in: query
         - name: filter
           in: query
@@ -29,7 +29,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/SearchGroupResult'
+                      $ref: '#/components/schemas/GroupChild'
         default:
           description: Unexpected error
           content:
@@ -37,14 +37,14 @@ paths:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
 
-  /apis/front/v1/groups/children?parentId={groupId}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v1/groups/children?parentID={parentID}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
       operationId: queryGroupChildren
       summary: query children of a group
       parameters:
-        - name: groupId
+        - name: parentID
           in: query
         - $ref: '../core.yaml/#/components/parameters/pageNumber'
         - $ref: '../core.yaml/#/components/parameters/pageSize'
@@ -68,7 +68,6 @@ paths:
 
 components:
   schemas:
-
     GroupChild:
       type: object
       properties:
@@ -76,53 +75,19 @@ components:
           type: integer
         name:
           type: string
-        fullName:
-          type: string
         description:
           type: string
         path:
+          type: string
+        fullName:
+          type: string
+        fullPath:
           type: string
         type:
           $ref: '#/components/schemas/GroupChildType'
         childrenCount:
           type: integer
-        subGroupCount:
-          type: integer
-        applicationCount:
-          type: integer
-        parentId:
-          type: integer
-        createdAt:
-          $ref: "../core.yaml#/components/schemas/Date"
-        updatedAt:
-          $ref: "../core.yaml#/components/schemas/Date"
-
-    SearchGroupResult:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        fullName:
-          type: string
-        description:
-          type: string
-        path:
-          type: string
-        type:
-          $ref: '#/components/schemas/GroupChildType'
-        childrenCount:
-          type: integer
-        subGroupCount:
-          type: integer
-        applicationCount:
-          type: integer
-        children:
-          type: array
-          items:
-            $ref: '#/components/schemas/SearchGroupResult'
-        parentId:
+        parentID:
           type: integer
         createdAt:
           $ref: "../core.yaml#/components/schemas/Date"
@@ -134,6 +99,7 @@ components:
       enum:
         - group
         - application
+        - cluster
 
 
 

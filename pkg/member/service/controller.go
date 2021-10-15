@@ -107,7 +107,7 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 		return nil, err
 	}
 
-	// 2. If service exist return error TODO(tom): change to updateMember
+	// 2. If  member exist return error TODO(tom): change to updateMember
 	memberItem, err := s.getDirectMemberByDetail(ctx, postMember.ResourceType, postMember.ResourceID,
 		postMember.MemberInfo, postMember.MemberType)
 	if err != nil {

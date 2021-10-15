@@ -54,7 +54,7 @@ func TestBasic(t *testing.T) {
 
 	retMember, err := Mgr.GetByUserID(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
 	assert.Nil(t, err)
-	assert.True(t, MemberValueEqual(retMember, member1))
+	assert.True(t, MemberValueEqual(retMember, member))
 
 	// test update
 	var grandByCat uint = 3

@@ -15,6 +15,8 @@ var (
 
 type Manager interface {
 	GetByName(ctx context.Context, name string) (*models.Application, error)
+	// GetByNameFuzzily get applications that fuzzily matching the given name
+	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
 	Create(ctx context.Context, application *models.Application) (*models.Application, error)
 	UpdateByName(ctx context.Context, name string, application *models.Application) (*models.Application, error)
 	DeleteByName(ctx context.Context, name string) error
@@ -30,6 +32,10 @@ func New() Manager {
 type manager struct {
 	applicationDAO applicationdao.DAO
 	groupDAO       groupdao.DAO
+}
+
+func (m *manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error) {
+	return m.applicationDAO.GetByNameFuzzily(ctx, name)
 }
 
 func (m *manager) GetByName(ctx context.Context, name string) (*models.Application, error) {

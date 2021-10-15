@@ -6,13 +6,20 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/controller/member"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	usermodel "g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -20,11 +27,20 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(context.TODO(), db)
+	db, _                      = orm.NewSqliteDB("")
+	ctx                        = orm.NewContext(context.TODO(), db)
+	contextUserID       uint   = 1
+	contextUserName     string = "Tony"
+	contextUserFullName string = "TonyWu"
 )
 
+// nolint
 func init() {
+	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+		Name:     contextUserName,
+		FullName: contextUserFullName,
+		ID:       contextUserID,
+	})
 	// create table
 	err := db.AutoMigrate(&models.Group{})
 	if err != nil {
@@ -32,6 +48,17 @@ func init() {
 		os.Exit(1)
 	}
 	err = db.AutoMigrate(&appmodels.Application{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	err = db.AutoMigrate(&membermodels.Member{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+
+	err = db.AutoMigrate(&usermodel.User{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
@@ -330,7 +357,104 @@ func TestControllerGetByPath(t *testing.T) {
 }
 
 func TestControllerGetChildren(t *testing.T) {
-	// todo including application
+	newRootGroup := &NewGroup{
+		Name: "1",
+		Path: "a",
+	}
+	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+
+	newGroup := &NewGroup{
+		Name:     "2",
+		Path:     "b",
+		ParentID: id,
+	}
+	id2, _ := Ctl.CreateGroup(ctx, newGroup)
+	group2, _ := Ctl.GetByID(ctx, id2)
+
+	applicationDAO := applicationdao.NewDAO()
+	app, err := applicationDAO.Create(ctx, &appmodels.Application{
+		GroupID: id,
+		Name:    "c",
+	})
+	assert.Nil(t, err)
+
+	type args struct {
+		ctx        context.Context
+		id         uint
+		pageNumber int
+		pageSize   int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Child
+		want1   int64
+		wantErr bool
+	}{
+		{
+			name: "firstPage",
+			args: args{
+				ctx:        ctx,
+				id:         id,
+				pageSize:   1,
+				pageNumber: 1,
+			},
+			want: []*Child{
+				{
+					ID:        id2,
+					Name:      "2",
+					Path:      "b",
+					FullPath:  "/a/b",
+					FullName:  "1 / 2",
+					Type:      ChildTypeGroup,
+					UpdatedAt: group2.UpdatedAt,
+				},
+			},
+			want1: 2,
+		},
+		{
+			name: "secondPage",
+			args: args{
+				ctx:        ctx,
+				id:         id,
+				pageSize:   1,
+				pageNumber: 2,
+			},
+			want: []*Child{
+				{
+					ID:        app.ID,
+					Name:      "c",
+					Path:      "c",
+					FullPath:  "/a/c",
+					FullName:  "1 / c",
+					Type:      ChildTypeApplication,
+					UpdatedAt: app.UpdatedAt,
+				},
+			},
+			want1: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := Ctl.GetChildren(tt.args.ctx, tt.args.id, tt.args.pageNumber, tt.args.pageSize)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetChildren() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			for i, val := range got {
+				val.UpdatedAt = tt.want[i].UpdatedAt
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetChildren() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("GetChildren() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.Application{})
 }
 
 func TestControllerGetSubGroups(t *testing.T) {
@@ -430,7 +554,111 @@ func TestControllerGetSubGroups(t *testing.T) {
 }
 
 func TestControllerSearchChildren(t *testing.T) {
-	// todo including application
+	newRootGroup := &NewGroup{
+		Name: "1",
+		Path: "a",
+	}
+	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+
+	newGroup := &NewGroup{
+		Name:     "2",
+		Path:     "b",
+		ParentID: id,
+	}
+	id2, _ := Ctl.CreateGroup(ctx, newGroup)
+	_, _ = Ctl.GetByID(ctx, id2)
+
+	applicationDAO := applicationdao.NewDAO()
+	app, err := applicationDAO.Create(ctx, &appmodels.Application{
+		GroupID: id,
+		Name:    "c",
+	})
+	assert.Nil(t, err)
+
+	type args struct {
+		ctx    context.Context
+		id     uint
+		filter string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Child
+		want1   int64
+		wantErr bool
+	}{
+		{
+			name: "blankFilter",
+			args: args{
+				ctx:    ctx,
+				filter: "",
+				id:     id,
+			},
+			want: []*Child{
+				{
+					ID:       id2,
+					Name:     "2",
+					Path:     "b",
+					FullPath: "/a/b",
+					FullName: "1 / 2",
+					Type:     ChildTypeGroup,
+				},
+				{
+					ID:       app.ID,
+					Name:     app.Name,
+					Path:     app.Name,
+					FullPath: "/a/c",
+					FullName: "1 / c",
+					Type:     ChildTypeApplication,
+				},
+			},
+			want1: 2,
+		},
+		{
+			name: "matchApp",
+			args: args{
+				ctx:    ctx,
+				filter: "c",
+				id:     id,
+			},
+			want: []*Child{
+				{
+					ID:       app.ID,
+					Name:     app.Name,
+					Path:     app.Name,
+					FullPath: "/a/c",
+					FullName: "1 / c",
+					Type:     ChildTypeApplication,
+					ParentID: id,
+				},
+			},
+			want1: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := Ctl.SearchChildren(tt.args.ctx, &SearchParams{
+				GroupID: tt.args.id,
+				Filter:  tt.args.filter,
+			})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SearchChildren() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			for i, val := range got {
+				val.UpdatedAt = tt.want[i].UpdatedAt
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SearchChildren() got = %+v, want %+v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("SearchChildren() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerSearchGroups(t *testing.T) {
@@ -559,10 +787,8 @@ func TestControllerSearchGroups(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1, err := Ctl.SearchGroups(tt.args.ctx, &SearchParams{
-				GroupID:    tt.args.id,
-				Filter:     tt.args.filter,
-				PageNumber: common.DefaultPageNumber,
-				PageSize:   common.MaxPageSize,
+				GroupID: tt.args.id,
+				Filter:  tt.args.filter,
 			})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SearchGroups() error = %v, wantErr %v", err, tt.wantErr)
@@ -700,8 +926,9 @@ func TestControllerUpdateBasic(t *testing.T) {
 
 func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 	type args struct {
-		groupID uint
-		groups  []*models.Group
+		groupID      uint
+		groups       []*models.Group
+		applications []*appmodels.Application
 	}
 	tests := []struct {
 		name string
@@ -723,6 +950,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     0,
 					},
 				},
+				applications: []*appmodels.Application{},
 			},
 			want: []*Child{},
 		},
@@ -777,6 +1005,15 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     4,
 					},
 				},
+				applications: []*appmodels.Application{
+					{
+						Model: gorm.Model{
+							ID: 6,
+						},
+						Name:    "f",
+						GroupID: 2,
+					},
+				},
 			},
 			want: []*Child{
 				{
@@ -787,7 +1024,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					ParentID:      1,
 					FullPath:      "/a/b",
 					FullName:      "1 / 2",
-					ChildrenCount: 1,
+					ChildrenCount: 2,
 					Type:          ChildTypeGroup,
 					Children: []*Child{
 						{
@@ -799,6 +1036,15 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 							FullPath:     "/a/b/c",
 							FullName:     "1 / 2 / 3",
 							Type:         ChildTypeGroup,
+						},
+						{
+							ID:       6,
+							Name:     "f",
+							Path:     "f",
+							ParentID: 2,
+							FullPath: "/a/b/f",
+							FullName: "1 / 2 / f",
+							Type:     ChildTypeApplication,
 						},
 					},
 				},
@@ -830,9 +1076,167 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := generateChildrenWithLevelStruct(tt.args.groupID, tt.args.groups); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("generateChildrenWithLevelStruct() = %v, want %v", got, tt.want)
+			if got := generateChildrenWithLevelStruct(tt.args.groupID, tt.args.groups,
+				tt.args.applications); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("generateChildrenWithLevelStruct() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}
+}
+
+func MemberSame(m1, m2 member.Member) bool {
+	if m1.ID == m2.ID &&
+		m1.MemberInfo == m2.MemberInfo &&
+		m1.MemberID == m2.MemberID &&
+		m1.ResourceType == m2.ResourceType &&
+		m1.ResourceID == m2.ResourceID &&
+		m1.Role == m2.Role &&
+		m1.GrantBy == m1.GrantBy {
+		return true
+	}
+	return false
+}
+
+var (
+	user1ID   uint   = 1
+	user1Name string = contextUserName
+
+	user2ID   uint   = 2
+	user2Name string = "tom"
+
+	user3ID   uint   = 3
+	user3Name string = "jerry"
+
+	user4ID   uint   = 4
+	user4Name string = "alias"
+
+	user5ID   uint   = 5
+	user5Name string = "henry"
+)
+
+func CreateUsers(t *testing.T) {
+	// create user
+	user1 := usermodel.User{
+		Model: gorm.Model{},
+		Name:  user1Name,
+	}
+
+	user2 := user1
+	user2.Name = user2Name
+
+	user3 := user1
+	user3.Name = user3Name
+
+	user4 := user1
+	user4.Name = user4Name
+
+	user5 := user1
+	user5.Name = user5Name
+
+	for _, user := range []usermodel.User{user1, user2, user3, user4, user5} {
+		_, err := usermanager.Mgr.Create(ctx, &user)
+		assert.Nil(t, err)
+	}
+}
+
+func TestCreateGroupWithOwner(t *testing.T) {
+	CreateUsers(t)
+	// create group
+	newGroup := &NewGroup{
+		Name:            "1",
+		Path:            "1",
+		VisibilityLevel: "private",
+		Description:     "i am a private Group",
+		ParentID:        0,
+	}
+
+	groupID, err := Ctl.CreateGroup(ctx, newGroup)
+	assert.Nil(t, err)
+
+	retMember, err := Ctl.GetMember(ctx, groupID)
+	expectMember := member.Member{
+		ID:           1,
+		MemberType:   membermodels.MemberUser,
+		MemberInfo:   contextUserName,
+		MemberID:     contextUserID,
+		ResourceType: membermodels.TypeGroup,
+		ResourceID:   1,
+		Role:         member.Owner,
+		GrantBy:      contextUserID,
+	}
+	assert.Nil(t, err)
+	assert.NotNil(t, retMember)
+	assert.True(t, MemberSame(*retMember, expectMember))
+
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
+
+}
+
+func PostMemberAndMemberEqual(postMember member.PostMember, member2 member.Member) bool {
+	return postMember.ResourceType == string(member2.ResourceType) &&
+		postMember.ResourceID == member2.ResourceID &&
+		postMember.MemberType == member2.MemberType &&
+		postMember.MemberType == postMember.MemberType &&
+		postMember.Role == postMember.Role
+}
+
+func TestCreateGetUpdateRemoveList(t *testing.T) {
+	CreateUsers(t)
+
+	// create group
+	newGroup := &NewGroup{
+		Name:            "1",
+		Path:            "1",
+		VisibilityLevel: "private",
+		Description:     "i am a private Group",
+		ParentID:        0,
+	}
+
+	groupID, err := Ctl.CreateGroup(ctx, newGroup)
+	assert.Nil(t, err)
+
+	// create member already exist
+	postMember1 := member.PostMember{
+		ResourceType: membermodels.TypeGroupStr,
+		ResourceID:   groupID,
+		MemberInfo:   user1ID,
+		MemberType:   membermodels.MemberUser,
+		Role:         membermodels.Owner,
+	}
+	_, err = Ctl.CreateMember(ctx, &postMember1)
+	assert.NotNil(t, err.Error())
+	assert.True(t, strings.Contains(err.Error(), memberservice.ErrMemberExist.Error()))
+	// assert.True(t, PostMemberAndMemberEqual(postMember1, *retMember))
+
+	// create member exist
+	postMember2 := postMember1
+	postMember2.MemberInfo = user2ID
+	retMember2, err := Ctl.CreateMember(ctx, &postMember2)
+	assert.Nil(t, err)
+	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember2))
+
+	// remove the member
+	err = Ctl.RemoveMember(ctx, groupID, retMember2.MemberID, retMember2.MemberType)
+	assert.Nil(t, err)
+
+	// list member (create post2 and then list)
+	retMember2, err = Ctl.CreateMember(ctx, &postMember2)
+	assert.Nil(t, err)
+	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember2))
+
+	// create member already exist
+	postMemberOwner := member.PostMember{
+		ResourceType: membermodels.TypeGroupStr,
+		ResourceID:   groupID,
+		MemberInfo:   user1ID,
+		MemberType:   membermodels.MemberUser,
+		Role:         membermodels.Owner,
+	}
+	members, err := Ctl.ListMember(ctx, groupID)
+	assert.Nil(t, err)
+	assert.Equal(t, len(members), 2)
+	assert.True(t, PostMemberAndMemberEqual(postMemberOwner, members[0]))
+	assert.True(t, PostMemberAndMemberEqual(postMember2, members[1]))
 }

@@ -32,7 +32,7 @@ const (
 
 type Manager interface {
 	// Create a group
-	Create(ctx context.Context, group *models.Group) (uint, error)
+	Create(ctx context.Context, group *models.Group) (*models.Group, error)
 	// Delete a group by id
 	Delete(ctx context.Context, id uint) (int64, error)
 	// GetByID get a group by id
@@ -43,14 +43,18 @@ type Manager interface {
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	// GetByNameFuzzily get groups that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	// GetByIDNameFuzzily get groups that fuzzily matching the given name and id
+	GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error)
 	// UpdateBasic update basic info of a group
 	UpdateBasic(ctx context.Context, group *models.Group) error
 	// GetSubGroupsUnderParentIDs get subgroups under the given parent groups without paging
 	GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uint) ([]*models.Group, error)
 	// Transfer move a group under another parent group
-	Transfer(ctx context.Context, id, newParentID uint) error
+	Transfer(ctx context.Context, id, newParentID uint, userID uint) error
 	// GetSubGroups get subgroups of a parent group, order by updateTime desc by default with paging
 	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error)
+	// GetChildren get children of a parent group, order by updateTime desc by default with paging
+	GetChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error)
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 }
@@ -60,9 +64,8 @@ type manager struct {
 	applicationDAO applicationdao.DAO
 }
 
-func (m manager) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error) {
-	query := formatListGroupQuery(id, pageNumber, pageSize)
-	return m.groupDAO.List(ctx, query)
+func (m manager) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error) {
+	return m.groupDAO.GetByIDNameFuzzily(ctx, id, name)
 }
 
 func New() Manager {
@@ -72,8 +75,18 @@ func New() Manager {
 	}
 }
 
-func (m manager) Transfer(ctx context.Context, id, newParentID uint) error {
-	return m.groupDAO.Transfer(ctx, id, newParentID)
+func (m manager) GetChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) (
+	[]*models.GroupOrApplication, int64, error) {
+	return m.groupDAO.ListChildren(ctx, parentID, pageNumber, pageSize)
+}
+
+func (m manager) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error) {
+	query := formatListGroupQuery(id, pageNumber, pageSize)
+	return m.groupDAO.List(ctx, query)
+}
+
+func (m manager) Transfer(ctx context.Context, id, newParentID uint, userID uint) error {
+	return m.groupDAO.Transfer(ctx, id, newParentID, userID)
 }
 
 func (m manager) GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error) {
@@ -88,14 +101,14 @@ func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.G
 	return m.groupDAO.GetByNameFuzzily(ctx, name)
 }
 
-func (m manager) Create(ctx context.Context, group *models.Group) (uint, error) {
+func (m manager) Create(ctx context.Context, group *models.Group) (*models.Group, error) {
 	if err := m.checkApplicationExists(ctx, group); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	id, err := m.groupDAO.Create(ctx, group)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	return id, nil
@@ -109,7 +122,14 @@ func (m manager) Delete(ctx context.Context, id uint) (int64, error) {
 	if count > 0 {
 		return 0, ErrHasChildren
 	}
-	// todo check application children exist
+
+	count, err = m.applicationDAO.CountByGroupID(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+	if count > 0 {
+		return 0, ErrHasChildren
+	}
 
 	return m.groupDAO.Delete(ctx, id)
 }

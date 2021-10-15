@@ -14,6 +14,16 @@ type Group struct {
 	Description     string
 	ParentID        uint
 	TraversalIDs    string
+	CreatedBy       uint
+	UpdatedBy       uint
+}
+
+type GroupOrApplication struct {
+	gorm.Model
+	Name        string
+	Path        string
+	Description string
+	Type        string
 }
 
 type Groups []*Group
