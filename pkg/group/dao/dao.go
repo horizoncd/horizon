@@ -274,12 +274,13 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 		}
 
 		// insert a record to member table
-		member := membermodels.Member{
+		member := &membermodels.Member{
 			ResourceType: membermodels.TypeGroup,
 			ResourceID:   id,
 			Role:         "Owner",
 			MemberType:   membermodels.MemberUser,
 			MemberInfo:   group.CreatedBy,
+			GrantBy:      "",
 		}
 		result := tx.Create(member)
 		if result.Error != nil {

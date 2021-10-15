@@ -16,6 +16,7 @@ import (
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -57,6 +58,11 @@ func init() {
 		os.Exit(1)
 	}
 	err = db.AutoMigrate(&appmodels.Application{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	err = db.AutoMigrate(&membermodels.Member{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
