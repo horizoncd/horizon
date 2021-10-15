@@ -33,13 +33,14 @@ func MemberValueEqual(member1, member2 *models.Member) bool {
 
 // nolint
 func TestBasic(t *testing.T) {
+	var grandByadmin uint = 0
 	member1 := &models.Member{
 		ResourceType: "group",
 		ResourceID:   1234324,
 		Role:         "owner",
 		MemberType:   models.MemberUser,
 		MemberInfo:   1,
-		GrantBy:      "admin",
+		GrantBy:      grandByadmin,
 	}
 
 	// test create
@@ -56,19 +57,20 @@ func TestBasic(t *testing.T) {
 	assert.True(t, MemberValueEqual(retMember, member1))
 
 	// test update
+	var grandByCat uint = 3
 	member1.Role = "maintainer"
-	member1.GrantBy = "tom"
+	member1.GrantBy = grandByadmin
 	var grandUser userauth.User = &userauth.DefaultInfo{
 		Name:     "cat",
 		FullName: "cat",
-		ID:       123,
+		ID:       grandByCat,
 	}
 	ctx = context.WithValue(ctx, user.Key(), grandUser)
 
 	retMember2, err := Mgr.UpdateByID(ctx, retMember.ID, member1.Role)
 	assert.Nil(t, err)
 
-	member1.GrantBy = "cat"
+	member1.GrantBy = grandByCat
 	assert.True(t, MemberValueEqual(retMember2, member1))
 
 	retMember3, err := Mgr.GetByUserID(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
@@ -83,13 +85,15 @@ func TestBasic(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
+	var grandByadmin uint = 0
+
 	member1 := &models.Member{
 		ResourceType: "group",
 		ResourceID:   123456,
 		Role:         "owner",
 		MemberType:   models.MemberUser,
 		MemberInfo:   1,
-		GrantBy:      "admin",
+		GrantBy:      grandByadmin,
 	}
 
 	// create 1
@@ -104,7 +108,7 @@ func TestList(t *testing.T) {
 		Role:         "owner",
 		MemberType:   models.MemberUser,
 		MemberInfo:   2,
-		GrantBy:      "admin",
+		GrantBy:      grandByadmin,
 	}
 	retMember2, err := Mgr.Create(ctx, member2)
 	assert.Nil(t, err)

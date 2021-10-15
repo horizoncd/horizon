@@ -27,6 +27,10 @@ const (
 	MemberGroup
 )
 
+const (
+	Owner string = "owner"
+)
+
 type Member struct {
 	gorm.Model
 
@@ -42,6 +46,8 @@ type Member struct {
 	// MemberType: user/group
 	MemberType MemberType `gorm:"column:member_type"`
 	// userID or groupID
-	MemberInfo uint   `gorm:"column:member_info"`
-	GrantBy    string `gorm:"column:grant_by"`
+	MemberInfo uint `gorm:"column:member_info"`
+
+	// TODO(tom): change go user
+	GrantBy uint `gorm:"column:grant_by"`
 }

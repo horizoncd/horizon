@@ -81,7 +81,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Mem
 
 		// 2. update value
 		memberInDB.Role = role
-		memberInDB.GrantBy = currentUser.GetName()
+		memberInDB.GrantBy = currentUser.GetID()
 
 		// 3. save member after updated
 		tx.Save(&memberInDB)

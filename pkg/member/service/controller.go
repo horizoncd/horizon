@@ -21,7 +21,7 @@ var (
 )
 
 var (
-	Ctl = NewService()
+	Svc = NewService()
 )
 
 type Service interface {

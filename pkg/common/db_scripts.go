@@ -21,6 +21,7 @@ const (
 	UserQueryByOIDC = "select * from user where oidc_id = ? and oidc_type = ?"
 	UserSearch      = "select * from user where name like ? or full_name like ? or email like ? limit ? offset ?"
 	UserSearchCount = "select count(1) from user where name like ? or full_name like ? or email like ?"
+	UserGetByID     = "select * from user where in ?"
 )
 
 /* sql about member */

@@ -7,11 +7,13 @@ import (
 	"sort"
 	"strings"
 
+	"g.hz.netease.com/horizon/core/controller/member"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	membermodel "g.hz.netease.com/horizon/pkg/member/models"
+	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
-
 	"gorm.io/gorm"
 )
 
@@ -58,11 +60,18 @@ type Controller interface {
 	SearchGroups(ctx context.Context, params *SearchParams) ([]*Child, int64, error)
 	// SearchChildren search children of a group, including subgroups and applications
 	SearchChildren(ctx context.Context, params *SearchParams) ([]*Child, int64, error)
+
+	// GetMember()
+	// CreateMember()
+	// UpdateMember()
+	// RemoveMember()
 }
 
 type controller struct {
 	groupManager       manager.Manager
 	applicationManager appmanager.Manager
+	memberService      memberservice.Service
+	convertHelper      member.ConvertMemberHelp
 }
 
 // NewController initializes a new group controller
@@ -70,6 +79,8 @@ func NewController() Controller {
 	return &controller{
 		groupManager:       manager.Mgr,
 		applicationManager: appmanager.Mgr,
+		memberService:      memberservice.Svc,
+		convertHelper:      member.Converter,
 	}
 }
 
@@ -193,9 +204,16 @@ func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 
 // CreateGroup add a group
 func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint, error) {
+	const op = "group *controller: creat group"
 	groupEntity := convertNewGroupToGroup(newGroup)
 
-	return c.groupManager.Create(ctx, groupEntity)
+	// 1. create the group
+	id, err := c.groupManager.Create(ctx, groupEntity)
+	if err != nil {
+		// TODO(wurongjun): conflict error should return http 404
+		return id, errors.E(op, http.StatusInternalServerError, err.Error())
+	}
+	return id, nil
 }
 
 // GetByFullPath get a group by the URLPath
@@ -291,6 +309,102 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 	}
 
 	return nil
+}
+
+func (c *controller) GetMember(ctx context.Context, id uint) (*member.Member, error) {
+	const op = "group *controller: get current user member"
+
+	member, err := c.memberService.GetUserMember(ctx, membermodel.TypeGroupStr, id)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+	}
+	if member == nil {
+		return nil, errors.E(op, http.StatusNotFound)
+	}
+	retMember, err := c.convertHelper.ConvertMember(ctx, member)
+	if err != nil {
+		return nil, errors.E(op, http.StatusBadRequest, err.Error())
+	}
+	return retMember, nil
+}
+
+func (c *controller) CreateMember(ctx context.Context, postMember *member.PostMember) (*member.Member, error) {
+	const op = "group *controller: create group member"
+
+	member, err := c.memberService.CreateMember(ctx, member.CovertPostMember(postMember))
+	if err != nil {
+		switch err {
+		case memberservice.ErrMemberExist:
+			return nil, errors.E(op, http.StatusBadRequest, err.Error())
+		case memberservice.ErrGrantHighRole:
+			return nil, errors.E(op, http.StatusBadRequest, err.Error())
+		case memberservice.ErrNotPermitted:
+			return nil, errors.E(op, http.StatusBadRequest, err.Error())
+		default:
+			return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+		}
+	}
+	retMember, err := c.convertHelper.ConvertMember(ctx, member)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+	}
+	return retMember, nil
+}
+
+func (c *controller) UpdateMember(ctx context.Context, id uint, updateMember member.UpdateMember) (*member.Member, error) {
+	const op = "group *controller: update group member"
+
+	member, err := c.memberService.UpdateMember(ctx, membermodel.TypeGroupStr, id,
+		updateMember.ID, updateMember.MemberType, updateMember.Role)
+	if err != nil {
+		switch err {
+		case memberservice.ErrMemberExist:
+			return nil, errors.E(op, http.StatusBadRequest, err.Error())
+		case memberservice.ErrGrantHighRole:
+			fallthrough
+		case memberservice.ErrNotPermitted:
+			return nil, errors.E(op, http.StatusForbidden, err.Error())
+		default:
+			return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+		}
+	}
+	retMember, err := c.convertHelper.ConvertMember(ctx, member)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+	}
+	return retMember, nil
+}
+
+func (c *controller) RemoveMember(ctx context.Context, groupID uint, memberID uint, memberType membermodel.MemberType) error {
+	const op = "group *controller: remove group member"
+	err := c.memberService.RemoveMember(ctx, membermodel.TypeGroupStr, groupID, memberID, memberType)
+	if err != nil {
+		switch err {
+		case memberservice.ErrMemberNotExist:
+			return errors.E(op, http.StatusNotFound, err.Error())
+		case memberservice.ErrNotPermitted:
+			fallthrough
+		case memberservice.ErrRemoveHighRole:
+			return errors.E(op, http.StatusForbidden, err.Error())
+		}
+	}
+	return nil
+}
+
+func (c *controller) ListMember(ctx context.Context, id uint) ([]member.Member, error) {
+	const op = "group *controller: list group member"
+	members, err := c.memberService.ListMember(ctx, membermodel.TypeGroupStr, id)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+	}
+	if members == nil || len(members) < 1 {
+		return nil, nil
+	}
+	retMembers, err := c.convertHelper.ConvertMembers(ctx, members)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+	}
+	return retMembers, nil
 }
 
 // formatGroupsInTraversalIDs query groups by ids (split traversalIDs by ',')
