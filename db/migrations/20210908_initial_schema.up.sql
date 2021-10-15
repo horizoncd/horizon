@@ -11,8 +11,8 @@ CREATE TABLE `group`
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'updater',
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_parent_id_name_delete_at` (`parent_id`, `name`, `deleted_at`),
     UNIQUE KEY `idx_parent_id_path_delete_at` (`parent_id`, `path`, `deleted_at`)

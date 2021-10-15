@@ -50,7 +50,7 @@ type Manager interface {
 	// GetSubGroupsUnderParentIDs get subgroups under the given parent groups without paging
 	GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uint) ([]*models.Group, error)
 	// Transfer move a group under another parent group
-	Transfer(ctx context.Context, id, newParentID uint, userName string) error
+	Transfer(ctx context.Context, id, newParentID uint, userID uint) error
 	// GetSubGroups get subgroups of a parent group, order by updateTime desc by default with paging
 	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error)
 	// GetChildren get children of a parent group, order by updateTime desc by default with paging
@@ -85,8 +85,8 @@ func (m manager) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize
 	return m.groupDAO.List(ctx, query)
 }
 
-func (m manager) Transfer(ctx context.Context, id, newParentID uint, userName string) error {
-	return m.groupDAO.Transfer(ctx, id, newParentID, userName)
+func (m manager) Transfer(ctx context.Context, id, newParentID uint, userID uint) error {
+	return m.groupDAO.Transfer(ctx, id, newParentID, userID)
 }
 
 func (m manager) GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error) {

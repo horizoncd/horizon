@@ -14,8 +14,8 @@ type Group struct {
 	Description     string
 	ParentID        uint
 	TraversalIDs    string
-	CreatedBy       string
-	UpdatedBy       string
+	CreatedBy       uint
+	UpdatedBy       uint
 }
 
 type GroupOrApplication struct {

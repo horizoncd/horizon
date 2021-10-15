@@ -284,7 +284,7 @@ func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *Upda
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), "no user in context")
 	}
-	group.UpdatedBy = currentUser.GetName()
+	group.UpdatedBy = currentUser.GetID()
 
 	err = c.groupManager.UpdateBasic(ctx, group)
 	if err != nil {
@@ -304,7 +304,7 @@ func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 			errors.ErrorCode(common.InternalError), "no user in context")
 	}
 
-	err = c.groupManager.Transfer(ctx, id, newParentID, currentUser.GetName())
+	err = c.groupManager.Transfer(ctx, id, newParentID, currentUser.GetID())
 	if err != nil {
 		return err
 	}
@@ -325,8 +325,8 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 		return 0, errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), "no user in context")
 	}
-	group.CreatedBy = currentUser.GetName()
-	group.UpdatedBy = currentUser.GetName()
+	group.CreatedBy = currentUser.GetID()
+	group.UpdatedBy = currentUser.GetID()
 	return group.ID, err
 }
 

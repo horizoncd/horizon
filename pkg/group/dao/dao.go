@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"gorm.io/gorm"
 )
 
@@ -48,7 +49,7 @@ type DAO interface {
 	// ListChildren children of a group
 	ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error)
 	// Transfer move a group under another parent group
-	Transfer(ctx context.Context, id, newParentID uint, userName string) error
+	Transfer(ctx context.Context, id, newParentID uint, userID uint) error
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 }
@@ -93,7 +94,7 @@ func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageS
 	return gas, count, result.Error
 }
 
-func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userName string) error {
+func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userID uint) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
@@ -111,14 +112,14 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userName strin
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		// change parentID
-		if err := tx.Exec(common.GroupUpdateParentID, newParentID, userName, id).Error; err != nil {
+		if err := tx.Exec(common.GroupUpdateParentID, newParentID, userID, id).Error; err != nil {
 			return err
 		}
 
 		// update traversalIDs
 		oldTIDs := group.TraversalIDs
 		newTIDs := fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID)
-		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs, userName, oldTIDs+"%").Error; err != nil {
+		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs, userID, oldTIDs+"%").Error; err != nil {
 			return err
 		}
 
@@ -270,6 +271,22 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 		if err := tx.Exec(common.GroupUpdateTraversalIDs, traversalIDs, id).Error; err != nil {
 			// rollback when error
 			return err
+		}
+
+		// insert a record to member table
+		member := membermodels.Member{
+			ResourceType: membermodels.TypeGroup,
+			ResourceID:   id,
+			Role:         "Owner",
+			MemberType:   membermodels.MemberUser,
+			MemberInfo:   group.CreatedBy,
+		}
+		result := tx.Create(member)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("create member error")
 		}
 
 		// commit when return nil

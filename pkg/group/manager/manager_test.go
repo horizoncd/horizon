@@ -44,6 +44,8 @@ func getGroup(parentID uint, name, path string) *models.Group {
 		Path:            path,
 		VisibilityLevel: "private",
 		ParentID:        parentID,
+		CreatedBy:       1,
+		UpdatedBy:       1,
 	}
 }
 
@@ -218,7 +220,7 @@ func TestTransferGroup(t *testing.T) {
 	g3, err := Mgr.Create(ctx, getGroup(0, "3", "c"))
 	assert.Nil(t, err)
 
-	err = Mgr.Transfer(ctx, g1.ID, g3.ID, "")
+	err = Mgr.Transfer(ctx, g1.ID, g3.ID, 1)
 	assert.Nil(t, err)
 
 	group, err := Mgr.GetByID(ctx, g2.ID)
