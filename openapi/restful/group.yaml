@@ -51,9 +51,9 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/groups/{groupId}:
+  /apis/core/v1/groups/{GroupID}:
     parameters:
-      - name: groupId
+      - name: GroupID
         in: path
     get:
       tags:
@@ -112,9 +112,9 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/groups/{groupId}/groups:
+  /apis/core/v1/groups/{GroupID}/groups:
     parameters:
-      - name: groupId
+      - name: GroupID
         in: path
     get:
       tags:
@@ -137,9 +137,9 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/groups/{groupId}/applications:
+  /apis/core/v1/groups/{GroupID}/applications:
     parameters:
-      - $ref: "#/components/schemas/GroupId"
+      - $ref: "#/components/schemas/GroupID"
     get:
       tags:
         - group
@@ -178,18 +178,16 @@ components:
           $ref: '#/components/schemas/GroupDescription'
         visibilityLevel:
           $ref: '#/components/schemas/VisibilityLevel'
-        parantId:
-          $ref: '#/components/schemas/GroupId'
+        parantID:
+          $ref: '#/components/schemas/GroupID'
 
     Group:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/GroupId'
+          $ref: '#/components/schemas/GroupID'
         name:
           $ref: '#/components/schemas/GroupName'
-        fullName:
-          $ref: '#/components/schemas/GroupFullName'
         path:
           $ref: '#/components/schemas/GroupPath'
         description:
@@ -201,7 +199,7 @@ components:
         updatedAt:
           $ref: "common.yaml#/components/schemas/Date"
 
-    GroupId:
+    GroupID:
       type: integer
       format: int64
       description: the parent id of the subgroup, if not provided, a root group
@@ -210,11 +208,6 @@ components:
       type: string
       maxLength: 64
       description: the group Name
-
-    GroupFullName:
-      type: string
-      maxLength: 512
-      description: the group full name
 
     GroupPath:
       type: string

@@ -8,11 +8,13 @@ import (
 	"strconv"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -24,7 +26,11 @@ var (
 	ctx   = orm.NewContext(context.TODO(), db)
 )
 
+// nolint
 func init() {
+	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+		Name: "Tony",
+	})
 	// create table
 	err := db.AutoMigrate(&models.Group{})
 	if err != nil {
@@ -32,6 +38,11 @@ func init() {
 		os.Exit(1)
 	}
 	err = db.AutoMigrate(&appmodels.Application{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	err = db.AutoMigrate(&membermodels.Member{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
@@ -330,7 +341,104 @@ func TestControllerGetByPath(t *testing.T) {
 }
 
 func TestControllerGetChildren(t *testing.T) {
-	// todo including application
+	newRootGroup := &NewGroup{
+		Name: "1",
+		Path: "a",
+	}
+	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+
+	newGroup := &NewGroup{
+		Name:     "2",
+		Path:     "b",
+		ParentID: id,
+	}
+	id2, _ := Ctl.CreateGroup(ctx, newGroup)
+	group2, _ := Ctl.GetByID(ctx, id2)
+
+	applicationDAO := applicationdao.NewDAO()
+	app, err := applicationDAO.Create(ctx, &appmodels.Application{
+		GroupID: id,
+		Name:    "c",
+	})
+	assert.Nil(t, err)
+
+	type args struct {
+		ctx        context.Context
+		id         uint
+		pageNumber int
+		pageSize   int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Child
+		want1   int64
+		wantErr bool
+	}{
+		{
+			name: "firstPage",
+			args: args{
+				ctx:        ctx,
+				id:         id,
+				pageSize:   1,
+				pageNumber: 1,
+			},
+			want: []*Child{
+				{
+					ID:        id2,
+					Name:      "2",
+					Path:      "b",
+					FullPath:  "/a/b",
+					FullName:  "1 / 2",
+					Type:      ChildTypeGroup,
+					UpdatedAt: group2.UpdatedAt,
+				},
+			},
+			want1: 2,
+		},
+		{
+			name: "secondPage",
+			args: args{
+				ctx:        ctx,
+				id:         id,
+				pageSize:   1,
+				pageNumber: 2,
+			},
+			want: []*Child{
+				{
+					ID:        app.ID,
+					Name:      "c",
+					Path:      "c",
+					FullPath:  "/a/c",
+					FullName:  "1 / c",
+					Type:      ChildTypeApplication,
+					UpdatedAt: app.UpdatedAt,
+				},
+			},
+			want1: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := Ctl.GetChildren(tt.args.ctx, tt.args.id, tt.args.pageNumber, tt.args.pageSize)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetChildren() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			for i, val := range got {
+				val.UpdatedAt = tt.want[i].UpdatedAt
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetChildren() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("GetChildren() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.Application{})
 }
 
 func TestControllerGetSubGroups(t *testing.T) {
@@ -430,7 +538,111 @@ func TestControllerGetSubGroups(t *testing.T) {
 }
 
 func TestControllerSearchChildren(t *testing.T) {
-	// todo including application
+	newRootGroup := &NewGroup{
+		Name: "1",
+		Path: "a",
+	}
+	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+
+	newGroup := &NewGroup{
+		Name:     "2",
+		Path:     "b",
+		ParentID: id,
+	}
+	id2, _ := Ctl.CreateGroup(ctx, newGroup)
+	_, _ = Ctl.GetByID(ctx, id2)
+
+	applicationDAO := applicationdao.NewDAO()
+	app, err := applicationDAO.Create(ctx, &appmodels.Application{
+		GroupID: id,
+		Name:    "c",
+	})
+	assert.Nil(t, err)
+
+	type args struct {
+		ctx    context.Context
+		id     uint
+		filter string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []*Child
+		want1   int64
+		wantErr bool
+	}{
+		{
+			name: "blankFilter",
+			args: args{
+				ctx:    ctx,
+				filter: "",
+				id:     id,
+			},
+			want: []*Child{
+				{
+					ID:       id2,
+					Name:     "2",
+					Path:     "b",
+					FullPath: "/a/b",
+					FullName: "1 / 2",
+					Type:     ChildTypeGroup,
+				},
+				{
+					ID:       app.ID,
+					Name:     app.Name,
+					Path:     app.Name,
+					FullPath: "/a/c",
+					FullName: "1 / c",
+					Type:     ChildTypeApplication,
+				},
+			},
+			want1: 2,
+		},
+		{
+			name: "matchApp",
+			args: args{
+				ctx:    ctx,
+				filter: "c",
+				id:     id,
+			},
+			want: []*Child{
+				{
+					ID:       app.ID,
+					Name:     app.Name,
+					Path:     app.Name,
+					FullPath: "/a/c",
+					FullName: "1 / c",
+					Type:     ChildTypeApplication,
+					ParentID: id,
+				},
+			},
+			want1: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := Ctl.SearchChildren(tt.args.ctx, &SearchParams{
+				GroupID: tt.args.id,
+				Filter:  tt.args.filter,
+			})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SearchChildren() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			for i, val := range got {
+				val.UpdatedAt = tt.want[i].UpdatedAt
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SearchChildren() got = %+v, want %+v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("SearchChildren() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerSearchGroups(t *testing.T) {
@@ -559,10 +771,8 @@ func TestControllerSearchGroups(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1, err := Ctl.SearchGroups(tt.args.ctx, &SearchParams{
-				GroupID:    tt.args.id,
-				Filter:     tt.args.filter,
-				PageNumber: common.DefaultPageNumber,
-				PageSize:   common.MaxPageSize,
+				GroupID: tt.args.id,
+				Filter:  tt.args.filter,
 			})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SearchGroups() error = %v, wantErr %v", err, tt.wantErr)
@@ -700,8 +910,9 @@ func TestControllerUpdateBasic(t *testing.T) {
 
 func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 	type args struct {
-		groupID uint
-		groups  []*models.Group
+		groupID      uint
+		groups       []*models.Group
+		applications []*appmodels.Application
 	}
 	tests := []struct {
 		name string
@@ -723,6 +934,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     0,
 					},
 				},
+				applications: []*appmodels.Application{},
 			},
 			want: []*Child{},
 		},
@@ -777,6 +989,15 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     4,
 					},
 				},
+				applications: []*appmodels.Application{
+					{
+						Model: gorm.Model{
+							ID: 6,
+						},
+						Name:    "f",
+						GroupID: 2,
+					},
+				},
 			},
 			want: []*Child{
 				{
@@ -787,7 +1008,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					ParentID:      1,
 					FullPath:      "/a/b",
 					FullName:      "1 / 2",
-					ChildrenCount: 1,
+					ChildrenCount: 2,
 					Type:          ChildTypeGroup,
 					Children: []*Child{
 						{
@@ -799,6 +1020,15 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 							FullPath:     "/a/b/c",
 							FullName:     "1 / 2 / 3",
 							Type:         ChildTypeGroup,
+						},
+						{
+							ID:       6,
+							Name:     "f",
+							Path:     "f",
+							ParentID: 2,
+							FullPath: "/a/b/f",
+							FullName: "1 / 2 / f",
+							Type:     ChildTypeApplication,
 						},
 					},
 				},
@@ -830,8 +1060,9 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := generateChildrenWithLevelStruct(tt.args.groupID, tt.args.groups); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("generateChildrenWithLevelStruct() = %v, want %v", got, tt.want)
+			if got := generateChildrenWithLevelStruct(tt.args.groupID, tt.args.groups,
+				tt.args.applications); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("generateChildrenWithLevelStruct() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}

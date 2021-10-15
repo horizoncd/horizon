@@ -7,7 +7,10 @@ import (
 	"sort"
 	"strings"
 
+	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -75,32 +78,89 @@ func NewController() Controller {
 
 // GetChildren get children of a group, including subgroups and applications
 func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
-	return c.GetSubGroups(ctx, id, pageNumber, pageSize)
+	var parent *Child
+	if id > 0 {
+		var err error
+		parent, err = c.GetByID(ctx, id)
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+
+	// query children
+	children, count, err := c.groupManager.GetChildren(ctx, id, pageNumber, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// calculate childrenCount
+	parentIDs := make([]uint, len(children))
+	for i, g := range children {
+		if g.Type == ChildTypeGroup {
+			parentIDs[i] = g.ID
+		}
+	}
+	groups, err := c.groupManager.GetSubGroupsUnderParentIDs(ctx, parentIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+	childrenCountMap := map[uint]int{}
+	for _, g := range groups {
+		childrenCountMap[g.ParentID]++
+	}
+
+	// format GroupChild
+	var gChildren = make([]*Child, len(children))
+	for i, val := range children {
+		var fName, fPath string
+		if id == 0 {
+			fName = val.Name
+			fPath = fmt.Sprintf("/%s", val.Path)
+		} else {
+			fName = fmt.Sprintf("%s / %s", parent.FullName, val.Name)
+			fPath = fmt.Sprintf("%s/%s", parent.FullPath, val.Path)
+		}
+		child := convertGroupOrApplicationToChild(val, &Full{
+			FullName: fName,
+			FullPath: fPath,
+		})
+		child.ChildrenCount = childrenCountMap[child.ID]
+
+		gChildren[i] = child
+	}
+
+	return gChildren, count, nil
 }
 
 // SearchGroups search subGroups of a group
 func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]*Child, int64, error) {
 	if params.Filter == "" {
-		return c.GetSubGroups(ctx, params.GroupID, params.PageNumber, params.PageSize)
+		return c.GetSubGroups(ctx, params.GroupID, common.DefaultPageNumber, common.DefaultPageSize)
 	}
 
 	// query groups by the name fuzzily
-	groupsByNames, err := c.groupManager.GetByNameFuzzily(ctx, params.Filter)
+	var matchedGroups []*models.Group
+	var err error
+	if params.GroupID == 0 {
+		matchedGroups, err = c.groupManager.GetByNameFuzzily(ctx, params.Filter)
+	} else {
+		matchedGroups, err = c.groupManager.GetByIDNameFuzzily(ctx, params.GroupID, params.Filter)
+	}
 	if err != nil {
 		return nil, 0, err
 	}
-	if groupsByNames == nil {
+	if matchedGroups == nil {
 		return []*Child{}, 0, nil
 	}
 
-	// query groups in ids (split groupsByNames's traversalIDs by ',')
-	groups, err := c.formatGroupsInTraversalIDs(ctx, groupsByNames)
+	// query groups in ids (split matchedGroups' traversalIDs by ',')
+	groups, err := c.formatGroupsInTraversalIDs(ctx, matchedGroups)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// generate children with level struct
-	childrenWithLevelStruct := generateChildrenWithLevelStruct(params.GroupID, groups)
+	childrenWithLevelStruct := generateChildrenWithLevelStruct(params.GroupID, groups, []*appmodels.Application{})
 
 	// sort children by updatedAt desc
 	sort.SliceStable(childrenWithLevelStruct, func(i, j int) bool {
@@ -111,15 +171,59 @@ func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]
 
 // SearchChildren search children of a group, including subgroups and applications
 func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) ([]*Child, int64, error) {
-	return c.SearchGroups(ctx, params)
+	if params.Filter == "" {
+		return c.GetChildren(ctx, params.GroupID, common.DefaultPageNumber, common.DefaultPageSize)
+	}
+
+	// query groups by the name fuzzily
+	var matchedGroups []*models.Group
+	var err error
+	if params.GroupID == 0 {
+		matchedGroups, err = c.groupManager.GetByNameFuzzily(ctx, params.Filter)
+	} else {
+		matchedGroups, err = c.groupManager.GetByIDNameFuzzily(ctx, params.GroupID, params.Filter)
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// query applications by the name fuzzily
+	matchedApplications, err := c.applicationManager.GetByNameFuzzily(ctx, params.Filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	var groupIDs []uint
+	for _, application := range matchedApplications {
+		groupIDs = append(groupIDs, application.GroupID)
+	}
+	groups, err := c.groupManager.GetByIDs(ctx, groupIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	matchedGroups = append(matchedGroups, groups...)
+	// query groups in ids (split matchedGroups' traversalIDs by ',')
+	groups, err = c.formatGroupsInTraversalIDs(ctx, matchedGroups)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// generate children with level struct
+	childrenWithLevelStruct := generateChildrenWithLevelStruct(params.GroupID, groups, matchedApplications)
+
+	// sort children by updatedAt desc
+	sort.SliceStable(childrenWithLevelStruct, func(i, j int) bool {
+		return childrenWithLevelStruct[i].UpdatedAt.After(childrenWithLevelStruct[j].UpdatedAt)
+	})
+	return childrenWithLevelStruct, int64(len(childrenWithLevelStruct)), nil
 }
 
 // GetSubGroups get subgroups of a group
 func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
-	var pGChild *Child
+	var parent *Child
 	if id > 0 {
 		var err error
-		pGChild, err = c.GetByID(ctx, id)
+		parent, err = c.GetByID(ctx, id)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -153,8 +257,8 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 			fName = s.Name
 			fPath = fmt.Sprintf("/%s", s.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", pGChild.FullName, s.Name)
-			fPath = fmt.Sprintf("%s/%s", pGChild.FullPath, s.Path)
+			fName = fmt.Sprintf("%s / %s", parent.FullName, s.Name)
+			fPath = fmt.Sprintf("%s/%s", parent.FullPath, s.Path)
 		}
 		child := convertGroupToChild(s, &Full{
 			FullName: fName,
@@ -170,10 +274,19 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 
 // UpdateBasic update basic info of a group, including name, path, description and visibilityLevel
 func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *UpdateGroup) error {
-	groupEntity := convertUpdateGroupToGroup(updateGroup)
-	groupEntity.ID = id
+	const op = "group controller: update group basic"
 
-	err := c.groupManager.UpdateBasic(ctx, groupEntity)
+	group := convertUpdateGroupToGroup(updateGroup)
+	group.ID = id
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+	group.UpdatedBy = currentUser.GetID()
+
+	err = c.groupManager.UpdateBasic(ctx, group)
 	if err != nil {
 		return err
 	}
@@ -183,7 +296,15 @@ func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *Upda
 
 // Transfer put a group under another parent group
 func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
-	err := c.groupManager.Transfer(ctx, id, newParentID)
+	const op = "group controller: transfer group"
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+
+	err = c.groupManager.Transfer(ctx, id, newParentID, currentUser.GetID())
 	if err != nil {
 		return err
 	}
@@ -193,9 +314,20 @@ func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 
 // CreateGroup add a group
 func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint, error) {
+	const op = "group controller: create group"
 	groupEntity := convertNewGroupToGroup(newGroup)
-
-	return c.groupManager.Create(ctx, groupEntity)
+	group, err := c.groupManager.Create(ctx, groupEntity)
+	if group == nil {
+		return 0, err
+	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return 0, errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+	group.CreatedBy = currentUser.GetID()
+	group.UpdatedBy = currentUser.GetID()
+	return group.ID, err
 }
 
 // GetByFullPath get a group by the URLPath
@@ -242,7 +374,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, er
 			return convertApplicationToChild(app, &Full{
 				FullName: fmt.Sprintf("%v / %v", appParentFull.FullName, app.Name),
 				FullPath: fmt.Sprintf("%v/%v", appParentFull.FullPath, app.Name),
-			})
+			}), nil
 		}
 	}
 
@@ -309,15 +441,29 @@ func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*m
 }
 
 // generateChildrenWithLevelStruct generate subgroups with level struct
-func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Child {
+func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
+	applications []*appmodels.Application) []*Child {
 	// get mapping between id and full
 	idToFull := generateIDToFull(groups)
+
+	// record the mapping between parentID and children
+	parentIDToChildren := make(map[uint][]*Child)
 
 	// first level children under the group
 	firstLevelChildren := make([]*Child, 0)
 
-	// record the mapping between parentID and children
-	parentIDToChildren := make(map[uint][]*Child)
+	// generate children by applications
+	for _, application := range applications {
+		parent := idToFull[application.GroupID]
+		child := convertApplicationToChild(application, &Full{
+			FullName: fmt.Sprintf("%v / %v", parent.FullName, application.Name),
+			FullPath: fmt.Sprintf("%v/%v", parent.FullPath, application.Name),
+		})
+		if application.GroupID == groupID {
+			firstLevelChildren = append(firstLevelChildren, child)
+		}
+		parentIDToChildren[application.GroupID] = append(parentIDToChildren[application.GroupID], child)
+	}
 
 	// reverse the order
 	sort.Sort(sort.Reverse(models.Groups(groups)))
@@ -330,6 +476,11 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group) []*Ch
 		parentIDToChildren[g.ParentID] = append(parentIDToChildren[g.ParentID], child)
 
 		if v, ok := parentIDToChildren[g.ID]; ok {
+			// sort children by type, 'group' in the front of the array while 'application' in the back
+			sort.SliceStable(v, func(i, j int) bool {
+				return strings.Compare(v[i].Type, v[j].Type) > 0
+			})
+
 			child.ChildrenCount = len(v)
 			child.Children = v
 		}
