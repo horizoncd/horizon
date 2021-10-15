@@ -52,7 +52,7 @@ func TestBasic(t *testing.T) {
 
 	t.Logf(string(b))
 
-	retMember, err := Mgr.GetByUserID(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
+	retMember, err := Mgr.GetByID(ctx, member.ID)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(retMember, member))
 
@@ -73,13 +73,13 @@ func TestBasic(t *testing.T) {
 	member1.GrantBy = grandByCat
 	assert.True(t, MemberValueEqual(retMember2, member1))
 
-	retMember3, err := Mgr.GetByUserID(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
+	retMember3, err := Mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberInfo)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(retMember2, retMember3))
 
 	// test delete
 	assert.Nil(t, Mgr.DeleteMember(ctx, retMember3.ID))
-	retMember4, err := Mgr.GetByUserID(ctx, member1.ResourceType, member1.ResourceID, member1.MemberInfo)
+	retMember4, err := Mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberInfo)
 	assert.Nil(t, err)
 	assert.Nil(t, retMember4)
 }

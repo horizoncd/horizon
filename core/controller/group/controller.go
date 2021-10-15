@@ -14,7 +14,7 @@ import (
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
-	membermodel "g.hz.netease.com/horizon/pkg/member/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"gorm.io/gorm"
@@ -64,14 +64,13 @@ type Controller interface {
 	// SearchChildren search children of a group, including subgroups and applications
 	SearchChildren(ctx context.Context, params *SearchParams) ([]*Child, int64, error)
 
-	// GetMember get the member of the group
-	GetMember(ctx context.Context, id uint) (*member.Member, error)
 	// CreateMember create a member of the group
 	CreateMember(ctx context.Context, postMember *member.PostMember) (*member.Member, error)
 	// UpdateMember update a member of the group
 	UpdateMember(ctx context.Context, id uint, updateMember member.UpdateMember) (*member.Member, error)
 	// RemoveMember leave group or remote a member of the group
-	RemoveMember(ctx context.Context, groupID uint, memberID uint, memberType membermodel.MemberType) error
+	RemoveMember(ctx context.Context, memberID uint) error
+
 	// ListMember list all the member of the group (and all the member from parent group)
 	ListMember(ctx context.Context, id uint) ([]member.Member, error)
 }
@@ -442,23 +441,6 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (c *controller) GetMember(ctx context.Context, id uint) (*member.Member, error) {
-	const op = "group *controller: get current user member"
-
-	member, err := c.memberService.GetUserMember(ctx, membermodel.TypeGroupStr, id)
-	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
-	}
-	if member == nil {
-		return nil, errors.E(op, http.StatusNotFound)
-	}
-	retMember, err := c.convertHelper.ConvertMember(ctx, member)
-	if err != nil {
-		return nil, errors.E(op, http.StatusBadRequest, err.Error())
-	}
-	return retMember, nil
-}
-
 func (c *controller) CreateMember(ctx context.Context, postMember *member.PostMember) (*member.Member, error) {
 	const op = "group *controller: create group member"
 
@@ -482,11 +464,11 @@ func (c *controller) CreateMember(ctx context.Context, postMember *member.PostMe
 	return retMember, nil
 }
 
-func (c *controller) UpdateMember(ctx context.Context, id uint, updateMember member.UpdateMember) (*member.Member, error) {
+func (c *controller) UpdateMember(ctx context.Context, id uint,
+	updateMember member.UpdateMember) (*member.Member, error) {
 	const op = "group *controller: update group member"
 
-	member, err := c.memberService.UpdateMember(ctx, membermodel.TypeGroupStr, id,
-		updateMember.ID, updateMember.MemberType, updateMember.Role)
+	member, err := c.memberService.UpdateMember(ctx, id, updateMember.Role)
 	if err != nil {
 		switch err {
 		case memberservice.ErrMemberExist:
@@ -506,9 +488,9 @@ func (c *controller) UpdateMember(ctx context.Context, id uint, updateMember mem
 	return retMember, nil
 }
 
-func (c *controller) RemoveMember(ctx context.Context, groupID uint, memberID uint, memberType membermodel.MemberType) error {
+func (c *controller) RemoveMember(ctx context.Context, id uint) error {
 	const op = "group *controller: remove group member"
-	err := c.memberService.RemoveMember(ctx, membermodel.TypeGroupStr, groupID, memberID, memberType)
+	err := c.memberService.RemoveMember(ctx, id)
 	if err != nil {
 		switch err {
 		case memberservice.ErrMemberNotExist:
@@ -524,7 +506,7 @@ func (c *controller) RemoveMember(ctx context.Context, groupID uint, memberID ui
 
 func (c *controller) ListMember(ctx context.Context, id uint) ([]member.Member, error) {
 	const op = "group *controller: list group member"
-	members, err := c.memberService.ListMember(ctx, membermodel.TypeGroupStr, id)
+	members, err := c.memberService.ListMember(ctx, membermodels.TypeGroupStr, id)
 	if err != nil {
 		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
 	}

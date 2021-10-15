@@ -21,7 +21,8 @@ var (
 )
 
 type UpdateMember struct {
-	ID         uint
+	ID uint
+	//TODO(tom): remove it
 	MemberType models.MemberType
 	Role       string
 }
@@ -52,7 +53,8 @@ type Member struct {
 
 	// MemberInfo username or groupName
 	MemberInfo string
-	MemberID   uint
+	// MemberID userID or groupID
+	MemberID uint
 
 	// ResourceName   application/group
 	ResourceType models.ResourceType
@@ -126,9 +128,9 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 	var userIDs []uint
 	for _, member := range members {
 		if member.MemberType != models.MemberUser {
-			return nil, errors.New("user not found")
+			return nil, errors.New("Only Support User MemberType yet")
 		}
-		userIDs = append(userIDs, member.ID)
+		userIDs = append(userIDs, member.MemberInfo)
 	}
 	users, err := c.userManager.GetUserByIDs(ctx, userIDs)
 	if err != nil {

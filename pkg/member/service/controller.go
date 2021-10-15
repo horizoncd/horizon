@@ -25,18 +25,15 @@ var (
 )
 
 type Service interface {
-	// GetUserMember get the service of the current user
-	GetUserMember(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error)
-	// CreateMember post a new service
+	// CreateMember post a new member
 	CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error)
-	// UpdateMember update exist service entry
-	// user can only update a role not higher than self
-	UpdateMember(ctx context.Context, resourceType string, resourceID uint,
-		memberInfo uint, memberType models.MemberType, role string) (*models.Member, error)
-	// RemoveMember Remove the service (self leave/remove other service)
-	RemoveMember(ctx context.Context, resourceType string, resourceID uint, memberInfo uint,
-		memberType models.MemberType) error
-	// ListMember list all the service of the resource
+	// GetMember return the current user member of direct or parent
+	GetMember(ctx context.Context, memberID uint) (*models.Member, error)
+	// UpdateMember update the member by the memberID
+	UpdateMember(ctx context.Context, memberID uint, role string) (*models.Member, error)
+	// RemoveMember Remove the member by the memberID
+	RemoveMember(ctx context.Context, memberID uint) error
+	// ListMember list all the member of the resource
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
 }
 
@@ -52,48 +49,6 @@ func NewService() Service {
 	}
 }
 
-func (s *service) GetUserMember(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error) {
-	var currentUser userauth.User
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return s.getMember(ctx, resourceType, resourceID, currentUser.GetID(), models.MemberUser)
-}
-
-func (s *service) getMember(ctx context.Context, resourceType string, resourceID uint,
-	memberInfo uint, memberType models.MemberType) (*models.Member, error) {
-	members, err := s.ListMember(ctx, resourceType, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	for _, item := range members {
-		if item.MemberType == memberType &&
-			item.MemberInfo == memberInfo {
-			return &item, nil
-		}
-	}
-	return nil, nil
-}
-
-func (s *service) getDirectMemberByDetail(ctx context.Context,
-	resourceType string, resourceID uint,
-	memberInfo uint, memberType models.MemberType) (*models.Member, error) {
-	members, err := s.ListMember(ctx, resourceType, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	for _, item := range members {
-		if string(item.ResourceType) == resourceType &&
-			item.ResourceID == resourceID &&
-			item.MemberType == memberType &&
-			item.MemberInfo == memberInfo {
-			return &item, nil
-		}
-	}
-	return nil, nil
-}
-
 func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error) {
 	var currentUser userauth.User
 	currentUser, err := user.FromContext(ctx)
@@ -101,32 +56,27 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 		return nil, err
 	}
 
-	// 1. convert service
-	member, err := ConvertPostMemberToMember(postMember, currentUser)
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. If  member exist return error TODO(tom): change to updateMember
-	memberItem, err := s.getDirectMemberByDetail(ctx, postMember.ResourceType, postMember.ResourceID,
-		postMember.MemberInfo, postMember.MemberType)
+	// 1. check exist
+	memberItem, err := s.memberManager.Get(ctx, models.ResourceType(postMember.ResourceType), postMember.ResourceID,
+		postMember.MemberType, postMember.MemberInfo)
 	if err != nil {
 		return nil, err
 	}
 	if memberItem != nil {
-		return nil, ErrMemberExist
+		// if member exist, try to update the member
+		return s.UpdateMember(ctx, memberItem.ID, postMember.Role)
 	}
 
-	// 3. check if the current user can grant the role
+	// 2. check if current user can create the role
 	var userMemberInfo *models.Member
-	userMemberInfo, err = s.GetUserMember(ctx, postMember.ResourceType, postMember.ResourceID)
+	userMemberInfo, err = s.getMember(ctx, postMember.ResourceType,
+		postMember.ResourceID, models.MemberUser, currentUser.GetID())
 	if err != nil {
 		return nil, err
 	}
 	if userMemberInfo == nil {
 		return nil, ErrNotPermitted
 	}
-
 	RoleEqualOrBigger := func(role1, role2 string) bool {
 		return true
 	}
@@ -134,18 +84,7 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 		return nil, ErrGrantHighRole
 	}
 
-	return s.memberManager.Create(ctx, member)
-}
-
-// createMemberDirect for unit test
-func (s *service) createMemberDirect(ctx context.Context, postMember PostMember) (*models.Member, error) {
-	var currentUser userauth.User
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// 1. convert service
+	// 3. do create  member
 	member, err := ConvertPostMemberToMember(postMember, currentUser)
 	if err != nil {
 		return nil, err
@@ -153,18 +92,19 @@ func (s *service) createMemberDirect(ctx context.Context, postMember PostMember)
 	return s.memberManager.Create(ctx, member)
 }
 
-func (s *service) RemoveMember(ctx context.Context, resourceType string, resourceID uint, memberInfo uint,
-	memberType models.MemberType) error {
-	// 1. get current user and check the permission
+func (s *service) GetMember(ctx context.Context, memberID uint) (*models.Member, error) {
+	return s.memberManager.GetByID(ctx, memberID)
+}
+
+func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
 	var currentUser userauth.User
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	// 2. If service not exist return error
-	memberItem, err := s.getDirectMemberByDetail(ctx, resourceType, resourceID,
-		memberInfo, memberType)
+	// 1. get member
+	memberItem, err := s.memberManager.GetByID(ctx, memberID)
 	if err != nil {
 		return err
 	}
@@ -172,46 +112,35 @@ func (s *service) RemoveMember(ctx context.Context, resourceType string, resourc
 		return ErrMemberNotExist
 	}
 
-	// 3. self level the group
-	if memberType == models.MemberUser &&
-		memberInfo == currentUser.GetID() {
-		return s.memberManager.DeleteMember(ctx, resourceID)
-	}
-
-	// 4. test if current user  have the permission to remove the
-	var currentUserInfo *models.Member
-	currentUserInfo, err = s.GetUserMember(ctx, resourceType, resourceID)
+	// 2. check if the grant current user can remove the member
+	var userMemberInfo *models.Member
+	userMemberInfo, err = s.getMember(ctx, string(memberItem.ResourceType),
+		memberItem.ResourceID, models.MemberUser, currentUser.GetID())
 	if err != nil {
 		return err
 	}
-	if currentUserInfo == nil {
+	if userMemberInfo == nil {
 		return ErrNotPermitted
 	}
 
-	RoleBigger := func(role1, role2 string) bool {
+	RoleEqualOrBigger := func(role1, role2 string) bool {
 		return true
 	}
-	if !RoleBigger(currentUserInfo.Role, memberItem.Role) {
+	if !RoleEqualOrBigger(userMemberInfo.Role, memberItem.Role) {
 		return ErrRemoveHighRole
 	}
-
-	return s.memberManager.DeleteMember(ctx, memberItem.ID)
+	return s.memberManager.DeleteMember(ctx, memberID)
 }
 
-// UpdateMember update exist service entry
-// user can only attach a role not higher than self
-func (s *service) UpdateMember(ctx context.Context, resourceType string, resourceID uint,
-	memberInfo uint, memberType models.MemberType, role string) (*models.Member, error) {
-	// 1. get current user and check the permission
+func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) (*models.Member, error) {
 	var currentUser userauth.User
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. If service not exist return
-	memberItem, err := s.getDirectMemberByDetail(ctx, resourceType, resourceID,
-		memberInfo, memberType)
+	// 1. get the member
+	memberItem, err := s.memberManager.GetByID(ctx, memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -219,13 +148,24 @@ func (s *service) UpdateMember(ctx context.Context, resourceType string, resourc
 		return nil, ErrMemberNotExist
 	}
 
-	// 3. check if the grant current user can grant the role
+	// 2. check if the current user have the permission to update the role
 	var userMemberInfo *models.Member
-	userMemberInfo, err = s.getDirectMemberByDetail(ctx, resourceType, resourceID,
-		currentUser.GetID(), models.MemberUser)
+	userMemberInfo, err = s.getMember(ctx, string(memberItem.ResourceType),
+		memberItem.ResourceID, models.MemberUser, currentUser.GetID())
 	if err != nil {
 		return nil, err
 	}
+	if userMemberInfo == nil {
+		return nil, ErrNotPermitted
+	}
+
+	RoleBigger := func(role1, role2 string) bool {
+		return true
+	}
+	if !RoleBigger(userMemberInfo.Role, memberItem.Role) {
+		return nil, ErrNotPermitted
+	}
+
 	RoleEqualOrBigger := func(role1, role2 string) bool {
 		return true
 	}
@@ -233,7 +173,8 @@ func (s *service) UpdateMember(ctx context.Context, resourceType string, resourc
 		return nil, ErrGrantHighRole
 	}
 
-	return s.memberManager.UpdateByID(ctx, memberItem.ResourceID, role)
+	// 3. update the role
+	return s.memberManager.UpdateByID(ctx, memberItem.ID, role)
 }
 
 func (s *service) ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error) {
@@ -294,6 +235,22 @@ func DeduplicateMember(members []models.Member) []models.Member {
 	return retMembers
 }
 
+// getMember return the direct member or member from the parent
+func (s *service) getMember(ctx context.Context, resourceType string, resourceID uint,
+	memberType models.MemberType, memberInfo uint) (*models.Member, error) {
+	members, err := s.ListMember(ctx, resourceType, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range members {
+		if item.MemberType == memberType &&
+			item.MemberInfo == memberInfo {
+			return &item, nil
+		}
+	}
+	return nil, nil
+}
+
 func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
 	// TODO(tom)
 	// 1. query the application's service
@@ -310,4 +267,20 @@ func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID
 	// 3. merge and return
 	err := errors.New("Unimplement yet")
 	return nil, err
+}
+
+// createMemberDirect for unit test
+func (s *service) createMemberDirect(ctx context.Context, postMember PostMember) (*models.Member, error) {
+	var currentUser userauth.User
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// 1. convert service
+	member, err := ConvertPostMemberToMember(postMember, currentUser)
+	if err != nil {
+		return nil, err
+	}
+	return s.memberManager.Create(ctx, member)
 }

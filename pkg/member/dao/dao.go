@@ -16,6 +16,7 @@ type DAO interface {
 	Create(ctx context.Context, member *models.Member) (*models.Member, error)
 	Get(ctx context.Context, resourceType models.ResourceType, resourceID uint,
 		memberType models.MemberType, memberInfo uint) (*models.Member, error)
+	GetByID(ctx context.Context, memberID uint) (*models.Member, error)
 	Delete(ctx context.Context, memberID uint) error
 	UpdateByID(ctx context.Context, memberID uint, role string) (*models.Member, error)
 	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
@@ -56,6 +57,23 @@ func (d *dao) Get(ctx context.Context, resourceType models.ResourceType, resourc
 	return &member, nil
 }
 
+func (d *dao) GetByID(ctx context.Context, memberID uint) (*models.Member, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var member models.Member
+	result := db.Raw(common.MemberQueryByID, memberID).Scan(&member)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+	return &member, nil
+}
+
 func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Member, error) {
 	const op = "member dao: update by ID"
 	db, err := orm.FromContext(ctx)
@@ -71,7 +89,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Mem
 	var memberInDB models.Member
 	if err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. get member in db first
-		result := tx.Raw(common.MemberQuerybyID, id).Scan(&memberInDB)
+		result := tx.Raw(common.MemberQueryByID, id).Scan(&memberInDB)
 		if result.Error != nil {
 			return result.Error
 		}

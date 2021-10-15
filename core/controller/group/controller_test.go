@@ -6,7 +6,6 @@ import (
 	"os"
 	"reflect"
 	"strconv"
-	"strings"
 	"testing"
 
 	"g.hz.netease.com/horizon/core/controller/member"
@@ -17,7 +16,6 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodel "g.hz.netease.com/horizon/pkg/user/models"
 
@@ -1082,16 +1080,18 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 			}
 		})
 	}
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
 }
 
 func MemberSame(m1, m2 member.Member) bool {
-	if m1.ID == m2.ID &&
-		m1.MemberInfo == m2.MemberInfo &&
+	if m1.MemberInfo == m2.MemberInfo &&
 		m1.MemberID == m2.MemberID &&
 		m1.ResourceType == m2.ResourceType &&
 		m1.ResourceID == m2.ResourceID &&
 		m1.Role == m2.Role &&
-		m1.GrantBy == m1.GrantBy {
+		m1.GrantBy == m2.GrantBy {
 		return true
 	}
 	return false
@@ -1104,13 +1104,10 @@ var (
 	user2ID   uint   = 2
 	user2Name string = "tom"
 
-	user3ID   uint   = 3
 	user3Name string = "jerry"
 
-	user4ID   uint   = 4
 	user4Name string = "alias"
 
-	user5ID   uint   = 5
 	user5Name string = "henry"
 )
 
@@ -1153,33 +1150,31 @@ func TestCreateGroupWithOwner(t *testing.T) {
 	groupID, err := Ctl.CreateGroup(ctx, newGroup)
 	assert.Nil(t, err)
 
-	retMember, err := Ctl.GetMember(ctx, groupID)
+	retMembers, err := Ctl.ListMember(ctx, groupID)
 	expectMember := member.Member{
-		ID:           1,
 		MemberType:   membermodels.MemberUser,
 		MemberInfo:   contextUserName,
 		MemberID:     contextUserID,
 		ResourceType: membermodels.TypeGroup,
-		ResourceID:   1,
+		ResourceID:   groupID,
 		Role:         member.Owner,
 		GrantBy:      contextUserID,
 	}
 	assert.Nil(t, err)
-	assert.NotNil(t, retMember)
-	assert.True(t, MemberSame(*retMember, expectMember))
+	assert.NotNil(t, retMembers)
+	assert.True(t, MemberSame(retMembers[0], expectMember))
 
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
-
 }
 
 func PostMemberAndMemberEqual(postMember member.PostMember, member2 member.Member) bool {
 	return postMember.ResourceType == string(member2.ResourceType) &&
 		postMember.ResourceID == member2.ResourceID &&
 		postMember.MemberType == member2.MemberType &&
-		postMember.MemberType == postMember.MemberType &&
-		postMember.Role == postMember.Role
+		postMember.MemberInfo == member2.MemberID &&
+		postMember.Role == member2.Role
 }
 
 func TestCreateGetUpdateRemoveList(t *testing.T) {
@@ -1197,28 +1192,20 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	groupID, err := Ctl.CreateGroup(ctx, newGroup)
 	assert.Nil(t, err)
 
-	// create member already exist
-	postMember1 := member.PostMember{
+	// create member
+	postMember2 := member.PostMember{
 		ResourceType: membermodels.TypeGroupStr,
 		ResourceID:   groupID,
-		MemberInfo:   user1ID,
+		MemberInfo:   user2ID,
 		MemberType:   membermodels.MemberUser,
 		Role:         membermodels.Owner,
 	}
-	_, err = Ctl.CreateMember(ctx, &postMember1)
-	assert.NotNil(t, err.Error())
-	assert.True(t, strings.Contains(err.Error(), memberservice.ErrMemberExist.Error()))
-	// assert.True(t, PostMemberAndMemberEqual(postMember1, *retMember))
-
-	// create member exist
-	postMember2 := postMember1
-	postMember2.MemberInfo = user2ID
 	retMember2, err := Ctl.CreateMember(ctx, &postMember2)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember2))
 
 	// remove the member
-	err = Ctl.RemoveMember(ctx, groupID, retMember2.MemberID, retMember2.MemberType)
+	err = Ctl.RemoveMember(ctx, retMember2.ID)
 	assert.Nil(t, err)
 
 	// list member (create post2 and then list)
@@ -1239,4 +1226,8 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	assert.Equal(t, len(members), 2)
 	assert.True(t, PostMemberAndMemberEqual(postMemberOwner, members[0]))
 	assert.True(t, PostMemberAndMemberEqual(postMember2, members[1]))
+
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
 }

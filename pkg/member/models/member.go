@@ -36,9 +36,9 @@ type Member struct {
 
 	// member entry basic info
 	// ResourceType group/application/applicationinstance
-	ResourceType ResourceType
+	ResourceType ResourceType `gorm:"column:resource_type"`
 	// ResourceID  groupID/applicationID/applicationinstanceID
-	ResourceID uint
+	ResourceID uint `gorm:"colum:resource_id"`
 
 	// role binding info
 	// Role: owner/maintainer/...
