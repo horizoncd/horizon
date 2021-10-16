@@ -135,7 +135,7 @@ CREATE TABLE `member`
 
     `role`          varchar(64)      NOT NULL COMMENT 'binding role name',
     `member_type`   tinyint(1) COMMENT '0-USER, 1-group',
-    `member_info`   int(11) unsigned NOT NULL COMMENT 'UserID or GroupID',
+    `membername_id`   int(11) unsigned NOT NULL COMMENT 'UserID or GroupID',
 
     `grant_by`      varchar(512)     NOT NULL COMMENT 'who grand the role',
     `created_by`    varchar(512)     NOT NULL COMMENT 'who create the role',

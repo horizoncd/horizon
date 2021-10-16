@@ -278,10 +278,10 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 			ResourceType: membermodels.TypeGroup,
 			ResourceID:   id,
 			//TODO(tom): where to place the role
-			Role:       membermodels.Owner,
-			MemberType: membermodels.MemberUser,
-			MemberInfo: group.CreatedBy,
-			GrantBy:    group.UpdatedBy,
+			Role:         membermodels.Owner,
+			MemberType:   membermodels.MemberUser,
+			MemberNameID: group.CreatedBy,
+			GrantBy:      group.UpdatedBy,
 		}
 		result := tx.Create(member)
 		if result.Error != nil {

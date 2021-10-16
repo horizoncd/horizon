@@ -20,13 +20,6 @@ var (
 	Owner string = "Owner"
 )
 
-type UpdateMember struct {
-	ID uint
-	//TODO(tom): remove it
-	MemberType models.MemberType
-	Role       string
-}
-
 type PostMember struct {
 	// ResourceType group/application/applicationInstance
 	ResourceType string
@@ -34,11 +27,11 @@ type PostMember struct {
 	// ResourceID group id;application id ...
 	ResourceID uint
 
-	// MemberInfo group id / userid
-	MemberInfo uint
-
 	// MemberType user or group
 	MemberType models.MemberType
+
+	// MemberNameID group id / userid
+	MemberNameID uint
 
 	// Role owner/maintainer/develop/...
 	Role string
@@ -48,17 +41,17 @@ type Member struct {
 	// ID the uniq id of the member entry
 	ID uint
 
-	// MemberType user or group
-	MemberType models.MemberType
-
-	// MemberInfo username or groupName
-	MemberInfo string
-	// MemberID userID or groupID
-	MemberID uint
-
 	// ResourceName   application/group
 	ResourceType models.ResourceType
 	ResourceID   uint
+
+	// MemberType user or group
+	MemberType models.MemberType
+
+	// MemberName username or groupName
+	MemberName string
+	// MemberNameID userID or groupID
+	MemberNameID uint
 
 	// Role the role name that bind
 	Role string
@@ -72,7 +65,7 @@ func CovertPostMember(member *PostMember) memberservice.PostMember {
 	return memberservice.PostMember{
 		ResourceType: member.ResourceType,
 		ResourceID:   member.ResourceID,
-		MemberInfo:   member.MemberInfo,
+		MemberInfo:   member.MemberNameID,
 		MemberType:   member.MemberType,
 		Role:         member.Role,
 	}
@@ -99,7 +92,7 @@ func (c *converter) ConvertMember(ctx context.Context, member *models.Member) (_
 	var user *usermodels.User
 
 	if member.MemberType == models.MemberUser {
-		user, err = c.userManager.GetUserByID(ctx, member.MemberInfo)
+		user, err = c.userManager.GetUserByID(ctx, member.MemberNameID)
 		if err != nil {
 			return nil, err
 		}
@@ -115,8 +108,8 @@ func (c *converter) ConvertMember(ctx context.Context, member *models.Member) (_
 	return &Member{
 		ID:           member.ID,
 		MemberType:   member.MemberType,
-		MemberInfo:   memberInfo,
-		MemberID:     member.MemberInfo,
+		MemberName:   memberInfo,
+		MemberNameID: member.MemberNameID,
 		ResourceType: member.ResourceType,
 		ResourceID:   member.ResourceID,
 		Role:         member.Role,
@@ -130,7 +123,7 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 		if member.MemberType != models.MemberUser {
 			return nil, errors.New("Only Support User MemberType yet")
 		}
-		userIDs = append(userIDs, member.MemberInfo)
+		userIDs = append(userIDs, member.MemberNameID)
 	}
 	users, err := c.userManager.GetUserByIDs(ctx, userIDs)
 	if err != nil {
@@ -144,8 +137,8 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 		retMembers = append(retMembers, Member{
 			ID:           member.ID,
 			MemberType:   member.MemberType,
-			MemberInfo:   users[i].Name,
-			MemberID:     member.MemberInfo,
+			MemberName:   users[i].Name,
+			MemberNameID: member.MemberNameID,
 			ResourceType: member.ResourceType,
 			ResourceID:   member.ResourceID,
 			Role:         member.Role,

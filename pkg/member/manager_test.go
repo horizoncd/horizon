@@ -24,7 +24,7 @@ func MemberValueEqual(member1, member2 *models.Member) bool {
 		member1.ResourceID == member2.ResourceID &&
 		member1.Role == member2.Role &&
 		member1.MemberType == member2.MemberType &&
-		member1.MemberInfo == member2.MemberInfo &&
+		member1.MemberNameID == member2.MemberNameID &&
 		member1.GrantBy == member2.GrantBy {
 		return true
 	}
@@ -39,7 +39,7 @@ func TestBasic(t *testing.T) {
 		ResourceID:   1234324,
 		Role:         "owner",
 		MemberType:   models.MemberUser,
-		MemberInfo:   1,
+		MemberNameID: 1,
 		GrantBy:      grandByadmin,
 	}
 
@@ -73,13 +73,13 @@ func TestBasic(t *testing.T) {
 	member1.GrantBy = grandByCat
 	assert.True(t, MemberValueEqual(retMember2, member1))
 
-	retMember3, err := Mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberInfo)
+	retMember3, err := Mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberNameID)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(retMember2, retMember3))
 
 	// test delete
 	assert.Nil(t, Mgr.DeleteMember(ctx, retMember3.ID))
-	retMember4, err := Mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberInfo)
+	retMember4, err := Mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberNameID)
 	assert.Nil(t, err)
 	assert.Nil(t, retMember4)
 }
@@ -92,7 +92,7 @@ func TestList(t *testing.T) {
 		ResourceID:   123456,
 		Role:         "owner",
 		MemberType:   models.MemberUser,
-		MemberInfo:   1,
+		MemberNameID: 1,
 		GrantBy:      grandByadmin,
 	}
 
@@ -107,7 +107,7 @@ func TestList(t *testing.T) {
 		ResourceID:   123456,
 		Role:         "owner",
 		MemberType:   models.MemberUser,
-		MemberInfo:   2,
+		MemberNameID: 2,
 		GrantBy:      grandByadmin,
 	}
 	retMember2, err := Mgr.Create(ctx, member2)

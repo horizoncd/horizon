@@ -82,7 +82,7 @@ func ConvertPostMemberToMember(postMember PostMember, currentUser userauth.User)
 		ResourceID:   postMember.ResourceID,
 		Role:         postMember.Role,
 		MemberType:   postMember.MemberType,
-		MemberInfo:   postMember.MemberInfo,
+		MemberNameID: postMember.MemberInfo,
 		GrantBy:      currentUser.GetID(),
 	}, nil
 }

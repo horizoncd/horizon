@@ -1,0 +1,195 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Member-Restful
+  description: Restful API About Member
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/groups/{groupID}/members:
+    parameters:
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+    post:
+      tags:
+        - member
+      operationId: createGroupMember
+      summary: create a group member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref : '#/components/schemas/PostMember'
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - member
+      operationId: listGroupMember
+      summary: list a group member
+      responses:
+        '200':
+          description: Succuss
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/members/{memberid}:
+    parameters:
+      - name: memberid
+        in: path
+        description: group id
+        required: true
+    get:
+      tags:
+        - member
+      operationId: getMember
+      summary: get a member
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - member
+      operationId: updateMember
+      summary: update a member
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+      - member
+      operationId: deleteMember
+      summary: delete a member
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    PostMember:
+      type: object
+      required: [ResourceType, ResourceID, MemberType, MemberInfo]
+      properties:
+        ResourceType:
+          $ref: '#/components/schemas/PostMember'
+        ResourceID:
+          $ref: '#/components/schemas/ResourceID'
+        MemberType:
+          $ref: '#/components/schemas/MemberType'
+        MemberNameID:
+          $ref: '#/components/schemas/MemberNameID'
+        Role:
+          $ref: '#/components/schemas/Role'
+
+    Member:
+      type: object
+      properties:
+        ID:
+          $ref: '#/components/schemas/MemberEntryID'
+        ResourceType:
+          $ref: '#/components/schemas/ResourceType'
+        ResourceID:
+          $ref: '#/components/schemas/ResourceID'
+        MemberType:
+          $ref : '#/components/schemas/MemberType'
+        MemberName:
+          $ref : '#/components/schemas/MemberName'
+        MemberNameID:
+          $ref: '#/components/schemas/MemberNameID'
+        Role:
+          $ref: '#/components/schemas/Role'
+        GrantBy:
+          $ref: '#/components/schemas/MemberNameID'
+        GrantTime:
+          $ref: "common.yaml#/components/schemas/Date"
+
+
+    MemberEntryID:
+      type: integer
+      format: uint64
+      description: the uniq id of a member entry
+
+    MemberName:
+      type: string
+      format: uint64
+      description: the groupname or username
+
+    MemberNameID:
+      type: integer
+      format: uint64
+      description: the groupID or userID
+
+    ResourceType:
+      type: string
+      enum: ["group", "application", "cluster"]
+      description: add member to such resource
+
+    ResourceID:
+      type: integer
+      format: uint64
+      description: groupID applicationID or clusterID
+
+    MemberType:
+      type: integer
+      format: uint8
+      enum: [0, 1]
+      description: 0 for user, 1 for group
+
+    MemberInfo:
+      type: integer
+      format: uint64
+      description: userID or groupID
+
+    Role:
+      type: string
+      enum: ["Owner", "maintainer", "develop", "test"]
+      description: the member role

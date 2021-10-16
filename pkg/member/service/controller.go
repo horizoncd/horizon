@@ -225,7 +225,7 @@ func DeduplicateMember(members []models.Member) []models.Member {
 
 	var retMembers []models.Member
 	for _, item := range members {
-		key := strconv.Itoa(int(item.MemberType)) + "-" + strconv.FormatUint(uint64(item.MemberInfo), 10)
+		key := strconv.Itoa(int(item.MemberType)) + "-" + strconv.FormatUint(uint64(item.MemberNameID), 10)
 		_, ok := memberMap[key]
 		if !ok {
 			memberMap[key] = item
@@ -244,7 +244,7 @@ func (s *service) getMember(ctx context.Context, resourceType string, resourceID
 	}
 	for _, item := range members {
 		if item.MemberType == memberType &&
-			item.MemberInfo == memberInfo {
+			item.MemberNameID == memberInfo {
 			return &item, nil
 		}
 	}

@@ -25,7 +25,7 @@ var (
 func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
 	return models.ResourceType(postMember.ResourceType) == member.ResourceType &&
 		postMember.ResourceID == member.ResourceID &&
-		postMember.MemberInfo == member.MemberInfo &&
+		postMember.MemberInfo == member.MemberNameID &&
 		postMember.MemberType == member.MemberType &&
 		postMember.Role == member.Role
 }

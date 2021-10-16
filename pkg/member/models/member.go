@@ -28,7 +28,8 @@ const (
 )
 
 const (
-	Owner string = "Owner"
+	Owner     string = "Owner"
+	Maitainer string = "Maitainer"
 )
 
 type Member struct {
@@ -46,7 +47,7 @@ type Member struct {
 	// MemberType: user/group
 	MemberType MemberType `gorm:"column:member_type"`
 	// userID or groupID
-	MemberInfo uint `gorm:"column:member_info"`
+	MemberNameID uint `gorm:"column:membername_id"`
 
 	// TODO(tom): change go user
 	GrantBy uint `gorm:"column:grant_by"`
