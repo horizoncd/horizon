@@ -20,6 +20,11 @@ var (
 	Owner string = "Owner"
 )
 
+type UpdateMember struct {
+	ID   uint
+	Role string
+}
+
 type PostMember struct {
 	// ResourceType group/application/applicationInstance
 	ResourceType string

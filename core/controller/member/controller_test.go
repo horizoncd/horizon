@@ -124,7 +124,7 @@ func TestCreateGroupWithOwner(t *testing.T) {
 	groupID, err := group.Ctl.CreateGroup(ctx, newGroup)
 	assert.Nil(t, err)
 
-	retMembers, err := Ctl.ListMember(ctx, groupID)
+	retMembers, err := Ctl.ListMember(ctx, membermodels.TypeGroupStr, groupID)
 	expectMember := Member{
 		MemberType:   membermodels.MemberUser,
 		MemberName:   contextUserName,
@@ -200,7 +200,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 		MemberType:   membermodels.MemberUser,
 		Role:         membermodels.Owner,
 	}
-	members, err := Ctl.ListMember(ctx, groupID)
+	members, err := Ctl.ListMember(ctx, membermodels.TypeGroupStr, groupID)
 	assert.Nil(t, err)
 	assert.Equal(t, len(members), 2)
 	assert.True(t, PostMemberAndMemberEqual(postMemberOwner, members[0]))

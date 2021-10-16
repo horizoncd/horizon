@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 )
@@ -22,7 +21,7 @@ type Controller interface {
 	// RemoveMember leave group or remote a member of the group
 	RemoveMember(ctx context.Context, id uint) error
 	// ListMember list all the member of the group (and all the member from parent group)
-	ListMember(ctx context.Context, id uint) ([]Member, error)
+	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]Member, error)
 }
 
 // NewController initializes a new group controller
@@ -100,9 +99,9 @@ func (c *controller) RemoveMember(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (c *controller) ListMember(ctx context.Context, id uint) ([]Member, error) {
+func (c *controller) ListMember(ctx context.Context, resourceType string, id uint) ([]Member, error) {
 	const op = "group *controller: list group member"
-	members, err := c.memberService.ListMember(ctx, membermodels.TypeGroupStr, id)
+	members, err := c.memberService.ListMember(ctx, resourceType, id)
 	if err != nil {
 		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
 	}
