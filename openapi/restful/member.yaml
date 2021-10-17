@@ -117,7 +117,7 @@ components:
   schemas:
     PostMember:
       type: object
-      required: [ResourceType, ResourceID, MemberType, MemberInfo]
+      required: [ResourceType, ResourceID, MemberType, MemberNameID]
       properties:
         ResourceType:
           $ref: '#/components/schemas/PostMember'

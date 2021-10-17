@@ -18,7 +18,7 @@ type Controller interface {
 	CreateMember(ctx context.Context, postMember *PostMember) (*Member, error)
 	// UpdateMember update a member of the group
 	UpdateMember(ctx context.Context, id uint, role string) (*Member, error)
-	// RemoveMember leave group or remote a member of the group
+	// RemoveMember leave group or remove a member of the group
 	RemoveMember(ctx context.Context, id uint) error
 	// ListMember list all the member of the group (and all the member from parent group)
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]Member, error)

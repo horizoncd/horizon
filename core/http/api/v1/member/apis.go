@@ -98,6 +98,7 @@ func (a *API) DeleteMember(c *gin.Context) {
 	err = a.memberCtrl.RemoveMember(c, uint(uintID))
 	if err != nil {
 		response.AbortWithError(c, err)
+		return
 	}
 	response.Success(c)
 }
@@ -114,6 +115,7 @@ func (a *API) ListGroupMember(c *gin.Context) {
 	members, err := a.memberCtrl.ListMember(c, membermodels.TypeGroupStr, uint(uintID))
 	if err != nil {
 		response.AbortWithError(c, err)
+		return
 	}
 	response.SuccessWithData(c, members)
 }

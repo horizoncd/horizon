@@ -36,7 +36,7 @@ type Member struct {
 	gorm.Model
 
 	// member entry basic info
-	// ResourceType group/application/applicationinstance
+	// ResourceType group/application/cluster
 	ResourceType ResourceType `gorm:"column:resource_type"`
 	// ResourceID  groupID/applicationID/applicationinstanceID
 	ResourceID uint `gorm:"colum:resource_id"`

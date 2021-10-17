@@ -7,7 +7,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
-	userManager "g.hz.netease.com/horizon/pkg/user/manager"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
 
@@ -26,7 +26,7 @@ type UpdateMember struct {
 }
 
 type PostMember struct {
-	// ResourceType group/application/applicationInstance
+	// ResourceType group/application/cluster
 	ResourceType string
 
 	// ResourceID group id;application id ...
@@ -82,12 +82,12 @@ type ConvertMemberHelp interface {
 }
 
 type converter struct {
-	userManager userManager.Manager
+	userManager usermanager.Manager
 }
 
 func New() ConvertMemberHelp {
 	return &converter{
-		userManager: userManager.Mgr,
+		userManager: usermanager.Mgr,
 	}
 }
 
@@ -137,12 +137,16 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 	if len(users) != len(userIDs) {
 		return nil, errors.New("cannot find all the users")
 	}
+	userIDToName := make(map[uint]string)
+	for _, userItem := range users {
+		userIDToName[userItem.ID] = userItem.Name
+	}
 	var retMembers []Member
-	for i, member := range members {
+	for _, member := range members {
 		retMembers = append(retMembers, Member{
 			ID:           member.ID,
 			MemberType:   member.MemberType,
-			MemberName:   users[i].Name,
+			MemberName:   userIDToName[member.MemberNameID],
 			MemberNameID: member.MemberNameID,
 			ResourceType: member.ResourceType,
 			ResourceID:   member.ResourceID,

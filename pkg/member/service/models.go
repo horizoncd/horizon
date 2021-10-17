@@ -9,7 +9,7 @@ import (
 )
 
 type PostMember struct {
-	// ResourceType group/application/applicationInstance
+	// ResourceType group/application/cluster
 	ResourceType string
 
 	// ResourceID group id;application id ...
