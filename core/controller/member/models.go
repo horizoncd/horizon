@@ -21,49 +21,49 @@ var (
 )
 
 type UpdateMember struct {
-	ID   uint
-	Role string
+	ID   uint   `json:"id"`
+	Role string `json:"role"`
 }
 
 type PostMember struct {
 	// ResourceType group/application/cluster
-	ResourceType string
+	ResourceType string `json:"resourceType"`
 
 	// ResourceID group id;application id ...
-	ResourceID uint
+	ResourceID uint `json:"resourceID"`
 
 	// MemberType user or group
-	MemberType models.MemberType
+	MemberType models.MemberType `json:"memberType"`
 
 	// MemberNameID group id / userid
-	MemberNameID uint
+	MemberNameID uint `json:"memberNameID"`
 
 	// Role owner/maintainer/develop/...
-	Role string
+	Role string `json:"role"`
 }
 
 type Member struct {
 	// ID the uniq id of the member entry
-	ID uint
+	ID uint `json:"id"`
 
 	// ResourceName   application/group
-	ResourceType models.ResourceType
-	ResourceID   uint
+	ResourceType models.ResourceType `json:"resourceType"`
+	ResourceID   uint                `json:"resourceID"`
 
 	// MemberType user or group
-	MemberType models.MemberType
+	MemberType models.MemberType `json:"memberType"`
 
 	// MemberName username or groupName
-	MemberName string
+	MemberName string `json:"memberName"`
 	// MemberNameID userID or groupID
-	MemberNameID uint
+	MemberNameID uint `json:"memberNameID"`
 
 	// Role the role name that bind
-	Role string
+	Role string `json:"role"`
 	// GrantBy user who grant the role
-	GrantBy uint
+	GrantBy uint `json:"grantBy"`
 	// GrantTime
-	GrantTime time.Time
+	GrantTime time.Time `json:"grantTime"`
 }
 
 func CovertPostMember(member *PostMember) memberservice.PostMember {

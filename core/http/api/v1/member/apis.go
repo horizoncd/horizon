@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	_paramResourceID = "resourceID"
+	_paramResourceID = "groupID"
 	_paramMemberID   = "memberID"
 )
 
@@ -117,5 +117,9 @@ func (a *API) ListGroupMember(c *gin.Context) {
 		response.AbortWithError(c, err)
 		return
 	}
-	response.SuccessWithData(c, members)
+	membersResp := response.DataWithTotal{
+		Items: members,
+		Total: int64(len(members)),
+	}
+	response.SuccessWithData(c, membersResp)
 }

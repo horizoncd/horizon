@@ -28,7 +28,7 @@ const (
 const (
 	MemberQueryByID   = "select * from member where id = ? and deleted_at is null"
 	MemberSingleQuery = "select * from member where resource_type = ? and  resource_id = ? and member_type= ?" +
-		"and membername_id = ? and deleted_at is null"
+		" and membername_id = ? and deleted_at is null"
 	MemberSingleDelete = "update member set deleted_at = CURRENT_TIMESTAMP where ID = ?"
 	MemberSelectAll    = "select * from member where resource_type = ? and resource_id = ? and deleted_at is null"
 )

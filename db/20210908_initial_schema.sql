@@ -135,18 +135,18 @@ CREATE TABLE `member`
 
     `role`          varchar(64)      NOT NULL COMMENT 'binding role name',
     `member_type`   tinyint(1) COMMENT '0-USER, 1-group',
-    `membername_id`   int(11) unsigned NOT NULL COMMENT 'UserID or GroupID',
+    `membername_id` int(11) unsigned NOT NULL COMMENT 'UserID or GroupID',
 
-    `grant_by`      varchar(512)     NOT NULL COMMENT 'who grand the role',
-    `created_by`    varchar(512)     NOT NULL COMMENT 'who create the role',
+    `grant_by`      int(11) unsigned NOT NULL COMMENT 'who grant the role',
+    `created_by`    int(11) unsigned NOT NULL COMMENT 'who create the role',
 
-    `created_at`    datetime         NOT NULL DEFAULT CURRENT_TIME,
+    `created_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     `deleted_at`    datetime                  DEFAULT NULL,
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_resource_member` (`resource_type`, `resource_id`, `member_type`, `member_info`)
+    UNIQUE KEY `idx_resource_member` (`resource_type`, `resource_id`, `member_type`, `membername_id`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
