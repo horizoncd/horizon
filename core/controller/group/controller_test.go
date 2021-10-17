@@ -13,6 +13,7 @@ import (
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 
@@ -132,12 +133,12 @@ func TestControllerCreateGroup(t *testing.T) {
 				return
 			}
 			if err == nil {
-				group, _ := Ctl.GetByID(ctx, got)
-				parent, _ := Ctl.GetByID(ctx, tt.args.newGroup.ParentID)
+				group, _ := manager.Mgr.GetByID(ctx, got)
 				var traversalIDs string
-				if parent == nil {
+				if group.ParentID == 0 {
 					traversalIDs = strconv.Itoa(int(got))
 				} else {
+					parent, _ := manager.Mgr.GetByID(ctx, tt.args.newGroup.ParentID)
 					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
 				}
 
@@ -216,7 +217,8 @@ func TestControllerGetByID(t *testing.T) {
 	id, err := Ctl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
 
-	group, err := Ctl.GetByID(ctx, id)
+	group, err := manager.Mgr.GetByID(ctx, id)
+
 	assert.Nil(t, err)
 
 	type args struct {
@@ -876,13 +878,14 @@ func TestControllerTransfer(t *testing.T) {
 	}
 
 	// check transfer success
-	g, err := Ctl.GetByID(ctx, id)
+	g, err := manager.Mgr.GetByID(ctx, id)
+
 	assert.Nil(t, err)
 	assert.Equal(t, id3, g.ParentID)
 	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id)), g.TraversalIDs)
 	assert.True(t, g.UpdatedBy == 2)
 
-	g, err = Ctl.GetByID(ctx, id2)
+	g, err = manager.Mgr.GetByID(ctx, id2)
 	assert.Nil(t, err)
 	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id))+","+strconv.Itoa(int(id2)), g.TraversalIDs)
 	assert.True(t, g.UpdatedBy == 2)
@@ -944,8 +947,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 			if err := Ctl.UpdateBasic(tt.args.ctx, tt.args.id, tt.args.updateGroup); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateBasic() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
-			group, _ := Ctl.GetByID(ctx, tt.args.id)
+			group, _ := manager.Mgr.GetByID(ctx, tt.args.id)
 
 			if group != nil {
 				assert.True(t, GroupValueEqual(group, &models.Group{

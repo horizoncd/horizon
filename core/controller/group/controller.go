@@ -46,7 +46,7 @@ type Controller interface {
 	// Delete remove a group by the id
 	Delete(ctx context.Context, id uint) error
 	// GetByID get a group by the id
-	GetByID(ctx context.Context, id uint) (*models.Group, error)
+	GetByID(ctx context.Context, id uint) (*Child, error)
 	// GetByFullPath get a group by the URLPath
 	GetByFullPath(ctx context.Context, path string) (*Child, error)
 	// Transfer put a group under another parent group
@@ -82,7 +82,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 	var full *Full
 	if id > 0 {
 		var err error
-		parent, err = c.GetByID(ctx, id)
+		parent, err = c.groupManager.GetByID(ctx, id)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -230,7 +230,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 	var full *Full
 	if id > 0 {
 		var err error
-		parent, err = c.GetByID(ctx, id)
+		parent, err = c.groupManager.GetByID(ctx, id)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -402,7 +402,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, er
 }
 
 // GetByID get a group by the id
-func (c *controller) GetByID(ctx context.Context, id uint) (*models.Group, error) {
+func (c *controller) GetByID(ctx context.Context, id uint) (*Child, error) {
 	const op = "group *controller: get group by id"
 
 	groupEntity, err := c.groupManager.GetByID(ctx, id)
@@ -413,7 +413,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*models.Group, error
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
 
-	return groupEntity, nil
+	return convertGroupToBasicChild(groupEntity), nil
 }
 
 // Delete remove a group by the id
