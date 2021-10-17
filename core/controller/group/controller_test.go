@@ -228,7 +228,7 @@ func TestControllerGetByID(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *models.Group
+		want    *Child
 		wantErr bool
 	}{
 		{
@@ -237,19 +237,14 @@ func TestControllerGetByID(t *testing.T) {
 				ctx: ctx,
 				id:  id,
 			},
-			want: &models.Group{
-				Model: gorm.Model{
-					ID:        id,
-					CreatedAt: group.CreatedAt,
-					UpdatedAt: group.UpdatedAt,
-				},
+			want: &Child{
+				ID:              id,
 				Name:            "1",
 				Path:            "a",
 				VisibilityLevel: "private",
+				UpdatedAt:       group.UpdatedAt,
 				ParentID:        0,
-				TraversalIDs:    strconv.Itoa(int(id)),
-				CreatedBy:       1,
-				UpdatedBy:       1,
+				Type:            ChildTypeGroup,
 			},
 		},
 		{
@@ -949,7 +944,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 			}
 			group, _ := manager.Mgr.GetByID(ctx, tt.args.id)
 
-			if group != nil {
+			if group.ID > 0 {
 				assert.True(t, GroupValueEqual(group, &models.Group{
 					Name:            tt.args.updateGroup.Name,
 					Path:            tt.args.updateGroup.Path,
