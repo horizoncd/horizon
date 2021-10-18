@@ -13,14 +13,10 @@ import (
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	"g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
-)
-
-const (
-	// RootGroupID id of the root group, which is not actually exists in the group table
-	RootGroupID = 0
 )
 
 var (
@@ -33,11 +29,6 @@ const (
 	ErrCodeNotFound = errors.ErrorCode("GroupNotFound")
 	// ErrGroupHasChildren a kind of error code, returned when deleting a group which still has some children
 	ErrGroupHasChildren = errors.ErrorCode("GroupHasChildren")
-
-	// ChildTypeGroup used to indicate the 'Child' is a group
-	ChildTypeGroup = "group"
-	// ChildTypeApplication ...
-	ChildTypeApplication = "application"
 )
 
 type Controller interface {
@@ -46,21 +37,21 @@ type Controller interface {
 	// Delete remove a group by the id
 	Delete(ctx context.Context, id uint) error
 	// GetByID get a group by the id
-	GetByID(ctx context.Context, id uint) (*Child, error)
+	GetByID(ctx context.Context, id uint) (*service.Child, error)
 	// GetByFullPath get a group by the URLPath
-	GetByFullPath(ctx context.Context, path string) (*Child, error)
+	GetByFullPath(ctx context.Context, path string) (*service.Child, error)
 	// Transfer put a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
 	// UpdateBasic update basic info of a group, including name, path, description and visibilityLevel
 	UpdateBasic(ctx context.Context, id uint, updateGroup *UpdateGroup) error
 	// GetSubGroups get subgroups of a group
-	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error)
+	GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*service.Child, int64, error)
 	// GetChildren get children of a group, including subgroups and applications
-	GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error)
+	GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*service.Child, int64, error)
 	// SearchGroups search subGroups of a group
-	SearchGroups(ctx context.Context, params *SearchParams) ([]*Child, int64, error)
+	SearchGroups(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error)
 	// SearchChildren search children of a group, including subgroups and applications
-	SearchChildren(ctx context.Context, params *SearchParams) ([]*Child, int64, error)
+	SearchChildren(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error)
 }
 
 type controller struct {
@@ -77,9 +68,10 @@ func NewController() Controller {
 }
 
 // GetChildren get children of a group, including subgroups and applications
-func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
+func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) (
+	[]*service.Child, int64, error) {
 	var parent *models.Group
-	var full *Full
+	var full *service.Full
 	if id > 0 {
 		var err error
 		parent, err = c.groupManager.GetByID(ctx, id)
@@ -102,7 +94,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 	// calculate childrenCount
 	parentIDs := make([]uint, len(children))
 	for i, g := range children {
-		if g.Type == ChildTypeGroup {
+		if g.Type == service.ChildTypeGroup {
 			parentIDs[i] = g.ID
 		}
 	}
@@ -116,7 +108,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 	}
 
 	// format GroupChild
-	var gChildren = make([]*Child, len(children))
+	var gChildren = make([]*service.Child, len(children))
 	for i, val := range children {
 		var fName, fPath string
 		if id == 0 {
@@ -126,7 +118,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 			fName = fmt.Sprintf("%s / %s", full.FullName, val.Name)
 			fPath = fmt.Sprintf("%s/%s", full.FullPath, val.Path)
 		}
-		child := convertGroupOrApplicationToChild(val, &Full{
+		child := service.ConvertGroupOrApplicationToChild(val, &service.Full{
 			FullName: fName,
 			FullPath: fPath,
 		})
@@ -139,7 +131,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 }
 
 // SearchGroups search subGroups of a group
-func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]*Child, int64, error) {
+func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error) {
 	if params.Filter == "" {
 		return c.GetSubGroups(ctx, params.GroupID, common.DefaultPageNumber, common.DefaultPageSize)
 	}
@@ -156,7 +148,7 @@ func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]
 		return nil, 0, err
 	}
 	if matchedGroups == nil {
-		return []*Child{}, 0, nil
+		return []*service.Child{}, 0, nil
 	}
 
 	// query groups in ids (split matchedGroups' traversalIDs by ',')
@@ -176,7 +168,7 @@ func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]
 }
 
 // SearchChildren search children of a group, including subgroups and applications
-func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) ([]*Child, int64, error) {
+func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error) {
 	if params.Filter == "" {
 		return c.GetChildren(ctx, params.GroupID, common.DefaultPageNumber, common.DefaultPageSize)
 	}
@@ -225,9 +217,10 @@ func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) (
 }
 
 // GetSubGroups get subgroups of a group
-func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
+func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) (
+	[]*service.Child, int64, error) {
 	var parent *models.Group
-	var full *Full
+	var full *service.Full
 	if id > 0 {
 		var err error
 		parent, err = c.groupManager.GetByID(ctx, id)
@@ -262,7 +255,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 	}
 
 	// format GroupChild
-	var gChildren = make([]*Child, len(subGroups))
+	var gChildren = make([]*service.Child, len(subGroups))
 	for i, s := range subGroups {
 		var fName, fPath string
 		if id == 0 {
@@ -272,7 +265,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 			fName = fmt.Sprintf("%s / %s", full.FullName, s.Name)
 			fPath = fmt.Sprintf("%s/%s", full.FullPath, s.Path)
 		}
-		child := convertGroupToChild(s, &Full{
+		child := service.ConvertGroupToChild(s, &service.Full{
 			FullName: fName,
 			FullPath: fPath,
 		})
@@ -346,7 +339,7 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 }
 
 // GetByFullPath get a group by the URLPath
-func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, error) {
+func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.Child, error) {
 	const op = "group *controller: get group by path"
 
 	var errNotMatch = errors.E(op, http.StatusNotFound, ErrCodeNotFound,
@@ -360,17 +353,17 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, er
 	}
 
 	// get mapping between id and group
-	idToGroup := generateIDToGroup(groups)
+	idToGroup := service.GenerateIDToGroup(groups)
 
 	// get mapping between id and full
-	idToFull := generateIDToFull(groups)
+	idToFull := service.GenerateIDToFull(groups)
 
 	// 1. match group
 	for k, v := range idToFull {
 		// path pointing to a group
 		if v.FullPath == path {
 			g := idToGroup[k]
-			child := convertGroupToChild(g, v)
+			child := service.ConvertGroupToChild(g, v)
 			return child, nil
 		}
 	}
@@ -386,7 +379,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, er
 	if app != nil {
 		appParentFull, ok := idToFull[app.GroupID]
 		if ok && fmt.Sprintf("%v/%v", appParentFull.FullPath, app.Name) == path {
-			return convertApplicationToChild(app, &Full{
+			return service.ConvertApplicationToChild(app, &service.Full{
 				FullName: fmt.Sprintf("%v / %v", appParentFull.FullName, app.Name),
 				FullPath: fmt.Sprintf("%v/%v", appParentFull.FullPath, app.Name),
 			}), nil
@@ -402,7 +395,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*Child, er
 }
 
 // GetByID get a group by the id
-func (c *controller) GetByID(ctx context.Context, id uint) (*Child, error) {
+func (c *controller) GetByID(ctx context.Context, id uint) (*service.Child, error) {
 	const op = "group *controller: get group by id"
 
 	groupEntity, err := c.groupManager.GetByID(ctx, id)
@@ -418,7 +411,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*Child, error) {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
 
-	return convertGroupToChild(groupEntity, full), nil
+	return service.ConvertGroupToChild(groupEntity, full), nil
 }
 
 // Delete remove a group by the id
@@ -456,20 +449,20 @@ func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*m
 
 // generateChildrenWithLevelStruct generate subgroups with level struct
 func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
-	applications []*appmodels.Application) []*Child {
+	applications []*appmodels.Application) []*service.Child {
 	// get mapping between id and full
-	idToFull := generateIDToFull(groups)
+	idToFull := service.GenerateIDToFull(groups)
 
 	// record the mapping between parentID and children
-	parentIDToChildren := make(map[uint][]*Child)
+	parentIDToChildren := make(map[uint][]*service.Child)
 
 	// first level children under the group
-	firstLevelChildren := make([]*Child, 0)
+	firstLevelChildren := make([]*service.Child, 0)
 
 	// generate children by applications
 	for _, application := range applications {
 		parent := idToFull[application.GroupID]
-		child := convertApplicationToChild(application, &Full{
+		child := service.ConvertApplicationToChild(application, &service.Full{
 			FullName: fmt.Sprintf("%v / %v", parent.FullName, application.Name),
 			FullPath: fmt.Sprintf("%v/%v", parent.FullPath, application.Name),
 		})
@@ -484,7 +477,7 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
 	for _, g := range groups {
 		// get fullName and fullPath by id
 		full := idToFull[g.ID]
-		child := convertGroupToChild(g, full)
+		child := service.ConvertGroupToChild(g, full)
 
 		// record children of the group whose id is g.parentID
 		parentIDToChildren[g.ParentID] = append(parentIDToChildren[g.ParentID], child)
@@ -507,11 +500,11 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
 	return firstLevelChildren
 }
 
-func (c *controller) formatFullFromGroup(ctx context.Context, group *models.Group) (*Full, error) {
+func (c *controller) formatFullFromGroup(ctx context.Context, group *models.Group) (*service.Full, error) {
 	groups, err := c.groupManager.GetByIDs(ctx, manager.FormatIDsFromTraversalIDs(group.TraversalIDs))
 	if err != nil {
 		return nil, err
 	}
 
-	return generateFullFromGroups(groups), nil
+	return service.GenerateFullFromGroups(groups), nil
 }
