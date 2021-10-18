@@ -5,14 +5,19 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/applications/{application}/clusters?pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/core/v1/applications/{application}/clusters?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     parameters:
       - name: application
         in: path
         description: application name
         required: true
-      - $ref: 'common.yaml/#/components/parameters/pageNumber'
-      - $ref: 'common.yaml/#/components/parameters/pageSize'
+      - name: filter
+        in: query
+        description: filter clusters by name
+      - name: pageNumber
+        in: query
+      - name: pageSize
+        in: query
     get:
       tags:
         - cluster
