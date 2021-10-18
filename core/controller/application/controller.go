@@ -12,13 +12,12 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
-
-const _errCodeApplicationNotFound = errors.ErrorCode("ApplicationNotFound")
 
 type Controller interface {
 	// GetApplication get an application
@@ -36,6 +35,7 @@ type controller struct {
 	templateSchemaGetter templateschema.Getter
 	applicationMgr       manager.Manager
 	groupMgr             groupmanager.Manager
+	templateReleaseMgr   trmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -46,6 +46,7 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo) Controller {
 		templateSchemaGetter: templateschema.Gtr,
 		applicationMgr:       manager.Mgr,
 		groupMgr:             groupmanager.Mgr,
+		templateReleaseMgr:   trmanager.Mgr,
 	}
 }
 
@@ -64,10 +65,14 @@ func (c *controller) GetApplication(ctx context.Context, name string) (_ *GetApp
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	if app == nil {
-		return nil, errors.E(op, http.StatusNotFound, _errCodeApplicationNotFound)
+
+	// 3. list template releases
+	trs, err := c.templateReleaseMgr.ListByTemplateName(ctx, app.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
 	}
-	return ofApplicationModel(app, pipelineJSONBlob, applicationJSONBlob), nil
+
+	return ofApplicationModel(app, trs, pipelineJSONBlob, applicationJSONBlob), nil
 }
 
 func (c *controller) CreateApplication(ctx context.Context, groupID uint,
@@ -104,7 +109,9 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 
 	app, err := c.applicationMgr.GetByName(ctx, request.Name)
 	if err != nil {
-		return errors.E(op, err)
+		if errors.Status(err) != http.StatusNotFound {
+			return errors.E(op, err)
+		}
 	}
 	if app != nil {
 		return errors.E(op, http.StatusConflict,
@@ -171,9 +178,6 @@ func (c *controller) DeleteApplication(ctx context.Context, name string) (err er
 	app, err := c.applicationMgr.GetByName(ctx, name)
 	if err != nil {
 		return errors.E(op, err)
-	}
-	if app == nil {
-		return errors.E(op, http.StatusNotFound, _errCodeApplicationNotFound)
 	}
 
 	// 2. delete application in git repo

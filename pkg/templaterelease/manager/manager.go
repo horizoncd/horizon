@@ -16,7 +16,7 @@ type Manager interface {
 	// Create template release
 	Create(ctx context.Context, templateRelease *models.TemplateRelease) (*models.TemplateRelease, error)
 	// ListByTemplateName list all releases by template name
-	ListByTemplateName(ctx context.Context, templateName string) ([]models.TemplateRelease, error)
+	ListByTemplateName(ctx context.Context, templateName string) ([]*models.TemplateRelease, error)
 	// GetByTemplateNameAndRelease get release by template name and release name
 	GetByTemplateNameAndRelease(ctx context.Context, templateName, release string) (*models.TemplateRelease, error)
 }
@@ -34,7 +34,7 @@ func (m *manager) Create(ctx context.Context,
 	return m.dao.Create(ctx, templateRelease)
 }
 
-func (m *manager) ListByTemplateName(ctx context.Context, templateName string) ([]models.TemplateRelease, error) {
+func (m *manager) ListByTemplateName(ctx context.Context, templateName string) ([]*models.TemplateRelease, error) {
 	return m.dao.ListByTemplateName(ctx, templateName)
 }
 
