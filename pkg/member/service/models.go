@@ -47,8 +47,8 @@ type Member struct {
 	// Role the role name that bind
 	Role string
 
-	// GrantBy user who grant the role
-	GrantBy string
+	// GrantedBy user who grant the role
+	GrantedBy string
 
 	// GrantTime
 	GrantTime time.Time
@@ -83,7 +83,7 @@ func ConvertPostMemberToMember(postMember PostMember, currentUser userauth.User)
 		Role:         postMember.Role,
 		MemberType:   postMember.MemberType,
 		MemberNameID: postMember.MemberInfo,
-		GrantBy:      currentUser.GetID(),
+		GrantedBy:    currentUser.GetID(),
 		CreatedBy:    currentUser.GetID(),
 	}, nil
 }

@@ -147,7 +147,7 @@ components:
           $ref: '#/components/schemas/MemberNameID'
         Role:
           $ref: '#/components/schemas/Role'
-        GrantBy:
+        GrantedBy:
           $ref: '#/components/schemas/MemberNameID'
         GrantTime:
           $ref: "common.yaml#/components/schemas/Date"

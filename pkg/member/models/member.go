@@ -50,6 +50,6 @@ type Member struct {
 	MemberNameID uint `gorm:"column:membername_id"`
 
 	// TODO(tom): change go user
-	GrantBy   uint `gorm:"column:grant_by"`
+	GrantedBy uint `gorm:"column:granted_by"`
 	CreatedBy uint `gorm:"column:created_by"`
 }

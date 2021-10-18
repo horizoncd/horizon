@@ -64,8 +64,8 @@ type Member struct {
 
 	// Role the role name that bind
 	Role string `json:"role"`
-	// GrantBy user who grant the role
-	GrantBy uint `json:"grantBy"`
+	// GrantedBy user who grant the role
+	GrantedBy uint `json:"grantedBy"`
 	// GrantTime
 	GrantTime time.Time `json:"grantTime"`
 }
@@ -124,7 +124,7 @@ func (c *converter) ConvertMember(ctx context.Context, member *models.Member) (_
 		ResourceType: member.ResourceType,
 		ResourceID:   member.ResourceID,
 		Role:         member.Role,
-		GrantBy:      member.GrantBy,
+		GrantedBy:    member.GrantedBy,
 		GrantTime:    member.UpdatedAt,
 	}, nil
 }
@@ -171,7 +171,7 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 			ResourceName: resourceName,
 			ResourcePath: resourcePath,
 			Role:         member.Role,
-			GrantBy:      member.GrantBy,
+			GrantedBy:    member.GrantedBy,
 			GrantTime:    member.UpdatedAt,
 		})
 

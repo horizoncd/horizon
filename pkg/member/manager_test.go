@@ -25,7 +25,7 @@ func MemberValueEqual(member1, member2 *models.Member) bool {
 		member1.Role == member2.Role &&
 		member1.MemberType == member2.MemberType &&
 		member1.MemberNameID == member2.MemberNameID &&
-		member1.GrantBy == member2.GrantBy {
+		member1.GrantedBy == member2.GrantedBy {
 		return true
 	}
 	return false
@@ -33,14 +33,14 @@ func MemberValueEqual(member1, member2 *models.Member) bool {
 
 // nolint
 func TestBasic(t *testing.T) {
-	var grandByadmin uint = 0
+	var grantedByAdmin uint = 0
 	member1 := &models.Member{
 		ResourceType: "group",
 		ResourceID:   1234324,
 		Role:         "owner",
 		MemberType:   models.MemberUser,
 		MemberNameID: 1,
-		GrantBy:      grandByadmin,
+		GrantedBy:    grantedByAdmin,
 	}
 
 	// test create
@@ -57,20 +57,20 @@ func TestBasic(t *testing.T) {
 	assert.True(t, MemberValueEqual(retMember, member))
 
 	// test update
-	var grandByCat uint = 3
+	var grantedByCat uint = 3
 	member1.Role = "maintainer"
-	member1.GrantBy = grandByadmin
+	member1.GrantedBy = grantedByAdmin
 	var grandUser userauth.User = &userauth.DefaultInfo{
 		Name:     "cat",
 		FullName: "cat",
-		ID:       grandByCat,
+		ID:       grantedByCat,
 	}
 	ctx = context.WithValue(ctx, user.Key(), grandUser)
 
 	retMember2, err := Mgr.UpdateByID(ctx, retMember.ID, member1.Role)
 	assert.Nil(t, err)
 
-	member1.GrantBy = grandByCat
+	member1.GrantedBy = grantedByCat
 	assert.True(t, MemberValueEqual(retMember2, member1))
 
 	retMember3, err := Mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberNameID)
@@ -85,7 +85,7 @@ func TestBasic(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	var grandByadmin uint = 0
+	var grantedByAdmin uint = 0
 
 	member1 := &models.Member{
 		ResourceType: "group",
@@ -93,7 +93,7 @@ func TestList(t *testing.T) {
 		Role:         "owner",
 		MemberType:   models.MemberUser,
 		MemberNameID: 1,
-		GrantBy:      grandByadmin,
+		GrantedBy:    grantedByAdmin,
 	}
 
 	// create 1
@@ -108,7 +108,7 @@ func TestList(t *testing.T) {
 		Role:         "owner",
 		MemberType:   models.MemberUser,
 		MemberNameID: 2,
-		GrantBy:      grandByadmin,
+		GrantedBy:    grantedByAdmin,
 	}
 	retMember2, err := Mgr.Create(ctx, member2)
 	assert.Nil(t, err)

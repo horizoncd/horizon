@@ -79,7 +79,7 @@ func MemberSame(m1, m2 Member) bool {
 		m1.ResourceType == m2.ResourceType &&
 		m1.ResourceID == m2.ResourceID &&
 		m1.Role == m2.Role &&
-		m1.GrantBy == m2.GrantBy {
+		m1.GrantedBy == m2.GrantedBy {
 		return true
 	}
 	return false
@@ -132,7 +132,7 @@ func TestCreateGroupWithOwner(t *testing.T) {
 		ResourceType: membermodels.TypeGroup,
 		ResourceID:   groupID,
 		Role:         Owner,
-		GrantBy:      contextUserID,
+		GrantedBy:    contextUserID,
 	}
 	assert.Nil(t, err)
 	assert.NotNil(t, retMembers)

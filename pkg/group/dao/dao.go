@@ -281,7 +281,7 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 			Role:         membermodels.Owner,
 			MemberType:   membermodels.MemberUser,
 			MemberNameID: group.CreatedBy,
-			GrantBy:      group.UpdatedBy,
+			GrantedBy:    group.UpdatedBy,
 		}
 		result := tx.Create(member)
 		if result.Error != nil {
