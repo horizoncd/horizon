@@ -15,6 +15,7 @@ var (
 
 type Controller interface {
 	ListEnvironments(ctx context.Context) (Environments, error)
+	ListRegionsByEnvironment(ctx context.Context, environment string) (Regions, error)
 }
 
 func NewController() Controller {
@@ -37,4 +38,16 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 	}
 
 	return ofEnvironmentModels(envs), nil
+}
+
+func (c *controller) ListRegionsByEnvironment(ctx context.Context, environment string) (_ Regions, err error) {
+	const op = "environment controller: list regions by environment"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	regions, err := c.envMgr.ListRegionsByEnvironment(ctx, environment)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return ofRegionModels(regions), nil
 }

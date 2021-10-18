@@ -7,6 +7,8 @@ import (
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/environment/models"
+	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -57,10 +59,18 @@ func Test(t *testing.T) {
 	assert.NotNil(t, err)
 	t.Logf("%v", err)
 
+	_, err = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:         "hz",
+		DisplayName:  "HZ",
+		K8SClusterID: 1,
+	})
+	assert.Nil(t, err)
+
 	regions, err := Mgr.ListRegionsByEnvironment(ctx, devEnv.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(regions))
-	assert.Equal(t, "hz", regions[0])
+	assert.Equal(t, "hz", regions[0].Name)
+	t.Logf("%v", regions[0])
 }
 
 func TestMain(m *testing.M) {
@@ -70,6 +80,9 @@ func TestMain(m *testing.M) {
 	}
 
 	if err := db.AutoMigrate(&models.EnvironmentRegion{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&regionmodels.Region{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)

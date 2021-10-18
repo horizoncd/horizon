@@ -15,6 +15,8 @@ type DAO interface {
 	ListAll(ctx context.Context) ([]*models.Region, error)
 	// GetRegion get a region
 	GetRegion(ctx context.Context, regionName string) (*models.Region, error)
+	// ListByNames list by names
+	ListByNames(ctx context.Context, regionNames []string) ([]*models.Region, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -58,4 +60,16 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 	result := db.Raw(common.RegionGetByName, regionName).First(&region)
 
 	return &region, result.Error
+}
+
+func (d *dao) ListByNames(ctx context.Context, regionNames []string) ([]*models.Region, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var regions []*models.Region
+	result := db.Raw(common.RegionListByNames, regionNames).Scan(&regions)
+
+	return regions, result.Error
 }

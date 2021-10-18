@@ -1,6 +1,9 @@
 package environment
 
-import "g.hz.netease.com/horizon/pkg/environment/models"
+import (
+	"g.hz.netease.com/horizon/pkg/environment/models"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+)
 
 type Environment struct {
 	Name        string `json:"name"`
@@ -19,4 +22,23 @@ func ofEnvironmentModels(envs []*models.Environment) Environments {
 		})
 	}
 	return environments
+}
+
+type Region struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"displayName"`
+}
+
+type Regions []*Region
+
+// ofEnvironmentModels []*models.Environment to []*Environment
+func ofRegionModels(regions []*regionmodels.Region) Regions {
+	rs := make(Regions, 0)
+	for _, region := range regions {
+		rs = append(rs, &Region{
+			Name:        region.Name,
+			DisplayName: region.DisplayName,
+		})
+	}
+	return rs
 }

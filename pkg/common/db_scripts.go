@@ -96,6 +96,7 @@ const (
 /* sql about region */
 const (
 	// RegionListAll ...
-	RegionListAll   = "select * from region"
-	RegionGetByName = "select * from region where name = ?"
+	RegionListAll     = "select * from region"
+	RegionGetByName   = "select * from region where name = ?"
+	RegionListByNames = "select * from region where name in ?"
 )

@@ -29,3 +29,13 @@ func (a *API) ListEnvironments(c *gin.Context) {
 	}
 	response.SuccessWithData(c, envs)
 }
+
+func (a *API) ListEnvironmentRegions(c *gin.Context) {
+	env := c.Param(_environmentParam)
+	regions, err := a.envCtl.ListRegionsByEnvironment(c, env)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, regions)
+}

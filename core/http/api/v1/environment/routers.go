@@ -1,6 +1,7 @@
 package environment
 
 import (
+	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/pkg/server/route"
@@ -14,6 +15,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		{
 			Method:      http.MethodGet,
 			HandlerFunc: api.ListEnvironments,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%v/regions", _environmentParam),
+			HandlerFunc: api.ListEnvironmentRegions,
 		},
 	}
 
