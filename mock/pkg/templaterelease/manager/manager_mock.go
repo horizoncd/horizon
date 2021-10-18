@@ -37,7 +37,7 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 // Create mocks base method
 func (m *MockManager) Create(ctx context.Context, templateRelease *models.TemplateRelease) (*models.TemplateRelease, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateEnvironment", ctx, templateRelease)
+	ret := m.ctrl.Call(m, "Create", ctx, templateRelease)
 	ret0, _ := ret[0].(*models.TemplateRelease)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -46,7 +46,7 @@ func (m *MockManager) Create(ctx context.Context, templateRelease *models.Templa
 // Create indicates an expected call of Create
 func (mr *MockManagerMockRecorder) Create(ctx, templateRelease interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEnvironment", reflect.TypeOf((*MockManager)(nil).Create), ctx, templateRelease)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockManager)(nil).Create), ctx, templateRelease)
 }
 
 // ListByTemplateName mocks base method

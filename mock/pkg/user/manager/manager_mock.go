@@ -38,7 +38,7 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 // Create mocks base method
 func (m *MockManager) Create(ctx context.Context, user *models.User) (*models.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateEnvironment", ctx, user)
+	ret := m.ctrl.Call(m, "Create", ctx, user)
 	ret0, _ := ret[0].(*models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -47,7 +47,7 @@ func (m *MockManager) Create(ctx context.Context, user *models.User) (*models.Us
 // Create indicates an expected call of Create
 func (mr *MockManagerMockRecorder) Create(ctx, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEnvironment", reflect.TypeOf((*MockManager)(nil).Create), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockManager)(nil).Create), ctx, user)
 }
 
 // GetByOIDCMeta mocks base method
