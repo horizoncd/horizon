@@ -23,8 +23,8 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(context.TODO(), db)
+	db, _                      = orm.NewSqliteDB("")
+	ctx                        = orm.NewContext(context.TODO(), db)
 	contextUserID       uint   = 1
 	contextUserName     string = "Tony"
 	contextUserFullName string = "TonyWu"
