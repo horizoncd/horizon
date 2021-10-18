@@ -1,0 +1,108 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Pipelinerun-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/pipelineruns/{pipelinerunID}/stop:
+    parameters:
+      - name: pipelinerunID
+        in: query
+        description: the pipelinerun ID
+        required: true
+    post:
+      tags:
+        - pipelinerun
+      operationId: stopPipelinerun
+      summary: |
+        Stop the running pipelinerun for a cluster.
+        If there is no running pipelinerun, do nothing and return success.
+        A cluster can only have one running pipelinerun.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/pipelineruns/{pipelinerunID}/log:
+    parameters:
+      - name: pipelinerunID
+        in: query
+        description: the pipelinerun ID
+        required: true
+    get:
+      tags:
+        - pipelinerun
+      operationId: getPipelineRunLog
+      summary: |
+        Get the specified pipelinerun's log for a cluster.
+      responses:
+        "200":
+          description: Success
+          content:
+            text/plain:
+              schema:
+                example: |
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/pipelineruns/{pipelinerunID}/status:
+    parameters:
+      - name: pipelinerunID
+        in: query
+        description: the pipelinerun ID
+        required: true
+    get:
+      tags:
+        - pipelinerun
+      operationId: getPipelinerunsStatus
+      summary: |
+        Get the specified pipelinerun's status for a cluster.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "id":1,
+                          "//status":"running/ok/failed/cancelled",
+                          "status":"ok",
+                          "//action":"builddeploy/deploy/rollback/restart",
+                          "action":"builddeploy",
+                          "title":"v1.0版本发布",
+                          "description":"This is a beautiful description",
+                          "//code_branch":"code_branch and code_commit exists only when action is buildAndDeploy",
+                          "code_branch":"develop",
+                          "code_commit":"239b7aeedc1d2b3023871a85d1cd2b11590c6ba9",
+                          "//config_commit":"cluster config commit",
+                          "config_commit":"0ae7266acc62d7c2bacd74e3f0ef3edacc04c459",
+                          "//rollback_from":"pipelinerun this pipelinerun rollback from",
+                          "rollback_from":1000,
+                          "createdBy":"Tony",
+                          "//startedAt":"unix timestamp",
+                          "startedAt":1634182718327,
+                          "//finishedAt":"unix timestamp",
+                          "finishedAt":163418378923
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

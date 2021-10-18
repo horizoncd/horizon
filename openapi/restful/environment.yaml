@@ -1,0 +1,91 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Environments-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/environments:
+    get:
+      tags:
+        - environment
+      operationId: listEnvironments
+      summary: list environments
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":[
+                          {
+                              "env":"dev",
+                              "name":"开发"
+                          },
+                          {
+                              "env":"test",
+                              "name":"测试"
+                          },
+                          {
+                              "env":"reg",
+                              "name":"回归"
+                          },
+                          {
+                              "env":"perf",
+                              "name":"性能"
+                          },
+                          {
+                              "env":"pre",
+                              "name":"预发"
+                          },
+                          {
+                              "env":"beta",
+                              "name":"灰度"
+                          },
+                          {
+                              "env":"online",
+                              "name":"线上"
+                          }
+                      ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/environments/{environment}/regions:
+    get:
+      tags:
+        - environment
+      operationId: listRegions
+      summary: list regions of a environment
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":[
+                          {
+                              "region": "yq"
+                          },
+                          {
+                              "region": "dg"
+                          },
+                          {
+                              "region": "eks"
+                          }
+                      ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

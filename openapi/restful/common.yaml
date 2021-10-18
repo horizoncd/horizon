@@ -26,7 +26,7 @@ components:
           type: string
         message:
           type: string
-        requestId:
+        requestID:
           type: string
 
     resourceType:
