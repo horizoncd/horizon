@@ -4,7 +4,7 @@ package group
 type NewGroup struct {
 	Name            string `json:"name" binding:"required"`
 	Path            string `json:"path" binding:"required"`
-	VisibilityLevel string `json:"visibilityLevel" binding:"required"`
+	VisibilityLevel string `json:"visibilityLevel"`
 	Description     string `json:"description"`
 	ParentID        uint   `json:"parentID"`
 }
@@ -13,7 +13,7 @@ type NewGroup struct {
 type UpdateGroup struct {
 	Name            string `json:"name" binding:"required"`
 	Path            string `json:"path" binding:"required"`
-	VisibilityLevel string `json:"visibilityLevel" binding:"required"`
+	VisibilityLevel string `json:"visibilityLevel"`
 	Description     string `json:"description"`
 }
 
