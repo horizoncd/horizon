@@ -7,8 +7,8 @@ type K8SCluster struct {
 	Name         string
 	Certificate  string
 	DomainSuffix string
-	CreatedBy    string
-	UpdatedBy    string
+	CreatedBy    uint
+	UpdatedBy    uint
 }
 
 func (K8SCluster) TableName() string {

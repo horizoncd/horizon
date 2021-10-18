@@ -7,6 +7,6 @@ type Environment struct {
 
 	Name        string
 	DisplayName string
-	CreatedBy   string
-	UpdatedBy   string
+	CreatedBy   uint
+	UpdatedBy   uint
 }

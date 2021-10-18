@@ -9,6 +9,6 @@ type EnvironmentRegion struct {
 
 	EnvironmentName string
 	RegionName      string
-	CreatedBy       string
-	UpdatedBy       string
+	CreatedBy       uint
+	UpdatedBy       uint
 }

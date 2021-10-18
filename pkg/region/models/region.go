@@ -12,8 +12,8 @@ type Region struct {
 	Name         string
 	DisplayName  string
 	K8SClusterID uint
-	CreatedBy    string
-	UpdatedBy    string
+	CreatedBy    uint
+	UpdatedBy    uint
 }
 
 type RegionWithK8SCluster struct {
@@ -22,6 +22,6 @@ type RegionWithK8SCluster struct {
 	Name        string
 	DisplayName string
 	K8SCluster  *models.K8SCluster
-	CreatedBy   string
-	UpdatedBy   string
+	CreatedBy   uint
+	UpdatedBy   uint
 }

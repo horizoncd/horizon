@@ -51,8 +51,8 @@ CREATE TABLE `gitlab`
     `created_at` datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` datetime                  DEFAULT NULL,
-    `created_by` varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by` varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by` int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by` int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -69,8 +69,8 @@ CREATE TABLE `template`
     `created_at`  datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`  datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`  datetime                  DEFAULT NULL,
-    `created_by`  varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`  varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`  int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`  int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -91,8 +91,8 @@ CREATE TABLE `template_release`
     `created_at`     datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`     datetime                  DEFAULT NULL,
-    `created_by`     varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`     varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`     int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`     int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_template_name_name` (`template_name`, `name`)
@@ -116,8 +116,8 @@ CREATE TABLE `application`
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -135,8 +135,8 @@ CREATE TABLE `k8s_cluster`
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`)
 ) ENGINE = InnoDB
@@ -152,8 +152,8 @@ CREATE TABLE `environment`
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -171,8 +171,8 @@ CREATE TABLE `region`
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -190,8 +190,8 @@ CREATE TABLE `environment_region`
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_env_region` (`environment_name`, `region_name`)
@@ -215,8 +215,8 @@ CREATE TABLE `cluster`
     `created_at`            datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            datetime                  DEFAULT NULL,
-    `created_by`            varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`            varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`            int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
+    `updated_by`            int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -243,7 +243,7 @@ CREATE TABLE `pipelinerun`
     `rollback_from`    int(11) unsigned NULL COMMENT 'the pipelinerun id that this pipelinerun rollback from',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_cluster_action` (`cluster`, `action`)
 ) ENGINE = InnoDB
@@ -259,7 +259,7 @@ CREATE TABLE `cluster_history`
     `pipelinerun_id`   int(11) unsigned NULL COMMENT 'pipelinerun_id if related to a pipelinerun',
     `description`      varchar(2048)    NULL COMMENT 'the history description',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_action` (`cluster`, `action`)
 ) ENGINE = InnoDB
