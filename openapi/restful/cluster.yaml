@@ -461,8 +461,8 @@ paths:
         required: true
       - name: targetBranch
         in: query
-        description: targetBranch
-        required: true
+        description: targetBranch. If targetBranch is empty, codeDiff will not be returned.
+        required: false
     get:
       tags:
         - cluster
