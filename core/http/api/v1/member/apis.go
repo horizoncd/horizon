@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	_paramResourceID = "groupID"
-	_paramMemberID   = "memberID"
+	_paramGroupID  = "groupID"
+	_paramMemberID = "memberID"
 )
 
 type API struct {
@@ -28,7 +28,7 @@ func NewAPI() *API {
 }
 
 func (a *API) CreateMember(c *gin.Context) {
-	resourceIDStr := c.Param(_paramResourceID)
+	resourceIDStr := c.Param(_paramGroupID)
 	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
@@ -104,7 +104,7 @@ func (a *API) DeleteMember(c *gin.Context) {
 }
 
 func (a *API) ListGroupMember(c *gin.Context) {
-	resourceIDStr := c.Param(_paramResourceID)
+	resourceIDStr := c.Param(_paramGroupID)
 	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,

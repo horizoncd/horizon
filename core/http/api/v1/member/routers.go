@@ -15,11 +15,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/resources/:%v/members", _paramResourceID),
+			Pattern:     fmt.Sprintf("/groups/:%v/members", _paramGroupID),
 			HandlerFunc: api.ListGroupMember,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/resources/:%v/members", _paramResourceID),
+			Pattern:     fmt.Sprintf("/groups/:%v/members", _paramGroupID),
 			HandlerFunc: api.CreateMember,
 		},
 		{

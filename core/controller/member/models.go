@@ -3,8 +3,10 @@ package member
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	groupManager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
@@ -48,6 +50,8 @@ type Member struct {
 
 	// ResourceName   application/group
 	ResourceType models.ResourceType `json:"resourceType"`
+	ResourceName string              `json:"resourceName"`
+	ResourcePath string              `json:"resourcePath"`
 	ResourceID   uint                `json:"resourceID"`
 
 	// MemberType user or group
@@ -82,12 +86,14 @@ type ConvertMemberHelp interface {
 }
 
 type converter struct {
-	userManager usermanager.Manager
+	userManager  usermanager.Manager
+	groupManager groupManager.Manager
 }
 
 func New() ConvertMemberHelp {
 	return &converter{
-		userManager: usermanager.Mgr,
+		userManager:  usermanager.Mgr,
+		groupManager: groupManager.Mgr,
 	}
 }
 
@@ -143,6 +149,18 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 	}
 	var retMembers []Member
 	for _, member := range members {
+		var resourceName, resourcePath string
+		switch member.ResourceType {
+		case models.TypeGroup:
+			group, err := c.groupManager.GetByID(ctx, member.ResourceID)
+			if err != nil {
+				return nil, err
+			}
+			resourceName = group.Name
+			resourcePath = group.Path
+		default:
+			return nil, errors.New(fmt.Sprintf("%s is not support now", member.ResourceType))
+		}
 		retMembers = append(retMembers, Member{
 			ID:           member.ID,
 			MemberType:   member.MemberType,
@@ -150,10 +168,13 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 			MemberNameID: member.MemberNameID,
 			ResourceType: member.ResourceType,
 			ResourceID:   member.ResourceID,
+			ResourceName: resourceName,
+			ResourcePath: resourcePath,
 			Role:         member.Role,
 			GrantBy:      member.GrantBy,
 			GrantTime:    member.UpdatedAt,
 		})
+
 	}
 	return retMembers, nil
 }
