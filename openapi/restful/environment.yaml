@@ -21,32 +21,25 @@ paths:
                   {
                       "data":[
                           {
-                              "env":"dev",
-                              "name":"开发"
+                              "name":"dev"
                           },
                           {
-                              "env":"test",
-                              "name":"测试"
+                              "name":"test"
                           },
                           {
-                              "env":"reg",
-                              "name":"回归"
+                              "name":"reg"
                           },
                           {
-                              "env":"perf",
-                              "name":"性能"
+                              "name":"perf"
                           },
                           {
-                              "env":"pre",
-                              "name":"预发"
+                              "name":"pre"
                           },
                           {
-                              "env":"beta",
-                              "name":"灰度"
+                              "name":"beta"
                           },
                           {
-                              "env":"online",
-                              "name":"线上"
+                              "name":"online"
                           }
                       ]
                   }
@@ -73,13 +66,13 @@ paths:
                   {
                       "data":[
                           {
-                              "region": "yq"
+                              "name": "yq"
                           },
                           {
-                              "region": "dg"
+                              "name": "dg"
                           },
                           {
-                              "region": "eks"
+                              "name": "eks"
                           }
                       ]
                   }

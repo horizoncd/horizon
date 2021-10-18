@@ -5,12 +5,16 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/applications/{application}/clusters?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/core/v1/applications/{application}/clusters?environment={environment}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     parameters:
       - name: application
         in: path
         description: application name
         required: true
+      - name: environment
+        in: query
+        description: environment name
+        required: false
       - name: filter
         in: query
         description: filter clusters by name
