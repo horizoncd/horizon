@@ -10,6 +10,6 @@ type TemplateRelease struct {
 	GitlabName    string
 	GitlabProject string
 	Recommended   bool
-	CreatedBy     string
-	UpdatedBy     string
+	CreatedBy     uint
+	UpdatedBy     uint
 }

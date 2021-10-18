@@ -21,8 +21,8 @@ func Test(t *testing.T) {
 	var (
 		name        = "javaapp"
 		description = "javaapp template"
-		createdBy   = "tony"
-		updatedBy   = "tony"
+		createdBy   = uint(1)
+		updatedBy   = uint(1)
 	)
 	template := &models.Template{
 		Name:        name,

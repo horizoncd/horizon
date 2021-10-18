@@ -7,6 +7,6 @@ type Gitlab struct {
 	Name      string
 	URL       string
 	Token     string
-	CreatedBy string
-	UpdatedBy string
+	CreatedBy uint
+	UpdatedBy uint
 }
