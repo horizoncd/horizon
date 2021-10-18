@@ -53,7 +53,7 @@ func (r Releases) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
-func toReleases(trs []trmodels.TemplateRelease) Releases {
+func toReleases(trs []*trmodels.TemplateRelease) Releases {
 	releases := make(Releases, 0)
 	for _, tr := range trs {
 		releases = append(releases, Release{

@@ -63,14 +63,9 @@ func (d *dao) GetByName(ctx context.Context, name string) (*models.Application, 
 	}
 
 	var application models.Application
-	result := db.Raw(common.ApplicationQueryByName, name).Scan(&application)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return nil, nil
-	}
-	return &application, nil
+	result := db.Raw(common.ApplicationQueryByName, name).First(&application)
+
+	return &application, result.Error
 }
 
 func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error) {

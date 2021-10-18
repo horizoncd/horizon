@@ -43,7 +43,7 @@ func TestList(t *testing.T) {
 	}, nil)
 
 	templateReleaseMgr.EXPECT().ListByTemplateName(ctx, "javaapp").
-		Return([]trmodels.TemplateRelease{
+		Return([]*trmodels.TemplateRelease{
 			{
 				Model: gorm.Model{
 					ID: 1,

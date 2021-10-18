@@ -15,6 +15,8 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 
 	"github.com/golang/mock/gomock"
@@ -246,6 +248,9 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&trmodels.TemplateRelease{}); err != nil {
+		panic(err)
+	}
 	ctx = orm.NewContext(context.TODO(), db)
 	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -292,6 +297,7 @@ func Test(t *testing.T) {
 		templateSchemaGetter: templateSchemaGetter,
 		applicationMgr:       manager.Mgr,
 		groupMgr:             groupmanager.Mgr,
+		templateReleaseMgr:   trmanager.Mgr,
 	}
 
 	createRequest := &CreateApplicationRequest{
@@ -317,6 +323,7 @@ func Test(t *testing.T) {
 
 	// create application
 	if err := c.CreateApplication(ctx, uint(groupID), createRequest); err != nil {
+		t.Logf("%v", err)
 		t.Fatal(err)
 	}
 
