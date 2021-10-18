@@ -25,8 +25,8 @@ func Test(t *testing.T) {
 		description   = "javaapp template v1.0.0"
 		gitlabName    = "control"
 		gitlabProject = "helm-template/javaapp"
-		createdBy     = "tony"
-		updatedBy     = "tony"
+		createdBy     = uint(1)
+		updatedBy     = uint(1)
 	)
 	templateRelease := &models.TemplateRelease{
 		TemplateName:  templateName,

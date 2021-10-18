@@ -127,8 +127,8 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 
 	// 4. create application in db
 	applicationModel := request.toApplicationModel(groupID)
-	applicationModel.CreatedBy = currentUser.GetName()
-	applicationModel.UpdatedBy = currentUser.GetName()
+	applicationModel.CreatedBy = currentUser.GetID()
+	applicationModel.UpdatedBy = currentUser.GetID()
 	if _, err := c.applicationMgr.Create(ctx, applicationModel); err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -162,7 +162,7 @@ func (c *controller) UpdateApplication(ctx context.Context, name string,
 
 	// 3. update application in db
 	applicationModel := request.toApplicationModel()
-	applicationModel.UpdatedBy = currentUser.GetName()
+	applicationModel.UpdatedBy = currentUser.GetID()
 	if _, err := c.applicationMgr.UpdateByName(ctx, name, applicationModel); err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)

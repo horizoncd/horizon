@@ -22,6 +22,6 @@ type Application struct {
 	GitBranch       string
 	Template        string
 	TemplateRelease string
-	CreatedBy       string
-	UpdatedBy       string
+	CreatedBy       uint
+	UpdatedBy       uint
 }

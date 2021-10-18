@@ -23,8 +23,8 @@ func Test(t *testing.T) {
 		name      = "control"
 		url       = "https://gitlab.com"
 		token     = "token"
-		createdBy = "tony"
-		updatedBy = "tony"
+		createdBy = uint(1)
+		updatedBy = uint(1)
 	)
 	gitlab := &models.Gitlab{
 		Name:      name,
