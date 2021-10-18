@@ -29,8 +29,8 @@ func Test(t *testing.T) {
 		gitBranch       = "develop"
 		template        = "javaapp"
 		templateRelease = "v1.1.0"
-		createdBy       = "tony"
-		updatedBy       = "tony"
+		createdBy       = uint(1)
+		updatedBy       = uint(1)
 	)
 	application := &models.Application{
 		GroupID:         uint(groupID),
