@@ -159,7 +159,7 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 			resourceName = group.Name
 			resourcePath = group.Path
 		default:
-			return nil, errors.New(fmt.Sprintf("%s is not support now", member.ResourceType))
+			return nil, fmt.Errorf("%s is not support now", member.ResourceType)
 		}
 		retMembers = append(retMembers, Member{
 			ID:           member.ID,
@@ -174,7 +174,6 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 			GrantedBy:    member.GrantedBy,
 			GrantTime:    member.UpdatedAt,
 		})
-
 	}
 	return retMembers, nil
 }

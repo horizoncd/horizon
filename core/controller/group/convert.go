@@ -27,20 +27,6 @@ func generateFullFromGroups(groups []*models.Group) *Full {
 	}
 }
 
-// convertGroupToBasicChild format Child based on group model
-func convertGroupToBasicChild(group *models.Group) *Child {
-	return &Child{
-		ID:              group.ID,
-		Name:            group.Name,
-		Path:            group.Path,
-		VisibilityLevel: group.VisibilityLevel,
-		Description:     group.Description,
-		ParentID:        group.ParentID,
-		UpdatedAt:       group.UpdatedAt,
-		Type:            ChildTypeGroup,
-	}
-}
-
 // convertGroupToChild format Child based on group model、fullName、fullPath and resourceType
 func convertGroupToChild(group *models.Group, full *Full) *Child {
 	return &Child{
