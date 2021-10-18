@@ -14,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+
 	"gorm.io/gorm"
 )
 
@@ -77,10 +78,16 @@ func NewController() Controller {
 
 // GetChildren get children of a group, including subgroups and applications
 func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
-	var parent *Child
+	var parent *models.Group
+	var full *Full
 	if id > 0 {
 		var err error
-		parent, err = c.GetByID(ctx, id)
+		parent, err = c.groupManager.GetByID(ctx, id)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		full, err = c.formatFullFromGroup(ctx, parent)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -116,8 +123,8 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 			fName = val.Name
 			fPath = fmt.Sprintf("/%s", val.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", parent.FullName, val.Name)
-			fPath = fmt.Sprintf("%s/%s", parent.FullPath, val.Path)
+			fName = fmt.Sprintf("%s / %s", full.FullName, val.Name)
+			fPath = fmt.Sprintf("%s/%s", full.FullPath, val.Path)
 		}
 		child := convertGroupOrApplicationToChild(val, &Full{
 			FullName: fName,
@@ -219,10 +226,16 @@ func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) (
 
 // GetSubGroups get subgroups of a group
 func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*Child, int64, error) {
-	var parent *Child
+	var parent *models.Group
+	var full *Full
 	if id > 0 {
 		var err error
-		parent, err = c.GetByID(ctx, id)
+		parent, err = c.groupManager.GetByID(ctx, id)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		full, err = c.formatFullFromGroup(ctx, parent)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -256,8 +269,8 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 			fName = s.Name
 			fPath = fmt.Sprintf("/%s", s.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", parent.FullName, s.Name)
-			fPath = fmt.Sprintf("%s/%s", parent.FullPath, s.Path)
+			fName = fmt.Sprintf("%s / %s", full.FullName, s.Name)
+			fPath = fmt.Sprintf("%s/%s", full.FullPath, s.Path)
 		}
 		child := convertGroupToChild(s, &Full{
 			FullName: fName,
@@ -315,6 +328,7 @@ func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint, error) {
 	const op = "group controller: create group"
 	groupEntity := convertNewGroupToGroup(newGroup)
+
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
 		return 0, errors.E(op, http.StatusInternalServerError,
@@ -322,10 +336,12 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 	}
 	groupEntity.CreatedBy = currentUser.GetID()
 	groupEntity.UpdatedBy = currentUser.GetID()
+
 	group, err := c.groupManager.Create(ctx, groupEntity)
-	if group == nil {
+	if err != nil {
 		return 0, err
 	}
+
 	return group.ID, err
 }
 
@@ -397,13 +413,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*Child, error) {
 		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
 	}
 
-	groups, err := c.groupManager.GetByIDs(ctx, manager.FormatIDsFromTraversalIDs(groupEntity.TraversalIDs))
-	if err != nil {
-		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
-	}
-
-	full := generateFullFromGroups(groups)
-	return convertGroupToChild(groupEntity, full), nil
+	return convertGroupToBasicChild(groupEntity), nil
 }
 
 // Delete remove a group by the id
@@ -490,4 +500,13 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
 	}
 
 	return firstLevelChildren
+}
+
+func (c *controller) formatFullFromGroup(ctx context.Context, group *models.Group) (*Full, error) {
+	groups, err := c.groupManager.GetByIDs(ctx, manager.FormatIDsFromTraversalIDs(group.TraversalIDs))
+	if err != nil {
+		return nil, err
+	}
+
+	return generateFullFromGroups(groups), nil
 }

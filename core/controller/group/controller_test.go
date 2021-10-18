@@ -13,9 +13,9 @@ import (
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-	usermodel "g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -23,12 +23,26 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _                      = orm.NewSqliteDB("")
-	ctx                        = orm.NewContext(context.TODO(), db)
+	db, _ = orm.NewSqliteDB("")
+	ctx   = orm.NewContext(context.TODO(), db)
 	contextUserID       uint   = 1
 	contextUserName     string = "Tony"
 	contextUserFullName string = "TonyWu"
 )
+
+func GroupValueEqual(g1, g2 *models.Group) bool {
+	if g1.Name == g2.Name && g1.Path == g2.Path &&
+		g1.VisibilityLevel == g2.VisibilityLevel &&
+		g1.Description == g2.Description &&
+		g1.ParentID == g2.ParentID &&
+		g1.TraversalIDs == g2.TraversalIDs &&
+		g1.CreatedBy == g2.CreatedBy &&
+		g1.UpdatedBy == g2.UpdatedBy {
+		return true
+	}
+
+	return false
+}
 
 // nolint
 func init() {
@@ -49,12 +63,6 @@ func init() {
 		os.Exit(1)
 	}
 	err = db.AutoMigrate(&membermodels.Member{})
-	if err != nil {
-		fmt.Printf("%+v", err)
-		os.Exit(1)
-	}
-
-	err = db.AutoMigrate(&usermodel.User{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
@@ -82,7 +90,6 @@ func TestControllerCreateGroup(t *testing.T) {
 					VisibilityLevel: "private",
 				},
 			},
-			want:    1,
 			wantErr: false,
 		},
 		{
@@ -120,7 +127,6 @@ func TestControllerCreateGroup(t *testing.T) {
 					ParentID:        1,
 				},
 			},
-			want:    2,
 			wantErr: false,
 		},
 	}
@@ -131,8 +137,26 @@ func TestControllerCreateGroup(t *testing.T) {
 				t.Errorf("CreateGroup() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("CreateGroup() got = %v, want %v", got, tt.want)
+			if err == nil {
+				group, _ := manager.Mgr.GetByID(ctx, got)
+				var traversalIDs string
+				if group.ParentID == 0 {
+					traversalIDs = strconv.Itoa(int(got))
+				} else {
+					parent, _ := manager.Mgr.GetByID(ctx, tt.args.newGroup.ParentID)
+					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
+				}
+
+				assert.True(t, GroupValueEqual(group, &models.Group{
+					Name:            tt.args.newGroup.Name,
+					Path:            tt.args.newGroup.Path,
+					Description:     tt.args.newGroup.Description,
+					ParentID:        tt.args.newGroup.ParentID,
+					VisibilityLevel: tt.args.newGroup.VisibilityLevel,
+					TraversalIDs:    traversalIDs,
+					CreatedBy:       1,
+					UpdatedBy:       1,
+				}))
 			}
 		})
 	}
@@ -198,7 +222,8 @@ func TestControllerGetByID(t *testing.T) {
 	id, err := Ctl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
 
-	child, err := Ctl.GetByID(ctx, id)
+	group, err := manager.Mgr.GetByID(ctx, id)
+
 	assert.Nil(t, err)
 
 	type args struct {
@@ -222,12 +247,9 @@ func TestControllerGetByID(t *testing.T) {
 				Name:            "1",
 				Path:            "a",
 				VisibilityLevel: "private",
+				UpdatedAt:       group.UpdatedAt,
 				ParentID:        0,
-				TraversalIDs:    strconv.Itoa(int(id)),
-				FullPath:        "/a",
-				FullName:        "1",
 				Type:            ChildTypeGroup,
-				UpdatedAt:       child.UpdatedAt,
 			},
 		},
 		{
@@ -837,7 +859,10 @@ func TestControllerTransfer(t *testing.T) {
 		{
 			name: "twoRecordsTransfer",
 			args: args{
-				ctx:         ctx,
+				// nolint
+				ctx: context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+					ID: 2,
+				}),
 				id:          id,
 				newParentID: id3,
 			},
@@ -853,14 +878,17 @@ func TestControllerTransfer(t *testing.T) {
 	}
 
 	// check transfer success
-	g, err := Ctl.GetByID(ctx, id)
+	g, err := manager.Mgr.GetByID(ctx, id)
+
 	assert.Nil(t, err)
 	assert.Equal(t, id3, g.ParentID)
 	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id)), g.TraversalIDs)
+	assert.True(t, g.UpdatedBy == 2)
 
-	g, err = Ctl.GetByID(ctx, id2)
+	g, err = manager.Mgr.GetByID(ctx, id2)
 	assert.Nil(t, err)
 	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id))+","+strconv.Itoa(int(id2)), g.TraversalIDs)
+	assert.True(t, g.UpdatedBy == 2)
 
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
@@ -899,8 +927,11 @@ func TestControllerUpdateBasic(t *testing.T) {
 		{
 			name: "updateExist",
 			args: args{
-				ctx: ctx,
-				id:  id,
+				// nolint
+				ctx: context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+					ID: 2,
+				}),
+				id: id,
 				updateGroup: &UpdateGroup{
 					Name:            "2",
 					Path:            "b",
@@ -915,6 +946,20 @@ func TestControllerUpdateBasic(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := Ctl.UpdateBasic(tt.args.ctx, tt.args.id, tt.args.updateGroup); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateBasic() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			group, _ := manager.Mgr.GetByID(ctx, tt.args.id)
+
+			if group.ID > 0 {
+				assert.True(t, GroupValueEqual(group, &models.Group{
+					Name:            tt.args.updateGroup.Name,
+					Path:            tt.args.updateGroup.Path,
+					Description:     tt.args.updateGroup.Description,
+					ParentID:        group.ParentID,
+					VisibilityLevel: tt.args.updateGroup.VisibilityLevel,
+					TraversalIDs:    group.TraversalIDs,
+					CreatedBy:       1,
+					UpdatedBy:       2,
+				}))
 			}
 		})
 	}
@@ -1078,7 +1123,4 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 			}
 		})
 	}
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
 }
