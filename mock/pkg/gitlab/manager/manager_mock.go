@@ -37,7 +37,7 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 // Create mocks base method
 func (m *MockManager) Create(ctx context.Context, gitlab *models.Gitlab) (*models.Gitlab, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, gitlab)
+	ret := m.ctrl.Call(m, "CreateEnvironment", ctx, gitlab)
 	ret0, _ := ret[0].(*models.Gitlab)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -46,7 +46,7 @@ func (m *MockManager) Create(ctx context.Context, gitlab *models.Gitlab) (*model
 // Create indicates an expected call of Create
 func (mr *MockManagerMockRecorder) Create(ctx, gitlab interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockManager)(nil).Create), ctx, gitlab)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEnvironment", reflect.TypeOf((*MockManager)(nil).Create), ctx, gitlab)
 }
 
 // List mocks base method

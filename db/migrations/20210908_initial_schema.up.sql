@@ -128,7 +128,7 @@ CREATE TABLE `k8s_cluster`
 (
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
     `name`             varchar(128)     NOT NULL DEFAULT '' COMMENT 'k8s name',
-    `certificate`      text             NOT NULL DEFAULT '' COMMENT 'k8s certificate',
+    `certificate`      text             NOT NULL COMMENT 'k8s certificate',
     `domain_suffix`    varchar(128)              DEFAULT NULL COMMENT 'domain suffix',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -136,8 +136,7 @@ CREATE TABLE `k8s_cluster`
     `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
     `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
     PRIMARY KEY (`id`),
-    KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_env` (`env`)
+    KEY `idx_deleted_at` (`deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -165,7 +164,7 @@ CREATE TABLE `region`
 (
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
     `region`           varchar(128)     NOT NULL DEFAULT '' COMMENT 'region',
-    `k8s_cluster`      int(11) unsigned NOT NULL COMMENT 'k8s cluster id',
+    `k8s_cluster_id`   int(11) unsigned NOT NULL COMMENT 'k8s cluster id',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,

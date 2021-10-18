@@ -51,3 +51,24 @@ const (
 		"and deleted_at is null"
 	ApplicationDeleteByName = "update application set deleted_at = CURRENT_TIMESTAMP where name = ?"
 )
+
+/* sql about k8sCluster */
+const (
+	// K8SClusterListAll ...
+	K8SClusterListAll = "select * from k8s_cluster"
+)
+
+/* sql about environment */
+const (
+	// EnvironmentListAll ...
+	EnvironmentListAll    = "select * from environment"
+	EnvironmentListRegion = "select region from environment_region where env = ?"
+	EnvironmentRegionGet  = "select * from environment_region where env = ? and region = ?"
+)
+
+/* sql about region */
+const (
+	// RegionListAll ...
+	RegionListAll = "select * from region"
+	RegionGet     = "select * from region r where r.region = ?"
+)
