@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	groupManager "g.hz.netease.com/horizon/pkg/group/manager"
+	groupService "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
@@ -86,14 +86,12 @@ type ConvertMemberHelp interface {
 }
 
 type converter struct {
-	userManager  usermanager.Manager
-	groupManager groupManager.Manager
+	userManager usermanager.Manager
 }
 
 func New() ConvertMemberHelp {
 	return &converter{
-		userManager:  usermanager.Mgr,
-		groupManager: groupManager.Mgr,
+		userManager: usermanager.Mgr,
 	}
 }
 
@@ -152,12 +150,12 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 		var resourceName, resourcePath string
 		switch member.ResourceType {
 		case models.TypeGroup:
-			group, err := c.groupManager.GetByID(ctx, member.ResourceID)
+			group, err := groupService.Svc.GetChildByID(ctx, member.ResourceID)
 			if err != nil {
 				return nil, err
 			}
 			resourceName = group.Name
-			resourcePath = group.Path
+			resourcePath = group.FullPath
 		default:
 			return nil, fmt.Errorf("%s is not support now", member.ResourceType)
 		}
