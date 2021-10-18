@@ -57,7 +57,8 @@ func (m *manager) CreateEnvironmentRegion(ctx context.Context,
 	er *models.EnvironmentRegion) (*models.EnvironmentRegion, error) {
 	const op = "environment manager: create environmentRegion"
 
-	_, err := m.dao.GetEnvironmentRegionByEnvAndRegion(ctx, er.Env, er.Region)
+	_, err := m.dao.GetEnvironmentRegionByEnvAndRegion(ctx,
+		er.EnvironmentName, er.RegionName)
 	if err != nil {
 		if err != gorm.ErrRecordNotFound {
 			return nil, err

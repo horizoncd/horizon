@@ -38,14 +38,16 @@ func Test(t *testing.T) {
 	assert.NotNil(t, jdCluster)
 
 	hzRegion, err := Mgr.Create(ctx, &models.Region{
-		Region:       "hz",
+		Name:         "hz",
+		DisplayName:  "HZ",
 		K8SClusterID: hzCluster.ID,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, hzRegion)
 
 	jdRegion, err := Mgr.Create(ctx, &models.Region{
-		Region:       "jd",
+		Name:         "jd",
+		DisplayName:  "JD",
 		K8SClusterID: jdCluster.ID,
 	})
 	assert.Nil(t, err)
@@ -55,9 +57,9 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, regions)
 	assert.Equal(t, 2, len(regions))
-	assert.Equal(t, "hz", regions[0].Region)
+	assert.Equal(t, "hz", regions[0].Name)
 	assert.Equal(t, uint(1), regions[0].K8SClusterID)
-	assert.Equal(t, "jd", regions[1].Region)
+	assert.Equal(t, "jd", regions[1].Name)
 	assert.Equal(t, uint(2), regions[1].K8SClusterID)
 
 	regionWithK8SClusters, err := Mgr.ListAllWithK8SCluster(ctx)

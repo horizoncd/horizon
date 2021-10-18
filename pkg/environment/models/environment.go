@@ -5,8 +5,8 @@ import "gorm.io/gorm"
 type Environment struct {
 	gorm.Model
 
-	Env       string
-	Name      string
-	CreatedBy string
-	UpdatedBy string
+	Name        string
+	DisplayName string
+	CreatedBy   string
+	UpdatedBy   string
 }

@@ -7,8 +7,8 @@ import (
 type EnvironmentRegion struct {
 	gorm.Model
 
-	Env       string
-	Region    string
-	CreatedBy string
-	UpdatedBy string
+	EnvironmentName string
+	RegionName      string
+	CreatedBy       string
+	UpdatedBy       string
 }

@@ -21,25 +21,32 @@ paths:
                   {
                       "data":[
                           {
-                              "name":"dev"
+                              "name":"dev",
+                              "displayName":"开发"
                           },
                           {
-                              "name":"test"
+                              "name":"test",
+                              "displayName":"测试"
                           },
                           {
-                              "name":"reg"
+                              "name":"reg",
+                              "displayName":"回归"
                           },
                           {
-                              "name":"perf"
+                              "name":"perf",
+                              "displayName":"性能"
                           },
                           {
-                              "name":"pre"
+                              "name":"pre",
+                              "displayName":"预发"
                           },
                           {
-                              "name":"beta"
+                              "name":"beta",
+                              "displayName":"灰度"
                           },
                           {
-                              "name":"online"
+                              "name":"online",
+                              "displayName":"线上"
                           }
                       ]
                   }
@@ -66,13 +73,16 @@ paths:
                   {
                       "data":[
                           {
-                              "name": "yq"
+                              "name": "yq",
+                              "displayName": "义桥"
                           },
                           {
-                              "name": "dg"
+                              "name": "dg",
+                              "displayName": "东冠"
                           },
                           {
-                              "name": "eks"
+                              "name": "eks",
+                              "displayName": "海外EKS"
                           }
                       ]
                   }

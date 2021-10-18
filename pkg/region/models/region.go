@@ -9,7 +9,8 @@ import (
 type Region struct {
 	gorm.Model
 
-	Region       string
+	Name         string
+	DisplayName  string
 	K8SClusterID uint
 	CreatedBy    string
 	UpdatedBy    string
@@ -18,8 +19,9 @@ type Region struct {
 type RegionWithK8SCluster struct {
 	gorm.Model
 
-	Region     string
-	K8SCluster *models.K8SCluster
-	CreatedBy  string
-	UpdatedBy  string
+	Name        string
+	DisplayName string
+	K8SCluster  *models.K8SCluster
+	CreatedBy   string
+	UpdatedBy   string
 }

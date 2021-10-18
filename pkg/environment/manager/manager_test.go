@@ -23,15 +23,15 @@ func Test(t *testing.T) {
 	assert.Equal(t, len(envs), 0)
 
 	testEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
-		Env:  "test",
-		Name: "测试",
+		Name:        "test",
+		DisplayName: "测试",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", testEnv)
 
 	devEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
-		Env:  "dev",
-		Name: "开发",
+		Name:        "dev",
+		DisplayName: "开发",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", devEnv)
@@ -43,25 +43,24 @@ func Test(t *testing.T) {
 	t.Logf("%v", envs[1])
 
 	devHzEr, err := Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
-		Env:    devEnv.Env,
-		Region: "hz",
+		EnvironmentName: devEnv.Name,
+		RegionName:      "hz",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, devHzEr)
 	t.Logf("%v", devHzEr)
 
 	_, err = Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
-		Env:    devEnv.Env,
-		Region: "hz",
+		EnvironmentName: devEnv.Name,
+		RegionName:      "hz",
 	})
 	assert.NotNil(t, err)
 	t.Logf("%v", err)
 
-	regions, err := Mgr.ListRegionsByEnvironment(ctx, devEnv.Env)
+	regions, err := Mgr.ListRegionsByEnvironment(ctx, devEnv.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(regions))
 	assert.Equal(t, "hz", regions[0])
-
 }
 
 func TestMain(m *testing.M) {

@@ -62,14 +62,15 @@ func (m *manager) ListAllWithK8SCluster(ctx context.Context) (ret []*models.Regi
 		k8sCluster, ok := k8sClusterMap[region.K8SClusterID]
 		if !ok {
 			return nil, fmt.Errorf("k8sCluster with ID: %v of region: %v is not found",
-				region.K8SClusterID, region.Region)
+				region.K8SClusterID, region.Name)
 		}
 		ret = append(ret, &models.RegionWithK8SCluster{
-			Model:      region.Model,
-			Region:     region.Region,
-			K8SCluster: k8sCluster,
-			CreatedBy:  region.CreatedBy,
-			UpdatedBy:  region.UpdatedBy,
+			Model:       region.Model,
+			Name:        region.Name,
+			DisplayName: region.DisplayName,
+			K8SCluster:  k8sCluster,
+			CreatedBy:   region.CreatedBy,
+			UpdatedBy:   region.UpdatedBy,
 		})
 	}
 	return
@@ -90,15 +91,16 @@ func (m *manager) GetRegionWithK8SCluster(ctx context.Context,
 	k8sCluster, ok := k8sClusterMap[region.K8SClusterID]
 	if !ok {
 		return nil, fmt.Errorf("k8sCluster with ID: %v of region: %v is not found",
-			region.K8SClusterID, region.Region)
+			region.K8SClusterID, region.Name)
 	}
 
 	return &models.RegionWithK8SCluster{
-		Model:      region.Model,
-		Region:     region.Region,
-		K8SCluster: k8sCluster,
-		CreatedBy:  region.CreatedBy,
-		UpdatedBy:  region.UpdatedBy,
+		Model:       region.Model,
+		Name:        region.Name,
+		DisplayName: region.DisplayName,
+		K8SCluster:  k8sCluster,
+		CreatedBy:   region.CreatedBy,
+		UpdatedBy:   region.UpdatedBy,
 	}, nil
 }
 

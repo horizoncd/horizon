@@ -55,7 +55,7 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 	}
 
 	var region models.Region
-	result := db.Raw(common.RegionGet, regionName).First(&region)
+	result := db.Raw(common.RegionGetByName, regionName).First(&region)
 
 	return &region, result.Error
 }

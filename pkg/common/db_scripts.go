@@ -88,13 +88,14 @@ const (
 const (
 	// EnvironmentListAll ...
 	EnvironmentListAll    = "select * from environment"
-	EnvironmentListRegion = "select region from environment_region where env = ?"
-	EnvironmentRegionGet  = "select * from environment_region where env = ? and region = ?"
+	EnvironmentListRegion = "select region_name from environment_region where environment_name = ?"
+	EnvironmentRegionGet  = "select * from environment_region where" +
+		" environment_name = ? and region_name = ?"
 )
 
 /* sql about region */
 const (
 	// RegionListAll ...
-	RegionListAll = "select * from region"
-	RegionGet     = "select * from region r where r.region = ?"
+	RegionListAll   = "select * from region"
+	RegionGetByName = "select * from region r where r.name = ?"
 )
