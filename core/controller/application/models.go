@@ -1,7 +1,10 @@
 package application
 
 import (
+	"time"
+
 	"g.hz.netease.com/horizon/pkg/application/models"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 )
 
 // Base holds the parameters which can be updated of an application
@@ -33,13 +36,16 @@ type UpdateApplicationRequest struct {
 type GetApplicationResponse struct {
 	CreateApplicationRequest
 
-	GroupID uint `json:"groupID"`
+	GroupID   uint      `json:"groupID"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // Template struct about template
 type Template struct {
-	Name    string `json:"name"`
-	Release string `json:"release"`
+	Name               string `json:"name"`
+	Release            string `json:"release"`
+	RecommendedRelease string `json:"recommendedRelease,omitempty"`
 }
 
 // Git struct about git
@@ -78,16 +84,23 @@ func (m *UpdateApplicationRequest) toApplicationModel() *models.Application {
 }
 
 // ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse
-func ofApplicationModel(app *models.Application,
+func ofApplicationModel(app *models.Application, trs []*trmodels.TemplateRelease,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetApplicationResponse {
+	var recommendedRelease string
+	for _, tr := range trs {
+		if tr.Recommended {
+			recommendedRelease = tr.Name
+		}
+	}
 	return &GetApplicationResponse{
 		CreateApplicationRequest: CreateApplicationRequest{
 			Base: Base{
 				Description: app.Description,
 				Priority:    string(app.Priority),
 				Template: &Template{
-					Name:    app.Template,
-					Release: app.TemplateRelease,
+					Name:               app.Template,
+					Release:            app.TemplateRelease,
+					RecommendedRelease: recommendedRelease,
 				},
 				Git: &Git{
 					URL:       app.GitURL,
@@ -101,6 +114,8 @@ func ofApplicationModel(app *models.Application,
 			},
 			Name: app.Name,
 		},
-		GroupID: app.GroupID,
+		GroupID:   app.GroupID,
+		CreatedAt: app.CreatedAt,
+		UpdatedAt: app.UpdatedAt,
 	}
 }

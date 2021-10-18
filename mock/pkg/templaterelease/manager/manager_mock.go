@@ -50,10 +50,10 @@ func (mr *MockManagerMockRecorder) Create(ctx, templateRelease interface{}) *gom
 }
 
 // ListByTemplateName mocks base method
-func (m *MockManager) ListByTemplateName(ctx context.Context, templateName string) ([]models.TemplateRelease, error) {
+func (m *MockManager) ListByTemplateName(ctx context.Context, templateName string) ([]*models.TemplateRelease, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListByTemplateName", ctx, templateName)
-	ret0, _ := ret[0].([]models.TemplateRelease)
+	ret0, _ := ret[0].([]*models.TemplateRelease)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

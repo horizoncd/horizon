@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/lib/orm"
@@ -15,6 +16,10 @@ import (
 type DAO interface {
 	GetByName(ctx context.Context, name string) (*models.Application, error)
 	GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error)
+	// GetByNameFuzzily get applications that fuzzily matching the given name
+	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
+	// CountByGroupID get the count of the records matching the given groupID
+	CountByGroupID(ctx context.Context, groupID uint) (int64, error)
 	Create(ctx context.Context, application *models.Application) (*models.Application, error)
 	UpdateByName(ctx context.Context, name string, application *models.Application) (*models.Application, error)
 	DeleteByName(ctx context.Context, name string) error
@@ -27,6 +32,30 @@ func NewDAO() DAO {
 
 type dao struct{}
 
+func (d *dao) CountByGroupID(ctx context.Context, groupID uint) (int64, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	var count int64
+	result := db.Raw(common.ApplicationCountByGroupID, groupID).Scan(&count)
+
+	return count, result.Error
+}
+
+func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var applications []*models.Application
+	result := db.Raw(common.ApplicationQueryByFuzzily, fmt.Sprintf("%%%s%%", name)).Scan(&applications)
+
+	return applications, result.Error
+}
+
 func (d *dao) GetByName(ctx context.Context, name string) (*models.Application, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -34,14 +63,9 @@ func (d *dao) GetByName(ctx context.Context, name string) (*models.Application, 
 	}
 
 	var application models.Application
-	result := db.Raw(common.ApplicationQueryByName, name).Scan(&application)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return nil, nil
-	}
-	return &application, nil
+	result := db.Raw(common.ApplicationQueryByName, name).First(&application)
+
+	return &application, result.Error
 }
 
 func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error) {

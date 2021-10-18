@@ -72,10 +72,11 @@ func (a *API) Status(c *gin.Context) {
 	u, err := usermiddle.FromContext(c)
 	if err != nil {
 		response.Abort(c, http.StatusForbidden, common.Forbidden, "user not logged in")
+		return
 	}
 	response.SuccessWithData(c, struct {
 		Name string `json:"name"`
-		ID   int    `json:"id"`
+		ID   uint   `json:"id"`
 	}{
 		Name: u.GetFullName(),
 		ID:   u.GetID(),

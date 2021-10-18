@@ -52,12 +52,12 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/search-groups",
+			Pattern:     "/searchgroups",
 			HandlerFunc: a.SearchGroups,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/search-children",
+			Pattern:     "/searchchildren",
 			HandlerFunc: a.SearchChildren,
 		},
 		{

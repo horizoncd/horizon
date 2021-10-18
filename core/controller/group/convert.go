@@ -2,7 +2,6 @@ package group
 
 import (
 	"sort"
-	"strconv"
 	"strings"
 
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -28,6 +27,20 @@ func generateFullFromGroups(groups []*models.Group) *Full {
 	}
 }
 
+// convertGroupToBasicChild format Child based on group model
+func convertGroupToBasicChild(group *models.Group) *Child {
+	return &Child{
+		ID:              group.ID,
+		Name:            group.Name,
+		Path:            group.Path,
+		VisibilityLevel: group.VisibilityLevel,
+		Description:     group.Description,
+		ParentID:        group.ParentID,
+		UpdatedAt:       group.UpdatedAt,
+		Type:            ChildTypeGroup,
+	}
+}
+
 // convertGroupToChild format Child based on group model、fullName、fullPath and resourceType
 func convertGroupToChild(group *models.Group, full *Full) *Child {
 	return &Child{
@@ -45,7 +58,21 @@ func convertGroupToChild(group *models.Group, full *Full) *Child {
 	}
 }
 
-func convertApplicationToChild(app *appmodels.Application, full *Full) (*Child, error) {
+// convertGroupOrApplicationToChild format Child based on groupOrApplication
+func convertGroupOrApplicationToChild(groupOrApplication *models.GroupOrApplication, full *Full) *Child {
+	return &Child{
+		ID:          groupOrApplication.ID,
+		Name:        groupOrApplication.Name,
+		Path:        groupOrApplication.Path,
+		Description: groupOrApplication.Description,
+		UpdatedAt:   groupOrApplication.UpdatedAt,
+		FullName:    full.FullName,
+		FullPath:    full.FullPath,
+		Type:        groupOrApplication.Type,
+	}
+}
+
+func convertApplicationToChild(app *appmodels.Application, full *Full) *Child {
 	return &Child{
 		ID:          app.ID,
 		Name:        app.Name,
@@ -55,7 +82,7 @@ func convertApplicationToChild(app *appmodels.Application, full *Full) (*Child, 
 		FullName:    full.FullName,
 		FullPath:    full.FullPath,
 		Type:        ChildTypeApplication,
-	}, nil
+	}
 }
 
 // convertNewGroupToGroup convert newGroup model to group model
@@ -136,15 +163,4 @@ func generateIDToGroup(groups []*models.Group) map[uint]*models.Group {
 	}
 
 	return idToGroup
-}
-
-// formatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
-func formatIDsFromTraversalIDs(traversalIDs string) []uint {
-	splitIds := strings.Split(traversalIDs, ",")
-	var ids = make([]uint, len(splitIds))
-	for i, id := range splitIds {
-		ii, _ := strconv.Atoi(id)
-		ids[i] = uint(ii)
-	}
-	return ids
 }
