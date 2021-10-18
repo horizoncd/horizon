@@ -97,5 +97,5 @@ const (
 const (
 	// RegionListAll ...
 	RegionListAll   = "select * from region"
-	RegionGetByName = "select * from region r where r.name = ?"
+	RegionGetByName = "select * from region where name = ?"
 )
