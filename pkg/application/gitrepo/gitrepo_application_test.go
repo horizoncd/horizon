@@ -44,7 +44,7 @@ export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
 }
 EOF
 )"
-go test -v ./pkg/service/gitrepo
+go test -v ./pkg/application/gitrepo
 
 NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this test.
 
