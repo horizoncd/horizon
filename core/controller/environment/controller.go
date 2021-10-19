@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	// Ctl global instance of the group controller
+	// Ctl global instance of the environment controller
 	Ctl = NewController()
 )
 

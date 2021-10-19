@@ -31,7 +31,7 @@ type Region struct {
 
 type Regions []*Region
 
-// ofEnvironmentModels []*models.Environment to []*Environment
+// ofEnvironmentModels []*models.Region to []*Region
 func ofRegionModels(regions []*regionmodels.Region) Regions {
 	rs := make(Regions, 0)
 	for _, region := range regions {
