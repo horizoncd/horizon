@@ -24,6 +24,7 @@ type DAO interface {
 	GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error)
 	// SearchUser search user with a given filter, search for name/full_name/email.
 	SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error)
+	GetByIDs(ctx context.Context, userID []uint) ([]models.User, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -41,6 +42,22 @@ func (d *dao) Create(ctx context.Context, user *models.User) (*models.User, erro
 
 	result := db.Create(user)
 	return user, result.Error
+}
+
+func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]models.User, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var users []models.User
+	result := db.Raw(common.UserGetByID, userID).Scan(&users)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+	return users, nil
 }
 
 func (d *dao) GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error) {

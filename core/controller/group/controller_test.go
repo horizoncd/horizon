@@ -15,6 +15,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	"g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 
 	"github.com/stretchr/testify/assert"
@@ -23,8 +24,11 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(context.TODO(), db)
+	db, _                    = orm.NewSqliteDB("")
+	ctx                      = orm.NewContext(context.TODO(), db)
+	contextUserID       uint = 1
+	contextUserName          = "Tony"
+	contextUserFullName      = "TonyWu"
 )
 
 func GroupValueEqual(g1, g2 *models.Group) bool {
@@ -44,7 +48,9 @@ func GroupValueEqual(g1, g2 *models.Group) bool {
 // nolint
 func init() {
 	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
-		ID: 1,
+		Name:     contextUserName,
+		FullName: contextUserFullName,
+		ID:       contextUserID,
 	})
 	// create table
 	err := db.AutoMigrate(&models.Group{})
@@ -228,7 +234,7 @@ func TestControllerGetByID(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *Child
+		want    *service.Child
 		wantErr bool
 	}{
 		{
@@ -237,14 +243,17 @@ func TestControllerGetByID(t *testing.T) {
 				ctx: ctx,
 				id:  id,
 			},
-			want: &Child{
+			want: &service.Child{
 				ID:              id,
 				Name:            "1",
 				Path:            "a",
 				VisibilityLevel: "private",
 				UpdatedAt:       group.UpdatedAt,
 				ParentID:        0,
-				Type:            ChildTypeGroup,
+				FullPath:        "/a",
+				FullName:        "1",
+				TraversalIDs:    strconv.Itoa(int(id)),
+				Type:            service.ChildTypeGroup,
 			},
 		},
 		{
@@ -299,7 +308,7 @@ func TestControllerGetByPath(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *Child
+		want    *service.Child
 		wantErr bool
 	}{
 		{
@@ -308,7 +317,7 @@ func TestControllerGetByPath(t *testing.T) {
 				ctx:  ctx,
 				path: "/a",
 			},
-			want: &Child{
+			want: &service.Child{
 				ID:              id,
 				Name:            "1",
 				Path:            "a",
@@ -317,7 +326,7 @@ func TestControllerGetByPath(t *testing.T) {
 				TraversalIDs:    strconv.Itoa(int(id)),
 				FullPath:        "/a",
 				FullName:        "1",
-				Type:            ChildTypeGroup,
+				Type:            service.ChildTypeGroup,
 				UpdatedAt:       child.UpdatedAt,
 			},
 		},
@@ -334,7 +343,7 @@ func TestControllerGetByPath(t *testing.T) {
 				ctx:  ctx,
 				path: "/a/app",
 			},
-			want: &Child{
+			want: &service.Child{
 				ID:          app.ID,
 				Name:        "app",
 				Path:        "app",
@@ -342,7 +351,7 @@ func TestControllerGetByPath(t *testing.T) {
 				ParentID:    id,
 				FullName:    "1 / app",
 				FullPath:    "/a/app",
-				Type:        ChildTypeApplication,
+				Type:        service.ChildTypeApplication,
 			},
 		}, {
 			name: "applicationNotExist",
@@ -400,7 +409,7 @@ func TestControllerGetChildren(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*Child
+		want    []*service.Child
 		want1   int64
 		wantErr bool
 	}{
@@ -412,14 +421,14 @@ func TestControllerGetChildren(t *testing.T) {
 				pageSize:   1,
 				pageNumber: 1,
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:        id2,
 					Name:      "2",
 					Path:      "b",
 					FullPath:  "/a/b",
 					FullName:  "1 / 2",
-					Type:      ChildTypeGroup,
+					Type:      service.ChildTypeGroup,
 					UpdatedAt: group2.UpdatedAt,
 				},
 			},
@@ -433,14 +442,14 @@ func TestControllerGetChildren(t *testing.T) {
 				pageSize:   1,
 				pageNumber: 2,
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:        app.ID,
 					Name:      "c",
 					Path:      "c",
 					FullPath:  "/a/c",
 					FullName:  "1 / c",
-					Type:      ChildTypeApplication,
+					Type:      service.ChildTypeApplication,
 					UpdatedAt: app.UpdatedAt,
 				},
 			},
@@ -497,7 +506,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*Child
+		want    []*service.Child
 		want1   int64
 		wantErr bool
 	}{
@@ -506,7 +515,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 			args: args{
 				ctx: ctx,
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -516,7 +525,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            ChildTypeGroup,
+					Type:            service.ChildTypeGroup,
 					ChildrenCount:   1,
 					UpdatedAt:       group1.UpdatedAt,
 				},
@@ -529,7 +538,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 				ctx: ctx,
 				id:  id,
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:              id2,
 					Name:            "2",
@@ -539,7 +548,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)) + "," + strconv.Itoa(int(id2)),
 					FullPath:        "/a/b",
 					FullName:        "1 / 2",
-					Type:            ChildTypeGroup,
+					Type:            service.ChildTypeGroup,
 					ChildrenCount:   0,
 					UpdatedAt:       group2.UpdatedAt,
 				},
@@ -596,7 +605,7 @@ func TestControllerSearchChildren(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*Child
+		want    []*service.Child
 		want1   int64
 		wantErr bool
 	}{
@@ -607,14 +616,14 @@ func TestControllerSearchChildren(t *testing.T) {
 				filter: "",
 				id:     id,
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:       id2,
 					Name:     "2",
 					Path:     "b",
 					FullPath: "/a/b",
 					FullName: "1 / 2",
-					Type:     ChildTypeGroup,
+					Type:     service.ChildTypeGroup,
 				},
 				{
 					ID:       app.ID,
@@ -622,7 +631,7 @@ func TestControllerSearchChildren(t *testing.T) {
 					Path:     app.Name,
 					FullPath: "/a/c",
 					FullName: "1 / c",
-					Type:     ChildTypeApplication,
+					Type:     service.ChildTypeApplication,
 				},
 			},
 			want1: 2,
@@ -634,14 +643,14 @@ func TestControllerSearchChildren(t *testing.T) {
 				filter: "c",
 				id:     id,
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:       app.ID,
 					Name:     app.Name,
 					Path:     app.Name,
 					FullPath: "/a/c",
 					FullName: "1 / c",
-					Type:     ChildTypeApplication,
+					Type:     service.ChildTypeApplication,
 					ParentID: id,
 				},
 			},
@@ -700,7 +709,7 @@ func TestControllerSearchGroups(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*Child
+		want    []*service.Child
 		want1   int64
 		wantErr bool
 	}{
@@ -710,7 +719,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "",
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -720,7 +729,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            ChildTypeGroup,
+					Type:            service.ChildTypeGroup,
 					ChildrenCount:   1,
 					UpdatedAt:       group1.UpdatedAt,
 				},
@@ -733,7 +742,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "3",
 			},
-			want:  []*Child{},
+			want:  []*service.Child{},
 			want1: 0,
 		},
 		{
@@ -742,7 +751,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "1",
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -752,7 +761,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            ChildTypeGroup,
+					Type:            service.ChildTypeGroup,
 					UpdatedAt:       group1.UpdatedAt,
 				},
 			},
@@ -764,7 +773,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "2",
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -774,10 +783,10 @@ func TestControllerSearchGroups(t *testing.T) {
 					TraversalIDs:    strconv.Itoa(int(id)),
 					FullPath:        "/a",
 					FullName:        "1",
-					Type:            ChildTypeGroup,
+					Type:            service.ChildTypeGroup,
 					ChildrenCount:   1,
 					UpdatedAt:       group1.UpdatedAt,
-					Children: []*Child{
+					Children: []*service.Child{
 						{
 							ID:              id2,
 							Name:            "2",
@@ -787,7 +796,7 @@ func TestControllerSearchGroups(t *testing.T) {
 							TraversalIDs:    strconv.Itoa(int(id)) + "," + strconv.Itoa(int(id2)),
 							FullPath:        "/a/b",
 							FullName:        "1 / 2",
-							Type:            ChildTypeGroup,
+							Type:            service.ChildTypeGroup,
 							ChildrenCount:   0,
 							UpdatedAt:       group2.UpdatedAt,
 						},
@@ -969,7 +978,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []*Child
+		want []*service.Child
 	}{
 		{
 			name: "noMatch",
@@ -988,7 +997,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 				},
 				applications: []*appmodels.Application{},
 			},
-			want: []*Child{},
+			want: []*service.Child{},
 		},
 		{
 			name: "match",
@@ -1051,7 +1060,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					},
 				},
 			},
-			want: []*Child{
+			want: []*service.Child{
 				{
 					ID:            2,
 					Name:          "2",
@@ -1061,8 +1070,8 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					FullPath:      "/a/b",
 					FullName:      "1 / 2",
 					ChildrenCount: 2,
-					Type:          ChildTypeGroup,
-					Children: []*Child{
+					Type:          service.ChildTypeGroup,
+					Children: []*service.Child{
 						{
 							ID:           3,
 							Name:         "3",
@@ -1071,7 +1080,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 							ParentID:     2,
 							FullPath:     "/a/b/c",
 							FullName:     "1 / 2 / 3",
-							Type:         ChildTypeGroup,
+							Type:         service.ChildTypeGroup,
 						},
 						{
 							ID:       6,
@@ -1080,7 +1089,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 							ParentID: 2,
 							FullPath: "/a/b/f",
 							FullName: "1 / 2 / f",
-							Type:     ChildTypeApplication,
+							Type:     service.ChildTypeApplication,
 						},
 					},
 				},
@@ -1093,8 +1102,8 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					FullPath:      "/a/d",
 					FullName:      "1 / 4",
 					ChildrenCount: 1,
-					Type:          ChildTypeGroup,
-					Children: []*Child{
+					Type:          service.ChildTypeGroup,
+					Children: []*service.Child{
 						{
 							ID:           5,
 							Name:         "5",
@@ -1103,7 +1112,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 							ParentID:     4,
 							FullPath:     "/a/d/e",
 							FullName:     "1 / 4 / 5",
-							Type:         ChildTypeGroup,
+							Type:         service.ChildTypeGroup,
 						},
 					},
 				},

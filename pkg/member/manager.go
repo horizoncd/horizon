@@ -16,10 +16,12 @@ type Manager interface {
 	// Create a new member
 	Create(ctx context.Context, member *models.Member) (*models.Member, error)
 
-	// GetByUserID get the direct Member of resource by the userID
-	GetByUserID(ctx context.Context, resourceType models.ResourceType,
-		resourceID uint, userName uint) (*models.Member, error)
-	// TODO(tom) GetByGroupID
+	// Get  return the direct member
+	Get(ctx context.Context, resourceType models.ResourceType,
+		resourceID uint, memberType models.MemberType, memberInfo uint) (*models.Member, error)
+
+	// GetByID get the member by ID
+	GetByID(ctx context.Context, memberID uint) (*models.Member, error)
 
 	// UpdateByID  update a member by memberID
 	UpdateByID(ctx context.Context, id uint, role string) (*models.Member, error)
@@ -44,9 +46,13 @@ func (m *manager) Create(ctx context.Context, member *models.Member) (*models.Me
 	return m.dao.Create(ctx, member)
 }
 
-func (m *manager) GetByUserID(ctx context.Context, resourceType models.ResourceType, resourceID uint,
-	userName uint) (*models.Member, error) {
-	return m.dao.Get(ctx, resourceType, resourceID, models.MemberUser, userName)
+func (m *manager) Get(ctx context.Context, resourceType models.ResourceType,
+	resourceID uint, memberType models.MemberType, memberInfo uint) (*models.Member, error) {
+	return m.dao.Get(ctx, resourceType, resourceID, memberType, memberInfo)
+}
+
+func (m *manager) GetByID(ctx context.Context, memberID uint) (*models.Member, error) {
+	return m.dao.GetByID(ctx, memberID)
 }
 
 func (m *manager) UpdateByID(ctx context.Context, memberID uint, role string) (*models.Member, error) {

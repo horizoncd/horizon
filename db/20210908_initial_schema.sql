@@ -125,6 +125,27 @@ CREATE TABLE `application`
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
 
+-- member table
+CREATE TABLE `member`
+(
+    `id`            int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `resource_type` varchar(64)      NOT NULL COMMENT 'group\application\cluster',
+    `resource_id`   int(11) unsigned NOT NULL COMMENT 'resource id',
+    `role`          varchar(64)      NOT NULL COMMENT 'binding role name',
+    `member_type`   tinyint(1) COMMENT '0-USER, 1-group',
+    `membername_id` int(11) unsigned NOT NULL COMMENT 'UserID or GroupID',
+    `granted_by`      int(11) unsigned NOT NULL COMMENT 'who grant the role',
+    `created_by`    int(11) unsigned NOT NULL COMMENT 'who create the role',
+    `created_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`    datetime                  DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_resource_member` (`resource_type`, `resource_id`, `member_type`, `membername_id`, `deleted_at`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4;
+
 -- k8s cluster table
 CREATE TABLE `k8s_cluster`
 (

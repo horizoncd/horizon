@@ -25,7 +25,7 @@ var (
 func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
 	return models.ResourceType(postMember.ResourceType) == member.ResourceType &&
 		postMember.ResourceID == member.ResourceID &&
-		postMember.MemberInfo == member.MemberInfo &&
+		postMember.MemberInfo == member.MemberNameID &&
 		postMember.MemberType == member.MemberType &&
 		postMember.Role == member.Role
 }
@@ -44,15 +44,14 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	s = originService
 
 	//  case  /group1/group2
-	//    group1 service: tom(1), jerry(1), cat(1)
-	//    group2 service: tom(2), jerry(2)
-	var group2ID uint = 4
+	//    group1 member: tom(1), jerry(1), cat(1)
+	//    group2 member: tom(2), jerry(2)
 	var group1ID uint = 3
+	var group2ID uint = 4
 	var traversalIDs string = "3,4"
 	var tomID uint = 1
 	var jerryID uint = 2
 	var catID uint = 3
-	var jimID uint = 4
 	var grandUser userauth.User = &userauth.DefaultInfo{
 		Name:     "tom",
 		FullName: "tom",
@@ -82,7 +81,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMemberJerry2, member))
 
-	// insert service to group1
+	// insert member to group1
 	postMemberTom1 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group1ID,
@@ -90,9 +89,9 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		MemberType:   models.MemberUser,
 		Role:         "owner",
 	}
-	member, err = originService.createMemberDirect(ctx, postMemberTom1)
+	tomMember1, err := originService.createMemberDirect(ctx, postMemberTom1)
 	assert.Nil(t, err)
-	assert.True(t, PostMemberEqualsMember(postMemberTom1, member))
+	assert.True(t, PostMemberEqualsMember(postMemberTom1, tomMember1))
 
 	postMemberJerry1 := PostMember{
 		ResourceType: models.TypeGroupStr,
@@ -116,7 +115,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMemberCat1, member))
 
-	// create service success
+	// create member ok
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
@@ -128,52 +127,42 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			ParentID:        0,
 			TraversalIDs:    traversalIDs,
 		}, nil
-	}).Times(2)
-
+	}).Times(1)
 	postMemberCat2 := PostMember{
 		ResourceType: models.TypeGroupStr,
 		ResourceID:   group2ID,
 		MemberInfo:   catID,
 		MemberType:   models.MemberUser,
-		Role:         "develop",
+		Role:         "maintainer",
 	}
+	catMember2, err := s.CreateMember(ctx, postMemberCat2)
+	assert.Nil(t, err)
+	assert.True(t, PostMemberEqualsMember(postMemberCat2, catMember2))
+
+	// create member exist  auto change to update role
+	groupManager.EXPECT().GetByID(gomock.Any(),
+		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
+		return &groupModels.Group{
+			Model:           gorm.Model{},
+			Name:            "",
+			Path:            "",
+			VisibilityLevel: "",
+			Description:     "",
+			ParentID:        0,
+			TraversalIDs:    traversalIDs,
+		}, nil
+	}).Times(1)
+	postMemberCat2.Role = "develop"
 	member, err = s.CreateMember(ctx, postMemberCat2)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMemberCat2, member))
 
-	// create service exist err
-	groupManager.EXPECT().GetByID(gomock.Any(),
-		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
-		return &groupModels.Group{
-			Model:           gorm.Model{},
-			Name:            "",
-			Path:            "",
-			VisibilityLevel: "",
-			Description:     "",
-			ParentID:        0,
-			TraversalIDs:    traversalIDs,
-		}, nil
-	}).Times(1)
-	member, err = s.CreateMember(ctx, postMemberCat2)
-	assert.Equal(t, err.Error(), ErrMemberExist.Error())
-
-	// update service not exist
-	groupManager.EXPECT().GetByID(gomock.Any(),
-		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
-		return &groupModels.Group{
-			Model:           gorm.Model{},
-			Name:            "",
-			Path:            "",
-			VisibilityLevel: "",
-			Description:     "",
-			ParentID:        0,
-			TraversalIDs:    traversalIDs,
-		}, nil
-	}).Times(1)
-	member, err = s.UpdateMember(ctx, "group", 3, tomID, models.MemberUser, "owner")
+	// update member not exist
+	var memberIDNotExist uint = 123233434
+	member, err = s.UpdateMember(ctx, memberIDNotExist, "owner")
 	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
 
-	// update service correct
+	// update member correct
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
@@ -185,12 +174,17 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			ParentID:        0,
 			TraversalIDs:    traversalIDs,
 		}, nil
-	}).Times(2)
-	member, err = s.UpdateMember(ctx, "group", group2ID, tomID, models.MemberUser, "maintainer")
+	}).Times(1)
+	member, err = s.UpdateMember(ctx, tomMember1.ID, "maintainer")
 	assert.Nil(t, err)
 	assert.Equal(t, member.Role, "maintainer")
+	assert.Equal(t, member.ID, tomMember1.ID)
 
-	// remove service not exist
+	// remove member not exist
+	err = s.RemoveMember(ctx, memberIDNotExist)
+	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
+
+	// remove member ok
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
@@ -203,23 +197,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
-	err = s.RemoveMember(ctx, "group", group2ID, jimID, models.MemberUser)
-	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
-
-	// remove service ok
-	groupManager.EXPECT().GetByID(gomock.Any(),
-		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
-		return &groupModels.Group{
-			Model:           gorm.Model{},
-			Name:            "",
-			Path:            "",
-			VisibilityLevel: "",
-			Description:     "",
-			ParentID:        0,
-			TraversalIDs:    traversalIDs,
-		}, nil
-	}).Times(2)
-	err = s.RemoveMember(ctx, "group", group2ID, catID, models.MemberUser)
+	err = s.RemoveMember(ctx, catMember2.ID)
 	assert.Nil(t, err)
 }
 

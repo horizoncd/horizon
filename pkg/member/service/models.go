@@ -9,7 +9,7 @@ import (
 )
 
 type PostMember struct {
-	// ResourceType group/application/applicationInstance
+	// ResourceType group/application/cluster
 	ResourceType string
 
 	// ResourceID group id;application id ...
@@ -47,8 +47,8 @@ type Member struct {
 	// Role the role name that bind
 	Role string
 
-	// GrantBy user who grant the role
-	GrantBy string
+	// GrantedBy user who grant the role
+	GrantedBy string
 
 	// GrantTime
 	GrantTime time.Time
@@ -82,7 +82,8 @@ func ConvertPostMemberToMember(postMember PostMember, currentUser userauth.User)
 		ResourceID:   postMember.ResourceID,
 		Role:         postMember.Role,
 		MemberType:   postMember.MemberType,
-		MemberInfo:   postMember.MemberInfo,
-		GrantBy:      currentUser.GetName(),
+		MemberNameID: postMember.MemberInfo,
+		GrantedBy:    currentUser.GetID(),
+		CreatedBy:    currentUser.GetID(),
 	}, nil
 }
