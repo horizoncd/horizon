@@ -140,7 +140,7 @@ CREATE TABLE `member`
     `grant_by`      varchar(512)     NOT NULL COMMENT 'who grand the role',
     `created_by`    varchar(512)     NOT NULL COMMENT 'who create the role',
 
-    `created_at`    datetime         NOT NULL DEFAULT CURRENT_TIME,
+    `created_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     `deleted_at`    datetime                  DEFAULT NULL,
