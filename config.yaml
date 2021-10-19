@@ -23,11 +23,11 @@ gitlabConfig:
     recyclingParent:
       path: music-cloud-native/recycling-applications
       id: 4586
-  applicationInstance:
+  cluster:
     gitlabName: compute
     parent:
-      path: music-cloud-native/application-instances
+      path: music-cloud-native/clusters
       id: 4279
     recyclingParent:
-      path: music-cloud-native/recycling-application-instances
+      path: music-cloud-native/recycling-clusters
       id: 4587

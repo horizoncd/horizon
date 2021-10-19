@@ -11,8 +11,8 @@ CREATE TABLE `group`
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       int(11) unsigned NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_parent_id_name_delete_at` (`parent_id`, `name`, `deleted_at`),
     UNIQUE KEY `idx_parent_id_path_delete_at` (`parent_id`, `path`, `deleted_at`)
@@ -51,8 +51,8 @@ CREATE TABLE `gitlab`
     `created_at` datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` datetime                  DEFAULT NULL,
-    `created_by` varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by` varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by` int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by` int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -69,8 +69,8 @@ CREATE TABLE `template`
     `created_at`  datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`  datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`  datetime                  DEFAULT NULL,
-    `created_by`  varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`  varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`  int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`  int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -91,11 +91,32 @@ CREATE TABLE `template_release`
     `created_at`     datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`     datetime                  DEFAULT NULL,
-    `created_by`     varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`     varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`     int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`     int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_template_name_name` (`template_name`, `name`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4;
+
+-- member table
+CREATE TABLE `member`
+(
+    `id`            int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `resource_type` varchar(64)      NOT NULL COMMENT 'group\application\cluster',
+    `resource_id`   int(11) unsigned NOT NULL COMMENT 'resource id',
+    `role`          varchar(64)      NOT NULL COMMENT 'binding role name',
+    `member_type`   tinyint(1) COMMENT '0-USER, 1-group',
+    `membername_id` int(11) unsigned NOT NULL COMMENT 'UserID or GroupID',
+    `granted_by`      int(11) unsigned NOT NULL COMMENT 'who grant the role',
+    `created_by`    int(11) unsigned NOT NULL COMMENT 'who create the role',
+    `created_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`    datetime                  DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_resource_member` (`resource_type`, `resource_id`, `member_type`, `membername_id`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -116,8 +137,8 @@ CREATE TABLE `application`
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -130,16 +151,15 @@ CREATE TABLE `k8s_cluster`
 (
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
     `name`             varchar(128)     NOT NULL DEFAULT '' COMMENT 'k8s name',
-    `certificate`      text             NOT NULL DEFAULT '' COMMENT 'k8s certificate',
+    `certificate`      text             NOT NULL COMMENT 'k8s certificate',
     `domain_suffix`    varchar(128)              DEFAULT NULL COMMENT 'domain suffix',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
-    KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_env` (`env`)
+    KEY `idx_deleted_at` (`deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -148,16 +168,16 @@ CREATE TABLE `k8s_cluster`
 CREATE TABLE `environment`
 (
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `env`              varchar(128)     NOT NULL DEFAULT '' COMMENT 'env',
-    `name`             varchar(128)     NOT NULL DEFAULT '' COMMENT 'env name',
+    `name`              varchar(128)     NOT NULL DEFAULT '' COMMENT 'env name',
+    `display_name`             varchar(128)     NOT NULL DEFAULT '' COMMENT 'display name',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_env` (`env`)
+    UNIQUE KEY `idx_name` (`name`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -166,16 +186,17 @@ CREATE TABLE `environment`
 CREATE TABLE `region`
 (
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `region`           varchar(128)     NOT NULL DEFAULT '' COMMENT 'region',
-    `k8s_cluster`      int(11) unsigned NOT NULL COMMENT 'k8s cluster id',
+    `name`             varchar(128)     NOT NULL DEFAULT '' COMMENT 'region name',
+    `display_name`     varchar(128)     NOT NULL DEFAULT '' COMMENT 'region display name',
+    `k8s_cluster_id`   int(11) unsigned NOT NULL COMMENT 'k8s cluster id',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_region` (`region`)
+    UNIQUE KEY `idx_name` (`name`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -184,17 +205,17 @@ CREATE TABLE `region`
 CREATE TABLE `environment_region`
 (
     `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `env`              varchar(128)     NOT NULL DEFAULT '' COMMENT 'env',
-    `region`           varchar(128)     NOT NULL DEFAULT '' COMMENT 'region',
-    `disabled`         tinyint(1)       NOT NULL DEFAULT 0 COMMENT 'is system admin，0-false，1-true',
+    `environment_name` varchar(128)     NOT NULL DEFAULT '' COMMENT 'environment name',
+    `region_name`      varchar(128)     NOT NULL DEFAULT '' COMMENT 'region name',
+    `disabled`         tinyint(1)       NOT NULL DEFAULT 0 COMMENT 'is disabled，0-false，1-true',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`       datetime                  DEFAULT NULL,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_env_region` (`env`, `region`)
+    UNIQUE KEY `idx_env_region` (`environment_name`, `region_name`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -206,13 +227,17 @@ CREATE TABLE `cluster`
     `application`           varchar(64)      NOT NULL COMMENT 'application name',
     `name`                  varchar(64)      NOT NULL DEFAULT '' COMMENT 'the name of cluster',
     `description`           varchar(256)              DEFAULT NULL COMMENT 'the description of cluster',
-    `git_branch`            varchar(128)              DEFAULT NULL COMMENT 'git default branch',
+    `git_url`               varchar(128)              DEFAULT NULL COMMENT 'git repo url',
+    `git_subfolder`         varchar(128)              DEFAULT NULL COMMENT 'git repo subfolder',
+    `git_branch`            varchar(128)              DEFAULT NULL COMMENT 'git branch',
+    `template`              varchar(64)      NOT NULL COMMENT 'template name',
+    `template_release`      varchar(64)      NOT NULL COMMENT 'template release',
     `environment_region_id` varchar(128)     NOT NULL DEFAULT '' COMMENT 'env',
     `created_at`            datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`            datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`            datetime                  DEFAULT NULL,
-    `created_by`            varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    `updated_by`            varchar(64)      NOT NULL DEFAULT '' COMMENT 'updater',
+    `created_by`            int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`            int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
     UNIQUE KEY `idx_name` (`name`)
@@ -239,25 +264,9 @@ CREATE TABLE `pipelinerun`
     `rollback_from`    int(11) unsigned NULL COMMENT 'the pipelinerun id that this pipelinerun rollback from',
     `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
+    `created_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     PRIMARY KEY (`id`),
     KEY `idx_cluster_action` (`cluster`, `action`)
-) ENGINE = InnoDB
-  AUTO_INCREMENT = 1
-  DEFAULT CHARSET = utf8mb4;
-
--- cluster history table
-CREATE TABLE `cluster_history`
-(
-    `id`               int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `cluster`          varchar(64)      NOT NULL COMMENT 'cluster name',
-    `action`           varchar(64)      NOT NULL COMMENT 'action',
-    `pipelinerun_id`   int(11) unsigned NULL COMMENT 'pipelinerun_id if related to a pipelinerun',
-    `description`      varchar(2048)    NULL COMMENT 'the history description',
-    `created_at`       datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `created_by`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'creator',
-    PRIMARY KEY (`id`),
-    KEY `idx_action` (`cluster`, `action`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;

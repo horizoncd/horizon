@@ -1,8 +1,8 @@
 package gitlab
 
 type Config struct {
-	Application          *Gitlab `yaml:"application"`
-	ApplicationInstances *Gitlab `yaml:"applicationInstance"`
+	Application *Gitlab `yaml:"application"`
+	Cluster     *Gitlab `yaml:"cluster"`
 }
 
 type Gitlab struct {

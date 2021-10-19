@@ -78,3 +78,26 @@ const (
 	ApplicationDeleteByName   = "update application set deleted_at = CURRENT_TIMESTAMP where name = ?"
 	ApplicationCountByGroupID = "select count(1) from application where group_id = ? and deleted_at is null"
 )
+
+/* sql about k8sCluster */
+const (
+	// K8SClusterListAll ...
+	K8SClusterListAll = "select * from k8s_cluster"
+)
+
+/* sql about environment */
+const (
+	// EnvironmentListAll ...
+	EnvironmentListAll    = "select * from environment"
+	EnvironmentListRegion = "select region_name from environment_region where environment_name = ?"
+	EnvironmentRegionGet  = "select * from environment_region where" +
+		" environment_name = ? and region_name = ?"
+)
+
+/* sql about region */
+const (
+	// RegionListAll ...
+	RegionListAll     = "select * from region"
+	RegionGetByName   = "select * from region where name = ?"
+	RegionListByNames = "select * from region where name in ?"
+)
