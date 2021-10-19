@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	_paramGroupID = "groupID"
-	_paramPath    = "path"
+	_paramGroupID  = "groupID"
+	_paramFullPath = "fullPath"
 )
 
 type API struct {
@@ -83,7 +83,7 @@ func (a *API) GetGroup(c *gin.Context) {
 
 // GetGroupByFullPath get a group child by fullPath
 func (a *API) GetGroupByFullPath(c *gin.Context) {
-	path := c.Query(_paramPath)
+	path := c.Query(_paramFullPath)
 
 	child, err := a.groupCtl.GetByFullPath(c, path)
 	if err != nil {
