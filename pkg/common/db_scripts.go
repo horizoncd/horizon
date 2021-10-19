@@ -21,13 +21,14 @@ const (
 	UserQueryByOIDC = "select * from user where oidc_id = ? and oidc_type = ?"
 	UserSearch      = "select * from user where name like ? or full_name like ? or email like ? limit ? offset ?"
 	UserSearchCount = "select count(1) from user where name like ? or full_name like ? or email like ?"
+	UserGetByID     = "select * from user where id in ?"
 )
 
 /* sql about member */
 const (
-	MemberQuerybyID   = "select * from member where id = ? and deleted_at is null"
+	MemberQueryByID   = "select * from member where id = ? and deleted_at is null"
 	MemberSingleQuery = "select * from member where resource_type = ? and  resource_id = ? and member_type= ?" +
-		"and member_info = ? and deleted_at is null"
+		" and membername_id = ? and deleted_at is null"
 	MemberSingleDelete = "update member set deleted_at = CURRENT_TIMESTAMP where ID = ?"
 	MemberSelectAll    = "select * from member where resource_type = ? and resource_id = ? and deleted_at is null"
 )
@@ -76,4 +77,27 @@ const (
 		"and deleted_at is null"
 	ApplicationDeleteByName   = "update application set deleted_at = CURRENT_TIMESTAMP where name = ?"
 	ApplicationCountByGroupID = "select count(1) from application where group_id = ? and deleted_at is null"
+)
+
+/* sql about k8sCluster */
+const (
+	// K8SClusterListAll ...
+	K8SClusterListAll = "select * from k8s_cluster"
+)
+
+/* sql about environment */
+const (
+	// EnvironmentListAll ...
+	EnvironmentListAll    = "select * from environment"
+	EnvironmentListRegion = "select region_name from environment_region where environment_name = ?"
+	EnvironmentRegionGet  = "select * from environment_region where" +
+		" environment_name = ? and region_name = ?"
+)
+
+/* sql about region */
+const (
+	// RegionListAll ...
+	RegionListAll     = "select * from region"
+	RegionGetByName   = "select * from region where name = ?"
+	RegionListByNames = "select * from region where name in ?"
 )

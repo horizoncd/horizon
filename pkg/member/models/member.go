@@ -27,14 +27,19 @@ const (
 	MemberGroup
 )
 
+const (
+	Owner     string = "Owner"
+	Maitainer string = "Maitainer"
+)
+
 type Member struct {
 	gorm.Model
 
 	// member entry basic info
-	// ResourceType group/application/applicationinstance
-	ResourceType ResourceType
+	// ResourceType group/application/cluster
+	ResourceType ResourceType `gorm:"column:resource_type"`
 	// ResourceID  groupID/applicationID/applicationinstanceID
-	ResourceID uint
+	ResourceID uint `gorm:"colum:resource_id"`
 
 	// role binding info
 	// Role: owner/maintainer/...
@@ -42,6 +47,9 @@ type Member struct {
 	// MemberType: user/group
 	MemberType MemberType `gorm:"column:member_type"`
 	// userID or groupID
-	MemberInfo uint   `gorm:"column:member_info"`
-	GrantBy    string `gorm:"column:grant_by"`
+	MemberNameID uint `gorm:"column:membername_id"`
+
+	// TODO(tom): change go user
+	GrantedBy uint `gorm:"column:granted_by"`
+	CreatedBy uint `gorm:"column:created_by"`
 }

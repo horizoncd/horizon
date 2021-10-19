@@ -9,7 +9,9 @@ import (
 
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
+	"g.hz.netease.com/horizon/core/http/api/v1/environment"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
+	"g.hz.netease.com/horizon/core/http/api/v1/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
@@ -21,8 +23,9 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
 	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
-	ormMiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
+	ormmiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 )
@@ -89,6 +92,8 @@ func Run(flags *Flags) {
 		templateAPI    = template.NewAPI()
 		userAPI        = user.NewAPI()
 		applicationAPI = application.NewAPI(applicationCtl)
+		environmentAPI = environment.NewAPI()
+		memberAPI      = member.NewAPI()
 	)
 
 	// init server
@@ -99,7 +104,7 @@ func Run(flags *Flags) {
 		gin.Recovery(),
 		requestid.Middleware(),        // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(),        // log middleware, attach a logger to context
-		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
+		ormmiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
 		auth.Middleware(middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
 		metricsmiddle.Middleware( // metrics middleware
@@ -125,6 +130,8 @@ func Run(flags *Flags) {
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
 	application.RegisterRoutes(r, applicationAPI)
+	environment.RegisterRoutes(r, environmentAPI)
+	member.RegisterRoutes(r, memberAPI)
 
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
