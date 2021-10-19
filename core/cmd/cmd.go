@@ -10,6 +10,7 @@ import (
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
+	"g.hz.netease.com/horizon/core/http/api/v1/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
@@ -89,6 +90,7 @@ func Run(flags *Flags) {
 		templateAPI    = template.NewAPI()
 		userAPI        = user.NewAPI()
 		applicationAPI = application.NewAPI(applicationCtl)
+		memberAPI      = member.NewAPI()
 	)
 
 	// init server
@@ -125,7 +127,7 @@ func Run(flags *Flags) {
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
 	application.RegisterRoutes(r, applicationAPI)
-
+	member.RegisterRoutes(r, memberAPI)
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
 }
