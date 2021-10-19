@@ -13,10 +13,11 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.4
 	github.com/xanzy/go-gitlab v0.50.4
 	github.com/xeipuuv/gojsonschema v1.2.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/driver/sqlite v1.1.5
 	gorm.io/gorm v1.21.15
 	gorm.io/plugin/prometheus v0.0.0-20210820101226-2a49866f83ee
 	k8s.io/klog v1.0.0
+	sigs.k8s.io/yaml v1.3.0
 )
