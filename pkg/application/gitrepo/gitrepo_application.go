@@ -2,6 +2,7 @@ package gitrepo
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -16,6 +17,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"gopkg.in/yaml.v2"
+	kyaml "sigs.k8s.io/yaml"
 )
 
 const (
@@ -204,10 +206,18 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 	go func() {
 		defer wg.Done()
 		pipelineBytes, err1 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
+		if err1 != nil {
+			return
+		}
+		pipelineBytes, err1 = kyaml.YAMLToJSON(pipelineBytes)
 	}()
 	go func() {
 		defer wg.Done()
 		applicationBytes, err2 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
+		if err2 != nil {
+			return
+		}
+		applicationBytes, err2 = kyaml.YAMLToJSON(applicationBytes)
 	}()
 	wg.Wait()
 
@@ -217,10 +227,10 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 		}
 	}
 
-	if err := yaml.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
+	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
 		return nil, nil, errors.E(op, err)
 	}
-	if err := yaml.Unmarshal(applicationBytes, &applicationJSONBlob); err != nil {
+	if err := json.Unmarshal(applicationBytes, &applicationJSONBlob); err != nil {
 		return nil, nil, errors.E(op, err)
 	}
 
