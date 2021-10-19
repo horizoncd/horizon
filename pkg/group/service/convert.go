@@ -19,7 +19,7 @@ func GenerateFullFromGroups(groups []*models.Group) *Full {
 	}
 
 	fullPath = "/" + strings.Join(paths, "/")
-	fullName = strings.Join(names, " / ")
+	fullName = strings.Join(names, "/")
 
 	return &Full{
 		FullName: fullName,
@@ -84,11 +84,11 @@ after the function executed, we get a map:
     fullPath: "/w"
   },
   2: {
-    fullName: "a / b",
+    fullName: "a/b",
     fullPath: "/w/r"
   },
   3: {
-    fullName: "a / b / c",
+    fullName: "a/b/c",
     fullPath: "/w/r/j"
   },
 }
@@ -106,7 +106,7 @@ func GenerateIDToFull(groups []*models.Group) map[uint]*Full {
 			fullPath = "/" + g.Path
 		} else {
 			parentFull := idToFull[g.ParentID]
-			fullName = parentFull.FullName + " / " + g.Name
+			fullName = parentFull.FullName + "/" + g.Name
 			fullPath = parentFull.FullPath + "/" + g.Path
 		}
 
