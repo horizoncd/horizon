@@ -2,7 +2,6 @@ package gitrepo
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -15,13 +14,15 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+
+	"gopkg.in/yaml.v2"
 )
 
 const (
 	_branchMaster = "master"
 
-	_filePathApplication = "application.json"
-	_filePathPipeline    = "pipeline.json"
+	_filePathApplication = "application.yaml"
+	_filePathPipeline    = "pipeline.yaml"
 )
 
 // ApplicationGitRepo interface to provide the management functions with git repo for applications
@@ -77,12 +78,12 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 
 	// 2. write files to application repo
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
-	applicationJSON, err := json.MarshalIndent(applicationJSONBlob, "", "  ")
+	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
 	}
-	pipelineJSON, err := json.MarshalIndent(pipelineJSONBlob, "", "  ")
+	pipelineYAML, err := yaml.Marshal(pipelineJSONBlob)
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -91,11 +92,11 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 		{
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathApplication,
-			Content:  string(applicationJSON),
+			Content:  string(applicationYAML),
 		}, {
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathPipeline,
-			Content:  string(pipelineJSON),
+			Content:  string(pipelineYAML),
 		},
 	}
 
@@ -139,12 +140,12 @@ func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, applicati
 
 	// 3. write files to gitlab
 	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
-	applicationJSON, err := json.MarshalIndent(applicationJSONBlob, "", "  ")
+	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
 	}
-	pipelineJSON, err := json.MarshalIndent(pipelineJSONBlob, "", "  ")
+	pipelineYAML, err := yaml.Marshal(pipelineJSONBlob)
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
@@ -153,11 +154,11 @@ func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, applicati
 		{
 			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathApplication,
-			Content:  string(applicationJSON),
+			Content:  string(applicationYAML),
 		}, {
 			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathPipeline,
-			Content:  string(pipelineJSON),
+			Content:  string(pipelineYAML),
 		},
 	}
 
@@ -216,10 +217,10 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 		}
 	}
 
-	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
+	if err := yaml.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
 		return nil, nil, errors.E(op, err)
 	}
-	if err := json.Unmarshal(applicationBytes, &applicationJSONBlob); err != nil {
+	if err := yaml.Unmarshal(applicationBytes, &applicationJSONBlob); err != nil {
 		return nil, nil, errors.E(op, err)
 	}
 
