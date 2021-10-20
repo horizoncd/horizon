@@ -35,6 +35,9 @@ type Service interface {
 	RemoveMember(ctx context.Context, memberID uint) error
 	// ListMember list all the member of the resource
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
+
+	// GetMemberOfResource return the current user's role of the resource (member from direct or parent)
+	GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error)
 }
 
 type service struct {
@@ -90,6 +93,16 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 		return nil, err
 	}
 	return s.memberManager.Create(ctx, member)
+}
+
+func (s *service) GetMemberOfResource(ctx context.Context,
+	resourceType string, resourceID uint) (*models.Member, error) {
+	var currentUser userauth.User
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.getMember(ctx, resourceType, resourceID, models.MemberUser, currentUser.GetID())
 }
 
 func (s *service) GetMember(ctx context.Context, memberID uint) (*models.Member, error) {

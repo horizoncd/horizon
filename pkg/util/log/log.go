@@ -75,6 +75,30 @@ func Errorf(ctx context.Context, format string, args ...interface{}) {
 	klog.ErrorDepth(_depth, msg)
 }
 
+func Warn(ctx context.Context, args ...interface{}) {
+	val, ok := ctx.Value(string(logKey)).(string)
+	if !ok {
+		klog.ErrorDepth(_depth, args...)
+		return
+	}
+
+	msg := fmt.Sprint(args...)
+	klog.WarningDepth(_depth, val, msg)
+}
+
+func Warningf(ctx context.Context, format string, args ...interface{}) {
+	val, ok := ctx.Value(string(logKey)).(string)
+	if !ok {
+		msg := fmt.Sprintf(format, args...)
+		klog.ErrorDepth(_depth, msg)
+		return
+	}
+
+	format = fmt.Sprintf("%v%v", val, format)
+	msg := fmt.Sprintf(format, args...)
+	klog.WarningDepth(_depth, msg)
+}
+
 func Flush() {
 	klog.Flush()
 }

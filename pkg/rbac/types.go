@@ -17,10 +17,14 @@ package rbac
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
 
 	"g.hz.netease.com/horizon/pkg/auth"
-	"g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/member/models"
+	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
 // attention: rbac is refers to the kubernetes rbac
@@ -34,17 +38,21 @@ const (
 	NonResourceAll = "*"
 )
 
+var (
+	ErrMemberNotExist = errors.New("Member Not Exist")
+)
+
 type Role struct {
-	Name        string
-	PolicyRules []PolicyRule
+	Name        string       `yaml:"name"`
+	PolicyRules []PolicyRule `yaml:"rules"`
 }
 
 type PolicyRule struct {
-	Verbs           []string
-	APIGroups       []string
-	Resources       []string
-	Scopes          []string
-	NonResourceURLs []string
+	Verbs           []string `yaml:"verbs"`
+	APIGroups       []string `yaml:"apiGroups"`
+	Resources       []string `yaml:"resources"`
+	Scopes          []string `yaml:"scopes"`
+	NonResourceURLs []string `yaml:"nonResourceURLs"`
 }
 
 func RuleAllow(attribute auth.Attributes, rule *PolicyRule) bool {
@@ -62,52 +70,77 @@ func RuleAllow(attribute auth.Attributes, rule *PolicyRule) bool {
 		NonResourceURLMatches(rule, attribute.GetPath())
 }
 
-// authorizingVisitor short-circuits once allowed, and collects any resolution errors encountered
-type authorizingVisitor struct {
-	requestAttributes auth.Attributes
-
-	allowed bool
-	reason  string
-	errors  []error
-}
-
-func (v *authorizingVisitor) visit(source fmt.Stringer, rule *PolicyRule, err error) bool {
-	if rule != nil && RuleAllow(v.requestAttributes, rule) {
-		v.allowed = true
-		if source != nil {
-			v.reason = source.String()
-		}
-	}
-	if err != nil {
-		v.errors = append(v.errors, err)
-	}
-	return true
-}
-
 // Authorizer use the basic rbac rules to check if the user
-// have the permission
-type Authorizer struct {
-	authorizationRuleResolver RequestToRuleResolver
+// have the permissions
+type Authorizer interface {
+	Authorize(ctx context.Context, attributes auth.Attributes) (auth.Decision, string, error)
 }
 
 type VisitorFunc func(fmt.Stringer, *PolicyRule, error) bool
 
-type RequestToRuleResolver interface {
-	// VisitRulesFor invokes visitor() with each rule that applies to a given user
-	VisitRulesFor(user user.User, visitor VisitorFunc)
+type authorizer struct {
+	roleService   Service
+	memberService memberservice.Service
 }
 
-func (r *Authorizer) Authorize(ctx context.Context, attributes auth.Attributes) (auth.Decision,
+// /apis/core/v1/applications/
+// /apis/core/v1/clusters/
+// /apis/core/v1/groups/
+// /apis/core/v1/members/
+// /apis/core/v1/pipelineruns/
+
+func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.Decision,
 	string, error) {
-	ruleCheckingVisitor := &authorizingVisitor{requestAttributes: attributes}
-
-	r.authorizationRuleResolver.VisitRulesFor(attributes.GetUser(), ruleCheckingVisitor.visit)
-
-	if ruleCheckingVisitor.allowed {
-		return auth.DecisionAllow, ruleCheckingVisitor.reason, nil
+	// TODO(tom): members and pipelineruns need to add to auth check
+	if attr.IsResourceRequest() && (attr.GetResource() == "members" ||
+		attr.GetResource() == "pipelineruns") {
+		log.Warn(ctx,
+			"/apis/core/v1/members/{memberid} and /apis/core/v1/pipelineruns/{pipelineruns} are not authed")
+		return auth.DecisionAllow, "not checked", nil
 	}
 
-	// Build a detailed log of the denial.
-	reason := ruleCheckingVisitor.reason
+	// 1. get the member
+	resourceIDStr := attr.GetName()
+	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+	if err != nil {
+		log.Errorf(ctx, "resourceType = %s, resourceID = %s, format error\n", attr.GetResource(), attr.GetName())
+		return auth.DecisionDeny, "resourceId Format Error", err
+	}
+
+	member, err := a.memberService.GetMemberOfResource(ctx, attr.GetResource(), uint(resourceID))
+	if err != nil {
+		log.Errorf(ctx, "GetMemberOfResource error, resourceType = %s, resourceID = %s, user = %s\n",
+			attr.GetResource(), attr.GetName(), attr.GetUser().String())
+		return auth.DecisionDeny, "getMember return error", err
+	}
+	if member == nil {
+		log.Warningf(ctx, " user %s member not found of resourceType = %s, resourceID = %s",
+			attr.GetUser().String(), attr.GetResource(), attr.GetName())
+		return auth.DecisionDeny, "member not exist", nil
+	}
+
+	// 2. get the role
+	role, err := a.roleService.GetRole(ctx, member.Role)
+	if err != nil {
+		log.Errorf(ctx, "get role file err = %+v", err)
+		return auth.DecisionDeny, "GetRole Failed", err
+	}
+	if role == nil {
+		return auth.DecisionDeny, "member not found", ErrMemberNotExist
+	}
+
+	// 3. check the permission
+	return VisitRoles(member, role, attr)
+}
+
+func VisitRoles(member *models.Member, role *Role, attri auth.Attributes) (_ auth.Decision, reason string, err error) {
+	for i, rule := range role.PolicyRules {
+		if RuleAllow(attri, &rule) {
+			reason = fmt.Sprintf("user %s allowd by member(%s) by rule[%d]",
+				attri.GetUser().String(), member.BaseInfo(), i)
+			return auth.DecisionAllow, reason, nil
+		}
+	}
+	reason = fmt.Sprintf("user %s deny by member(%s)", attri.GetUser().String(), member.BaseInfo())
 	return auth.DecisionDeny, reason, nil
 }
