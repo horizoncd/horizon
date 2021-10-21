@@ -14,9 +14,16 @@ oidcConfig:
   emailHeader: X-HORIZON-OIDC-EMAIL
   oidcIDHeader: X-HORIZON-OIDC-ID
   oidcTypeHeader: X-HORIZON-OIDC-TYPE
-gitlabConfig:
+gitlabMapper:
+  control:
+    httpURL: https://g.hz.netease.com
+    token: 
+  compute:
+    httpURL: http://cicd.mockserver.org
+    sshURL: ssh://git@music-cicd-gitlab.hz.netease.com:22222
+    token: ""
+gitlabRepoConfig:
   application:
-    gitlabName: compute
     parent:
       path: music-cloud-native/applications
       id: 4278
@@ -24,7 +31,6 @@ gitlabConfig:
       path: music-cloud-native/recycling-applications
       id: 4586
   cluster:
-    gitlabName: compute
     parent:
       path: music-cloud-native/clusters
       id: 4279

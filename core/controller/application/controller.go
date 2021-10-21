@@ -40,10 +40,11 @@ type controller struct {
 
 var _ Controller = (*controller)(nil)
 
-func NewController(applicationGitRepo gitrepo.ApplicationGitRepo) Controller {
+func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
+	templateSchemaGetter templateschema.Getter) Controller {
 	return &controller{
 		applicationGitRepo:   applicationGitRepo,
-		templateSchemaGetter: templateschema.Gtr,
+		templateSchemaGetter: templateSchemaGetter,
 		applicationMgr:       manager.Mgr,
 		groupMgr:             groupmanager.Mgr,
 		templateReleaseMgr:   trmanager.Mgr,

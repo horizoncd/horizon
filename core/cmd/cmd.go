@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -8,6 +9,7 @@ import (
 	"regexp"
 
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
+	templatectl "g.hz.netease.com/horizon/core/controller/template"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/environment"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
@@ -20,11 +22,13 @@ import (
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
+	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
 	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
 	ormmiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
@@ -76,20 +80,28 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	var (
-		// init service
-		applicationGitRepo = gitrepo.NewApplicationGitlabRepo(config.GitlabConfig)
-	)
+	// init service
+	ctx := orm.NewContext(context.Background(), mysqlDB)
+	gitlabFactory := gitlabfty.NewFactory(config.GitlabMapper)
+	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, config.GitlabRepoConfig, gitlabFactory)
+	if err != nil {
+		panic(err)
+	}
+	templateSchemaGetter, err := templateschema.NewSchemaGetter(ctx, gitlabFactory)
+	if err != nil {
+		panic(err)
+	}
 
 	var (
 		// init controller
-		applicationCtl = applicationctl.NewController(applicationGitRepo)
+		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter)
+		templateCtl    = templatectl.NewController(templateSchemaGetter)
 	)
 
 	var (
 		// init API
 		groupAPI       = group.NewAPI()
-		templateAPI    = template.NewAPI()
+		templateAPI    = template.NewAPI(templateCtl)
 		userAPI        = user.NewAPI()
 		applicationAPI = application.NewAPI(applicationCtl)
 		environmentAPI = environment.NewAPI()

@@ -195,6 +195,7 @@ func (h *helper) CreateProject(ctx context.Context, name string, groupID int) (_
 	project, resp, err := h.client.Projects.CreateProject(&gitlab.CreateProjectOptions{
 		InitializeWithReadme: func() *bool { b := true; return &b }(),
 		Name:                 &name,
+		Path:                 &name,
 		NamespaceID:          &groupID,
 	}, gitlab.WithContext(ctx))
 

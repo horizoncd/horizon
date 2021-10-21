@@ -41,25 +41,6 @@ CREATE TABLE `user`
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
 
--- gitlab table
-CREATE TABLE `gitlab`
-(
-    `id`         int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `name`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'the name of gitlab',
-    `url`        varchar(128)     NOT NULL DEFAULT '' COMMENT 'gitlab base url',
-    `token`      varchar(128)     NOT NULL DEFAULT '' COMMENT 'gitlab token',
-    `created_at` datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` datetime                  DEFAULT NULL,
-    `created_by` int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
-    `updated_by` int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
-    PRIMARY KEY (`id`),
-    KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
-) ENGINE = InnoDB
-  AUTO_INCREMENT = 1
-  DEFAULT CHARSET = utf8mb4;
-
 -- template table
 CREATE TABLE `template`
 (

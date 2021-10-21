@@ -2,14 +2,23 @@ package manager
 
 import (
 	"context"
+	"net/http"
 
 	"g.hz.netease.com/horizon/pkg/templaterelease/dao"
 	"g.hz.netease.com/horizon/pkg/templaterelease/models"
+	"g.hz.netease.com/horizon/pkg/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/wlog"
+
+	"gorm.io/gorm"
 )
 
 var (
 	// Mgr is the global template release manager
 	Mgr = New()
+)
+
+const (
+	_errCodeReleaseNotFound = errors.ErrorCode("ReleaseNotFound")
 )
 
 type Manager interface {
@@ -39,6 +48,16 @@ func (m *manager) ListByTemplateName(ctx context.Context, templateName string) (
 }
 
 func (m *manager) GetByTemplateNameAndRelease(ctx context.Context,
-	templateName, release string) (*models.TemplateRelease, error) {
-	return m.dao.GetByTemplateNameAndRelease(ctx, templateName, release)
+	templateName, release string) (_ *models.TemplateRelease, err error) {
+	const op = "template release manager: get by template name and release"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	tr, err := m.dao.GetByTemplateNameAndRelease(ctx, templateName, release)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.E(op, http.StatusNotFound, _errCodeReleaseNotFound, err)
+		}
+		return nil, err
+	}
+	return tr, nil
 }
