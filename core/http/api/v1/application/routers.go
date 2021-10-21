@@ -28,6 +28,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/applications/:%v", _applicationParam),
 			HandlerFunc: api.Update,
 		},
+		{
+			Method:      http.MethodDelete,
+			Pattern:     fmt.Sprintf("/applications/:%v", _applicationParam),
+			HandlerFunc: api.Delete,
+		},
 	}
 
 	route.RegisterRoutes(apiGroup, routes)

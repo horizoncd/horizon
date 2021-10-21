@@ -72,3 +72,12 @@ func (a *API) Update(c *gin.Context) {
 	}
 	response.Success(c)
 }
+
+func (a *API) Delete(c *gin.Context) {
+	name := c.Param(_applicationParam)
+	if err := a.applicationCtl.DeleteApplication(c, name); err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.Success(c)
+}

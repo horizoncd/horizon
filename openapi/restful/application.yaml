@@ -207,3 +207,17 @@ paths:
                           }
                       }
                   }
+    delete:
+      tags:
+        - application
+      operationId: deleteApplication
+      summary: delete a application
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
