@@ -54,12 +54,7 @@ func (d dao) GetByTemplateNameAndRelease(ctx context.Context,
 
 	var tr models.TemplateRelease
 	result := db.Raw(common.TemplateReleaseQueryByTemplateNameAndName,
-		templateName, release).Scan(&tr)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return nil, nil
-	}
-	return &tr, nil
+		templateName, release).First(&tr)
+
+	return &tr, result.Error
 }

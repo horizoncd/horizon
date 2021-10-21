@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
-	gitlabftymock "g.hz.netease.com/horizon/mock/pkg/gitlab/factory"
 	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -19,7 +18,6 @@ import (
 
 var (
 	ctx                   = context.Background()
-	gitlabName            = "control"
 	templateName          = "javaapp"
 	releaseName           = "v1.0.0"
 	templateGitlabProject = "helm-template/javaapp"
@@ -27,11 +25,8 @@ var (
 
 func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	gitlabFty := gitlabftymock.NewMockFactory(mockCtl)
 	gitlabLib := gitlablibmock.NewMockInterface(mockCtl)
 	templateReleaseMgr := trmock.NewMockManager(mockCtl)
-
-	gitlabFty.EXPECT().GetByName(ctx, gitlabName).Return(gitlabLib, nil)
 
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
 		releaseName).Return(&trmodels.TemplateRelease{
@@ -40,12 +35,11 @@ func Test(t *testing.T) {
 		},
 		TemplateName:  templateName,
 		Name:          releaseName,
-		GitlabName:    gitlabName,
 		GitlabProject: templateGitlabProject,
 	}, nil)
 
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
-		"release-not-exists").Return(nil, nil)
+		"release-not-exists").Return(nil, errors.E("", http.StatusNotFound))
 
 	jsonSchema := `{"type": "object"}`
 	var jsonSchemaMap map[string]interface{}
@@ -61,7 +55,7 @@ func Test(t *testing.T) {
 
 	g := &getter{
 		templateReleaseMgr: templateReleaseMgr,
-		gitlabFactory:      gitlabFty,
+		gitlabLib:          gitlabLib,
 	}
 
 	// release exists
@@ -78,5 +72,4 @@ func Test(t *testing.T) {
 	assert.Nil(t, schema)
 	assert.NotNil(t, err)
 	assert.Equal(t, http.StatusNotFound, errors.Status(err))
-	assert.Equal(t, string(_errCodeReleaseNotFound), errors.Code(err))
 }

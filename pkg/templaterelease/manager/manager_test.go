@@ -3,11 +3,13 @@ package manager
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"os"
 	"testing"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/templaterelease/models"
+	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -23,7 +25,6 @@ func Test(t *testing.T) {
 		templateName  = "javaapp"
 		name          = "v1.0.0"
 		description   = "javaapp template v1.0.0"
-		gitlabName    = "control"
 		gitlabProject = "helm-template/javaapp"
 		createdBy     = uint(1)
 		updatedBy     = uint(1)
@@ -32,7 +33,6 @@ func Test(t *testing.T) {
 		TemplateName:  templateName,
 		Name:          name,
 		Description:   description,
-		GitlabName:    gitlabName,
 		GitlabProject: gitlabProject,
 		Recommended:   true,
 		CreatedBy:     createdBy,
@@ -63,7 +63,8 @@ func Test(t *testing.T) {
 
 	// template release not exists
 	template, err = Mgr.GetByTemplateNameAndRelease(ctx, templateName, "not-exist")
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
+	assert.Equal(t, http.StatusNotFound, errors.Status(err))
 	assert.Nil(t, template)
 }
 

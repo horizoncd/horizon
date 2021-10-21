@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	ServerConfig server.Config `yaml:"serverConfig"`
-	DBConfig     db.Config     `yaml:"dbConfig"`
-	OIDCConfig   oidc.Config   `yaml:"oidcConfig"`
-	GitlabConfig gitlab.Config `yaml:"gitlabConfig"`
+	ServerConfig     server.Config     `yaml:"serverConfig"`
+	DBConfig         db.Config         `yaml:"dbConfig"`
+	OIDCConfig       oidc.Config       `yaml:"oidcConfig"`
+	GitlabMapper     gitlab.Mapper     `yaml:"gitlabMapper"`
+	GitlabRepoConfig gitlab.RepoConfig `yaml:"gitlabRepoConfig"`
 }

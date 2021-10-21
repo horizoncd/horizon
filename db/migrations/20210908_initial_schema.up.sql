@@ -41,25 +41,6 @@ CREATE TABLE `user`
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
 
--- gitlab table
-CREATE TABLE `gitlab`
-(
-    `id`         int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `name`       varchar(64)      NOT NULL DEFAULT '' COMMENT 'the name of gitlab',
-    `url`        varchar(128)     NOT NULL DEFAULT '' COMMENT 'gitlab base url',
-    `token`      varchar(128)     NOT NULL DEFAULT '' COMMENT 'gitlab token',
-    `created_at` datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` datetime                  DEFAULT NULL,
-    `created_by` int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
-    `updated_by` int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
-    PRIMARY KEY (`id`),
-    KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
-) ENGINE = InnoDB
-  AUTO_INCREMENT = 1
-  DEFAULT CHARSET = utf8mb4;
-
 -- template table
 CREATE TABLE `template`
 (
@@ -85,7 +66,6 @@ CREATE TABLE `template_release`
     `template_name`  varchar(64)      NOT NULL COMMENT 'the name of template',
     `name`           varchar(64)      NOT NULL DEFAULT '' COMMENT 'the name of template release',
     `description`    varchar(256)     NOT NULL COMMENT 'description about this template release',
-    `gitlab_name`    varchar(64)      NOT NULL COMMENT 'the name of gitlab',
     `gitlab_project` varchar(256)     NOT NULL COMMENT 'project ID or relative path in gitlab',
     `recommended`    tinyint(1)       NOT NULL COMMENT 'is the most recommended template, 0-false, 1-true',
     `created_at`     datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -5,37 +5,31 @@ import (
 	"sync"
 	"testing"
 
-	gitlabmock "g.hz.netease.com/horizon/mock/pkg/gitlab/manager"
-	"g.hz.netease.com/horizon/pkg/gitlab/models"
+	"g.hz.netease.com/horizon/pkg/config/gitlab"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	ctx         = context.Background()
-	gitlabName  = "control"
-	gitlabURL   = "https://gitlab.com"
-	gitlabToken = "asdfghjk"
+	ctx        = context.Background()
+	gitlabName = "control"
 )
 
 func Test(t *testing.T) {
-	mockCtl := gomock.NewController(t)
-	gitlabMgr := gitlabmock.NewMockManager(mockCtl)
-	gitlabMgr.EXPECT().GetByName(ctx, gitlabName).Return(&models.Gitlab{
-		Model: gorm.Model{
-			ID: 1,
-		},
-		Name:  gitlabName,
-		URL:   gitlabURL,
-		Token: gitlabToken,
-	}, nil)
-	gitlabMgr.EXPECT().GetByName(ctx, "not-exists").Return(nil, nil)
-
 	mgr := &factory{
-		m:         &sync.Map{},
-		gitlabMgr: gitlabMgr,
+		m: &sync.Map{},
+		gitlabMapper: gitlab.Mapper{
+			gitlabName: {
+				HTTPURL: "https://gitlab.com",
+				SSHURL:  "ssh://gitlab.com",
+				Token:   "asdfghjk",
+			},
+			"compute": {
+				HTTPURL: "",
+				SSHURL:  "",
+				Token:   "",
+			},
+		},
 	}
 
 	// 1. query db at first
@@ -55,6 +49,6 @@ func Test(t *testing.T) {
 }
 
 func TestNewController(t *testing.T) {
-	ctl := newFactory()
+	ctl := NewFactory(nil)
 	assert.NotNil(t, ctl)
 }

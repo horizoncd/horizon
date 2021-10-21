@@ -16,9 +16,9 @@ type API struct {
 	templateCtl templatectl.Controller
 }
 
-func NewAPI() *API {
+func NewAPI(ctl templatectl.Controller) *API {
 	return &API{
-		templateCtl: templatectl.Ctl,
+		templateCtl: ctl,
 	}
 }
 

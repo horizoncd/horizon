@@ -11,7 +11,7 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
-	gitlabsvc "g.hz.netease.com/horizon/pkg/gitlab/factory"
+	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -21,6 +21,8 @@ import (
 )
 
 const (
+	_gitlabName = "compute"
+
 	_branchMaster = "master"
 
 	_filePathApplication = "application.yaml"
@@ -43,15 +45,20 @@ type ApplicationGitRepo interface {
 }
 
 type applicationGitlabRepo struct {
-	gitlabFactory gitlabsvc.Factory
-	gitlabConfig  gitlabconf.Config
+	gitlabLib           gitlablib.Interface
+	applicationRepoConf *gitlabconf.Repo
 }
 
-func NewApplicationGitlabRepo(gitlabConfig gitlabconf.Config) ApplicationGitRepo {
-	return &applicationGitlabRepo{
-		gitlabFactory: gitlabsvc.Fty,
-		gitlabConfig:  gitlabConfig,
+func NewApplicationGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig,
+	gitlabFactory gitlabfty.Factory) (ApplicationGitRepo, error) {
+	gitlabLib, err := gitlabFactory.GetByName(ctx, _gitlabName)
+	if err != nil {
+		return nil, err
 	}
+	return &applicationGitlabRepo{
+		gitlabLib:           gitlabLib,
+		applicationRepoConf: gitlabRepoConfig.Application,
+	}, nil
 }
 
 func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, application string,
@@ -65,21 +72,13 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 			errors.ErrorCode(common.InternalError), "no user in context")
 	}
 
-	var applicationConf = g.gitlabConfig.Application
-
-	gitlabLib, err := g.gitlabFactory.GetByName(ctx, applicationConf.GitlabName)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
-	}
-
 	// 1. create application repo
-	if _, err := gitlabLib.CreateProject(ctx, application, applicationConf.Parent.ID); err != nil {
+	if _, err := g.gitlabLib.CreateProject(ctx, application, g.applicationRepoConf.Parent.ID); err != nil {
 		return errors.E(op, err)
 	}
 
 	// 2. write files to application repo
-	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
+	pid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
 	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
@@ -114,7 +113,7 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 		Pipeline:    pipelineJSONBlob,
 	})
 
-	if _, err := gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
 		return errors.E(op, err)
 	}
 
@@ -132,16 +131,8 @@ func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, applicati
 			errors.ErrorCode(common.InternalError), "no user in context")
 	}
 
-	var applicationConf = g.gitlabConfig.Application
-
-	gitlabLib, err := g.gitlabFactory.GetByName(ctx, applicationConf.GitlabName)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
-	}
-
-	// 3. write files to gitlab
-	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
+	// 1. write files to gitlab
+	pid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
 	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
@@ -176,7 +167,7 @@ func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, applicati
 		Pipeline:    pipelineJSONBlob,
 	})
 
-	if _, err := gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
 		return errors.E(op, err)
 	}
 
@@ -188,16 +179,8 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 	const op = "gitlab repo: get application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	var applicationConf = g.gitlabConfig.Application
-
-	gitlabLib, err := g.gitlabFactory.GetByName(ctx, applicationConf.GitlabName)
-	if err != nil {
-		return nil, nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
-	}
-
-	// 2. get template and pipeline from gitlab
-	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
+	// 1. get template and pipeline from gitlab
+	pid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
 	var applicationBytes, pipelineBytes []byte
 	var err1, err2 error
 
@@ -205,7 +188,7 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		pipelineBytes, err1 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
+		pipelineBytes, err1 = g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
 		if err1 != nil {
 			return
 		}
@@ -213,7 +196,7 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 	}()
 	go func() {
 		defer wg.Done()
-		applicationBytes, err2 = gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
+		applicationBytes, err2 = g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
 		if err2 != nil {
 			return
 		}
@@ -242,26 +225,17 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 	const op = "gitlab repo: get application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	var applicationConf = g.gitlabConfig.Application
-
-	// 1. get gitlab lib instance
-	gitlabLib, err := g.gitlabFactory.GetByName(ctx, applicationConf.GitlabName)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
-	}
-
-	// 2. delete gitlab project
-	pid := fmt.Sprintf("%v/%v", applicationConf.Parent.Path, application)
-	// 2.1 transfer project to RecyclingParent
-	if err := gitlabLib.TransferProject(ctx, pid, applicationConf.RecyclingParent.Path); err != nil {
+	// 1. delete gitlab project
+	pid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	// 1.1 transfer project to RecyclingParent
+	if err := g.gitlabLib.TransferProject(ctx, pid, g.applicationRepoConf.RecyclingParent.Path); err != nil {
 		return errors.E(op, err)
 	}
-	// 2.2 edit project's name and path to {application}-{applicationID}
-	newPid := fmt.Sprintf("%v/%v", applicationConf.RecyclingParent.Path, application)
+	// 1.2 edit project's name and path to {application}-{applicationID}
+	newPid := fmt.Sprintf("%v/%v", g.applicationRepoConf.RecyclingParent.Path, application)
 	newName := fmt.Sprintf("%v-%d", application, applicationID)
 	newPath := newName
-	if err := gitlabLib.EditNameAndPathForProject(ctx, newPid, &newName, &newPath); err != nil {
+	if err := g.gitlabLib.EditNameAndPathForProject(ctx, newPid, &newName, &newPath); err != nil {
 		return errors.E(op, err)
 	}
 
