@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -54,6 +53,5 @@ func loadConfig(configFilePath string) (*Config, error) {
 	}
 	config.TektonMapper = newTektonMapper
 
-	fmt.Printf("%v", config)
 	return &config, nil
 }
