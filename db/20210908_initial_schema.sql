@@ -129,15 +129,15 @@ CREATE TABLE `application`
 -- k8s cluster table
 CREATE TABLE `k8s_cluster`
 (
-    `id`            int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `name`          varchar(128)     NOT NULL DEFAULT '' COMMENT 'k8s name',
-    `certificate`   text             NOT NULL COMMENT 'k8s certificate',
-    `domain_suffix` varchar(128)              DEFAULT NULL COMMENT 'domain suffix',
-    `created_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at`    datetime                  DEFAULT NULL,
-    `created_by`    int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
-    `updated_by`    int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
+    `id`             int(11) unsigned NOT NULL AUTO_INCREMENT,
+    `name`           varchar(128)     NOT NULL DEFAULT '' COMMENT 'k8s name',
+    `certificate`    text             NOT NULL COMMENT 'k8s certificate',
+    `ingress_domain` varchar(128)              DEFAULT NULL COMMENT 'k8s ingress address',
+    `created_at`     datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`     datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at`     datetime                  DEFAULT NULL,
+    `created_by`     int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`     int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`)
 ) ENGINE = InnoDB

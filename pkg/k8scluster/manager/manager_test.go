@@ -23,9 +23,9 @@ func Test(t *testing.T) {
 	assert.Equal(t, len(k8sClusters), 0)
 
 	k8sCluster, err := Mgr.Create(ctx, &models.K8SCluster{
-		Name:         "hz",
-		Certificate:  "i am a Certificate",
-		DomainSuffix: "hz.com",
+		Name:          "hz",
+		Certificate:   "i am a Certificate",
+		IngressDomain: "hz.com",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", k8sCluster)
