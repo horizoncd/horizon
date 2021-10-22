@@ -24,17 +24,17 @@ var (
 func Test(t *testing.T) {
 	k8sClusterMgr := k8sclustermanager.Mgr
 	hzCluster, err := k8sClusterMgr.Create(ctx, &k8sclustermodels.K8SCluster{
-		Name:         "hz",
-		Certificate:  "hz-cert",
-		DomainSuffix: "hz.com",
+		Name:          "hz",
+		Certificate:   "hz-cert",
+		IngressDomain: "hz.com",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, hzCluster)
 
 	jdCluster, err := k8sClusterMgr.Create(ctx, &k8sclustermodels.K8SCluster{
-		Name:         "jd",
-		Certificate:  "jd-cert",
-		DomainSuffix: "jd.com",
+		Name:          "jd",
+		Certificate:   "jd-cert",
+		IngressDomain: "jd.com",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, jdCluster)

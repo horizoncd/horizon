@@ -14,6 +14,7 @@ import (
 )
 
 type DAO interface {
+	GetByID(ctx context.Context, id uint) (*models.Application, error)
 	GetByName(ctx context.Context, name string) (*models.Application, error)
 	GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error)
 	// GetByNameFuzzily get applications that fuzzily matching the given name
@@ -21,8 +22,8 @@ type DAO interface {
 	// CountByGroupID get the count of the records matching the given groupID
 	CountByGroupID(ctx context.Context, groupID uint) (int64, error)
 	Create(ctx context.Context, application *models.Application) (*models.Application, error)
-	UpdateByName(ctx context.Context, name string, application *models.Application) (*models.Application, error)
-	DeleteByName(ctx context.Context, name string) error
+	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
+	DeleteByID(ctx context.Context, id uint) error
 }
 
 // NewDAO returns an instance of the default DAO
@@ -54,6 +55,18 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Appl
 	result := db.Raw(common.ApplicationQueryByFuzzily, fmt.Sprintf("%%%s%%", name)).Scan(&applications)
 
 	return applications, result.Error
+}
+
+func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var application models.Application
+	result := db.Raw(common.ApplicationQueryByID, id).First(&application)
+
+	return &application, result.Error
 }
 
 func (d *dao) GetByName(ctx context.Context, name string) (*models.Application, error) {
@@ -90,9 +103,8 @@ func (d *dao) Create(ctx context.Context, application *models.Application) (*mod
 	return application, result.Error
 }
 
-func (d *dao) UpdateByName(ctx context.Context, name string,
-	application *models.Application) (*models.Application, error) {
-	const op = "application dao: update by name"
+func (d *dao) UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error) {
+	const op = "application dao: update by id"
 
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -102,7 +114,7 @@ func (d *dao) UpdateByName(ctx context.Context, name string,
 	var applicationInDB models.Application
 	if err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. get application in db first
-		result := tx.Raw(common.ApplicationQueryByName, name).Scan(&applicationInDB)
+		result := tx.Raw(common.ApplicationQueryByID, id).Scan(&applicationInDB)
 		if result.Error != nil {
 			return result.Error
 		}
@@ -128,15 +140,15 @@ func (d *dao) UpdateByName(ctx context.Context, name string,
 	return &applicationInDB, nil
 }
 
-func (d *dao) DeleteByName(ctx context.Context, name string) error {
-	const op = "application dao: delete by name"
+func (d *dao) DeleteByID(ctx context.Context, id uint) error {
+	const op = "application dao: delete by id"
 
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	result := db.Exec(common.ApplicationDeleteByName, name)
+	result := db.Exec(common.ApplicationDeleteByID, id)
 	if result.Error != nil {
 		return result.Error
 	}

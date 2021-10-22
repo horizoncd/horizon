@@ -35,7 +35,8 @@ type UpdateApplicationRequest struct {
 
 type GetApplicationResponse struct {
 	CreateApplicationRequest
-
+	FullPath  string    `json:"fullPath"`
+	ID        uint      `json:"id"`
 	GroupID   uint      `json:"groupID"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -84,7 +85,7 @@ func (m *UpdateApplicationRequest) toApplicationModel() *models.Application {
 }
 
 // ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse
-func ofApplicationModel(app *models.Application, trs []*trmodels.TemplateRelease,
+func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodels.TemplateRelease,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetApplicationResponse {
 	var recommendedRelease string
 	for _, tr := range trs {
@@ -114,6 +115,8 @@ func ofApplicationModel(app *models.Application, trs []*trmodels.TemplateRelease
 			},
 			Name: app.Name,
 		},
+		FullPath:  fullPath,
+		ID:        app.ID,
 		GroupID:   app.GroupID,
 		CreatedAt: app.CreatedAt,
 		UpdatedAt: app.UpdatedAt,

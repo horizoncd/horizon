@@ -115,7 +115,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 			fName = val.Name
 			fPath = fmt.Sprintf("/%s", val.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", full.FullName, val.Name)
+			fName = fmt.Sprintf("%s/%s", full.FullName, val.Name)
 			fPath = fmt.Sprintf("%s/%s", full.FullPath, val.Path)
 		}
 		child := service.ConvertGroupOrApplicationToChild(val, &service.Full{
@@ -262,7 +262,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 			fName = s.Name
 			fPath = fmt.Sprintf("/%s", s.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", full.FullName, s.Name)
+			fName = fmt.Sprintf("%s/%s", full.FullName, s.Name)
 			fPath = fmt.Sprintf("%s/%s", full.FullPath, s.Path)
 		}
 		child := service.ConvertGroupToChild(s, &service.Full{
@@ -378,10 +378,10 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.C
 	}
 	if app != nil {
 		appParentFull, ok := idToFull[app.GroupID]
-		if ok && fmt.Sprintf("%v/%v", appParentFull.FullPath, app.Name) == path {
+		if ok && fmt.Sprintf("%s/%s", appParentFull.FullPath, app.Name) == path {
 			return service.ConvertApplicationToChild(app, &service.Full{
-				FullName: fmt.Sprintf("%v / %v", appParentFull.FullName, app.Name),
-				FullPath: fmt.Sprintf("%v/%v", appParentFull.FullPath, app.Name),
+				FullName: fmt.Sprintf("%s/%s", appParentFull.FullName, app.Name),
+				FullPath: fmt.Sprintf("%s/%s", appParentFull.FullPath, app.Name),
 			}), nil
 		}
 	}
@@ -463,8 +463,8 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
 	for _, application := range applications {
 		parent := idToFull[application.GroupID]
 		child := service.ConvertApplicationToChild(application, &service.Full{
-			FullName: fmt.Sprintf("%v / %v", parent.FullName, application.Name),
-			FullPath: fmt.Sprintf("%v/%v", parent.FullPath, application.Name),
+			FullName: fmt.Sprintf("%s/%s", parent.FullName, application.Name),
+			FullPath: fmt.Sprintf("%s/%s", parent.FullPath, application.Name),
 		})
 		if application.GroupID == groupID {
 			firstLevelChildren = append(firstLevelChildren, child)

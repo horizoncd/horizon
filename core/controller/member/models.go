@@ -64,8 +64,10 @@ type Member struct {
 
 	// Role the role name that bind
 	Role string `json:"role"`
-	// GrantedBy user who grant the role
+	// GrantedBy id of user who grant the role
 	GrantedBy uint `json:"grantedBy"`
+	// GrantorName name of user who grant the role
+	GrantorName string `json:"grantorName"`
 	// GrantTime
 	GrantTime time.Time `json:"grantTime"`
 }
@@ -128,18 +130,16 @@ func (c *converter) ConvertMember(ctx context.Context, member *models.Member) (_
 }
 func (c *converter) ConvertMembers(ctx context.Context, members []models.Member) ([]Member, error) {
 	var userIDs []uint
+
 	for _, member := range members {
 		if member.MemberType != models.MemberUser {
 			return nil, errors.New("Only Support User MemberType yet")
 		}
-		userIDs = append(userIDs, member.MemberNameID)
+		userIDs = append(userIDs, member.MemberNameID, member.GrantedBy)
 	}
 	users, err := c.userManager.GetUserByIDs(ctx, userIDs)
 	if err != nil {
 		return nil, err
-	}
-	if len(users) != len(userIDs) {
-		return nil, errors.New("cannot find all the users")
 	}
 	userIDToName := make(map[uint]string)
 	for _, userItem := range users {
@@ -170,6 +170,7 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 			ResourcePath: resourcePath,
 			Role:         member.Role,
 			GrantedBy:    member.GrantedBy,
+			GrantorName:  userIDToName[member.GrantedBy],
 			GrantTime:    member.UpdatedAt,
 		})
 	}

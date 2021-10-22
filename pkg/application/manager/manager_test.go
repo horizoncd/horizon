@@ -54,6 +54,14 @@ func Test(t *testing.T) {
 	b, err := json.Marshal(application)
 	assert.Nil(t, err)
 	t.Logf(string(b))
+
+	appGetByID, err := Mgr.GetByID(ctx, application.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, application.Name, appGetByID.Name)
+
+	appGetByName, err := Mgr.GetByName(ctx, application.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, application.ID, appGetByName.ID)
 }
 
 func TestMain(m *testing.M) {
