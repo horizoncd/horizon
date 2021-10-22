@@ -1,11 +1,5 @@
 package common
 
-/* sql about gitlab */
-const (
-	GitlabQuery       = "select * from gitlab where deleted_at is null"
-	GitlabQueryByName = "select * from gitlab where name = ? and deleted_at is null"
-)
-
 /* sql about template */
 const (
 	TemplateQuery                      = "select * from template where deleted_at is null"
@@ -70,12 +64,12 @@ const (
 
 /* sql about application */
 const (
-	// ApplicationQueryByName ...
+	ApplicationQueryByID              = "select * from application where id = ? and deleted_at is null"
 	ApplicationQueryByName            = "select * from application where name = ? and deleted_at is null"
 	ApplicationQueryByFuzzily         = "select * from application where name like ? and deleted_at is null"
 	ApplicationQueryByNamesUnderGroup = "select * from application where group_id = ? and name in ? " +
 		"and deleted_at is null"
-	ApplicationDeleteByName   = "update application set deleted_at = CURRENT_TIMESTAMP where name = ?"
+	ApplicationDeleteByID     = "update application set deleted_at = CURRENT_TIMESTAMP where id = ?"
 	ApplicationCountByGroupID = "select count(1) from application where group_id = ? and deleted_at is null"
 )
 
