@@ -93,6 +93,11 @@ type Interface interface {
 	// EditNameAndPathForProject update name and path for a specified project.
 	// The pid can be the project's ID or relative path such as fist/second.
 	EditNameAndPathForProject(ctx context.Context, pid interface{}, newName, newPath *string) error
+
+	// Compare branches, tags or commits.
+	// The pid can be the project's ID or relative path such as fist/second.
+	// See https://docs.gitlab.com/ee/api/repositories.html#compare-branches-tags-or-commits for more information.
+	Compare(ctx context.Context, pid interface{}, from, to string, straight *bool) (*gitlab.Compare, error)
 }
 
 var _ Interface = (*helper)(nil)
@@ -358,6 +363,23 @@ func (h *helper) EditNameAndPathForProject(ctx context.Context, pid interface{},
 	}
 
 	return nil
+}
+
+func (h *helper) Compare(ctx context.Context, pid interface{}, from, to string,
+	straight *bool) (_ *gitlab.Compare, err error) {
+	const op = "gitlab: compare branchs"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	compare, resp, err := h.client.Repositories.Compare(pid, &gitlab.CompareOptions{
+		From:     &from,
+		To:       &to,
+		Straight: straight,
+	}, gitlab.WithContext(ctx))
+	if err != nil {
+		return nil, parseError(op, resp, err)
+	}
+
+	return compare, nil
 }
 
 func parseError(op errors.Op, resp *gitlab.Response, err error) error {

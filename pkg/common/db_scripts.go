@@ -101,3 +101,9 @@ const (
 	RegionGetByName   = "select * from region where name = ?"
 	RegionListByNames = "select * from region where name in ?"
 )
+
+/* sql about cluster */
+const (
+	ClusterQueryByName        = "select * from cluster where name = ?"
+	ClusterQueryByApplication = "select * from cluster where application = ?"
+)
