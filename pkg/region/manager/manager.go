@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
+	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	k8sclusterdao "g.hz.netease.com/horizon/pkg/k8scluster/dao"
 	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
@@ -20,21 +22,23 @@ type Manager interface {
 	Create(ctx context.Context, region *models.Region) (*models.Region, error)
 	// ListAll list all regions
 	ListAll(ctx context.Context) ([]*models.Region, error)
-	// ListAllWithK8SCluster list all regions with K8S cluster
-	ListAllWithK8SCluster(ctx context.Context) ([]*models.RegionWithK8SCluster, error)
-	// GetRegionWithK8SCluster get region with k8s cluster
-	GetRegionWithK8SCluster(ctx context.Context, regionName string) (*models.RegionWithK8SCluster, error)
+	// ListRegionEntities list all region entity
+	ListRegionEntities(ctx context.Context) ([]*models.RegionEntity, error)
+	// GetRegionEntity get region entity
+	GetRegionEntity(ctx context.Context, regionName string) (*models.RegionEntity, error)
 }
 
 type manager struct {
 	regionDAO     regiondao.DAO
 	k8sClusterDAO k8sclusterdao.DAO
+	harborDAO     harbordao.DAO
 }
 
 func New() Manager {
 	return &manager{
 		regionDAO:     regiondao.NewDAO(),
 		k8sClusterDAO: k8sclusterdao.NewDAO(),
+		harborDAO:     harbordao.NewDAO(),
 	}
 }
 
@@ -46,7 +50,7 @@ func (m *manager) ListAll(ctx context.Context) ([]*models.Region, error) {
 	return m.regionDAO.ListAll(ctx)
 }
 
-func (m *manager) ListAllWithK8SCluster(ctx context.Context) (ret []*models.RegionWithK8SCluster, err error) {
+func (m *manager) ListRegionEntities(ctx context.Context) (ret []*models.RegionEntity, err error) {
 	var regions []*models.Region
 	regions, err = m.regionDAO.ListAll(ctx)
 	if err != nil {
@@ -58,26 +62,33 @@ func (m *manager) ListAllWithK8SCluster(ctx context.Context) (ret []*models.Regi
 		return nil, err
 	}
 
+	harborMap, err := m.getHarborMap(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, region := range regions {
 		k8sCluster, ok := k8sClusterMap[region.K8SClusterID]
 		if !ok {
 			return nil, fmt.Errorf("k8sCluster with ID: %v of region: %v is not found",
 				region.K8SClusterID, region.Name)
 		}
-		ret = append(ret, &models.RegionWithK8SCluster{
-			Model:       region.Model,
-			Name:        region.Name,
-			DisplayName: region.DisplayName,
-			K8SCluster:  k8sCluster,
-			CreatedBy:   region.CreatedBy,
-			UpdatedBy:   region.UpdatedBy,
+		harbor, ok := harborMap[region.HarborID]
+		if !ok {
+			return nil, fmt.Errorf("harbor with ID: %v of region: %v is not found",
+				region.HarborID, region.Name)
+		}
+		ret = append(ret, &models.RegionEntity{
+			Region:     region,
+			K8SCluster: k8sCluster,
+			Harbor:     harbor,
 		})
 	}
 	return
 }
 
-func (m *manager) GetRegionWithK8SCluster(ctx context.Context,
-	regionName string) (*models.RegionWithK8SCluster, error) {
+func (m *manager) GetRegionEntity(ctx context.Context,
+	regionName string) (*models.RegionEntity, error) {
 	region, err := m.regionDAO.GetRegion(ctx, regionName)
 	if err != nil {
 		return nil, err
@@ -88,19 +99,27 @@ func (m *manager) GetRegionWithK8SCluster(ctx context.Context,
 		return nil, err
 	}
 
+	harborMap, err := m.getHarborMap(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	k8sCluster, ok := k8sClusterMap[region.K8SClusterID]
 	if !ok {
 		return nil, fmt.Errorf("k8sCluster with ID: %v of region: %v is not found",
 			region.K8SClusterID, region.Name)
 	}
 
-	return &models.RegionWithK8SCluster{
-		Model:       region.Model,
-		Name:        region.Name,
-		DisplayName: region.DisplayName,
-		K8SCluster:  k8sCluster,
-		CreatedBy:   region.CreatedBy,
-		UpdatedBy:   region.UpdatedBy,
+	harbor, ok := harborMap[region.HarborID]
+	if !ok {
+		return nil, fmt.Errorf("harbor with ID: %v of region: %v is not found",
+			region.HarborID, region.Name)
+	}
+
+	return &models.RegionEntity{
+		Region:     region,
+		K8SCluster: k8sCluster,
+		Harbor:     harbor,
 	}, nil
 }
 
@@ -115,4 +134,17 @@ func (m *manager) getK8SClusterMap(ctx context.Context) (map[uint]*k8sclustermod
 		k8sClusterMap[k8sCluster.ID] = k8sCluster
 	}
 	return k8sClusterMap, nil
+}
+
+func (m *manager) getHarborMap(ctx context.Context) (map[uint]*harbormodels.Harbor, error) {
+	harbors, err := m.harborDAO.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	harborMap := make(map[uint]*harbormodels.Harbor)
+	for _, harbor := range harbors {
+		harborMap[harbor.ID] = harbor
+	}
+	return harborMap, nil
 }

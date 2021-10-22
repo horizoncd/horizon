@@ -1,11 +1,5 @@
 package common
 
-/* sql about gitlab */
-const (
-	GitlabQuery       = "select * from gitlab where deleted_at is null"
-	GitlabQueryByName = "select * from gitlab where name = ? and deleted_at is null"
-)
-
 /* sql about template */
 const (
 	TemplateQuery                      = "select * from template where deleted_at is null"
@@ -83,6 +77,12 @@ const (
 const (
 	// K8SClusterListAll ...
 	K8SClusterListAll = "select * from k8s_cluster"
+)
+
+/* sql about harbor */
+const (
+	HarborListAll = "select * from harbor"
+	HarborGetByID = "select * from harbor where id = ?"
 )
 
 /* sql about environment */

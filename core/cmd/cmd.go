@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"regexp"
 
@@ -31,7 +30,6 @@ import (
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 
 	"github.com/gin-gonic/gin"
-	"gopkg.in/yaml.v2"
 )
 
 // Flags defines agent CLI flags.
@@ -56,14 +54,8 @@ func ParseFlags() *Flags {
 
 // Run runs the agent.
 func Run(flags *Flags) {
-	var config Config
-	// load config
-	data, err := ioutil.ReadFile(flags.ConfigFile)
+	config, err := loadConfig(flags.ConfigFile)
 	if err != nil {
-		panic(err)
-	}
-
-	if err := yaml.Unmarshal(data, &config); err != nil {
 		panic(err)
 	}
 

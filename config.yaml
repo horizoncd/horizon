@@ -37,3 +37,20 @@ gitlabRepoConfig:
     recyclingParent:
       path: music-cloud-native/recycling-clusters
       id: 4587
+argoCDMapper:
+  dev,test,reg,perf,beta,pre,online:
+    url: http://argocd-server.argocd
+    token: 
+    helmRepo: "https://harbor.mock.org/chartrepo/cloudnative-template"
+tektonMapper:
+  dev,test,reg,perf,beta,pre,online:
+    url: http://el-default-listener.tekton-resources:8080
+    kubeconfig: ""
+    s3:
+      accessKey: 
+      secretKey: 
+      region: us-east-1
+      endpoint: nos-jd.service.163.org
+      bucket: yufeng-collector-dev
+      skipVerify: true
+      s3ForcePathStyle: true
