@@ -179,9 +179,9 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember2))
 
 	// update member
-	retMember3, err := Ctl.UpdateMember(ctx, retMember2.ID, membermodels.Maitainer)
+	retMember3, err := Ctl.UpdateMember(ctx, retMember2.ID, membermodels.Maintainer)
 	assert.Nil(t, err)
-	postMember2.Role = membermodels.Maitainer
+	postMember2.Role = membermodels.Maintainer
 	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember3))
 
 	// remove the member

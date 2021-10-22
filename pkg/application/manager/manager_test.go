@@ -8,6 +8,7 @@ import (
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -67,6 +68,9 @@ func Test(t *testing.T) {
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Application{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)

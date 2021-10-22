@@ -63,8 +63,8 @@ func ConvertResourceType(resourceTypeStr string) (models.ResourceType, bool) {
 		resourceType = models.TypeGroup
 	case models.TypeApplicationStr:
 		resourceType = models.TypeApplication
-	case models.TypeApplicationInstanceStr:
-		resourceType = models.TypeApplicationInstance
+	case models.TypeApplicationClusterStr:
+		resourceType = models.TypeApplicationCluster
 	default:
 		convertOk = false
 	}
