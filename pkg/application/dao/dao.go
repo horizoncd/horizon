@@ -2,12 +2,14 @@ package dao
 
 import (
 	"context"
+	goerrors "errors"
 	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/common"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
@@ -99,8 +101,29 @@ func (d *dao) Create(ctx context.Context, application *models.Application) (*mod
 		return nil, err
 	}
 
-	result := db.Create(application)
-	return application, result.Error
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(application).Error; err != nil {
+			return err
+		}
+		// insert a record to member table
+		member := &membermodels.Member{
+			ResourceType: membermodels.TypeApplication,
+			ResourceID:   application.ID,
+			Role:         membermodels.Owner,
+			MemberType:   membermodels.MemberUser,
+			MemberNameID: application.CreatedBy,
+			GrantedBy:    application.UpdatedBy,
+		}
+		result := tx.Create(member)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return goerrors.New("create member error")
+		}
+		return nil
+	})
+	return application, err
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error) {
