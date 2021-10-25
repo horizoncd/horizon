@@ -27,7 +27,7 @@ music-cloud-native
 	  │
       ├── applications                 -- 应用配置 group
       │    └── app1                    -- 应用 group
-      │		    ├── application.yaml   -- 部署模板参数
+      │         ├── application.yaml   -- 部署模板参数
       │         └── pipeline.yaml      -- 流水线参数
       │
       └── clusters                                            -- 集群配置 group

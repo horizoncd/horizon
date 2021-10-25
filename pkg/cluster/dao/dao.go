@@ -10,8 +10,8 @@ import (
 
 type DAO interface {
 	Create(ctx context.Context, cluster *models.Cluster) (*models.Cluster, error)
-	GetByName(ctx context.Context, name string) (*models.Cluster, error)
-	ListByApplication(ctx context.Context, application string) ([]*models.Cluster, error)
+	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
+	ListByApplication(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 }
 
 type dao struct {
@@ -32,26 +32,26 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster) (*models.Clus
 	return cluster, result.Error
 }
 
-func (d *dao) GetByName(ctx context.Context, name string) (*models.Cluster, error) {
+func (d *dao) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var cluster models.Cluster
-	result := db.Raw(common.ClusterQueryByName, name).First(&cluster)
+	result := db.Raw(common.ClusterQueryByID, id).First(&cluster)
 
 	return &cluster, result.Error
 }
 
-func (d *dao) ListByApplication(ctx context.Context, application string) ([]*models.Cluster, error) {
+func (d *dao) ListByApplication(ctx context.Context, applicationID uint) ([]*models.Cluster, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var clusters []*models.Cluster
-	result := db.Raw(common.ClusterQueryByApplication, application).Scan(&clusters)
+	result := db.Raw(common.ClusterQueryByApplication, applicationID).Scan(&clusters)
 
 	return clusters, result.Error
 }

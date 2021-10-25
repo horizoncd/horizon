@@ -104,6 +104,6 @@ const (
 
 /* sql about cluster */
 const (
-	ClusterQueryByName        = "select * from cluster where name = ?"
-	ClusterQueryByApplication = "select * from cluster where application = ?"
+	ClusterQueryByID          = "select * from cluster where id = ?"
+	ClusterQueryByApplication = "select * from cluster where application_id = ?"
 )
