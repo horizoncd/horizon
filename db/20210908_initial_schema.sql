@@ -223,7 +223,7 @@ CREATE TABLE `environment_region`
 CREATE TABLE `cluster`
 (
     `id`                    int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `application`           varchar(64)      NOT NULL COMMENT 'application name',
+    `application_id`        int(11) unsigned NOT NULL COMMENT 'application id',
     `name`                  varchar(64)      NOT NULL DEFAULT '' COMMENT 'the name of cluster',
     `description`           varchar(256)              DEFAULT NULL COMMENT 'the description of cluster',
     `git_url`               varchar(128)              DEFAULT NULL COMMENT 'git repo url',
@@ -248,7 +248,7 @@ CREATE TABLE `cluster`
 CREATE TABLE `pipelinerun`
 (
     `id`            int(11) unsigned NOT NULL AUTO_INCREMENT,
-    `cluster`       varchar(64)      NOT NULL COMMENT 'cluster name',
+    `cluster_id`    int(11) unsigned NOT NULL COMMENT 'cluster id',
     `action`        varchar(64)      NOT NULL COMMENT 'action',
     `status`        varchar(64)      NOT NULL DEFAULT '' COMMENT 'the pipelinerun status',
     `title`         varchar(256)     NOT NULL DEFAULT '' COMMENT 'the title of pipelinerun',
@@ -265,7 +265,7 @@ CREATE TABLE `pipelinerun`
     `updated_at`    datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created_by`    int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     PRIMARY KEY (`id`),
-    KEY `idx_cluster_action` (`cluster`, `action`)
+    KEY `idx_cluster_action` (`cluster_id`, `action`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
