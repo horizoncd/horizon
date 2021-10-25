@@ -245,17 +245,19 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, cluster string, clus
 
 	// 1. delete gitlab project
 	pid := fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, cluster)
-	// 1.1 transfer project to RecyclingParent
-	if err := g.gitlabLib.TransferProject(ctx, pid, g.clusterRepoConf.RecyclingParent.Path); err != nil {
-		return errors.E(op, err)
-	}
-	// 1.2 edit project's name and path to {application}-{applicationID}
-	newPid := fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, cluster)
+	// 1.1 edit project's name and path to {cluster}-{clusterID}
 	newName := fmt.Sprintf("%v-%d", cluster, clusterID)
 	newPath := newName
-	if err := g.gitlabLib.EditNameAndPathForProject(ctx, newPid, &newName, &newPath); err != nil {
+	if err := g.gitlabLib.EditNameAndPathForProject(ctx, pid, &newName, &newPath); err != nil {
 		return errors.E(op, err)
 	}
+
+	// 1.2 transfer project to RecyclingParent
+	newPid := fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, newPath)
+	if err := g.gitlabLib.TransferProject(ctx, newPid, g.clusterRepoConf.RecyclingParent.Path); err != nil {
+		return errors.E(op, err)
+	}
+
 	return nil
 }
 
