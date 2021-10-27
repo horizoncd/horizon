@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -38,7 +37,7 @@ music-cloud-native
                               ├── sre                         -- sre目录
                               │     └── sre.yaml              -- sre values数据
                               ├── system
-                              │     ├── base.yaml             -- 基础数据
+                              │     ├── horizon.yaml          -- 基础数据
                               │     └── env.yaml              -- 环境相关数据
                               ├── pipeline
                               │     ├── pipeline.yaml         -- pipeline模板参数
@@ -56,7 +55,7 @@ const (
 	// _filePathChart           = "Chart.yaml"
 	_filePathApplication = "application.yaml"
 	_filePathSRE         = "sre/sre.yaml"
-	_filePathBase        = "system/base.yaml"
+	_filePathBase        = "system/horizon.yaml"
 	_filePathEnv         = "system/env.yaml"
 	_filePathPipeline    = "pipeline/pipeline.yaml"
 	// _filePathPipelineOutput  = "pipeline/pipeline-output.yaml"
@@ -310,29 +309,34 @@ func (g *clusterGitRepo) assembleSREValue(params *Params) map[string]interface{}
 }
 
 type EnvValue struct {
-	Environment string `yaml:"environment"`
-	Region      string `yaml:"region"`
-	Namespace   string `yaml:"namespace"`
+	Environment  string `yaml:"environment"`
+	Region       string `yaml:"region"`
+	Namespace    string `yaml:"namespace"`
+	BaseRegistry string `yaml:"baseRegistry"`
 }
 
-func (g *clusterGitRepo) assembleEnvValue(params *Params) map[string]*EnvValue {
+func (g *clusterGitRepo) assembleEnvValue(params *Params) map[string]map[string]*EnvValue {
+	const envValueNamespace = "env"
 	var namespace = fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
-	ret := make(map[string]*EnvValue)
-	ret[params.TemplateRelease.TemplateName] = &EnvValue{
+	envMap := make(map[string]*EnvValue)
+	envMap[envValueNamespace] = &EnvValue{
 		Environment: params.Environment,
 		Region:      params.RegionEntity.Name,
 		Namespace:   namespace,
+		BaseRegistry: strings.TrimPrefix(strings.TrimPrefix(
+			params.RegionEntity.Harbor.Server, "https://"), "http://"),
 	}
+
+	ret := make(map[string]map[string]*EnvValue)
+	ret[params.TemplateRelease.TemplateName] = envMap
 	return ret
 }
 
 type BaseValue struct {
 	Application string             `yaml:"application"`
-	Cluster     string             `yaml:"Cluster"`
-	Group       uint               `yaml:"group"`
+	Cluster     string             `yaml:"cluster"`
 	Template    *BaseValueTemplate `yaml:"template"`
 	Priority    string             `yaml:"priority"`
-	BaseImage   *BaseValueImage    `yaml:"baseImage"`
 }
 
 type BaseValueTemplate struct {
@@ -340,27 +344,22 @@ type BaseValueTemplate struct {
 	Release string `yaml:"release"`
 }
 
-type BaseValueImage struct {
-	Prefix string `yaml:"prefix"`
-}
-
-// assembleBaseValue assemble base value. return a map, key is template name, and value is *BaseValue
-func (g *clusterGitRepo) assembleBaseValue(params *Params) map[string]*BaseValue {
-	ret := make(map[string]*BaseValue)
-	ret[params.TemplateRelease.TemplateName] = &BaseValue{
+// assembleBaseValue assemble base value. return a map, key is template name,
+// and value is a map which key is "horizon", and value is *BaseValue
+func (g *clusterGitRepo) assembleBaseValue(params *Params) map[string]map[string]*BaseValue {
+	const baseValueNamespace = "horizon"
+	baseMap := make(map[string]*BaseValue)
+	baseMap[baseValueNamespace] = &BaseValue{
 		Application: params.Application.Name,
 		Cluster:     params.Cluster,
-		Group:       params.Application.GroupID,
 		Template: &BaseValueTemplate{
 			Name:    params.TemplateRelease.TemplateName,
 			Release: params.TemplateRelease.Name,
 		},
 		Priority: string(params.Application.Priority),
-		// TODO(gjq) cloudnative-template config
-		BaseImage: &BaseValueImage{
-			Prefix: path.Join(strings.TrimPrefix(strings.TrimPrefix(
-				params.RegionEntity.Harbor.Server, "https://"), "http://"), "cloudnative-template"),
-		},
 	}
+
+	ret := make(map[string]map[string]*BaseValue)
+	ret[params.TemplateRelease.TemplateName] = baseMap
 	return ret
 }
