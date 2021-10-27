@@ -48,6 +48,7 @@ func (m *manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Application, error) {
 	const op = "application manager: get by id"
 	application, err := m.applicationDAO.GetByID(ctx, id)
+	// TODO(gjq) error handing outside
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, errors.E(op, http.StatusNotFound, _errCodeApplicationNotFound)

@@ -180,6 +180,12 @@ func Test(t *testing.T) {
 	b, _ = json.Marshal(commit)
 	t.Logf(string(b))
 
+	compare, err := g.Compare(ctx, pid, startBranch, newBranch, nil)
+	assert.Nil(t, err)
+	for _, diff := range compare.Diffs {
+		t.Logf(diff.Diff)
+	}
+
 	// 12. get file
 	content, err := g.GetFile(ctx, pid, newBranch, "c")
 	assert.Nil(t, err)

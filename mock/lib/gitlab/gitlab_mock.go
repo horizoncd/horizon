@@ -254,3 +254,18 @@ func (mr *MockInterfaceMockRecorder) EditNameAndPathForProject(ctx, pid, newName
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EditNameAndPathForProject", reflect.TypeOf((*MockInterface)(nil).EditNameAndPathForProject), ctx, pid, newName, newPath)
 }
+
+// Compare mocks base method
+func (m *MockInterface) Compare(ctx context.Context, pid interface{}, from, to string, straight *bool) (*gitlab0.Compare, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Compare", ctx, pid, from, to, straight)
+	ret0, _ := ret[0].(*gitlab0.Compare)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Compare indicates an expected call of Compare
+func (mr *MockInterfaceMockRecorder) Compare(ctx, pid, from, to, straight interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Compare", reflect.TypeOf((*MockInterface)(nil).Compare), ctx, pid, from, to, straight)
+}
