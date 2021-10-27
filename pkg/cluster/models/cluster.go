@@ -5,7 +5,7 @@ import "gorm.io/gorm"
 type Cluster struct {
 	gorm.Model
 
-	Application         string
+	ApplicationID       uint
 	Name                string
 	Description         string
 	GitURL              string
@@ -13,7 +13,7 @@ type Cluster struct {
 	GitBranch           string
 	Template            string
 	TemplateRelease     string
-	EnvironmentRegionID string
+	EnvironmentRegionID uint
 	CreatedBy           uint
 	UpdatedBy           uint
 }

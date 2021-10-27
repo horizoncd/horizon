@@ -62,6 +62,8 @@ type (
 		// GetContainerLog get standard output of container of an application in argoCD
 		GetContainerLog(ctx context.Context, application string,
 			param ContainerLogParams) (<-chan ContainerLog, <-chan error, error)
+
+		GetHelmRepo(ctx context.Context) string
 	}
 
 	// EventParam the params for ListResourceEvents
@@ -113,7 +115,7 @@ type (
 
 type (
 	// argo holding the info for ArgoCD Server
-	argoCD struct {
+	helper struct {
 		// URL for argoCD server
 		URL string `json:"url"`
 		// Token the token to be used for argoCD server
@@ -136,10 +138,10 @@ type (
 )
 
 func NewArgoCD(URL, token, helmRepo string) ArgoCD {
-	return &argoCD{URL: URL, Token: token, HelmRepo: helmRepo}
+	return &helper{URL: URL, Token: token, HelmRepo: helmRepo}
 }
 
-var _ ArgoCD = (*argoCD)(nil)
+var _ ArgoCD = (*helper)(nil)
 
 const (
 	// http retry count
@@ -169,12 +171,12 @@ var (
 	}
 )
 
-func (argo *argoCD) CreateApplication(ctx context.Context, manifest []byte) (err error) {
+func (h *helper) CreateApplication(ctx context.Context, manifest []byte) (err error) {
 	const op = "argo: create application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	url := argo.URL + "/api/v1/applications?validate=false&upsert=false"
-	resp, err := argo.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(manifest))
+	url := h.URL + "/api/v1/applications?validate=false&upsert=false"
+	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(manifest))
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -188,11 +190,11 @@ func (argo *argoCD) CreateApplication(ctx context.Context, manifest []byte) (err
 	return nil
 }
 
-func (argo *argoCD) DeployApplication(ctx context.Context, application string, revision string) (err error) {
+func (h *helper) DeployApplication(ctx context.Context, application string, revision string) (err error) {
 	const op = "argo: deploy application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	url := fmt.Sprintf("%v/api/v1/applications/%v/sync", argo.URL, application)
+	url := fmt.Sprintf("%v/api/v1/applications/%v/sync", h.URL, application)
 	req := DeployApplicationRequest{
 		Revision: revision,
 		Prune:    true,
@@ -203,7 +205,7 @@ func (argo *argoCD) DeployApplication(ctx context.Context, application string, r
 	if err != nil {
 		return errors.E(op, err)
 	}
-	resp, err := argo.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(reqBody))
+	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(reqBody))
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -217,12 +219,12 @@ func (argo *argoCD) DeployApplication(ctx context.Context, application string, r
 	return nil
 }
 
-func (argo *argoCD) DeleteApplication(ctx context.Context, application string) (err error) {
+func (h *helper) DeleteApplication(ctx context.Context, application string) (err error) {
 	const op = "argo: delete application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	url := fmt.Sprintf("%v/api/v1/applications/%v?cascade=true", argo.URL, application)
-	resp, err := argo.sendHTTPRequest(ctx, http.MethodDelete, url, nil)
+	url := fmt.Sprintf("%v/api/v1/applications/%v?cascade=true", h.URL, application)
+	resp, err := h.sendHTTPRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -237,7 +239,7 @@ func (argo *argoCD) DeleteApplication(ctx context.Context, application string) (
 	return nil
 }
 
-func (argo *argoCD) WaitApplication(ctx context.Context, cluster string, uid string, status int) (err error) {
+func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string, status int) (err error) {
 	const op = "argo: wait application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -249,7 +251,7 @@ func (argo *argoCD) WaitApplication(ctx context.Context, cluster string, uid str
 		defer cancel()
 
 		log.Infof(ctx, "wait for cluster<%v> to be status of %v, count=%v", cluster, status, i+1)
-		applicationCR, err := argo.RefreshApplication(ctx, cluster)
+		applicationCR, err := h.RefreshApplication(ctx, cluster)
 		if err != nil && stderrors.Is(err, context.DeadlineExceeded) {
 			return waitError
 		}
@@ -287,29 +289,29 @@ func (argo *argoCD) WaitApplication(ctx context.Context, cluster string, uid str
 	return errors.E(op, "time out")
 }
 
-func (argo *argoCD) GetApplication(ctx context.Context,
+func (h *helper) GetApplication(ctx context.Context,
 	application string) (applicationCRD *v1alpha1.Application, err error) {
 	const op = "argo: get application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	url := fmt.Sprintf("%v/api/v1/applications/%v", argo.URL, application)
-	return argo.getOrRefreshApplication(ctx, url)
+	url := fmt.Sprintf("%v/api/v1/applications/%v", h.URL, application)
+	return h.getOrRefreshApplication(ctx, url)
 }
 
-func (argo *argoCD) RefreshApplication(ctx context.Context,
+func (h *helper) RefreshApplication(ctx context.Context,
 	application string) (applicationCRD *v1alpha1.Application, err error) {
 	const op = "argo: refresh application "
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	url := fmt.Sprintf("%v/api/v1/applications/%v?refresh=normal", argo.URL, application)
-	return argo.getOrRefreshApplication(ctx, url)
+	url := fmt.Sprintf("%v/api/v1/applications/%v?refresh=normal", h.URL, application)
+	return h.getOrRefreshApplication(ctx, url)
 }
 
 // getOrRefreshApplication 具体是 get 还是 refresh 操作，由调用者的 url 中的 parameter 决定
-func (argo *argoCD) getOrRefreshApplication(ctx context.Context,
+func (h *helper) getOrRefreshApplication(ctx context.Context,
 	url string) (applicationCRD *v1alpha1.Application, err error) {
 	const op = "argo: getApplication"
-	resp, err := argo.sendHTTPRequest(ctx, http.MethodGet, url, nil)
+	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -334,13 +336,13 @@ func (argo *argoCD) getOrRefreshApplication(ctx context.Context,
 	return applicationCRD, nil
 }
 
-func (argo *argoCD) GetApplicationTree(ctx context.Context, application string) (
+func (h *helper) GetApplicationTree(ctx context.Context, application string) (
 	tree *v1alpha1.ApplicationTree, err error) {
 	const op = "argo: get application tree"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	url := fmt.Sprintf("%v/api/v1/applications/%v/resource-tree", argo.URL, application)
-	resp, err := argo.sendHTTPRequest(ctx, http.MethodGet, url, nil)
+	url := fmt.Sprintf("%v/api/v1/applications/%v/resource-tree", h.URL, application)
+	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -363,14 +365,14 @@ func (argo *argoCD) GetApplicationTree(ctx context.Context, application string) 
 	return tree, nil
 }
 
-func (argo *argoCD) GetApplicationResource(ctx context.Context, application string, gvk ResourceParams) (
+func (h *helper) GetApplicationResource(ctx context.Context, application string, gvk ResourceParams) (
 	output string, err error) {
 	const op = "argo: get application resource"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v/resource?namespace=%v&resourceName=%v&group=%v&version=%v&kind=%v",
-		argo.URL, application, gvk.Namespace, gvk.ResourceName, gvk.Group, gvk.Version, gvk.Kind)
-	resp, err := argo.sendHTTPRequest(ctx, http.MethodGet, url, nil)
+		h.URL, application, gvk.Namespace, gvk.ResourceName, gvk.Group, gvk.Version, gvk.Kind)
+	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", errors.E(op, err)
 	}
@@ -398,14 +400,14 @@ func (argo *argoCD) GetApplicationResource(ctx context.Context, application stri
 	return m.Manifest, nil
 }
 
-func (argo *argoCD) ListResourceEvents(ctx context.Context, application string, param EventParam) (
+func (h *helper) ListResourceEvents(ctx context.Context, application string, param EventParam) (
 	eventList *corev1.EventList, err error) {
 	const op = "argo: list resource events"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v/events?resourceUID=%v&resourceNamespace=%v&resourceName=%v",
-		argo.URL, application, param.ResourceUID, param.ResourceNamespace, param.ResourceName)
-	resp, err := argo.sendHTTPRequest(ctx, http.MethodGet, url, nil)
+		h.URL, application, param.ResourceUID, param.ResourceNamespace, param.ResourceName)
+	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -428,11 +430,11 @@ func (argo *argoCD) ListResourceEvents(ctx context.Context, application string, 
 	return eventList, nil
 }
 
-func (argo *argoCD) ResumeRollout(ctx context.Context, application string) (err error) {
+func (h *helper) ResumeRollout(ctx context.Context, application string) (err error) {
 	const op = "argo: resume rollout"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	app, err := argo.GetApplication(ctx, application)
+	app, err := h.GetApplication(ctx, application)
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -441,9 +443,9 @@ func (argo *argoCD) ResumeRollout(ctx context.Context, application string) (err 
 	namespace := app.Spec.Destination.Namespace
 	// rollout名字和所属application的名字一致
 	format := "%v/api/v1/applications/%v/resource/actions?namespace=%v&resourceName=%v&version=%s&kind=Rollout&group=%s"
-	url := fmt.Sprintf(format, argo.URL, application, namespace, application, rolloutVersion, rolloutGroup)
+	url := fmt.Sprintf(format, h.URL, application, namespace, application, rolloutVersion, rolloutGroup)
 	requestBodyStr := `"resume"`
-	resp, err := argo.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader([]byte(requestBodyStr)))
+	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader([]byte(requestBodyStr)))
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -457,14 +459,14 @@ func (argo *argoCD) ResumeRollout(ctx context.Context, application string) (err 
 	return nil
 }
 
-func (argo *argoCD) GetContainerLog(ctx context.Context, application string,
+func (h *helper) GetContainerLog(ctx context.Context, application string,
 	param ContainerLogParams) (lc <-chan ContainerLog, ec <-chan error, err error) {
 	const op = "argo: get container log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	format := "%v/api/v1/applications/%v/pods/%v/logs?container=%v&follow=false&namespace=%v&tailLines=%v"
-	url := fmt.Sprintf(format, argo.URL, application, param.PodName, param.ContainerName, param.Namespace, param.TailLines)
-	resp, err := argo.sendHTTPRequest(ctx, http.MethodGet, url, nil) // nolint:bodyclose
+	url := fmt.Sprintf(format, h.URL, application, param.PodName, param.ContainerName, param.Namespace, param.TailLines)
+	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil) // nolint:bodyclose
 	if err != nil {
 		return nil, nil, errors.E(op, err)
 	}
@@ -512,7 +514,11 @@ func (argo *argoCD) GetContainerLog(ctx context.Context, application string,
 	return logC, errC, nil
 }
 
-func (argo *argoCD) sendHTTPRequest(ctx context.Context, method string, url string,
+func (h *helper) GetHelmRepo(ctx context.Context) string {
+	return h.HelmRepo
+}
+
+func (h *helper) sendHTTPRequest(ctx context.Context, method string, url string,
 	body io.Reader) (*http.Response, error) {
 	log.Infof(ctx, "method: %v, url: %v", method, url)
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
@@ -520,7 +526,7 @@ func (argo *argoCD) sendHTTPRequest(ctx context.Context, method string, url stri
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", argo.Token))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", h.Token))
 	req.Header.Add("Content-Type", "application/json")
 
 	r, err := retryablehttp.FromRequest(req)

@@ -2,6 +2,7 @@ package cd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/argoproj/gitops-engine/pkg/health"
+	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -28,14 +30,18 @@ const (
 )
 
 type Params struct {
+	Application string
 	Environment string
 	Cluster     string
 }
 
 type CD interface {
-	DeployCluster(ctx context.Context, params *Params) error
-	DeleteCluster(ctx context.Context, cluster string) error
-	GetCluster(ctx context.Context, params *Params) (*ClusterState, error)
+	// CreateCluster create a cluster in cd system
+	CreateCluster(ctx context.Context, params *Params) error
+	// GetClusterState get cluster state in cd system
+	GetClusterState(ctx context.Context, params *Params) (*ClusterState, error)
+	// GetHelmRepo get helm repo
+	GetHelmRepo(ctx context.Context, environment string) (string, error)
 }
 
 type cd struct {
@@ -43,29 +49,52 @@ type cd struct {
 	clusterGitRepo gitrepo.ClusterGitRepo
 }
 
-func NewCD(argoCDMapper argocdconf.Mapper) CD {
+func NewCD(argoCDMapper argocdconf.Mapper, clusterGitRepo gitrepo.ClusterGitRepo) CD {
 	return &cd{
-		factory: argocd.NewFactory(argoCDMapper),
+		factory:        argocd.NewFactory(argoCDMapper),
+		clusterGitRepo: clusterGitRepo,
 	}
 }
 
-// DeployCluster ... TODO(gjq) implements cd
-func (c *cd) DeployCluster(ctx context.Context, params *Params) error {
+func (c *cd) CreateCluster(ctx context.Context, params *Params) (err error) {
+	const op = "cd: create cluster"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return err
+		return errors.E(op, err)
 	}
-	if err := argo.CreateApplication(ctx, nil); err != nil {
-		return err
+
+	// if argo application is exists, return err
+	_, err = argo.GetApplication(ctx, params.Cluster)
+	if err == nil {
+		return errors.E(op, http.StatusConflict, fmt.Sprintf("%v is already exists in argoCD", params.Cluster))
+	} else if errors.Status(err) != http.StatusNotFound {
+		return errors.E(op, err)
 	}
-	panic("implement me")
+
+	argoApplicationBytes, err := c.clusterGitRepo.ReadArgoApplication(ctx, params.Application, params.Cluster)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	var argoApplication *argocd.Application
+	if err := yaml.Unmarshal(argoApplicationBytes, &argoApplication); err != nil {
+		return errors.E(op, err)
+	}
+	manifest, err := json.Marshal(argoApplication)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	if err := argo.CreateApplication(ctx, manifest); err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
 }
 
-func (c *cd) DeleteCluster(ctx context.Context, cluster string) error {
-	panic("implement me")
-}
-
-func (c *cd) GetCluster(ctx context.Context,
+func (c *cd) GetClusterState(ctx context.Context,
 	params *Params) (clusterState *ClusterState, err error) {
 	const op = "cd: get cluster status"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
@@ -127,6 +156,17 @@ func (c *cd) GetCluster(ctx context.Context,
 	}
 
 	return clusterState, nil
+}
+
+func (c *cd) GetHelmRepo(ctx context.Context, environment string) (_ string, err error) {
+	const op = "cd: get cluster status"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	argo, err := c.factory.GetArgoCD(environment)
+	if err != nil {
+		return "", err
+	}
+	return argo.GetHelmRepo(ctx), nil
 }
 
 type (

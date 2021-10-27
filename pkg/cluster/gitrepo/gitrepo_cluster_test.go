@@ -85,7 +85,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	g, err = gitlablib.New(p.Token, p.BaseURL)
+	g, err = gitlablib.New(p.Token, p.BaseURL, "")
 	if err != nil {
 		panic(err)
 	}
@@ -120,13 +120,13 @@ func Test(t *testing.T) {
 			},
 		},
 	}
+	application := "app"
 	cluster := "cluster"
 	params := &Params{
 		Cluster:     cluster,
-		K8SServer:   "http://k8s.com",
 		HelmRepoURL: "https://helm.com",
 		Environment: "test",
-		RegionEntity: regionmodels.RegionEntity{
+		RegionEntity: &regionmodels.RegionEntity{
 			Region: &regionmodels.Region{
 				Name:        "hz",
 				DisplayName: "HZ",
@@ -143,14 +143,15 @@ func Test(t *testing.T) {
 		},
 		Application: &appmodels.Application{
 			GroupID:  10,
-			Name:     "app",
+			Name:     application,
 			Priority: "P0",
 		},
 	}
 
 	defer func() {
-		_ = r.DeleteCluster(ctx, cluster, 1)
-		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v-%v", rootGroupName, "recycling-clusters", cluster, 1))
+		_ = r.DeleteCluster(ctx, application, cluster, 1)
+		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v/%v-%v", rootGroupName,
+			"recycling-clusters", application, cluster, 1))
 	}()
 	err := r.CreateCluster(ctx, params)
 	assert.Nil(t, err)
@@ -159,7 +160,7 @@ func Test(t *testing.T) {
 	err = r.UpdateCluster(ctx, params)
 	assert.Nil(t, err)
 
-	diff, err := r.CompareConfig(ctx, params.Cluster)
+	diff, err := r.CompareConfig(ctx, application, params.Cluster)
 	assert.Nil(t, err)
 	t.Logf("\n%v\n", diff)
 }

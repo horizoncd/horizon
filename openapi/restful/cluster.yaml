@@ -214,6 +214,7 @@ paths:
                           },
                           "id":1,
                           "name":"cluster",
+                          "fullPath": "/a/b/c",
                           "description":"xxxxxxxxxxxx",
                           "priority":"P0",
                           "template":{

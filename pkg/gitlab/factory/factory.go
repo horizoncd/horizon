@@ -51,7 +51,7 @@ func (f *factory) GetByName(ctx context.Context, name string) (_ gitlablib.Inter
 		return nil, errors.E(op, errMsg)
 	}
 
-	gitlabLib, err := gitlablib.New(gitlabModel.Token, gitlabModel.HTTPURL)
+	gitlabLib, err := gitlablib.New(gitlabModel.Token, gitlabModel.HTTPURL, gitlabModel.SSHURL)
 	if err != nil {
 		return nil, err
 	}

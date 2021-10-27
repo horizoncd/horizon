@@ -121,7 +121,7 @@ CREATE TABLE `application`
     `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
+    UNIQUE KEY `idx_name_deleted_at` (`name`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -239,7 +239,7 @@ CREATE TABLE `cluster`
     `updated_by`            int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
+    UNIQUE KEY `idx_name_deleted_at` (`name`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;

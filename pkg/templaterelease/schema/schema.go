@@ -15,7 +15,7 @@ const _gitlabName = "control"
 
 // Getter provides some functions for template schema
 type Getter interface {
-	// GetTemplateSchema get schema for specified template release
+	// GetTemplateSchema get schema for specified template release. todo(gjq) add cache
 	GetTemplateSchema(ctx context.Context, templateName, releaseName string) (*Schemas, error)
 }
 

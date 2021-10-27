@@ -121,7 +121,7 @@ CREATE TABLE `application`
     `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
+    UNIQUE KEY `idx_name_deleted_at` (`name`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -131,6 +131,7 @@ CREATE TABLE `k8s_cluster`
 (
     `id`             int(11) unsigned NOT NULL AUTO_INCREMENT,
     `name`           varchar(128)     NOT NULL DEFAULT '' COMMENT 'k8s name',
+    `server`         varchar(256)     NOT NULL DEFAULT '' COMMENT 'k8s server',
     `certificate`    text             NOT NULL COMMENT 'k8s certificate',
     `ingress_domain` varchar(128)              DEFAULT NULL COMMENT 'k8s ingress address',
     `created_at`     datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -150,7 +151,7 @@ CREATE TABLE `harbor`
     `id`                int(11) unsigned NOT NULL AUTO_INCREMENT,
     `server`            varchar(256)     NOT NULL DEFAULT '' COMMENT 'harbor server address',
     `token`             varchar(512)     NOT NULL COMMENT 'harbor server token',
-    `preheat_policy_id` tinyint(1) COMMENT 'p2p preheat policy id',
+    `preheat_policy_id` int(2) COMMENT 'p2p preheat policy id',
     `created_at`        datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`        datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at`        datetime                  DEFAULT NULL,
@@ -239,7 +240,7 @@ CREATE TABLE `cluster`
     `updated_by`            int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
+    UNIQUE KEY `idx_name_deleted_at` (`name`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;

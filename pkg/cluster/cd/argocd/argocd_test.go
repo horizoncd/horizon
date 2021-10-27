@@ -29,7 +29,7 @@ var (
 	_argoURL           = "https://localhost:8080"
 	_argoToken         = "" +
 		""
-	_argoClient          = &argoCD{URL: _argoURL, Token: _argoToken}
+	_argoClient          = &helper{URL: _argoURL, Token: _argoToken}
 	_mockArgoServer      string
 	_applicationManifest []byte
 )
@@ -180,7 +180,7 @@ func TestWaitApplication_Duplicate(t *testing.T) {
 	}
 }
 
-func SharedTestApplication(ctx context.Context, argoClient *argoCD, t *testing.T) {
+func SharedTestApplication(ctx context.Context, argoClient *helper, t *testing.T) {
 	if err := argoClient.DeleteApplication(ctx, _application); err != nil {
 		t.Fatal(err)
 	}
@@ -280,7 +280,7 @@ func SharedTestApplication(ctx context.Context, argoClient *argoCD, t *testing.T
 
 func TestResumeRollout(t *testing.T) {
 	ctx := log.WithContext(context.Background(), "TestByMock")
-	argoClient := &argoCD{URL: fmt.Sprintf("http://%v", _mockArgoServer)}
+	argoClient := &helper{URL: fmt.Sprintf("http://%v", _mockArgoServer)}
 
 	if err := argoClient.CreateApplication(ctx, _applicationManifest); err != nil {
 		t.Fatal(err)
@@ -300,7 +300,7 @@ func TestUnmarshal(t *testing.T) {
 
 func TestGetContainerLog(t *testing.T) {
 	ctx := log.WithContext(context.Background(), "TestByMock")
-	argoClient := &argoCD{URL: fmt.Sprintf("http://%v", _mockArgoServer)}
+	argoClient := &helper{URL: fmt.Sprintf("http://%v", _mockArgoServer)}
 	if err := argoClient.CreateApplication(ctx, _applicationManifest); err != nil {
 		t.Fatal(err)
 	}
@@ -332,7 +332,7 @@ func TestGetContainerLog(t *testing.T) {
 }
 func TestGetContainerLog_PodInitializing(t *testing.T) {
 	ctx := log.WithContext(context.Background(), "TestByMock")
-	argoClient := &argoCD{URL: fmt.Sprintf("http://%v", _mockArgoServer)}
+	argoClient := &helper{URL: fmt.Sprintf("http://%v", _mockArgoServer)}
 	if err := argoClient.CreateApplication(ctx, _applicationManifest); err != nil {
 		t.Fatal(err)
 	}

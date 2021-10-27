@@ -12,8 +12,8 @@ type Region struct {
 
 	Name         string
 	DisplayName  string
-	K8SClusterID uint
-	HarborID     uint
+	K8SClusterID uint `gorm:"column:k8s_cluster_id"`
+	HarborID     uint `gorm:"column:harbor_id"`
 	CreatedBy    uint
 	UpdatedBy    uint
 }

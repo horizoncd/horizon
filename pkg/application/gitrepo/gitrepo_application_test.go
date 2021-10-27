@@ -129,7 +129,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	g, err = gitlablib.New(p.Token, p.BaseURL)
+	g, err = gitlablib.New(p.Token, p.BaseURL, "")
 	if err != nil {
 		panic(err)
 	}

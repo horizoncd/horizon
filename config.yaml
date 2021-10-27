@@ -39,7 +39,7 @@ gitlabRepoConfig:
       id: 4587
 argoCDMapper:
   dev,test,reg,perf,beta,pre,online:
-    url: http://argocd-server.argocd
+    url: http://argocd.mockserver.org
     token: 
     helmRepo: "https://harbor.mock.org/chartrepo/cloudnative-template"
 tektonMapper:
