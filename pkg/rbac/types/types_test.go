@@ -1,11 +1,10 @@
-package rbac
+package types
 
 import (
 	"testing"
 
 	"g.hz.netease.com/horizon/pkg/auth"
 	"g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -256,46 +255,3 @@ func TestRuleAllow(t *testing.T) {
 		assert.Equal(t, RuleAllow(v.attr, &v.policy), v.allowed)
 	}
 }
-
-type TestAuthorizationRuleResolver struct {
-	// dummy
-}
-
-func (r *TestAuthorizationRuleResolver) VisitRulesFor(attributes auth.Attributes, visitor VisitorFunc) {
-	policy := PolicyRule{
-		Verbs:     []string{"get", "create", "update", "patch", "delete"},
-		APIGroups: []string{"core"},
-		Resources: []string{"group"},
-		Scopes:    []string{"*"},
-	}
-	var err errors.Error
-	visitor(nil, &policy, &err)
-}
-
-// func TestRuleAllowFrameWork(t *testing.T) {
-// 	authorizer := Authorizer{
-// 		authorizationRuleResolver: &TestAuthorizationRuleResolver{},
-// 	}
-//
-// 	testUser := user.DefaultInfo{
-// 		Name:     "tom",
-// 		FullName: "hzsunjianliang",
-// 		ID:       12345,
-// 	}
-//
-// 	attribute := auth.AttributesRecord{
-// 		User:            &testUser,
-// 		Verb:            "get",
-// 		APIGroup:        "core",
-// 		APIVersion:      "v1",
-// 		Resource:        "group",
-// 		SubResource:     "",
-// 		Name:            "123",
-// 		Scope:           "*",
-// 		ResourceRequest: true,
-// 		Path:            "/apis/cores/v1/group/123",
-// 	}
-// 	context := context.Background()
-// 	decision, _, _ := authorizer.Authorize(context, attribute)
-// 	assert.Equal(t, decision, auth.DecisionAllow)
-// }

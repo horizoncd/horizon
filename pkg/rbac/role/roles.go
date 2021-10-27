@@ -1,4 +1,4 @@
-package rbac
+package role
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"g.hz.netease.com/horizon/pkg/rbac/types"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"gopkg.in/yaml.v2"
 )
@@ -25,18 +26,18 @@ var (
 )
 
 type Service interface {
-	ListRole(ctx context.Context) ([]Role, error)
-	GetRole(ctx context.Context, roleName string) (*Role, error)
+	ListRole(ctx context.Context) ([]types.Role, error)
+	GetRole(ctx context.Context, roleName string) (*types.Role, error)
 	RoleCompare(ctx context.Context, role1, role2 string) (RoleCompResult, error)
 }
 
 type roleRankMapItem struct {
 	rank int
-	role Role
+	role types.Role
 }
 type fileRoleService struct {
-	RolePriorityRankDesc []string `yaml:"RolePriorityRankDesc"`
-	Roles                []Role   `yaml:"Roles"`
+	RolePriorityRankDesc []string     `yaml:"RolePriorityRankDesc"`
+	Roles                []types.Role `yaml:"Roles"`
 	roleRankMap          map[string]roleRankMapItem
 }
 
@@ -76,11 +77,11 @@ func NewFileRole(ctx context.Context, reader io.Reader) (Service, error) {
 	return &fRole, nil
 }
 
-func (fRole *fileRoleService) ListRole(ctx context.Context) ([]Role, error) {
+func (fRole *fileRoleService) ListRole(ctx context.Context) ([]types.Role, error) {
 	return fRole.Roles, nil
 }
 
-func (fRole *fileRoleService) GetRole(ctx context.Context, roleName string) (*Role, error) {
+func (fRole *fileRoleService) GetRole(ctx context.Context, roleName string) (*types.Role, error) {
 	role, ifOk := fRole.roleRankMap[roleName]
 	if !ifOk {
 		return nil, ErrorRoleNotFound

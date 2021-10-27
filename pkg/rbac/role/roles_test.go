@@ -1,10 +1,11 @@
-package rbac
+package role
 
 import (
 	"context"
 	"strings"
 	"testing"
 
+	"g.hz.netease.com/horizon/pkg/rbac/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -195,16 +196,16 @@ func TestRole(t *testing.T) {
 		})
 	}
 
-	policy := PolicyRule{
+	policy := types.PolicyRule{
 		Verbs:           []string{"*"},
 		APIGroups:       []string{"/api/core/v1/*"},
 		Resources:       []string{"groups"},
 		Scopes:          []string{"*"},
 		NonResourceURLs: []string{"*"},
 	}
-	expectRole := Role{
+	expectRole := types.Role{
 		Name:        "owner",
-		PolicyRules: []PolicyRule{policy},
+		PolicyRules: []types.PolicyRule{policy},
 	}
 
 	roles, err := service.ListRole(ctx)
