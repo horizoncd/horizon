@@ -57,8 +57,8 @@ const (
 	_filePathApplication = "application.yaml"
 	_filePathSRE         = "sre/sre.yaml"
 	_filePathBase        = "system/base.yaml"
-	// _filePathEnv             = "system/env.yaml"
-	_filePathPipeline = "pipeline/pipeline.yaml"
+	_filePathEnv         = "system/env.yaml"
+	_filePathPipeline    = "pipeline/pipeline.yaml"
 	// _filePathPipelineOutput  = "pipeline/pipeline-output.yaml"
 	// _filePathArgoApplication = "argo/argo-application.yaml"
 )
@@ -117,17 +117,18 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *Params) (err
 	// 2. write files to repo
 	pid := fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Cluster)
 	// TODO(gjq) add Chart.yaml & argo-application.yaml
-	var applicationYAML, pipelineYAML, baseValueYAML, sreValueYAML []byte
-	var err1, err2, err3, err4 error
+	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML []byte
+	var err1, err2, err3, err4, err5 error
 	marshal := func(b *[]byte, err *error, data interface{}) {
 		*b, *err = yaml.Marshal(data)
 	}
 	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params))
 	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params))
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params))
-	marshal(&sreValueYAML, &err4, g.assembleSREValue(params))
+	marshal(&envValueYAML, &err4, g.assembleEnvValue(params))
+	marshal(&sreValueYAML, &err5, g.assembleSREValue(params))
 
-	for _, err := range []error{err1, err2, err3, err4} {
+	for _, err := range []error{err1, err2, err3, err4, err5} {
 		if err != nil {
 			return err
 		}
@@ -146,6 +147,10 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *Params) (err
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathBase,
 			Content:  string(baseValueYAML),
+		}, {
+			Action:   gitlablib.FileCreate,
+			FilePath: _filePathEnv,
+			Content:  string(envValueYAML),
 		}, {
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathSRE,
@@ -304,17 +309,30 @@ func (g *clusterGitRepo) assembleSREValue(params *Params) map[string]interface{}
 	return ret
 }
 
-type BaseValue struct {
-	Application string `yaml:"application"`
-	Cluster     string `yaml:"Cluster"`
+type EnvValue struct {
 	Environment string `yaml:"environment"`
+	Region      string `yaml:"region"`
+	Namespace   string `yaml:"namespace"`
+}
 
-	Region    string             `yaml:"region"`
-	Group     uint               `yaml:"group"`
-	Namespace string             `yaml:"namespace"`
-	Template  *BaseValueTemplate `yaml:"template"`
-	Priority  string             `yaml:"priority"`
-	BaseImage *BaseValueImage    `yaml:"baseImage"`
+func (g *clusterGitRepo) assembleEnvValue(params *Params) map[string]*EnvValue {
+	var namespace = fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
+	ret := make(map[string]*EnvValue)
+	ret[params.TemplateRelease.TemplateName] = &EnvValue{
+		Environment: params.Environment,
+		Region:      params.RegionEntity.Name,
+		Namespace:   namespace,
+	}
+	return ret
+}
+
+type BaseValue struct {
+	Application string             `yaml:"application"`
+	Cluster     string             `yaml:"Cluster"`
+	Group       uint               `yaml:"group"`
+	Template    *BaseValueTemplate `yaml:"template"`
+	Priority    string             `yaml:"priority"`
+	BaseImage   *BaseValueImage    `yaml:"baseImage"`
 }
 
 type BaseValueTemplate struct {
@@ -328,15 +346,11 @@ type BaseValueImage struct {
 
 // assembleBaseValue assemble base value. return a map, key is template name, and value is *BaseValue
 func (g *clusterGitRepo) assembleBaseValue(params *Params) map[string]*BaseValue {
-	var namespace = fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
 	ret := make(map[string]*BaseValue)
 	ret[params.TemplateRelease.TemplateName] = &BaseValue{
 		Application: params.Application.Name,
 		Cluster:     params.Cluster,
-		Environment: params.Environment,
-		Region:      params.RegionEntity.Name,
 		Group:       params.Application.GroupID,
-		Namespace:   namespace,
 		Template: &BaseValueTemplate{
 			Name:    params.TemplateRelease.TemplateName,
 			Release: params.TemplateRelease.Name,
