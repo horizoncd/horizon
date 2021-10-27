@@ -26,6 +26,7 @@ var (
 	ctx = context.TODO()
 )
 
+// nolint
 func TestAuthMember(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	memberServiceMock := servicemock.NewMockService(mockCtl)
@@ -94,6 +95,7 @@ func TestAuthMember(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// nolint
 func TestAuthRole(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	memberServiceMock := servicemock.NewMockService(mockCtl)

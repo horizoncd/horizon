@@ -67,10 +67,10 @@ func (mr *MockServiceMockRecorder) ListRole(ctx interface{}) *gomock.Call {
 }
 
 // RoleCompare mocks base method.
-func (m *MockService) RoleCompare(ctx context.Context, role1, role2 string) (role.RoleCompResult, error) {
+func (m *MockService) RoleCompare(ctx context.Context, role1, role2 string) (role.CompResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RoleCompare", ctx, role1, role2)
-	ret0, _ := ret[0].(role.RoleCompResult)
+	ret0, _ := ret[0].(role.CompResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

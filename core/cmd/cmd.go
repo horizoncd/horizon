@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"os"
 	"regexp"
 
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
@@ -19,19 +20,26 @@ import (
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
+	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/rbac"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
 	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
 	ormMiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile string
-	Dev        bool
+	ConfigFile     string
+	RoleConfigFile string
+	Dev            bool
+	Environment    string
+	LogLevel       string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -41,16 +49,44 @@ func ParseFlags() *Flags {
 	flag.StringVar(
 		&flags.ConfigFile, "config", "", "configuration file path")
 
+	flag.StringVar(
+		&flags.RoleConfigFile, "roles", "", "roles file path")
+
 	flag.BoolVar(
 		&flags.Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
+
+	flag.StringVar(
+		&flags.Environment, "environment", "production", "environment string tag")
+
+	flag.StringVar(
+		&flags.LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
 
 	flag.Parse()
 	return &flags
 }
 
+func InitLog(flags *Flags) {
+	if flags.Environment == "production" {
+		log.SetFormatter(&log.JSONFormatter{})
+	} else {
+		// The TextFormatter is default, you don't actually have to do this.
+		log.SetFormatter(&log.TextFormatter{})
+	}
+	log.SetOutput(os.Stdout)
+	level, err := log.ParseLevel(flags.LogLevel)
+	if err != nil {
+		panic(err)
+	}
+	log.SetLevel(level)
+}
+
 // Run runs the agent.
 func Run(flags *Flags) {
 	var config Config
+
+	// init log
+	InitLog(flags)
+
 	// load config
 	data, err := ioutil.ReadFile(flags.ConfigFile)
 	if err != nil {
@@ -60,6 +96,17 @@ func Run(flags *Flags) {
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		panic(err)
 	}
+
+	// init roles
+	file, err := os.OpenFile(flags.RoleConfigFile, os.O_RDONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	roleService, err := role.NewFileRole(context.TODO(), file)
+	if err != nil {
+		panic(err)
+	}
+	rbacAuthorizer := rbac.NewAuthorizer(roleService, memberservice.Svc)
 
 	// init db
 	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
@@ -97,24 +144,26 @@ func Run(flags *Flags) {
 	r := gin.New()
 	// use middleware
 	middlewares := []gin.HandlerFunc{
-		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
-		requestid.Middleware(),        // requestID middleware, attach a requestID to context
-		logmiddle.Middleware(),        // log middleware, attach a logger to context
-		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
-		auth.Middleware(middleware.MethodAndPathSkipper("*",
-			regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))),
+		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+		requestid.Middleware(),        // requestID middleware, attach a requestID to context
+		logmiddle.Middleware(),        // log middleware, attach a logger to context
+		ormMiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
+
 	}
-	// enable usermiddle when current env is not dev
+	// enable usermiddle and auth when current env is not dev
 	if !flags.Dev {
 		middlewares = append(middlewares,
 			usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		)
+		middlewares = append(middlewares,
+			auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
+				regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))))
 	}
 	r.Use(middlewares...)
 

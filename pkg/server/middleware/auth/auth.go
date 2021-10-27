@@ -5,16 +5,19 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/pkg/auth"
+	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/sets"
 	"github.com/gin-gonic/gin"
 )
 
-const contextRequestInfoKey = "contextRequestInfo"
-
-func Middleware(skipMatchers ...middleware.Skipper) gin.HandlerFunc {
+func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
+		// 1. get requestInfo
 		requestInfoFactory := RequestInfoFactory{
 			APIPrefixes: sets.NewString("apis"),
 		}
@@ -23,8 +26,38 @@ func Middleware(skipMatchers ...middleware.Skipper) gin.HandlerFunc {
 			response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
 			return
 		}
-		// attach request info to context
-		c.Set(contextRequestInfoKey, requestInfo)
+		// 2. get user
+		currentUser, err := user.FromContext(c)
+		if err != nil {
+			response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
+		}
+
+		// 3. do rbac auth
+		authRecord := auth.AttributesRecord{
+			User:            currentUser,
+			Verb:            requestInfo.Verb,
+			APIGroup:        requestInfo.APIGroup,
+			APIVersion:      requestInfo.APIVersion,
+			Resource:        requestInfo.Resource,
+			SubResource:     requestInfo.Subresource,
+			Name:            requestInfo.Name,
+			Scope:           requestInfo.Scope,
+			ResourceRequest: requestInfo.IsResourceRequest,
+			Path:            requestInfo.Path,
+		}
+		var decision auth.Decision
+		var reason string
+		decision, reason, err = authorizer.Authorize(c, authRecord)
+		if err != nil {
+			log.Errorf(c, "auth failed with err = %s", err.Error())
+			response.AbortWithInternalError(c, err.Error())
+		}
+		if decision == auth.DecisionDeny {
+			log.Warningf(c, "denied request with reason = %s", reason)
+			response.AbortWithForbiddenError(c, common.Forbidden, reason)
+		} else {
+			log.Debugf(c, "passed request with reason = %s", reason)
+		}
 		c.Next()
 	}, skipMatchers...)
 }

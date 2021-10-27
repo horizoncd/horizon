@@ -11,10 +11,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type RoleCompResult uint8
+type CompResult uint8
 
 const (
-	RoleEqual RoleCompResult = iota
+	RoleEqual CompResult = iota
 	RoleBigger
 	RoleSmaller
 	RoleCanNotCompare
@@ -28,7 +28,7 @@ var (
 type Service interface {
 	ListRole(ctx context.Context) ([]types.Role, error)
 	GetRole(ctx context.Context, roleName string) (*types.Role, error)
-	RoleCompare(ctx context.Context, role1, role2 string) (RoleCompResult, error)
+	RoleCompare(ctx context.Context, role1, role2 string) (CompResult, error)
 }
 
 type roleRankMapItem struct {
@@ -89,7 +89,7 @@ func (fRole *fileRoleService) GetRole(ctx context.Context, roleName string) (*ty
 	return &role.role, nil
 }
 
-func (fRole *fileRoleService) RoleCompare(ctx context.Context, role1, role2 string) (RoleCompResult, error) {
+func (fRole *fileRoleService) RoleCompare(ctx context.Context, role1, role2 string) (CompResult, error) {
 	item1, ifOk1 := fRole.roleRankMap[role1]
 	item2, ifOk2 := fRole.roleRankMap[role2]
 

@@ -26,6 +26,13 @@ type Authorizer interface {
 
 type VisitorFunc func(fmt.Stringer, *types.PolicyRule, error) bool
 
+func NewAuthorizer(roleservice role.Service, memberservice memberservice.Service) Authorizer {
+	return &authorizer{
+		roleService:   roleservice,
+		memberService: memberservice,
+	}
+}
+
 type authorizer struct {
 	roleService   role.Service
 	memberService memberservice.Service
@@ -49,7 +56,7 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 	// TODO(tom): members and pipelineruns need to add to auth check
 	if attr.IsResourceRequest() && (attr.GetResource() == "members" ||
 		attr.GetResource() == "pipelineruns") {
-		log.Warn(ctx,
+		log.Warning(ctx,
 			"/apis/core/v1/members/{memberid} and /apis/core/v1/pipelineruns/{pipelineruns} are not authed")
 		return auth.DecisionAllow, NotChecked, nil
 	}
@@ -88,14 +95,15 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 	return VisitRoles(member, role, attr)
 }
 
-func VisitRoles(member *models.Member, role *types.Role, attri auth.Attributes) (_ auth.Decision, reason string, err error) {
+func VisitRoles(member *models.Member, role *types.Role,
+	attr auth.Attributes) (_ auth.Decision, reason string, err error) {
 	for i, rule := range role.PolicyRules {
-		if types.RuleAllow(attri, &rule) {
+		if types.RuleAllow(attr, &rule) {
 			reason = fmt.Sprintf("user %s allowd by member(%s) by rule[%d]",
-				attri.GetUser().String(), member.BaseInfo(), i)
+				attr.GetUser().String(), member.BaseInfo(), i)
 			return auth.DecisionAllow, reason, nil
 		}
 	}
-	reason = fmt.Sprintf("user %s deny by member(%s)", attri.GetUser().String(), member.BaseInfo())
+	reason = fmt.Sprintf("user %s denied by member(%s)", attr.GetUser().String(), member.BaseInfo())
 	return auth.DecisionDeny, reason, nil
 }

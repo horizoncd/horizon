@@ -4,101 +4,91 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/klog"
+	rlog "github.com/sirupsen/logrus"
 )
 
 type key string
 
 const (
-	logKey = key("log")
-
-	_depth = 1
+	traceKey = key("trace")
 )
 
 func Key() string {
-	return string(logKey)
+	return string(traceKey)
 }
 
 func WithContext(parent context.Context, traceID string) context.Context {
 	return context.WithValue(parent, Key(), fmt.Sprintf("[%v] ", traceID)) // nolint
 }
 
-func Info(ctx context.Context, args ...interface{}) {
-	InfoDepth(ctx, _depth+1, args...)
+func WithFiled(ctx context.Context, key string, value interface{}) *rlog.Entry {
+	val, ok := ctx.Value(string(traceKey)).(string)
+	if !ok {
+		val = ""
+	}
+	return rlog.WithField(string(traceKey), val).WithField(key, value)
 }
 
-func InfoDepth(ctx context.Context, depth int, args ...interface{}) {
-	val, ok := ctx.Value(string(logKey)).(string)
+func Info(ctx context.Context, args ...interface{}) {
+	val, ok := ctx.Value(string(traceKey)).(string)
 	if !ok {
-		klog.InfoDepth(depth, args...)
-		return
+		val = ""
 	}
-
-	msg := fmt.Sprint(args...)
-	klog.InfoDepth(depth, val, msg)
+	rlog.WithField(string(traceKey), val).Info(args...)
 }
 
 func Infof(ctx context.Context, format string, args ...interface{}) {
-	val, ok := ctx.Value(string(logKey)).(string)
+	val, ok := ctx.Value(string(traceKey)).(string)
 	if !ok {
-		msg := fmt.Sprintf(format, args...)
-		klog.InfoDepth(_depth, msg)
-		return
+		val = ""
 	}
-
-	format = fmt.Sprintf("%v%v", val, format)
-	msg := fmt.Sprintf(format, args...)
-	klog.InfoDepth(_depth, msg)
+	rlog.WithField(string(traceKey), val).Infof(format, args...)
 }
 
 func Error(ctx context.Context, args ...interface{}) {
-	val, ok := ctx.Value(string(logKey)).(string)
+	val, ok := ctx.Value(string(traceKey)).(string)
 	if !ok {
-		klog.ErrorDepth(_depth, args...)
-		return
+		val = ""
 	}
-
-	msg := fmt.Sprint(args...)
-	klog.ErrorDepth(_depth, val, msg)
+	rlog.WithField(string(traceKey), val).Error(args...)
 }
 
 func Errorf(ctx context.Context, format string, args ...interface{}) {
-	val, ok := ctx.Value(string(logKey)).(string)
+	val, ok := ctx.Value(string(traceKey)).(string)
 	if !ok {
-		msg := fmt.Sprintf(format, args...)
-		klog.ErrorDepth(_depth, msg)
-		return
+		val = ""
 	}
-
-	format = fmt.Sprintf("%v%v", val, format)
-	msg := fmt.Sprintf(format, args...)
-	klog.ErrorDepth(_depth, msg)
+	rlog.WithField(string(traceKey), val).Errorf(format, args...)
 }
 
-func Warn(ctx context.Context, args ...interface{}) {
-	val, ok := ctx.Value(string(logKey)).(string)
+func Warning(ctx context.Context, args ...interface{}) {
+	val, ok := ctx.Value(string(traceKey)).(string)
 	if !ok {
-		klog.ErrorDepth(_depth, args...)
-		return
+		val = ""
 	}
-
-	msg := fmt.Sprint(args...)
-	klog.WarningDepth(_depth, val, msg)
+	rlog.WithField(string(traceKey), val).Warning(args...)
 }
 
 func Warningf(ctx context.Context, format string, args ...interface{}) {
-	val, ok := ctx.Value(string(logKey)).(string)
+	val, ok := ctx.Value(string(traceKey)).(string)
 	if !ok {
-		msg := fmt.Sprintf(format, args...)
-		klog.ErrorDepth(_depth, msg)
-		return
+		val = ""
 	}
-
-	format = fmt.Sprintf("%v%v", val, format)
-	msg := fmt.Sprintf(format, args...)
-	klog.WarningDepth(_depth, msg)
+	rlog.WithField(string(traceKey), val).Warningf(format, args...)
 }
 
-func Flush() {
-	klog.Flush()
+func Debug(ctx context.Context, args ...interface{}) {
+	val, ok := ctx.Value(string(traceKey)).(string)
+	if !ok {
+		val = ""
+	}
+	rlog.WithField(string(traceKey), val).Debug(args...)
+}
+
+func Debugf(ctx context.Context, format string, args ...interface{}) {
+	val, ok := ctx.Value(string(traceKey)).(string)
+	if !ok {
+		val = ""
+	}
+	rlog.WithField(string(traceKey), val).Debugf(format, args...)
 }
