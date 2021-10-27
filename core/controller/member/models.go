@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	groupService "g.hz.netease.com/horizon/pkg/group/service"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
@@ -51,7 +52,7 @@ type Member struct {
 	// ResourceName   application/group
 	ResourceType models.ResourceType `json:"resourceType"`
 	ResourceName string              `json:"resourceName"`
-	ResourcePath string              `json:"resourcePath"`
+	ResourcePath string              `json:"resourcePath,omitempty"`
 	ResourceID   uint                `json:"resourceID"`
 
 	// MemberType user or group
@@ -150,12 +151,18 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 		var resourceName, resourcePath string
 		switch member.ResourceType {
 		case models.TypeGroup:
-			group, err := groupService.Svc.GetChildByID(ctx, member.ResourceID)
+			group, err := groupservice.Svc.GetChildByID(ctx, member.ResourceID)
 			if err != nil {
 				return nil, err
 			}
 			resourceName = group.Name
 			resourcePath = group.FullPath
+		case models.TypeApplication:
+			application, err := applicationmanager.Mgr.GetByID(ctx, member.ResourceID)
+			if err != nil {
+				return nil, err
+			}
+			resourceName = application.Name
 		default:
 			return nil, fmt.Errorf("%s is not support now", member.ResourceType)
 		}
