@@ -7,11 +7,13 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd"
+	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	argocdconf "g.hz.netease.com/horizon/pkg/config/argocd"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+
 	"github.com/argoproj/gitops-engine/pkg/health"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,14 +33,14 @@ type Params struct {
 }
 
 type CD interface {
-	CreateCluster(ctx context.Context, params *Params) error
 	DeployCluster(ctx context.Context, params *Params) error
 	DeleteCluster(ctx context.Context, cluster string) error
 	GetCluster(ctx context.Context, params *Params) (*ClusterState, error)
 }
 
 type cd struct {
-	factory argocd.Factory
+	factory        argocd.Factory
+	clusterGitRepo gitrepo.ClusterGitRepo
 }
 
 func NewCD(argoCDMapper argocdconf.Mapper) CD {
@@ -47,8 +49,8 @@ func NewCD(argoCDMapper argocdconf.Mapper) CD {
 	}
 }
 
-// CreateCluster ... TODO(gjq) implements cd
-func (c *cd) CreateCluster(ctx context.Context, params *Params) error {
+// DeployCluster ... TODO(gjq) implements cd
+func (c *cd) DeployCluster(ctx context.Context, params *Params) error {
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
 		return err
@@ -56,10 +58,6 @@ func (c *cd) CreateCluster(ctx context.Context, params *Params) error {
 	if err := argo.CreateApplication(ctx, nil); err != nil {
 		return err
 	}
-	panic("implement me")
-}
-
-func (c *cd) DeployCluster(ctx context.Context, params *Params) error {
 	panic("implement me")
 }
 
