@@ -269,3 +269,17 @@ func (mr *MockInterfaceMockRecorder) Compare(ctx, pid, from, to, straight interf
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Compare", reflect.TypeOf((*MockInterface)(nil).Compare), ctx, pid, from, to, straight)
 }
+
+// GetSSHURL mocks base method
+func (m *MockInterface) GetSSHURL(ctx context.Context) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSSHURL", ctx)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetSSHURL indicates an expected call of GetSSHURL
+func (mr *MockInterfaceMockRecorder) GetSSHURL(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSSHURL", reflect.TypeOf((*MockInterface)(nil).GetSSHURL), ctx)
+}

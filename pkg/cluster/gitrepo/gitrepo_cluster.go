@@ -491,7 +491,7 @@ func (g *clusterGitRepo) assembleArgoApplication(ctx context.Context, params *Pa
 
 	gitRepoURL := fmt.Sprintf("%v/%v/%v/%v.git",
 		g.gitlabLib.GetSSHURL(ctx), g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
-	namespae := fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
+	namespace := fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
 
 	return &argocd.Application{
 		APIVersion: apiVersion,
@@ -512,7 +512,7 @@ func (g *clusterGitRepo) assembleArgoApplication(ctx context.Context, params *Pa
 			},
 			Destination: argocd.ApplicationDestination{
 				Server:    params.RegionEntity.K8SCluster.Server,
-				Namespace: namespae,
+				Namespace: namespace,
 			},
 			Project: project,
 			SyncPolicy: &argocd.SyncPolicy{

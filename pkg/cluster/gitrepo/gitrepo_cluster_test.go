@@ -13,6 +13,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
+	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 
@@ -130,6 +131,9 @@ func Test(t *testing.T) {
 			Region: &regionmodels.Region{
 				Name:        "hz",
 				DisplayName: "HZ",
+			},
+			K8SCluster: &k8sclustermodels.K8SCluster{
+				Server: "https://k8s.com",
 			},
 			Harbor: &harbormodels.Harbor{
 				Server: "https://harbor.com",
