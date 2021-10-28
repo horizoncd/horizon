@@ -117,14 +117,10 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 2. validate
-	if err := validateClusterName(application.Name, r.Name); err != nil {
+	if err := c.validateCreate(ctx, application.Name,
+		application.Template, application.TemplateRelease, r); err != nil {
 		return nil, errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), err)
-	}
-	if err := c.validateTemplateInput(ctx,
-		application.Template, application.TemplateRelease, r.TemplateInput); err != nil {
-		return nil, errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
 	}
 
 	// 3. get environmentRegion
@@ -212,21 +208,27 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		return nil, errors.E(op, err)
 	}
 
-	// 2. validate template input
-	if err := c.validateTemplateInput(ctx,
-		cluster.Template, r.Template.Release, r.TemplateInput); err != nil {
-		return nil, errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
-	}
-
-	// 3. get application that this cluster belongs to
+	// 2. get application that this cluster belongs to
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
+	// 2. validate template input
+	var templateRelease string
+	if r.Template == nil || r.Template.Release == "" {
+		templateRelease = cluster.TemplateRelease
+	} else {
+		templateRelease = r.Template.Release
+	}
+	if err := c.validateTemplateInput(ctx,
+		cluster.Template, templateRelease, r.TemplateInput); err != nil {
+		return nil, errors.E(op, http.StatusBadRequest,
+			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
+	}
+
 	// 4. get templateRelease
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, r.Template.Release)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, templateRelease)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -245,7 +247,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 6. update cluster in db
-	clusterModel := r.toClusterModel()
+	clusterModel := r.toClusterModel(cluster, templateRelease)
 	clusterModel.UpdatedBy = currentUser.GetID()
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {
@@ -267,6 +269,30 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 
 	return ofClusterModel(application, cluster, er, fullPath,
 		r.TemplateInput.Pipeline, r.TemplateInput.Application), nil
+}
+
+// validateCreate validate for create cluster
+func (c *controller) validateCreate(ctx context.Context, applicationName,
+	template, release string, r *CreateClusterRequest) error {
+	if err := validateClusterName(applicationName, r.Name); err != nil {
+		return err
+	}
+	if r.Git == nil || r.Git.Branch == "" {
+		return fmt.Errorf("git branch cannot be empty")
+	}
+	if r.TemplateInput == nil {
+		return fmt.Errorf("template input cannot be empty")
+	}
+	if r.TemplateInput.Application == nil {
+		return fmt.Errorf("application config for template cannot be empty")
+	}
+	if r.TemplateInput.Pipeline == nil {
+		return fmt.Errorf("pipeline config for template cannot be empty")
+	}
+	if err := c.validateTemplateInput(ctx, template, release, r.TemplateInput); err != nil {
+		return err
+	}
+	return nil
 }
 
 // validateTemplateInput validate templateInput is valid for template schema

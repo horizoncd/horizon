@@ -14,6 +14,7 @@ import (
 const (
 	// param
 	_applicationIDParam = "applicationID"
+	_clusterIDParam     = "clusterID"
 	_scope              = "scope"
 )
 
@@ -51,6 +52,43 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment, region, request)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
+func (a *API) Update(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	var request *cluster.UpdateClusterRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody,
+			fmt.Sprintf("request body is invalid, err: %v", err))
+		return
+	}
+	resp, err := a.clusterCtl.UpdateCluster(c, uint(clusterID), request)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
+func (a *API) Get(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	resp, err := a.clusterCtl.GetCluster(c, uint(clusterID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return

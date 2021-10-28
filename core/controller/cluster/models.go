@@ -20,9 +20,9 @@ type TemplateInput struct {
 }
 
 type Git struct {
-	URL       string `json:"url,omitempty"`
-	Subfolder string `json:"subfolder,omitempty"`
-	Branch    string `json:"branch,omitempty"`
+	URL       string `json:"url"`
+	Subfolder string `json:"subfolder"`
+	Branch    string `json:"branch"`
 }
 
 type CreateClusterRequest struct {
@@ -33,7 +33,8 @@ type CreateClusterRequest struct {
 
 type UpdateClusterRequest struct {
 	*Base
-	*Template
+
+	Template *Template `json:"template"`
 }
 
 type GetClusterResponse struct {
@@ -79,13 +80,30 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 	}
 }
 
-func (r *UpdateClusterRequest) toClusterModel() *models.Cluster {
+func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
+	templateRelease string) *models.Cluster {
+	var gitURL, gitSubfolder, gitBranch string
+	if r.Git == nil || r.Git.URL == "" {
+		gitURL = cluster.GitURL
+	} else {
+		gitURL = r.Git.URL
+	}
+	if r.Git == nil || r.Git.Subfolder == "" {
+		gitSubfolder = cluster.GitSubfolder
+	} else {
+		gitSubfolder = r.Git.Subfolder
+	}
+	if r.Git == nil || r.Git.Branch == "" {
+		gitBranch = cluster.GitBranch
+	} else {
+		gitBranch = r.Git.Branch
+	}
 	return &models.Cluster{
 		Description:     r.Description,
-		GitURL:          r.Git.URL,
-		GitSubfolder:    r.Git.Subfolder,
-		GitBranch:       r.Git.Branch,
-		TemplateRelease: r.Template.Release,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubfolder,
+		GitBranch:       gitBranch,
+		TemplateRelease: templateRelease,
 	}
 }
 
