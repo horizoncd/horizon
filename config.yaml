@@ -20,7 +20,7 @@ gitlabMapper:
     token: 
   compute:
     httpURL: http://cicd.mockserver.org
-    sshURL: ssh://git@music-cicd-gitlab.hz.netease.com:22222
+    sshURL: ssh://git@music-cicd-gitlab-test.hz.netease.com:22222
     token: ""
 gitlabRepoConfig:
   application:
