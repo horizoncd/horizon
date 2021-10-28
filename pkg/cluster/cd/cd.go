@@ -91,6 +91,7 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 	return nil
 }
 
+// GetClusterState TODO(gjq) restructure
 func (c *cd) GetClusterState(ctx context.Context,
 	params *GetClusterStateParams) (clusterState *ClusterState, err error) {
 	const op = "cd: get cluster status"
