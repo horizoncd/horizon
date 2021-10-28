@@ -92,6 +92,7 @@ const (
 	EnvironmentListRegion = "select region_name from environment_region where environment_name = ?"
 	EnvironmentRegionGet  = "select * from environment_region where" +
 		" environment_name = ? and region_name = ?"
+	EnvironmentRegionGetByID = "select * from environment_region where id = ?"
 )
 
 /* sql about region */

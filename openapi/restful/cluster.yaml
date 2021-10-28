@@ -149,8 +149,14 @@ paths:
               example: |
                 {
                     "description":"xxxxxxxxxxxx",
+                    "template":{
+                        "//release": "template release can be edited",
+                        "release":"v1.1.0"
+                    },
+                    "//git": "git params can be edited",
                     "git":{
-                        "//branch":"branch can be edited",
+                        "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                        "subfolder":"/",
                         "branch":"develop"
                     },
                     "templateInput":{

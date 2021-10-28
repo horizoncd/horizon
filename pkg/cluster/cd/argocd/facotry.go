@@ -18,7 +18,7 @@ type factory struct {
 func NewFactory(argoCDMapper argocd.Mapper) Factory {
 	cache := &sync.Map{}
 	for env, argoCDConf := range argoCDMapper {
-		argoCD := NewArgoCD(argoCDConf.URL, argoCDConf.Token, argoCDConf.HelmRepo)
+		argoCD := NewArgoCD(argoCDConf.URL, argoCDConf.Token)
 		cache.Store(env, argoCD)
 	}
 	return &factory{

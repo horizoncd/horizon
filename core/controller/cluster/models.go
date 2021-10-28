@@ -33,6 +33,7 @@ type CreateClusterRequest struct {
 
 type UpdateClusterRequest struct {
 	*Base
+	*Template
 }
 
 type GetClusterResponse struct {
@@ -75,6 +76,16 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		Template:            application.Template,
 		TemplateRelease:     application.TemplateRelease,
 		EnvironmentRegionID: er.ID,
+	}
+}
+
+func (r *UpdateClusterRequest) toClusterModel() *models.Cluster {
+	return &models.Cluster{
+		Description:     r.Description,
+		GitURL:          r.Git.URL,
+		GitSubfolder:    r.Git.Subfolder,
+		GitBranch:       r.Git.Branch,
+		TemplateRelease: r.Template.Release,
 	}
 }
 

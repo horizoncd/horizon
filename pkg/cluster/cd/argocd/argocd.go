@@ -62,8 +62,6 @@ type (
 		// GetContainerLog get standard output of container of an application in argoCD
 		GetContainerLog(ctx context.Context, application string,
 			param ContainerLogParams) (<-chan ContainerLog, <-chan error, error)
-
-		GetHelmRepo(ctx context.Context) string
 	}
 
 	// EventParam the params for ListResourceEvents
@@ -119,8 +117,7 @@ type (
 		// URL for argoCD server
 		URL string `json:"url"`
 		// Token the token to be used for argoCD server
-		Token    string `json:"token"`
-		HelmRepo string `json:"helmRepo"`
+		Token string `json:"token"`
 	}
 
 	Hook struct{}
@@ -137,8 +134,8 @@ type (
 	}
 )
 
-func NewArgoCD(URL, token, helmRepo string) ArgoCD {
-	return &helper{URL: URL, Token: token, HelmRepo: helmRepo}
+func NewArgoCD(URL, token string) ArgoCD {
+	return &helper{URL: URL, Token: token}
 }
 
 var _ ArgoCD = (*helper)(nil)
@@ -512,10 +509,6 @@ func (h *helper) GetContainerLog(ctx context.Context, application string,
 	}()
 
 	return logC, errC, nil
-}
-
-func (h *helper) GetHelmRepo(ctx context.Context) string {
-	return h.HelmRepo
 }
 
 func (h *helper) sendHTTPRequest(ctx context.Context, method string, url string,

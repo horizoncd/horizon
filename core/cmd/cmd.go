@@ -83,7 +83,8 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, config.GitlabRepoConfig, gitlabFactory)
+	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, config.GitlabRepoConfig,
+		config.HelmRepoMapper, gitlabFactory)
 	if err != nil {
 		panic(err)
 	}
@@ -95,9 +96,8 @@ func Run(flags *Flags) {
 	var (
 		// init controller
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter)
-		clusterCtl     = clusterctl.NewController(clusterGitRepo,
-			cd.NewCD(config.ArgoCDMapper, clusterGitRepo), templateSchemaGetter)
-		templateCtl = templatectl.NewController(templateSchemaGetter)
+		clusterCtl     = clusterctl.NewController(clusterGitRepo, cd.NewCD(config.ArgoCDMapper), templateSchemaGetter)
+		templateCtl    = templatectl.NewController(templateSchemaGetter)
 	)
 
 	var (

@@ -10,14 +10,12 @@ import (
 func Test(t *testing.T) {
 	argoCDMapper := make(map[string]*argocd.ArgoCD)
 	argoCDTest := &argocd.ArgoCD{
-		URL:      "http://test.argo.com",
-		Token:    "token1",
-		HelmRepo: "http://test.helm-repo.com",
+		URL:   "http://test.argo.com",
+		Token: "token1",
 	}
 	argoCDReg := &argocd.ArgoCD{
-		URL:      "http://reg.argo.com",
-		Token:    "token1",
-		HelmRepo: "http://reg.helm-repo.com",
+		URL:   "http://reg.argo.com",
+		Token: "token1",
 	}
 	argoCDMapper["test"] = argoCDTest
 	argoCDMapper["reg"] = argoCDReg
@@ -27,12 +25,12 @@ func Test(t *testing.T) {
 	argoCD, err := factory.GetArgoCD("test")
 	assert.Nil(t, err)
 	assert.NotNil(t, argoCD)
-	assert.Equal(t, argoCD, NewArgoCD(argoCDTest.URL, argoCDTest.Token, argoCDTest.HelmRepo))
+	assert.Equal(t, argoCD, NewArgoCD(argoCDTest.URL, argoCDTest.Token))
 
 	argoCD, err = factory.GetArgoCD("reg")
 	assert.Nil(t, err)
 	assert.NotNil(t, argoCD)
-	assert.Equal(t, argoCD, NewArgoCD(argoCDReg.URL, argoCDReg.Token, argoCDReg.HelmRepo))
+	assert.Equal(t, argoCD, NewArgoCD(argoCDReg.URL, argoCDReg.Token))
 
 	argoCD, err = factory.GetArgoCD("not-exists")
 	assert.Nil(t, argoCD)

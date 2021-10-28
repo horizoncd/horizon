@@ -70,6 +70,8 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 		}
 		// 2. update value
 		clusterInDB.Description = cluster.Description
+		clusterInDB.GitURL = cluster.GitURL
+		clusterInDB.GitSubfolder = cluster.GitSubfolder
 		clusterInDB.GitBranch = cluster.GitBranch
 		clusterInDB.TemplateRelease = cluster.TemplateRelease
 		clusterInDB.UpdatedBy = cluster.UpdatedBy

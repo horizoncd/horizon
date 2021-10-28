@@ -8,15 +8,14 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd"
-	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	argocdconf "g.hz.netease.com/horizon/pkg/config/argocd"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/argoproj/gitops-engine/pkg/health"
-	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -29,34 +28,38 @@ const (
 	RolloutPodTemplateHash    = "rollouts-pod-template-hash"
 )
 
-type Params struct {
-	Application string
+type GetClusterStateParams struct {
 	Environment string
 	Cluster     string
 }
 
+type CreateClusterParams struct {
+	Environment   string
+	Cluster       string
+	GitRepoSSHURL string
+	ValueFiles    []string
+	RegionEntity  *regionmodels.RegionEntity
+	Namespace     string
+}
+
 type CD interface {
 	// CreateCluster create a cluster in cd system
-	CreateCluster(ctx context.Context, params *Params) error
+	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	// GetClusterState get cluster state in cd system
-	GetClusterState(ctx context.Context, params *Params) (*ClusterState, error)
-	// GetHelmRepo get helm repo
-	GetHelmRepo(ctx context.Context, environment string) (string, error)
+	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 }
 
 type cd struct {
-	factory        argocd.Factory
-	clusterGitRepo gitrepo.ClusterGitRepo
+	factory argocd.Factory
 }
 
-func NewCD(argoCDMapper argocdconf.Mapper, clusterGitRepo gitrepo.ClusterGitRepo) CD {
+func NewCD(argoCDMapper argocdconf.Mapper) CD {
 	return &cd{
-		factory:        argocd.NewFactory(argoCDMapper),
-		clusterGitRepo: clusterGitRepo,
+		factory: argocd.NewFactory(argoCDMapper),
 	}
 }
 
-func (c *cd) CreateCluster(ctx context.Context, params *Params) (err error) {
+func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
 	const op = "cd: create cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -73,15 +76,9 @@ func (c *cd) CreateCluster(ctx context.Context, params *Params) (err error) {
 		return errors.E(op, err)
 	}
 
-	argoApplicationBytes, err := c.clusterGitRepo.ReadArgoApplication(ctx, params.Application, params.Cluster)
-	if err != nil {
-		return errors.E(op, err)
-	}
+	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
+		params.GitRepoSSHURL, params.RegionEntity.K8SCluster.Server, params.ValueFiles)
 
-	var argoApplication *argocd.Application
-	if err := yaml.Unmarshal(argoApplicationBytes, &argoApplication); err != nil {
-		return errors.E(op, err)
-	}
 	manifest, err := json.Marshal(argoApplication)
 	if err != nil {
 		return errors.E(op, err)
@@ -95,7 +92,7 @@ func (c *cd) CreateCluster(ctx context.Context, params *Params) (err error) {
 }
 
 func (c *cd) GetClusterState(ctx context.Context,
-	params *Params) (clusterState *ClusterState, err error) {
+	params *GetClusterStateParams) (clusterState *ClusterState, err error) {
 	const op = "cd: get cluster status"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -156,17 +153,6 @@ func (c *cd) GetClusterState(ctx context.Context,
 	}
 
 	return clusterState, nil
-}
-
-func (c *cd) GetHelmRepo(ctx context.Context, environment string) (_ string, err error) {
-	const op = "cd: get cluster status"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
-
-	argo, err := c.factory.GetArgoCD(environment)
-	if err != nil {
-		return "", err
-	}
-	return argo.GetHelmRepo(ctx), nil
 }
 
 type (
