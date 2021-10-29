@@ -13,6 +13,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
+	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 
@@ -30,7 +31,9 @@ var (
 	ctx context.Context
 	g   gitlablib.Interface
 
+	sshURL        string
 	rootGroupName string
+	templateName  string
 
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}
 	pipelineJSONStr                       = `{
@@ -85,7 +88,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	g, err = gitlablib.New(p.Token, p.BaseURL)
+	sshURL = "ssh://gitlab.com"
+
+	g, err = gitlablib.New(p.Token, p.BaseURL, sshURL)
 	if err != nil {
 		panic(err)
 	}
@@ -95,6 +100,7 @@ func TestMain(m *testing.M) {
 	})
 
 	rootGroupName = p.RootGroupName
+	templateName = "javaapp"
 
 	if err := json.Unmarshal([]byte(pipelineJSONStr), &pipelineJSONBlob); err != nil {
 		panic(err)
@@ -119,47 +125,70 @@ func Test(t *testing.T) {
 				ID:   4971,
 			},
 		},
+		helmRepoMapper: map[string]string{
+			"test": "https://test.helm.com",
+		},
 	}
+	application := "app"
 	cluster := "cluster"
-	params := &Params{
-		Cluster:     cluster,
-		K8SServer:   "http://k8s.com",
-		HelmRepoURL: "https://helm.com",
+	baseParams := &BaseParams{
+		Cluster:             cluster,
+		PipelineJSONBlob:    pipelineJSONBlob,
+		ApplicationJSONBlob: applicationJSONBlob,
+		TemplateRelease: &trmodels.TemplateRelease{
+			TemplateName: templateName,
+			Name:         "v1.0.0",
+		},
+		Application: &appmodels.Application{
+			GroupID:  10,
+			Name:     application,
+			Priority: "P0",
+		},
+	}
+	createParams := &CreateClusterParams{
+		BaseParams:  baseParams,
 		Environment: "test",
-		RegionEntity: regionmodels.RegionEntity{
+		RegionEntity: &regionmodels.RegionEntity{
 			Region: &regionmodels.Region{
 				Name:        "hz",
 				DisplayName: "HZ",
+			},
+			K8SCluster: &k8sclustermodels.K8SCluster{
+				Server: "https://k8s.com",
 			},
 			Harbor: &harbormodels.Harbor{
 				Server: "https://harbor.com",
 			},
 		},
-		PipelineJSONBlob:    pipelineJSONBlob,
-		ApplicationJSONBlob: applicationJSONBlob,
-		TemplateRelease: &trmodels.TemplateRelease{
-			TemplateName: "javaapp",
-			Name:         "v1.0.0",
-		},
-		Application: &appmodels.Application{
-			GroupID:  10,
-			Name:     "app",
-			Priority: "P0",
-		},
+	}
+
+	updateParams := &UpdateClusterParams{
+		BaseParams: baseParams,
 	}
 
 	defer func() {
-		_ = r.DeleteCluster(ctx, cluster, 1)
-		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v-%v", rootGroupName, "recycling-clusters", cluster, 1))
+		_ = r.DeleteCluster(ctx, application, cluster, 1)
+		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v/%v-%v", rootGroupName,
+			"recycling-clusters", application, cluster, 1))
 	}()
-	err := r.CreateCluster(ctx, params)
+	clusterRepo, err := r.CreateCluster(ctx, createParams)
+	assert.Nil(t, err)
+	t.Logf("%v", clusterRepo)
+	assert.Equal(t, clusterRepo.GitRepoSSHURL, fmt.Sprintf("%v/%v/%v/%v.git",
+		sshURL, r.clusterRepoConf.Parent.Path, application, cluster))
+
+	updateParams.Application.Priority = "P1"
+	err = r.UpdateCluster(ctx, updateParams)
 	assert.Nil(t, err)
 
-	params.Application.Priority = "P1"
-	err = r.UpdateCluster(ctx, params)
-	assert.Nil(t, err)
-
-	diff, err := r.CompareConfig(ctx, params.Cluster)
+	diff, err := r.CompareConfig(ctx, application, cluster)
 	assert.Nil(t, err)
 	t.Logf("\n%v\n", diff)
+
+	files, err := r.GetCluster(ctx, application, cluster, templateName)
+	assert.Nil(t, err)
+	t.Logf("%v", files.PipelineJSONBlob)
+	t.Logf("%v", files.ApplicationJSONBlob)
+	assert.Equal(t, files.PipelineJSONBlob, pipelineJSONBlob)
+	assert.Equal(t, files.ApplicationJSONBlob, applicationJSONBlob)
 }

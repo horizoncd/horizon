@@ -42,6 +42,8 @@ type EnvironmentRegionManager interface {
 	CreateEnvironmentRegion(ctx context.Context, er *models.EnvironmentRegion) (*models.EnvironmentRegion, error)
 	// ListRegionsByEnvironment list regions by env
 	ListRegionsByEnvironment(ctx context.Context, env string) ([]*regionmodels.Region, error)
+	GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error)
+	GetByEnvironmentAndRegion(ctx context.Context, env, region string) (*models.EnvironmentRegion, error)
 }
 
 type manager struct {
@@ -85,4 +87,13 @@ func (m *manager) ListRegionsByEnvironment(ctx context.Context, env string) ([]*
 		return nil, err
 	}
 	return regions, nil
+}
+
+func (m *manager) GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error) {
+	return m.envDAO.GetEnvironmentRegionByID(ctx, id)
+}
+
+func (m *manager) GetByEnvironmentAndRegion(ctx context.Context,
+	env, region string) (*models.EnvironmentRegion, error) {
+	return m.envDAO.GetEnvironmentRegionByEnvAndRegion(ctx, env, region)
 }

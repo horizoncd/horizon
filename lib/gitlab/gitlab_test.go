@@ -76,7 +76,7 @@ func TestMain(m *testing.M) {
 	if err := json.Unmarshal([]byte(param), &p); err != nil {
 		panic(err)
 	}
-	g, err = New(p.Token, p.BaseURL)
+	g, err = New(p.Token, p.BaseURL, "")
 	if err != nil {
 		panic(err)
 	}

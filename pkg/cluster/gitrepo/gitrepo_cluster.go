@@ -2,22 +2,27 @@ package gitrepo
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
+	"g.hz.netease.com/horizon/pkg/config/helmrepo"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	kyaml "sigs.k8s.io/yaml"
 
+	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
 )
 
@@ -39,54 +44,73 @@ music-cloud-native
                               ├── system
                               │     ├── horizon.yaml          -- 基础数据
                               │     └── env.yaml              -- 环境相关数据
-                              ├── pipeline
-                              │     ├── pipeline.yaml         -- pipeline模板参数
-                              │     └── pipeline-output.yaml  -- pipeline输出
-							  └── argo
-							        └── argo-application.yaml -- argo application
+                              └── pipeline
+                                    ├── pipeline.yaml         -- pipeline模板参数
+                                    └── pipeline-output.yaml  -- pipeline输出
 */
 
 const (
 	_gitlabName = "compute"
 
+	// _branchMaster is the main branch
 	_branchMaster = "master"
+	// _branchGitops is the gitops branch, values updated in this branch, then merge into the _branchMaster
 	_branchGitops = "gitops"
 
-	// _filePathChart           = "Chart.yaml"
+	_filePathChart       = "Chart.yaml"
 	_filePathApplication = "application.yaml"
 	_filePathSRE         = "sre/sre.yaml"
 	_filePathBase        = "system/horizon.yaml"
 	_filePathEnv         = "system/env.yaml"
 	_filePathPipeline    = "pipeline/pipeline.yaml"
 	// _filePathPipelineOutput  = "pipeline/pipeline-output.yaml"
-	// _filePathArgoApplication = "argo/argo-application.yaml"
 )
 
-type Params struct {
+type BaseParams struct {
 	Cluster             string
-	K8SServer           string
-	HelmRepoURL         string
-	Environment         string
-	RegionEntity        regionmodels.RegionEntity
 	PipelineJSONBlob    map[string]interface{}
 	ApplicationJSONBlob map[string]interface{}
 	TemplateRelease     *trmodels.TemplateRelease
 	Application         *models.Application
 }
 
+type CreateClusterParams struct {
+	*BaseParams
+
+	Environment  string
+	RegionEntity *regionmodels.RegionEntity
+}
+
+type UpdateClusterParams struct {
+	*BaseParams
+}
+
+type ClusterRepo struct {
+	GitRepoSSHURL string
+	ValueFiles    []string
+	Namespace     string
+}
+
+type ClusterFiles struct {
+	PipelineJSONBlob, ApplicationJSONBlob map[string]interface{}
+}
+
 type ClusterGitRepo interface {
-	CreateCluster(ctx context.Context, params *Params) error
-	UpdateCluster(ctx context.Context, params *Params) error
-	DeleteCluster(ctx context.Context, cluster string, clusterID uint) error
-	CompareConfig(ctx context.Context, cluster string) (string, error)
+	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
+	CreateCluster(ctx context.Context, params *CreateClusterParams) (*ClusterRepo, error)
+	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
+	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
+	CompareConfig(ctx context.Context, application, cluster string) (string, error)
+	MergeBranch(ctx context.Context, application, cluster string) error
 }
 
 type clusterGitRepo struct {
 	gitlabLib       gitlablib.Interface
 	clusterRepoConf *gitlabconf.Repo
+	helmRepoMapper  helmrepo.Mapper
 }
 
-func NewClusterGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig,
+func NewClusterGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig, helmRepoMapper helmrepo.Mapper,
 	gitlabFactory gitlabfty.Factory) (ClusterGitRepo, error) {
 	gitlabLib, err := gitlabFactory.GetByName(ctx, _gitlabName)
 	if err != nil {
@@ -95,41 +119,118 @@ func NewClusterGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoC
 	return &clusterGitRepo{
 		gitlabLib:       gitlabLib,
 		clusterRepoConf: gitlabRepoConfig.Cluster,
+		helmRepoMapper:  helmRepoMapper,
 	}, nil
 }
 
-func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *Params) (err error) {
+func (g *clusterGitRepo) GetCluster(ctx context.Context,
+	application, cluster, templateName string) (_ *ClusterFiles, err error) {
+	const op = "cluster git repo: get cluster"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// 1. get template and pipeline from gitlab
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	var applicationBytes, pipelineBytes []byte
+	var err1, err2 error
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		pipelineBytes, err1 = g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipeline)
+		if err1 != nil {
+			return
+		}
+		pipelineBytes, err1 = kyaml.YAMLToJSON(pipelineBytes)
+	}()
+	go func() {
+		defer wg.Done()
+		applicationBytes, err2 = g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathApplication)
+		if err2 != nil {
+			return
+		}
+		applicationBytes, err2 = kyaml.YAMLToJSON(applicationBytes)
+	}()
+	wg.Wait()
+
+	for _, err := range []error{err1, err2} {
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+	}
+
+	var pipelineJSONBlobWithTemplate, applicationJSONBlobWithTemplate map[string]map[string]interface{}
+	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlobWithTemplate); err != nil {
+		return nil, errors.E(op, err)
+	}
+	if err := json.Unmarshal(applicationBytes, &applicationJSONBlobWithTemplate); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	pipelineJSONBlob, ok1 := pipelineJSONBlobWithTemplate[templateName]
+	applicationJSONBlob, ok2 := applicationJSONBlobWithTemplate[templateName]
+	if !ok1 || !ok2 {
+		return nil, errors.E(op, "template name: %v is different from git and db", templateName)
+	}
+
+	return &ClusterFiles{
+		PipelineJSONBlob:    pipelineJSONBlob,
+		ApplicationJSONBlob: applicationJSONBlob,
+	}, nil
+}
+
+func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (_ *ClusterRepo, err error) {
 	const op = "cluster git repo: create cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
+		return nil, errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), "no user in context")
 	}
 
-	// 1. create cluster repo
-	if _, err := g.gitlabLib.CreateProject(ctx, params.Cluster, g.clusterRepoConf.Parent.ID); err != nil {
-		return errors.E(op, err)
+	// 1. create application group if necessary
+	var appGroup *gitlab.Group
+	appGroup, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name))
+	if err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return nil, errors.E(op, err)
+		}
+		appGroup, err = g.gitlabLib.CreateGroup(ctx, params.Application.Name,
+			params.Application.Name, &g.clusterRepoConf.Parent.ID)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
 	}
 
-	// 2. write files to repo
-	pid := fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Cluster)
-	// TODO(gjq) add Chart.yaml & argo-application.yaml
-	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML []byte
-	var err1, err2, err3, err4, err5 error
+	// 2. create cluster repo under appGroup
+	if _, err := g.gitlabLib.CreateProject(ctx, params.Cluster, appGroup.ID); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 3. write files to repo
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
+
+	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML, chartYAML []byte
+	var err1, err2, err3, err4, err5, err6, err7 error
 	marshal := func(b *[]byte, err *error, data interface{}) {
 		*b, *err = yaml.Marshal(data)
 	}
-	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params))
-	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params))
-	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params))
+
+	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
+	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
+	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
 	marshal(&envValueYAML, &err4, g.assembleEnvValue(params))
 	marshal(&sreValueYAML, &err5, g.assembleSREValue(params))
+	chart, err := g.assembleChart(params)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	marshal(&chartYAML, &err6, chart)
 
-	for _, err := range []error{err1, err2, err3, err4, err5} {
+	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7} {
 		if err != nil {
-			return err
+			return nil, errors.E(op, err)
 		}
 	}
 
@@ -154,6 +255,10 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *Params) (err
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathSRE,
 			Content:  string(sreValueYAML),
+		}, {
+			Action:   gitlablib.FileCreate,
+			FilePath: _filePathChart,
+			Content:  string(chartYAML),
 		},
 	}
 
@@ -170,18 +275,23 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *Params) (err
 	})
 
 	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
-		return errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
 
 	// 3. create gitops branch from master
 	if _, err := g.gitlabLib.CreateBranch(ctx, pid, _branchGitops, _branchMaster); err != nil {
-		return errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
 
-	return nil
+	return &ClusterRepo{
+		GitRepoSSHURL: fmt.Sprintf("%v/%v/%v/%v.git",
+			g.gitlabLib.GetSSHURL(ctx), g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster),
+		ValueFiles: []string{_filePathApplication, _filePathEnv, _filePathBase, _filePathSRE},
+		Namespace:  getNamespace(params),
+	}, nil
 }
 
-func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *Params) (err error) {
+func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateClusterParams) (err error) {
 	const op = "cluster git repo: update cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -192,15 +302,15 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *Params) (err
 	}
 
 	// 1. write files to repo
-	pid := fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
 	var applicationYAML, pipelineYAML, baseValueYAML []byte
 	var err1, err2, err3 error
 	marshal := func(b *[]byte, err *error, data interface{}) {
 		*b, *err = yaml.Marshal(data)
 	}
-	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params))
-	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params))
-	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params))
+	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
+	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
+	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
 
 	for _, err := range []error{err1, err2, err3} {
 		if err != nil {
@@ -243,12 +353,24 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *Params) (err
 	return nil
 }
 
-func (g *clusterGitRepo) DeleteCluster(ctx context.Context, cluster string, clusterID uint) (err error) {
+func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) (err error) {
 	const op = "cluster git repo: delete cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
+	// 1. create application group if necessary
+	_, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
+	if err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return errors.E(op, err)
+		}
+		_, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.clusterRepoConf.RecyclingParent.ID)
+		if err != nil {
+			return errors.E(op, err)
+		}
+	}
+
 	// 1. delete gitlab project
-	pid := fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 	// 1.1 edit project's name and path to {cluster}-{clusterID}
 	newName := fmt.Sprintf("%v-%d", cluster, clusterID)
 	newPath := newName
@@ -257,19 +379,20 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, cluster string, clus
 	}
 
 	// 1.2 transfer project to RecyclingParent
-	newPid := fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, newPath)
-	if err := g.gitlabLib.TransferProject(ctx, newPid, g.clusterRepoConf.RecyclingParent.Path); err != nil {
+	newPid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, newPath)
+	if err := g.gitlabLib.TransferProject(ctx, newPid,
+		fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application)); err != nil {
 		return errors.E(op, err)
 	}
 
 	return nil
 }
 
-func (g *clusterGitRepo) CompareConfig(ctx context.Context, cluster string) (_ string, err error) {
+func (g *clusterGitRepo) CompareConfig(ctx context.Context, application, cluster string) (_ string, err error) {
 	const op = "cluster git repo: compare config"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	pid := fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
 	compare, err := g.gitlabLib.Compare(ctx, pid, _branchMaster, _branchGitops, nil)
 	if err != nil {
@@ -287,22 +410,44 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, cluster string) (_ s
 	return diffStr, nil
 }
 
+func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster string) (err error) {
+	const op = "cluster git repo: merge branch"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+
+	title := fmt.Sprintf("git merge %v", _branchGitops)
+	mr, err := g.gitlabLib.CreateMR(ctx, pid, _branchGitops, _branchMaster, title)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	// TODO(gjq) add this msg
+	// mergeCommitMsg := ""
+	removeSourceBranch := false
+	if _, err := g.gitlabLib.AcceptMR(ctx, pid, mr.IID, nil, &removeSourceBranch); err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
+}
+
 // assembleApplicationValue assemble application.yaml data
-func (g *clusterGitRepo) assembleApplicationValue(params *Params) map[string]map[string]interface{} {
+func (g *clusterGitRepo) assembleApplicationValue(params *BaseParams) map[string]map[string]interface{} {
 	ret := make(map[string]map[string]interface{})
 	ret[params.TemplateRelease.TemplateName] = params.ApplicationJSONBlob
 	return ret
 }
 
 // assembleApplicationValue assemble pipeline.yaml data
-func (g *clusterGitRepo) assemblePipelineValue(params *Params) map[string]map[string]interface{} {
+func (g *clusterGitRepo) assemblePipelineValue(params *BaseParams) map[string]map[string]interface{} {
 	ret := make(map[string]map[string]interface{})
 	ret[params.TemplateRelease.TemplateName] = params.PipelineJSONBlob
 	return ret
 }
 
 // assembleSreValue assemble sre value data
-func (g *clusterGitRepo) assembleSREValue(params *Params) map[string]interface{} {
+func (g *clusterGitRepo) assembleSREValue(params *CreateClusterParams) map[string]interface{} {
 	ret := make(map[string]interface{})
 	ret[params.TemplateRelease.TemplateName] = make(map[string]string)
 	return ret
@@ -315,14 +460,17 @@ type EnvValue struct {
 	BaseRegistry string `yaml:"baseRegistry"`
 }
 
-func (g *clusterGitRepo) assembleEnvValue(params *Params) map[string]map[string]*EnvValue {
+func getNamespace(params *CreateClusterParams) string {
+	return fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
+}
+
+func (g *clusterGitRepo) assembleEnvValue(params *CreateClusterParams) map[string]map[string]*EnvValue {
 	const envValueNamespace = "env"
-	var namespace = fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
 	envMap := make(map[string]*EnvValue)
 	envMap[envValueNamespace] = &EnvValue{
 		Environment: params.Environment,
 		Region:      params.RegionEntity.Name,
-		Namespace:   namespace,
+		Namespace:   getNamespace(params),
 		BaseRegistry: strings.TrimPrefix(strings.TrimPrefix(
 			params.RegionEntity.Harbor.Server, "https://"), "http://"),
 	}
@@ -346,7 +494,7 @@ type BaseValueTemplate struct {
 
 // assembleBaseValue assemble base value. return a map, key is template name,
 // and value is a map which key is "horizon", and value is *BaseValue
-func (g *clusterGitRepo) assembleBaseValue(params *Params) map[string]map[string]*BaseValue {
+func (g *clusterGitRepo) assembleBaseValue(params *BaseParams) map[string]map[string]*BaseValue {
 	const baseValueNamespace = "horizon"
 	baseMap := make(map[string]*BaseValue)
 	baseMap[baseValueNamespace] = &BaseValue{
@@ -362,4 +510,49 @@ func (g *clusterGitRepo) assembleBaseValue(params *Params) map[string]map[string
 	ret := make(map[string]map[string]*BaseValue)
 	ret[params.TemplateRelease.TemplateName] = baseMap
 	return ret
+}
+
+type Chart struct {
+	APIVersion   string       `yaml:"apiVersion"`
+	Name         string       `yaml:"name"`
+	Version      string       `yaml:"version"`
+	Dependencies []Dependency `yaml:"dependencies"`
+}
+
+type Dependency struct {
+	Name       string `yaml:"name"`
+	Version    string `yaml:"version"`
+	Repository string `yaml:"repository"`
+}
+
+func (g *clusterGitRepo) assembleChart(params *CreateClusterParams) (*Chart, error) {
+	const op = "cluster git repo: assemble chart"
+	helmRepo, ok := g.helmRepoMapper[params.Environment]
+	if !ok {
+		return nil, errors.E(op, http.StatusNotFound,
+			fmt.Errorf("helm repo for environment %v not found", params.Environment))
+	}
+	return &Chart{
+		APIVersion: "v2",
+		Name:       params.Cluster,
+		Version:    "1.0.0",
+		Dependencies: []Dependency{
+			{
+				Repository: helmRepo,
+				Name:       renameTemplateName(params.TemplateRelease.TemplateName),
+				Version:    params.TemplateRelease.Name,
+			},
+		},
+	}, nil
+}
+
+// helm dependency 不支持 chart name 中包含 '.' 符号
+func renameTemplateName(name string) string {
+	templateName := []byte(name)
+	for i := range templateName {
+		if templateName[i] == '.' {
+			templateName[i] = '_'
+		}
+	}
+	return string(templateName)
 }

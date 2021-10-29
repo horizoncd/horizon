@@ -5,6 +5,7 @@ import "gorm.io/gorm"
 type K8SCluster struct {
 	gorm.Model
 	Name          string
+	Server        string
 	Certificate   string
 	IngressDomain string
 	CreatedBy     uint

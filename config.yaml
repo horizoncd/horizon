@@ -20,7 +20,7 @@ gitlabMapper:
     token: 
   compute:
     httpURL: http://cicd.mockserver.org
-    sshURL: ssh://git@music-cicd-gitlab.hz.netease.com:22222
+    sshURL: ssh://git@music-cicd-gitlab-test.hz.netease.com:22222
     token: ""
 gitlabRepoConfig:
   application:
@@ -37,11 +37,12 @@ gitlabRepoConfig:
     recyclingParent:
       path: music-cloud-native/recycling-clusters
       id: 4587
+helmRepoMapper:
+  dev,test,reg,perf,beta,pre,online: "https://harbor.mock.org/chartrepo/cloudnative-template"
 argoCDMapper:
   dev,test,reg,perf,beta,pre,online:
-    url: http://argocd-server.argocd
+    url: http://argocd.mockserver.org
     token: 
-    helmRepo: "https://harbor.mock.org/chartrepo/cloudnative-template"
 tektonMapper:
   dev,test,reg,perf,beta,pre,online:
     url: http://el-default-listener.tekton-resources:8080

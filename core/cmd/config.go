@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/argocd"
 	"g.hz.netease.com/horizon/pkg/config/db"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
+	"g.hz.netease.com/horizon/pkg/config/helmrepo"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
 	"g.hz.netease.com/horizon/pkg/config/server"
 	"g.hz.netease.com/horizon/pkg/config/tekton"
@@ -22,6 +23,7 @@ type Config struct {
 	GitlabRepoConfig gitlab.RepoConfig `yaml:"gitlabRepoConfig"`
 	ArgoCDMapper     argocd.Mapper     `yaml:"argoCDMapper"`
 	TektonMapper     tekton.Mapper     `yaml:"tektonMapper"`
+	HelmRepoMapper   helmrepo.Mapper   `yaml:"helmRepoMapper"`
 }
 
 func loadConfig(configFilePath string) (*Config, error) {
@@ -52,6 +54,15 @@ func loadConfig(configFilePath string) (*Config, error) {
 		}
 	}
 	config.TektonMapper = newTektonMapper
+
+	newHelmRepoMapper := helmrepo.Mapper{}
+	for key, v := range config.HelmRepoMapper {
+		ks := strings.Split(key, ",")
+		for i := 0; i < len(ks); i++ {
+			newHelmRepoMapper[ks[i]] = v
+		}
+	}
+	config.HelmRepoMapper = newHelmRepoMapper
 
 	return &config, nil
 }

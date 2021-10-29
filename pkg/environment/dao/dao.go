@@ -21,6 +21,8 @@ type EnvironmentDAO interface {
 }
 
 type EnvironmentRegionDAO interface {
+	// GetEnvironmentRegionByID ...
+	GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error)
 	// GetEnvironmentRegionByEnvAndRegion get
 	GetEnvironmentRegionByEnvAndRegion(ctx context.Context, env, region string) (*models.EnvironmentRegion, error)
 	// CreateEnvironmentRegion create a environmentRegion
@@ -81,6 +83,18 @@ func (d *dao) ListRegionsByEnvironment(ctx context.Context, env string) ([]strin
 	result := db.Raw(common.EnvironmentListRegion, env).Scan(&regions)
 
 	return regions, result.Error
+}
+
+func (d *dao) GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var environmentRegion models.EnvironmentRegion
+	result := db.Raw(common.EnvironmentRegionGetByID, id).First(&environmentRegion)
+
+	return &environmentRegion, result.Error
 }
 
 func (d *dao) GetEnvironmentRegionByEnvAndRegion(ctx context.Context,

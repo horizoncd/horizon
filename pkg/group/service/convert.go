@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/group/models"
 )
 
@@ -71,6 +72,19 @@ func ConvertApplicationToChild(app *appmodels.Application, full *Full) *Child {
 	}
 }
 
+func ConvertClusterToChild(cluster *clustermodels.Cluster, full *Full) *Child {
+	return &Child{
+		ID:          cluster.ID,
+		Name:        cluster.Name,
+		Path:        cluster.Name,
+		Description: cluster.Description,
+		ParentID:    cluster.ApplicationID,
+		FullName:    full.FullName,
+		FullPath:    full.FullPath,
+		Type:        ChildTypeCluster,
+	}
+}
+
 /*
 GenerateIDToFull assuming we have 3 groups,
 group one: {id: 1, name: "a", path: "w"}
@@ -105,7 +119,10 @@ func GenerateIDToFull(groups []*models.Group) map[uint]*Full {
 			fullName = g.Name
 			fullPath = "/" + g.Path
 		} else {
-			parentFull := idToFull[g.ParentID]
+			parentFull, ok := idToFull[g.ParentID]
+			if !ok {
+				continue
+			}
 			fullName = parentFull.FullName + "/" + g.Name
 			fullPath = parentFull.FullPath + "/" + g.Path
 		}

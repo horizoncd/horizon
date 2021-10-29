@@ -98,6 +98,8 @@ type Interface interface {
 	// The pid can be the project's ID or relative path such as fist/second.
 	// See https://docs.gitlab.com/ee/api/repositories.html#compare-branches-tags-or-commits for more information.
 	Compare(ctx context.Context, pid interface{}, from, to string, straight *bool) (*gitlab.Compare, error)
+
+	GetSSHURL(ctx context.Context) string
 }
 
 var _ Interface = (*helper)(nil)
@@ -124,13 +126,15 @@ func (a FileAction) toFileActionValuePtr() *gitlab.FileActionValue {
 }
 
 type helper struct {
-	client *gitlab.Client
+	client  *gitlab.Client
+	httpURL string
+	sshURL  string
 }
 
 // New an instance of Gitlab
-func New(token, baseURL string) (Interface, error) {
+func New(token, httpURL, sshURL string) (Interface, error) {
 	client, err := gitlab.NewClient(token,
-		gitlab.WithBaseURL(baseURL),
+		gitlab.WithBaseURL(httpURL),
 		gitlab.WithHTTPClient(&http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -140,7 +144,9 @@ func New(token, baseURL string) (Interface, error) {
 		return nil, err
 	}
 	return &helper{
-		client: client,
+		client:  client,
+		httpURL: httpURL,
+		sshURL:  sshURL,
 	}, nil
 }
 
@@ -380,6 +386,10 @@ func (h *helper) Compare(ctx context.Context, pid interface{}, from, to string,
 	}
 
 	return compare, nil
+}
+
+func (h *helper) GetSSHURL(ctx context.Context) string {
+	return h.sshURL
 }
 
 func parseError(op errors.Op, resp *gitlab.Response, err error) error {
