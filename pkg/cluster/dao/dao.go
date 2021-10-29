@@ -16,6 +16,7 @@ import (
 type DAO interface {
 	Create(ctx context.Context, cluster *models.Cluster) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
+	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
@@ -48,6 +49,18 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
 
 	var cluster models.Cluster
 	result := db.Raw(common.ClusterQueryByID, id).First(&cluster)
+
+	return &cluster, result.Error
+}
+
+func (d *dao) GetByName(ctx context.Context, clusterName string) (*models.Cluster, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var cluster models.Cluster
+	result := db.Raw(common.ClusterQueryByName, clusterName).First(&cluster)
 
 	return &cluster, result.Error
 }

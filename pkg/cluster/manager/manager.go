@@ -23,6 +23,7 @@ const _errCodeClusterNotFound = errors.ErrorCode("ClusterNotFound")
 type Manager interface {
 	Create(ctx context.Context, cluster *models.Cluster) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
+	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
@@ -53,6 +54,10 @@ func (m *manager) GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 		return nil, errors.E(op, err)
 	}
 	return cluster, nil
+}
+
+func (m *manager) GetByName(ctx context.Context, clusterName string) (*models.Cluster, error) {
+	return m.dao.GetByName(ctx, clusterName)
 }
 
 func (m *manager) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error) {

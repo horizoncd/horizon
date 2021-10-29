@@ -106,6 +106,7 @@ const (
 /* sql about cluster */
 const (
 	ClusterQueryByID                = "select * from cluster where id = ? and deleted_at is null"
+	ClusterQueryByName              = "select * from cluster where name = ? and deleted_at is null"
 	ClusterQueryByApplicationAndEnv = "select c.*, er.environment_name, er.region_name from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"where c.application_id = ? and er.environment_name = ? " +
