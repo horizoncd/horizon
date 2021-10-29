@@ -17,3 +17,10 @@ type Cluster struct {
 	CreatedBy           uint
 	UpdatedBy           uint
 }
+
+type ClusterWithEnvAndRegion struct {
+	*Cluster
+
+	EnvironmentName string
+	RegionName      string
+}

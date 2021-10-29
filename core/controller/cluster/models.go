@@ -145,3 +145,29 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 		UpdatedAt: cluster.UpdatedAt,
 	}
 }
+
+type ListClusterResponse struct {
+	ID       uint      `json:"id"`
+	Name     string    `json:"name"`
+	Scope    *Scope    `json:"scope"`
+	Template *Template `json:"template"`
+}
+
+func ofClustersWithEnvAndRegion(clusters []*models.ClusterWithEnvAndRegion) []*ListClusterResponse {
+	respList := make([]*ListClusterResponse, 0)
+	for _, c := range clusters {
+		respList = append(respList, &ListClusterResponse{
+			ID:   c.ID,
+			Name: c.Name,
+			Scope: &Scope{
+				Env:    c.EnvironmentName,
+				Region: c.RegionName,
+			},
+			Template: &Template{
+				Name:    c.Template,
+				Release: c.TemplateRelease,
+			},
+		})
+	}
+	return respList
+}

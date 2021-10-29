@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -16,7 +17,8 @@ type DAO interface {
 	Create(ctx context.Context, cluster *models.Cluster) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
-	ListByApplication(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
+	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
+		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 }
 
@@ -86,16 +88,32 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 	return &clusterInDB, nil
 }
 
-func (d *dao) ListByApplication(ctx context.Context, applicationID uint) ([]*models.Cluster, error) {
+func (d *dao) ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
+	filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
-	var clusters []*models.Cluster
-	result := db.Raw(common.ClusterQueryByApplication, applicationID).Scan(&clusters)
+	offset := (query.PageNumber - 1) * query.PageSize
+	limit := query.PageSize
 
-	return clusters, result.Error
+	like := "%" + filter + "%"
+	var clusters []*models.ClusterWithEnvAndRegion
+	result := db.Raw(common.ClusterQueryByApplicationAndEnv, applicationID,
+		environment, like, limit, offset).Scan(&clusters)
+
+	if result.Error != nil {
+		return 0, nil, result.Error
+	}
+
+	var count int
+	result = db.Raw(common.ClusterCountByApplicationAndEnv, applicationID, environment, like).Scan(&count)
+	if result.Error != nil {
+		return 0, nil, result.Error
+	}
+
+	return count, clusters, nil
 }
 
 func (d *dao) CheckClusterExists(ctx context.Context, cluster string) (bool, error) {

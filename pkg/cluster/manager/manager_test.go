@@ -7,6 +7,9 @@ import (
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
+	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -18,7 +21,7 @@ var (
 
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&models.Cluster{}); err != nil {
+	if err := db.AutoMigrate(&models.Cluster{}, &envmodels.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
@@ -39,6 +42,12 @@ func Test(t *testing.T) {
 		updatedBy       = uint(1)
 	)
 
+	er, err := envmanager.Mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+		EnvironmentName: "test",
+		RegionName:      "hz",
+	})
+	assert.Nil(t, err)
+
 	cluster := &models.Cluster{
 		ApplicationID:       applicationID,
 		Name:                name,
@@ -48,12 +57,12 @@ func Test(t *testing.T) {
 		GitBranch:           gitBranch,
 		Template:            template,
 		TemplateRelease:     templateRelease,
-		EnvironmentRegionID: uint(2),
+		EnvironmentRegionID: er.ID,
 		CreatedBy:           createdBy,
 		UpdatedBy:           updatedBy,
 	}
 
-	cluster, err := Mgr.Create(ctx, cluster)
+	cluster, err = Mgr.Create(ctx, cluster)
 	assert.Nil(t, err)
 	t.Logf("%v", cluster)
 
@@ -68,10 +77,13 @@ func Test(t *testing.T) {
 	assert.Equal(t, clusterGetByID.Name, cluster.Name)
 	t.Logf("%v", clusterGetByID)
 
-	clusters, err := Mgr.ListByApplication(ctx, applicationID)
+	count, clustersWithEnvAndRegion, err := Mgr.ListByApplicationAndEnv(ctx, applicationID, er.EnvironmentName, "", nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(clusters))
-	assert.Equal(t, cluster.Name, clusters[0].Name)
+	assert.Equal(t, 1, count)
+	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
+	assert.Equal(t, cluster.Name, clustersWithEnvAndRegion[0].Name)
+	assert.Equal(t, er.EnvironmentName, clustersWithEnvAndRegion[0].EnvironmentName)
+	assert.Equal(t, er.RegionName, clustersWithEnvAndRegion[0].RegionName)
 
 	exists, err := Mgr.CheckClusterExists(ctx, name)
 	assert.Nil(t, err)

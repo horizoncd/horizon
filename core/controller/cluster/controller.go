@@ -9,6 +9,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/lib/q"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
@@ -25,6 +26,8 @@ import (
 
 type Controller interface {
 	GetCluster(ctx context.Context, clusterID uint) (*GetClusterResponse, error)
+	ListCluster(ctx context.Context, applicationID uint, environment,
+		filter string, query *q.Query) (int, []*ListClusterResponse, error)
 	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
 		request *CreateClusterRequest) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
@@ -58,6 +61,20 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, cd cd.CD,
 		regionMgr:            regionmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
 	}
+}
+
+func (c *controller) ListCluster(ctx context.Context, applicationID uint, environment,
+	filter string, query *q.Query) (_ int, _ []*ListClusterResponse, err error) {
+	const op = "cluster controller: list cluster"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationAndEnv(ctx,
+		applicationID, environment, filter, query)
+	if err != nil {
+		return 0, nil, errors.E(op, err)
+	}
+
+	return count, ofClustersWithEnvAndRegion(clustersWithEnvAndRegion), nil
 }
 
 func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClusterResponse, err error) {

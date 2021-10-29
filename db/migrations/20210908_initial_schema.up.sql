@@ -240,6 +240,7 @@ CREATE TABLE `cluster`
     `updated_by`            int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY `idx_deleted_at` (`deleted_at`),
+    KEY `idx_application_id` (`application_id`),
     UNIQUE KEY `idx_name_deleted_at` (`name`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1

@@ -17,6 +17,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/applications/:%v/clusters", _applicationIDParam),
 			HandlerFunc: api.Create,
 		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/applications/:%v/clusters", _applicationIDParam),
+			HandlerFunc: api.List,
+		}, {
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/clusters/:%v", _clusterIDParam),
 			HandlerFunc: api.Update,

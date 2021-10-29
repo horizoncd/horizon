@@ -32,6 +32,7 @@ import (
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -488,4 +489,11 @@ func Test(t *testing.T) {
 	assert.Equal(t, resp.Template.Release, "v1.0.1")
 	assert.Equal(t, resp.TemplateInput.Application, applicationJSONBlob)
 	assert.Equal(t, resp.TemplateInput.Pipeline, pipelineJSONBlob)
+
+	c, respList, err := c.ListCluster(ctx, application.ID, "test", "", nil)
+	assert.Nil(t, err)
+	assert.Equal(t, c, 1)
+	t.Logf("%v", respList[0])
+	assert.Equal(t, respList[0].Template.Name, "javaapp")
+	assert.Equal(t, respList[0].Template.Release, "v1.0.1")
 }
