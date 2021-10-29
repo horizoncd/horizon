@@ -16,6 +16,7 @@ var (
 var (
 	roleForTestOk = `
 RolePriorityRankDesc: [owner,maintainer]
+DefaultRole: maintainer
 Roles:
   - name: owner
     rules:
@@ -212,4 +213,6 @@ func TestRole(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(roles), 2)
 	assert.Equal(t, roles[0], expectRole)
+
+	assert.NotNil(t, service.GetDefaultRole(ctx))
 }

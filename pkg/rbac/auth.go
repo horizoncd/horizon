@@ -46,11 +46,6 @@ const (
 	RoleNotExist      = "role not exist"
 )
 
-// /apis/core/v1/applications/
-// /apis/core/v1/clusters/
-// /apis/core/v1/groups/
-// /apis/core/v1/members/
-// /apis/core/v1/pipelineruns/
 func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.Decision,
 	string, error) {
 	// TODO(tom): members and pipelineruns need to add to auth check
@@ -75,17 +70,28 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 			attr.GetResource(), attr.GetName(), attr.GetUser().String())
 		return auth.DecisionDeny, InternalError, err
 	}
-	if member == nil {
-		log.Warningf(ctx, " user %s member not found of resourceType = %s, resourceID = %s",
-			attr.GetUser().String(), attr.GetResource(), attr.GetName())
-		return auth.DecisionDeny, MemberNotExist, nil
-	}
 
 	// 2. get the role
-	role, err := a.roleService.GetRole(ctx, member.Role)
-	if err != nil {
-		log.Errorf(ctx, "get role file err = %+v", err)
-		return auth.DecisionDeny, InternalError, err
+	var role *types.Role
+	if member == nil {
+		// TODO(tom): non public resources
+		// now default resource are public, if there is a default role, non member can choose the default role
+		defaultRole := a.roleService.GetDefaultRole(ctx)
+		if defaultRole == nil {
+			log.Warningf(ctx, " user %s member and role not found of resourceType = %s, resourceID = %s",
+				attr.GetUser().String(), attr.GetResource(), attr.GetName())
+			return auth.DecisionDeny, MemberNotExist, nil
+		}
+		log.WithFiled(ctx, "user",
+			attr.GetUser().String()).Debugf(" use the default role %s", defaultRole.Name)
+		role = defaultRole
+	} else {
+		var err error
+		role, err = a.roleService.GetRole(ctx, member.Role)
+		if err != nil {
+			log.Errorf(ctx, "get role file err = %+v", err)
+			return auth.DecisionDeny, InternalError, err
+		}
 	}
 	if role == nil {
 		return auth.DecisionDeny, RoleNotExist, nil

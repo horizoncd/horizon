@@ -36,6 +36,20 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
+// GetDefaultRole mocks base method.
+func (m *MockService) GetDefaultRole(ctx context.Context) *types.Role {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDefaultRole", ctx)
+	ret0, _ := ret[0].(*types.Role)
+	return ret0
+}
+
+// GetDefaultRole indicates an expected call of GetDefaultRole.
+func (mr *MockServiceMockRecorder) GetDefaultRole(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDefaultRole", reflect.TypeOf((*MockService)(nil).GetDefaultRole), ctx)
+}
+
 // GetRole mocks base method.
 func (m *MockService) GetRole(ctx context.Context, roleName string) (*types.Role, error) {
 	m.ctrl.T.Helper()

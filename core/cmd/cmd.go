@@ -20,6 +20,7 @@ import (
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
+	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
@@ -102,7 +103,16 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	roleService, err := role.NewFileRole(context.TODO(), file)
+	content, err := ioutil.ReadAll(file)
+	if err != nil {
+		panic(err)
+	}
+	var roleConfig roleconfig.Config
+	if err := yaml.Unmarshal(content, &config); err != nil {
+		panic(err)
+	}
+
+	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
 	if err != nil {
 		panic(err)
 	}

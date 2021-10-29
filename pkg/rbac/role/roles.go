@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"gopkg.in/yaml.v2"
@@ -29,6 +30,7 @@ type Service interface {
 	ListRole(ctx context.Context) ([]types.Role, error)
 	GetRole(ctx context.Context, roleName string) (*types.Role, error)
 	RoleCompare(ctx context.Context, role1, role2 string) (CompResult, error)
+	GetDefaultRole(ctx context.Context) *types.Role
 }
 
 type roleRankMapItem struct {
@@ -36,21 +38,19 @@ type roleRankMapItem struct {
 	role types.Role
 }
 type fileRoleService struct {
-	RolePriorityRankDesc []string     `yaml:"RolePriorityRankDesc"`
-	Roles                []types.Role `yaml:"Roles"`
+	RolePriorityRankDesc []string
+	DefaultRoleName      string
+	DefaultRole          *types.Role
+	Roles                []types.Role
 	roleRankMap          map[string]roleRankMapItem
 }
 
-func NewFileRole(ctx context.Context, reader io.Reader) (Service, error) {
-	content, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return nil, err
+func NewFileRoleFrom2(ctx context.Context, config roleconfig.Config) (Service, error) {
+	fRole := fileRoleService{
+		RolePriorityRankDesc: config.RolePriorityRankDesc,
+		Roles:                config.Roles,
+		DefaultRoleName:      config.DefaultRole,
 	}
-	var fRole fileRoleService
-	if err := yaml.Unmarshal(content, &fRole); err != nil {
-		return nil, err
-	}
-
 	// check
 	if len(fRole.Roles) != len(fRole.RolePriorityRankDesc) {
 		log.Error(ctx, "role number in RolePriorityRank not equal with Roles")
@@ -74,7 +74,29 @@ func NewFileRole(ctx context.Context, reader io.Reader) (Service, error) {
 			role: role,
 		}
 	}
+
+	if fRole.DefaultRoleName != "" {
+		defaultRole, ok := fRole.roleRankMap[fRole.DefaultRoleName]
+		if !ok {
+			log.WithFiled(ctx, "DefaultRole", fRole.DefaultRole).Error("not found")
+			return nil, ErrorRoleNotFound
+		}
+		fRole.DefaultRole = &defaultRole.role
+	}
+
 	return &fRole, nil
+}
+
+func NewFileRole(ctx context.Context, reader io.Reader) (Service, error) {
+	content, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	var config roleconfig.Config
+	if err := yaml.Unmarshal(content, &config); err != nil {
+		return nil, err
+	}
+	return NewFileRoleFrom2(ctx, config)
 }
 
 func (fRole *fileRoleService) ListRole(ctx context.Context) ([]types.Role, error) {
@@ -87,6 +109,10 @@ func (fRole *fileRoleService) GetRole(ctx context.Context, roleName string) (*ty
 		return nil, ErrorRoleNotFound
 	}
 	return &role.role, nil
+}
+
+func (fRole *fileRoleService) GetDefaultRole(ctx context.Context) *types.Role {
+	return fRole.DefaultRole
 }
 
 func (fRole *fileRoleService) RoleCompare(ctx context.Context, role1, role2 string) (CompResult, error) {

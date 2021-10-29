@@ -32,8 +32,8 @@ const (
 )
 
 const (
-	Owner     string = "Owner"
-	Maitainer string = "Maitainer"
+	Owner     string = "owner"
+	Maitainer string = "maitainer"
 )
 
 type Member struct {

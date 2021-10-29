@@ -89,6 +89,7 @@ func TestAuthMember(t *testing.T) {
 	// member not exist
 	memberServiceMock.EXPECT().GetMemberOfResource(ctx, gomock.Any(),
 		gomock.Any()).Return(nil, nil).Times(1)
+	roleServieMock.EXPECT().GetDefaultRole(ctx).Return(nil).Times(1)
 	decision, reason, err = testAuthorizer.Authorize(ctx, authRecord)
 	assert.Equal(t, auth.DecisionDeny, decision)
 	assert.Equal(t, MemberNotExist, reason)
