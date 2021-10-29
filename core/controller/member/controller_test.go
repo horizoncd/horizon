@@ -9,12 +9,16 @@ import (
 	"g.hz.netease.com/horizon/core/controller/group"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodel "g.hz.netease.com/horizon/pkg/user/models"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -111,7 +115,11 @@ func CreateUsers(t *testing.T) {
 }
 
 func TestCreateGroupWithOwner(t *testing.T) {
+	memberService := memberservice.NewService(nil)
+	Ctl := NewController(memberService)
+
 	CreateUsers(t)
+
 	// create group
 	newGroup := &group.NewGroup{
 		Name:            "1",
@@ -131,7 +139,7 @@ func TestCreateGroupWithOwner(t *testing.T) {
 		MemberNameID: contextUserID,
 		ResourceType: membermodels.TypeGroup,
 		ResourceID:   groupID,
-		Role:         Owner,
+		Role:         membermodels.Owner,
 		GrantedBy:    contextUserID,
 	}
 	assert.Nil(t, err)
@@ -152,7 +160,16 @@ func PostMemberAndMemberEqual(postMember PostMember, member2 Member) bool {
 }
 
 func TestCreateGetUpdateRemoveList(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	roleMockService := rolemock.NewMockService(mockCtrl)
+	memberService := memberservice.NewService(roleMockService)
+	Ctl := NewController(memberService)
 	CreateUsers(t)
+
+	// mock the RoleCompare
+	roleMockService.EXPECT().RoleCompare(ctx, gomock.Any(), gomock.Any()).Return(
+		roleservice.RoleBigger, nil).AnyTimes()
 
 	// create group
 	newGroup := &group.NewGroup{
@@ -179,9 +196,9 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember2))
 
 	// update member
-	retMember3, err := Ctl.UpdateMember(ctx, retMember2.ID, membermodels.Maitainer)
+	retMember3, err := Ctl.UpdateMember(ctx, retMember2.ID, "maitainer")
 	assert.Nil(t, err)
-	postMember2.Role = membermodels.Maitainer
+	postMember2.Role = "maitainer"
 	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember3))
 
 	// remove the member

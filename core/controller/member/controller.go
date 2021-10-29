@@ -8,11 +8,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/errors"
 )
 
-var (
-	// Ctl global instance of the group controller
-	Ctl = NewController()
-)
-
 type Controller interface {
 	// CreateMember create a member of the group
 	CreateMember(ctx context.Context, postMember *PostMember) (*Member, error)
@@ -25,9 +20,9 @@ type Controller interface {
 }
 
 // NewController initializes a new group controller
-func NewController() Controller {
+func NewController(memberService memberservice.Service) Controller {
 	return &controller{
-		memberService: memberservice.Svc,
+		memberService: memberService,
 		convertHelper: Converter,
 	}
 }

@@ -8,10 +8,12 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	groupmanagermock "g.hz.netease.com/horizon/mock/pkg/group/manager"
+	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	groupModels "g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/member"
 	"g.hz.netease.com/horizon/pkg/member/models"
+	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -35,11 +37,12 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-
 	groupManager := groupmanagermock.NewMockManager(mockCtrl)
+	roleMockService := rolemock.NewMockService(mockCtrl)
 	originService := &service{
 		memberManager: member.Mgr,
 		groupManager:  groupManager,
+		roleService:   roleMockService,
 	}
 	s = originService
 
@@ -115,6 +118,10 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMemberCat1, member))
 
+	// test role smaller
+	// create member exist  auto change to update role
+	roleMockService.EXPECT().RoleCompare(ctx, gomock.Any(), gomock.Any()).Return(
+		roleservice.RoleSmaller, nil).Times(1)
 	// create member ok
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
@@ -135,11 +142,36 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		MemberType:   models.MemberUser,
 		Role:         "maintainer",
 	}
+	_, err = s.CreateMember(ctx, postMemberCat2)
+	assert.Equal(t, err, ErrGrantHighRole)
+
+	// create member exist  auto change to update role
+	roleMockService.EXPECT().RoleCompare(ctx, gomock.Any(), gomock.Any()).Return(
+		roleservice.RoleBigger, nil).AnyTimes()
+	// create member ok
+	groupManager.EXPECT().GetByID(gomock.Any(),
+		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
+		return &groupModels.Group{
+			Model:           gorm.Model{},
+			Name:            "",
+			Path:            "",
+			VisibilityLevel: "",
+			Description:     "",
+			ParentID:        0,
+			TraversalIDs:    traversalIDs,
+		}, nil
+	}).Times(1)
+	postMemberCat2 = PostMember{
+		ResourceType: models.TypeGroupStr,
+		ResourceID:   group2ID,
+		MemberInfo:   catID,
+		MemberType:   models.MemberUser,
+		Role:         "maintainer",
+	}
 	catMember2, err := s.CreateMember(ctx, postMemberCat2)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMemberCat2, catMember2))
 
-	// create member exist  auto change to update role
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{

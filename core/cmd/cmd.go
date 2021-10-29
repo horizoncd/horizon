@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
+	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
@@ -98,6 +99,8 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
+	//
+
 	// init roles
 	file, err := os.OpenFile(flags.RoleConfigFile, os.O_RDONLY, 0644)
 	if err != nil {
@@ -116,7 +119,8 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	rbacAuthorizer := rbac.NewAuthorizer(roleService, memberservice.Svc)
+	mservice := memberservice.NewService(roleService)
+	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
 
 	// init db
 	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
@@ -139,6 +143,7 @@ func Run(flags *Flags) {
 	var (
 		// init controller
 		applicationCtl = applicationctl.NewController(applicationGitRepo)
+		memberCtl      = memberctl.NewController(mservice)
 	)
 
 	var (
@@ -147,7 +152,7 @@ func Run(flags *Flags) {
 		templateAPI    = template.NewAPI()
 		userAPI        = user.NewAPI()
 		applicationAPI = application.NewAPI(applicationCtl)
-		memberAPI      = member.NewAPI()
+		memberAPI      = member.NewAPI(memberCtl)
 	)
 
 	// init server

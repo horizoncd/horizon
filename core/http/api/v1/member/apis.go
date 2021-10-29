@@ -21,9 +21,9 @@ type API struct {
 }
 
 // NewAPI initializes a new group api
-func NewAPI() *API {
+func NewAPI(controller member.Controller) *API {
 	return &API{
-		memberCtrl: member.Ctl,
+		memberCtrl: controller,
 	}
 }
 
