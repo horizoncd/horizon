@@ -61,8 +61,8 @@ type Template struct {
 }
 
 type Scope struct {
-	Env    string `json:"env"`
-	Region string `json:"region"`
+	Environment string `json:"environment"`
+	Region      string `json:"region"`
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
@@ -138,8 +138,8 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 			Release: cluster.TemplateRelease,
 		},
 		Scope: &Scope{
-			Env:    er.EnvironmentName,
-			Region: er.RegionName,
+			Environment: er.EnvironmentName,
+			Region:      er.RegionName,
 		},
 		CreatedAt: cluster.CreatedAt,
 		UpdatedAt: cluster.UpdatedAt,
@@ -160,8 +160,8 @@ func ofClustersWithEnvAndRegion(clusters []*models.ClusterWithEnvAndRegion) []*L
 			ID:   c.ID,
 			Name: c.Name,
 			Scope: &Scope{
-				Env:    c.EnvironmentName,
-				Region: c.RegionName,
+				Environment: c.EnvironmentName,
+				Region:      c.RegionName,
 			},
 			Template: &Template{
 				Name:    c.Template,

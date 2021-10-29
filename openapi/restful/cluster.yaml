@@ -42,7 +42,7 @@ paths:
                                   "id":1,
                                   "name":"gitops-dg-online",
                                   "scope":{
-                                      "env":"online",
+                                      "environment":"online",
                                       "region":"dg"
                                   },
                                   "template":{
@@ -68,7 +68,7 @@ paths:
         required: true
       - name: scope
         in: query
-        description: scope is env/region, this value can not be edited after created.
+        description: scope is environment/region, this value can not be edited after created.
         required: true
     post:
       tags:
@@ -233,7 +233,7 @@ paths:
                               "branch":"develop"
                           },
                           "scope":{
-                              "env":"test",
+                              "environment":"test",
                               "region":"hz"
                           },
                           "templateInput":{
