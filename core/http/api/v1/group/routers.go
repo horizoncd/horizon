@@ -28,10 +28,6 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 			HandlerFunc: a.GetGroup,
 		},
 		{
-			Method:      http.MethodGet,
-			HandlerFunc: a.GetGroupByFullPath,
-		},
-		{
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/:%s", _paramGroupID),
 			HandlerFunc: a.UpdateGroup,
@@ -64,6 +60,10 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 			Method:      http.MethodGet,
 			Pattern:     "/searchchildren",
 			HandlerFunc: a.SearchChildren,
+		},
+		{
+			Method:      http.MethodGet,
+			HandlerFunc: a.GetGroupByFullPath,
 		},
 	}
 
