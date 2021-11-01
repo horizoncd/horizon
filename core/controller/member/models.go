@@ -19,10 +19,6 @@ var (
 	Converter = New()
 )
 
-var (
-	Owner string = "Owner"
-)
-
 type UpdateMember struct {
 	ID   uint   `json:"id"`
 	Role string `json:"role"`

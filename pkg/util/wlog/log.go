@@ -5,15 +5,19 @@ import (
 	"io/ioutil"
 	"net/http"
 	"runtime/debug"
+	"time"
 
 	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
-type Log struct{ ctx context.Context }
+type Log struct {
+	ctx   context.Context
+	start time.Time
+}
 
 func Start(ctx context.Context, op string) Log {
-	log.InfoDepth(ctx, 2, op)
-	return Log{ctx: ctx}
+	log.Info(ctx, op)
+	return Log{ctx: ctx, start: time.Now()}
 }
 
 func (l Log) Stop(end func() string) {
@@ -22,8 +26,8 @@ func (l Log) Stop(end func() string) {
 
 		panic(err)
 	}
-
-	log.InfoDepth(l.ctx, 2, end())
+	duration := time.Since(time.Now())
+	log.WithFiled(l.ctx, "duration", duration).Info()
 }
 
 func ByErr(err error) string {
@@ -41,10 +45,10 @@ func Response(ctx context.Context, resp *http.Response) string {
 	}
 
 	str := string(data)
-	log.InfoDepth(ctx, 2, str)
+	log.Info(ctx, str)
 	return str
 }
 
 func ResponseContent(ctx context.Context, data []byte) {
-	log.InfoDepth(ctx, 2, string(data))
+	log.Info(ctx, string(data))
 }

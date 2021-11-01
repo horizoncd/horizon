@@ -11,6 +11,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"gorm.io/gorm"
 )
 
@@ -277,8 +278,7 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 		member := &membermodels.Member{
 			ResourceType: membermodels.TypeGroup,
 			ResourceID:   id,
-			//TODO(tom): where to place the role
-			Role:         membermodels.Owner,
+			Role:         role.Owner,
 			MemberType:   membermodels.MemberUser,
 			MemberNameID: group.CreatedBy,
 			GrantedBy:    group.UpdatedBy,

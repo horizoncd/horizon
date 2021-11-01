@@ -11,6 +11,7 @@ import (
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/member"
 	"g.hz.netease.com/horizon/pkg/member/models"
+	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 )
 
 var (
@@ -19,10 +20,6 @@ var (
 	ErrMemberNotExist = errors.New("MemberNotExist")  // "Member not exists"
 	ErrGrantHighRole  = errors.New("GrantHigherRole") // "Grant higher role"
 	ErrRemoveHighRole = errors.New("RemoveHighRole")  // "Remove higher role"
-)
-
-var (
-	Svc = NewService()
 )
 
 type Service interface {
@@ -36,19 +33,24 @@ type Service interface {
 	RemoveMember(ctx context.Context, memberID uint) error
 	// ListMember list all the member of the resource
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
+
+	// GetMemberOfResource return the current user's role of the resource (member from direct or parent)
+	GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error)
 }
 
 type service struct {
 	memberManager      member.Manager
 	groupManager       groupmanager.Manager
 	applicationManager applicationmanager.Manager
+	roleService        roleservice.Service
 }
 
-func NewService() Service {
+func NewService(roleService roleservice.Service) Service {
 	return &service{
 		memberManager:      member.Mgr,
 		groupManager:       groupmanager.Mgr,
 		applicationManager: applicationmanager.Mgr,
+		roleService:        roleService,
 	}
 }
 
@@ -80,10 +82,12 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 	if userMemberInfo == nil {
 		return nil, ErrNotPermitted
 	}
-	RoleEqualOrBigger := func(role1, role2 string) bool {
-		return true
+
+	comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, postMember.Role)
+	if err != nil {
+		return nil, err
 	}
-	if !RoleEqualOrBigger(userMemberInfo.Role, postMember.Role) {
+	if comResult == roleservice.RoleSmaller {
 		return nil, ErrGrantHighRole
 	}
 
@@ -93,6 +97,16 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 		return nil, err
 	}
 	return s.memberManager.Create(ctx, member)
+}
+
+func (s *service) GetMemberOfResource(ctx context.Context,
+	resourceType string, resourceID uint) (*models.Member, error) {
+	var currentUser userauth.User
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.getMember(ctx, resourceType, resourceID, models.MemberUser, currentUser.GetID())
 }
 
 func (s *service) GetMember(ctx context.Context, memberID uint) (*models.Member, error) {
@@ -126,12 +140,14 @@ func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
 		return ErrNotPermitted
 	}
 
-	RoleEqualOrBigger := func(role1, role2 string) bool {
-		return true
+	comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, memberItem.Role)
+	if err != nil {
+		return err
 	}
-	if !RoleEqualOrBigger(userMemberInfo.Role, memberItem.Role) {
+	if comResult == roleservice.RoleSmaller {
 		return ErrRemoveHighRole
 	}
+
 	return s.memberManager.DeleteMember(ctx, memberID)
 }
 
@@ -162,17 +178,19 @@ func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) 
 		return nil, ErrNotPermitted
 	}
 
-	RoleBigger := func(role1, role2 string) bool {
-		return true
+	comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, memberItem.Role)
+	if err != nil {
+		return nil, err
 	}
-	if !RoleBigger(userMemberInfo.Role, memberItem.Role) {
+	if comResult != roleservice.RoleBigger {
 		return nil, ErrNotPermitted
 	}
 
-	RoleEqualOrBigger := func(role1, role2 string) bool {
-		return true
+	comResult, err = s.roleService.RoleCompare(ctx, userMemberInfo.Role, role)
+	if err != nil {
+		return nil, err
 	}
-	if !RoleEqualOrBigger(userMemberInfo.Role, role) {
+	if comResult == roleservice.RoleSmaller {
 		return nil, ErrGrantHighRole
 	}
 
