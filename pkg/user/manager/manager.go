@@ -20,6 +20,7 @@ type Manager interface {
 	GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error)
 	// SearchUser search user by filter
 	SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByID(ctx context.Context, userID uint) (*models.User, error)
 	GetUserByIDs(ctx context.Context, userIDs []uint) ([]models.User, error)
 }
@@ -42,6 +43,10 @@ func (m *manager) GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*
 
 func (m *manager) SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error) {
 	return m.dao.SearchUser(ctx, filter, query)
+}
+
+func (m *manager) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return m.dao.GetByEmail(ctx, email)
 }
 
 func (m *manager) GetUserByID(ctx context.Context, userID uint) (*models.User, error) {
