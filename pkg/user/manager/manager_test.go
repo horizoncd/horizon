@@ -55,6 +55,11 @@ func Test(t *testing.T) {
 	u3, err := Mgr.GetByOIDCMeta(ctx, "not-exist", "not-exist")
 	assert.Nil(t, err)
 	assert.Nil(t, u3)
+
+	u4, err := Mgr.GetUserByEmail(ctx, email)
+	assert.Nil(t, err)
+	assert.NotNil(t, u4)
+	assert.Equal(t, u4.Name, name)
 }
 
 func TestSearchUser(t *testing.T) {

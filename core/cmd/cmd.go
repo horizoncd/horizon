@@ -19,6 +19,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
+	"g.hz.netease.com/horizon/core/middleware/authenticate"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -128,6 +129,9 @@ func Run(flags *Flags) {
 	}
 	// enable usermiddle when current env is not dev
 	if !flags.Dev {
+		middlewares = append(middlewares, authenticate.Middleware(
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))))
 		middlewares = append(middlewares,
 			usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
