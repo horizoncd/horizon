@@ -9,15 +9,15 @@ import (
 type ResourceType string
 
 const (
-	TypeGroupStr string = "group"
+	TypeGroupStr string = "groups"
 	// TypeGroup represent the group member entry.
 	TypeGroup ResourceType = (ResourceType)(TypeGroupStr)
 
-	TypeApplicationStr string = "application"
+	TypeApplicationStr string = "applications"
 	// TypeApplication represent the application  member entry.
 	TypeApplication ResourceType = (ResourceType)(TypeApplicationStr)
 
-	TypeApplicationClusterStr string = "applicationCluster"
+	TypeApplicationClusterStr string = "clusters"
 	// TypeApplicationCluster represent the application instance member entry
 	TypeApplicationCluster ResourceType = (ResourceType)(TypeApplicationClusterStr)
 )
