@@ -104,13 +104,19 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 
 func VisitRoles(member *models.Member, role *types.Role,
 	attr auth.Attributes) (_ auth.Decision, reason string, err error) {
+	var memberInfo string
+	if member != nil {
+		memberInfo = member.BaseInfo()
+	} else {
+		memberInfo = "null"
+	}
 	for i, rule := range role.PolicyRules {
 		if types.RuleAllow(attr, &rule) {
 			reason = fmt.Sprintf("user %s allowd by member(%s) by rule[%d]",
-				attr.GetUser().String(), member.BaseInfo(), i)
+				attr.GetUser().String(), memberInfo, i)
 			return auth.DecisionAllow, reason, nil
 		}
 	}
-	reason = fmt.Sprintf("user %s denied by member(%s)", attr.GetUser().String(), member.BaseInfo())
+	reason = fmt.Sprintf("user %s denied by member(%s)", attr.GetUser().String(), memberInfo)
 	return auth.DecisionDeny, reason, nil
 }
