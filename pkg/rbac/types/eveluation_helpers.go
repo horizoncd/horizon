@@ -14,9 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rbac
+package types
 
-import "strings"
+import (
+	"strings"
+
+	"g.hz.netease.com/horizon/pkg/auth"
+)
 
 func VerbMatches(rule *PolicyRule, requestedVerb string) bool {
 	for _, rulesVerb := range rule.Verbs {
@@ -103,4 +107,19 @@ func NonResourceURLMatches(rule *PolicyRule, requestedURL string) bool {
 		}
 	}
 	return false
+}
+
+func RuleAllow(attribute auth.Attributes, rule *PolicyRule) bool {
+	if attribute.IsResourceRequest() {
+		combinedResource := attribute.GetResource()
+		if len(attribute.GetSubResource()) > 0 {
+			combinedResource = attribute.GetResource() + "/" + attribute.GetSubResource()
+		}
+		return VerbMatches(rule, attribute.GetVerb()) &&
+			APIGroupMatches(rule, attribute.GetAPIGroup()) &&
+			ResourceMatches(rule, combinedResource, attribute.GetSubResource()) &&
+			ScopeMatches(rule, attribute.GetScope())
+	}
+	return VerbMatches(rule, attribute.GetVerb()) &&
+		NonResourceURLMatches(rule, attribute.GetPath())
 }

@@ -1,12 +1,14 @@
 package member
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
 )
@@ -18,13 +20,15 @@ const (
 )
 
 type API struct {
-	memberCtrl member.Controller
+	memberCtrl  member.Controller
+	roleService role.Service
 }
 
 // NewAPI initializes a new group api
-func NewAPI() *API {
+func NewAPI(controller member.Controller, rservice role.Service) *API {
 	return &API{
-		memberCtrl: member.Ctl,
+		memberCtrl:  controller,
+		roleService: rservice,
 	}
 }
 
@@ -51,7 +55,7 @@ func (a *API) CreateGroupMember(c *gin.Context) {
 		return
 	}
 
-	if err := validatePostMember(membermodels.TypeGroup, postMember); err != nil {
+	if err := a.validatePostMember(c, membermodels.TypeGroup, postMember); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			err.Error())
 		return
@@ -88,7 +92,7 @@ func (a *API) CreateApplicationMember(c *gin.Context) {
 		return
 	}
 
-	if err := validatePostMember(membermodels.TypeApplication, postMember); err != nil {
+	if err := a.validatePostMember(c, membermodels.TypeApplication, postMember); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			err.Error())
 		return
@@ -123,7 +127,7 @@ func (a *API) UpdateMember(c *gin.Context) {
 		return
 	}
 
-	if err := validRole(updateMember.Role); err != nil {
+	if err := a.validRole(c, updateMember.Role); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			err.Error())
 		return
@@ -195,8 +199,17 @@ func (a *API) ListApplicationMember(c *gin.Context) {
 	response.SuccessWithData(c, membersResp)
 }
 
+func (a *API) validRole(ctx context.Context, role string) error {
+	_, err := a.roleService.GetRole(ctx, role)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // validatePostMember validate postMember body according to resourceType
-func validatePostMember(resourceType membermodels.ResourceType, postMember *member.PostMember) error {
+func (a *API) validatePostMember(ctx context.Context, resourceType membermodels.ResourceType,
+	postMember *member.PostMember) error {
 	if membermodels.ResourceType(postMember.ResourceType) != resourceType {
 		return fmt.Errorf("resourceType not match")
 	}
@@ -208,7 +221,7 @@ func validatePostMember(resourceType membermodels.ResourceType, postMember *memb
 		return err
 	}
 
-	if err := validRole(postMember.Role); err != nil {
+	if err := a.validRole(ctx, postMember.Role); err != nil {
 		return err
 	}
 
@@ -231,15 +244,6 @@ func validMemberType(memberType membermodels.MemberType) error {
 		return fmt.Errorf("this type of member is not supported yet")
 	default:
 		return fmt.Errorf("invalid memberType")
-	}
-	return nil
-}
-
-func validRole(role string) error {
-	switch role {
-	case membermodels.Owner, membermodels.Maintainer, membermodels.Developer, membermodels.Reporter, membermodels.Guest:
-	default:
-		return fmt.Errorf("invalid role")
 	}
 	return nil
 }

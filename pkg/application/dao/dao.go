@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
@@ -109,7 +110,7 @@ func (d *dao) Create(ctx context.Context, application *models.Application) (*mod
 		member := &membermodels.Member{
 			ResourceType: membermodels.TypeApplication,
 			ResourceID:   application.ID,
-			Role:         membermodels.Owner,
+			Role:         role.Owner,
 			MemberType:   membermodels.MemberUser,
 			MemberNameID: application.CreatedBy,
 			GrantedBy:    application.UpdatedBy,

@@ -1,6 +1,10 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"fmt"
+
+	"gorm.io/gorm"
+)
 
 type ResourceType string
 
@@ -27,14 +31,6 @@ const (
 	MemberGroup
 )
 
-const (
-	Owner      string = "Owner"
-	Maintainer string = "Maintainer"
-	Developer  string = "Developer"
-	Reporter   string = "Reporter"
-	Guest      string = "Guest"
-)
-
 type Member struct {
 	gorm.Model
 
@@ -55,4 +51,9 @@ type Member struct {
 	// TODO(tom): change go user
 	GrantedBy uint `gorm:"column:granted_by"`
 	CreatedBy uint `gorm:"column:created_by"`
+}
+
+func (m *Member) BaseInfo() string {
+	return fmt.Sprintf("resource(%s/%d)-memberInfo(%d/%d)",
+		m.ResourceType, m.ResourceID, m.MemberType, m.MemberNameID)
 }
