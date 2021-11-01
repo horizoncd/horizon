@@ -17,9 +17,9 @@ const (
 	// TypeApplication represent the application  member entry.
 	TypeApplication ResourceType = (ResourceType)(TypeApplicationStr)
 
-	TypeApplicationInstanceStr string = "applicationinstance"
-	// TypeApplicationInstance represent the application instance member entry
-	TypeApplicationInstance ResourceType = (ResourceType)(TypeApplicationInstanceStr)
+	TypeApplicationClusterStr string = "applicationCluster"
+	// TypeApplicationCluster represent the application instance member entry
+	TypeApplicationCluster ResourceType = (ResourceType)(TypeApplicationClusterStr)
 )
 
 type MemberType uint8

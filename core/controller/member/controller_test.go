@@ -199,6 +199,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	retMember3, err := Ctl.UpdateMember(ctx, retMember2.ID, "maitainer")
 	assert.Nil(t, err)
 	postMember2.Role = "maitainer"
+
 	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember3))
 
 	// remove the member

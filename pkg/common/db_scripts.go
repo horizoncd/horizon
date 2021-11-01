@@ -1,11 +1,5 @@
 package common
 
-/* sql about gitlab */
-const (
-	GitlabQuery       = "select * from gitlab where deleted_at is null"
-	GitlabQueryByName = "select * from gitlab where name = ? and deleted_at is null"
-)
-
 /* sql about template */
 const (
 	TemplateQuery                      = "select * from template where deleted_at is null"
@@ -18,10 +12,11 @@ const (
 /* sql about user */
 const (
 	// UserQueryByOIDC ...
-	UserQueryByOIDC = "select * from user where oidc_id = ? and oidc_type = ?"
-	UserSearch      = "select * from user where name like ? or full_name like ? or email like ? limit ? offset ?"
-	UserSearchCount = "select count(1) from user where name like ? or full_name like ? or email like ?"
-	UserGetByID     = "select * from user where id in ?"
+	UserQueryByOIDC  = "select * from user where oidc_type = ? and email = ?"
+	UserQueryByEmail = "select * from user where email = ? "
+	UserSearch       = "select * from user where name like ? or full_name like ? or email like ? limit ? offset ?"
+	UserSearchCount  = "select count(1) from user where name like ? or full_name like ? or email like ?"
+	UserGetByID      = "select * from user where id in ?"
 )
 
 /* sql about member */
@@ -70,11 +65,56 @@ const (
 
 /* sql about application */
 const (
-	// ApplicationQueryByName ...
+	ApplicationQueryByID              = "select * from application where id = ? and deleted_at is null"
 	ApplicationQueryByName            = "select * from application where name = ? and deleted_at is null"
 	ApplicationQueryByFuzzily         = "select * from application where name like ? and deleted_at is null"
 	ApplicationQueryByNamesUnderGroup = "select * from application where group_id = ? and name in ? " +
 		"and deleted_at is null"
-	ApplicationDeleteByName   = "update application set deleted_at = CURRENT_TIMESTAMP where name = ?"
+	ApplicationDeleteByID     = "update application set deleted_at = CURRENT_TIMESTAMP where id = ?"
 	ApplicationCountByGroupID = "select count(1) from application where group_id = ? and deleted_at is null"
+)
+
+/* sql about k8sCluster */
+const (
+	// K8SClusterListAll ...
+	K8SClusterListAll = "select * from k8s_cluster"
+)
+
+/* sql about harbor */
+const (
+	HarborListAll = "select * from harbor"
+	HarborGetByID = "select * from harbor where id = ?"
+)
+
+/* sql about environment */
+const (
+	// EnvironmentListAll ...
+	EnvironmentListAll    = "select * from environment"
+	EnvironmentListRegion = "select region_name from environment_region where environment_name = ?"
+	EnvironmentRegionGet  = "select * from environment_region where" +
+		" environment_name = ? and region_name = ?"
+	EnvironmentRegionGetByID = "select * from environment_region where id = ?"
+)
+
+/* sql about region */
+const (
+	// RegionListAll ...
+	RegionListAll     = "select * from region"
+	RegionGetByName   = "select * from region where name = ?"
+	RegionListByNames = "select * from region where name in ?"
+)
+
+/* sql about cluster */
+const (
+	ClusterQueryByID                = "select * from cluster where id = ? and deleted_at is null"
+	ClusterQueryByName              = "select * from cluster where name = ? and deleted_at is null"
+	ClusterQueryByApplicationAndEnv = "select c.*, er.environment_name, er.region_name from cluster c " +
+		"join environment_region er on c.environment_region_id = er.id " +
+		"where c.application_id = ? and er.environment_name = ? " +
+		"and c.name like ? and c.deleted_at is null limit ? offset ?"
+	ClusterCountByApplicationAndEnv = "select count(1) from cluster c " +
+		"join environment_region er on c.environment_region_id = er.id " +
+		"where c.application_id = ? and er.environment_name = ? " +
+		"and c.name like ? and c.deleted_at is null"
+	ClusterQueryByClusterName = "select * from cluster where name = ? and deleted_at is null"
 )

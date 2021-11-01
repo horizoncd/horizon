@@ -22,7 +22,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref : '#/components/schemas/PostMember'
+              $ref: '#/components/schemas/PostMember'
       responses:
         "200":
           description: Success
@@ -58,24 +58,6 @@ paths:
         in: path
         description: group id
         required: true
-    get:
-      tags:
-        - member
-      operationId: getMember
-      summary: get a member
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Member'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
     put:
       tags:
         - member
@@ -85,7 +67,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Role'
+              $ref: '#/components/schemas/PutMember'
       responses:
         '200':
           description: Success
@@ -101,7 +83,7 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     delete:
       tags:
-      - member
+        - member
       operationId: deleteMember
       summary: delete a member
       responses:
@@ -117,79 +99,93 @@ components:
   schemas:
     PostMember:
       type: object
-      required: [ResourceType, ResourceID, MemberType, MemberNameID]
+      required: [ resourceType, resourceID, memberType, memberNameID, role ]
       properties:
-        ResourceType:
+        resourceType:
           $ref: '#/components/schemas/PostMember'
-        ResourceID:
+        resourceID:
           $ref: '#/components/schemas/ResourceID'
-        MemberType:
+        memberType:
           $ref: '#/components/schemas/MemberType'
-        MemberNameID:
+        memberNameID:
           $ref: '#/components/schemas/MemberNameID'
-        Role:
+        role:
+          $ref: '#/components/schemas/Role'
+
+    PutMember:
+      type: object
+      required: [ role ]
+      properties:
+        role:
           $ref: '#/components/schemas/Role'
 
     Member:
       type: object
       properties:
-        ID:
+        id:
           $ref: '#/components/schemas/MemberEntryID'
-        ResourceType:
-          $ref: '#/components/schemas/ResourceType'
-        ResourceID:
+        memberName:
+          $ref: '#/components/schemas/MemberName'
+        memberNameID:
+          $ref: '#/components/schemas/MemberNameID'
+        memberType:
+          $ref: '#/components/schemas/MemberType'
+        resourceID:
           $ref: '#/components/schemas/ResourceID'
-        MemberType:
-          $ref : '#/components/schemas/MemberType'
-        MemberName:
-          $ref : '#/components/schemas/MemberName'
-        MemberNameID:
-          $ref: '#/components/schemas/MemberNameID'
-        Role:
-          $ref: '#/components/schemas/Role'
-        GrantedBy:
-          $ref: '#/components/schemas/MemberNameID'
-        GrantTime:
+        resourceName:
+          $ref: '#/components/schemas/ResourceName'
+        resourcePath:
+          $ref: '#/components/schemas/ResourcePath'
+        resourceType:
+          $ref: '#/components/schemas/ResourceType'
+        grantTime:
           $ref: "common.yaml#/components/schemas/Date"
-
+        grantedBy:
+          $ref: '#/components/schemas/GrantedBy'
+        grantorName:
+          $ref: '#/components/schemas/GrantorName'
+        role:
+          $ref: '#/components/schemas/Role'
 
     MemberEntryID:
       type: integer
       format: uint64
       description: the uniq id of a member entry
-
     MemberName:
       type: string
       format: uint64
       description: the groupname or username
-
     MemberNameID:
       type: integer
       format: uint64
       description: the groupID or userID
-
-    ResourceType:
-      type: string
-      enum: ["group", "application", "cluster"]
-      description: add member to such resource
-
+    MemberType:
+      type: integer
+      format: uint8
+      enum: [ 0, 1 ]
+      description: 0 for user, 1 for group
     ResourceID:
       type: integer
       format: uint64
       description: groupID applicationID or clusterID
-
-    MemberType:
-      type: integer
-      format: uint8
-      enum: [0, 1]
-      description: 0 for user, 1 for group
-
-    MemberInfo:
+    ResourceName:
+      type: string
+      description: groupName, applicationName or clusterName
+    ResourcePath:
+      type: string
+      description: full path of resource
+    ResourceType:
+      type: string
+      enum: [ "group", "application", "cluster" ]
+      description: add member to such resource
+    GrantedBy:
       type: integer
       format: uint64
-      description: userID or groupID
-
+      description: id of user who grant this member
+    GrantorName:
+      type: string
+      description: name of user who grant this member
     Role:
       type: string
-      enum: ["Owner", "maintainer", "develop", "test"]
+      enum: [ "Owner", "Maintainer", "Developer", "Reporter", "Guest" ]
       description: the member role

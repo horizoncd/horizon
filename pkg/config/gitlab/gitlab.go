@@ -1,12 +1,21 @@
 package gitlab
 
-type Config struct {
-	Application          *Gitlab `yaml:"application"`
-	ApplicationInstances *Gitlab `yaml:"applicationInstance"`
-}
+// Mapper gitlab mapper
+type Mapper map[string]*Gitlab
 
 type Gitlab struct {
-	GitlabName      string  `yaml:"gitlabName"`
+	HTTPURL string `yaml:"httpURL"`
+	SSHURL  string `yaml:"sshURL"`
+	Token   string `yaml:"token"`
+}
+
+// RepoConfig gitlab repo config
+type RepoConfig struct {
+	Application *Repo `yaml:"application"`
+	Cluster     *Repo `yaml:"cluster"`
+}
+
+type Repo struct {
 	Parent          *Parent `yaml:"parent"`
 	RecyclingParent *Parent `yaml:"recyclingParent"`
 }

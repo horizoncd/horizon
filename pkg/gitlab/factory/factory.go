@@ -6,14 +6,9 @@ import (
 	"sync"
 
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	"g.hz.netease.com/horizon/pkg/gitlab/manager"
+	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-)
-
-var (
-	// Fty Global gitlab factory
-	Fty = newFactory()
 )
 
 // Factory used to get the gitlab instance
@@ -24,18 +19,17 @@ type Factory interface {
 
 type factory struct {
 	// m use sync.Map for cache
-	m *sync.Map
-	// gitlabMgr to query gitlab db
-	gitlabMgr manager.Manager
+	m            *sync.Map
+	gitlabMapper gitlab.Mapper
 }
 
 var _ Factory = (*factory)(nil)
 
-// newFactory initializes a new factory
-func newFactory() Factory {
+// NewFactory initializes a new factory
+func NewFactory(gitlabMapper gitlab.Mapper) Factory {
 	return &factory{
-		m:         &sync.Map{},
-		gitlabMgr: manager.Mgr,
+		m:            &sync.Map{},
+		gitlabMapper: gitlabMapper,
 	}
 }
 
@@ -50,18 +44,14 @@ func (f *factory) GetByName(ctx context.Context, name string) (_ gitlablib.Inter
 		// exists in cache, return
 		return ret.(gitlablib.Interface), nil
 	}
-	// not exists in cache, query db
-	gitlabModel, err := f.gitlabMgr.GetByName(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-	if gitlabModel == nil {
-		// not in db
+	// not exists in cache
+	gitlabModel, ok := f.gitlabMapper[name]
+	if !ok {
 		errMsg := fmt.Sprintf("the gitlab instance for name: %s is not found. ", name)
 		return nil, errors.E(op, errMsg)
 	}
 
-	gitlabLib, err := gitlablib.New(gitlabModel.Token, gitlabModel.URL)
+	gitlabLib, err := gitlablib.New(gitlabModel.Token, gitlabModel.HTTPURL, gitlabModel.SSHURL)
 	if err != nil {
 		return nil, err
 	}

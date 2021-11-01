@@ -66,13 +66,13 @@ type Subject struct {
 	// Application the name of application.
 	Application *string `json:"application,omitempty"`
 
-	// ApplicationInstance the name of applicationInstance.
-	ApplicationInstance *string `json:"applicationInstance,omitempty"`
+	// Cluster the name of cluster.
+	Cluster *string `json:"cluster,omitempty"`
 }
 
 func (s Subject) String() string {
-	if s.ApplicationInstance != nil {
-		return fmt.Sprintf("%s %s %s", s.Operator, s.Action, *s.ApplicationInstance)
+	if s.Cluster != nil {
+		return fmt.Sprintf("%s %s %s", s.Operator, s.Action, *s.Cluster)
 	} else if s.Application != nil {
 		return fmt.Sprintf("%s %s %s", s.Operator, s.Action, *s.Application)
 	}

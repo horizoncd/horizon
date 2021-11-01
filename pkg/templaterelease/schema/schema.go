@@ -3,23 +3,19 @@ package schema
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"sync"
 
+	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
-var (
-	Gtr = newSchemaGetter()
-)
+const _gitlabName = "control"
 
 // Getter provides some functions for template schema
 type Getter interface {
-	// GetTemplateSchema get schema for specified template release
+	// GetTemplateSchema get schema for specified template release. todo(gjq) add cache
 	GetTemplateSchema(ctx context.Context, templateName, releaseName string) (*Schemas, error)
 }
 
@@ -40,37 +36,30 @@ const (
 	// ui schema file path
 	_pipelineUISchemaPath    = "schema/pipeline.ui.schema.json"
 	_applicationUISchemaPath = "schema/application.ui.schema.json"
-
-	// ErrCodeReleaseNotFound  ReleaseNotFound error code
-	_errCodeReleaseNotFound = errors.ErrorCode("ReleaseNotFound")
 )
 
 type getter struct {
-	gitlabFactory      gitlabfty.Factory
+	gitlabLib          gitlablib.Interface
 	templateReleaseMgr manager.Manager
 }
 
-func newSchemaGetter() Getter {
-	return &getter{
-		gitlabFactory:      gitlabfty.Fty,
-		templateReleaseMgr: manager.Mgr,
+func NewSchemaGetter(ctx context.Context, gitlabFty gitlabfty.Factory) (Getter, error) {
+	gitlabLib, err := gitlabFty.GetByName(ctx, _gitlabName)
+	if err != nil {
+		return nil, err
 	}
+	return &getter{
+		gitlabLib:          gitlabLib,
+		templateReleaseMgr: manager.Mgr,
+	}, nil
 }
 
 func (g *getter) GetTemplateSchema(ctx context.Context,
 	templateName, releaseName string) (_ *Schemas, err error) {
-	const op = "template service: getTemplateSchema"
+	const op = "template schema getter: getTemplateSchema"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	tr, err := g.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, releaseName)
-	if err != nil {
-		return nil, err
-	}
-	if tr == nil {
-		return nil, errors.E(op, http.StatusNotFound, _errCodeReleaseNotFound,
-			fmt.Sprintf("the release %v of template %v is not found", releaseName, templateName))
-	}
-	gitlabLib, err := g.gitlabFactory.GetByName(ctx, tr.GitlabName)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +71,7 @@ func (g *getter) GetTemplateSchema(ctx context.Context,
 	wgReadFile.Add(4)
 	readFile := func(b *[]byte, err *error, filePath string) {
 		defer wgReadFile.Done()
-		bytes, e := gitlabLib.GetFile(ctx, tr.GitlabProject, tr.Name, filePath)
+		bytes, e := g.gitlabLib.GetFile(ctx, tr.GitlabProject, tr.Name, filePath)
 		*b = bytes
 		*err = e
 	}

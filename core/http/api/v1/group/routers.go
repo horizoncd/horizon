@@ -41,6 +41,11 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 			Pattern:     fmt.Sprintf("/:%s/groups", _paramGroupID),
 			HandlerFunc: a.GetSubGroups,
 		},
+		{
+			Method:      http.MethodPut,
+			Pattern:     fmt.Sprintf("/:%s/transfer", _paramGroupID),
+			HandlerFunc: a.TransferGroup,
+		},
 	}
 
 	frontAPI := engine.Group("/apis/front/v1/groups")
@@ -59,11 +64,6 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 			Method:      http.MethodGet,
 			Pattern:     "/searchchildren",
 			HandlerFunc: a.SearchChildren,
-		},
-		{
-			Method:      http.MethodPut,
-			Pattern:     fmt.Sprintf("/:%s/transfer", _paramGroupID),
-			HandlerFunc: a.TransferGroup,
 		},
 	}
 

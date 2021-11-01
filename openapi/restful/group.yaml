@@ -5,14 +5,14 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/groups?path={path}:
+  /apis/core/v1/groups?fullPath={fullPath}:
     get:
       tags:
         - group
       operationId: queryGroups
-      summary: query groups by field
+      summary: query group by fullPath
       parameters:
-        - name: path
+        - name: fullPath
           in: query
       responses:
         '200':
@@ -22,13 +22,15 @@ paths:
               schema:
                 properties:
                   data:
-                    $ref: '#/components/schemas/Group'
+                    $ref: "../front/group.yaml#/components/schemas/GroupChild"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+
+
   /apis/core/v1/groups:
     post:
       tags:
@@ -51,9 +53,9 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/groups/{GroupID}:
+  /apis/core/v1/groups/{groupID}:
     parameters:
-      - name: GroupID
+      - name: groupID
         in: path
     get:
       tags:
@@ -66,7 +68,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Group"
+                $ref: "../front/group.yaml#/components/schemas/GroupChild"
         default:
           description: Unexpected error
           content:
@@ -112,15 +114,15 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/groups/{GroupID}/groups:
+  /apis/core/v1/groups/{groupID}/groups:
     parameters:
-      - name: GroupID
+      - name: groupID
         in: path
     get:
       tags:
         - group
       operationId: getSubgroups
-      summary: get the subgroup of a group
+      summary: get subgroups of a group
       responses:
         '200':
           description: Success
@@ -137,23 +139,20 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/groups/{GroupID}/applications:
+  /apis/core/v1/groups/{groupID}/transfer?groupID={groupID}:
     parameters:
-      - $ref: "#/components/schemas/GroupID"
-    get:
+      - name: groupID
+        in: path
+      - name: groupID
+        in: query
+    put:
       tags:
         - group
-      operationId: getGroupAppliatons
-      summary: get the application of a group
+      operationId: transferGroup
+      summary: transfer a group under another parent group
       responses:
         '200':
           description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '../application.yaml#/components/schemas/application'
         default:
           description: Unexpected error
           content:
@@ -168,7 +167,6 @@ components:
       required:
         - name
         - path
-        - visibilityLevel
       properties:
         name:
           $ref: '#/components/schemas/GroupName'
@@ -176,8 +174,6 @@ components:
           $ref: '#/components/schemas/GroupPath'
         description:
           $ref: '#/components/schemas/GroupDescription'
-        visibilityLevel:
-          $ref: '#/components/schemas/VisibilityLevel'
         parantID:
           $ref: '#/components/schemas/GroupID'
 
@@ -192,8 +188,6 @@ components:
           $ref: '#/components/schemas/GroupPath'
         description:
           $ref: '#/components/schemas/GroupDescription'
-        visibilityLevel:
-          $ref: '#/components/schemas/VisibilityLevel'
         createdAt:
           $ref: "common.yaml#/components/schemas/Date"
         updatedAt:
@@ -213,12 +207,6 @@ components:
       type: string
       maxLength: 1024
       description: the group path
-
-    VisibilityLevel:
-      type: string
-      enum: ["public", "private"]
-      default: "private"
-      description: public means public(every one can see the group), private means private only members can see
 
     GroupDescription:
       type: string

@@ -20,7 +20,16 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		}, {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/groups/:%v/members", _paramGroupID),
-			HandlerFunc: api.CreateMember,
+			HandlerFunc: api.CreateGroupMember,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/applications/:%v/members", _paramApplicationID),
+			HandlerFunc: api.ListApplicationMember,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/applications/:%v/members", _paramApplicationID),
+			HandlerFunc: api.CreateApplicationMember,
 		},
 		{
 			Method:      http.MethodPut,

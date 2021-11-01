@@ -9,10 +9,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
-var (
-	Ctl = NewController()
-)
-
 type Controller interface {
 	// ListTemplate list all template available
 	ListTemplate(ctx context.Context) (Templates, error)
@@ -31,11 +27,11 @@ type controller struct {
 var _ Controller = (*controller)(nil)
 
 // NewController initializes a new controller
-func NewController() Controller {
+func NewController(getter templateschema.Getter) Controller {
 	return &controller{
 		templateMgr:          tmanager.Mgr,
 		templateReleaseMgr:   trmanager.Mgr,
-		templateSchemaGetter: templateschema.Gtr,
+		templateSchemaGetter: getter,
 	}
 }
 

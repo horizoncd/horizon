@@ -5,20 +5,18 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v1/groups/searchgroups?parentID={parentID}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v1/groups/searchgroups?groupID={groupID}&filter={filter}:
     get:
       tags:
         - group
-      description: query groups
-      summary: query groups
-      operationId: queryGroups
+      description: search subGroups of a group
+      summary: search subGroups
+      operationId: searchGroups
       parameters:
-        - name: parentID
+        - name: groupID
           in: query
         - name: filter
           in: query
-        - $ref: '../core.yaml/#/components/parameters/pageNumber'
-        - $ref: '../core.yaml/#/components/parameters/pageSize'
       responses:
         '200':
           description: Success
@@ -35,19 +33,49 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/front/v1/groups/children?parentID={parentID}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v1/groups/searchchildren?groupID={groupID}&filter={filter}:
+    get:
+      tags:
+        - group
+      description: search children of a group
+      summary: search children
+      operationId: searchChildren
+      parameters:
+        - name: groupID
+          in: query
+        - name: filter
+          in: query
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupChild'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/front/v1/groups/children?groupID={groupID}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
       operationId: queryGroupChildren
       summary: query children of a group
       parameters:
-        - name: parentID
+        - name: groupID
           in: query
-        - $ref: '../core.yaml/#/components/parameters/pageNumber'
-        - $ref: '../core.yaml/#/components/parameters/pageSize'
+        - $ref: 'common.yaml/#/components/parameters/pageNumber'
+        - $ref: 'common.yaml/#/components/parameters/pageSize'
       responses:
         "200":
           content:
@@ -64,7 +92,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
 components:
   schemas:
@@ -87,19 +115,22 @@ components:
           $ref: '#/components/schemas/GroupChildType'
         childrenCount:
           type: integer
+        Children:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupChild'
         parentID:
           type: integer
         createdAt:
-          $ref: "../core.yaml#/components/schemas/Date"
+          $ref: "../restful/common.yaml#/components/schemas/Date"
         updatedAt:
-          $ref: "../core.yaml#/components/schemas/Date"
+          $ref: "../restful/common.yaml#/components/schemas/Date"
 
     GroupChildType:
       type: string
       enum:
         - group
         - application
-        - cluster
 
 
 

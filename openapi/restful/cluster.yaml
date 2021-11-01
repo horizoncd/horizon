@@ -5,12 +5,16 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/applications/{application}/clusters?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/core/v1/applications/{applicationID}/clusters?environment={environment}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     parameters:
-      - name: application
+      - name: applicationID
         in: path
-        description: application name
+        description: application id
         required: true
+      - name: environment
+        in: query
+        description: environment name
+        required: false
       - name: filter
         in: query
         description: filter clusters by name
@@ -38,7 +42,7 @@ paths:
                                   "id":1,
                                   "name":"gitops-dg-online",
                                   "scope":{
-                                      "env":"online",
+                                      "environment":"online",
                                       "region":"dg"
                                   },
                                   "template":{
@@ -56,15 +60,15 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/applications/{application}/clusters?scope={scope}:
+  /apis/core/v1/applications/{applicationID}/clusters?scope={scope}:
     parameters:
-      - name: application
+      - name: applicationID
         in: path
-        description: application name
+        description: application id
         required: true
       - name: scope
         in: query
-        description: scope is env/region, this value can not be edited after created.
+        description: scope is environment/region, this value can not be edited after created.
         required: true
     post:
       tags:
@@ -126,11 +130,11 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/clusters/{cluster}:
+  /apis/core/v1/clusters/{clusterID}:
     parameters:
-      - name: cluster
+      - name: clusterID
         in: path
-        description: name of cluster
+        description: id of cluster
         required: true
     put:
       tags:
@@ -145,8 +149,14 @@ paths:
               example: |
                 {
                     "description":"xxxxxxxxxxxx",
+                    "template":{
+                        "//release": "template release can be edited",
+                        "release":"v1.1.0"
+                    },
+                    "//git": "git params can be edited",
                     "git":{
-                        "//branch":"branch can be edited",
+                        "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                        "subfolder":"/",
                         "branch":"develop"
                     },
                     "templateInput":{
@@ -204,8 +214,13 @@ paths:
                 example: |
                   {
                       "data":{
-                          "application":"app",
+                          "application":{
+                              "id":2,
+                              "name":"app"
+                          },
+                          "id":1,
                           "name":"cluster",
+                          "fullPath": "/a/b/c",
                           "description":"xxxxxxxxxxxx",
                           "priority":"P0",
                           "template":{
@@ -217,9 +232,9 @@ paths:
                               "subfolder":"/",
                               "branch":"develop"
                           },
-                          "scope": {
-                            "env": "test",
-                            "region": "hz"
+                          "scope":{
+                              "environment":"test",
+                              "region":"hz"
                           },
                           "templateInput":{
                               "application":{
@@ -269,11 +284,11 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/builddeploy:
+  /apis/core/v1/clusters/{clusterID}/builddeploy:
     parameters:
-      - name: cluster
+      - name: clusterID
         in: path
-        description: name of cluster
+        description: id of cluster
         required: true
     post:
       tags:
@@ -317,11 +332,11 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/deploy:
+  /apis/core/v1/clusters/{clusterID}/deploy:
     parameters:
-      - name: cluster
+      - name: clusterID
         in: path
-        description: name of cluster
+        description: id of cluster
         required: true
     post:
       tags:
@@ -359,11 +374,11 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/rollback:
+  /apis/core/v1/clusters/{clusterID}/rollback:
     parameters:
-      - name: cluster
+      - name: clusterID
         in: path
-        description: name of cluster
+        description: id of cluster
         required: true
     post:
       tags:
@@ -400,11 +415,11 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/restart:
+  /apis/core/v1/clusters/{clusterID}/restart:
     parameters:
-      - name: cluster
+      - name: clusterID
         in: path
-        description: name of cluster
+        description: id of cluster
         required: true
     post:
       tags:
@@ -431,11 +446,11 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/next:
+  /apis/core/v1/clusters/{clusterID}/next:
     parameters:
-      - name: cluster
+      - name: clusterID
         in: path
-        description: name of cluster
+        description: id of cluster
         required: true
     post:
       tags:
@@ -453,11 +468,11 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/diffs?targetBranch={targetBranch}:
+  /apis/core/v1/clusters/{clusterID}/diffs?targetBranch={targetBranch}:
     parameters:
-      - name: cluster
+      - name: clusterID
         in: path
-        description: name of cluster
+        description: id of cluster
         required: true
       - name: targetBranch
         in: query
@@ -506,7 +521,12 @@ paths:
                       }
                   }
 
-  /apis/core/v1/clusters/{cluster}/pipelineruns:
+  /apis/core/v1/clusters/{clusterID}/pipelineruns:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
     get:
       tags:
         - cluster
@@ -555,11 +575,11 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/clusters/{cluster}/status:
+  /apis/core/v1/clusters/{clusterID}/status:
     parameters:
-      - name: cluster
+      - name: clusterID
         in: path
-        description: name of cluster
+        description: id of cluster
         required: true
     get:
       tags:

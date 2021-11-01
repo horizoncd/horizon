@@ -6,8 +6,9 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/middleware/user"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	groupManager "g.hz.netease.com/horizon/pkg/group/manager"
+	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/member"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
@@ -38,16 +39,18 @@ type Service interface {
 }
 
 type service struct {
-	memberManager member.Manager
-	groupManager  groupManager.Manager
-	roleService   roleservice.Service
+	memberManager      member.Manager
+	groupManager       groupmanager.Manager
+	applicationManager applicationmanager.Manager
+	roleService        roleservice.Service
 }
 
 func NewService(roleService roleservice.Service) Service {
 	return &service{
-		memberManager: member.Mgr,
-		groupManager:  groupManager.Mgr,
-		roleService:   roleService,
+		memberManager:      member.Mgr,
+		groupManager:       groupmanager.Mgr,
+		applicationManager: applicationmanager.Mgr,
+		roleService:        roleService,
 	}
 }
 
@@ -204,7 +207,7 @@ func (s *service) ListMember(ctx context.Context, resourceType string, resourceI
 		allMembers, err = s.listGroupMembers(ctx, resourceID)
 	case models.TypeApplicationStr:
 		allMembers, err = s.listApplicationMembers(ctx, resourceID)
-	case models.TypeApplicationInstanceStr:
+	case models.TypeApplicationClusterStr:
 		allMembers, err = s.listApplicationInstanceMembers(ctx, resourceID)
 	default:
 		err = errors.New("unsupported resourceType")
@@ -221,7 +224,7 @@ func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]mode
 	if err != nil {
 		return nil, err
 	}
-	groupIDs := groupManager.FormatIDsFromTraversalIDs(groupInfo.TraversalIDs)
+	groupIDs := groupmanager.FormatIDsFromTraversalIDs(groupInfo.TraversalIDs)
 
 	// 2. get all the direct service of group
 	var retMembers []models.Member
@@ -270,12 +273,26 @@ func (s *service) getMember(ctx context.Context, resourceType string, resourceID
 }
 
 func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
-	// TODO(tom)
+	var retMembers []models.Member
 	// 1. query the application's service
+	applicationInfo, err := s.applicationManager.GetByID(ctx, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	members, err := s.memberManager.ListDirectMember(ctx, models.TypeApplication, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	retMembers = append(retMembers, members...)
 	// 2. query the group's service
-	// 3. merge and return
-	err := errors.New("Unimplement yet")
-	return nil, err
+	members, err = s.listGroupMembers(ctx, applicationInfo.GroupID)
+	if err != nil {
+		return nil, err
+	}
+
+	retMembers = append(retMembers, members...)
+
+	return DeduplicateMember(retMembers), nil
 }
 
 func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {

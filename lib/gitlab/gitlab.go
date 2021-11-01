@@ -93,6 +93,13 @@ type Interface interface {
 	// EditNameAndPathForProject update name and path for a specified project.
 	// The pid can be the project's ID or relative path such as fist/second.
 	EditNameAndPathForProject(ctx context.Context, pid interface{}, newName, newPath *string) error
+
+	// Compare branches, tags or commits.
+	// The pid can be the project's ID or relative path such as fist/second.
+	// See https://docs.gitlab.com/ee/api/repositories.html#compare-branches-tags-or-commits for more information.
+	Compare(ctx context.Context, pid interface{}, from, to string, straight *bool) (*gitlab.Compare, error)
+
+	GetSSHURL(ctx context.Context) string
 }
 
 var _ Interface = (*helper)(nil)
@@ -119,13 +126,15 @@ func (a FileAction) toFileActionValuePtr() *gitlab.FileActionValue {
 }
 
 type helper struct {
-	client *gitlab.Client
+	client  *gitlab.Client
+	httpURL string
+	sshURL  string
 }
 
 // New an instance of Gitlab
-func New(token, baseURL string) (Interface, error) {
+func New(token, httpURL, sshURL string) (Interface, error) {
 	client, err := gitlab.NewClient(token,
-		gitlab.WithBaseURL(baseURL),
+		gitlab.WithBaseURL(httpURL),
 		gitlab.WithHTTPClient(&http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -135,7 +144,9 @@ func New(token, baseURL string) (Interface, error) {
 		return nil, err
 	}
 	return &helper{
-		client: client,
+		client:  client,
+		httpURL: httpURL,
+		sshURL:  sshURL,
 	}, nil
 }
 
@@ -195,6 +206,7 @@ func (h *helper) CreateProject(ctx context.Context, name string, groupID int) (_
 	project, resp, err := h.client.Projects.CreateProject(&gitlab.CreateProjectOptions{
 		InitializeWithReadme: func() *bool { b := true; return &b }(),
 		Name:                 &name,
+		Path:                 &name,
 		NamespaceID:          &groupID,
 	}, gitlab.WithContext(ctx))
 
@@ -357,6 +369,27 @@ func (h *helper) EditNameAndPathForProject(ctx context.Context, pid interface{},
 	}
 
 	return nil
+}
+
+func (h *helper) Compare(ctx context.Context, pid interface{}, from, to string,
+	straight *bool) (_ *gitlab.Compare, err error) {
+	const op = "gitlab: compare branchs"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	compare, resp, err := h.client.Repositories.Compare(pid, &gitlab.CompareOptions{
+		From:     &from,
+		To:       &to,
+		Straight: straight,
+	}, gitlab.WithContext(ctx))
+	if err != nil {
+		return nil, parseError(op, resp, err)
+	}
+
+	return compare, nil
+}
+
+func (h *helper) GetSSHURL(ctx context.Context) string {
+	return h.sshURL
 }
 
 func parseError(op errors.Op, resp *gitlab.Response, err error) error {

@@ -7,7 +7,6 @@ type TemplateRelease struct {
 	TemplateName  string
 	Name          string
 	Description   string
-	GitlabName    string
 	GitlabProject string
 	Recommended   bool
 	CreatedBy     uint

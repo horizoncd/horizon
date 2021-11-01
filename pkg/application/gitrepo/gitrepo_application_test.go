@@ -10,10 +10,8 @@ import (
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	gitlabftymock "g.hz.netease.com/horizon/mock/pkg/gitlab/factory"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,7 +42,7 @@ export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
 }
 EOF
 )"
-go test -v ./pkg/service/gitrepo
+go test -v ./pkg/application/gitrepo
 
 NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this test.
 
@@ -131,7 +129,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	g, err = gitlablib.New(p.Token, p.BaseURL)
+	g, err = gitlablib.New(p.Token, p.BaseURL, "")
 	if err != nil {
 		panic(err)
 	}
@@ -153,23 +151,16 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	mockCtl := gomock.NewController(t)
-	gitlabFactory := gitlabftymock.NewMockFactory(mockCtl)
-	gitlabFactory.EXPECT().GetByName(ctx, "compute").Return(g, nil).AnyTimes()
-
 	r = &applicationGitlabRepo{
-		gitlabFactory: gitlabFactory,
-		gitlabConfig: gitlab.Config{
-			Application: &gitlab.Gitlab{
-				GitlabName: "compute",
-				Parent: &gitlab.Parent{
-					Path: fmt.Sprintf("%v/%v", rootGroupName, "applications"),
-					ID:   4280,
-				},
-				RecyclingParent: &gitlab.Parent{
-					Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-applications"),
-					ID:   4592,
-				},
+		gitlabLib: g,
+		applicationRepoConf: &gitlab.Repo{
+			Parent: &gitlab.Parent{
+				Path: fmt.Sprintf("%v/%v", rootGroupName, "applications"),
+				ID:   4280,
+			},
+			RecyclingParent: &gitlab.Parent{
+				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-applications"),
+				ID:   4592,
 			},
 		},
 	}

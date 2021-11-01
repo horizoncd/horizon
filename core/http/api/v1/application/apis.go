@@ -7,13 +7,14 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
 	"g.hz.netease.com/horizon/pkg/server/response"
+
 	"github.com/gin-gonic/gin"
 )
 
 const (
 	// param
-	_groupIDParam     = "groupID"
-	_applicationParam = "application"
+	_groupIDParam       = "groupID"
+	_applicationIDParam = "applicationID"
 )
 
 type API struct {
@@ -27,10 +28,14 @@ func NewAPI(applicationCtl application.Controller) *API {
 }
 
 func (a *API) Get(c *gin.Context) {
-	name := c.Param(_applicationParam)
+	appIDStr := c.Param(_applicationIDParam)
+	appID, err := strconv.ParseUint(appIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
 	var res *application.GetApplicationResponse
-	var err error
-	if res, err = a.applicationCtl.GetApplication(c, name); err != nil {
+	if res, err = a.applicationCtl.GetApplication(c, uint(appID)); err != nil {
 		response.AbortWithError(c, err)
 		return
 	}
@@ -51,11 +56,12 @@ func (a *API) Create(c *gin.Context) {
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	if err := a.applicationCtl.CreateApplication(c, uint(groupID), request); err != nil {
+	resp, err := a.applicationCtl.CreateApplication(c, uint(groupID), request)
+	if err != nil {
 		response.AbortWithError(c, err)
 		return
 	}
-	response.Success(c)
+	response.SuccessWithData(c, resp)
 }
 
 func (a *API) Update(c *gin.Context) {
@@ -65,8 +71,28 @@ func (a *API) Update(c *gin.Context) {
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	name := c.Param(_applicationParam)
-	if err := a.applicationCtl.UpdateApplication(c, name, request); err != nil {
+	appIDStr := c.Param(_applicationIDParam)
+	appID, err := strconv.ParseUint(appIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	resp, err := a.applicationCtl.UpdateApplication(c, uint(appID), request)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
+func (a *API) Delete(c *gin.Context) {
+	appIDStr := c.Param(_applicationIDParam)
+	appID, err := strconv.ParseUint(appIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	if err := a.applicationCtl.DeleteApplication(c, uint(appID)); err != nil {
 		response.AbortWithError(c, err)
 		return
 	}

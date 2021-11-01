@@ -11,6 +11,7 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/group/service"
@@ -26,7 +27,7 @@ var (
 
 const (
 	// ErrCodeNotFound a kind of error code, returned when there's no group matching the given id
-	ErrCodeNotFound = errors.ErrorCode("GroupNotFound")
+	ErrCodeNotFound = errors.ErrorCode("RecordNotFound")
 	// ErrGroupHasChildren a kind of error code, returned when deleting a group which still has some children
 	ErrGroupHasChildren = errors.ErrorCode("GroupHasChildren")
 )
@@ -57,6 +58,7 @@ type Controller interface {
 type controller struct {
 	groupManager       manager.Manager
 	applicationManager appmanager.Manager
+	clusterManager     clustermanager.Manager
 }
 
 // NewController initializes a new group controller
@@ -64,6 +66,7 @@ func NewController() Controller {
 	return &controller{
 		groupManager:       manager.Mgr,
 		applicationManager: appmanager.Mgr,
+		clusterManager:     clustermanager.Mgr,
 	}
 }
 
@@ -115,7 +118,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 			fName = val.Name
 			fPath = fmt.Sprintf("/%s", val.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", full.FullName, val.Name)
+			fName = fmt.Sprintf("%s/%s", full.FullName, val.Name)
 			fPath = fmt.Sprintf("%s/%s", full.FullPath, val.Path)
 		}
 		child := service.ConvertGroupOrApplicationToChild(val, &service.Full{
@@ -262,7 +265,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 			fName = s.Name
 			fPath = fmt.Sprintf("/%s", s.Path)
 		} else {
-			fName = fmt.Sprintf("%s / %s", full.FullName, s.Name)
+			fName = fmt.Sprintf("%s/%s", full.FullName, s.Name)
 			fPath = fmt.Sprintf("%s/%s", full.FullPath, s.Path)
 		}
 		child := service.ConvertGroupToChild(s, &service.Full{
@@ -340,7 +343,7 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 
 // GetByFullPath get a group by the URLPath
 func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.Child, error) {
-	const op = "group *controller: get group by path"
+	const op = "get record by fullPath"
 
 	var errNotMatch = errors.E(op, http.StatusNotFound, ErrCodeNotFound,
 		fmt.Sprintf("no resource matching the path: %s", path))
@@ -373,22 +376,34 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.C
 		return nil, errNotMatch
 	}
 	app, err := c.applicationManager.GetByName(ctx, paths[len(paths)-1])
-	if err != nil {
-		return nil, err
-	}
-	if app != nil {
+	if app != nil && err == nil {
 		appParentFull, ok := idToFull[app.GroupID]
-		if ok && fmt.Sprintf("%v/%v", appParentFull.FullPath, app.Name) == path {
+		if ok && fmt.Sprintf("%s/%s", appParentFull.FullPath, app.Name) == path {
 			return service.ConvertApplicationToChild(app, &service.Full{
-				FullName: fmt.Sprintf("%v / %v", appParentFull.FullName, app.Name),
-				FullPath: fmt.Sprintf("%v/%v", appParentFull.FullPath, app.Name),
+				FullName: fmt.Sprintf("%s/%s", appParentFull.FullName, app.Name),
+				FullPath: fmt.Sprintf("%s/%s", appParentFull.FullPath, app.Name),
 			}), nil
 		}
 	}
 
-	// 3. todo match cluster
+	// 3. match cluster
 	if len(paths) < 3 {
 		return nil, errNotMatch
+	}
+	cluster, err := c.clusterManager.GetByName(ctx, paths[len(paths)-1])
+	if err != nil {
+		return nil, errNotMatch
+	}
+	app, err = c.applicationManager.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, errNotMatch
+	}
+	appParentFull, ok := idToFull[app.GroupID]
+	if ok && fmt.Sprintf("%s/%s/%s", appParentFull.FullPath, app.Name, cluster.Name) == path {
+		return service.ConvertClusterToChild(cluster, &service.Full{
+			FullName: fmt.Sprintf("%s/%s/%s", appParentFull.FullName, app.Name, cluster.Name),
+			FullPath: fmt.Sprintf("%s/%s/%s", appParentFull.FullPath, app.Name, cluster.Name),
+		}), nil
 	}
 
 	return nil, errNotMatch
@@ -463,8 +478,8 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
 	for _, application := range applications {
 		parent := idToFull[application.GroupID]
 		child := service.ConvertApplicationToChild(application, &service.Full{
-			FullName: fmt.Sprintf("%v / %v", parent.FullName, application.Name),
-			FullPath: fmt.Sprintf("%v/%v", parent.FullPath, application.Name),
+			FullName: fmt.Sprintf("%s/%s", parent.FullName, application.Name),
+			FullPath: fmt.Sprintf("%s/%s", parent.FullPath, application.Name),
 		})
 		if application.GroupID == groupID {
 			firstLevelChildren = append(firstLevelChildren, child)

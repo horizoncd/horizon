@@ -21,32 +21,32 @@ paths:
                   {
                       "data":[
                           {
-                              "env":"dev",
-                              "name":"开发"
+                              "name":"dev",
+                              "displayName":"开发"
                           },
                           {
-                              "env":"test",
-                              "name":"测试"
+                              "name":"test",
+                              "displayName":"测试"
                           },
                           {
-                              "env":"reg",
-                              "name":"回归"
+                              "name":"reg",
+                              "displayName":"回归"
                           },
                           {
-                              "env":"perf",
-                              "name":"性能"
+                              "name":"perf",
+                              "displayName":"性能"
                           },
                           {
-                              "env":"pre",
-                              "name":"预发"
+                              "name":"pre",
+                              "displayName":"预发"
                           },
                           {
-                              "env":"beta",
-                              "name":"灰度"
+                              "name":"beta",
+                              "displayName":"灰度"
                           },
                           {
-                              "env":"online",
-                              "name":"线上"
+                              "name":"online",
+                              "displayName":"线上"
                           }
                       ]
                   }
@@ -73,13 +73,16 @@ paths:
                   {
                       "data":[
                           {
-                              "region": "yq"
+                              "name": "yq",
+                              "displayName": "义桥"
                           },
                           {
-                              "region": "dg"
+                              "name": "dg",
+                              "displayName": "东冠"
                           },
                           {
-                              "region": "eks"
+                              "name": "eks",
+                              "displayName": "海外EKS"
                           }
                       ]
                   }

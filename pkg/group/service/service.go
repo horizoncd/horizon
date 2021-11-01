@@ -11,6 +11,8 @@ const (
 	ChildTypeGroup = "group"
 	// ChildTypeApplication ...
 	ChildTypeApplication = "application"
+	// ChildTypeCluster ...
+	ChildTypeCluster = "cluster"
 	// RootGroupID id of the root group, which is not actually exists in the group table
 	RootGroupID = 0
 )

@@ -2,6 +2,7 @@ package member
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
@@ -95,7 +96,7 @@ func (c *controller) RemoveMember(ctx context.Context, id uint) error {
 }
 
 func (c *controller) ListMember(ctx context.Context, resourceType string, id uint) ([]Member, error) {
-	const op = "group *controller: list group member"
+	op := errors.Op(fmt.Sprintf("group *controller: list %s member", resourceType))
 	members, err := c.memberService.ListMember(ctx, resourceType, id)
 	if err != nil {
 		return nil, errors.E(op, http.StatusInternalServerError, err.Error())

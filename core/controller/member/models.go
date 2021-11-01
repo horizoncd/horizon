@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	groupService "g.hz.netease.com/horizon/pkg/group/service"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
@@ -47,7 +48,7 @@ type Member struct {
 	// ResourceName   application/group
 	ResourceType models.ResourceType `json:"resourceType"`
 	ResourceName string              `json:"resourceName"`
-	ResourcePath string              `json:"resourcePath"`
+	ResourcePath string              `json:"resourcePath,omitempty"`
 	ResourceID   uint                `json:"resourceID"`
 
 	// MemberType user or group
@@ -60,8 +61,10 @@ type Member struct {
 
 	// Role the role name that bind
 	Role string `json:"role"`
-	// GrantedBy user who grant the role
+	// GrantedBy id of user who grant the role
 	GrantedBy uint `json:"grantedBy"`
+	// GrantorName name of user who grant the role
+	GrantorName string `json:"grantorName"`
 	// GrantTime
 	GrantTime time.Time `json:"grantTime"`
 }
@@ -124,18 +127,16 @@ func (c *converter) ConvertMember(ctx context.Context, member *models.Member) (_
 }
 func (c *converter) ConvertMembers(ctx context.Context, members []models.Member) ([]Member, error) {
 	var userIDs []uint
+
 	for _, member := range members {
 		if member.MemberType != models.MemberUser {
 			return nil, errors.New("Only Support User MemberType yet")
 		}
-		userIDs = append(userIDs, member.MemberNameID)
+		userIDs = append(userIDs, member.MemberNameID, member.GrantedBy)
 	}
 	users, err := c.userManager.GetUserByIDs(ctx, userIDs)
 	if err != nil {
 		return nil, err
-	}
-	if len(users) != len(userIDs) {
-		return nil, errors.New("cannot find all the users")
 	}
 	userIDToName := make(map[uint]string)
 	for _, userItem := range users {
@@ -146,12 +147,18 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 		var resourceName, resourcePath string
 		switch member.ResourceType {
 		case models.TypeGroup:
-			group, err := groupService.Svc.GetChildByID(ctx, member.ResourceID)
+			group, err := groupservice.Svc.GetChildByID(ctx, member.ResourceID)
 			if err != nil {
 				return nil, err
 			}
 			resourceName = group.Name
 			resourcePath = group.FullPath
+		case models.TypeApplication:
+			application, err := applicationmanager.Mgr.GetByID(ctx, member.ResourceID)
+			if err != nil {
+				return nil, err
+			}
+			resourceName = application.Name
 		default:
 			return nil, fmt.Errorf("%s is not support now", member.ResourceType)
 		}
@@ -166,6 +173,7 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 			ResourcePath: resourcePath,
 			Role:         member.Role,
 			GrantedBy:    member.GrantedBy,
+			GrantorName:  userIDToName[member.GrantedBy],
 			GrantTime:    member.UpdatedAt,
 		})
 	}

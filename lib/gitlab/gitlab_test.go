@@ -76,7 +76,7 @@ func TestMain(m *testing.M) {
 	if err := json.Unmarshal([]byte(param), &p); err != nil {
 		panic(err)
 	}
-	g, err = New(p.Token, p.BaseURL)
+	g, err = New(p.Token, p.BaseURL, "")
 	if err != nil {
 		panic(err)
 	}
@@ -179,6 +179,12 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	b, _ = json.Marshal(commit)
 	t.Logf(string(b))
+
+	compare, err := g.Compare(ctx, pid, startBranch, newBranch, nil)
+	assert.Nil(t, err)
+	for _, diff := range compare.Diffs {
+		t.Logf(diff.Diff)
+	}
 
 	// 12. get file
 	content, err := g.GetFile(ctx, pid, newBranch, "c")

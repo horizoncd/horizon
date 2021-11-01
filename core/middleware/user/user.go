@@ -16,12 +16,44 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const contextUserKey = "contextUser"
+const (
+	contextUserKey     = "contextUser"
+	HTTPHeaderOperator = "Operator"
+)
 
 // Middleware check user is exists in db. If not, add user into db.
 // Then attach a User object into context.
 func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
+		mgr := manager.Mgr
+
+		operator := c.Request.Header.Get(HTTPHeaderOperator)
+		// TODO(gjq): remove this later
+		// 1. get user by operator if operator is not empty
+		if operator != "" {
+			u, err := mgr.GetUserByEmail(c, operator)
+			if err != nil {
+				response.Abort(c, http.StatusUnauthorized,
+					http.StatusText(http.StatusUnauthorized), err.Error())
+				return
+			}
+			if u == nil {
+				response.Abort(c, http.StatusUnauthorized,
+					http.StatusText(http.StatusUnauthorized),
+					fmt.Sprintf("no user matched operator: %s", operator))
+				return
+			}
+
+			c.Set(contextUserKey, &userauth.DefaultInfo{
+				Name:     u.Name,
+				FullName: u.FullName,
+				ID:       u.ID,
+			})
+			c.Next()
+			return
+		}
+
+		// 2. else, get by oidc
 		oidcID := c.Request.Header.Get(config.OIDCIDHeader)
 		oidcType := c.Request.Header.Get(config.OIDCTypeHeader)
 		userName := c.Request.Header.Get(config.UserHeader)
@@ -29,15 +61,15 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 		email := c.Request.Header.Get(config.EmailHeader)
 
 		// if one of the fields is empty, return 401 Unauthorized
-		if len(oidcID) == 0 || len(oidcType) == 0 ||
-			len(userName) == 0 || len(email) == 0 || len(fullName) == 0 {
+		// the oidcID will be empty for the common account, such as grp.cloudnative
+		if len(oidcType) == 0 || len(userName) == 0 ||
+			len(email) == 0 || len(fullName) == 0 {
 			response.Abort(c, http.StatusUnauthorized,
 				http.StatusText(http.StatusUnauthorized), http.StatusText(http.StatusUnauthorized))
 			return
 		}
 
-		mgr := manager.Mgr
-		u, err := mgr.GetByOIDCMeta(c, oidcID, oidcType)
+		u, err := mgr.GetByOIDCMeta(c, oidcType, email)
 		if err != nil {
 			response.AbortWithInternalError(c, fmt.Sprintf("error to find user: %v", err))
 			return

@@ -14,20 +14,44 @@ oidcConfig:
   emailHeader: X-HORIZON-OIDC-EMAIL
   oidcIDHeader: X-HORIZON-OIDC-ID
   oidcTypeHeader: X-HORIZON-OIDC-TYPE
-gitlabConfig:
+gitlabMapper:
+  control:
+    httpURL: https://g.hz.netease.com
+    token: 
+  compute:
+    httpURL: http://cicd.mockserver.org
+    sshURL: ssh://git@music-cicd-gitlab-test.hz.netease.com:22222
+    token: ""
+gitlabRepoConfig:
   application:
-    gitlabName: compute
     parent:
       path: music-cloud-native/applications
       id: 4278
     recyclingParent:
       path: music-cloud-native/recycling-applications
       id: 4586
-  applicationInstance:
-    gitlabName: compute
+  cluster:
     parent:
-      path: music-cloud-native/application-instances
+      path: music-cloud-native/clusters
       id: 4279
     recyclingParent:
-      path: music-cloud-native/recycling-application-instances
+      path: music-cloud-native/recycling-clusters
       id: 4587
+helmRepoMapper:
+  dev,test,reg,perf,beta,pre,online: "https://harbor.mock.org/chartrepo/cloudnative-template"
+argoCDMapper:
+  dev,test,reg,perf,beta,pre,online:
+    url: http://argocd.mockserver.org
+    token: 
+tektonMapper:
+  dev,test,reg,perf,beta,pre,online:
+    url: http://el-default-listener.tekton-resources:8080
+    kubeconfig: ""
+    s3:
+      accessKey: 
+      secretKey: 
+      region: us-east-1
+      endpoint: nos-jd.service.163.org
+      bucket: yufeng-collector-dev
+      skipVerify: true
+      s3ForcePathStyle: true
