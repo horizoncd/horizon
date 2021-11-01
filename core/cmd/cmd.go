@@ -112,7 +112,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 	var roleConfig roleconfig.Config
-	if err := yaml.Unmarshal(content, &config); err != nil {
+	if err := yaml.Unmarshal(content, &roleConfig); err != nil {
 		panic(err)
 	}
 
