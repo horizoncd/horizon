@@ -50,7 +50,8 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 	string, error) {
 	// TODO(tom): members and pipelineruns need to add to auth check
 	if attr.IsResourceRequest() && (attr.GetResource() == "members" ||
-		attr.GetResource() == "pipelineruns") {
+		attr.GetResource() == "pipelineruns" ||
+		attr.GetResource() == "templates") {
 		log.Warning(ctx,
 			"/apis/core/v1/members/{memberid} and /apis/core/v1/pipelineruns/{pipelineruns} are not authed")
 		return auth.DecisionAllow, NotChecked, nil

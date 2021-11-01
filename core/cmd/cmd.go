@@ -199,7 +199,7 @@ func Run(flags *Flags) {
 		)
 		middlewares = append(middlewares,
 			auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
-				regexp.MustCompile("(^/apis/[^c][^o][^r][^e].*)|(^/health)|(^/metrics)"))))
+				regexp.MustCompile("(^/apis/[^c][^o][^r][^e].*)|(^/health)|(^/metrics)|(^/apis/login)"))))
 	}
 	r.Use(middlewares...)
 
