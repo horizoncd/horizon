@@ -28,6 +28,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 		mgr := manager.Mgr
 
 		operator := c.Request.Header.Get(HTTPHeaderOperator)
+		// TODO(gjq): remove this later
 		// 1. get user by operator if operator is not empty
 		if operator != "" {
 			u, err := mgr.GetUserByEmail(c, operator)
