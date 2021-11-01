@@ -35,8 +35,9 @@ CREATE TABLE `user`
     `updated_at` datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` datetime             DEFAULT NULL,
     PRIMARY KEY (`id`),
-    KEY          `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
+    KEY `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_name` (`name`),
+    UNIQUE KEY `idx_email`(`email`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
