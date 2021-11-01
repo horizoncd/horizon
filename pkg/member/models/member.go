@@ -31,11 +31,6 @@ const (
 	MemberGroup
 )
 
-//TODO(tom): get from the role table
-const (
-	Owner string = "owner"
-)
-
 type Member struct {
 	gorm.Model
 

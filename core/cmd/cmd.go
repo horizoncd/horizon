@@ -71,7 +71,6 @@ func InitLog(flags *Flags) {
 	if flags.Environment == "production" {
 		log.SetFormatter(&log.JSONFormatter{})
 	} else {
-		// The TextFormatter is default, you don't actually have to do this.
 		log.SetFormatter(&log.TextFormatter{})
 	}
 	log.SetOutput(os.Stdout)
@@ -98,8 +97,6 @@ func Run(flags *Flags) {
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		panic(err)
 	}
-
-	//
 
 	// init roles
 	file, err := os.OpenFile(flags.RoleConfigFile, os.O_RDONLY, 0644)

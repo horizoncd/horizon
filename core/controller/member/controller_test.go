@@ -139,7 +139,7 @@ func TestCreateGroupWithOwner(t *testing.T) {
 		MemberNameID: contextUserID,
 		ResourceType: membermodels.TypeGroup,
 		ResourceID:   groupID,
-		Role:         membermodels.Owner,
+		Role:         roleservice.Owner,
 		GrantedBy:    contextUserID,
 	}
 	assert.Nil(t, err)
@@ -189,7 +189,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 		ResourceID:   groupID,
 		MemberNameID: user2ID,
 		MemberType:   membermodels.MemberUser,
-		Role:         membermodels.Owner,
+		Role:         roleservice.Owner,
 	}
 	retMember2, err := Ctl.CreateMember(ctx, &postMember2)
 	assert.Nil(t, err)
@@ -215,7 +215,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 		ResourceID:   groupID,
 		MemberNameID: user1ID,
 		MemberType:   membermodels.MemberUser,
-		Role:         membermodels.Owner,
+		Role:         roleservice.Owner,
 	}
 	members, err := Ctl.ListMember(ctx, membermodels.TypeGroupStr, groupID)
 	assert.Nil(t, err)

@@ -5,8 +5,6 @@ import (
 	"errors"
 
 	"g.hz.netease.com/horizon/pkg/server/middleware"
-	"g.hz.netease.com/horizon/pkg/util/log"
-
 	"github.com/gin-gonic/gin"
 	"github.com/satori/go.uuid"
 )
@@ -23,10 +21,6 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 		}
 		c.Set(HeaderXRequestID, rid)
 		c.Header(HeaderXRequestID, rid)
-
-		// add the traceID
-		log.WithContext(c, rid)
-
 		c.Next()
 	}, skippers...)
 }

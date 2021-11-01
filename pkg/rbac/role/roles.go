@@ -21,15 +21,23 @@ const (
 	RoleCanNotCompare
 )
 
+const (
+	Owner string = "owner"
+)
+
 var (
 	ErrorRoleNotFound   = errors.New("role not found")
 	ErrorLoadCheckError = errors.New("load check error")
 )
 
 type Service interface {
+	// ListRole List all the role
 	ListRole(ctx context.Context) ([]types.Role, error)
+	// GetRole get role by the role name
 	GetRole(ctx context.Context, roleName string) (*types.Role, error)
+	// RoleCompare compare if the role1's permission is higher than role2
 	RoleCompare(ctx context.Context, role1, role2 string) (CompResult, error)
+	// GetDefaultRole return the default role(no default role will return nil)
 	GetDefaultRole(ctx context.Context) *types.Role
 }
 
@@ -40,9 +48,10 @@ type roleRankMapItem struct {
 type fileRoleService struct {
 	RolePriorityRankDesc []string
 	DefaultRoleName      string
-	DefaultRole          *types.Role
 	Roles                []types.Role
-	roleRankMap          map[string]roleRankMapItem
+
+	DefaultRole *types.Role
+	roleRankMap map[string]roleRankMapItem
 }
 
 func NewFileRoleFrom2(ctx context.Context, config roleconfig.Config) (Service, error) {
@@ -54,6 +63,11 @@ func NewFileRoleFrom2(ctx context.Context, config roleconfig.Config) (Service, e
 	// check
 	if len(fRole.Roles) != len(fRole.RolePriorityRankDesc) {
 		log.Error(ctx, "role number in RolePriorityRank not equal with Roles")
+		return nil, ErrorLoadCheckError
+	}
+	// the most powerful role must be named owner
+	if fRole.RolePriorityRankDesc[0] != Owner {
+		log.Errorf(ctx, "the first(most powerful) role must be %s", Owner)
 		return nil, ErrorLoadCheckError
 	}
 
