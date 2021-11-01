@@ -20,8 +20,8 @@ var _defaultQuery = &q.Query{
 type DAO interface {
 	// Create user
 	Create(ctx context.Context, user *models.User) (*models.User, error)
-	// GetByOIDCMeta get user by oidcID and oidcType
-	GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error)
+	// GetByOIDCMeta get user by oidcType and email
+	GetByOIDCMeta(ctx context.Context, oidcType, email string) (*models.User, error)
 	// SearchUser search user with a given filter, search for name/full_name/email.
 	SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
@@ -61,14 +61,14 @@ func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]models.User, error
 	return users, nil
 }
 
-func (d *dao) GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error) {
+func (d *dao) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*models.User, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var user models.User
-	result := db.Raw(common.UserQueryByOIDC, oidcID, oidcType).Scan(&user)
+	result := db.Raw(common.UserQueryByOIDC, oidcType, email).Scan(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}

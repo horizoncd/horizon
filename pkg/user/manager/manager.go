@@ -16,8 +16,8 @@ var (
 type Manager interface {
 	// Create user
 	Create(ctx context.Context, user *models.User) (*models.User, error)
-	// GetByOIDCMeta get user by oidcID and oidcType
-	GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error)
+	// GetByOIDCMeta get user oidcType and email
+	GetByOIDCMeta(ctx context.Context, oidcType, email string) (*models.User, error)
 	// SearchUser search user by filter
 	SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
@@ -37,8 +37,8 @@ func (m *manager) Create(ctx context.Context, user *models.User) (*models.User, 
 	return m.dao.Create(ctx, user)
 }
 
-func (m *manager) GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error) {
-	return m.dao.GetByOIDCMeta(ctx, oidcID, oidcType)
+func (m *manager) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*models.User, error) {
+	return m.dao.GetByOIDCMeta(ctx, oidcType, email)
 }
 
 func (m *manager) SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error) {

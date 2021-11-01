@@ -12,7 +12,7 @@ const (
 /* sql about user */
 const (
 	// UserQueryByOIDC ...
-	UserQueryByOIDC  = "select * from user where oidc_id = ? and oidc_type = ?"
+	UserQueryByOIDC  = "select * from user where oidc_type = ? and email = ?"
 	UserQueryByEmail = "select * from user where email = ? "
 	UserSearch       = "select * from user where name like ? or full_name like ? or email like ? limit ? offset ?"
 	UserSearchCount  = "select count(1) from user where name like ? or full_name like ? or email like ?"
