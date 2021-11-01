@@ -61,14 +61,15 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 		email := c.Request.Header.Get(config.EmailHeader)
 
 		// if one of the fields is empty, return 401 Unauthorized
-		if len(oidcID) == 0 || len(oidcType) == 0 ||
-			len(userName) == 0 || len(email) == 0 || len(fullName) == 0 {
+		// the oidcID will be empty for the common account, such as grp.cloudnative
+		if len(oidcType) == 0 || len(userName) == 0 ||
+			len(email) == 0 || len(fullName) == 0 {
 			response.Abort(c, http.StatusUnauthorized,
 				http.StatusText(http.StatusUnauthorized), http.StatusText(http.StatusUnauthorized))
 			return
 		}
 
-		u, err := mgr.GetByOIDCMeta(c, oidcID, oidcType)
+		u, err := mgr.GetByOIDCMeta(c, oidcType, email)
 		if err != nil {
 			response.AbortWithInternalError(c, fmt.Sprintf("error to find user: %v", err))
 			return

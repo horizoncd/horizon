@@ -44,7 +44,7 @@ func Test(t *testing.T) {
 	}
 	t.Logf(string(b))
 
-	u2, err := Mgr.GetByOIDCMeta(ctx, oidcID, oidcType)
+	u2, err := Mgr.GetByOIDCMeta(ctx, oidcType, email)
 	if err != nil {
 		t.Fatal(err)
 	}
