@@ -146,7 +146,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 	regionConfigBytes, _ := json.Marshal(regionConfig)
-	log.Infof("regions: %v", string(regionConfigBytes))
+	log.Printf("regions: %v\n", string(regionConfigBytes))
 
 	// init db
 	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
