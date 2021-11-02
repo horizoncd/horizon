@@ -52,7 +52,7 @@ func (a *API) CreateGroupMember(c *gin.Context) {
 	postMember.ResourceType = membermodels.TypeGroupStr
 	postMember.ResourceID = uint(uintID)
 
-	if err := a.validatePostMember(c, membermodels.TypeGroup, postMember); err != nil {
+	if err := a.validatePostMember(c, postMember); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			err.Error())
 		return
@@ -86,7 +86,7 @@ func (a *API) CreateApplicationMember(c *gin.Context) {
 	postMember.ResourceType = membermodels.TypeApplicationStr
 	postMember.ResourceID = uint(uintID)
 
-	if err := a.validatePostMember(c, membermodels.TypeApplication, postMember); err != nil {
+	if err := a.validatePostMember(c, postMember); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			err.Error())
 		return
@@ -202,7 +202,7 @@ func (a *API) validRole(ctx context.Context, role string) error {
 }
 
 // validatePostMember validate postMember body according to resourceType
-func (a *API) validatePostMember(ctx context.Context, resourceType membermodels.ResourceType,
+func (a *API) validatePostMember(ctx context.Context,
 	postMember *member.PostMember) error {
 
 	if err := validMemberType(postMember.MemberType); err != nil {
