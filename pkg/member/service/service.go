@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	applicationclustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/member"
 	"g.hz.netease.com/horizon/pkg/member/models"
@@ -39,18 +40,20 @@ type Service interface {
 }
 
 type service struct {
-	memberManager      member.Manager
-	groupManager       groupmanager.Manager
-	applicationManager applicationmanager.Manager
-	roleService        roleservice.Service
+	memberManager             member.Manager
+	groupManager              groupmanager.Manager
+	applicationManager        applicationmanager.Manager
+	applicationClusterManager applicationclustermanager.Manager
+	roleService               roleservice.Service
 }
 
 func NewService(roleService roleservice.Service) Service {
 	return &service{
-		memberManager:      member.Mgr,
-		groupManager:       groupmanager.Mgr,
-		applicationManager: applicationmanager.Mgr,
-		roleService:        roleService,
+		memberManager:             member.Mgr,
+		groupManager:              groupmanager.Mgr,
+		applicationManager:        applicationmanager.Mgr,
+		applicationClusterManager: applicationclustermanager.Mgr,
+		roleService:               roleService,
 	}
 }
 
@@ -298,12 +301,26 @@ func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) (
 }
 
 func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
-	// TODO(tom)
-	// 1. query the applicationinstance's service
-	// 2. query the application's service
-	// 3. merge and return
-	err := errors.New("Unimplement yet")
-	return nil, err
+	var retMembers []models.Member
+	// 1. query the application cluster's members
+	clusterInfo, err := s.applicationClusterManager.GetByID(ctx, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	members, err := s.memberManager.ListDirectMember(ctx, models.TypeApplicationCluster, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	retMembers = append(retMembers, members...)
+	// 2. query the application's members (contains the group's members)
+	members, err = s.listApplicationMembers(ctx, clusterInfo.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	retMembers = append(retMembers, members...)
+
+	return DeduplicateMember(retMembers), nil
 }
 
 // createMemberDirect for unit test
