@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -23,18 +24,19 @@ import (
 	"g.hz.netease.com/horizon/core/http/metrics"
 	"g.hz.netease.com/horizon/core/middleware/authenticate"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
+	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	"g.hz.netease.com/horizon/pkg/config/region"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
-	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
-	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
+	// "g.hz.netease.com/horizon/pkg/server/middleware/auth"
 	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
 	ormmiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
@@ -47,11 +49,12 @@ import (
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile     string
-	RoleConfigFile string
-	Dev            bool
-	Environment    string
-	LogLevel       string
+	ConfigFile       string
+	RoleConfigFile   string
+	RegionConfigFile string
+	Dev              bool
+	Environment      string
+	LogLevel         string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -63,6 +66,9 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.RoleConfigFile, "roles", "", "roles file path")
+
+	flag.StringVar(
+		&flags.RegionConfigFile, "regions", "", "regions file path")
 
 	flag.BoolVar(
 		&flags.Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
@@ -121,7 +127,20 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 	mservice := memberservice.NewService(roleService)
-	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
+	// rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
+
+	// load region config
+	regionFile, err := os.OpenFile(flags.RegionConfigFile, os.O_RDONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	regionConfig, err := region.LoadRegionConfig(regionFile)
+	if err != nil {
+		panic(err)
+	}
+	regionConfigBytes, _ := json.Marshal(regionConfig)
+	log.Infof("regions: %v", string(regionConfigBytes))
 
 	// init db
 	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
@@ -155,11 +174,11 @@ func Run(flags *Flags) {
 
 	var (
 		// init controller
-
 		memberCtl      = memberctl.NewController(mservice)
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter)
-		clusterCtl     = clusterctl.NewController(clusterGitRepo, cd.NewCD(config.ArgoCDMapper), templateSchemaGetter)
-		templateCtl    = templatectl.NewController(templateSchemaGetter)
+		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo,
+			cd.NewCD(config.ArgoCDMapper), templateSchemaGetter)
+		templateCtl = templatectl.NewController(templateSchemaGetter)
 	)
 
 	var (
@@ -185,10 +204,11 @@ func Run(flags *Flags) {
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+		regionmiddle.Middleware(regionConfig),
 	}
 	// enable usermiddle and auth when current env is not dev
 	if !flags.Dev {
-		// TODO(gjq): review this authentication, add OIDC provider
+		// TODO(gjq): remove this authentication, add OIDC provider
 		middlewares = append(middlewares, authenticate.Middleware(
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))))
@@ -197,9 +217,9 @@ func Run(flags *Flags) {
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		)
-		middlewares = append(middlewares,
-			auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
-				regexp.MustCompile("(^/apis/[^c][^o][^r][^e].*)|(^/health)|(^/metrics)|(^/apis/login)"))))
+		// middlewares = append(middlewares,
+		// 	auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
+		// 		regexp.MustCompile("(^/apis/[^c][^o][^r][^e].*)|(^/health)|(^/metrics)|(^/apis/login)"))))
 	}
 	r.Use(middlewares...)
 
