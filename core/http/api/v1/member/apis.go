@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	_paramGroupID       = "groupID"
-	_paramApplicationID = "applicationID"
-	_paramMemberID      = "memberID"
+	_paramGroupID              = "groupID"
+	_paramApplicationID        = "applicationID"
+	_paramApplicationClusterID = "clusterID"
+	_paramMemberID             = "memberID"
 )
 
 type API struct {
@@ -84,6 +85,40 @@ func (a *API) CreateApplicationMember(c *gin.Context) {
 	}
 
 	postMember.ResourceType = membermodels.TypeApplicationStr
+	postMember.ResourceID = uint(uintID)
+
+	if err := a.validatePostMember(c, postMember); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			err.Error())
+		return
+	}
+
+	retMember, err := a.memberCtrl.CreateMember(c, postMember)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, retMember)
+}
+
+func (a *API) CreateApplicationClusterMember(c *gin.Context) {
+	resourceIDStr := c.Param(_paramApplicationClusterID)
+	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("%v", err))
+		return
+	}
+
+	var postMember *member.PostMember
+	err = c.ShouldBindJSON(&postMember)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody,
+			fmt.Sprintf("%v", err))
+		return
+	}
+
+	postMember.ResourceType = membermodels.TypeApplicationClusterStr
 	postMember.ResourceID = uint(uintID)
 
 	if err := a.validatePostMember(c, postMember); err != nil {
@@ -182,6 +217,27 @@ func (a *API) ListApplicationMember(c *gin.Context) {
 	}
 
 	members, err := a.memberCtrl.ListMember(c, membermodels.TypeApplicationStr, uint(uintID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	membersResp := response.DataWithTotal{
+		Items: members,
+		Total: int64(len(members)),
+	}
+	response.SuccessWithData(c, membersResp)
+}
+
+func (a *API) ListApplicationClusterMember(c *gin.Context) {
+	resourceIDStr := c.Param(_paramApplicationClusterID)
+	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("%v", err))
+		return
+	}
+
+	members, err := a.memberCtrl.ListMember(c, membermodels.TypeApplicationClusterStr, uint(uintID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
