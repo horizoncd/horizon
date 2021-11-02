@@ -19,7 +19,7 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 		},
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/:%s", _paramGroupID),
+			Pattern:     fmt.Sprintf("/:%s/groups", _paramGroupID),
 			HandlerFunc: a.CreateSubGroup,
 		},
 		{
