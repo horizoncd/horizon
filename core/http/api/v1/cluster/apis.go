@@ -9,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/core/controller/cluster"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -93,7 +94,8 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 
-	scope := c.Query(_scope)
+	scope := c.Request.URL.Query().Get(_scope)
+	log.Infof(c, "scope: %v", scope)
 	scopeArray := strings.Split(scope, "/")
 	if len(scopeArray) != 2 {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, "invalid scope!")
