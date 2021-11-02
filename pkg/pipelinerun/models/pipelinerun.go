@@ -2,13 +2,10 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type Pipelinerun struct {
-	gorm.Model
-
+	ID               uint
 	ClusterID        uint
 	Action           string
 	Status           string
@@ -23,5 +20,7 @@ type Pipelinerun struct {
 	StartedAt        *time.Time
 	FinishedAt       *time.Time
 	RollbackFrom     *uint
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 	CreatedBy        string
 }

@@ -118,3 +118,10 @@ const (
 		"and c.name like ? and c.deleted_at is null"
 	ClusterQueryByClusterName = "select * from cluster where name = ? and deleted_at is null"
 )
+
+/* sql about pipelinerun */
+const (
+	// PipelineRunGetLastConfigCommit ...
+	PipelineRunGetLastConfigCommit = "select * from pipelinerun " +
+		"where cluster_id = ? and config_commit is not null order by created_at desc"
+)

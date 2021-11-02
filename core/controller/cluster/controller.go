@@ -12,6 +12,7 @@ import (
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
+	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -25,7 +26,8 @@ type Controller interface {
 		request *CreateClusterRequest) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
 		request *UpdateClusterRequest) (*GetClusterResponse, error)
-	BuildDeploy(ctx context.Context, request *BuildDeployRequest) (*BuildDeployResponse, error)
+	BuildDeploy(ctx context.Context, clusterID uint,
+		request *BuildDeployRequest) (*BuildDeployResponse, error)
 }
 
 type controller struct {
@@ -40,6 +42,7 @@ type controller struct {
 	envMgr               envmanager.Manager
 	regionMgr            regionmanager.Manager
 	groupSvc             groupsvc.Service
+	prMgr                prmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -58,5 +61,6 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		envMgr:               envmanager.Mgr,
 		regionMgr:            regionmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
+		prMgr:                prmanager.Mgr,
 	}
 }

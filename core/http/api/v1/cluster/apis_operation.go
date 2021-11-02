@@ -17,7 +17,7 @@ func (a *API) BuildDeploy(c *gin.Context) {
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	resp, err := a.clusterCtl.BuildDeploy(c, request)
+	resp, err := a.clusterCtl.BuildDeploy(c, 0, request)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
