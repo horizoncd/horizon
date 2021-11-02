@@ -34,9 +34,10 @@ import (
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
-	// "g.hz.netease.com/horizon/pkg/server/middleware/auth"
+	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
 	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
 	ormmiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
@@ -127,7 +128,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 	mservice := memberservice.NewService(roleService)
-	// rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
+	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
 
 	// load region config
 	regionFile, err := os.OpenFile(flags.RegionConfigFile, os.O_RDONLY, 0644)
@@ -217,9 +218,9 @@ func Run(flags *Flags) {
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		)
-		// middlewares = append(middlewares,
-		// 	auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
-		// 		regexp.MustCompile("(^/apis/[^c][^o][^r][^e].*)|(^/health)|(^/metrics)|(^/apis/login)"))))
+		middlewares = append(middlewares,
+			auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
+				regexp.MustCompile("(^/apis/[^c][^o][^r][^e].*)|(^/health)|(^/metrics)|(^/apis/login)"))))
 	}
 	r.Use(middlewares...)
 
