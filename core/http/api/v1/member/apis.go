@@ -204,15 +204,12 @@ func (a *API) validRole(ctx context.Context, role string) error {
 // validatePostMember validate postMember body according to resourceType
 func (a *API) validatePostMember(ctx context.Context,
 	postMember *member.PostMember) error {
-
 	if err := validMemberType(postMember.MemberType); err != nil {
 		return err
 	}
-
 	if err := a.validRole(ctx, postMember.Role); err != nil {
 		return err
 	}
-
 	return nil
 }
 
