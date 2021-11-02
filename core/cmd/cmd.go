@@ -13,12 +13,14 @@ import (
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
+	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
 	"g.hz.netease.com/horizon/core/http/api/v1/environment"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
+	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
@@ -185,6 +187,7 @@ func Run(flags *Flags) {
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo,
 			cd.NewCD(config.ArgoCDMapper), templateSchemaGetter)
 		templateCtl = templatectl.NewController(templateSchemaGetter)
+		roleCtl     = roltctl.NewController(roleService)
 	)
 
 	var (
@@ -196,6 +199,7 @@ func Run(flags *Flags) {
 		memberAPI      = member.NewAPI(memberCtl, roleService)
 		clusterAPI     = cluster.NewAPI(clusterCtl)
 		environmentAPI = environment.NewAPI()
+		roleAPI        = roleapi.NewAPI(roleCtl)
 	)
 
 	// init server
@@ -241,6 +245,7 @@ func Run(flags *Flags) {
 	cluster.RegisterRoutes(r, clusterAPI)
 	environment.RegisterRoutes(r, environmentAPI)
 	member.RegisterRoutes(r, memberAPI)
+	roleapi.RegisterRoutes(r, roleAPI)
 
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
