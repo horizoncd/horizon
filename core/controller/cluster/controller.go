@@ -319,7 +319,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		pipelineJSONBlob, applicationJSONBlob), nil
 }
 
-func (c *controller) GetClusterByName(ctx context.Context, clusterName string) (_ *GetClusterByNameResponse, err error) {
+func (c *controller) GetClusterByName(ctx context.Context,
+	clusterName string) (_ *GetClusterByNameResponse, err error) {
 	const op = "cluster controller: get cluster by name"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
