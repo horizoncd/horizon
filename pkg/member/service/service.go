@@ -184,7 +184,7 @@ func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) 
 		if err != nil {
 			return nil, err
 		}
-		if comResult != roleservice.RoleBigger {
+		if comResult != roleservice.RoleBigger && comResult != roleservice.RoleEqual {
 			return nil, ErrNotPermitted
 		}
 
