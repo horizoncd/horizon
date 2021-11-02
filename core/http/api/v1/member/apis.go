@@ -49,17 +49,14 @@ func (a *API) CreateGroupMember(c *gin.Context) {
 		return
 	}
 
-	if uint(uintID) != postMember.ResourceID {
-		response.AbortWithRequestError(c, common.InvalidRequestParam,
-			"id not match")
-		return
-	}
-
 	if err := a.validatePostMember(c, membermodels.TypeGroup, postMember); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			err.Error())
 		return
 	}
+
+	postMember.ResourceType = membermodels.TypeGroupStr
+	postMember.ResourceID = uint(uintID)
 
 	retMember, err := a.memberCtrl.CreateMember(c, postMember)
 	if err != nil {
@@ -86,17 +83,14 @@ func (a *API) CreateApplicationMember(c *gin.Context) {
 		return
 	}
 
-	if uint(uintID) != postMember.ResourceID {
-		response.AbortWithRequestError(c, common.InvalidRequestParam,
-			"id not match")
-		return
-	}
-
 	if err := a.validatePostMember(c, membermodels.TypeApplication, postMember); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			err.Error())
 		return
 	}
+
+	postMember.ResourceType = membermodels.TypeApplicationStr
+	postMember.ResourceID = uint(uintID)
 
 	retMember, err := a.memberCtrl.CreateMember(c, postMember)
 	if err != nil {

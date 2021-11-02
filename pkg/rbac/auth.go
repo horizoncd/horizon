@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/auth"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
@@ -41,14 +42,25 @@ type authorizer struct {
 const (
 	NotChecked        = "not checked"
 	ResourceFormatErr = "format error"
+	AnonymousUser     = "anonymous user"
 	InternalError     = "internal error"
 	MemberNotExist    = "member not exist"
 	RoleNotExist      = "role not exist"
+	AmdinAllow        = "admin allows everything"
 )
 
 func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.Decision,
 	string, error) {
-	// TODO(tom): members and pipelineruns need to add to auth check
+	// 0. check (admin allows everything, and some are not checked)
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return auth.DecisionDeny, AnonymousUser, nil
+	}
+	if currentUser.IsAdmin() {
+		return auth.DecisionAllow, AmdinAllow, nil
+	}
+
+	// TODO(tom): members and pipelineruns and environments need to add to auth check
 	if attr.IsResourceRequest() && (attr.GetResource() == "members" ||
 		attr.GetResource() == "pipelineruns" ||
 		attr.GetResource() == "templates" ||
