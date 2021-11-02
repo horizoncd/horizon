@@ -45,10 +45,36 @@ func (a *API) CreateGroup(c *gin.Context) {
 	response.SuccessWithData(c, id)
 }
 
+// CreateSubGroup create a subgroup
+func (a *API) CreateSubGroup(c *gin.Context) {
+	groupID := c.Param(_paramGroupID)
+	intID, err := strconv.ParseUint(groupID, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
+		return
+	}
+
+	var newGroup *group.NewGroup
+	err = c.ShouldBindJSON(&newGroup)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody, fmt.Sprintf("%v", err))
+		return
+	}
+
+	newGroup.ParentID = uint(intID)
+	id, err := a.groupCtl.CreateGroup(c, newGroup)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+
+	response.SuccessWithData(c, id)
+}
+
 // DeleteGroup delete a group by id
 func (a *API) DeleteGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
-	intID, err := strconv.Atoi(groupID)
+	intID, err := strconv.ParseUint(groupID, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
 		return
@@ -66,7 +92,7 @@ func (a *API) DeleteGroup(c *gin.Context) {
 // GetGroup get a group child by id
 func (a *API) GetGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
-	intID, err := strconv.Atoi(groupID)
+	intID, err := strconv.ParseUint(groupID, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
 		return
@@ -98,7 +124,7 @@ func (a *API) GetGroupByFullPath(c *gin.Context) {
 func (a *API) TransferGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	parentID := c.Query(_paramGroupID)
-	intID, err := strconv.Atoi(groupID)
+	intID, err := strconv.ParseUint(groupID, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
 		return
@@ -121,8 +147,7 @@ func (a *API) TransferGroup(c *gin.Context) {
 // UpdateGroup update basic info of a group
 func (a *API) UpdateGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
-
-	intID, err := strconv.Atoi(groupID)
+	intID, err := strconv.ParseUint(groupID, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
 		return
@@ -147,8 +172,8 @@ func (a *API) UpdateGroup(c *gin.Context) {
 // GetChildren get children of a group, including groups and applications
 func (a *API) GetChildren(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
-	intID, err := strconv.Atoi(groupID)
-	if err != nil || intID < -1 {
+	intID, err := strconv.ParseUint(groupID, 10, 0)
+	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
@@ -173,8 +198,8 @@ func (a *API) GetChildren(c *gin.Context) {
 // GetSubGroups get subGroups of a group
 func (a *API) GetSubGroups(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
-	intID, err := strconv.Atoi(groupID)
-	if err != nil || intID < -1 {
+	intID, err := strconv.ParseUint(groupID, 10, 0)
+	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
@@ -199,8 +224,8 @@ func (a *API) GetSubGroups(c *gin.Context) {
 // SearchChildren search children of a group, including groups and applications
 func (a *API) SearchChildren(c *gin.Context) {
 	groupID := c.Query(_paramGroupID)
-	intID, err := strconv.Atoi(groupID)
-	if err != nil || intID < -1 {
+	intID, err := strconv.ParseUint(groupID, 10, 0)
+	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
@@ -232,8 +257,8 @@ func (a *API) SearchChildren(c *gin.Context) {
 // SearchGroups search subgroups of a group
 func (a *API) SearchGroups(c *gin.Context) {
 	groupID := c.Query(_paramGroupID)
-	intID, err := strconv.Atoi(groupID)
-	if err != nil || intID < -1 {
+	intID, err := strconv.ParseUint(groupID, 10, 0)
+	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
