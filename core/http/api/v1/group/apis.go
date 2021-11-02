@@ -45,6 +45,31 @@ func (a *API) CreateGroup(c *gin.Context) {
 	response.SuccessWithData(c, id)
 }
 
+// CreateSubGroup create a subgroup
+func (a *API) CreateSubGroup(c *gin.Context) {
+	groupID := c.Param(_paramGroupID)
+	intID, err := strconv.Atoi(groupID)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
+		return
+	}
+	var newGroup *group.NewGroup
+	err = c.ShouldBindJSON(&newGroup)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody, fmt.Sprintf("%v", err))
+		return
+	}
+
+	newGroup.ParentID = uint(intID)
+	id, err := a.groupCtl.CreateGroup(c, newGroup)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+
+	response.SuccessWithData(c, id)
+}
+
 // DeleteGroup delete a group by id
 func (a *API) DeleteGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
