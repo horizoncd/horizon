@@ -103,7 +103,7 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 		var err error
 		role, err = a.roleService.GetRole(ctx, member.Role)
 		if err != nil {
-			log.Errorf(ctx, "get role file err = %+v", err)
+			log.Errorf(ctx, "get role for role(%s), err = %+v", member.Role, err)
 			return auth.DecisionDeny, InternalError, err
 		}
 	}
