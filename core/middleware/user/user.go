@@ -48,6 +48,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 				Name:     u.Name,
 				FullName: u.FullName,
 				ID:       u.ID,
+				Admin:    u.Admin,
 			})
 			c.Next()
 			return
@@ -92,6 +93,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 			Name:     u.Name,
 			FullName: u.FullName,
 			ID:       u.ID,
+			Admin:    u.Admin,
 		})
 		c.Next()
 	}, skippers...)
