@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"regexp"
 
@@ -44,7 +45,7 @@ import (
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -86,16 +87,18 @@ func ParseFlags() *Flags {
 
 func InitLog(flags *Flags) {
 	if flags.Environment == "production" {
-		log.SetFormatter(&log.JSONFormatter{})
+		logrus.SetFormatter(&logrus.JSONFormatter{})
+		logrus.SetReportCaller(true)
 	} else {
-		log.SetFormatter(&log.TextFormatter{})
+		logrus.SetFormatter(&logrus.TextFormatter{})
+		logrus.SetReportCaller(true)
 	}
-	log.SetOutput(os.Stdout)
-	level, err := log.ParseLevel(flags.LogLevel)
+	logrus.SetOutput(os.Stdout)
+	level, err := logrus.ParseLevel(flags.LogLevel)
 	if err != nil {
 		panic(err)
 	}
-	log.SetLevel(level)
+	logrus.SetLevel(level)
 }
 
 // Run runs the agent.
@@ -121,6 +124,8 @@ func Run(flags *Flags) {
 	var roleConfig roleconfig.Config
 	if err := yaml.Unmarshal(content, &roleConfig); err != nil {
 		panic(err)
+	} else {
+		log.Printf("the roleConfig = %+v\n", roleConfig)
 	}
 
 	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
