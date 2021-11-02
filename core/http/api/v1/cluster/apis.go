@@ -17,6 +17,7 @@ const (
 	// param
 	_applicationIDParam = "applicationID"
 	_clusterIDParam     = "clusterID"
+	_clusterParam       = "cluster"
 	_scope              = "scope"
 	_environment        = "environment"
 )
@@ -148,6 +149,16 @@ func (a *API) Get(c *gin.Context) {
 		return
 	}
 	resp, err := a.clusterCtl.GetCluster(c, uint(clusterID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
+func (a *API) GetByName(c *gin.Context) {
+	clusterName := c.Param(_clusterParam)
+	resp, err := a.clusterCtl.GetClusterByName(c, clusterName)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return

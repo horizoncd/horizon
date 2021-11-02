@@ -171,3 +171,13 @@ func ofClustersWithEnvAndRegion(clusters []*models.ClusterWithEnvAndRegion) []*L
 	}
 	return respList
 }
+
+type GetClusterByNameResponse struct {
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Template    *Template `json:"template"`
+	Git         *Git      `json:"git"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}

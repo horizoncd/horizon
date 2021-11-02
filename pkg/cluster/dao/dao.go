@@ -60,9 +60,17 @@ func (d *dao) GetByName(ctx context.Context, clusterName string) (*models.Cluste
 	}
 
 	var cluster models.Cluster
-	result := db.Raw(common.ClusterQueryByName, clusterName).First(&cluster)
+	result := db.Raw(common.ClusterQueryByName, clusterName).Scan(&cluster)
 
-	return &cluster, result.Error
+	if result.Error != nil {
+		return nil, err
+	}
+
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+
+	return &cluster, nil
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error) {
