@@ -50,9 +50,11 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 	string, error) {
 	// TODO(tom): members and pipelineruns need to add to auth check
 	if attr.IsResourceRequest() && (attr.GetResource() == "members" ||
-		attr.GetResource() == "pipelineruns") {
+		attr.GetResource() == "pipelineruns" ||
+		attr.GetResource() == "templates" ||
+		attr.GetResource() == "environments") {
 		log.Warning(ctx,
-			"/apis/core/v1/members/{memberid} and /apis/core/v1/pipelineruns/{pipelineruns} are not authed")
+			"members|templates|environments are not authed yet")
 		return auth.DecisionAllow, NotChecked, nil
 	}
 
@@ -103,13 +105,19 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 
 func VisitRoles(member *models.Member, role *types.Role,
 	attr auth.Attributes) (_ auth.Decision, reason string, err error) {
+	var memberInfo string
+	if member != nil {
+		memberInfo = member.BaseInfo()
+	} else {
+		memberInfo = "null"
+	}
 	for i, rule := range role.PolicyRules {
 		if types.RuleAllow(attr, &rule) {
 			reason = fmt.Sprintf("user %s allowd by member(%s) by rule[%d]",
-				attr.GetUser().String(), member.BaseInfo(), i)
+				attr.GetUser().String(), memberInfo, i)
 			return auth.DecisionAllow, reason, nil
 		}
 	}
-	reason = fmt.Sprintf("user %s denied by member(%s)", attr.GetUser().String(), member.BaseInfo())
+	reason = fmt.Sprintf("user %s denied by member(%s)", attr.GetUser().String(), memberInfo)
 	return auth.DecisionDeny, reason, nil
 }

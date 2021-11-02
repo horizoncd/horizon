@@ -113,7 +113,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 	var roleConfig roleconfig.Config
-	if err := yaml.Unmarshal(content, &config); err != nil {
+	if err := yaml.Unmarshal(content, &roleConfig); err != nil {
 		panic(err)
 	}
 
@@ -204,7 +204,7 @@ func Run(flags *Flags) {
 		)
 		middlewares = append(middlewares,
 			auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
-				regexp.MustCompile("^/apis/[^c][^o][^r][^e].*"))))
+				regexp.MustCompile("(^/apis/[^c][^o][^r][^e].*)|(^/health)|(^/metrics)|(^/apis/login)"))))
 	}
 	r.Use(middlewares...)
 
