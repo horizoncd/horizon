@@ -30,6 +30,7 @@ func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) 
 		currentUser, err := user.FromContext(c)
 		if err != nil {
 			response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
+			return
 		}
 
 		// 3. do rbac auth
@@ -51,13 +52,14 @@ func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) 
 		if err != nil {
 			log.Errorf(c, "auth failed with err = %s", err.Error())
 			response.AbortWithInternalError(c, err.Error())
+			return
 		}
 		if decision == auth.DecisionDeny {
 			log.Warningf(c, "denied request with reason = %s", reason)
 			response.AbortWithForbiddenError(c, common.Forbidden, reason)
-		} else {
-			log.Debugf(c, "passed request with reason = %s", reason)
+			return
 		}
+		log.Debugf(c, "passed request with reason = %s", reason)
 		c.Next()
 	}, skipMatchers...)
 }

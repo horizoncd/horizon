@@ -63,6 +63,18 @@ func Test(t *testing.T) {
 	appGetByName, err := Mgr.GetByName(ctx, application.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, application.ID, appGetByName.ID)
+
+	appGetByName.Description = "new"
+	appGetByName, err = Mgr.UpdateByID(ctx, application.ID, appGetByName)
+	assert.Nil(t, err)
+
+	apps, err := Mgr.GetByNameFuzzily(ctx, "app")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(apps))
+	assert.Equal(t, appGetByName.Name, apps[0].Name)
+
+	err = Mgr.DeleteByID(ctx, appGetByName.ID)
+	assert.Nil(t, err)
 }
 
 func TestMain(m *testing.M) {

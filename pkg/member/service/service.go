@@ -73,24 +73,25 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 	}
 
 	// 2. check if current user can create the role
-	var userMemberInfo *models.Member
-	userMemberInfo, err = s.getMember(ctx, postMember.ResourceType,
-		postMember.ResourceID, models.MemberUser, currentUser.GetID())
-	if err != nil {
-		return nil, err
-	}
-	if userMemberInfo == nil {
-		return nil, ErrNotPermitted
-	}
+	if !currentUser.IsAdmin() {
+		var userMemberInfo *models.Member
+		userMemberInfo, err = s.getMember(ctx, postMember.ResourceType,
+			postMember.ResourceID, models.MemberUser, currentUser.GetID())
+		if err != nil {
+			return nil, err
+		}
+		if userMemberInfo == nil {
+			return nil, ErrNotPermitted
+		}
 
-	comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, postMember.Role)
-	if err != nil {
-		return nil, err
+		comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, postMember.Role)
+		if err != nil {
+			return nil, err
+		}
+		if comResult == roleservice.RoleSmaller {
+			return nil, ErrGrantHighRole
+		}
 	}
-	if comResult == roleservice.RoleSmaller {
-		return nil, ErrGrantHighRole
-	}
-
 	// 3. do create  member
 	member, err := ConvertPostMemberToMember(postMember, currentUser)
 	if err != nil {
@@ -168,32 +169,33 @@ func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) 
 	}
 
 	// 2. check if the current user have the permission to update the role
-	var userMemberInfo *models.Member
-	userMemberInfo, err = s.getMember(ctx, string(memberItem.ResourceType),
-		memberItem.ResourceID, models.MemberUser, currentUser.GetID())
-	if err != nil {
-		return nil, err
-	}
-	if userMemberInfo == nil {
-		return nil, ErrNotPermitted
-	}
+	if !currentUser.IsAdmin() {
+		var userMemberInfo *models.Member
+		userMemberInfo, err = s.getMember(ctx, string(memberItem.ResourceType),
+			memberItem.ResourceID, models.MemberUser, currentUser.GetID())
+		if err != nil {
+			return nil, err
+		}
+		if userMemberInfo == nil {
+			return nil, ErrNotPermitted
+		}
 
-	comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, memberItem.Role)
-	if err != nil {
-		return nil, err
-	}
-	if comResult != roleservice.RoleBigger {
-		return nil, ErrNotPermitted
-	}
+		comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, memberItem.Role)
+		if err != nil {
+			return nil, err
+		}
+		if comResult != roleservice.RoleBigger && comResult != roleservice.RoleEqual {
+			return nil, ErrNotPermitted
+		}
 
-	comResult, err = s.roleService.RoleCompare(ctx, userMemberInfo.Role, role)
-	if err != nil {
-		return nil, err
+		comResult, err = s.roleService.RoleCompare(ctx, userMemberInfo.Role, role)
+		if err != nil {
+			return nil, err
+		}
+		if comResult == roleservice.RoleSmaller {
+			return nil, ErrGrantHighRole
+		}
 	}
-	if comResult == roleservice.RoleSmaller {
-		return nil, ErrGrantHighRole
-	}
-
 	// 3. update the role
 	return s.memberManager.UpdateByID(ctx, memberItem.ID, role)
 }

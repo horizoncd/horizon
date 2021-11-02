@@ -49,13 +49,10 @@ func (a *API) CreateGroupMember(c *gin.Context) {
 		return
 	}
 
-	if uint(uintID) != postMember.ResourceID {
-		response.AbortWithRequestError(c, common.InvalidRequestParam,
-			"id not match")
-		return
-	}
+	postMember.ResourceType = membermodels.TypeGroupStr
+	postMember.ResourceID = uint(uintID)
 
-	if err := a.validatePostMember(c, membermodels.TypeGroup, postMember); err != nil {
+	if err := a.validatePostMember(c, postMember); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			err.Error())
 		return
@@ -86,13 +83,10 @@ func (a *API) CreateApplicationMember(c *gin.Context) {
 		return
 	}
 
-	if uint(uintID) != postMember.ResourceID {
-		response.AbortWithRequestError(c, common.InvalidRequestParam,
-			"id not match")
-		return
-	}
+	postMember.ResourceType = membermodels.TypeApplicationStr
+	postMember.ResourceID = uint(uintID)
 
-	if err := a.validatePostMember(c, membermodels.TypeApplication, postMember); err != nil {
+	if err := a.validatePostMember(c, postMember); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			err.Error())
 		return
@@ -208,31 +202,13 @@ func (a *API) validRole(ctx context.Context, role string) error {
 }
 
 // validatePostMember validate postMember body according to resourceType
-func (a *API) validatePostMember(ctx context.Context, resourceType membermodels.ResourceType,
+func (a *API) validatePostMember(ctx context.Context,
 	postMember *member.PostMember) error {
-	if membermodels.ResourceType(postMember.ResourceType) != resourceType {
-		return fmt.Errorf("resourceType not match")
-	}
-	if err := validResourceType(postMember.ResourceType); err != nil {
-		return err
-	}
-
 	if err := validMemberType(postMember.MemberType); err != nil {
 		return err
 	}
-
 	if err := a.validRole(ctx, postMember.Role); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func validResourceType(resourceType string) error {
-	switch membermodels.ResourceType(resourceType) {
-	case membermodels.TypeGroup, membermodels.TypeApplication, membermodels.TypeApplicationCluster:
-	default:
-		return fmt.Errorf("invalid resourceType")
 	}
 	return nil
 }

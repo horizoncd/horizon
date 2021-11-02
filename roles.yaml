@@ -1,0 +1,144 @@
+DefaultRole: guest
+RolePriorityRankDesc:
+- owner
+- pe
+- maintainer
+- guest
+Roles:
+- desc: owner为组/应用/集群的拥有者,拥有最高权限
+  name: owner
+  rules:
+  - apiGroups:
+    - core
+    nonResourceURLs:
+    - '*'
+    resources:
+    - '*'
+    scopes:
+    - '*'
+    verbs:
+    - '*'
+- desc: maintainer为组/应用/集群的管理者，拥有除删除资源之外的其他权限，并且也可以进行成员管理
+  name: maintainer
+  rules:
+  - apiGroups:
+    - core
+    nonResourceURLs:
+    - '*'
+    resources:
+    - applications
+    - groups/applications
+    - applications/members
+    - applications
+    scopes:
+    - '*'
+    verbs:
+    - create
+    - get
+    - update
+  - apiGroups:
+    - core
+    resources:
+    - groups
+    - groups/members
+    - groups/groups
+    scopes:
+    - '*'
+    verbs:
+    - get
+  - apiGroups:
+    - core
+    nonResourceURLs:
+    - '*'
+    resources:
+    - applications/clusters
+    - clusters
+    - clusters/builddeploy
+    - clusters/deploy
+    - clusters/diff
+    - clusters/next
+    - clusters/restart
+    - clusters/rollback
+    - clusters/status
+    - clusters/members
+    - clusters/pipelines
+    scopes:
+    - '*'
+    verbs:
+    - create
+    - get
+    - update
+- desc: pe为应用/集群的管理者，拥有除删除资源之外的其他权限，并且也可以进行成员管理
+  name: pe
+  rules:
+  - apiGroups:
+    - core
+    nonResourceURLs:
+    - '*'
+    resources:
+    - applications
+    - groups/applications
+    - applications/members
+    - applications
+    scopes:
+    - '*'
+    verbs:
+    - create
+    - get
+    - update
+  - apiGroups:
+    - core
+    resources:
+    - groups
+    - groups/members
+    - groups/groups
+    scopes:
+    - '*'
+    verbs:
+    - get
+  - apiGroups:
+    - core
+    nonResourceURLs:
+    - '*'
+    resources:
+    - applications/clusters
+    - clusters
+    - clusters/builddeploy
+    - clusters/deploy
+    - clusters/diff
+    - clusters/next
+    - clusters/restart
+    - clusters/rollback
+    - clusters/status
+    - clusters/members
+    - clusters/pipelines
+    scopes:
+    - '*'
+    verbs:
+    - create
+    - get
+    - update
+- desc: guest为只读人员，拥有组/应用/项目的只读权限，以及测试环境集群创建的权限
+  name: guest
+  rules:
+  - apiGroups:
+    - core
+    resources:
+    - '*'
+    scopes:
+    - '*'
+    verbs:
+    - get
+  - apiGroups:
+    - core
+    resources:
+    - applications/clusters
+    scopes:
+    - test/*
+    - reg/*
+    - perf/*
+    - pre/*
+    verbs:
+    - create
+    - get
+    - update

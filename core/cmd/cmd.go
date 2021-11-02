@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -23,12 +24,14 @@ import (
 	"g.hz.netease.com/horizon/core/http/metrics"
 	"g.hz.netease.com/horizon/core/middleware/authenticate"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
+	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	"g.hz.netease.com/horizon/pkg/config/region"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
@@ -48,11 +51,12 @@ import (
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile     string
-	RoleConfigFile string
-	Dev            bool
-	Environment    string
-	LogLevel       string
+	ConfigFile       string
+	RoleConfigFile   string
+	RegionConfigFile string
+	Dev              bool
+	Environment      string
+	LogLevel         string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -64,6 +68,9 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.RoleConfigFile, "roles", "", "roles file path")
+
+	flag.StringVar(
+		&flags.RegionConfigFile, "regions", "", "regions file path")
 
 	flag.BoolVar(
 		&flags.Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
@@ -124,6 +131,19 @@ func Run(flags *Flags) {
 	mservice := memberservice.NewService(roleService)
 	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
 
+	// load region config
+	regionFile, err := os.OpenFile(flags.RegionConfigFile, os.O_RDONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	regionConfig, err := region.LoadRegionConfig(regionFile)
+	if err != nil {
+		panic(err)
+	}
+	regionConfigBytes, _ := json.Marshal(regionConfig)
+	log.Infof("regions: %v", string(regionConfigBytes))
+
 	// init db
 	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
 		Host:              config.DBConfig.Host,
@@ -162,7 +182,7 @@ func Run(flags *Flags) {
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter)
-		clusterCtl     = clusterctl.NewController(clusterGitRepo, commitGetter,
+		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, commitGetter,
 			cd.NewCD(config.ArgoCDMapper), templateSchemaGetter)
 		templateCtl = templatectl.NewController(templateSchemaGetter)
 	)
@@ -190,10 +210,11 @@ func Run(flags *Flags) {
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+		regionmiddle.Middleware(regionConfig),
 	}
 	// enable usermiddle and auth when current env is not dev
 	if !flags.Dev {
-		// TODO(gjq): review this authentication, add OIDC provider
+		// TODO(gjq): remove this authentication, add OIDC provider
 		middlewares = append(middlewares, authenticate.Middleware(
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))))

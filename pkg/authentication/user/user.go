@@ -5,15 +5,17 @@ import "fmt"
 // User describes a user that has been authenticated to the system
 type User interface {
 	GetName() string
-	GetID() uint
 	GetFullName() string
+	GetID() uint
 	String() string
+	IsAdmin() bool
 }
 
 type DefaultInfo struct {
 	Name     string
 	FullName string
 	ID       uint
+	Admin    bool
 }
 
 func (d *DefaultInfo) GetName() string {
@@ -30,4 +32,8 @@ func (d *DefaultInfo) GetFullName() string {
 
 func (d *DefaultInfo) String() string {
 	return fmt.Sprintf("%s(%d)", d.Name, d.ID)
+}
+
+func (d *DefaultInfo) IsAdmin() bool {
+	return d.Admin
 }
