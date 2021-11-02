@@ -52,7 +52,8 @@ const (
 	_timeout         = 4 * time.Second
 )
 
-// harbor member to add to harbor project
+// members harbor member to add to harbor project
+// TODO(gjq): move this to config
 var members = []*HarborMember{
 	{
 		Role:     3,

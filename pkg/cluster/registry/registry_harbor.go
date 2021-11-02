@@ -43,6 +43,7 @@ func (l imageList) Len() int {
 
 var timestampPattern = regexp.MustCompile(`\d{14}`)
 
+// Less
 // tag的格式为：{分支名}-{commitID}-{timestamp}
 // 此处按照timestamp倒序排序，timestamp的格式比如:20210702134536
 func (l imageList) Less(i, j int) bool {

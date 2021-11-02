@@ -27,6 +27,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
@@ -152,14 +153,18 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+	commitGetter, err := code.NewCommitGetter(ctx, gitlabFactory)
+	if err != nil {
+		panic(err)
+	}
 
 	var (
 		// init controller
-
 		memberCtl      = memberctl.NewController(mservice)
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter)
-		clusterCtl     = clusterctl.NewController(clusterGitRepo, cd.NewCD(config.ArgoCDMapper), templateSchemaGetter)
-		templateCtl    = templatectl.NewController(templateSchemaGetter)
+		clusterCtl     = clusterctl.NewController(clusterGitRepo, commitGetter,
+			cd.NewCD(config.ArgoCDMapper), templateSchemaGetter)
+		templateCtl = templatectl.NewController(templateSchemaGetter)
 	)
 
 	var (

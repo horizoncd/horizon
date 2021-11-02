@@ -269,7 +269,8 @@ CREATE TABLE `pipelinerun`
     `updated_at`         datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created_by`         int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     PRIMARY KEY (`id`),
-    KEY                  `idx_cluster_action` (`cluster_id`, `action`)
+    KEY                  `idx_cluster_action` (`cluster_id`, `action`),
+    KEY                  `idx_cluster_config_commit` (`cluster_id`, `config_commit`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
