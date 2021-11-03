@@ -9,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 
@@ -23,8 +24,8 @@ var (
 
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&models.Cluster{},
-		&envmodels.EnvironmentRegion{}, &regionmodels.Region{}); err != nil {
+	if err := db.AutoMigrate(&models.Cluster{}, &envmodels.EnvironmentRegion{},
+		&regionmodels.Region{},  &membermodels.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)

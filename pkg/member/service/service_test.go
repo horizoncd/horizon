@@ -7,9 +7,13 @@ import (
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	applicationmanagermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
+	clustermanagermock "g.hz.netease.com/horizon/mock/pkg/cluster/manager"
 	groupmanagermock "g.hz.netease.com/horizon/mock/pkg/group/manager"
 	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
+	applicationModels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	groupModels "g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/member"
 	"g.hz.netease.com/horizon/pkg/member/models"
@@ -345,8 +349,141 @@ func TestListApplicationMember(t *testing.T) {
 	// TODO(tom)
 }
 
+//  case  /group1/group2/application/cluster
+//		group1 member: sph(1)
+//		group2 member: sph(2), jerry(2)
+//		application3 member: sph(3), cat(3)
+//		cluster4 member: cat(4)
+//		ret: sph(3), jerry(2), cat(4)
+// nolint
 func TestListApplicationInstanceMember(t *testing.T) {
-	// TODO(tom)
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var (
+		group1ID       uint = 1
+		group2ID       uint = 2
+		application3ID uint = 3
+		cluster4ID     uint = 4
+
+		traversalIDs string        = "1,2"
+		sphID        uint          = 1
+		jerryID      uint          = 2
+		catID        uint          = 3
+		grandUser    userauth.User = &userauth.DefaultInfo{
+			Name:     "sph",
+			FullName: "sph",
+			ID:       1,
+		}
+	)
+	ctx = context.WithValue(ctx, user.Key(), grandUser)
+
+	// mock the groupManager
+	groupManager := groupmanagermock.NewMockManager(mockCtrl)
+	groupManager.EXPECT().GetByID(gomock.Any(),
+		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
+		return &groupModels.Group{
+			Model:           gorm.Model{},
+			Name:            "",
+			Path:            "",
+			VisibilityLevel: "",
+			Description:     "",
+			ParentID:        0,
+			TraversalIDs:    traversalIDs,
+		}, nil
+	}).Times(1)
+
+	// mock the applicationManager
+	applicationManager := applicationmanagermock.NewMockManager(mockCtrl)
+	applicationManager.EXPECT().GetByID(gomock.Any(),
+		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*applicationModels.Application, error) {
+		return &applicationModels.Application{
+			Model:       gorm.Model{},
+			Name:        "",
+			Description: "",
+			GroupID:     group2ID,
+		}, nil
+	}).Times(1)
+
+	// mock the applicationClusterManager
+	clusterManager := clustermanagermock.NewMockManager(mockCtrl)
+	clusterManager.EXPECT().GetByID(gomock.Any(),
+		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*clustermodels.Cluster, error) {
+		return &clustermodels.Cluster{
+			Model:         gorm.Model{},
+			Name:          "",
+			Description:   "",
+			ApplicationID: application3ID,
+		}, nil
+	}).Times(1)
+
+	originService := &service{
+		memberManager:             member.Mgr,
+		groupManager:              groupManager,
+		applicationManager:        applicationManager,
+		applicationClusterManager: clusterManager,
+	}
+	s = originService
+
+	// insert members
+	postMembers := []PostMember{
+		{
+			ResourceType: models.TypeGroupStr,
+			ResourceID:   group1ID,
+			MemberInfo:   sphID,
+			MemberType:   models.MemberUser,
+			Role:         "owner",
+		},
+		{
+			ResourceType: models.TypeGroupStr,
+			ResourceID:   group2ID,
+			MemberInfo:   sphID,
+			MemberType:   models.MemberUser,
+			Role:         "owner",
+		},
+		{
+			ResourceType: models.TypeGroupStr,
+			ResourceID:   group2ID,
+			MemberInfo:   jerryID,
+			MemberType:   models.MemberUser,
+			Role:         "owner",
+		},
+		{
+			ResourceType: models.TypeApplicationStr,
+			ResourceID:   application3ID,
+			MemberInfo:   sphID,
+			MemberType:   models.MemberUser,
+			Role:         "owner",
+		},
+		{
+			ResourceType: models.TypeApplicationStr,
+			ResourceID:   application3ID,
+			MemberInfo:   catID,
+			MemberType:   models.MemberUser,
+			Role:         "owner",
+		},
+		{
+			ResourceType: models.TypeApplicationClusterStr,
+			ResourceID:   cluster4ID,
+			MemberInfo:   catID,
+			MemberType:   models.MemberUser,
+			Role:         "owner",
+		},
+	}
+
+	for _, postMember := range postMembers {
+		result, err := originService.createMemberDirect(ctx, postMember)
+		assert.Nil(t, err)
+		assert.True(t, PostMemberEqualsMember(postMember, result))
+	}
+
+	// check members
+	members, err := s.ListMember(ctx, models.TypeApplicationClusterStr, cluster4ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(members))
+	assert.True(t, PostMemberEqualsMember(postMembers[5], &members[0]))
+	assert.True(t, PostMemberEqualsMember(postMembers[3], &members[1]))
+	assert.True(t, PostMemberEqualsMember(postMembers[2], &members[2]))
 }
 
 func TestMain(m *testing.M) {
