@@ -1,0 +1,194 @@
+package cmdb
+
+import (
+	"bytes"
+	"context"
+	"crypto/md5"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+
+	"g.hz.netease.com/horizon/pkg/config/cmdb"
+	"g.hz.netease.com/horizon/pkg/util/log"
+	"g.hz.netease.com/horizon/pkg/util/wlog"
+)
+
+type Controller interface {
+	// GetApplication(ctx context.Context, appName string) error
+	CreateApplication(ctx context.Context, req CreateApplicationRequest) error
+	DeleteApplication(ctx context.Context, appName string) error
+	//
+	// CreateCluster(ctx context.Context, req CreateClusterRequest) error
+	// DeleteCluster(ctx context.Context, clusterName string) error
+}
+
+func NewController(config cmdb.Config) Controller {
+	return &controller{
+		cli:    &http.Client{},
+		config: config,
+	}
+}
+
+type controller struct {
+	cli    *http.Client
+	config cmdb.Config
+}
+
+func (c *controller) getSignature() (string, error) {
+	now := time.Now()
+	year := now.Year()
+	month := now.Month()
+	day := now.Day()
+	date := fmt.Sprintf("%d%02d%02d", year, month, day)
+	content := fmt.Sprintf("%v%v%v", c.config.ClientID, date, c.config.SecretCode)
+
+	hashFunc := md5.New()
+	var b []byte
+	_, err := io.WriteString(hashFunc, content)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", hashFunc.Sum(b)), nil
+}
+
+func (c *controller) CreateApplication(ctx context.Context, req CreateApplicationRequest) error {
+	const op = "cmdb CreateApplication"
+
+	// 1. build request
+	signature, err := c.getSignature()
+	if err != nil {
+		return err
+	}
+
+	const format = "http://%s/api/v2/createApplication?signature=%s&client=%s"
+	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID)
+
+	content, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, URL, bytes.NewReader(content))
+	httpReq.Header.Add("Content-Type", "application/json")
+	if err != nil {
+		return err
+	}
+
+	// 2. do request
+	resp, err := c.cli.Do(httpReq)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		message := wlog.Response(ctx, resp)
+		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
+	}
+
+	var cResp CommonResp
+	responseBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	err = json.NewDecoder(bytes.NewReader(responseBytes)).Decode(&cResp)
+	if err != nil {
+		return err
+	}
+	if cResp.Code != 200 && cResp.Code != 601 {
+		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
+	}
+	log.Infof(ctx, "createApplication ok, response body  = %s", string(responseBytes))
+	return nil
+}
+
+func (c *controller) DeleteApplication(ctx context.Context, appName string) error {
+	// 1. build request
+	signature, err := c.getSignature()
+	if err != nil {
+		return err
+	}
+	const format = "http://%s/api/v2/deleteApplication?signature=%s&client=%s&applicationName=%s"
+	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID, appName)
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
+	httpReq.Header.Add("Content-Type", "application/json")
+	if err != nil {
+		return err
+	}
+
+	// 2. do request
+	resp, err := c.cli.Do(httpReq)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		message := wlog.Response(ctx, resp)
+		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
+	}
+
+	var cResp CommonResp
+	responseBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	err = json.NewDecoder(bytes.NewReader(responseBytes)).Decode(&cResp)
+	if err != nil {
+		return err
+	}
+	if cResp.Code != 200 && cResp.Code != 601 {
+		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
+	}
+	log.Infof(ctx, "deleteApplication ok, response body  = %s", string(responseBytes))
+	return nil
+}
+
+func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest) error {
+	// 1. build request
+	signature, err := c.getSignature()
+	if err != nil {
+		return err
+	}
+
+	const format = "http://%s/api/v2/createCluster?signature=%s&client=%s"
+	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID)
+
+	content, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, URL, bytes.NewReader(content))
+	httpReq.Header.Add("Content-Type", "application/json")
+	if err != nil {
+		return err
+	}
+
+	// 2. do request
+	resp, err := c.cli.Do(httpReq)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		message := wlog.Response(ctx, resp)
+		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
+	}
+
+	var cResp CommonResp
+	responseBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	err = json.NewDecoder(bytes.NewReader(responseBytes)).Decode(&cResp)
+	if err != nil {
+		return err
+	}
+	if cResp.Code != 200 && cResp.Code != 601 {
+		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
+	}
+	log.Infof(ctx, "createApplication ok, response body  = %s", string(responseBytes))
+	return nil
+}
+func (c *controller) DeleteCluster(clusterName string) error {
+}
