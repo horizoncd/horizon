@@ -25,7 +25,7 @@ var (
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Cluster{}, &envmodels.EnvironmentRegion{},
-		&regionmodels.Region{},  &membermodels.Member{}); err != nil {
+		&regionmodels.Region{}, &membermodels.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
