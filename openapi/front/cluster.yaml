@@ -1,0 +1,45 @@
+openapi: 3.0.1
+info:
+  title: Horizon Cluster Front
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v1/clusters/{clusterName}:
+    get:
+      tags:
+        - cluster
+      description: get cluster by name
+      operationId: getClusterByName
+      parameters:
+        - name: clusterName
+          in: path
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "id":1,
+                          "name":"cluster",
+                          "description":"xxxxxxxxxxxx",
+                          "template":{
+                              "name":"javaapp",
+                              "release":"v1.1.0"
+                          },
+                          "git":{
+                              "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                              "subfolder":"/",
+                              "branch":"develop"
+                          }
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

@@ -61,8 +61,9 @@ type Template struct {
 }
 
 type Scope struct {
-	Environment string `json:"environment"`
-	Region      string `json:"region"`
+	Environment       string `json:"environment"`
+	Region            string `json:"region"`
+	RegionDisplayName string `json:"regionDisplayName,omitempty"`
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
@@ -147,10 +148,12 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 }
 
 type ListClusterResponse struct {
-	ID       uint      `json:"id"`
-	Name     string    `json:"name"`
-	Scope    *Scope    `json:"scope"`
-	Template *Template `json:"template"`
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	Scope     *Scope    `json:"scope"`
+	Template  *Template `json:"template"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func ofClustersWithEnvAndRegion(clusters []*models.ClusterWithEnvAndRegion) []*ListClusterResponse {
@@ -160,14 +163,27 @@ func ofClustersWithEnvAndRegion(clusters []*models.ClusterWithEnvAndRegion) []*L
 			ID:   c.ID,
 			Name: c.Name,
 			Scope: &Scope{
-				Environment: c.EnvironmentName,
-				Region:      c.RegionName,
+				Environment:       c.EnvironmentName,
+				Region:            c.RegionName,
+				RegionDisplayName: c.RegionDisplayName,
 			},
 			Template: &Template{
 				Name:    c.Template,
 				Release: c.TemplateRelease,
 			},
+			CreatedAt: c.CreatedAt,
+			UpdatedAt: c.UpdatedAt,
 		})
 	}
 	return respList
+}
+
+type GetClusterByNameResponse struct {
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Template    *Template `json:"template"`
+	Git         *Git      `json:"git"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }

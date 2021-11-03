@@ -33,6 +33,7 @@ type Controller interface {
 		request *CreateClusterRequest) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
 		request *UpdateClusterRequest) (*GetClusterResponse, error)
+	GetClusterByName(ctx context.Context, clusterName string) (*GetClusterByNameResponse, error)
 }
 
 type controller struct {
@@ -316,6 +317,36 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 
 	return ofClusterModel(application, cluster, er, fullPath,
 		pipelineJSONBlob, applicationJSONBlob), nil
+}
+
+func (c *controller) GetClusterByName(ctx context.Context,
+	clusterName string) (_ *GetClusterByNameResponse, err error) {
+	const op = "cluster controller: get cluster by name"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	cluster, err := c.clusterMgr.GetByName(ctx, clusterName)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	if cluster == nil {
+		return nil, errors.E(op, http.StatusNotFound, errors.ErrorCode("ClusterNotFound"))
+	}
+	return &GetClusterByNameResponse{
+		ID:          cluster.ID,
+		Name:        cluster.Name,
+		Description: cluster.Description,
+		Template: &Template{
+			Name:    cluster.Template,
+			Release: cluster.TemplateRelease,
+		},
+		Git: &Git{
+			URL:       cluster.GitURL,
+			Subfolder: cluster.GitSubfolder,
+			Branch:    cluster.GitBranch,
+		},
+		CreatedAt: cluster.CreatedAt,
+		UpdatedAt: cluster.UpdatedAt,
+	}, nil
 }
 
 // validateCreate validate for create cluster
