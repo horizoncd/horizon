@@ -108,12 +108,15 @@ const (
 const (
 	ClusterQueryByID                = "select * from cluster where id = ? and deleted_at is null"
 	ClusterQueryByName              = "select * from cluster where name = ? and deleted_at is null"
-	ClusterQueryByApplicationAndEnv = "select c.*, er.environment_name, er.region_name from cluster c " +
+	ClusterQueryByApplicationAndEnv = "select c.*, er.environment_name, er.region_name, " +
+		"r.display_name as region_display_name from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
+		"join region r on r.name = er.region_name " +
 		"where c.application_id = ? and er.environment_name = ? " +
 		"and c.name like ? and c.deleted_at is null limit ? offset ?"
 	ClusterCountByApplicationAndEnv = "select count(1) from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
+		"join region r on r.name = er.region_name " +
 		"where c.application_id = ? and er.environment_name = ? " +
 		"and c.name like ? and c.deleted_at is null"
 	ClusterQueryByClusterName = "select * from cluster where name = ? and deleted_at is null"
