@@ -75,10 +75,12 @@ func (a *API) Status(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, struct {
-		Name string `json:"name"`
-		ID   uint   `json:"id"`
+		Name    string `json:"name"`
+		ID      uint   `json:"id"`
+		IsAdmin bool   `json:"isAdmin"`
 	}{
-		Name: u.GetFullName(),
-		ID:   u.GetID(),
+		Name:    u.GetFullName(),
+		ID:      u.GetID(),
+		IsAdmin: u.IsAdmin(),
 	})
 }

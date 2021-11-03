@@ -17,7 +17,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/groups/:%v/members", _paramGroupID),
 			HandlerFunc: api.ListGroupMember,
-		}, {
+		},
+		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/groups/:%v/members", _paramGroupID),
 			HandlerFunc: api.CreateGroupMember,
@@ -26,7 +27,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/applications/:%v/members", _paramApplicationID),
 			HandlerFunc: api.ListApplicationMember,
-		}, {
+		},
+		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/applications/:%v/members", _paramApplicationID),
 			HandlerFunc: api.CreateApplicationMember,
@@ -35,7 +37,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/members", _paramApplicationClusterID),
 			HandlerFunc: api.ListApplicationClusterMember,
-		}, {
+		},
+		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/members", _paramApplicationClusterID),
 			HandlerFunc: api.CreateApplicationClusterMember,
@@ -44,7 +47,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/members/:%v", _paramMemberID),
 			HandlerFunc: api.UpdateMember,
-		}, {
+		},
+		{
 			Method:      http.MethodDelete,
 			Pattern:     fmt.Sprintf("/members/:%v", _paramMemberID),
 			HandlerFunc: api.DeleteMember,

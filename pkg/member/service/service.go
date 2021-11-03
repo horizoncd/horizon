@@ -34,7 +34,6 @@ type Service interface {
 	RemoveMember(ctx context.Context, memberID uint) error
 	// ListMember list all the member of the resource
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
-
 	// GetMemberOfResource return the current user's role of the resource (member from direct or parent)
 	GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error)
 }
