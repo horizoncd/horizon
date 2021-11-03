@@ -25,6 +25,11 @@ const (
 	AddMembers       = "addMembers"
 	DeleteRepository = "deleteRepository"
 	ListImage        = "listImage"
+	PreHeatProject   = "preheatProject"
+
+	Filters     = "[{\"type\":\"repository\",\"value\":\"**\"},{\"type\":\"tag\",\"value\":\"**\"}]"
+	Trigger     = "{\"type\":\"event_based\",\"trigger_setting\":{\"cron\":\"\"}}"
+	PreheatName = "kraken"
 )
 
 type HarborArtifact struct {
@@ -56,7 +61,7 @@ func (l imageList) Swap(i, j int) {
 	l[i], l[j] = l[j], l[i]
 }
 
-func (h *HarborRegistry) CreateProject(ctx context.Context, project string) (exists bool, projectID int, err error) {
+func (h *HarborRegistry) CreateProject(ctx context.Context, project string) (_ int, err error) {
 	const op = "registry: create project"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -69,11 +74,11 @@ func (h *HarborRegistry) CreateProject(ctx context.Context, project string) (exi
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return false, -1, errors.E(op, err)
+		return -1, errors.E(op, err)
 	}
 	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), false, CreateProject)
 	if err != nil {
-		return false, -1, errors.E(op, err)
+		return -1, errors.E(op, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -82,14 +87,22 @@ func (h *HarborRegistry) CreateProject(ctx context.Context, project string) (exi
 		location := resp.Header.Get("Location")
 		projectIDStr := location[strings.LastIndex(location, "/")+1:]
 		projectID, err := strconv.Atoi(projectIDStr)
-		return false, projectID, err
+		if err != nil {
+			return -1, errors.E(op, err)
+		}
+		if err := h.AddMembers(ctx, projectID); err != nil {
+			return -1, errors.E(op, err)
+		}
+		_ = h.PreheatProject(ctx, project, projectID)
+		return projectID, nil
 	} else if resp.StatusCode == http.StatusConflict {
 		// 已经存在
-		return true, -1, nil
+		return -1, nil
 	}
 
 	message := wlog.Response(ctx, resp)
-	return false, -1, errors.E(op, resp.StatusCode, message)
+	return -1, errors.E(op, resp.StatusCode, message)
+
 }
 
 func (h *HarborRegistry) AddMembers(ctx context.Context, projectID int) (err error) {
@@ -193,6 +206,37 @@ func (h *HarborRegistry) ListImage(ctx context.Context,
 	sort.Sort(imageList(images))
 
 	return images, nil
+}
+
+func (h *HarborRegistry) PreheatProject(ctx context.Context, project string,
+	projectID int) (err error) {
+	const op = "registry: preheat project"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	preheatURL := fmt.Sprintf("%s/api/v2.0/projects/%s/preheat/policies", h.server, project)
+	body := map[string]interface{}{
+		"name":        PreheatName,
+		"project_id":  projectID,
+		"provider_id": h.preheatPolicyID,
+		"filters":     Filters,
+		"trigger":     Trigger,
+		"enabled":     true,
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, preheatURL, bytes.NewReader(bodyBytes), false, PreHeatProject)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusConflict {
+		return nil
+	}
+	message := wlog.Response(ctx, resp)
+	return errors.E(op, resp.StatusCode, message)
 }
 
 func (h *HarborRegistry) GetServer(ctx context.Context) string {

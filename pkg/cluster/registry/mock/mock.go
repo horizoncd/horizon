@@ -48,7 +48,38 @@ func NewHarborServer() *HarborServer {
 		Methods(http.MethodDelete).HandlerFunc(s.DeleteRepository)
 	r.Path("/api/v2.0/projects/{project}/repositories/{repository}/artifacts").
 		Methods(http.MethodGet).HandlerFunc(s.ListImage)
+	r.Path("/api/v2.0/projects/{project_name}/preheat/policies").
+		Methods(http.MethodPost).HandlerFunc(s.PreheatProject)
 	return s
+}
+
+func (s *HarborServer) PreheatProject(w http.ResponseWriter, r *http.Request) {
+	type Preheat struct {
+		Name       string `json:"name"`
+		ProjectID  int    `json:"project_id"`
+		ProviderID int    `json:"provider_id"`
+		Filters    string `json:"filters"`
+		Trigger    string `json:"trigger"`
+		Enabled    bool   `json:"enabled"`
+	}
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		s.responseError(w, http.StatusInternalServerError, err)
+		return
+	}
+	var preheat Preheat
+	if err := json.Unmarshal(data, &preheat); err != nil {
+		s.responseError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	for _, v := range s.Projects {
+		if v.ID == preheat.ProjectID {
+			w.WriteHeader(http.StatusCreated)
+			return
+		}
+	}
+	s.responseError(w, http.StatusBadRequest, fmt.Errorf("project not exist"))
 }
 
 func (s *HarborServer) CreateProject(w http.ResponseWriter, r *http.Request) {

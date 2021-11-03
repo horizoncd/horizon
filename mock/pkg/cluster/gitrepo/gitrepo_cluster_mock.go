@@ -120,3 +120,33 @@ func (mr *MockClusterGitRepoMockRecorder) MergeBranch(ctx, application, cluster 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeBranch", reflect.TypeOf((*MockClusterGitRepo)(nil).MergeBranch), ctx, application, cluster)
 }
+
+// UpdateImage mocks base method
+func (m *MockClusterGitRepo) UpdateImage(ctx context.Context, application, cluster, template, image string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateImage", ctx, application, cluster, template, image)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateImage indicates an expected call of UpdateImage
+func (mr *MockClusterGitRepoMockRecorder) UpdateImage(ctx, application, cluster, template, image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockClusterGitRepo)(nil).UpdateImage), ctx, application, cluster, template, image)
+}
+
+// GetConfigCommit mocks base method
+func (m *MockClusterGitRepo) GetConfigCommit(ctx context.Context, application, cluster string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfigCommit", ctx, application, cluster)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigCommit indicates an expected call of GetConfigCommit
+func (mr *MockClusterGitRepoMockRecorder) GetConfigCommit(ctx, application, cluster interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigCommit", reflect.TypeOf((*MockClusterGitRepo)(nil).GetConfigCommit), ctx, application, cluster)
+}

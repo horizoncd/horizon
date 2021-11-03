@@ -11,5 +11,5 @@ type BuildDeployRequestGit struct {
 }
 
 type BuildDeployResponse struct {
-	PipelinerunID string `json:"pipelinerunID"`
+	PipelinerunID uint `json:"pipelinerunID"`
 }

@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
@@ -45,12 +46,14 @@ type controller struct {
 	regionMgr            regionmanager.Manager
 	groupSvc             groupsvc.Service
 	prMgr                prmanager.Manager
+	tektonFty            factory.Factory
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo appgitrepo.ApplicationGitRepo,
-	commitGetter code.CommitGetter, cd cd.CD, templateSchemaGetter templateschema.Getter) Controller {
+	commitGetter code.CommitGetter, cd cd.CD, tektonFty factory.Factory,
+	templateSchemaGetter templateschema.Getter) Controller {
 	return &controller{
 		clusterMgr:           clustermanager.Mgr,
 		clusterGitRepo:       clusterGitRepo,
@@ -64,5 +67,6 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		regionMgr:            regionmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
 		prMgr:                prmanager.Mgr,
+		tektonFty:            tektonFty,
 	}
 }

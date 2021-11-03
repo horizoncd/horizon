@@ -9,13 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	"github.com/stretchr/testify/assert"
 
 	"g.hz.netease.com/horizon/pkg/cluster/registry/mock"
 )
 
-var harbor = &harbormodels.Harbor{}
+var harbor = &HarborConfig{}
 var server = mock.NewHarborServer()
 
 func TestMain(m *testing.M) {
@@ -28,22 +27,13 @@ func TestByMock(t *testing.T) {
 	h := NewHarborRegistry(harbor)
 	ctx := context.Background()
 	// add project1
-	exists, projectID, err := h.CreateProject(ctx, "project1")
-	assert.False(t, exists)
+	projectID, err := h.CreateProject(ctx, "project1")
 	assert.Nil(t, err)
 	fmt.Printf("projectID: %d", projectID)
 	// add project1 again
-	existsAgain, projectIDAgain, err := h.CreateProject(ctx, "project1")
-	assert.True(t, existsAgain)
+	projectIDAgain, err := h.CreateProject(ctx, "project1")
 	assert.Nil(t, err)
 	assert.Equal(t, -1, projectIDAgain)
-
-	// add member for project1
-	err = h.AddMembers(ctx, projectID)
-	assert.Nil(t, err)
-	// add member for project1 again
-	err = h.AddMembers(ctx, projectID)
-	assert.Nil(t, err)
 
 	// 推送镜像到repo1
 	server.PushImage("project1", "repo1", "v1")

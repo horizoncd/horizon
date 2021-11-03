@@ -11,8 +11,10 @@ type Pipelinerun struct {
 	Status           string
 	Title            string
 	Description      string
-	CodeBranch       string
-	CodeCommit       string
+	GitURL           string
+	GitBranch        string
+	GitCommit        string
+	ImageURL         string
 	LastConfigCommit string
 	ConfigCommit     string
 	LogBucket        string
@@ -22,5 +24,5 @@ type Pipelinerun struct {
 	RollbackFrom     *uint
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
-	CreatedBy        string
+	CreatedBy        uint
 }

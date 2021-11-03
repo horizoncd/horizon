@@ -102,6 +102,8 @@ type ClusterGitRepo interface {
 	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
 	CompareConfig(ctx context.Context, application, cluster string) (string, error)
 	MergeBranch(ctx context.Context, application, cluster string) error
+	UpdateImage(ctx context.Context, application, cluster, template, image string) (string, error)
+	GetConfigCommit(ctx context.Context, application, cluster string) (string, error)
 }
 
 type clusterGitRepo struct {
@@ -213,9 +215,6 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 
 	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML, chartYAML []byte
 	var err1, err2, err3, err4, err5, err6, err7 error
-	marshal := func(b *[]byte, err *error, data interface{}) {
-		*b, *err = yaml.Marshal(data)
-	}
 
 	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
 	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
@@ -432,6 +431,66 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	return nil
 }
 
+func (g *clusterGitRepo) UpdateImage(ctx context.Context, application, cluster,
+	template, image string) (_ string, err error) {
+	const op = "cluster git repo: update image"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return "", errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+
+	var outputYaml []byte
+	var err1 error
+	marshal(&outputYaml, &err1, assemblePipelineOutput(template, image))
+	if err1 != nil {
+		return "", errors.E(op, err1)
+	}
+
+	actions := []gitlablib.CommitAction{
+		{
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathApplication,
+			Content:  string(outputYaml),
+		},
+	}
+
+	commitMsg := angular.CommitMessage("cluster", angular.Subject{
+		Operator: currentUser.GetName(),
+		Action:   "deploy cluster",
+		Cluster:  angular.StringPtr(cluster),
+	}, struct {
+		Image string `json:"image"`
+	}{
+		Image: image,
+	})
+
+	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
+	if err != nil {
+		return "", errors.E(op, err)
+	}
+
+	return commit.ID, nil
+}
+
+func (g *clusterGitRepo) GetConfigCommit(ctx context.Context, application, cluster string) (_ string, err error) {
+	const op = "cluster git repo: merge branch"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+
+	branch, err := g.gitlabLib.GetBranch(ctx, pid, _branchGitops)
+	if err != nil {
+		return "", errors.E(op, err)
+	}
+
+	return branch.Commit.ID, nil
+}
+
 // assembleApplicationValue assemble application.yaml data
 func (g *clusterGitRepo) assembleApplicationValue(params *BaseParams) map[string]map[string]interface{} {
 	ret := make(map[string]map[string]interface{})
@@ -555,4 +614,16 @@ func renameTemplateName(name string) string {
 		}
 	}
 	return string(templateName)
+}
+
+// assemblePipelineOutput ...
+func assemblePipelineOutput(templateName, image string) map[string]map[string]string {
+	ret := make(map[string]map[string]string)
+	ret[templateName] = make(map[string]string)
+	ret[templateName]["image"] = image
+	return ret
+}
+
+func marshal(b *[]byte, err *error, data interface{}) {
+	*b, *err = yaml.Marshal(data)
 }
