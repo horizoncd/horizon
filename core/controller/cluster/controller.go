@@ -26,6 +26,8 @@ type Controller interface {
 		request *CreateClusterRequest) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
 		request *UpdateClusterRequest) (*GetClusterResponse, error)
+	GetClusterByName(ctx context.Context,
+		clusterName string) (*GetClusterByNameResponse, error)
 	BuildDeploy(ctx context.Context, clusterID uint,
 		request *BuildDeployRequest) (*BuildDeployResponse, error)
 }
