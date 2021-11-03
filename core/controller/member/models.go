@@ -7,6 +7,7 @@ import (
 	"time"
 
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
@@ -159,6 +160,12 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 				return nil, err
 			}
 			resourceName = application.Name
+		case models.TypeApplicationCluster:
+			cluster, err := clustermanager.Mgr.GetByID(ctx, member.ResourceID)
+			if err != nil {
+				return nil, err
+			}
+			resourceName = cluster.Name
 		default:
 			return nil, fmt.Errorf("%s is not support now", member.ResourceType)
 		}

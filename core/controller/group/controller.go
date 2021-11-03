@@ -391,7 +391,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.C
 		return nil, errNotMatch
 	}
 	cluster, err := c.clusterManager.GetByName(ctx, paths[len(paths)-1])
-	if err != nil {
+	if err != nil || cluster == nil {
 		return nil, errNotMatch
 	}
 	app, err = c.applicationManager.GetByID(ctx, cluster.ApplicationID)

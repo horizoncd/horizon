@@ -21,6 +21,7 @@ type Cluster struct {
 type ClusterWithEnvAndRegion struct {
 	*Cluster
 
-	EnvironmentName string
-	RegionName      string
+	EnvironmentName   string
+	RegionName        string
+	RegionDisplayName string
 }

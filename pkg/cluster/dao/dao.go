@@ -2,12 +2,15 @@ package dao
 
 import (
 	"context"
+	goerrors "errors"
 	"net/http"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/common"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
@@ -36,9 +39,30 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster) (*models.Clus
 		return nil, err
 	}
 
-	result := db.Create(cluster)
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(cluster).Error; err != nil {
+			return err
+		}
+		// insert a record to member table
+		member := &membermodels.Member{
+			ResourceType: membermodels.TypeApplicationCluster,
+			ResourceID:   cluster.ID,
+			Role:         role.Owner,
+			MemberType:   membermodels.MemberUser,
+			MemberNameID: cluster.CreatedBy,
+			GrantedBy:    cluster.UpdatedBy,
+		}
+		result := tx.Create(member)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return goerrors.New("create member error")
+		}
+		return nil
+	})
 
-	return cluster, result.Error
+	return cluster, err
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
@@ -60,9 +84,17 @@ func (d *dao) GetByName(ctx context.Context, clusterName string) (*models.Cluste
 	}
 
 	var cluster models.Cluster
-	result := db.Raw(common.ClusterQueryByName, clusterName).First(&cluster)
+	result := db.Raw(common.ClusterQueryByName, clusterName).Scan(&cluster)
 
-	return &cluster, result.Error
+	if result.Error != nil {
+		return nil, err
+	}
+
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+
+	return &cluster, nil
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error) {
