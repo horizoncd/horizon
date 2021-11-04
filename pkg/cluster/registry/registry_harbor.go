@@ -102,7 +102,6 @@ func (h *HarborRegistry) CreateProject(ctx context.Context, project string) (_ i
 
 	message := wlog.Response(ctx, resp)
 	return -1, errors.E(op, resp.StatusCode, message)
-
 }
 
 func (h *HarborRegistry) AddMembers(ctx context.Context, projectID int) (err error) {

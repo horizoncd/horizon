@@ -75,7 +75,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 1. create project in harbor
-	harbor := registry.NewHarborRegistry(&registry.HarborConfig{
+	harbor := c.registryFty.GetByHarborConfig(ctx, &registry.HarborConfig{
 		Server:          regionEntity.Harbor.Server,
 		Token:           regionEntity.Harbor.Token,
 		PreheatPolicyID: regionEntity.Harbor.PreheatPolicyID,

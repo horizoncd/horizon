@@ -9,11 +9,17 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
+	commitmock "g.hz.netease.com/horizon/mock/pkg/cluster/code"
 	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
+	registrymock "g.hz.netease.com/horizon/mock/pkg/cluster/registry"
+	registryftymock "g.hz.netease.com/horizon/mock/pkg/cluster/registry/factory"
+	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
+	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
@@ -27,6 +33,8 @@ import (
 	k8sclustermanager "g.hz.netease.com/horizon/pkg/k8scluster/manager"
 	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
@@ -272,7 +280,8 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{},
 		&harbormodels.Harbor{}, &k8sclustermodels.K8SCluster{},
-		&regionmodels.Region{}, &envmodels.EnvironmentRegion{}); err != nil {
+		&regionmodels.Region{}, &envmodels.EnvironmentRegion{},
+		&prmodels.Pipelinerun{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
@@ -305,6 +314,9 @@ func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
+	tektonFty := tektonftymock.NewMockFactory(mockCtl)
+	registryFty := registryftymock.NewMockFactory(mockCtl)
+	commitGetter := commitmock.NewMockCommitGetter(mockCtl)
 
 	templateSchemaGetter := trschemamock.NewMockSchemaGetter(mockCtl)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0").
@@ -395,6 +407,7 @@ func Test(t *testing.T) {
 	c = &controller{
 		clusterMgr:           clustermanager.Mgr,
 		clusterGitRepo:       clusterGitRepo,
+		commitGetter:         commitGetter,
 		cd:                   cd,
 		applicationMgr:       appMgr,
 		templateReleaseMgr:   trMgr,
@@ -402,6 +415,9 @@ func Test(t *testing.T) {
 		envMgr:               envMgr,
 		regionMgr:            regionMgr,
 		groupSvc:             groupsvc.Svc,
+		prMgr:                prmanager.Mgr,
+		tektonFty:            tektonFty,
+		registryFty:          registryFty,
 	}
 
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(&gitrepo.ClusterRepo{
@@ -414,7 +430,9 @@ func Test(t *testing.T) {
 		"app-cluster", "javaapp").Return(&gitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
-	}, nil)
+	}, nil).AnyTimes()
+	clusterGitRepo.EXPECT().UpdateImage(ctx, gomock.Any(), gomock.Any(),
+		gomock.Any(), gomock.Any()).Return("12345678", nil)
 
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil)
 
@@ -500,4 +518,28 @@ func Test(t *testing.T) {
 	getByName, err := c.GetClusterByName(ctx, "app-cluster")
 	assert.Nil(t, err)
 	t.Logf("%v", getByName)
+
+	tekton := tektonmock.NewMockInterface(mockCtl)
+	tektonFty.EXPECT().GetTekton(gomock.Any()).Return(tekton, nil)
+	tekton.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("abc", nil)
+
+	registry := registrymock.NewMockRegistry(mockCtl)
+	registry.EXPECT().CreateProject(ctx, gomock.Any()).Return(1, nil)
+	registryFty.EXPECT().GetByHarborConfig(ctx, gomock.Any()).Return(registry)
+
+	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any()).Return(&code.Commit{
+		ID:      "code-commit-id",
+		Message: "msg",
+	}, nil)
+
+	buildDeployResp, err := c.BuildDeploy(ctx, resp.ID, &BuildDeployRequest{
+		Title:       "title",
+		Description: "description",
+		Git: &BuildDeployRequestGit{
+			Branch: "develop",
+		},
+	})
+	assert.Nil(t, err)
+	b, _ = json.Marshal(buildDeployResp)
+	t.Logf("%v", string(b))
 }

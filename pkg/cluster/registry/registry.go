@@ -3,9 +3,7 @@ package registry
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -71,19 +69,8 @@ type HarborConfig struct {
 	PreheatPolicyID int
 }
 
-var harborRegistryCache *sync.Map
-
-func init() {
-	harborRegistryCache = &sync.Map{}
-}
-
 // NewHarborRegistry new a HarborRegistry
 func NewHarborRegistry(harbor *HarborConfig) Registry {
-	key := fmt.Sprintf("%v-%v", harbor.Server, harbor.Token)
-	if ret, ok := harborRegistryCache.Load(key); ok {
-		return ret.(Registry)
-	}
-
 	transport := http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
@@ -110,8 +97,6 @@ func NewHarborRegistry(harbor *HarborConfig) Registry {
 			},
 		},
 	}
-
-	harborRegistryCache.Store(key, harborRegistry)
 
 	return harborRegistry
 }

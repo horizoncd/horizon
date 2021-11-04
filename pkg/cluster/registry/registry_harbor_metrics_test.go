@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
+// nolint
 func Test_observe(t *testing.T) {
 	observe("server1", "GET", "/uri1", "200", "createProject", 100*time.Millisecond)
 	observe("server1", "GET", "/uri1", "300", "createProject", 400*time.Millisecond)
