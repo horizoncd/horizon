@@ -647,6 +647,7 @@ func renameTemplateName(name string) string {
 }
 
 // assemblePipelineOutput ...
+// TODO(gjq): move image update to template
 func assemblePipelineOutput(templateName, image string) map[string]map[string]string {
 	ret := make(map[string]map[string]string)
 	ret[templateName] = make(map[string]string)
