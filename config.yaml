@@ -46,7 +46,8 @@ argoCDMapper:
     token: 
 tektonMapper:
   dev,test,reg,perf,beta,pre,online:
-    url: http://el-horizon-listener.tekton-resources:8080
+    server: http://el-horizon-listener.tekton-resources:8080
+    namespace: tekton-resources
     kubeconfig: ""
     s3:
       accessKey: 
