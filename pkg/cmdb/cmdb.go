@@ -16,12 +16,10 @@ import (
 )
 
 type Controller interface {
-	// GetApplication(ctx context.Context, appName string) error
 	CreateApplication(ctx context.Context, req CreateApplicationRequest) error
 	DeleteApplication(ctx context.Context, appName string) error
-	//
-	// CreateCluster(ctx context.Context, req CreateClusterRequest) error
-	// DeleteCluster(ctx context.Context, clusterName string) error
+	CreateCluster(ctx context.Context, req CreateClusterRequest) error
+	DeleteCluster(ctx context.Context, clusterName string) error
 }
 
 func NewController(config cmdb.Config) Controller {
@@ -54,8 +52,9 @@ func (c *controller) getSignature() (string, error) {
 	return fmt.Sprintf("%x", hashFunc.Sum(b)), nil
 }
 
-func (c *controller) CreateApplication(ctx context.Context, req CreateApplicationRequest) error {
+func (c *controller) CreateApplication(ctx context.Context, req CreateApplicationRequest) (err error) {
 	const op = "cmdb CreateApplication"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	// 1. build request
 	signature, err := c.getSignature()
@@ -65,17 +64,15 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 
 	const format = "http://%s/api/v2/createApplication?signature=%s&client=%s"
 	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID)
-
 	content, err := json.Marshal(req)
 	if err != nil {
 		return err
 	}
-
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, URL, bytes.NewReader(content))
-	httpReq.Header.Add("Content-Type", "application/json")
 	if err != nil {
 		return err
 	}
+	httpReq.Header.Add("Content-Type", "application/json")
 
 	// 2. do request
 	resp, err := c.cli.Do(httpReq)
@@ -84,7 +81,7 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 	}
 	if resp.StatusCode != http.StatusOK {
 		message := wlog.Response(ctx, resp)
-		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
+		return fmt.Errorf("%s, code  = %d, err = %s", op, resp.StatusCode, message)
 	}
 
 	var cResp CommonResp
@@ -97,13 +94,16 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 		return err
 	}
 	if cResp.Code != 200 && cResp.Code != 601 {
-		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
+		return fmt.Errorf("%s, code = %+v, rt = %+v", op, cResp.Code, cResp.RT)
 	}
-	log.Infof(ctx, "createApplication ok, response body  = %s", string(responseBytes))
+	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
 	return nil
 }
 
-func (c *controller) DeleteApplication(ctx context.Context, appName string) error {
+func (c *controller) DeleteApplication(ctx context.Context, appName string) (err error) {
+	const op = "cmdb DeleteApplication"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
 	// 1. build request
 	signature, err := c.getSignature()
 	if err != nil {
@@ -127,7 +127,6 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) erro
 		message := wlog.Response(ctx, resp)
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
 	}
-
 	var cResp CommonResp
 	responseBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -140,25 +139,25 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) erro
 	if cResp.Code != 200 && cResp.Code != 601 {
 		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
 	}
-	log.Infof(ctx, "deleteApplication ok, response body  = %s", string(responseBytes))
+	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
 	return nil
 }
 
-func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest) error {
+func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest) (err error) {
+	const op = "cmdb CreateCluster"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
 	// 1. build request
 	signature, err := c.getSignature()
 	if err != nil {
 		return err
 	}
-
 	const format = "http://%s/api/v2/createCluster?signature=%s&client=%s"
 	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID)
-
 	content, err := json.Marshal(req)
 	if err != nil {
 		return err
 	}
-
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, URL, bytes.NewReader(content))
 	httpReq.Header.Add("Content-Type", "application/json")
 	if err != nil {
@@ -174,7 +173,6 @@ func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest
 		message := wlog.Response(ctx, resp)
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
 	}
-
 	var cResp CommonResp
 	responseBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -187,8 +185,47 @@ func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest
 	if cResp.Code != 200 && cResp.Code != 601 {
 		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
 	}
-	log.Infof(ctx, "createApplication ok, response body  = %s", string(responseBytes))
+	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
 	return nil
 }
-func (c *controller) DeleteCluster(clusterName string) error {
+func (c *controller) DeleteCluster(ctx context.Context, clusterName string) (err error) {
+	const op = "cmdb DeleteCluster"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// 1. build request
+	signature, err := c.getSignature()
+	if err != nil {
+		return err
+	}
+	const format = "http://%s/api/v2/deleteCluster?signature=%s&client=%s&clusterName=%s"
+	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID, clusterName)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
+	httpReq.Header.Add("Content-Type", "application/json")
+	if err != nil {
+		return err
+	}
+
+	// 2. do request
+	resp, err := c.cli.Do(httpReq)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		message := wlog.Response(ctx, resp)
+		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
+	}
+	var cResp CommonResp
+	responseBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	err = json.NewDecoder(bytes.NewReader(responseBytes)).Decode(&cResp)
+	if err != nil {
+		return err
+	}
+	if cResp.Code != 200 && cResp.Code != 601 {
+		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
+	}
+	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
+	return nil
 }

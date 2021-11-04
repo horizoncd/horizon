@@ -10,14 +10,18 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
+const (
+	Success string = "successfully"
+)
+
 type Log struct {
 	ctx   context.Context
 	start time.Time
+	op    string
 }
 
 func Start(ctx context.Context, op string) Log {
-	log.Info(ctx, op)
-	return Log{ctx: ctx, start: time.Now()}
+	return Log{op: op, ctx: ctx, start: time.Now()}
 }
 
 func (l Log) Stop(end func() string) {
@@ -26,13 +30,20 @@ func (l Log) Stop(end func() string) {
 
 		panic(err)
 	}
-	duration := time.Since(time.Now())
-	log.WithFiled(l.ctx, "duration", duration).Info()
+	duration := time.Since(l.start)
+
+	str := end()
+	if str == Success {
+		log.WithFiled(l.ctx, "op", l.op).WithField("duration", duration).Info(Success)
+	} else {
+		log.WithFiled(l.ctx, "op", l.op).WithField("duration", duration).Errorf(end())
+	}
+
 }
 
 func ByErr(err error) string {
 	if err == nil {
-		return "successfully"
+		return Success
 	}
 	return err.Error()
 }

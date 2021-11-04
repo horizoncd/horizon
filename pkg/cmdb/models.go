@@ -36,12 +36,20 @@ const (
 	Online Env = "online"
 )
 
+type ClusterStatusType string
+
+const (
+	StatusReady  ClusterStatusType = "ready"
+	StatusOnline ClusterStatusType = "Online"
+)
+
 type CreateClusterRequest struct {
-	Name            string    `json:"name"`
-	ApplicationName string    `json:"applicationName"`
-	Env             Env       `json:"env"`
-	ClusterStyle    string    `json:"clusterStyle"`
-	Admin           []Account `json:"admin"`
+	Name                string            `json:"name"`
+	ApplicationName     string            `json:"applicationName"`
+	Env                 Env               `json:"env"`
+	ClusterServerStatus ClusterStatusType `json:"clusterServerStatus"`
+	ClusterStyle        string            `json:"clusterStyle"`
+	Admin               []Account         `json:"admin"`
 }
 
 type CommonResp struct {
