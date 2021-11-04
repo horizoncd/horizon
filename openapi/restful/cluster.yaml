@@ -321,8 +321,8 @@ paths:
                 example: |
                   {
                     "data": {
-                      "//id": "pipelinerun id",
-                      "id": 1000
+                      "//id": "pipelinerun record id",
+                      "pipelinerunID": 1000
                     }
                   }
         default:
@@ -364,7 +364,7 @@ paths:
                   {
                     "data": {
                       "//id": "pipelinerun record id",
-                      "id": 1000
+                      "pipelinerunID": 1000
                     }
                   }
         default:
@@ -405,7 +405,7 @@ paths:
                   {
                     "data": {
                       "//id": "pipelinerun record id",
-                      "id": 1000
+                      "pipelinerunID": 1000
                     }
                   }
         default:
@@ -436,7 +436,7 @@ paths:
                   {
                     "data": {
                       "//id": "pipelinerun record id",
-                      "id": 1000
+                      "pipelinerunID": 1000
                     }
                   }
         default:

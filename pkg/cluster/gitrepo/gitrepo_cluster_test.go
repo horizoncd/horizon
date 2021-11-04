@@ -181,7 +181,7 @@ func Test(t *testing.T) {
 	err = r.UpdateCluster(ctx, updateParams)
 	assert.Nil(t, err)
 
-	diff, err := r.CompareConfig(ctx, application, cluster)
+	diff, err := r.CompareConfig(ctx, application, cluster, nil, nil)
 	assert.Nil(t, err)
 	t.Logf("\n%v\n", diff)
 
@@ -191,4 +191,12 @@ func Test(t *testing.T) {
 	t.Logf("%v", files.ApplicationJSONBlob)
 	assert.Equal(t, files.PipelineJSONBlob, pipelineJSONBlob)
 	assert.Equal(t, files.ApplicationJSONBlob, applicationJSONBlob)
+
+	commit, err := r.GetConfigCommit(ctx, application, cluster)
+	assert.Nil(t, err)
+	t.Logf("%v", commit)
+
+	diff, err = r.CompareConfig(ctx, application, cluster, &commit.Master, &commit.Gitops)
+	assert.Nil(t, err)
+	t.Logf("\n%v\n", diff)
 }
