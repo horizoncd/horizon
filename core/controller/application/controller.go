@@ -273,14 +273,7 @@ func (c *controller) validateCreate(b Base) error {
 	if b.Template == nil {
 		return fmt.Errorf("template cannot be empty")
 	}
-	if b.Git != nil && b.Git.URL != "" {
-		re := `^ssh://.+[.]git$`
-		pattern := regexp.MustCompile(re)
-		if !pattern.MatchString(b.Git.URL) {
-			return fmt.Errorf("invalid git url, should satisfies the pattern %v", re)
-		}
-	}
-	return nil
+	return validateGit(b)
 }
 
 func (c *controller) validateUpdate(b Base) error {
@@ -289,6 +282,10 @@ func (c *controller) validateUpdate(b Base) error {
 			return err
 		}
 	}
+	return validateGit(b)
+}
+
+func validateGit(b Base) error {
 	if b.Git != nil && b.Git.URL != "" {
 		re := `^ssh://.+[.]git$`
 		pattern := regexp.MustCompile(re)
