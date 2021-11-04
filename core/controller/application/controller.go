@@ -103,9 +103,18 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 		return nil, errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), err)
 	}
-	if err := c.validateBase(ctx, request.Base); err != nil {
+	if err := c.validateCreate(request.Base); err != nil {
 		return nil, errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
+	}
+	if request.TemplateInput == nil {
+		return nil, errors.E(op, http.StatusBadRequest,
+			errors.ErrorCode(common.InvalidRequestBody), "templateInput cannot be empty")
+	}
+	if err := c.validateTemplateInput(ctx, request.Template.Name,
+		request.Template.Release, request.TemplateInput); err != nil {
+		return nil, errors.E(op, http.StatusBadRequest,
+			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("invalid templateInput, err: %v", err))
 	}
 
 	// 2. check groups or applications with the same name exists
@@ -182,19 +191,33 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 	}
 
 	// 2. validate
-	if err := c.validateBase(ctx, request.Base); err != nil {
+	if err := c.validateUpdate(request.Base); err != nil {
 		return nil, errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
 	}
 
-	// 3. update application in git repo
-	if err := c.applicationGitRepo.UpdateApplication(ctx, appExistsInDB.Name,
-		request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
-		return nil, errors.E(op, err)
+	// 3. if templateInput is not empty, validate and update in git repo
+	if request.TemplateInput != nil {
+		var template, templateRelease string
+		if request.Template != nil {
+			template = request.Template.Name
+			templateRelease = request.Template.Release
+		} else {
+			template = appExistsInDB.Template
+			templateRelease = appExistsInDB.TemplateRelease
+		}
+		if err := c.validateTemplateInput(ctx, template, templateRelease, request.TemplateInput); err != nil {
+			return nil, errors.E(op, http.StatusBadRequest,
+				errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("invalid templateInput, err: %v", err))
+		}
+		if err := c.applicationGitRepo.UpdateApplication(ctx, appExistsInDB.Name,
+			request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
+			return nil, errors.E(op, err)
+		}
 	}
 
 	// 4. update application in db
-	applicationModel := request.toApplicationModel()
+	applicationModel := request.toApplicationModel(appExistsInDB)
 	applicationModel.UpdatedBy = currentUser.GetID()
 	applicationModel, err = c.applicationMgr.UpdateByID(ctx, id, applicationModel)
 	if err != nil {
@@ -243,14 +266,32 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error)
 	return nil
 }
 
-func (c *controller) validateBase(ctx context.Context, b Base) error {
-	t := b.Template
-	tInput := b.TemplateInput
+func (c *controller) validateCreate(b Base) error {
 	if err := validatePriority(b.Priority); err != nil {
 		return err
 	}
-	if err := c.validateTemplateInput(ctx, t.Name, t.Release, tInput); err != nil {
-		return err
+	if b.Template == nil {
+		return fmt.Errorf("template cannot be empty")
+	}
+	return validateGit(b)
+}
+
+func (c *controller) validateUpdate(b Base) error {
+	if b.Priority != "" {
+		if err := validatePriority(b.Priority); err != nil {
+			return err
+		}
+	}
+	return validateGit(b)
+}
+
+func validateGit(b Base) error {
+	if b.Git != nil && b.Git.URL != "" {
+		re := `^ssh://.+[.]git$`
+		pattern := regexp.MustCompile(re)
+		if !pattern.MatchString(b.Git.URL) {
+			return fmt.Errorf("invalid git url, should satisfies the pattern %v", re)
+		}
 	}
 	return nil
 }
