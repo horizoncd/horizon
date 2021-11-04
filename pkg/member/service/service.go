@@ -109,7 +109,23 @@ func (s *service) GetMemberOfResource(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	return s.getMember(ctx, resourceType, resourceID, models.MemberUser, currentUser.GetID())
+	memberInfo, err := s.getMember(ctx, resourceType, resourceID, models.MemberUser, currentUser.GetID())
+	if err != nil {
+		return nil, err
+	}
+	if nil == memberInfo {
+		defaultRole := s.roleService.GetDefaultRole(ctx)
+		if nil != defaultRole {
+			memberInfo = &models.Member{
+				MemberType:   models.MemberUser,
+				Role:         defaultRole.Name,
+				MemberNameID: currentUser.GetID(),
+				ResourceType: models.ResourceType(resourceType),
+				ResourceID:   resourceID,
+			}
+		}
+	}
+	return memberInfo, nil
 }
 
 func (s *service) GetMember(ctx context.Context, memberID uint) (*models.Member, error) {
