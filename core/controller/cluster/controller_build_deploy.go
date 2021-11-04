@@ -22,9 +22,7 @@ import (
 
 const (
 	ActionBuildDeploy = "builddeploy"
-)
 
-const (
 	StatusCreated = "created"
 )
 
@@ -33,7 +31,11 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	const op = "cluster controller: build deploy"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	action := ActionBuildDeploy
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
@@ -53,15 +55,6 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, branch)
 	if err != nil {
 		return nil, errors.E(op, err)
-	}
-
-	var lastConfigCommit = ""
-	lastPr, err := c.prMgr.GetLastPipelinerunWithConfigCommit(ctx, clusterID)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-	if lastPr != nil {
-		lastConfigCommit = lastPr.ConfigCommit
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
@@ -87,29 +80,23 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	// 2. update image in git repo
 	imageURL := assembleImageURL(regionEntity, application.Name, cluster.Name, branch, commit.ID)
 
-	configCommit, err := c.clusterGitRepo.UpdateImage(ctx, application.Name, cluster.Name, cluster.Template, imageURL)
+	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return nil, errors.E(op, err)
-	}
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
 	}
 
 	// 3. add pipelinerun in db
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
-		Action:           action,
+		Action:           ActionBuildDeploy,
 		Status:           StatusCreated,
 		Title:            r.Title,
 		Description:      r.Description,
 		GitBranch:        branch,
 		GitCommit:        commit.ID,
 		ImageURL:         imageURL,
-		LastConfigCommit: lastConfigCommit,
-		ConfigCommit:     configCommit,
+		LastConfigCommit: configCommit.Master,
+		ConfigCommit:     configCommit.Gitops,
 		CreatedBy:        currentUser.GetID(),
 	}
 	prCreated, err := c.prMgr.Create(ctx, pr)
@@ -130,10 +117,11 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	_, err = tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
-		Application: application.Name,
-		Cluster:     cluster.Name,
-		ClusterID:   cluster.ID,
-		Environment: er.EnvironmentName,
+		Application:   application.Name,
+		ApplicationID: application.ID,
+		Cluster:       cluster.Name,
+		ClusterID:     cluster.ID,
+		Environment:   er.EnvironmentName,
 		Git: tekton.PipelineRunGit{
 			URL:       cluster.GitURL,
 			Branch:    branch,

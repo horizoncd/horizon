@@ -58,6 +58,7 @@ type (
 	// PipelineRun 结构体用来传递给tekton trigger所暴露的接口
 	PipelineRun struct {
 		Application      string                 `json:"application"`
+		ApplicationID    uint                   `json:"applicationID"`
 		Cluster          string                 `json:"cluster"`
 		ClusterID        uint                   `json:"clusterID"`
 		Environment      string                 `json:"environment"`

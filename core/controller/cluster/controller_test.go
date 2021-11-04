@@ -431,8 +431,10 @@ func Test(t *testing.T) {
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 	}, nil).AnyTimes()
-	clusterGitRepo.EXPECT().UpdateImage(ctx, gomock.Any(), gomock.Any(),
-		gomock.Any(), gomock.Any()).Return("12345678", nil)
+	clusterGitRepo.EXPECT().GetConfigCommit(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.ClusterCommit{
+		Master: "master-commit",
+		Gitops: "gitops-commit",
+	}, nil)
 
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil)
 

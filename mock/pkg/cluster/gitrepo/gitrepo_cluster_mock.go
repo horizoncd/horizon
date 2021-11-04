@@ -93,18 +93,18 @@ func (mr *MockClusterGitRepoMockRecorder) DeleteCluster(ctx, application, cluste
 }
 
 // CompareConfig mocks base method
-func (m *MockClusterGitRepo) CompareConfig(ctx context.Context, application, cluster string) (string, error) {
+func (m *MockClusterGitRepo) CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CompareConfig", ctx, application, cluster)
+	ret := m.ctrl.Call(m, "CompareConfig", ctx, application, cluster, from, to)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CompareConfig indicates an expected call of CompareConfig
-func (mr *MockClusterGitRepoMockRecorder) CompareConfig(ctx, application, cluster interface{}) *gomock.Call {
+func (mr *MockClusterGitRepoMockRecorder) CompareConfig(ctx, application, cluster, from, to interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompareConfig", reflect.TypeOf((*MockClusterGitRepo)(nil).CompareConfig), ctx, application, cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompareConfig", reflect.TypeOf((*MockClusterGitRepo)(nil).CompareConfig), ctx, application, cluster, from, to)
 }
 
 // MergeBranch mocks base method
@@ -137,10 +137,10 @@ func (mr *MockClusterGitRepoMockRecorder) UpdateImage(ctx, application, cluster,
 }
 
 // GetConfigCommit mocks base method
-func (m *MockClusterGitRepo) GetConfigCommit(ctx context.Context, application, cluster string) (string, error) {
+func (m *MockClusterGitRepo) GetConfigCommit(ctx context.Context, application, cluster string) (*gitrepo.ClusterCommit, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfigCommit", ctx, application, cluster)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*gitrepo.ClusterCommit)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

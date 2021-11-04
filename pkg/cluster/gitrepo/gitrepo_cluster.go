@@ -95,15 +95,20 @@ type ClusterFiles struct {
 	PipelineJSONBlob, ApplicationJSONBlob map[string]interface{}
 }
 
+type ClusterCommit struct {
+	Master string
+	Gitops string
+}
+
 type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
 	CreateCluster(ctx context.Context, params *CreateClusterParams) (*ClusterRepo, error)
 	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
 	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
-	CompareConfig(ctx context.Context, application, cluster string) (string, error)
+	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
 	MergeBranch(ctx context.Context, application, cluster string) error
 	UpdateImage(ctx context.Context, application, cluster, template, image string) (string, error)
-	GetConfigCommit(ctx context.Context, application, cluster string) (string, error)
+	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
 }
 
 type clusterGitRepo struct {
@@ -387,13 +392,19 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 	return nil
 }
 
-func (g *clusterGitRepo) CompareConfig(ctx context.Context, application, cluster string) (_ string, err error) {
+func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
+	cluster string, from, to *string) (_ string, err error) {
 	const op = "cluster git repo: compare config"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
-	compare, err := g.gitlabLib.Compare(ctx, pid, _branchMaster, _branchGitops, nil)
+	var compare *gitlab.Compare
+	if from == nil || to == nil {
+		compare, err = g.gitlabLib.Compare(ctx, pid, _branchMaster, _branchGitops, nil)
+	} else {
+		compare, err = g.gitlabLib.Compare(ctx, pid, *from, *to, nil)
+	}
 	if err != nil {
 		return "", errors.E(op, err)
 	}
@@ -477,18 +488,37 @@ func (g *clusterGitRepo) UpdateImage(ctx context.Context, application, cluster,
 	return commit.ID, nil
 }
 
-func (g *clusterGitRepo) GetConfigCommit(ctx context.Context, application, cluster string) (_ string, err error) {
-	const op = "cluster git repo: merge branch"
+func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
+	application, cluster string) (_ *ClusterCommit, err error) {
+	const op = "cluster git repo: get config commit"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
-	branch, err := g.gitlabLib.GetBranch(ctx, pid, _branchGitops)
-	if err != nil {
-		return "", errors.E(op, err)
+	var branchMaster, branchGitops *gitlab.Branch
+	var err1, err2 error
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		branchMaster, err1 = g.gitlabLib.GetBranch(ctx, pid, _branchMaster)
+	}()
+	go func() {
+		defer wg.Done()
+		branchGitops, err2 = g.gitlabLib.GetBranch(ctx, pid, _branchGitops)
+	}()
+	wg.Wait()
+
+	for _, err := range []error{err1, err2} {
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
 	}
 
-	return branch.Commit.ID, nil
+	return &ClusterCommit{
+		Master: branchMaster.Commit.ID,
+		Gitops: branchGitops.Commit.ID,
+	}, nil
 }
 
 // assembleApplicationValue assemble application.yaml data

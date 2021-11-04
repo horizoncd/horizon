@@ -14,7 +14,6 @@ var (
 
 type Manager interface {
 	Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error)
-	GetLastPipelinerunWithConfigCommit(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 }
 
 type manager struct {
@@ -29,8 +28,4 @@ func New() Manager {
 
 func (m *manager) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error) {
 	return m.dao.Create(ctx, pipelinerun)
-}
-
-func (m *manager) GetLastPipelinerunWithConfigCommit(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
-	return m.dao.GetLastPipelinerunWithConfigCommit(ctx, clusterID)
 }
