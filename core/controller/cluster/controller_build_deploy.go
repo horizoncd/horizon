@@ -48,7 +48,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	var branch = cluster.GitBranch
-	if r.Git != nil || r.Git.Branch != "" {
+	if r.Git != nil && r.Git.Branch != "" {
 		branch = r.Git.Branch
 	}
 
