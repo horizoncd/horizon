@@ -47,7 +47,7 @@ func (f *factory) GetByK8SServer(ctx context.Context, server string) (*rest.Conf
 		return nil, nil, err
 	}
 
-	config, client, err := kube.BuildClient(k8sCluster.Certificate)
+	config, client, err := kube.BuildClientFromContent(k8sCluster.Certificate)
 	if err != nil {
 		return nil, nil, err
 	}
