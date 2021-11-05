@@ -142,7 +142,7 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) (err
 	if err != nil {
 		return err
 	}
-	if cResp.Code != 200 && cResp.Code != 601 {
+	if cResp.Code != 200 && cResp.Code != 1030 && cResp.Code != 601 {
 		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
 	}
 	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
@@ -234,7 +234,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterName string) (err
 	if err != nil {
 		return err
 	}
-	if cResp.Code != 200 && cResp.Code != 601 {
+	if cResp.Code != 200 && cResp.Code != 1030 && cResp.Code != 601 {
 		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
 	}
 	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
