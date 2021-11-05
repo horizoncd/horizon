@@ -57,13 +57,13 @@ const (
 	// _branchGitops is the gitops branch, values updated in this branch, then merge into the _branchMaster
 	_branchGitops = "gitops"
 
-	_filePathChart       = "Chart.yaml"
-	_filePathApplication = "application.yaml"
-	_filePathSRE         = "sre/sre.yaml"
-	_filePathBase        = "system/horizon.yaml"
-	_filePathEnv         = "system/env.yaml"
-	_filePathPipeline    = "pipeline/pipeline.yaml"
-	// _filePathPipelineOutput  = "pipeline/pipeline-output.yaml"
+	_filePathChart          = "Chart.yaml"
+	_filePathApplication    = "application.yaml"
+	_filePathSRE            = "sre/sre.yaml"
+	_filePathBase           = "system/horizon.yaml"
+	_filePathEnv            = "system/env.yaml"
+	_filePathPipeline       = "pipeline/pipeline.yaml"
+	_filePathPipelineOutput = "pipeline/pipeline-output.yaml"
 )
 
 type BaseParams struct {
@@ -462,7 +462,7 @@ func (g *clusterGitRepo) UpdateImage(ctx context.Context, application, cluster,
 	actions := []gitlablib.CommitAction{
 		{
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathApplication,
+			FilePath: _filePathPipelineOutput,
 			Content:  string(outputYaml),
 		},
 	}

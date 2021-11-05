@@ -39,7 +39,7 @@ gitlabRepoConfig:
       path: music-cloud-native/recycling-clusters
       id: 4587
 helmRepoMapper:
-  dev,test,reg,perf,beta,pre,online: "https://harbor.mock.org/chartrepo/cloudnative-template"
+  dev,test,reg,perf,beta,pre,online: "https://harbor.mock.org/chartrepo/horizon-template"
 argoCDMapper:
   dev,test,reg,perf,beta,pre,online:
     url: http://argocd.mockserver.org
