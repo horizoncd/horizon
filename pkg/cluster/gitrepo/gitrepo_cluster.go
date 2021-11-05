@@ -85,10 +85,9 @@ type UpdateClusterParams struct {
 	*BaseParams
 }
 
-type ClusterRepo struct {
+type RepoInfo struct {
 	GitRepoSSHURL string
 	ValueFiles    []string
-	Namespace     string
 }
 
 type ClusterFiles struct {
@@ -102,13 +101,17 @@ type ClusterCommit struct {
 
 type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
-	CreateCluster(ctx context.Context, params *CreateClusterParams) (*ClusterRepo, error)
+	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
 	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
+	// CompareConfig compare config of `from` commit with `to` commit.
+	// if `from` or `to` is nil, compare the master branch with gitops branch
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
-	MergeBranch(ctx context.Context, application, cluster string) error
+	// MergeBranch merge gitops branch to master branch, and return master branch's newest commit
+	MergeBranch(ctx context.Context, application, cluster string) (string, error)
 	UpdateImage(ctx context.Context, application, cluster, template, image string) (string, error)
 	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
+	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
 }
 
 type clusterGitRepo struct {
@@ -186,13 +189,13 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	}, nil
 }
 
-func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (_ *ClusterRepo, err error) {
+func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
 	const op = "cluster git repo: create cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
+		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), "no user in context")
 	}
 
@@ -201,18 +204,18 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	appGroup, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name))
 	if err != nil {
 		if errors.Status(err) != http.StatusNotFound {
-			return nil, errors.E(op, err)
+			return errors.E(op, err)
 		}
 		appGroup, err = g.gitlabLib.CreateGroup(ctx, params.Application.Name,
 			params.Application.Name, &g.clusterRepoConf.Parent.ID)
 		if err != nil {
-			return nil, errors.E(op, err)
+			return errors.E(op, err)
 		}
 	}
 
 	// 2. create cluster repo under appGroup
 	if _, err := g.gitlabLib.CreateProject(ctx, params.Cluster, appGroup.ID); err != nil {
-		return nil, errors.E(op, err)
+		return errors.E(op, err)
 	}
 
 	// 3. write files to repo
@@ -228,13 +231,13 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	marshal(&sreValueYAML, &err5, g.assembleSREValue(params))
 	chart, err := g.assembleChart(params)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return errors.E(op, err)
 	}
 	marshal(&chartYAML, &err6, chart)
 
 	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7} {
 		if err != nil {
-			return nil, errors.E(op, err)
+			return errors.E(op, err)
 		}
 	}
 
@@ -279,20 +282,15 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	})
 
 	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
-		return nil, errors.E(op, err)
+		return errors.E(op, err)
 	}
 
 	// 3. create gitops branch from master
 	if _, err := g.gitlabLib.CreateBranch(ctx, pid, _branchGitops, _branchMaster); err != nil {
-		return nil, errors.E(op, err)
+		return errors.E(op, err)
 	}
 
-	return &ClusterRepo{
-		GitRepoSSHURL: fmt.Sprintf("%v/%v/%v/%v.git",
-			g.gitlabLib.GetSSHURL(ctx), g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster),
-		ValueFiles: []string{_filePathApplication, _filePathEnv, _filePathBase, _filePathSRE},
-		Namespace:  getNamespace(params),
-	}, nil
+	return nil
 }
 
 func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateClusterParams) (err error) {
@@ -420,7 +418,7 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 	return diffStr, nil
 }
 
-func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster string) (err error) {
+func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster string) (_ string, err error) {
 	const op = "cluster git repo: merge branch"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -429,17 +427,16 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	title := fmt.Sprintf("git merge %v", _branchGitops)
 	mr, err := g.gitlabLib.CreateMR(ctx, pid, _branchGitops, _branchMaster, title)
 	if err != nil {
-		return errors.E(op, err)
+		return "", errors.E(op, err)
 	}
 
-	// TODO(gjq) add this msg
-	// mergeCommitMsg := ""
+	mergeCommitMsg := "git merge gitops"
 	removeSourceBranch := false
-	if _, err := g.gitlabLib.AcceptMR(ctx, pid, mr.IID, nil, &removeSourceBranch); err != nil {
-		return errors.E(op, err)
+	mr, err = g.gitlabLib.AcceptMR(ctx, pid, mr.IID, &mergeCommitMsg, &removeSourceBranch)
+	if err != nil {
+		return "", errors.E(op, err)
 	}
-
-	return nil
+	return mr.MergeCommitSHA, nil
 }
 
 func (g *clusterGitRepo) UpdateImage(ctx context.Context, application, cluster,
@@ -519,6 +516,14 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 		Master: branchMaster.Commit.ID,
 		Gitops: branchGitops.Commit.ID,
 	}, nil
+}
+
+func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo {
+	return &RepoInfo{
+		GitRepoSSHURL: fmt.Sprintf("%v/%v/%v/%v.git",
+			g.gitlabLib.GetSSHURL(ctx), g.clusterRepoConf.Parent.Path, application, cluster),
+		ValueFiles: []string{_filePathApplication, _filePathEnv, _filePathBase, _filePathSRE},
+	}
 }
 
 // assembleApplicationValue assemble application.yaml data

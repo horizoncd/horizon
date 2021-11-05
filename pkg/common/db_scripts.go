@@ -77,7 +77,8 @@ const (
 /* sql about k8sCluster */
 const (
 	// K8SClusterListAll ...
-	K8SClusterListAll = "select * from k8s_cluster"
+	K8SClusterListAll     = "select * from k8s_cluster"
+	K8SClusterGetByServer = "select * from k8s_cluster where server = ?"
 )
 
 /* sql about harbor */
@@ -120,4 +121,12 @@ const (
 		"where c.application_id = ? and er.environment_name = ? " +
 		"and c.name like ? and c.deleted_at is null"
 	ClusterQueryByClusterName = "select * from cluster where name = ? and deleted_at is null"
+)
+
+/* sql about pipelinerun */
+const (
+	PipelinerunGetByID                = "select * from pipelinerun where id = ?"
+	PipelinerunDeleteByID             = "delete from pipelinerun where id = ?"
+	PipelinerunUpdateConfigCommitByID = "update pipelinerun set config_commit = ? where id = ?"
+	PipelinerunGetLatestByClusterID   = "select * from pipelinerun where cluster_id = ? order by id desc limit 1"
 )

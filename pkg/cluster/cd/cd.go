@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd"
+	"g.hz.netease.com/horizon/pkg/cluster/common"
+	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	argocdconf "g.hz.netease.com/horizon/pkg/config/argocd"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -29,38 +31,42 @@ const (
 )
 
 type GetClusterStateParams struct {
-	Environment string
-	Cluster     string
+	Environment  string
+	Cluster      string
+	Namespace    string
+	RegionEntity *regionmodels.RegionEntity
 }
 
-type CreateClusterParams struct {
+type DeployClusterParams struct {
 	Environment   string
 	Cluster       string
 	GitRepoSSHURL string
 	ValueFiles    []string
 	RegionEntity  *regionmodels.RegionEntity
 	Namespace     string
+	Revision      string
 }
 
 type CD interface {
-	// CreateCluster create a cluster in cd system
-	CreateCluster(ctx context.Context, params *CreateClusterParams) error
+	DeployCluster(ctx context.Context, params *DeployClusterParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 }
 
 type cd struct {
-	factory argocd.Factory
+	kubeClientFty kubeclient.Factory
+	factory       argocd.Factory
 }
 
 func NewCD(argoCDMapper argocdconf.Mapper) CD {
 	return &cd{
-		factory: argocd.NewFactory(argoCDMapper),
+		kubeClientFty: kubeclient.Fty,
+		factory:       argocd.NewFactory(argoCDMapper),
 	}
 }
 
-func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
-	const op = "cd: create cluster"
+func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (err error) {
+	const op = "cd: deploy cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
@@ -68,27 +74,25 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 		return errors.E(op, err)
 	}
 
-	// if argo application is exists, return err
-	_, err = argo.GetApplication(ctx, params.Cluster)
-	if err == nil {
-		return errors.E(op, http.StatusConflict, fmt.Sprintf("%v is already exists in argoCD", params.Cluster))
-	} else if errors.Status(err) != http.StatusNotFound {
-		return errors.E(op, err)
+	// if argo application is not exists, create it first
+	if _, err = argo.GetApplication(ctx, params.Cluster); err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return errors.E(op, err)
+		}
+		var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
+			params.GitRepoSSHURL, params.RegionEntity.K8SCluster.Server, params.ValueFiles)
+
+		manifest, err := json.Marshal(argoApplication)
+		if err != nil {
+			return errors.E(op, err)
+		}
+
+		if err := argo.CreateApplication(ctx, manifest); err != nil {
+			return errors.E(op, err)
+		}
 	}
 
-	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
-		params.GitRepoSSHURL, params.RegionEntity.K8SCluster.Server, params.ValueFiles)
-
-	manifest, err := json.Marshal(argoApplication)
-	if err != nil {
-		return errors.E(op, err)
-	}
-
-	if err := argo.CreateApplication(ctx, manifest); err != nil {
-		return errors.E(op, err)
-	}
-
-	return nil
+	return argo.DeployApplication(ctx, params.Cluster, params.Revision)
 }
 
 // GetClusterState TODO(gjq) restructure
@@ -99,7 +103,12 @@ func (c *cd) GetClusterState(ctx context.Context,
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return nil, err
+		return nil, errors.E(op, err)
+	}
+
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return nil, errors.E(op, err)
 	}
 
 	clusterState = &ClusterState{Versions: map[string]*ClusterVersion{}}
@@ -121,11 +130,9 @@ func (c *cd) GetClusterState(ctx context.Context,
 	}
 
 	var latestReplicaSet *appsv1.ReplicaSet
-	// TODO(gjq) label key
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
-		"cloudnative.music.netease.com/cluster", params.Cluster))
-	// TODO(gjq) fill kubeClientset and namespace
-	rss, err := kube.GetReplicaSets(ctx, nil, "", labelSelector.String())
+		common.ClusterLabelKey, params.Cluster))
+	rss, err := kube.GetReplicaSets(ctx, kubeClient, params.Namespace, labelSelector.String())
 	if err != nil {
 		return nil, err
 	} else if len(rss) == 0 {
@@ -151,6 +158,33 @@ func (c *cd) GetClusterState(ctx context.Context,
 
 	if clusterState.PodTemplateHash == "" {
 		return nil, errors.E(op, http.StatusNotFound, "clusterState.PodTemplateHash == ''")
+	}
+
+	// 从目前的配置来看，该 if 分支表示负载类型是 serverless 应用
+	if clusterState.PodTemplateHashKey == DeploymentPodTemplateHash {
+		labelSelector := fields.ParseSelectorOrDie(
+			fmt.Sprintf("%v=%v", common.ClusterLabelKey, params.Cluster))
+		// serverless 应用会有多个 Deployment 对象
+		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient, params.Namespace, labelSelector.String())
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+		for i := range deploymentList {
+			deployment := &deploymentList[i]
+			// Borrowed at kubernetes/kubectl/rollout_status.go
+			if deployment.Generation <= deployment.Status.ObservedGeneration {
+				cond := getDeploymentCondition(deployment.Status, appsv1.DeploymentProgressing)
+				if cond != nil && cond.Reason == "ProgressDeadlineExceeded" {
+					// 默认情况下，如果 Deployment 在十分钟之内，未能完成滚动更新，
+					// 则 Deployment 的健康状态是 HealthStatusDegraded.
+					clusterState.Status = health.HealthStatusDegraded
+				}
+			} else {
+				// 如果 Deployment 有更新，而 Deployment Controller 尚未处理，
+				// 则 Deployment 的健康状态是 HealthStatusProgressing
+				clusterState.Status = health.HealthStatusProgressing
+			}
+		}
 	}
 
 	return clusterState, nil
@@ -301,4 +335,15 @@ func CompareRevision(ctx context.Context, rs1, rs2 *appsv1.ReplicaSet) bool {
 	}
 
 	return num1 > num2
+}
+
+func getDeploymentCondition(status appsv1.DeploymentStatus,
+	condType appsv1.DeploymentConditionType) *appsv1.DeploymentCondition {
+	for i := range status.Conditions {
+		c := status.Conditions[i]
+		if c.Type == condType {
+			return &c
+		}
+	}
+	return nil
 }

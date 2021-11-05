@@ -17,6 +17,8 @@ type Manager interface {
 	Create(ctx context.Context, k8sCluster *models.K8SCluster) (*models.K8SCluster, error)
 	// ListAll list all k8sClusters
 	ListAll(ctx context.Context) ([]*models.K8SCluster, error)
+	// GetByServer get by server
+	GetByServer(ctx context.Context, server string) (*models.K8SCluster, error)
 }
 
 func New() Manager {
@@ -35,4 +37,8 @@ func (m *manager) ListAll(ctx context.Context) ([]*models.K8SCluster, error) {
 
 func (m *manager) Create(ctx context.Context, k8sCluster *models.K8SCluster) (*models.K8SCluster, error) {
 	return m.dao.Create(ctx, k8sCluster)
+}
+
+func (m *manager) GetByServer(ctx context.Context, server string) (*models.K8SCluster, error) {
+	return m.dao.GetByServer(ctx, server)
 }

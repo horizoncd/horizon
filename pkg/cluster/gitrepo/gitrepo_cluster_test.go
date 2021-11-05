@@ -171,11 +171,8 @@ func Test(t *testing.T) {
 		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v/%v-%v", rootGroupName,
 			"recycling-clusters", application, cluster, 1))
 	}()
-	clusterRepo, err := r.CreateCluster(ctx, createParams)
+	err := r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
-	t.Logf("%v", clusterRepo)
-	assert.Equal(t, clusterRepo.GitRepoSSHURL, fmt.Sprintf("%v/%v/%v/%v.git",
-		sshURL, r.clusterRepoConf.Parent.Path, application, cluster))
 
 	updateParams.Application.Priority = "P1"
 	err = r.UpdateCluster(ctx, updateParams)
@@ -199,4 +196,16 @@ func Test(t *testing.T) {
 	diff, err = r.CompareConfig(ctx, application, cluster, &commit.Master, &commit.Gitops)
 	assert.Nil(t, err)
 	t.Logf("\n%v\n", diff)
+
+	com, err := r.UpdateImage(ctx, application, cluster, templateName, "newImage")
+	assert.Nil(t, err)
+	t.Logf("%v", com)
+
+	repoInfo := r.GetRepoInfo(ctx, application, cluster)
+	assert.NotNil(t, repoInfo)
+	t.Logf("%v", repoInfo)
+
+	com, err = r.MergeBranch(ctx, application, cluster)
+	assert.Nil(t, err)
+	t.Logf("%v", com)
 }

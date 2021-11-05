@@ -30,8 +30,14 @@ type Controller interface {
 		request *UpdateClusterRequest) (*GetClusterResponse, error)
 	GetClusterByName(ctx context.Context,
 		clusterName string) (*GetClusterByNameResponse, error)
+
 	BuildDeploy(ctx context.Context, clusterID uint,
 		request *BuildDeployRequest) (*BuildDeployResponse, error)
+	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
+
+	// InternalDeploy deploy only used by internal system
+	InternalDeploy(ctx context.Context, clusterID uint,
+		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
 }
 
 type controller struct {
