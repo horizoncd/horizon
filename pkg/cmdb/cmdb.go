@@ -118,7 +118,6 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) (err
 	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID, appName)
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
-	httpReq.Header.Add("Content-Type", "application/json")
 	if err != nil {
 		return err
 	}
@@ -211,7 +210,6 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterName string) (err
 	const format = "http://%s/api/v2/deleteCluster?signature=%s&client=%s&clusterName=%s"
 	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID, clusterName)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
-	httpReq.Header.Add("Content-Type", "application/json")
 	if err != nil {
 		return err
 	}
