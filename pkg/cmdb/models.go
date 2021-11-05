@@ -1,5 +1,19 @@
 package cmdb
 
+import "errors"
+
+type AccountType string
+
+const (
+	User AccountType = "user"
+)
+
+type ClusterStyle string
+
+const (
+	Docker ClusterStyle = "docker"
+)
+
 type PriorityType int
 
 const (
@@ -9,8 +23,8 @@ const (
 )
 
 type Account struct {
-	Account     string `json:"account"`
-	AccountType string `json:"type"` // user or group
+	Account     string      `json:"account"`
+	AccountType AccountType `json:"type"` // user or group
 }
 
 type CreateApplicationRequest struct {
@@ -20,21 +34,39 @@ type CreateApplicationRequest struct {
 	Admin    []Account    `json:"admin"`
 }
 
-type DeleteApplication struct {
-	appName string
-}
-
 type Env string
 
 const (
-	Dev    Env = "dev"
-	Test   Env = "test"
-	Reg    Env = "reg"
-	Pre    Env = "pre"
-	beta   Env = "beta"
-	Perf   Env = "perf"
-	Online Env = "online"
+	Dev       Env = "dev"
+	Test      Env = "test"
+	Reg       Env = "reg"
+	Pre       Env = "pre"
+	Beta      Env = "beta"
+	Perf      Env = "perf"
+	Online    Env = "online"
+	UnKownEnv Env = "unknown"
 )
+
+func ToCmdbEnv(evn string) (Env, error) {
+	switch Env(evn) {
+	case Dev:
+		return Dev, nil
+	case Test:
+		return Test, nil
+	case Reg:
+		return Reg, nil
+	case Pre:
+		return Pre, nil
+	case Beta:
+		return Beta, nil
+	case Perf:
+		return Perf, nil
+	case Online:
+		return Online, nil
+	default:
+		return UnKownEnv, errors.New("")
+	}
+}
 
 type ClusterStatusType string
 
@@ -48,7 +80,7 @@ type CreateClusterRequest struct {
 	ApplicationName     string            `json:"applicationName"`
 	Env                 Env               `json:"env"`
 	ClusterServerStatus ClusterStatusType `json:"clusterServerStatus"`
-	ClusterStyle        string            `json:"clusterStyle"`
+	ClusterStyle        ClusterStyle      `json:"clusterStyle"`
 	Admin               []Account         `json:"admin"`
 }
 

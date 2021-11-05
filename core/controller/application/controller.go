@@ -13,6 +13,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
+	"g.hz.netease.com/horizon/pkg/hook/hook"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -40,12 +41,13 @@ type controller struct {
 	groupMgr             groupmanager.Manager
 	groupSvc             groupsvc.Service
 	templateReleaseMgr   trmanager.Manager
+	hook                 hook.Hook
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
-	templateSchemaGetter templateschema.Getter) Controller {
+	templateSchemaGetter templateschema.Getter, hook hook.Hook) Controller {
 	return &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
@@ -53,6 +55,7 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
 		groupMgr:             groupmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
 		templateReleaseMgr:   trmanager.Mgr,
+		hook:                 hook,
 	}
 }
 
@@ -85,6 +88,16 @@ func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplica
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, app.Name)
 	return ofApplicationModel(app, fullPath, trs, pipelineJSONBlob, applicationJSONBlob), nil
+}
+
+func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
+	if c.hook != nil {
+		event := hook.Event{
+			EventType: eventType,
+			Event:     content,
+		}
+		go c.hook.Push(ctx, event)
+	}
 }
 
 func (c *controller) CreateApplication(ctx context.Context, groupID uint,
@@ -160,8 +173,13 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 		return nil, errors.E(op, err)
 	}
 
-	return ofApplicationModel(applicationModel, fullPath, trs,
-		request.TemplateInput.Pipeline, request.TemplateInput.Application), nil
+	ret := ofApplicationModel(applicationModel, fullPath, trs,
+		request.TemplateInput.Pipeline, request.TemplateInput.Application)
+
+	// 7. post hook
+	c.postHook(ctx, hook.CreateApplication, ret)
+
+	return ret, nil
 }
 
 func (c *controller) UpdateApplication(ctx context.Context, id uint,
@@ -239,6 +257,9 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error)
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)
 	}
+
+	// 4. post hook
+	c.postHook(ctx, hook.DeleteApplication, app.Name)
 
 	return nil
 }

@@ -1,5 +1,7 @@
 package hook
 
+import "context"
+
 type EventType string
 
 const (
@@ -12,4 +14,10 @@ const (
 type Event struct {
 	EventType EventType
 	Event     interface{}
+}
+
+type EventCtx struct {
+	EventType EventType
+	Event     interface{}
+	Ctx       context.Context
 }

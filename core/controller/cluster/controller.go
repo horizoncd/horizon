@@ -17,6 +17,7 @@ import (
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
+	"g.hz.netease.com/horizon/pkg/hook/hook"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -47,12 +48,13 @@ type controller struct {
 	envMgr               envmanager.Manager
 	regionMgr            regionmanager.Manager
 	groupSvc             groupsvc.Service
+	hook                 hook.Hook
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo appgitrepo.ApplicationGitRepo,
-	cd cd.CD, templateSchemaGetter templateschema.Getter) Controller {
+	cd cd.CD, templateSchemaGetter templateschema.Getter, hook hook.Hook) Controller {
 	return &controller{
 		clusterMgr:           clustermanager.Mgr,
 		clusterGitRepo:       clusterGitRepo,
@@ -64,6 +66,17 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		envMgr:               envmanager.Mgr,
 		regionMgr:            regionmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
+		hook:                 hook,
+	}
+}
+
+func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
+	if c.hook != nil {
+		event := hook.Event{
+			EventType: eventType,
+			Event:     content,
+		}
+		go c.hook.Push(ctx, event)
 	}
 }
 
@@ -224,8 +237,12 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	return ofClusterModel(application, cluster, er, fullPath,
-		r.TemplateInput.Pipeline, r.TemplateInput.Application), nil
+	ret := ofClusterModel(application, cluster, er, fullPath,
+		r.TemplateInput.Pipeline, r.TemplateInput.Application)
+
+	// 12. post hook
+	c.postHook(ctx, hook.CreateCluster, ret)
+	return ret, nil
 }
 
 func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,

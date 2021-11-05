@@ -4,42 +4,58 @@ import (
 	"context"
 	"reflect"
 
-	"g.hz.netease.com/horizon/pkg/hook/handler"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
-type Event struct {
-	hook.Event
-	Ctx context.Context
+type EventHandler interface {
+	Process(event *hook.EventCtx) error
 }
 
 type InMemHook struct {
-	events        chan *Event
-	eventHandlers []handler.EventHandler
+	events        chan *hook.EventCtx
+	eventHandlers []EventHandler
+	quit          chan bool
 }
 
-func NewInMemHook(channelSize int) hook.Hook {
-	return &InMemHook{events: make(chan *Event, channelSize)}
+func NewInMemHook(channelSize int, handlers ...EventHandler) hook.Hook {
+	return &InMemHook{
+		events:        make(chan *hook.EventCtx, channelSize),
+		eventHandlers: handlers,
+		quit:          make(chan bool),
+	}
+}
+
+func (h *InMemHook) Stop() {
+	close(h.events)
+	log.Info(context.TODO(), "channel closed")
+}
+
+func (h *InMemHook) WaitStop() {
+	<-h.quit
 }
 
 func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
-	newEvent := &Event{
-		Event: event,
-		Ctx:   ctx,
+	newEvent := &hook.EventCtx{
+		EventType: event.EventType,
+		Event:     event.Event,
+		Ctx:       ctx,
 	}
 	h.events <- newEvent
-	log.Info(ctx, "received event %s, event = %+v", event.EventType, event.Event)
+	log.Infof(ctx, "received eventType = %s, event = %+v", event.EventType, event.Event)
 }
 
 func (h *InMemHook) Process() {
 	for event := range h.events {
-		log.Info(event.Ctx, "received event %s, event = %+v", event.EventType, event.Event)
+		log.Infof(event.Ctx, "received event %s, event = %+v", event.EventType, event.Event)
 		for _, handlerEntry := range h.eventHandlers {
 			err := handlerEntry.Process(event)
 			if err != nil {
-				log.Info(event.Ctx, "handler ", reflect.TypeOf(handlerEntry))
+				log.Errorf(event.Ctx, "handler %s, err = %s", reflect.TypeOf(handlerEntry).Name(), err.Error())
 			}
 		}
 	}
+	log.Info(context.TODO(), "process ok")
+	h.quit <- true
+	log.Info(context.TODO(), "channel closed, ProcessExit")
 }

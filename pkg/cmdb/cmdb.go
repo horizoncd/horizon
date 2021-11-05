@@ -64,6 +64,8 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 
 	const format = "http://%s/api/v2/createApplication?signature=%s&client=%s"
 	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID)
+
+	req.ParentID = c.config.ParentID
 	content, err := json.Marshal(req)
 	if err != nil {
 		return err
@@ -79,6 +81,8 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		message := wlog.Response(ctx, resp)
 		return fmt.Errorf("%s, code  = %d, err = %s", op, resp.StatusCode, message)
@@ -123,6 +127,8 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) (err
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		message := wlog.Response(ctx, resp)
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
@@ -154,6 +160,8 @@ func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest
 	}
 	const format = "http://%s/api/v2/createCluster?signature=%s&client=%s"
 	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID)
+
+	req.ClusterStyle = Docker
 	content, err := json.Marshal(req)
 	if err != nil {
 		return err
@@ -169,6 +177,8 @@ func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		message := wlog.Response(ctx, resp)
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
@@ -210,6 +220,8 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterName string) (err
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		message := wlog.Response(ctx, resp)
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)

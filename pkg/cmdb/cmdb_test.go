@@ -64,6 +64,7 @@ func TestMain(m *testing.M) {
 		URL:        "api.nss.netease.com",
 		ClientID:   "musicHorizon",
 		SecretCode: "",
+		ParentID:   10,
 	}
 	c = NewController(config)
 	os.Exit(m.Run())

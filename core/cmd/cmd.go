@@ -183,9 +183,9 @@ func Run(flags *Flags) {
 	var (
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
-		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter)
+		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, nil)
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo,
-			cd.NewCD(config.ArgoCDMapper), templateSchemaGetter)
+			cd.NewCD(config.ArgoCDMapper), templateSchemaGetter, nil)
 		templateCtl = templatectl.NewController(templateSchemaGetter)
 		roleCtl     = roltctl.NewController(roleService)
 	)

@@ -38,7 +38,6 @@ func (l Log) Stop(end func() string) {
 	} else {
 		log.WithFiled(l.ctx, "op", l.op).WithField("duration", duration).Errorf(end())
 	}
-
 }
 
 func ByErr(err error) string {
