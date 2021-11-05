@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -89,7 +90,7 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 	}
 
 	var cResp CommonResp
-	responseBytes, err := io.ReadAll(resp.Body)
+	responseBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -134,7 +135,7 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) (err
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
 	}
 	var cResp CommonResp
-	responseBytes, err := io.ReadAll(resp.Body)
+	responseBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -184,7 +185,7 @@ func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
 	}
 	var cResp CommonResp
-	responseBytes, err := io.ReadAll(resp.Body)
+	responseBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -227,7 +228,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterName string) (err
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
 	}
 	var cResp CommonResp
-	responseBytes, err := io.ReadAll(resp.Body)
+	responseBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
