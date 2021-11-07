@@ -125,8 +125,9 @@ const (
 
 /* sql about pipelinerun */
 const (
-	PipelinerunGetByID                = "select * from pipelinerun where id = ?"
-	PipelinerunDeleteByID             = "delete from pipelinerun where id = ?"
-	PipelinerunUpdateConfigCommitByID = "update pipelinerun set config_commit = ? where id = ?"
-	PipelinerunGetLatestByClusterID   = "select * from pipelinerun where cluster_id = ? order by id desc limit 1"
+	PipelinerunGetByID                       = "select * from pipelinerun where id = ?"
+	PipelinerunDeleteByID                    = "delete from pipelinerun where id = ?"
+	PipelinerunUpdateConfigCommitByID        = "update pipelinerun set config_commit = ? where id = ?"
+	PipelinerunGetLatestByClusterIDAndAction = "select * from pipelinerun where cluster_id = ? " +
+		"and action = ? order by id desc limit 1"
 )

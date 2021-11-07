@@ -51,7 +51,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "2", prGet.ConfigCommit)
 
-	prGet, err = Mgr.GetLatestByClusterID(ctx, pr.ClusterID)
+	prGet, err = Mgr.GetLatestByClusterIDAndAction(ctx, pr.ClusterID, "builddeploy")
 	assert.Nil(t, err)
 	assert.Equal(t, "2", prGet.ConfigCommit)
 

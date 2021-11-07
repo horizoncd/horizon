@@ -27,11 +27,12 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	const op = "cluster controller: get cluster status"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	pr, err := c.prMgr.GetLatestByClusterID(ctx, clusterID)
+	// get latest builddeploy action pipelinerun
+	pr, err := c.prMgr.GetLatestByClusterIDAndAction(ctx, clusterID, ActionBuildDeploy)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	// if latest pr is not exists
+	// if latest builddeploy pr is not exists
 	if pr == nil {
 		return &GetClusterStatusResponse{
 			RunningTask: &RunningTask{
@@ -41,11 +42,6 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 				"status": _notFound,
 			},
 		}, nil
-	}
-	// if latest pr is not builddeploy
-	if pr.Action != ActionBuildDeploy {
-		// TODO(gjq): status if not builddeploy
-		return nil, nil
 	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -81,6 +77,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
+		// TODO(gjq): get pipelinerun object through the prObject & s3Bucket
 		obj, err := tektonCollector.GetLatestPipelineRunObject(ctx, application.Name, cluster.Name)
 		if err != nil {
 			return nil, errors.E(op, err)
