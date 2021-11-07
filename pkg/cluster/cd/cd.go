@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
+	"sync"
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
@@ -19,8 +21,10 @@ import (
 
 	"github.com/argoproj/gitops-engine/pkg/health"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -187,7 +191,206 @@ func (c *cd) GetClusterState(ctx context.Context,
 		}
 	}
 
+	if err := c.paddingPodAndEventInfo(ctx, params.Cluster, params.Namespace,
+		kubeClient, clusterState); err != nil {
+		return nil, errors.E(op, err)
+	}
+
 	return clusterState, nil
+}
+
+func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace string,
+	kubeClientSet kubernetes.Interface, clusterState *ClusterState) error {
+	const op = "deployer: padding pod and event"
+	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
+		common.ClusterLabelKey, cluster))
+
+	var pods []corev1.Pod
+	var events map[string][]*corev1.Event
+	var err1, err2 error
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		pods, err1 = kube.GetPods(ctx, kubeClientSet, namespace, labelSelector.String())
+	}()
+	go func() {
+		defer wg.Done()
+		events, err2 = kube.GetEvents(ctx, kubeClientSet, namespace)
+	}()
+	wg.Wait()
+
+	for _, e := range []error{err1, err2} {
+		if e != nil {
+			return errors.E(op, e)
+		}
+	}
+
+	for i := range pods {
+		pod := &pods[i]
+		podEvents := events[fmt.Sprintf("%v-%v-%v", pod.Name, pod.UID, pod.Namespace)]
+		if err := parsePod(ctx, clusterState, pod, podEvents); err != nil {
+			// pod 可能已经被删除
+			log.Info(ctx, err)
+			continue
+		} else {
+			clusterState.Replicas++
+		}
+	}
+	return nil
+}
+
+func parsePod(ctx context.Context, clusterInfo *ClusterState,
+	pod *corev1.Pod, events []*corev1.Event) (err error) {
+	const deploymentPodTemplateHash = "pod-template-hash"
+	const rolloutPodTemplateHash = "rollouts-pod-template-hash"
+
+	podTemplateHash := pod.Labels[deploymentPodTemplateHash]
+	if podTemplateHash == "" {
+		podTemplateHash = pod.Labels[rolloutPodTemplateHash]
+	}
+
+	if podTemplateHash == "" {
+		log.Errorf(ctx, "pod<%s> has no %v or %v label",
+			pod.Name, deploymentPodTemplateHash, rolloutPodTemplateHash)
+		return nil
+	}
+
+	if clusterInfo.Versions[podTemplateHash] == nil {
+		log.Infof(ctx, "pod<%s> has no related ReplicaSet object", pod.Name)
+		return nil
+	}
+	clusterInfo.Versions[podTemplateHash].Replicas++
+
+	clusterPod := &ClusterPod{
+		Metadata: PodMetadata{
+			Namespace:   pod.Namespace,
+			Annotations: pod.Annotations,
+		},
+		Spec: PodSpec{
+			NodeName:       pod.Spec.NodeName,
+			InitContainers: nil,
+			Containers:     nil,
+		},
+		Status: PodStatus{
+			HostIP: pod.Status.HostIP,
+			PodIP:  pod.Status.PodIP,
+			Phase:  string(pod.Status.Phase),
+		},
+	}
+
+	var initContainers []*Container
+	for i := range pod.Spec.InitContainers {
+		c := pod.Spec.InitContainers[i]
+		initContainers = append(initContainers, &Container{
+			Name:  c.Name,
+			Image: c.Image,
+		})
+	}
+	clusterPod.Spec.InitContainers = initContainers
+
+	cs := &containerList{name: pod.Labels[common.ClusterLabelKey]}
+	for i := range pod.Spec.Containers {
+		cs.containers = append(cs.containers, &pod.Spec.Containers[i])
+	}
+	sort.Sort(cs)
+
+	var containers []*Container
+	for i := range cs.containers {
+		c := cs.containers[i]
+		containers = append(containers, &Container{
+			Name:  c.Name,
+			Image: c.Image,
+		})
+	}
+	clusterPod.Spec.Containers = containers
+
+	var containerStatuses []*ContainerStatus
+	for i := range pod.Status.ContainerStatuses {
+		containerStatus := pod.Status.ContainerStatuses[i]
+		c := &ContainerStatus{
+			Name:  containerStatus.Name,
+			Ready: containerStatus.Ready,
+			State: parseContainerState(containerStatus),
+		}
+		containerStatuses = append(containerStatuses, c)
+	}
+	clusterPod.Status.ContainerStatuses = containerStatuses
+
+	for i := range events {
+		clusterPod.Status.Events = append(clusterPod.Status.Events,
+			Event{
+				Reason:         events[i].Reason,
+				Message:        events[i].Message,
+				Count:          events[i].Count,
+				EventTimestamp: events[i].FirstTimestamp,
+			})
+	}
+	clusterInfo.Versions[podTemplateHash].Pods[pod.Name] = clusterPod
+	return nil
+}
+
+type containerList struct {
+	name       string
+	containers []*corev1.Container
+}
+
+func (c *containerList) sort() {
+	sort.Sort(c)
+}
+
+func (c *containerList) Len() int { return len(c.containers) }
+
+func (c *containerList) Less(i, j int) bool {
+	if c.containers[i].Name == c.name {
+		return true
+	} else if c.containers[j].Name == c.name {
+		return false
+	}
+
+	a := c.containers[i].Name
+	b := c.containers[j].Name
+
+	return a <= b
+}
+
+func (c *containerList) Swap(i, j int) {
+	c.containers[i], c.containers[j] = c.containers[j], c.containers[i]
+}
+
+func parseContainerState(containerStatus corev1.ContainerStatus) ContainerState {
+	waiting := "waiting"
+	running := "running"
+	terminated := "terminated"
+
+	// Only one of its members may be specified.
+	state := containerStatus.State
+
+	if state.Running != nil {
+		return ContainerState{
+			State: running,
+		}
+	}
+
+	if state.Waiting != nil {
+		return ContainerState{
+			State:   waiting,
+			Reason:  state.Waiting.Reason,
+			Message: state.Waiting.Message,
+		}
+	}
+
+	if state.Terminated != nil {
+		return ContainerState{
+			State:   terminated,
+			Reason:  state.Terminated.Reason,
+			Message: state.Terminated.Message,
+		}
+	}
+
+	// If none of them is specified, the default one is ContainerStateWaiting.
+	return ContainerState{State: waiting}
 }
 
 type (
