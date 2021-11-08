@@ -100,12 +100,13 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 	if err != nil {
 		return err
 	}
+
 	err = json.NewDecoder(bytes.NewReader(responseBytes)).Decode(&cResp)
 	if err != nil {
 		return err
 	}
 	if cResp.Code != 200 && cResp.Code != 601 {
-		return fmt.Errorf("%s, code = %+v, rt = %+v", op, cResp.Code, cResp.RT)
+		return fmt.Errorf("%s, code = %+v, rt = %+v, body = %s", op, cResp.Code, cResp.RT, string(responseBytes))
 	}
 	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
 	return nil
@@ -148,7 +149,7 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) (err
 		return err
 	}
 	if cResp.Code != 200 && cResp.Code != 1030 && cResp.Code != 601 {
-		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
+		return fmt.Errorf("%s, code = %+v, rt = %+v, body = %s", op, cResp.Code, cResp.RT, string(responseBytes))
 	}
 	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
 	return nil
@@ -197,7 +198,7 @@ func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest
 		return err
 	}
 	if cResp.Code != 200 && cResp.Code != 601 {
-		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
+		return fmt.Errorf("%s, code = %+v, rt = %+v, body = %s", op, cResp.Code, cResp.RT, string(responseBytes))
 	}
 	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
 	return nil
@@ -238,7 +239,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterName string) (err
 		return err
 	}
 	if cResp.Code != 200 && cResp.Code != 1030 && cResp.Code != 601 {
-		return fmt.Errorf("code = %+v, rt = %+v", cResp.Code, cResp.RT)
+		return fmt.Errorf("%s, code = %+v, rt = %+v, body = %s", op, cResp.Code, cResp.RT, string(responseBytes))
 	}
 	log.WithFiled(ctx, "op", op).WithField("responseBody", string(responseBytes)).Info()
 	return nil
