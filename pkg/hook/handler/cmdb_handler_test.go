@@ -45,18 +45,7 @@ func TestApplication(t *testing.T) {
 	}
 	assert.Nil(t, handler.Process(createApplicationEvent))
 
-	// 2. delete application
-	deleteApplicationEvent := &hook.EventCtx{
-		EventType: hook.DeleteApplication,
-		Event:     applicationName,
-		Ctx:       ctx,
-	}
-	assert.Nil(t, handler.Process(deleteApplicationEvent))
-
-	// 3. create application
-	assert.Nil(t, handler.Process(createApplicationEvent))
-
-	// 4. create cluster
+	// 2. create cluster
 	ret2 := &cluster.GetClusterResponse{
 		CreateClusterRequest: &cluster.CreateClusterRequest{
 			Name: clusterName,
@@ -75,7 +64,7 @@ func TestApplication(t *testing.T) {
 	}
 	assert.Nil(t, handler.Process(createClusterEvent))
 
-	// 5. delete cluster
+	// 3. delete cluster
 	deleteClusterEvent := &hook.EventCtx{
 		EventType: hook.DeleteCluster,
 		Event:     clusterName,
@@ -83,7 +72,12 @@ func TestApplication(t *testing.T) {
 	}
 	assert.Nil(t, handler.Process(deleteClusterEvent))
 
-	// 6. delete application
+	// 4. delete application
+	deleteApplicationEvent := &hook.EventCtx{
+		EventType: hook.DeleteApplication,
+		Event:     applicationName,
+		Ctx:       ctx,
+	}
 	assert.Nil(t, handler.Process(deleteApplicationEvent))
 }
 
