@@ -17,8 +17,8 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
 	"g.hz.netease.com/horizon/lib/s3"
+	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/mock"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 )
 
@@ -45,7 +45,7 @@ func getPipelineRunLog(pr *v1beta1.PipelineRun) (<-chan log.Log, <-chan error, e
 func TestNewS3Collector(t *testing.T) {
 	s3Driver := &s3.Driver{}
 	ctl := gomock.NewController(t)
-	tek := mock.NewMockInterface(ctl)
+	tek := tektonmock.NewMockInterface(ctl)
 	s := NewS3Collector(s3Driver, tek)
 	assert.NotNil(t, s)
 }
@@ -180,7 +180,7 @@ func TestS3Collector_Collect(t *testing.T) {
 	ctx := context.Background()
 
 	ctl := gomock.NewController(t)
-	tek := mock.NewMockInterface(ctl)
+	tek := tektonmock.NewMockInterface(ctl)
 	tek.EXPECT().GetPipelineRunLog(ctx, pr).Return(getPipelineRunLog(pr))
 
 	backend := s3mem.New()

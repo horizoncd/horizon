@@ -4,6 +4,13 @@ import (
 	"time"
 )
 
+const (
+	ActionBuildDeploy = "builddeploy"
+	ActionDeploy      = "deploy"
+	ActionRestart     = "restart"
+	ActionRollback    = "rollback"
+)
+
 type Pipelinerun struct {
 	// ID pipelinerun id
 	ID uint

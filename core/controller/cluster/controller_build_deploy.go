@@ -21,8 +21,6 @@ import (
 )
 
 const (
-	ActionBuildDeploy = "builddeploy"
-
 	StatusCreated = "created"
 )
 
@@ -88,7 +86,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	// 3. add pipelinerun in db
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
-		Action:           ActionBuildDeploy,
+		Action:           prmodels.ActionBuildDeploy,
 		Status:           StatusCreated,
 		Title:            r.Title,
 		Description:      r.Description,

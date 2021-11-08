@@ -265,8 +265,9 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 
 	clusterPod := &ClusterPod{
 		Metadata: PodMetadata{
-			Namespace:   pod.Namespace,
-			Annotations: pod.Annotations,
+			CreationTimestamp: pod.CreationTimestamp,
+			Namespace:         pod.Namespace,
+			Annotations:       pod.Annotations,
 		},
 		Spec: PodSpec{
 			NodeName:       pod.Spec.NodeName,
@@ -310,9 +311,10 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 	for i := range pod.Status.ContainerStatuses {
 		containerStatus := pod.Status.ContainerStatuses[i]
 		c := &ContainerStatus{
-			Name:  containerStatus.Name,
-			Ready: containerStatus.Ready,
-			State: parseContainerState(containerStatus),
+			Name:         containerStatus.Name,
+			Ready:        containerStatus.Ready,
+			RestartCount: containerStatus.RestartCount,
+			State:        parseContainerState(containerStatus),
 		}
 		containerStatuses = append(containerStatuses, c)
 	}
@@ -334,10 +336,6 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 type containerList struct {
 	name       string
 	containers []*corev1.Container
-}
-
-func (c *containerList) sort() {
-	sort.Sort(c)
 }
 
 func (c *containerList) Len() int { return len(c.containers) }
@@ -441,8 +439,9 @@ type (
 	}
 
 	PodMetadata struct {
-		Namespace   string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-		Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+		CreationTimestamp metav1.Time       `json:"creationTimestamp"`
+		Namespace         string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+		Annotations       map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 	}
 
 	PodSpec struct {
@@ -465,9 +464,10 @@ type (
 	}
 
 	ContainerStatus struct {
-		Name  string         `json:"name,omitempty" yaml:"name,omitempty"`
-		Ready bool           `json:"ready" yaml:"ready"`
-		State ContainerState `json:"state" yaml:"state"`
+		Name         string         `json:"name,omitempty" yaml:"name,omitempty"`
+		Ready        bool           `json:"ready" yaml:"ready"`
+		RestartCount int32          `json:"restartCount"`
+		State        ContainerState `json:"state" yaml:"state"`
 	}
 
 	Event struct {

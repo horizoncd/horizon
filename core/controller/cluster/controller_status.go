@@ -8,8 +8,10 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
+	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+
 	"github.com/argoproj/gitops-engine/pkg/health"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
@@ -28,7 +30,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	// get latest builddeploy action pipelinerun
-	pr, err := c.prMgr.GetLatestByClusterIDAndAction(ctx, clusterID, ActionBuildDeploy)
+	pr, err := c.prMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -68,7 +70,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
-		latestPr, err = tektonClient.GetLatestPipelineRun(ctx, application.Name, cluster.Name)
+		latestPr, err = tektonClient.GetPipelineRunByID(ctx, cluster.Name, cluster.ID, pr.ID)
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
@@ -87,6 +89,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 
 	resp := &GetClusterStatusResponse{}
 	resp.RunningTask = c.getRunningTask(ctx, latestPr)
+	resp.RunningTask.PipelinerunID = pr.ID
 
 	clusterState, err := c.cd.GetClusterState(ctx, &cd.GetClusterStateParams{
 		Environment:  er.EnvironmentName,

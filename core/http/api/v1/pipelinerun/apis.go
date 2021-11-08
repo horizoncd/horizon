@@ -7,13 +7,13 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )
 
 const (
 	_pipelinerunIDParam = "pipelinerunID"
+	_clusterIDParam     = "cluster"
 )
 
 type API struct {
@@ -38,9 +38,27 @@ func (a *API) Log(c *gin.Context) {
 		response.AbortWithError(c, err)
 		return
 	}
+	a.writeLog(c, l)
+}
+
+func (a *API) LatestLogForCluster(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	l, err := a.prCtl.GetClusterLatestLog(c, uint(clusterID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	a.writeLog(c, l)
+}
+
+func (a *API) writeLog(c *gin.Context, l *prctl.Log) {
 	c.Header("Content-Type", "text/plain")
 	if l.LogBytes != nil {
-		log.Infof(c, "logBytes: %v", string(l.LogBytes))
 		_, _ = c.Writer.Write(l.LogBytes)
 		return
 	}
@@ -58,7 +76,6 @@ func (a *API) Log(c *gin.Context) {
 				_, _ = c.Writer.Write([]byte("\n"))
 				continue
 			}
-			log.Infof(c, "[%s : %s] %s\n", l.Task, l.Step, l.Log)
 			_, _ = c.Writer.Write([]byte(fmt.Sprintf("[%s : %s] %s\n", l.Task, l.Step, l.Log)))
 		case e, ok := <-errC:
 			if !ok {
@@ -68,5 +85,4 @@ func (a *API) Log(c *gin.Context) {
 			_, _ = c.Writer.Write([]byte(fmt.Sprintf("%s\n", e)))
 		}
 	}
-	c.Writer.Flush()
 }

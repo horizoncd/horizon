@@ -43,3 +43,28 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v1/clusters/{clusterID}/log:
+    get:
+      tags:
+        - cluster
+      description: get cluster's latest pipelinerun log
+      operationId: getClusterLatestLog
+      parameters:
+        - name: clusterID
+          in: path
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                example: |
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

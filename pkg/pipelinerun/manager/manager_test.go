@@ -21,7 +21,7 @@ func Test(t *testing.T) {
 	pr, err := Mgr.Create(ctx, &models.Pipelinerun{
 		ID:               0,
 		ClusterID:        1,
-		Action:           "builddeploy",
+		Action:           models.ActionBuildDeploy,
 		Status:           "created",
 		Title:            "title",
 		Description:      "description",
@@ -51,7 +51,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "2", prGet.ConfigCommit)
 
-	prGet, err = Mgr.GetLatestByClusterIDAndAction(ctx, pr.ClusterID, "builddeploy")
+	prGet, err = Mgr.GetLatestByClusterIDAndAction(ctx, pr.ClusterID, models.ActionBuildDeploy)
 	assert.Nil(t, err)
 	assert.Equal(t, "2", prGet.ConfigCommit)
 

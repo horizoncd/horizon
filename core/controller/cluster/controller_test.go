@@ -645,7 +645,7 @@ func Test(t *testing.T) {
 	tekton := tektonmock.NewMockInterface(mockCtl)
 	tektonFty.EXPECT().GetTekton(gomock.Any()).Return(tekton, nil).AnyTimes()
 	tekton.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("abc", nil)
-	tekton.EXPECT().GetLatestPipelineRun(ctx, gomock.Any(), gomock.Any()).Return(pr, nil)
+	tekton.EXPECT().GetPipelineRunByID(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(pr, nil)
 
 	registry := registrymock.NewMockRegistry(mockCtl)
 	registry.EXPECT().CreateProject(ctx, gomock.Any()).Return(1, nil)
