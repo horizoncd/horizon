@@ -89,7 +89,7 @@ func TestApplication(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	config := cmdbconfig.Config{
-		URL:        "api.nss.netease.com",
+		URL:        "api-in.nss.netease.com",
 		ClientID:   "musicHorizon",
 		SecretCode: "",
 		ParentID:   10,

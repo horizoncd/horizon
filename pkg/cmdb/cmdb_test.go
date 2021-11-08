@@ -61,7 +61,7 @@ func TestCreateCluster(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	config := cmdb.Config{
-		URL:        "api.nss.netease.com",
+		URL:        "api-in.nss.netease.com",
 		ClientID:   "musicHorizon",
 		SecretCode: "",
 		ParentID:   10,
