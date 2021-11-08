@@ -18,6 +18,7 @@ const (
 	_paramApplicationID        = "applicationID"
 	_paramApplicationClusterID = "clusterID"
 	_paramMemberID             = "memberID"
+	_querySelf                 = "self"
 )
 
 type API struct {
@@ -195,15 +196,39 @@ func (a *API) ListGroupMember(c *gin.Context) {
 		return
 	}
 
-	members, err := a.memberCtrl.ListMember(c, membermodels.TypeGroupStr, uint(uintID))
-	if err != nil {
-		response.AbortWithError(c, err)
-		return
+	querySelfStr, ok := c.GetQuery(_querySelf)
+	querySelf := false
+	if ok {
+		querySelf, err = strconv.ParseBool(querySelfStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam,
+				fmt.Sprintf("%v", err))
+			return
+		}
 	}
-	membersResp := response.DataWithTotal{
-		Items: members,
-		Total: int64(len(members)),
+
+	membersResp := response.DataWithTotal{}
+
+	if querySelf {
+		memberInfo, err := a.memberCtrl.GetMemberOfResource(c, membermodels.TypeGroupStr, uint(uintID))
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		if nil != memberInfo {
+			membersResp.Items = []member.Member{*memberInfo}
+			membersResp.Total = 1
+		}
+	} else {
+		members, err := a.memberCtrl.ListMember(c, membermodels.TypeGroupStr, uint(uintID))
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		membersResp.Items = members
+		membersResp.Total = int64(len(members))
 	}
+
 	response.SuccessWithData(c, membersResp)
 }
 
@@ -216,14 +241,37 @@ func (a *API) ListApplicationMember(c *gin.Context) {
 		return
 	}
 
-	members, err := a.memberCtrl.ListMember(c, membermodels.TypeApplicationStr, uint(uintID))
-	if err != nil {
-		response.AbortWithError(c, err)
-		return
+	querySelfStr, ok := c.GetQuery(_querySelf)
+	querySelf := false
+	if ok {
+		querySelf, err = strconv.ParseBool(querySelfStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam,
+				fmt.Sprintf("%v", err))
+			return
+		}
 	}
-	membersResp := response.DataWithTotal{
-		Items: members,
-		Total: int64(len(members)),
+
+	membersResp := response.DataWithTotal{}
+
+	if querySelf {
+		memberInfo, err := a.memberCtrl.GetMemberOfResource(c, membermodels.TypeApplicationStr, uint(uintID))
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		if nil != memberInfo {
+			membersResp.Items = []member.Member{*memberInfo}
+			membersResp.Total = 1
+		}
+	} else {
+		members, err := a.memberCtrl.ListMember(c, membermodels.TypeApplicationStr, uint(uintID))
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		membersResp.Items = members
+		membersResp.Total = int64(len(members))
 	}
 	response.SuccessWithData(c, membersResp)
 }
@@ -237,14 +285,36 @@ func (a *API) ListApplicationClusterMember(c *gin.Context) {
 		return
 	}
 
-	members, err := a.memberCtrl.ListMember(c, membermodels.TypeApplicationClusterStr, uint(uintID))
-	if err != nil {
-		response.AbortWithError(c, err)
-		return
+	querySelfStr, ok := c.GetQuery(_querySelf)
+	querySelf := false
+	if ok {
+		querySelf, err = strconv.ParseBool(querySelfStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam,
+				fmt.Sprintf("%v", err))
+			return
+		}
 	}
-	membersResp := response.DataWithTotal{
-		Items: members,
-		Total: int64(len(members)),
+
+	membersResp := response.DataWithTotal{}
+	if querySelf {
+		memberInfo, err := a.memberCtrl.GetMemberOfResource(c, membermodels.TypeApplicationClusterStr, uint(uintID))
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		if nil != memberInfo {
+			membersResp.Items = []member.Member{*memberInfo}
+			membersResp.Total = 1
+		}
+	} else {
+		members, err := a.memberCtrl.ListMember(c, membermodels.TypeApplicationClusterStr, uint(uintID))
+		if err != nil {
+			response.AbortWithError(c, err)
+			return
+		}
+		membersResp.Items = members
+		membersResp.Total = int64(len(members))
 	}
 	response.SuccessWithData(c, membersResp)
 }

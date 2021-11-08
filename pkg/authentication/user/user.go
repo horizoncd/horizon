@@ -7,6 +7,7 @@ type User interface {
 	GetName() string
 	GetFullName() string
 	GetID() uint
+	GetEmail() string
 	String() string
 	IsAdmin() bool
 }
@@ -15,6 +16,7 @@ type DefaultInfo struct {
 	Name     string
 	FullName string
 	ID       uint
+	Email    string
 	Admin    bool
 }
 
@@ -28,6 +30,10 @@ func (d *DefaultInfo) GetID() uint {
 
 func (d *DefaultInfo) GetFullName() string {
 	return d.FullName
+}
+
+func (d *DefaultInfo) GetEmail() string {
+	return d.Email
 }
 
 func (d *DefaultInfo) String() string {

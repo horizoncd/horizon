@@ -32,7 +32,9 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/config/region"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
@@ -179,13 +181,22 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+	commitGetter, err := code.NewCommitGetter(ctx, gitlabFactory)
+	if err != nil {
+		panic(err)
+	}
+	tektonFty, err := factory.NewFactory(config.TektonMapper)
+	if err != nil {
+		panic(err)
+	}
 
 	var (
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, nil)
-		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo,
-			cd.NewCD(config.ArgoCDMapper), templateSchemaGetter, nil)
+
+		clusterCtl = clusterctl.NewController(clusterGitRepo, applicationGitRepo, commitGetter,
+			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, nil)
 		templateCtl = templatectl.NewController(templateSchemaGetter)
 		roleCtl     = roltctl.NewController(roleService)
 	)
@@ -229,7 +240,7 @@ func Run(flags *Flags) {
 		)
 		middlewares = append(middlewares,
 			auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
-				regexp.MustCompile("(^/apis/[^c][^o][^r][^e].*)|(^/health)|(^/metrics)|(^/apis/login)"))))
+				regexp.MustCompile("(^/apis/[^c][^o][^r][^e].*)|(^/health)|(^/metrics)|(^/apis/login)|(^/apis/core/v1/roles)"))))
 	}
 	r.Use(middlewares...)
 

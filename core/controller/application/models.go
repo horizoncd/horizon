@@ -72,16 +72,43 @@ func (m *CreateApplicationRequest) toApplicationModel(groupID uint) *models.Appl
 }
 
 // toApplicationModel transfer UpdateApplicationRequest to models.Application
-func (m *UpdateApplicationRequest) toApplicationModel() *models.Application {
-	return &models.Application{
-		Description:     m.Description,
-		Priority:        models.Priority(m.Priority),
-		GitURL:          m.Git.URL,
-		GitSubfolder:    m.Git.Subfolder,
-		GitBranch:       m.Git.Branch,
-		Template:        m.Template.Name,
-		TemplateRelease: m.Template.Release,
+func (m *UpdateApplicationRequest) toApplicationModel(appExistsInDB *models.Application) *models.Application {
+	application := &models.Application{
+		Description:     appExistsInDB.Description,
+		Priority:        appExistsInDB.Priority,
+		GitURL:          appExistsInDB.GitURL,
+		GitSubfolder:    appExistsInDB.GitSubfolder,
+		GitBranch:       appExistsInDB.GitBranch,
+		Template:        appExistsInDB.Template,
+		TemplateRelease: appExistsInDB.TemplateRelease,
 	}
+	if m.Description != "" {
+		application.Description = m.Description
+	}
+	if m.Priority != "" {
+		application.Priority = models.Priority(m.Priority)
+	}
+	if m.Git != nil {
+		if m.Git.URL != "" {
+			application.GitURL = m.Git.URL
+		}
+		if m.Git.Branch != "" {
+			application.GitBranch = m.Git.Branch
+		}
+		if m.Git.Subfolder != "" {
+			application.GitSubfolder = m.Git.Subfolder
+		}
+	}
+	if m.Template != nil {
+		if m.Template.Name != "" {
+			application.Template = m.Template.Name
+		}
+		if m.Template.Release != "" {
+			application.TemplateRelease = m.Template.Release
+		}
+	}
+
+	return application
 }
 
 // ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse

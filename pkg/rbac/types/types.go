@@ -12,14 +12,14 @@ const (
 )
 
 type Role struct {
-	Name        string       `yaml:"name"`
-	PolicyRules []PolicyRule `yaml:"rules"`
+	Name        string       `yaml:"name" json:"name"`
+	PolicyRules []PolicyRule `yaml:"rules" json:"rules"`
 }
 
 type PolicyRule struct {
-	Verbs           []string `yaml:"verbs"`
-	APIGroups       []string `yaml:"apiGroups"`
-	Resources       []string `yaml:"resources"`
-	Scopes          []string `yaml:"scopes"`
-	NonResourceURLs []string `yaml:"nonResourceURLs"`
+	Verbs           []string `yaml:"verbs" json:"verbs"`
+	APIGroups       []string `yaml:"apiGroups" json:"apiGroups"`
+	Resources       []string `yaml:"resources" json:"resources"`
+	Scopes          []string `yaml:"scopes" json:"scopes"`
+	NonResourceURLs []string `yaml:"nonResourceURLs" json:"nonResourceURLs"`
 }

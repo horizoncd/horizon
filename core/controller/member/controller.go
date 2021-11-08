@@ -18,6 +18,8 @@ type Controller interface {
 	RemoveMember(ctx context.Context, id uint) error
 	// ListMember list all the member of the group (and all the member from parent group)
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]Member, error)
+	// GetMemberOfResource get the member of the group by user info in ctx
+	GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*Member, error)
 }
 
 // NewController initializes a new group controller
@@ -109,4 +111,20 @@ func (c *controller) ListMember(ctx context.Context, resourceType string, id uin
 		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
 	}
 	return retMembers, nil
+}
+
+func (c *controller) GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*Member, error) {
+	op := errors.Op(fmt.Sprintf("group *controller: get %s member", resourceType))
+	member, err := c.memberService.GetMemberOfResource(ctx, resourceType, resourceID)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+	}
+	if member == nil {
+		return nil, nil
+	}
+	retMember, err := c.convertHelper.ConvertMember(ctx, member)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+	}
+	return retMember, nil
 }
