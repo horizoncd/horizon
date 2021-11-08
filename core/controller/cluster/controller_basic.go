@@ -31,6 +31,34 @@ func (c *controller) ListCluster(ctx context.Context, applicationID uint, enviro
 	return count, ofClustersWithEnvAndRegion(clustersWithEnvAndRegion), nil
 }
 
+func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
+	filter string, query *q.Query) (count int, listClusterWithFullResp []*ListClusterWithFullResponse, err error) {
+	const op = "cluster controller: list cluster by name fuzzily"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByNameFuzzily(ctx,
+		environment, filter, query)
+	if err != nil {
+		return 0, nil, errors.E(op, err)
+	}
+
+	for _, cluster := range clustersWithEnvAndRegion {
+		application, err := c.applicationSvc.GetByID(ctx, cluster.ApplicationID)
+		if err != nil {
+			return count, nil, err
+		}
+		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
+		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
+		listClusterWithFullResp = append(listClusterWithFullResp, &ListClusterWithFullResponse{
+			ofClusterWithEnvAndRegion(cluster),
+			fullName,
+			fullPath,
+		})
+	}
+
+	return count, listClusterWithFullResp, nil
+}
+
 func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: get cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })

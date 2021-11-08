@@ -24,6 +24,7 @@ type DAO interface {
 	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
+	ListByNameFuzzily(context.Context, string, string, *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 }
 
 type dao struct {
@@ -156,6 +157,49 @@ func (d *dao) ListByApplicationAndEnv(ctx context.Context, applicationID uint, e
 	result = db.Raw(common.ClusterCountByApplicationAndEnv, applicationID, environment, like).Scan(&count)
 	if result.Error != nil {
 		return 0, nil, result.Error
+	}
+
+	return count, clusters, nil
+}
+
+func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
+	query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	offset := (query.PageNumber - 1) * query.PageSize
+	limit := query.PageSize
+
+	like := "%" + filter + "%"
+	var (
+		clusters []*models.ClusterWithEnvAndRegion
+		count    int
+		result   *gorm.DB
+	)
+	if environment != "" {
+		result = db.Raw(common.ClusterQueryByEnvNameFuzzily,
+			environment, like, limit, offset).Scan(&clusters)
+		if result.Error != nil {
+			return 0, nil, result.Error
+		}
+
+		result = db.Raw(common.ClusterCountByEnvNameFuzzily, environment, like).Scan(&count)
+		if result.Error != nil {
+			return 0, nil, result.Error
+		}
+	} else {
+		result = db.Raw(common.ClusterQueryByNameFuzzily,
+			like, limit, offset).Scan(&clusters)
+		if result.Error != nil {
+			return 0, nil, result.Error
+		}
+
+		result = db.Raw(common.ClusterCountByNameFuzzily, like).Scan(&count)
+		if result.Error != nil {
+			return 0, nil, result.Error
+		}
 	}
 
 	return count, clusters, nil

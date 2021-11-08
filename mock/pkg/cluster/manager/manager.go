@@ -2,7 +2,7 @@
 // Source: pkg/cluster/manager/manager.go
 
 // Package mock_manager is a generated GoMock package.
-package manager
+package mock_manager
 
 import (
 	context "context"
@@ -110,6 +110,22 @@ func (m *MockManager) ListByApplicationAndEnv(ctx context.Context, applicationID
 func (mr *MockManagerMockRecorder) ListByApplicationAndEnv(ctx, applicationID, environment, filter, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByApplicationAndEnv", reflect.TypeOf((*MockManager)(nil).ListByApplicationAndEnv), ctx, applicationID, environment, filter, query)
+}
+
+// ListByNameFuzzily mocks base method.
+func (m *MockManager) ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByNameFuzzily", ctx, environment, name, query)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].([]*models.ClusterWithEnvAndRegion)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListByNameFuzzily indicates an expected call of ListByNameFuzzily.
+func (mr *MockManagerMockRecorder) ListByNameFuzzily(ctx, environment, name, query interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByNameFuzzily", reflect.TypeOf((*MockManager)(nil).ListByNameFuzzily), ctx, environment, name, query)
 }
 
 // UpdateByID mocks base method.

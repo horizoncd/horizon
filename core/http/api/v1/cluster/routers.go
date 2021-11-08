@@ -43,6 +43,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var frontRoutes = route.Routes{
 		{
 			Method:      http.MethodGet,
+			Pattern:     "/searchclusters",
+			HandlerFunc: api.ListByNameFuzzily,
+		},
+		{
+			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%v", _clusterParam),
 			HandlerFunc: api.GetByName,
 		},

@@ -8,6 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	q "g.hz.netease.com/horizon/lib/q"
 	models "g.hz.netease.com/horizon/pkg/application/models"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -107,6 +108,22 @@ func (m *MockManager) GetByNameFuzzily(ctx context.Context, name string) ([]*mod
 func (mr *MockManagerMockRecorder) GetByNameFuzzily(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByNameFuzzily", reflect.TypeOf((*MockManager)(nil).GetByNameFuzzily), ctx, name)
+}
+
+// GetByNameFuzzilyByPagination mocks base method.
+func (m *MockManager) GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int, []*models.Application, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByNameFuzzilyByPagination", ctx, name, query)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].([]*models.Application)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetByNameFuzzilyByPagination indicates an expected call of GetByNameFuzzilyByPagination.
+func (mr *MockManagerMockRecorder) GetByNameFuzzilyByPagination(ctx, name, query interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByNameFuzzilyByPagination", reflect.TypeOf((*MockManager)(nil).GetByNameFuzzilyByPagination), ctx, name, query)
 }
 
 // UpdateByID mocks base method.

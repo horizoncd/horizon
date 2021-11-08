@@ -6,6 +6,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
@@ -25,6 +26,8 @@ type Controller interface {
 	GetCluster(ctx context.Context, clusterID uint) (*GetClusterResponse, error)
 	ListCluster(ctx context.Context, applicationID uint, environment,
 		filter string, query *q.Query) (int, []*ListClusterResponse, error)
+	ListClusterByNameFuzzily(ctx context.Context, environment,
+		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
 	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
 		request *CreateClusterRequest) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
@@ -48,6 +51,7 @@ type controller struct {
 	commitGetter         code.CommitGetter
 	cd                   cd.CD
 	applicationMgr       appmanager.Manager
+	applicationSvc       applicationservice.Service
 	templateReleaseMgr   trmanager.Manager
 	templateSchemaGetter templateschema.Getter
 	envMgr               envmanager.Manager
@@ -71,6 +75,7 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		commitGetter:         commitGetter,
 		cd:                   cd,
 		applicationMgr:       appmanager.Mgr,
+		applicationSvc:       applicationservice.Svc,
 		templateReleaseMgr:   trmanager.Mgr,
 		templateSchemaGetter: templateSchemaGetter,
 		envMgr:               envmanager.Mgr,

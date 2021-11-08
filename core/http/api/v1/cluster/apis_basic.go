@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cluster"
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
@@ -164,4 +165,29 @@ func (a *API) GetByName(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, resp)
+}
+
+func (a *API) ListByNameFuzzily(c *gin.Context) {
+	filter := c.Query(common.Filter)
+	environment := c.Query(_environment)
+
+	pageNumber, pageSize, err := request.GetPageParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	count, respList, err := a.clusterCtl.ListClusterByNameFuzzily(c, environment, filter, &q.Query{
+		PageNumber: pageNumber,
+		PageSize:   pageSize,
+	})
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: int64(count),
+		Items: respList,
+	})
 }

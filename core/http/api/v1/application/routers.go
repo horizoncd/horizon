@@ -35,5 +35,15 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 	}
 
+	frontGroup := engine.Group("/apis/front/v1")
+	var frontRoutes = route.Routes{
+		{
+			Method:      http.MethodGet,
+			Pattern:     "/applications/searchapplications",
+			HandlerFunc: api.SearchApplication,
+		},
+	}
+
 	route.RegisterRoutes(apiGroup, routes)
+	route.RegisterRoutes(frontGroup, frontRoutes)
 }

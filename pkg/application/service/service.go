@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 )
@@ -33,10 +32,12 @@ func (s service) GetByID(ctx context.Context, id uint) (*ApplicationDetail, erro
 		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, application.Name)
+	fullName := fmt.Sprintf("%v/%v", group.FullName, application.Name)
 
 	applicationDetail := &ApplicationDetail{
 		*application,
 		fullPath,
+		fullName,
 	}
 	return applicationDetail, nil
 }
