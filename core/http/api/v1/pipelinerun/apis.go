@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,19 +33,20 @@ func (a *API) Log(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	log, err := a.prCtl.GetPrLog(c, uint(prID))
+	l, err := a.prCtl.GetPrLog(c, uint(prID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
 	}
 	c.Header("Content-Type", "text/plain")
-	if log.LogBytes != nil {
-		_, _ = c.Writer.Write(log.LogBytes)
+	if l.LogBytes != nil {
+		log.Infof(c, "logBytes: %v", string(l.LogBytes))
+		_, _ = c.Writer.Write(l.LogBytes)
 		return
 	}
 
-	logC := log.LogChannel
-	errC := log.ErrChannel
+	logC := l.LogChannel
+	errC := l.ErrChannel
 	for logC != nil || errC != nil {
 		select {
 		case l, ok := <-logC:
@@ -56,6 +58,7 @@ func (a *API) Log(c *gin.Context) {
 				_, _ = c.Writer.Write([]byte("\n"))
 				continue
 			}
+			log.Infof(c, "[%s : %s] %s\n", l.Task, l.Step, l.Log)
 			_, _ = c.Writer.Write([]byte(fmt.Sprintf("[%s : %s] %s\n", l.Task, l.Step, l.Log)))
 		case e, ok := <-errC:
 			if !ok {
@@ -65,4 +68,5 @@ func (a *API) Log(c *gin.Context) {
 			_, _ = c.Writer.Write([]byte(fmt.Sprintf("%s\n", e)))
 		}
 	}
+	c.Writer.Flush()
 }

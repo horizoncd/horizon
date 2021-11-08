@@ -13,7 +13,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	apiGroup := engine.Group("/apis/core/v1")
 	var routes = route.Routes{
 		{
-			Method:      http.MethodPost,
+			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/log", _pipelinerunIDParam),
 			HandlerFunc: api.Log,
 		},
