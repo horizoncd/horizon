@@ -14,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
+	"g.hz.netease.com/horizon/pkg/hook/hook"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
@@ -46,6 +47,7 @@ type controller struct {
 	envMgr               envmanager.Manager
 	regionMgr            regionmanager.Manager
 	groupSvc             groupsvc.Service
+	hook                 hook.Hook
 	prMgr                prmanager.Manager
 	tektonFty            factory.Factory
 	registryFty          registryfty.Factory
@@ -55,7 +57,7 @@ var _ Controller = (*controller)(nil)
 
 func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo appgitrepo.ApplicationGitRepo,
 	commitGetter code.CommitGetter, cd cd.CD, tektonFty factory.Factory,
-	templateSchemaGetter templateschema.Getter) Controller {
+	templateSchemaGetter templateschema.Getter, hook hook.Hook) Controller {
 	return &controller{
 		clusterMgr:           clustermanager.Mgr,
 		clusterGitRepo:       clusterGitRepo,
@@ -71,5 +73,16 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		prMgr:                prmanager.Mgr,
 		tektonFty:            tektonFty,
 		registryFty:          registryfty.Fty,
+		hook:                 hook,
+	}
+}
+
+func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
+	if c.hook != nil {
+		event := hook.Event{
+			EventType: eventType,
+			Event:     content,
+		}
+		go c.hook.Push(ctx, event)
 	}
 }
