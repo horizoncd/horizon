@@ -20,7 +20,7 @@ type Response struct {
 	ErrorCode    string      `json:"errorCode,omitempty"`
 	ErrorMessage string      `json:"errorMessage,omitempty"`
 	Data         interface{} `json:"data,omitempty"`
-	RequestID    string      `json:"requestId,omitempty"`
+	RequestID    string      `json:"requestID,omitempty"`
 }
 
 func NewResponse() *Response {
