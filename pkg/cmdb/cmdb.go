@@ -35,6 +35,13 @@ type controller struct {
 	config cmdb.Config
 }
 
+const (
+	CreateApplicationFormat string = "http://%s/api/v2/createApplication?signature=%s&client=%s"
+	DeleteApplicationFormat string = "http://%s/api/v2/deleteApplication?signature=%s&client=%s&applicationName=%s"
+	CreateClusterFormat     string = "http://%s/api/v2/createCluster?signature=%s&client=%s"
+	DeleteClusterFormat     string = "http://%s/api/v2/deleteCluster?signature=%s&client=%s&clusterName=%s"
+)
+
 func (c *controller) getSignature() (string, error) {
 	now := time.Now()
 	year := now.Year()
@@ -63,8 +70,7 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 		return err
 	}
 
-	const format = "http://%s/api/v2/createApplication?signature=%s&client=%s"
-	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID)
+	URL := fmt.Sprintf(CreateApplicationFormat, c.config.URL, signature, c.config.ClientID)
 
 	req.ParentID = c.config.ParentID
 	content, err := json.Marshal(req)
@@ -114,8 +120,7 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) (err
 	if err != nil {
 		return err
 	}
-	const format = "http://%s/api/v2/deleteApplication?signature=%s&client=%s&applicationName=%s"
-	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID, appName)
+	URL := fmt.Sprintf(DeleteApplicationFormat, c.config.URL, signature, c.config.ClientID, appName)
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
 	if err != nil {
@@ -158,8 +163,7 @@ func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest
 	if err != nil {
 		return err
 	}
-	const format = "http://%s/api/v2/createCluster?signature=%s&client=%s"
-	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID)
+	URL := fmt.Sprintf(CreateClusterFormat, c.config.URL, signature, c.config.ClientID)
 
 	req.ClusterStyle = Docker
 	content, err := json.Marshal(req)
@@ -207,8 +211,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterName string) (err
 	if err != nil {
 		return err
 	}
-	const format = "http://%s/api/v2/deleteCluster?signature=%s&client=%s&clusterName=%s"
-	URL := fmt.Sprintf(format, c.config.URL, signature, c.config.ClientID, clusterName)
+	URL := fmt.Sprintf(DeleteClusterFormat, c.config.URL, signature, c.config.ClientID, clusterName)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
 	if err != nil {
 		return err

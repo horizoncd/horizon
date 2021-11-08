@@ -72,7 +72,7 @@ type ClusterStatusType string
 
 const (
 	StatusReady  ClusterStatusType = "ready"
-	StatusOnline ClusterStatusType = "Online"
+	StatusOnline ClusterStatusType = "online"
 )
 
 type CreateClusterRequest struct {
