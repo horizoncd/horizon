@@ -17,7 +17,8 @@ oidcConfig:
 gitlabMapper:
   control:
     httpURL: https://g.hz.netease.com
-    token: 
+    # token for grp.cloudnative
+    token: ""
   compute:
     httpURL: http://cicd.mockserver.org
     sshURL: ssh://git@music-cicd-gitlab-test.hz.netease.com:22222
@@ -38,14 +39,15 @@ gitlabRepoConfig:
       path: music-cloud-native/recycling-clusters
       id: 4587
 helmRepoMapper:
-  dev,test,reg,perf,beta,pre,online: "https://harbor.mock.org/chartrepo/cloudnative-template"
+  dev,test,reg,perf,beta,pre,online: "https://harbor.mock.org/chartrepo/horizon-template"
 argoCDMapper:
   dev,test,reg,perf,beta,pre,online:
     url: http://argocd.mockserver.org
     token: 
 tektonMapper:
   dev,test,reg,perf,beta,pre,online:
-    url: http://el-default-listener.tekton-resources:8080
+    server: http://el-horizon-listener.tekton-resources:8080
+    namespace: tekton-resources
     kubeconfig: ""
     s3:
       accessKey: 

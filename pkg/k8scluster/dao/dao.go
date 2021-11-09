@@ -13,6 +13,7 @@ type DAO interface {
 	Create(ctx context.Context, k8sCluster *models.K8SCluster) (*models.K8SCluster, error)
 	// ListAll list all k8sClusters
 	ListAll(ctx context.Context) ([]*models.K8SCluster, error)
+	GetByServer(ctx context.Context, server string) (*models.K8SCluster, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -43,4 +44,22 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.K8SCluster, error) {
 	result := db.Raw(common.K8SClusterListAll).Scan(&k8sClusters)
 
 	return k8sClusters, result.Error
+}
+
+func (d *dao) GetByServer(ctx context.Context, server string) (*models.K8SCluster, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var k8sCluster models.K8SCluster
+	result := db.Raw(common.K8SClusterGetByServer, server).Scan(&k8sCluster)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+	return &k8sCluster, nil
 }

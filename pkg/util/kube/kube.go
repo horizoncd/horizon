@@ -92,6 +92,39 @@ func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) 
 	return restConfig, k8sClient, nil
 }
 
+// BuildClientFromContent build client from k8s kubeconfig content, not file path
+func BuildClientFromContent(kubeconfigContent string) (*rest.Config, kubernetes.Interface, error) {
+	var restConfig *rest.Config
+	var err error
+	if len(kubeconfigContent) > 0 {
+		clientConfig, err := clientcmd.NewClientConfigFromBytes([]byte(kubeconfigContent))
+		if err != nil {
+			return nil, nil, err
+		}
+		restConfig, err = clientConfig.ClientConfig()
+		if err != nil {
+			return nil, nil, err
+		}
+	} else {
+		restConfig, err = rest.InClusterConfig()
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	groupVersion := &schema.GroupVersion{Group: "", Version: "v1"}
+	restConfig.GroupVersion = groupVersion
+	restConfig.APIPath = "/api"
+	restConfig.ContentType = runtime.ContentTypeJSON
+	restConfig.NegotiatedSerializer = scheme.Codecs
+
+	k8sClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	return restConfig, k8sClient, nil
+}
+
 type ContainerRef struct {
 	Config        *rest.Config
 	KubeClientset kubernetes.Interface

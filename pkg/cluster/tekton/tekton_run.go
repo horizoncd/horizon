@@ -8,8 +8,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"sort"
-	"strings"
+
+	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
+	"g.hz.netease.com/horizon/pkg/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/tektoncd/cli/pkg/options"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -17,11 +19,6 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"knative.dev/pkg/apis"
-
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
-	"g.hz.netease.com/horizon/pkg/util/errors"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
 const (
@@ -30,56 +27,14 @@ const (
 	labelKeyCluster     = labelKeyPrefix + "cluster"
 )
 
-type PipelineRunList []v1beta1.PipelineRun
-
-func (p PipelineRunList) Len() int { return len(p) }
-
-func (p PipelineRunList) Less(i, j int) bool {
-	return !p[i].CreationTimestamp.Before(&p[j].CreationTimestamp)
-}
-
-func (p PipelineRunList) Swap(i, j int) {
-	p[i], p[j] = p[j], p[i]
-}
-
-func (t *Tekton) GetLatestPipelineRun(ctx context.Context,
-	application, cluster string) (pr *v1beta1.PipelineRun, err error) {
-	const op = "tekton: get latest pipelineRun"
+func (t *Tekton) GetPipelineRunByID(ctx context.Context, cluster string,
+	clusterID, pipelinerunID uint) (_ *v1beta1.PipelineRun, err error) {
+	const op = "tekton: get pipelineRun log by pipelinerunID"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	pipelineRuns, err := t.client.Tekton.TektonV1beta1().PipelineRuns(t.namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s",
-			labelKeyApplication, application, labelKeyCluster, cluster),
-	})
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-	if len(pipelineRuns.Items) == 0 {
-		return nil, nil
-	}
-	sort.Sort(PipelineRunList(pipelineRuns.Items))
-	return &pipelineRuns.Items[0], nil
-}
+	prName := fmt.Sprintf("%v-%v-%v", cluster, clusterID, pipelinerunID)
 
-func (t *Tekton) GetRunningPipelineRun(ctx context.Context,
-	application, cluster string) (pr *v1beta1.PipelineRun, err error) {
-	const op = "tekton: get running pipelineRun"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
-
-	pipelineRuns, err := t.client.Tekton.TektonV1beta1().PipelineRuns(t.namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s",
-			labelKeyApplication, application, labelKeyCluster, cluster),
-	})
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-	for _, pipelineRun := range pipelineRuns.Items {
-		if t.getPipelineRunCondition(&pipelineRun) == string(v1beta1.PipelineRunReasonRunning) {
-			return &pipelineRun, nil
-		}
-	}
-
-	return nil, nil
+	return t.getPipelineRun(ctx, prName)
 }
 
 func (t *Tekton) CreatePipelineRun(ctx context.Context, pr *PipelineRun) (eventID string, err error) {
@@ -122,11 +77,11 @@ type patchStringValue struct {
 	Value string `json:"value"`
 }
 
-func (t *Tekton) StopPipelineRun(ctx context.Context, application, cluster string) (err error) {
+func (t *Tekton) StopPipelineRun(ctx context.Context, cluster string, clusterID, pipelinerunID uint) (err error) {
 	const op = "tekton: stop pipelineRun"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	pr, err := t.GetRunningPipelineRun(ctx, application, cluster)
+	pr, err := t.GetPipelineRunByID(ctx, cluster, clusterID, pipelinerunID)
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -138,8 +93,8 @@ func (t *Tekton) StopPipelineRun(ctx context.Context, application, cluster strin
 	// 这个判断参考tekton/cli的源代码：https://github.com/tektoncd/cli/blob/master/pkg/cmd/pipelinerun/cancel.go#L69
 	if len(pr.Status.Conditions) > 0 {
 		if pr.Status.Conditions[0].Status != corev1.ConditionUnknown {
-			return errors.E(op, fmt.Errorf(
-				"failed to cancel PipelineRun %s: PipelineRun has already finished execution", pr.Name))
+			// PipelineRun has already finished execution
+			return nil
 		}
 	}
 
@@ -160,19 +115,21 @@ func (t *Tekton) StopPipelineRun(ctx context.Context, application, cluster strin
 	return nil
 }
 
-func (t *Tekton) GetLatestPipelineRunLog(ctx context.Context, application,
-	cluster string) (logChan <-chan log.Log, errChan <-chan error, err error) {
-	const op = "tekton: get latest pipelineRun log"
+func (t *Tekton) GetPipelineRunLogByID(ctx context.Context,
+	cluster string, clusterID, pipelinerunID uint) (_ <-chan log.Log, _ <-chan error, err error) {
+	const op = "tekton: get pipelineRun log by pipelinerunID"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	var pr *v1beta1.PipelineRun
-	// 返回最近一次执行的PipelineRun的日志
-	pr, err = t.GetLatestPipelineRun(ctx, application, cluster)
+	prName := fmt.Sprintf("%v-%v-%v", cluster, clusterID, pipelinerunID)
+
+	pr, err := t.getPipelineRun(ctx, prName)
+
 	if err != nil {
 		return nil, nil, errors.E(op, err)
 	}
 	if pr == nil {
-		return nil, nil, errors.E(op, http.StatusNotFound, fmt.Errorf("no pipelineRun exists for %s", cluster))
+		return nil, nil, errors.E(op, http.StatusNotFound,
+			fmt.Errorf("no pipelineRun exists for %s with pipelinerunID: %v", cluster, pipelinerunID))
 	}
 
 	return t.GetPipelineRunLog(ctx, pr)
@@ -180,15 +137,9 @@ func (t *Tekton) GetLatestPipelineRunLog(ctx context.Context, application,
 
 func (t *Tekton) GetPipelineRunLog(ctx context.Context, pr *v1beta1.PipelineRun) (<-chan log.Log, <-chan error, error) {
 	const op = "tekton: get pipelineRun log"
-	condition := t.getPipelineRunCondition(pr)
 	logOps := &options.LogOptions{
 		Params:          log.NewTektonParams(t.client.Dynamic, t.client.Kube, t.client.Tekton, t.namespace),
 		PipelineRunName: pr.Name,
-	}
-	// 如果不失败的情况下，只返回我们自己的task/step的日志，不返回tekton的一些init阶段的日志
-	if condition != string(v1beta1.PipelineRunReasonFailed) {
-		logOps.Tasks = strings.Split(t.filteredTasks, ",")
-		logOps.Steps = strings.Split(t.filteredSteps, ",")
 	}
 
 	lr, err := log.NewReader(log.LogTypePipeline, logOps)
@@ -215,13 +166,15 @@ func (t *Tekton) DeletePipelineRun(ctx context.Context, pr *v1beta1.PipelineRun)
 	return nil
 }
 
-func (t *Tekton) getPipelineRunCondition(pr *v1beta1.PipelineRun) string {
-	for _, cond := range pr.Status.Conditions {
-		if cond.Type == apis.ConditionSucceeded {
-			return cond.Reason
-		}
+func (t *Tekton) getPipelineRun(ctx context.Context, prName string) (_ *v1beta1.PipelineRun, err error) {
+	const op = "tekton: get pipelineRun "
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	pr, err := t.client.Tekton.TektonV1beta1().PipelineRuns(t.namespace).Get(ctx, prName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.E(op, err)
 	}
-	return ""
+	return pr, nil
 }
 
 func (t *Tekton) sendHTTPRequest(ctx context.Context, method string,

@@ -64,7 +64,7 @@ func (f factory) GetTekton(environment string) (tekton.Interface, error) {
 	if ret, ok = f.cache.Load(environment); !ok {
 		return nil, fmt.Errorf("the tekton for environment: %v is not found", environment)
 	}
-	return ret.(tektonCache).tekton, nil
+	return ret.(*tektonCache).tekton, nil
 }
 
 func (f factory) GetTektonCollector(environment string) (collector.Interface, error) {
@@ -73,5 +73,5 @@ func (f factory) GetTektonCollector(environment string) (collector.Interface, er
 	if ret, ok = f.cache.Load(environment); !ok {
 		return nil, fmt.Errorf("the tektonCollector for environment: %v is not found", environment)
 	}
-	return ret.(tektonCache).tektonCollector, nil
+	return ret.(*tektonCache).tektonCollector, nil
 }

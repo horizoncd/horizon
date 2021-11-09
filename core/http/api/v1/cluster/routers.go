@@ -36,6 +36,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/diffs", _clusterIDParam),
 			HandlerFunc: api.GetDiff,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/status", _clusterIDParam),
+			HandlerFunc: api.ClusterStatus,
 		},
 	}
 
@@ -48,6 +52,18 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 	}
 
+	internalGroup := engine.Group("/apis/internal/v1/clusters")
+	var internalRoutes = route.Routes{
+		{
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/:%v/deploy", _clusterIDParam),
+			HandlerFunc: api.InternalDeploy,
+		},
+	}
+	// TODO use middleware to auth token
+	internalGroup.Use()
+
 	route.RegisterRoutes(apiGroup, routes)
 	route.RegisterRoutes(frontGroup, frontRoutes)
+	route.RegisterRoutes(internalGroup, internalRoutes)
 }

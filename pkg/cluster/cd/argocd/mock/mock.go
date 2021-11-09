@@ -12,6 +12,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
@@ -321,7 +322,14 @@ func (argoServer *ArgoServer) GetApplicationTree(w http.ResponseWriter, r *http.
 }
 
 func (argoServer *ArgoServer) GetApplicationResource(w http.ResponseWriter, r *http.Request) {
-	var deployment apps.Deployment
+	var deployment = apps.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "deployment",
+			Namespace:  "test-1",
+			UID:        "uid",
+			Generation: 1,
+		},
+	}
 	data, _ := json.Marshal(&deployment)
 	m := struct{ Manifest string }{}
 	m.Manifest = string(data)

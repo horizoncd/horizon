@@ -50,12 +50,11 @@ func (mr *MockClusterGitRepoMockRecorder) GetCluster(ctx, application, cluster, 
 }
 
 // CreateCluster mocks base method
-func (m *MockClusterGitRepo) CreateCluster(ctx context.Context, params *gitrepo.CreateClusterParams) (*gitrepo.ClusterRepo, error) {
+func (m *MockClusterGitRepo) CreateCluster(ctx context.Context, params *gitrepo.CreateClusterParams) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateCluster", ctx, params)
-	ret0, _ := ret[0].(*gitrepo.ClusterRepo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // CreateCluster indicates an expected call of CreateCluster
@@ -108,11 +107,12 @@ func (mr *MockClusterGitRepoMockRecorder) CompareConfig(ctx, application, cluste
 }
 
 // MergeBranch mocks base method
-func (m *MockClusterGitRepo) MergeBranch(ctx context.Context, application, cluster string) error {
+func (m *MockClusterGitRepo) MergeBranch(ctx context.Context, application, cluster string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MergeBranch", ctx, application, cluster)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // MergeBranch indicates an expected call of MergeBranch
@@ -149,4 +149,18 @@ func (m *MockClusterGitRepo) GetConfigCommit(ctx context.Context, application, c
 func (mr *MockClusterGitRepoMockRecorder) GetConfigCommit(ctx, application, cluster interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigCommit", reflect.TypeOf((*MockClusterGitRepo)(nil).GetConfigCommit), ctx, application, cluster)
+}
+
+// GetRepoInfo mocks base method
+func (m *MockClusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster string) *gitrepo.RepoInfo {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRepoInfo", ctx, application, cluster)
+	ret0, _ := ret[0].(*gitrepo.RepoInfo)
+	return ret0
+}
+
+// GetRepoInfo indicates an expected call of GetRepoInfo
+func (mr *MockClusterGitRepoMockRecorder) GetRepoInfo(ctx, application, cluster interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepoInfo", reflect.TypeOf((*MockClusterGitRepo)(nil).GetRepoInfo), ctx, application, cluster)
 }

@@ -10,16 +10,14 @@ import (
 )
 
 type Interface interface {
-	// GetLatestPipelineRun get latest pipelinerun
-	GetLatestPipelineRun(ctx context.Context, application, cluster string) (*v1beta1.PipelineRun, error)
-	// GetRunningPipelineRun get running pipelinerun
-	GetRunningPipelineRun(ctx context.Context, application, cluster string) (*v1beta1.PipelineRun, error)
+	GetPipelineRunByID(ctx context.Context, cluster string,
+		clusterID, pipelinerunID uint) (*v1beta1.PipelineRun, error)
 	// CreatePipelineRun create pipelinerun
 	CreatePipelineRun(ctx context.Context, pr *PipelineRun) (string, error)
 	// StopPipelineRun stop pipelinerun
-	StopPipelineRun(ctx context.Context, application, cluster string) error
-	// GetLatestPipelineRunLog get latest pipelinerun log
-	GetLatestPipelineRunLog(ctx context.Context, application, cluster string) (<-chan log.Log, <-chan error, error)
+	StopPipelineRun(ctx context.Context, cluster string, clusterID, pipelinerunID uint) error
+	GetPipelineRunLogByID(ctx context.Context, cluster string,
+		clusterID, pipelinerunID uint) (<-chan log.Log, <-chan error, error)
 	// GetPipelineRunLog 根据传入的pipelineRun获取该pipelineRun对应的log
 	GetPipelineRunLog(ctx context.Context, pr *v1beta1.PipelineRun) (<-chan log.Log, <-chan error, error)
 	// DeletePipelineRun 删除pipelineRun
@@ -33,10 +31,6 @@ type Tekton struct {
 	server string
 	// tekton 资源的命名空间
 	namespace string
-	// 用来过滤日志
-	filteredTasks string
-	// 用来过滤日志
-	filteredSteps string
 	// clients，用来获取tekton资源、k8s资源等
 	client *Client
 }

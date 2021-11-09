@@ -10,7 +10,6 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -135,7 +134,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	cluster.UpdatedBy = currentUser.GetID()
 
 	// 8. create cluster in git repo
-	clusterRepo, err := c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
+	err = c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
 		BaseParams: &gitrepo.BaseParams{
 			Cluster:             cluster.Name,
 			PipelineJSONBlob:    r.TemplateInput.Pipeline,
@@ -150,25 +149,13 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, errors.E(op, err)
 	}
 
-	// 9. create cluster in cd system. todo(gjq) create cluster in cd when deploy
-	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:   environment,
-		Cluster:       cluster.Name,
-		GitRepoSSHURL: clusterRepo.GitRepoSSHURL,
-		ValueFiles:    clusterRepo.ValueFiles,
-		RegionEntity:  regionEntity,
-		Namespace:     clusterRepo.Namespace,
-	}); err != nil {
-		return nil, errors.E(op, err)
-	}
-
-	// 10. create cluster in db
+	// 9. create cluster in db
 	cluster, err = c.clusterMgr.Create(ctx, cluster)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
-	// 11. get full path
+	// 10. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
 		return nil, errors.E(op, err)
