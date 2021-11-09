@@ -1,11 +1,15 @@
-FROM golang:1.15.3 AS builder
+FROM golang/golang:1.15.3 AS builder
 COPY . /horizon
 
 WORKDIR /horizon
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o bin/app -ldflags '-s -w' ./core/main.go
 
-FROM alpine:3.9 AS runtime
+FROM alpine/alpine:3.9 AS runtime
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk update && apk add bash curl git && \
+    apk add tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo "Asia/Shanghai" > /etc/timezone
 
 ARG GROUP=netease
 ARG USER=appops
