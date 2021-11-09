@@ -36,7 +36,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *metrics.WrappedPipelin
 	const op = "cloudEvent controller: cloudEvent"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	environment := wpr.PipelineRun.Labels[common.ApplicationLabelKey]
+	environment := wpr.PipelineRun.Labels[common.EnvironmentLabelKey]
 	pipelinerunIDStr := wpr.PipelineRun.Labels[common.PipelinerunIDLabelKey]
 	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
 	if err != nil {
