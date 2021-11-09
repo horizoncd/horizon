@@ -11,6 +11,7 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -161,8 +162,12 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	return ofClusterModel(application, cluster, er, fullPath,
-		r.TemplateInput.Pipeline, r.TemplateInput.Application), nil
+	ret := ofClusterModel(application, cluster, er, fullPath,
+		r.TemplateInput.Pipeline, r.TemplateInput.Application)
+
+	// 12. post hook
+	c.postHook(ctx, hook.CreateCluster, ret)
+	return ret, nil
 }
 
 func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
