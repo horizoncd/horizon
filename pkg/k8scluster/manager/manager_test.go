@@ -23,7 +23,9 @@ func Test(t *testing.T) {
 	assert.Equal(t, len(k8sClusters), 0)
 
 	k8sCluster, err := Mgr.Create(ctx, &models.K8SCluster{
+		Model:         gorm.Model{},
 		Name:          "hz",
+		Server:        "server",
 		Certificate:   "i am a Certificate",
 		IngressDomain: "hz.com",
 	})
@@ -34,6 +36,10 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(k8sClusters), 1)
 	t.Logf("%v", k8sClusters[0])
+
+	k8sClusterGetByServer, err := Mgr.GetByServer(ctx, "server")
+	assert.Nil(t, err)
+	assert.Equal(t, k8sClusterGetByServer.Name, "hz")
 }
 
 func TestMain(m *testing.M) {

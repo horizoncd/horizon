@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
+	"sync"
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd"
+	"g.hz.netease.com/horizon/pkg/cluster/common"
+	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	argocdconf "g.hz.netease.com/horizon/pkg/config/argocd"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -15,10 +19,13 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
+	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -29,38 +36,42 @@ const (
 )
 
 type GetClusterStateParams struct {
-	Environment string
-	Cluster     string
+	Environment  string
+	Cluster      string
+	Namespace    string
+	RegionEntity *regionmodels.RegionEntity
 }
 
-type CreateClusterParams struct {
+type DeployClusterParams struct {
 	Environment   string
 	Cluster       string
 	GitRepoSSHURL string
 	ValueFiles    []string
 	RegionEntity  *regionmodels.RegionEntity
 	Namespace     string
+	Revision      string
 }
 
 type CD interface {
-	// CreateCluster create a cluster in cd system
-	CreateCluster(ctx context.Context, params *CreateClusterParams) error
+	DeployCluster(ctx context.Context, params *DeployClusterParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 }
 
 type cd struct {
-	factory argocd.Factory
+	kubeClientFty kubeclient.Factory
+	factory       argocd.Factory
 }
 
 func NewCD(argoCDMapper argocdconf.Mapper) CD {
 	return &cd{
-		factory: argocd.NewFactory(argoCDMapper),
+		kubeClientFty: kubeclient.Fty,
+		factory:       argocd.NewFactory(argoCDMapper),
 	}
 }
 
-func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
-	const op = "cd: create cluster"
+func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (err error) {
+	const op = "cd: deploy cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
@@ -68,27 +79,25 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 		return errors.E(op, err)
 	}
 
-	// if argo application is exists, return err
-	_, err = argo.GetApplication(ctx, params.Cluster)
-	if err == nil {
-		return errors.E(op, http.StatusConflict, fmt.Sprintf("%v is already exists in argoCD", params.Cluster))
-	} else if errors.Status(err) != http.StatusNotFound {
-		return errors.E(op, err)
+	// if argo application is not exists, create it first
+	if _, err = argo.GetApplication(ctx, params.Cluster); err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return errors.E(op, err)
+		}
+		var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
+			params.GitRepoSSHURL, params.RegionEntity.K8SCluster.Server, params.ValueFiles)
+
+		manifest, err := json.Marshal(argoApplication)
+		if err != nil {
+			return errors.E(op, err)
+		}
+
+		if err := argo.CreateApplication(ctx, manifest); err != nil {
+			return errors.E(op, err)
+		}
 	}
 
-	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
-		params.GitRepoSSHURL, params.RegionEntity.K8SCluster.Server, params.ValueFiles)
-
-	manifest, err := json.Marshal(argoApplication)
-	if err != nil {
-		return errors.E(op, err)
-	}
-
-	if err := argo.CreateApplication(ctx, manifest); err != nil {
-		return errors.E(op, err)
-	}
-
-	return nil
+	return argo.DeployApplication(ctx, params.Cluster, params.Revision)
 }
 
 // GetClusterState TODO(gjq) restructure
@@ -99,7 +108,12 @@ func (c *cd) GetClusterState(ctx context.Context,
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return nil, err
+		return nil, errors.E(op, err)
+	}
+
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return nil, errors.E(op, err)
 	}
 
 	clusterState = &ClusterState{Versions: map[string]*ClusterVersion{}}
@@ -120,12 +134,25 @@ func (c *cd) GetClusterState(ctx context.Context,
 		clusterState.Status = health.HealthStatusProgressing
 	}
 
+	var rollout *v1alpha1.Rollout
+	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
+		Group:        "argoproj.io",
+		Version:      "v1alpha1",
+		Kind:         "Rollout",
+		Namespace:    argoApp.Spec.Destination.Namespace,
+		ResourceName: params.Cluster,
+	}, &rollout); err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return nil, errors.E(op, err)
+		}
+	}
+
+	clusterState.Step = getStep(rollout)
+
 	var latestReplicaSet *appsv1.ReplicaSet
-	// TODO(gjq) label key
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
-		"cloudnative.music.netease.com/cluster", params.Cluster))
-	// TODO(gjq) fill kubeClientset and namespace
-	rss, err := kube.GetReplicaSets(ctx, nil, "", labelSelector.String())
+		common.ClusterLabelKey, params.Cluster))
+	rss, err := kube.GetReplicaSets(ctx, kubeClient, params.Namespace, labelSelector.String())
 	if err != nil {
 		return nil, err
 	} else if len(rss) == 0 {
@@ -153,7 +180,232 @@ func (c *cd) GetClusterState(ctx context.Context,
 		return nil, errors.E(op, http.StatusNotFound, "clusterState.PodTemplateHash == ''")
 	}
 
+	// TODO(gjq): 通用化，POD的展示是直接按照resourceVersion 来获取Pod
+	// 从目前的配置来看，该 if 分支表示负载类型是 serverless 应用
+	if clusterState.PodTemplateHashKey == DeploymentPodTemplateHash {
+		labelSelector := fields.ParseSelectorOrDie(
+			fmt.Sprintf("%v=%v", common.ClusterLabelKey, params.Cluster))
+		// serverless 应用会有多个 Deployment 对象
+		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient, params.Namespace, labelSelector.String())
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+		for i := range deploymentList {
+			deployment := &deploymentList[i]
+			// Borrowed at kubernetes/kubectl/rollout_status.go
+			if deployment.Generation <= deployment.Status.ObservedGeneration {
+				cond := getDeploymentCondition(deployment.Status, appsv1.DeploymentProgressing)
+				if cond != nil && cond.Reason == "ProgressDeadlineExceeded" {
+					// 默认情况下，如果 Deployment 在十分钟之内，未能完成滚动更新，
+					// 则 Deployment 的健康状态是 HealthStatusDegraded.
+					clusterState.Status = health.HealthStatusDegraded
+				}
+			} else {
+				// 如果 Deployment 有更新，而 Deployment Controller 尚未处理，
+				// 则 Deployment 的健康状态是 HealthStatusProgressing
+				clusterState.Status = health.HealthStatusProgressing
+			}
+		}
+	}
+
+	if err := c.paddingPodAndEventInfo(ctx, params.Cluster, params.Namespace,
+		kubeClient, clusterState); err != nil {
+		return nil, errors.E(op, err)
+	}
+
 	return clusterState, nil
+}
+
+func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace string,
+	kubeClientSet kubernetes.Interface, clusterState *ClusterState) error {
+	const op = "deployer: padding pod and event"
+	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
+		common.ClusterLabelKey, cluster))
+
+	var pods []corev1.Pod
+	var events map[string][]*corev1.Event
+	var err1, err2 error
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		pods, err1 = kube.GetPods(ctx, kubeClientSet, namespace, labelSelector.String())
+	}()
+	go func() {
+		defer wg.Done()
+		events, err2 = kube.GetEvents(ctx, kubeClientSet, namespace)
+	}()
+	wg.Wait()
+
+	for _, e := range []error{err1, err2} {
+		if e != nil {
+			return errors.E(op, e)
+		}
+	}
+
+	for i := range pods {
+		pod := &pods[i]
+		podEvents := events[fmt.Sprintf("%v-%v-%v", pod.Name, pod.UID, pod.Namespace)]
+		if err := parsePod(ctx, clusterState, pod, podEvents); err != nil {
+			// pod 可能已经被删除
+			log.Info(ctx, err)
+			continue
+		} else {
+			clusterState.Replicas++
+		}
+	}
+	return nil
+}
+
+func parsePod(ctx context.Context, clusterInfo *ClusterState,
+	pod *corev1.Pod, events []*corev1.Event) (err error) {
+	const deploymentPodTemplateHash = "pod-template-hash"
+	const rolloutPodTemplateHash = "rollouts-pod-template-hash"
+
+	podTemplateHash := pod.Labels[deploymentPodTemplateHash]
+	if podTemplateHash == "" {
+		podTemplateHash = pod.Labels[rolloutPodTemplateHash]
+	}
+
+	if podTemplateHash == "" {
+		log.Errorf(ctx, "pod<%s> has no %v or %v label",
+			pod.Name, deploymentPodTemplateHash, rolloutPodTemplateHash)
+		return nil
+	}
+
+	if clusterInfo.Versions[podTemplateHash] == nil {
+		log.Infof(ctx, "pod<%s> has no related ReplicaSet object", pod.Name)
+		return nil
+	}
+	clusterInfo.Versions[podTemplateHash].Replicas++
+
+	clusterPod := &ClusterPod{
+		Metadata: PodMetadata{
+			CreationTimestamp: pod.CreationTimestamp,
+			Namespace:         pod.Namespace,
+			Annotations:       pod.Annotations,
+		},
+		Spec: PodSpec{
+			NodeName:       pod.Spec.NodeName,
+			InitContainers: nil,
+			Containers:     nil,
+		},
+		Status: PodStatus{
+			HostIP: pod.Status.HostIP,
+			PodIP:  pod.Status.PodIP,
+			Phase:  string(pod.Status.Phase),
+		},
+	}
+
+	var initContainers []*Container
+	for i := range pod.Spec.InitContainers {
+		c := pod.Spec.InitContainers[i]
+		initContainers = append(initContainers, &Container{
+			Name:  c.Name,
+			Image: c.Image,
+		})
+	}
+	clusterPod.Spec.InitContainers = initContainers
+
+	cs := &containerList{name: pod.Labels[common.ClusterLabelKey]}
+	for i := range pod.Spec.Containers {
+		cs.containers = append(cs.containers, &pod.Spec.Containers[i])
+	}
+	sort.Sort(cs)
+
+	var containers []*Container
+	for i := range cs.containers {
+		c := cs.containers[i]
+		containers = append(containers, &Container{
+			Name:  c.Name,
+			Image: c.Image,
+		})
+	}
+	clusterPod.Spec.Containers = containers
+
+	var containerStatuses []*ContainerStatus
+	for i := range pod.Status.ContainerStatuses {
+		containerStatus := pod.Status.ContainerStatuses[i]
+		c := &ContainerStatus{
+			Name:         containerStatus.Name,
+			Ready:        containerStatus.Ready,
+			RestartCount: containerStatus.RestartCount,
+			State:        parseContainerState(containerStatus),
+		}
+		containerStatuses = append(containerStatuses, c)
+	}
+	clusterPod.Status.ContainerStatuses = containerStatuses
+
+	for i := range events {
+		clusterPod.Status.Events = append(clusterPod.Status.Events,
+			Event{
+				Reason:         events[i].Reason,
+				Message:        events[i].Message,
+				Count:          events[i].Count,
+				EventTimestamp: events[i].FirstTimestamp,
+			})
+	}
+	clusterInfo.Versions[podTemplateHash].Pods[pod.Name] = clusterPod
+	return nil
+}
+
+type containerList struct {
+	name       string
+	containers []*corev1.Container
+}
+
+func (c *containerList) Len() int { return len(c.containers) }
+
+func (c *containerList) Less(i, j int) bool {
+	if c.containers[i].Name == c.name {
+		return true
+	} else if c.containers[j].Name == c.name {
+		return false
+	}
+
+	a := c.containers[i].Name
+	b := c.containers[j].Name
+
+	return a <= b
+}
+
+func (c *containerList) Swap(i, j int) {
+	c.containers[i], c.containers[j] = c.containers[j], c.containers[i]
+}
+
+func parseContainerState(containerStatus corev1.ContainerStatus) ContainerState {
+	waiting := "waiting"
+	running := "running"
+	terminated := "terminated"
+
+	// Only one of its members may be specified.
+	state := containerStatus.State
+
+	if state.Running != nil {
+		return ContainerState{
+			State: running,
+		}
+	}
+
+	if state.Waiting != nil {
+		return ContainerState{
+			State:   waiting,
+			Reason:  state.Waiting.Reason,
+			Message: state.Waiting.Message,
+		}
+	}
+
+	if state.Terminated != nil {
+		return ContainerState{
+			State:   terminated,
+			Reason:  state.Terminated.Reason,
+			Message: state.Terminated.Message,
+		}
+	}
+
+	// If none of them is specified, the default one is ContainerStateWaiting.
+	return ContainerState{State: waiting}
 }
 
 type (
@@ -166,6 +418,9 @@ type (
 		// Missing(Rollout或Deployment还尚未部署到业务集群)
 		// Unknown(集群健康评估失败，无法获悉当前的部署状态)
 		Status health.HealthStatusCode `json:"status,omitempty" yaml:"status,omitempty"`
+
+		// Step
+		Step *Step `json:"step"`
 
 		// Replicas the actual number of replicas running in k8s
 		Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
@@ -187,6 +442,11 @@ type (
 		Versions map[string]*ClusterVersion `json:"versions,omitempty" yaml:"versions,omitempty"`
 	}
 
+	Step struct {
+		Index int `json:"index"`
+		Total int `json:"total"`
+	}
+
 	// ClusterVersion version information
 	ClusterVersion struct {
 		// Replicas the replicas of this revision
@@ -204,8 +464,9 @@ type (
 	}
 
 	PodMetadata struct {
-		Namespace   string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-		Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+		CreationTimestamp metav1.Time       `json:"creationTimestamp"`
+		Namespace         string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+		Annotations       map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 	}
 
 	PodSpec struct {
@@ -228,9 +489,10 @@ type (
 	}
 
 	ContainerStatus struct {
-		Name  string         `json:"name,omitempty" yaml:"name,omitempty"`
-		Ready bool           `json:"ready" yaml:"ready"`
-		State ContainerState `json:"state" yaml:"state"`
+		Name         string         `json:"name,omitempty" yaml:"name,omitempty"`
+		Ready        bool           `json:"ready" yaml:"ready"`
+		RestartCount int32          `json:"restartCount"`
+		State        ContainerState `json:"state" yaml:"state"`
 	}
 
 	Event struct {
@@ -301,4 +563,44 @@ func CompareRevision(ctx context.Context, rs1, rs2 *appsv1.ReplicaSet) bool {
 	}
 
 	return num1 > num2
+}
+
+func getDeploymentCondition(status appsv1.DeploymentStatus,
+	condType appsv1.DeploymentConditionType) *appsv1.DeploymentCondition {
+	for i := range status.Conditions {
+		c := status.Conditions[i]
+		if c.Type == condType {
+			return &c
+		}
+	}
+	return nil
+}
+
+func getStep(rollout *v1alpha1.Rollout) *Step {
+	if rollout == nil || rollout.Spec.Strategy.Canary == nil ||
+		len(rollout.Spec.Strategy.Canary.Steps) == 0 {
+		return &Step{
+			Index: 0,
+			Total: 1,
+		}
+	}
+	var stepTotal = 0
+	for _, step := range rollout.Spec.Strategy.Canary.Steps {
+		if step.SetWeight != nil {
+			stepTotal++
+		}
+	}
+	var stepIndex = 0
+	if rollout.Status.CurrentStepIndex != nil {
+		index := int(*rollout.Status.CurrentStepIndex)
+		for i := 0; i < index; i++ {
+			if rollout.Spec.Strategy.Canary.Steps[i].SetWeight != nil {
+				stepIndex++
+			}
+		}
+	}
+	return &Step{
+		Index: stepIndex,
+		Total: stepTotal,
+	}
 }

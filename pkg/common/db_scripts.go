@@ -77,31 +77,32 @@ const (
 /* sql about k8sCluster */
 const (
 	// K8SClusterListAll ...
-	K8SClusterListAll = "select * from k8s_cluster"
+	K8SClusterListAll     = "select * from k8s_cluster where deleted_at is null"
+	K8SClusterGetByServer = "select * from k8s_cluster where server = ? and deleted_at is null"
 )
 
 /* sql about harbor */
 const (
-	HarborListAll = "select * from harbor"
-	HarborGetByID = "select * from harbor where id = ?"
+	HarborListAll = "select * from harbor where deleted_at is null"
+	HarborGetByID = "select * from harbor where id = ? and deleted_at is null"
 )
 
 /* sql about environment */
 const (
 	// EnvironmentListAll ...
-	EnvironmentListAll    = "select * from environment"
-	EnvironmentListRegion = "select region_name from environment_region where environment_name = ?"
+	EnvironmentListAll    = "select * from environment where deleted_at is null"
+	EnvironmentListRegion = "select region_name from environment_region where environment_name = ? and deleted_at is null"
 	EnvironmentRegionGet  = "select * from environment_region where" +
-		" environment_name = ? and region_name = ?"
-	EnvironmentRegionGetByID = "select * from environment_region where id = ?"
+		" environment_name = ? and region_name = ? and deleted_at is null"
+	EnvironmentRegionGetByID = "select * from environment_region where id = ? and deleted_at is null"
 )
 
 /* sql about region */
 const (
 	// RegionListAll ...
-	RegionListAll     = "select * from region"
-	RegionGetByName   = "select * from region where name = ?"
-	RegionListByNames = "select * from region where name in ?"
+	RegionListAll     = "select * from region where deleted_at is null"
+	RegionGetByName   = "select * from region where name = ? and deleted_at is null"
+	RegionListByNames = "select * from region where name in ? and deleted_at is null"
 )
 
 /* sql about cluster */
@@ -120,4 +121,13 @@ const (
 		"where c.application_id = ? and er.environment_name = ? " +
 		"and c.name like ? and c.deleted_at is null"
 	ClusterQueryByClusterName = "select * from cluster where name = ? and deleted_at is null"
+)
+
+/* sql about pipelinerun */
+const (
+	PipelinerunGetByID                       = "select * from pipelinerun where id = ?"
+	PipelinerunDeleteByID                    = "delete from pipelinerun where id = ?"
+	PipelinerunUpdateConfigCommitByID        = "update pipelinerun set config_commit = ? where id = ?"
+	PipelinerunGetLatestByClusterIDAndAction = "select * from pipelinerun where cluster_id = ? " +
+		"and action = ? order by id desc limit 1"
 )

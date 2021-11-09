@@ -238,22 +238,18 @@ func SharedTestApplication(ctx context.Context, argoClient *helper, t *testing.T
 		t.Log("application tree:", string(data))
 	}
 
-	data, err := argoClient.GetApplicationResource(ctx, _cluster2, ResourceParams{
+	var deployment *apps.Deployment
+	err := argoClient.GetApplicationResource(ctx, _cluster2, ResourceParams{
 		Group:        "apps",
 		Version:      "v1",
 		Kind:         "Deployment",
 		Namespace:    _cluster2Namespace,
 		ResourceName: _cluster2,
-	})
+	}, &deployment)
 	if err != nil {
 		t.Fatal(err)
 	} else {
-		t.Log("get application resource: ", data)
-	}
-
-	var deployment *apps.Deployment
-	if err = json.Unmarshal([]byte(data), &deployment); err != nil {
-		t.Fatal(err, data)
+		t.Logf("got: %v", deployment)
 	}
 
 	_, err = argoClient.ListResourceEvents(ctx, _cluster2, EventParam{

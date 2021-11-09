@@ -36,34 +36,19 @@ func (m *MockInterface) EXPECT() *MockInterfaceMockRecorder {
 	return m.recorder
 }
 
-// GetLatestPipelineRun mocks base method
-func (m *MockInterface) GetLatestPipelineRun(ctx context.Context, application, cluster string) (*v1beta1.PipelineRun, error) {
+// GetPipelineRunByID mocks base method
+func (m *MockInterface) GetPipelineRunByID(ctx context.Context, cluster string, clusterID, pipelinerunID uint) (*v1beta1.PipelineRun, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestPipelineRun", ctx, application, cluster)
+	ret := m.ctrl.Call(m, "GetPipelineRunByID", ctx, cluster, clusterID, pipelinerunID)
 	ret0, _ := ret[0].(*v1beta1.PipelineRun)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetLatestPipelineRun indicates an expected call of GetLatestPipelineRun
-func (mr *MockInterfaceMockRecorder) GetLatestPipelineRun(ctx, application, cluster interface{}) *gomock.Call {
+// GetPipelineRunByID indicates an expected call of GetPipelineRunByID
+func (mr *MockInterfaceMockRecorder) GetPipelineRunByID(ctx, cluster, clusterID, pipelinerunID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestPipelineRun", reflect.TypeOf((*MockInterface)(nil).GetLatestPipelineRun), ctx, application, cluster)
-}
-
-// GetRunningPipelineRun mocks base method
-func (m *MockInterface) GetRunningPipelineRun(ctx context.Context, application, cluster string) (*v1beta1.PipelineRun, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRunningPipelineRun", ctx, application, cluster)
-	ret0, _ := ret[0].(*v1beta1.PipelineRun)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRunningPipelineRun indicates an expected call of GetRunningPipelineRun
-func (mr *MockInterfaceMockRecorder) GetRunningPipelineRun(ctx, application, cluster interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunningPipelineRun", reflect.TypeOf((*MockInterface)(nil).GetRunningPipelineRun), ctx, application, cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPipelineRunByID", reflect.TypeOf((*MockInterface)(nil).GetPipelineRunByID), ctx, cluster, clusterID, pipelinerunID)
 }
 
 // CreatePipelineRun mocks base method
@@ -82,33 +67,33 @@ func (mr *MockInterfaceMockRecorder) CreatePipelineRun(ctx, pr interface{}) *gom
 }
 
 // StopPipelineRun mocks base method
-func (m *MockInterface) StopPipelineRun(ctx context.Context, application, cluster string) error {
+func (m *MockInterface) StopPipelineRun(ctx context.Context, cluster string, clusterID, pipelinerunID uint) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StopPipelineRun", ctx, application, cluster)
+	ret := m.ctrl.Call(m, "StopPipelineRun", ctx, cluster, clusterID, pipelinerunID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StopPipelineRun indicates an expected call of StopPipelineRun
-func (mr *MockInterfaceMockRecorder) StopPipelineRun(ctx, application, cluster interface{}) *gomock.Call {
+func (mr *MockInterfaceMockRecorder) StopPipelineRun(ctx, cluster, clusterID, pipelinerunID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopPipelineRun", reflect.TypeOf((*MockInterface)(nil).StopPipelineRun), ctx, application, cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopPipelineRun", reflect.TypeOf((*MockInterface)(nil).StopPipelineRun), ctx, cluster, clusterID, pipelinerunID)
 }
 
-// GetLatestPipelineRunLog mocks base method
-func (m *MockInterface) GetLatestPipelineRunLog(ctx context.Context, application, cluster string) (<-chan log.Log, <-chan error, error) {
+// GetPipelineRunLogByID mocks base method
+func (m *MockInterface) GetPipelineRunLogByID(ctx context.Context, cluster string, clusterID, pipelinerunID uint) (<-chan log.Log, <-chan error, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestPipelineRunLog", ctx, application, cluster)
+	ret := m.ctrl.Call(m, "GetPipelineRunLogByID", ctx, cluster, clusterID, pipelinerunID)
 	ret0, _ := ret[0].(<-chan log.Log)
 	ret1, _ := ret[1].(<-chan error)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// GetLatestPipelineRunLog indicates an expected call of GetLatestPipelineRunLog
-func (mr *MockInterfaceMockRecorder) GetLatestPipelineRunLog(ctx, application, cluster interface{}) *gomock.Call {
+// GetPipelineRunLogByID indicates an expected call of GetPipelineRunLogByID
+func (mr *MockInterfaceMockRecorder) GetPipelineRunLogByID(ctx, cluster, clusterID, pipelinerunID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestPipelineRunLog", reflect.TypeOf((*MockInterface)(nil).GetLatestPipelineRunLog), ctx, application, cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPipelineRunLogByID", reflect.TypeOf((*MockInterface)(nil).GetPipelineRunLogByID), ctx, cluster, clusterID, pipelinerunID)
 }
 
 // GetPipelineRunLog mocks base method

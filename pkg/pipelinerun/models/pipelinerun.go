@@ -4,6 +4,13 @@ import (
 	"time"
 )
 
+const (
+	ActionBuildDeploy = "builddeploy"
+	ActionDeploy      = "deploy"
+	ActionRestart     = "restart"
+	ActionRollback    = "rollback"
+)
+
 type Pipelinerun struct {
 	// ID pipelinerun id
 	ID uint
@@ -30,10 +37,12 @@ type Pipelinerun struct {
 	LastConfigCommit string
 	// ConfigCommit config commit of this pipelinerun
 	ConfigCommit string
-	// LogBucket pipelinerun log s3 bucket
-	LogBucket string
-	// LogObject pipelinerun log s3 object
+	// S3Bucket pipelinerun log and object s3 bucket
+	S3Bucket string `gorm:"column:s3_bucket"`
+	// LogObject pipelinerun's log s3 object
 	LogObject string
+	// PrObject pipelinerun s3 object
+	PrObject string `gorm:"column:pr_object"`
 	// StartedAt start time of this pipelinerun
 	StartedAt *time.Time
 	// FinishedAt finish time of this pipelinerun

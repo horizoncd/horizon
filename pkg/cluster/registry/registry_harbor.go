@@ -93,7 +93,9 @@ func (h *HarborRegistry) CreateProject(ctx context.Context, project string) (_ i
 		if err := h.AddMembers(ctx, projectID); err != nil {
 			return -1, errors.E(op, err)
 		}
-		_ = h.PreheatProject(ctx, project, projectID)
+		if h.preheatPolicyID != 0 {
+			_ = h.PreheatProject(ctx, project, projectID)
+		}
 		return projectID, nil
 	} else if resp.StatusCode == http.StatusConflict {
 		// 已经存在

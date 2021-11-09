@@ -21,8 +21,6 @@ import (
 )
 
 const (
-	ActionBuildDeploy = "builddeploy"
-
 	StatusCreated = "created"
 )
 
@@ -48,7 +46,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	var branch = cluster.GitBranch
-	if r.Git != nil || r.Git.Branch != "" {
+	if r.Git != nil && r.Git.Branch != "" {
 		branch = r.Git.Branch
 	}
 
@@ -88,10 +86,11 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	// 3. add pipelinerun in db
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
-		Action:           ActionBuildDeploy,
+		Action:           prmodels.ActionBuildDeploy,
 		Status:           StatusCreated,
 		Title:            r.Title,
 		Description:      r.Description,
+		GitURL:           cluster.GitURL,
 		GitBranch:        branch,
 		GitCommit:        commit.ID,
 		ImageURL:         imageURL,
@@ -99,7 +98,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		ConfigCommit:     configCommit.Gitops,
 		CreatedBy:        currentUser.GetID(),
 	}
-	prCreated, err := c.prMgr.Create(ctx, pr)
+	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

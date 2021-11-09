@@ -141,7 +141,8 @@ CREATE TABLE `k8s_cluster`
     `created_by`     int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     `updated_by`     int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
-    KEY              `idx_deleted_at` (`deleted_at`)
+    KEY              `idx_deleted_at` (`deleted_at`),
+    UNIQUE KEY `idx_server`(`server`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -177,7 +178,7 @@ CREATE TABLE `environment`
     `updated_by`   int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY            `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
+    UNIQUE KEY `idx_name` (`name`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -216,7 +217,7 @@ CREATE TABLE `environment_region`
     `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY                `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_env_region` (`environment_name`, `region_name`)
+    UNIQUE KEY `idx_env_region` (`environment_name`, `region_name`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -262,8 +263,9 @@ CREATE TABLE `pipelinerun`
     `image_url`          varchar(256)          DEFAULT NULL COMMENT 'image url',
     `last_config_commit` varchar(128)          DEFAULT NULL COMMENT 'the last commit of cluster config',
     `config_commit`      varchar(128)          DEFAULT NULL COMMENT 'the new commit of cluster config',
-    `log_bucket`         varchar(128) NOT NULL DEFAULT '' COMMENT 's3 bucket to storage this pipelinerun log',
+    `s3_bucket`          varchar(128) NOT NULL DEFAULT '' COMMENT 's3 bucket to storage this pipelinerun log',
     `log_object`         varchar(258) NOT NULL DEFAULT '' COMMENT 's3 object for log',
+    `pr_object`          varchar(258) NOT NULL DEFAULT '' COMMENT 's3 object for pipelinerun',
     `started_at`         datetime              DEFAULT NULL COMMENT 'start time of this pipelinerun',
     `finished_at`        datetime              DEFAULT NULL COMMENT 'finish time of this pipelinerun',
     `rollback_from`      int(11) unsigned NULL COMMENT 'the pipelinerun id that this pipelinerun rollback from',
