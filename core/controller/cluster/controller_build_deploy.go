@@ -10,6 +10,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -163,4 +164,73 @@ func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 
 	return fmt.Sprintf("%v/%v/%v:%v-%v-%v",
 		domain, application, cluster, normalizedBranch, commit[:8], timeStr)
+}
+
+func (c *controller) GetDiff(ctx context.Context, clusterID uint, codeBranch string) (_ *GetDiffResponse, err error) {
+	const op = "cluster controller: get diff"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// 1. get cluster
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. get application
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. get code commit
+	var commit *code.Commit
+	if codeBranch != "" {
+		commit, err = c.commitGetter.GetCommit(ctx, cluster.GitURL, codeBranch)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 4.  get config diff
+	diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return ofClusterDiff(cluster.GitURL, codeBranch, commit, diff), nil
+}
+
+const (
+	_internalGitSSHPrefix  string = "ssh://git@g.hz.netease.com:22222"
+	_internalGitHTTPPrefix string = "https://g.hz.netease.com"
+	_commitHistoryMiddle   string = "/-/commits/"
+)
+
+func ofClusterDiff(gitURL, branch string, commit *code.Commit, diff string) *GetDiffResponse {
+	var codeInfo *CodeInfo
+	if commit != nil {
+		// git@github.com:demo/demo.git
+		var historyLink string
+		if strings.HasPrefix(gitURL, _internalGitSSHPrefix) {
+			httpURL := internalSSHToHTTPURL(gitURL)
+			historyLink = httpURL + _commitHistoryMiddle + branch
+		}
+		codeInfo = &CodeInfo{
+			Branch:    branch,
+			CommitID:  commit.ID,
+			CommitMsg: commit.Message,
+			Link:      historyLink,
+		}
+	}
+
+	return &GetDiffResponse{
+		CodeInfo:   codeInfo,
+		ConfigDiff: diff,
+	}
+}
+
+func internalSSHToHTTPURL(sshURL string) string {
+	tmp := strings.TrimPrefix(sshURL, _internalGitSSHPrefix)
+	middle := strings.TrimRight(tmp, ".git")
+	httpURL := _internalGitHTTPPrefix + middle
+	return httpURL
 }

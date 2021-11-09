@@ -355,11 +355,12 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, group)
 
+	gitURL := "ssh://git.com"
 	application, err := appMgr.Create(ctx, &appmodels.Application{
 		GroupID:         group.ID,
 		Name:            "app",
 		Priority:        "P3",
-		GitURL:          "ssh://git.com",
+		GitURL:          gitURL,
 		GitSubfolder:    "/test",
 		GitBranch:       "master",
 		Template:        "javaapp",
@@ -421,7 +422,7 @@ func Test(t *testing.T) {
 	}
 
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(&gitrepo.ClusterRepo{
-		GitRepoSSHURL: "ssh://git.com",
+		GitRepoSSHURL: gitURL,
 		ValueFiles:    []string{"1", "2"},
 		Namespace:     "test-3",
 	}, nil).AnyTimes()
@@ -457,16 +458,17 @@ func Test(t *testing.T) {
 	b, _ := json.MarshalIndent(resp, "", "  ")
 	t.Logf("%v", string(b))
 
-	assert.Equal(t, resp.Git.URL, "ssh://git.com")
+	assert.Equal(t, resp.Git.URL, gitURL)
 	assert.Equal(t, resp.Git.Branch, "develop")
 	assert.Equal(t, resp.Git.Subfolder, "/test")
 	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
 
+	UpdateGitURL := "git@github.com:demo/demo.git"
 	updateClusterRequest := &UpdateClusterRequest{
 		Base: &Base{
 			Description: "new description",
 			Git: &Git{
-				URL:       "ssh://git.new.com",
+				URL:       UpdateGitURL,
 				Subfolder: "/new",
 				Branch:    "new",
 			},
@@ -490,7 +492,7 @@ func Test(t *testing.T) {
 
 	resp, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest)
 	assert.Nil(t, err)
-	assert.Equal(t, resp.Git.URL, "ssh://git.new.com")
+	assert.Equal(t, resp.Git.URL, UpdateGitURL)
 	assert.Equal(t, resp.Git.Branch, "new")
 	assert.Equal(t, resp.Git.Subfolder, "/new")
 	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
@@ -500,7 +502,7 @@ func Test(t *testing.T) {
 
 	resp, err = c.GetCluster(ctx, resp.ID)
 	assert.Nil(t, err)
-	assert.Equal(t, resp.Git.URL, "ssh://git.new.com")
+	assert.Equal(t, resp.Git.URL, UpdateGitURL)
 	assert.Equal(t, resp.Git.Branch, "new")
 	assert.Equal(t, resp.Git.Subfolder, "/new")
 	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
@@ -544,4 +546,32 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	b, _ = json.Marshal(buildDeployResp)
 	t.Logf("%v", string(b))
+
+	codeBranch := "master"
+	commitID := "code-commit-id"
+	commitMsg := "code-commit-msg"
+	configDiff := "config-diff"
+	if codeBranch != "" {
+		commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any()).Return(&code.Commit{
+			ID:      commitID,
+			Message: commitMsg,
+		}, nil)
+	}
+	clusterGitRepo.EXPECT().CompareConfig(ctx, gomock.Any(), gomock.Any(),
+		nil, nil).Return(configDiff, nil).Times(1)
+
+	getdiffResp, err := c.GetDiff(ctx, resp.ID, codeBranch)
+	assert.Nil(t, err)
+
+	assert.Equal(t, &GetDiffResponse{
+		CodeInfo: &CodeInfo{
+			Branch:    codeBranch,
+			CommitID:  commitID,
+			CommitMsg: commitMsg,
+			Link:      internalSSHToHTTPURL(UpdateGitURL) + _commitHistoryMiddle + codeBranch,
+		},
+		ConfigDiff: configDiff,
+	}, getdiffResp)
+	b, _ = json.Marshal(getdiffResp)
+	t.Logf("%s", string(b))
 }

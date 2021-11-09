@@ -493,31 +493,13 @@ paths:
                 example: |
                   {
                       "data":{
-                          "codeDiff":{
-                              "commit":{
-                                  "source":{
-                                      "id":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
-                                  },
-                                  "//target":"target is the target commit id and log of targetBranch",
-                                  "target":{
-                                      "id":"d75b5902eb3b4bc8bda333bfd27e73ee3dd52ec9",
-                                      "log":"xxxxxx"
-                                  }
-                              },
-                              "link":"https://g.hz.netease.com/music-cloud-native/horizon/horizon/-/compare/6cb5e13a2d3c59f2283fc6b52771729691aa9fc3...d75b5902eb3b4bc8bda333bfd27e73ee3dd52ec9"
+                          "codeInfo":{
+                              "Branch": "master"
+                              "CommitMsg": "last commit msg"
+                              "CommitID":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
+                              "Link": https://g.hz.netease.com/music-cloud-native/horizon/horizon/-/commits/feature/applications
                           },
-                          "configDiff":[
-                              {
-                                  "oldPath":"values.yaml",
-                                  "newPath":"values.yaml",
-                                  "aMode":"100644",
-                                  "bMode":"100644",
-                                  "newFile":false,
-                                  "renamedFile":false,
-                                  "deletedFile":false,
-                                  "diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: music-cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
-                              }
-                          ]
+                          "configDiff ":"diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: music-cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
                       }
                   }
 

@@ -33,6 +33,7 @@ type Controller interface {
 		clusterName string) (*GetClusterByNameResponse, error)
 	BuildDeploy(ctx context.Context, clusterID uint,
 		request *BuildDeployRequest) (*BuildDeployResponse, error)
+	GetDiff(ctx context.Context, clusterID uint, codeBranch string) (*GetDiffResponse, error)
 }
 
 type controller struct {
