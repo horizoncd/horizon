@@ -379,6 +379,7 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 
 	if resp.StatusCode != http.StatusOK {
 		message := wlog.Response(ctx, resp)
+		// TODO(gjq): 资源不存在的错误判断优化，不通过message来判断
 		if strings.Contains(message, "not found") {
 			return errors.E(op, http.StatusNotFound, message)
 		}

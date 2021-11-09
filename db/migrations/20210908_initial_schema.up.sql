@@ -142,7 +142,7 @@ CREATE TABLE `k8s_cluster`
     `updated_by`     int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY              `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_server`(`server`)
+    UNIQUE KEY `idx_server`(`server`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -178,7 +178,7 @@ CREATE TABLE `environment`
     `updated_by`   int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY            `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_name` (`name`)
+    UNIQUE KEY `idx_name` (`name`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -217,7 +217,7 @@ CREATE TABLE `environment_region`
     `updated_by`       int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
     KEY                `idx_deleted_at` (`deleted_at`),
-    UNIQUE KEY `idx_env_region` (`environment_name`, `region_name`)
+    UNIQUE KEY `idx_env_region` (`environment_name`, `region_name`, `deleted_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
