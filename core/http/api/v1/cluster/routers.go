@@ -32,6 +32,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/builddeploy", _clusterIDParam),
 			HandlerFunc: api.BuildDeploy,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/diffs", _clusterIDParam),
+			HandlerFunc: api.GetDiff,
 		},
 	}
 

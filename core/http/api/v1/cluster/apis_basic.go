@@ -20,6 +20,7 @@ const (
 	_clusterParam       = "cluster"
 	_scope              = "scope"
 	_environment        = "environment"
+	_targetbranch       = "targetBranch"
 )
 
 type API struct {
