@@ -18,7 +18,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-
 	"github.com/argoproj/gitops-engine/pkg/health"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -402,6 +401,9 @@ type (
 		// Unknown(集群健康评估失败，无法获悉当前的部署状态)
 		Status health.HealthStatusCode `json:"status,omitempty" yaml:"status,omitempty"`
 
+		// Step
+		Step Step `json:"step"`
+
 		// Replicas the actual number of replicas running in k8s
 		Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
 
@@ -420,6 +422,11 @@ type (
 		// Versions versions detail
 		// key is pod-template-hash, if equal to PodTemplateHash, the version is the desired version
 		Versions map[string]*ClusterVersion `json:"versions,omitempty" yaml:"versions,omitempty"`
+	}
+
+	Step struct {
+		Index int `json:"index"`
+		Total int `json:"total"`
 	}
 
 	// ClusterVersion version information

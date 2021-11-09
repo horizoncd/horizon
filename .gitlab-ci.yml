@@ -49,6 +49,7 @@ build:
   only:
     - develop
     - tags
+    - feature/applications
   except:
     - schedules
 
@@ -74,6 +75,7 @@ helm_package:
   only:
     - develop
     - tags
+    - feature/applications
   except:
     - schedules
 
@@ -88,3 +90,4 @@ deploy_dev:
     - helm upgrade  $RELEASE_NAME target/"$(ls target/ | grep tgz)" -n $NAMESPACE  --install --create-namespace
   only:
     - develop
+    - feature/applications
