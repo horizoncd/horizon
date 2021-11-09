@@ -156,24 +156,28 @@ type ListClusterResponse struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+func ofClusterWithEnvAndRegion(cluster *models.ClusterWithEnvAndRegion) *ListClusterResponse {
+	return &ListClusterResponse{
+		ID:   cluster.ID,
+		Name: cluster.Name,
+		Scope: &Scope{
+			Environment:       cluster.EnvironmentName,
+			Region:            cluster.RegionName,
+			RegionDisplayName: cluster.RegionDisplayName,
+		},
+		Template: &Template{
+			Name:    cluster.Template,
+			Release: cluster.TemplateRelease,
+		},
+		CreatedAt: cluster.CreatedAt,
+		UpdatedAt: cluster.UpdatedAt,
+	}
+}
+
 func ofClustersWithEnvAndRegion(clusters []*models.ClusterWithEnvAndRegion) []*ListClusterResponse {
 	respList := make([]*ListClusterResponse, 0)
 	for _, c := range clusters {
-		respList = append(respList, &ListClusterResponse{
-			ID:   c.ID,
-			Name: c.Name,
-			Scope: &Scope{
-				Environment:       c.EnvironmentName,
-				Region:            c.RegionName,
-				RegionDisplayName: c.RegionDisplayName,
-			},
-			Template: &Template{
-				Name:    c.Template,
-				Release: c.TemplateRelease,
-			},
-			CreatedAt: c.CreatedAt,
-			UpdatedAt: c.UpdatedAt,
-		})
+		respList = append(respList, ofClusterWithEnvAndRegion(c))
 	}
 	return respList
 }
@@ -186,4 +190,10 @@ type GetClusterByNameResponse struct {
 	Git         *Git      `json:"git"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type ListClusterWithFullResponse struct {
+	*ListClusterResponse
+	FullName string `json:"fullName"`
+	FullPath string `json:"fullPath"`
 }

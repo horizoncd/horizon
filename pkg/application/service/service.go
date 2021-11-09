@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 )
@@ -13,8 +12,10 @@ var (
 )
 
 type Service interface {
-	// GetByID get detail of an application by id
+	// GetByID get application with full name and full path by id
 	GetByID(ctx context.Context, id uint) (*ApplicationDetail, error)
+	// GetByIDs get application map with full name and full path by ids
+	GetByIDs(ctx context.Context, ids []uint) (map[uint]*ApplicationDetail, error)
 }
 
 type service struct {
@@ -33,12 +34,46 @@ func (s service) GetByID(ctx context.Context, id uint) (*ApplicationDetail, erro
 		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, application.Name)
+	fullName := fmt.Sprintf("%v/%v", group.FullName, application.Name)
 
 	applicationDetail := &ApplicationDetail{
 		*application,
 		fullPath,
+		fullName,
 	}
 	return applicationDetail, nil
+}
+
+func (s service) GetByIDs(ctx context.Context, ids []uint) (map[uint]*ApplicationDetail, error) {
+	applicationMap := map[uint]*ApplicationDetail{}
+	// 1. get applications
+	applications, err := s.applicationManager.GetByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. get groups for full path, full name
+	var groupIDs []uint
+	for _, application := range applications {
+		groupIDs = append(groupIDs, application.GroupID)
+	}
+	groupMap, err := s.groupService.GetChildrenByIDs(ctx, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. add full path and full name
+	for i, application := range applications {
+		fullPath := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullPath, application.Name)
+		fullName := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullName, application.Name)
+		applicationMap[application.ID] = &ApplicationDetail{
+			*applications[i],
+			fullPath,
+			fullName,
+		}
+	}
+
+	return applicationMap, nil
 }
 
 func NewService() Service {

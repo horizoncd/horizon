@@ -6,6 +6,8 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
+	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 
 	"github.com/gin-gonic/gin"
@@ -97,4 +99,29 @@ func (a *API) Delete(c *gin.Context) {
 		return
 	}
 	response.Success(c)
+}
+
+// SearchApplication search all applications
+func (a *API) SearchApplication(c *gin.Context) {
+	pageNumber, pageSize, err := request.GetPageParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	filter := c.Query(common.Filter)
+
+	total, applications, err := a.applicationCtl.ListApplication(c, filter, q.Query{
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+	})
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: int64(total),
+		Items: applications,
+	})
 }

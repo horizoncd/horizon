@@ -53,4 +53,15 @@ func TestServiceGetByID(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, "/a/b", result.FullPath)
 	})
+
+	t.Run("GetByIDs", func(t *testing.T) {
+		s := service{
+			groupService:       groupservice.Svc,
+			applicationManager: manager.Mgr,
+		}
+		result, err := s.GetByIDs(ctx, []uint{application.ID})
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(result))
+		assert.Equal(t, "/a/b", result[application.ID].FullPath)
+	})
 }

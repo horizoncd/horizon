@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
@@ -18,10 +19,13 @@ import (
 
 type DAO interface {
 	GetByID(ctx context.Context, id uint) (*models.Application, error)
+	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
 	GetByName(ctx context.Context, name string) (*models.Application, error)
 	GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error)
 	// GetByNameFuzzily get applications that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
+	// GetByNameFuzzilyByPagination get applications that fuzzily matching the given name
+	GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int, []*models.Application, error)
 	// CountByGroupID get the count of the records matching the given groupID
 	CountByGroupID(ctx context.Context, groupID uint) (int64, error)
 	Create(ctx context.Context, application *models.Application) (*models.Application, error)
@@ -60,6 +64,32 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Appl
 	return applications, result.Error
 }
 
+func (d *dao) GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int,
+	[]*models.Application, error) {
+	var (
+		applications []*models.Application
+		total        int
+	)
+
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return total, nil, err
+	}
+
+	offset := (query.PageNumber - 1) * query.PageSize
+	limit := query.PageSize
+
+	result := db.Raw(common.ApplicationQueryByFuzzilyAndPagination, fmt.Sprintf("%%%s%%", name), limit, offset).
+		Scan(&applications)
+	if result.Error != nil {
+		return total, applications, result.Error
+	}
+
+	result = db.Raw(common.ApplicationQueryByFuzzilyCount, fmt.Sprintf("%%%s%%", name)).Scan(&total)
+
+	return total, applications, result.Error
+}
+
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -70,6 +100,18 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error)
 	result := db.Raw(common.ApplicationQueryByID, id).First(&application)
 
 	return &application, result.Error
+}
+
+func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var applications []*models.Application
+	result := db.Raw(common.ApplicationQueryByIDs, ids).Scan(&applications)
+
+	return applications, result.Error
 }
 
 func (d *dao) GetByName(ctx context.Context, name string) (*models.Application, error) {
