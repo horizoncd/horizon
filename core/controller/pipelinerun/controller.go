@@ -61,10 +61,7 @@ func (c *controller) GetPrLog(ctx context.Context, prID uint) (_ *Log, err error
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
+
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -75,7 +72,7 @@ func (c *controller) GetPrLog(ctx context.Context, prID uint) (_ *Log, err error
 		return nil, errors.E(op, fmt.Errorf("%v action has no log", pr.Action))
 	}
 
-	return c.getPrLog(ctx, pr, cluster, application.Name, er.EnvironmentName)
+	return c.getPrLog(ctx, pr, cluster, er.EnvironmentName)
 }
 
 func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_ *Log, err error) {
@@ -94,19 +91,15 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	return c.getPrLog(ctx, pr, cluster, application.Name, er.EnvironmentName)
+	return c.getPrLog(ctx, pr, cluster, er.EnvironmentName)
 }
 
 func (c *controller) getPrLog(ctx context.Context, pr *prmodels.Pipelinerun, cluster *clustermodels.Cluster,
-	application, environment string) (_ *Log, err error) {
+	environment string) (_ *Log, err error) {
 	const op = "pipeline controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -132,8 +125,7 @@ func (c *controller) getPrLog(ctx context.Context, pr *prmodels.Pipelinerun, clu
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	// TODO(gjq): get pipelinerun log by pr.Object
-	logBytes, err := tektonCollector.GetLatestPipelineRunLog(ctx, application, cluster.Name)
+	logBytes, err := tektonCollector.GetPipelineRunLog(ctx, pr.PrObject)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

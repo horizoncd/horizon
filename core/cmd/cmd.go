@@ -263,6 +263,9 @@ func Run(flags *Flags) {
 	member.RegisterRoutes(r, memberAPI)
 	roleapi.RegisterRoutes(r, roleAPI)
 
+	// start cloud event server
+	go runCloudEventServer(tektonFty, config.CloudEventServerConfig)
+	// start api server
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
 }

@@ -2,8 +2,10 @@ package manager
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -54,6 +56,25 @@ func Test(t *testing.T) {
 	prGet, err = Mgr.GetLatestByClusterIDAndAction(ctx, pr.ClusterID, models.ActionBuildDeploy)
 	assert.Nil(t, err)
 	assert.Equal(t, "2", prGet.ConfigCommit)
+
+	err = Mgr.UpdateResultByID(ctx, pr.ID, &models.Result{
+		S3Bucket:   "bucket",
+		LogObject:  "log-obj",
+		PrObject:   "pr-obj",
+		Result:     "ok",
+		StartedAt:  func() *time.Time { t := time.Now(); return &t }(),
+		FinishedAt: func() *time.Time { t := time.Now(); return &t }(),
+	})
+	assert.Nil(t, err)
+
+	prGet, err = Mgr.GetByID(ctx, pr.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, prGet.S3Bucket, "bucket")
+	assert.Equal(t, prGet.LogObject, "log-obj")
+	assert.Equal(t, prGet.PrObject, "pr-obj")
+	assert.Equal(t, prGet.Status, "ok")
+	b, _ := json.Marshal(prGet)
+	t.Logf("%v", string(b))
 
 	err = Mgr.DeleteByID(ctx, pr.ID)
 	assert.Nil(t, err)

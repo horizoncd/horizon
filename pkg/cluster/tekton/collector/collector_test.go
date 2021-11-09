@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //nolint:lll
@@ -18,13 +20,18 @@ func Test_resolveObjMetadata(t *testing.T) {
             "labels":{
                 "app.kubernetes.io/managed-by":"Helm",
                 "cloudnative.music.netease.com/application":"testapp-1",
+				"cloudnative.music.netease.com/application-id":"1",
                 "cloudnative.music.netease.com/cluster":"testcluster-1",
+				"cloudnative.music.netease.com/cluster-id":"2",
                 "cloudnative.music.netease.com/environment":"env",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
                 "triggers.tekton.dev/triggers-eventid":"cttzw"
-            }
+            },
+			"annotations":{
+				"cloudnative.music.netease.com/operator":"demo@mail.com"
+			}
         },
         "status":{
             "conditions":[
@@ -149,14 +156,19 @@ func Test_resolveObjMetadata(t *testing.T) {
 			},
 			want: &ObjectMeta{
 				Application:       "ndp-gjq",
+				ApplicationID:     "1",
 				Cluster:           "test-music-docker",
+				ClusterID:         "2",
 				Environment:       "test",
+				Operator:          "demo@mail.com",
 				CreationTimestamp: "20210716165154",
 				PipelineRun: &PipelineRunStatus{
 					StatusMeta: StatusMeta{
 						Name:            "test-music-docker-q58rp",
 						Result:          "ok",
 						DurationSeconds: 127,
+						StartTime:       parseTime("2021-06-24T06:36:11Z"),
+						CompletionTime:  parseTime("2021-06-24T06:38:18Z"),
 					},
 					Pipeline: "default",
 					TaskRuns: map[string]TaskRunStatus{
@@ -227,4 +239,13 @@ func Test_resolveObjMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+const _layout = "2006-01-02T15:04:05Z"
+
+func parseTime(str string) *metav1.Time {
+	t, _ := time.Parse(_layout, str)
+	t.Local()
+	mt := metav1.NewTime(t.Local())
+	return &mt
 }
