@@ -220,12 +220,13 @@ func Run(flags *Flags) {
 	// init server
 	r := gin.New()
 	// use middleware
+	ormMiddleware := ormmiddle.Middleware(mysqlDB)
 	middlewares := []gin.HandlerFunc{
 		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
-		requestid.Middleware(),        // requestID middleware, attach a requestID to context
-		logmiddle.Middleware(),        // log middleware, attach a logger to context
-		ormmiddle.Middleware(mysqlDB), // orm db middleware, attach a db to context
+		requestid.Middleware(), // requestID middleware, attach a requestID to context
+		logmiddle.Middleware(), // log middleware, attach a logger to context
+		ormMiddleware,          // orm db middleware, attach a db to context
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
@@ -264,7 +265,7 @@ func Run(flags *Flags) {
 	roleapi.RegisterRoutes(r, roleAPI)
 
 	// start cloud event server
-	go runCloudEventServer(tektonFty, config.CloudEventServerConfig)
+	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)
 	// start api server
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
