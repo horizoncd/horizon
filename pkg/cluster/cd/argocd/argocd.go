@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -51,7 +52,8 @@ type (
 		GetApplicationTree(ctx context.Context, application string) (*v1alpha1.ApplicationTree, error)
 
 		// GetApplicationResource get a resource under an application in argoCD
-		GetApplicationResource(ctx context.Context, application string, param ResourceParams) (string, error)
+		GetApplicationResource(ctx context.Context, application string,
+			param ResourceParams, resource interface{}) error
 
 		// ListResourceEvents get resource's events of an application in argoCD
 		ListResourceEvents(ctx context.Context, application string, param EventParam) (*corev1.EventList, error)
@@ -362,8 +364,8 @@ func (h *helper) GetApplicationTree(ctx context.Context, application string) (
 	return tree, nil
 }
 
-func (h *helper) GetApplicationResource(ctx context.Context, application string, gvk ResourceParams) (
-	output string, err error) {
+func (h *helper) GetApplicationResource(ctx context.Context, application string,
+	gvk ResourceParams, resource interface{}) (err error) {
 	const op = "argo: get application resource"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -371,30 +373,41 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 		h.URL, application, gvk.Namespace, gvk.ResourceName, gvk.Group, gvk.Version, gvk.Kind)
 	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", errors.E(op, err)
+		return errors.E(op, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		message := wlog.Response(ctx, resp)
-		return "", errors.E(op, resp.StatusCode, message)
+		if strings.Contains(message, "not found") {
+			return errors.E(op, http.StatusNotFound, message)
+		}
+		return errors.E(op, resp.StatusCode, message)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.E(op, err)
+		return errors.E(op, err)
 	}
 
-	m := struct{ Manifest string }{}
+	type manifest struct {
+		Manifest string `json:"manifest"`
+	}
+
+	var m manifest
 	if err = json.Unmarshal(data, &m); err != nil {
-		return "", errors.E(op, err)
+		return errors.E(op, err)
 	}
 
-	if m.Manifest == "{}" {
-		return "", errors.E(op, http.StatusNotFound, "manifest is empty")
+	if m.Manifest == "" || m.Manifest == "{}" {
+		return errors.E(op, http.StatusNotFound, "manifest is empty")
 	}
 
-	return m.Manifest, nil
+	if err = json.Unmarshal([]byte(m.Manifest), &resource); err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
 }
 
 func (h *helper) ListResourceEvents(ctx context.Context, application string, param EventParam) (

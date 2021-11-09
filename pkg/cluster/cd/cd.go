@@ -18,6 +18,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -131,6 +132,21 @@ func (c *cd) GetClusterState(ctx context.Context,
 	} else if clusterState.Status == health.HealthStatusMissing {
 		clusterState.Status = health.HealthStatusProgressing
 	}
+
+	var rollout *v1alpha1.Rollout
+	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
+		Group:        "argoproj.io",
+		Version:      "v1alpha1",
+		Kind:         "Rollout",
+		Namespace:    argoApp.Spec.Destination.Namespace,
+		ResourceName: params.Cluster,
+	}, &rollout); err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return nil, errors.E(op, err)
+		}
+	}
+
+	clusterState.Step = getStep(rollout)
 
 	var latestReplicaSet *appsv1.ReplicaSet
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
@@ -402,7 +418,7 @@ type (
 		Status health.HealthStatusCode `json:"status,omitempty" yaml:"status,omitempty"`
 
 		// Step
-		Step Step `json:"step"`
+		Step *Step `json:"step"`
 
 		// Replicas the actual number of replicas running in k8s
 		Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
@@ -556,4 +572,33 @@ func getDeploymentCondition(status appsv1.DeploymentStatus,
 		}
 	}
 	return nil
+}
+
+func getStep(rollout *v1alpha1.Rollout) *Step {
+	if rollout == nil || rollout.Spec.Strategy.Canary == nil ||
+		len(rollout.Spec.Strategy.Canary.Steps) == 0 {
+		return &Step{
+			Index: 0,
+			Total: 1,
+		}
+	}
+	var stepTotal = 0
+	for _, step := range rollout.Spec.Strategy.Canary.Steps {
+		if step.SetWeight != nil {
+			stepTotal++
+		}
+	}
+	var stepIndex = 0
+	if rollout.Status.CurrentStepIndex != nil {
+		index := int(*rollout.Status.CurrentStepIndex)
+		for i := 0; i < index; i++ {
+			if rollout.Spec.Strategy.Canary.Steps[i].SetWeight != nil {
+				stepIndex++
+			}
+		}
+	}
+	return &Step{
+		Index: stepIndex,
+		Total: stepTotal,
+	}
 }
