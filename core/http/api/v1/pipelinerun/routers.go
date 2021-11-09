@@ -21,6 +21,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	}
 
 	// get cluster latest pipelinerun log
+	// only used for overmind
 	frontGroup := engine.Group("/apis/front/v1")
 	var frontRoutes = route.Routes{
 		{

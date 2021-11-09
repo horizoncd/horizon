@@ -98,7 +98,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		ConfigCommit:     configCommit.Gitops,
 		CreatedBy:        currentUser.GetID(),
 	}
-	prCreated, err := c.prMgr.Create(ctx, pr)
+	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

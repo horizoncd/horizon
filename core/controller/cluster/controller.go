@@ -54,7 +54,7 @@ type controller struct {
 	regionMgr            regionmanager.Manager
 	groupSvc             groupsvc.Service
 	hook                 hook.Hook
-	prMgr                prmanager.Manager
+	pipelinerunMgr       prmanager.Manager
 	tektonFty            factory.Factory
 	registryFty          registryfty.Factory
 }
@@ -76,7 +76,7 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		envMgr:               envmanager.Mgr,
 		regionMgr:            regionmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
-		prMgr:                prmanager.Mgr,
+		pipelinerunMgr:       prmanager.Mgr,
 		tektonFty:            tektonFty,
 		registryFty:          registryfty.Fty,
 		hook:                 hook,

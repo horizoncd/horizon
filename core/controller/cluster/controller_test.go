@@ -542,7 +542,7 @@ func Test(t *testing.T) {
 		envMgr:               envMgr,
 		regionMgr:            regionMgr,
 		groupSvc:             groupsvc.Svc,
-		prMgr:                prmanager.Mgr,
+		pipelinerunMgr:       prmanager.Mgr,
 		tektonFty:            tektonFty,
 		registryFty:          registryFty,
 	}

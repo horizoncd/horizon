@@ -15,7 +15,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	// 1. get pr, and do some validate
-	pr, err := c.prMgr.GetByID(ctx, r.PipelinerunID)
+	pr, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -49,7 +49,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	if err := c.prMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
+	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
 		return nil, errors.E(op, err)
 	}
 

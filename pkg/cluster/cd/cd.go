@@ -18,6 +18,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
 	appsv1 "k8s.io/api/apps/v1"
@@ -179,6 +180,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		return nil, errors.E(op, http.StatusNotFound, "clusterState.PodTemplateHash == ''")
 	}
 
+	// TODO(gjq): 通用化，POD的展示是直接按照resourceVersion 来获取Pod
 	// 从目前的配置来看，该 if 分支表示负载类型是 serverless 应用
 	if clusterState.PodTemplateHashKey == DeploymentPodTemplateHash {
 		labelSelector := fields.ParseSelectorOrDie(
