@@ -21,7 +21,7 @@ type GetDiffResponse struct {
 
 type CodeInfo struct {
 	// deploy branch info
-	Branch string `jons:"branch"`
+	Branch string `json:"branch"`
 	// current branch commit
 	CommitID string `json:"commitID"`
 	// commit message
