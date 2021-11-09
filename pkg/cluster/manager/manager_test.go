@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
@@ -88,13 +89,20 @@ func Test(t *testing.T) {
 	assert.Equal(t, clusterGetByID.Name, cluster.Name)
 	t.Logf("%v", clusterGetByID)
 
-	count, clustersWithEnvAndRegion, err := Mgr.ListByApplicationAndEnv(ctx, applicationID, er.EnvironmentName, "", nil)
+	count, clustersWithEnvAndRegion, err := Mgr.ListByApplicationAndEnv(ctx, applicationID,
+		er.EnvironmentName, "", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 	assert.Equal(t, cluster.Name, clustersWithEnvAndRegion[0].Name)
 	assert.Equal(t, er.EnvironmentName, clustersWithEnvAndRegion[0].EnvironmentName)
 	assert.Equal(t, er.RegionName, clustersWithEnvAndRegion[0].RegionName)
+
+	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, er.EnvironmentName, "clu",
+		&q.Query{PageNumber: 1, PageSize: 1})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, count)
+	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 
 	exists, err := Mgr.CheckClusterExists(ctx, name)
 	assert.Nil(t, err)

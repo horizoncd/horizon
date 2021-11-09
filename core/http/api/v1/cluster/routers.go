@@ -34,6 +34,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.BuildDeploy,
 		}, {
 			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/diffs", _clusterIDParam),
+			HandlerFunc: api.GetDiff,
+		}, {
+			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/status", _clusterIDParam),
 			HandlerFunc: api.ClusterStatus,
 		},
@@ -41,6 +45,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 
 	frontGroup := engine.Group("/apis/front/v1/clusters")
 	var frontRoutes = route.Routes{
+		{
+			Method:      http.MethodGet,
+			Pattern:     "/searchclusters",
+			HandlerFunc: api.ListByNameFuzzily,
+		},
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%v", _clusterParam),

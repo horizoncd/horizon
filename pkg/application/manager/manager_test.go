@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 
@@ -73,6 +74,18 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, appGetByName.Name, apps[0].Name)
 
+	total, apps, err := Mgr.GetByNameFuzzilyByPagination(ctx, "app", q.Query{PageSize: 1, PageNumber: 1})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, total)
+	assert.Equal(t, 1, len(apps))
+	assert.Equal(t, name, apps[0].Name)
+
+	apps, err = Mgr.GetByIDs(ctx, []uint{application.ID})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(apps))
+	assert.Equal(t, name, apps[0].Name)
+
+	assert.Equal(t, appGetByName.Name, apps[0].Name)
 	err = Mgr.DeleteByID(ctx, appGetByName.ID)
 	assert.Nil(t, err)
 }

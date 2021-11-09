@@ -8,4 +8,5 @@ import (
 type ApplicationDetail struct {
 	applicationmodels.Application
 	FullPath string
+	FullName string
 }

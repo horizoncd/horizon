@@ -42,6 +42,16 @@ type GetApplicationResponse struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+type ListApplicationResponse struct {
+	FullPath  string    `json:"fullPath"`
+	FullName  string    `json:"fullName"`
+	Name      string    `json:"name"`
+	ID        uint      `json:"id"`
+	GroupID   uint      `json:"groupID"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 // Template struct about template
 type Template struct {
 	Name               string `json:"name"`
