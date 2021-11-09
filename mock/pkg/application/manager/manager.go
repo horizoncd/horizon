@@ -80,6 +80,21 @@ func (mr *MockManagerMockRecorder) GetByID(ctx, id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockManager)(nil).GetByID), ctx, id)
 }
 
+// GetByIDs mocks base method.
+func (m *MockManager) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByIDs", ctx, ids)
+	ret0, _ := ret[0].([]*models.Application)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByIDs indicates an expected call of GetByIDs.
+func (mr *MockManagerMockRecorder) GetByIDs(ctx, ids interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIDs", reflect.TypeOf((*MockManager)(nil).GetByIDs), ctx, ids)
+}
+
 // GetByName mocks base method.
 func (m *MockManager) GetByName(ctx context.Context, name string) (*models.Application, error) {
 	m.ctrl.T.Helper()

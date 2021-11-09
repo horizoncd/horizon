@@ -19,6 +19,7 @@ import (
 
 type DAO interface {
 	GetByID(ctx context.Context, id uint) (*models.Application, error)
+	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
 	GetByName(ctx context.Context, name string) (*models.Application, error)
 	GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error)
 	// GetByNameFuzzily get applications that fuzzily matching the given name
@@ -99,6 +100,18 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error)
 	result := db.Raw(common.ApplicationQueryByID, id).First(&application)
 
 	return &application, result.Error
+}
+
+func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var applications []*models.Application
+	result := db.Raw(common.ApplicationQueryByIDs, ids).Scan(&applications)
+
+	return applications, result.Error
 }
 
 func (d *dao) GetByName(ctx context.Context, name string) (*models.Application, error) {

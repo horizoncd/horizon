@@ -65,6 +65,7 @@ const (
 
 /* sql about application */
 const (
+	ApplicationQueryByIDs                  = "select * from application where id in ? and deleted_at is null"
 	ApplicationQueryByID                   = "select * from application where id = ? and deleted_at is null"
 	ApplicationQueryByName                 = "select * from application where name = ? and deleted_at is null"
 	ApplicationQueryByFuzzily              = "select * from application where name like ? and deleted_at is null"

@@ -22,6 +22,7 @@ const _errCodeApplicationNotFound = errors.ErrorCode("ApplicationNotFound")
 
 type Manager interface {
 	GetByID(ctx context.Context, id uint) (*models.Application, error)
+	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
 	GetByName(ctx context.Context, name string) (*models.Application, error)
 	// GetByNameFuzzily get applications that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
@@ -64,6 +65,15 @@ func (m *manager) GetByID(ctx context.Context, id uint) (*models.Application, er
 		return nil, errors.E(op, err)
 	}
 	return application, nil
+}
+
+func (m *manager) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error) {
+	const op = "application manager: get by ids"
+	applications, err := m.applicationDAO.GetByIDs(ctx, ids)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	return applications, nil
 }
 
 func (m *manager) GetByName(ctx context.Context, name string) (*models.Application, error) {

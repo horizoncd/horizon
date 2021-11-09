@@ -36,19 +36,28 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 	const op = "cluster controller: list cluster by name fuzzily"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
+	listClusterWithFullResp = []*ListClusterWithFullResponse{}
+	// 1. get clusters
 	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByNameFuzzily(ctx,
 		environment, filter, query)
 	if err != nil {
 		return 0, nil, errors.E(op, err)
 	}
 
+	// 2. get applications
+	var applicationIDs []uint
 	for _, cluster := range clustersWithEnvAndRegion {
-		application, err := c.applicationSvc.GetByID(ctx, cluster.ApplicationID)
-		if err != nil {
-			return count, nil, err
-		}
-		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
-		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
+		applicationIDs = append(applicationIDs, cluster.ApplicationID)
+	}
+	applicationMap, err := c.applicationSvc.GetByIDs(ctx, applicationIDs)
+	if err != nil {
+		return 0, nil, errors.E(op, err)
+	}
+
+	// 3. convert and add full path, full name
+	for _, cluster := range clustersWithEnvAndRegion {
+		fullPath := fmt.Sprintf("%v/%v", applicationMap[cluster.ApplicationID].FullPath, cluster.Name)
+		fullName := fmt.Sprintf("%v/%v", applicationMap[cluster.ApplicationID].FullName, cluster.Name)
 		listClusterWithFullResp = append(listClusterWithFullResp, &ListClusterWithFullResponse{
 			ofClusterWithEnvAndRegion(cluster),
 			fullName,

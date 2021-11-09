@@ -377,20 +377,27 @@ func (c *controller) ListApplication(ctx context.Context, filter string, query q
 	const op = "application controller: list application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
+	listApplicationResp = []*ListApplicationResponse{}
 	// 1. get application in db
 	count, applications, err := c.applicationMgr.GetByNameFuzzilyByPagination(ctx, filter, query)
 	if err != nil {
 		return count, nil, err
 	}
 
-	// 2. convert models.Application to ListApplicationResponse
+	// 2. get groups for full path, full name
+	var groupIDs []uint
 	for _, application := range applications {
-		group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
-		if err != nil {
-			return count, nil, err
-		}
-		fullPath := fmt.Sprintf("%v/%v", group.FullPath, application.Name)
-		fullName := fmt.Sprintf("%v/%v", group.FullName, application.Name)
+		groupIDs = append(groupIDs, application.GroupID)
+	}
+	groupMap, err := c.groupSvc.GetChildrenByIDs(ctx, groupIDs)
+	if err != nil {
+		return count, nil, err
+	}
+
+	// 3. convert models.Application to ListApplicationResponse
+	for _, application := range applications {
+		fullPath := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullPath, application.Name)
+		fullName := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullName, application.Name)
 		listApplicationResp = append(
 			listApplicationResp,
 			&ListApplicationResponse{

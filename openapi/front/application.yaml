@@ -5,12 +5,12 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v1/applications?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v1/applications/searchapplications?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - cluster
-      description: search clusters by name fuzzily
-      operationId: searchClusters
+      description: search applications by name fuzzily
+      operationId: searchApplications
       parameters:
         - name: filter
           in: query

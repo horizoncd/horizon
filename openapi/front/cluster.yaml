@@ -68,7 +68,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/front/v1/clusters?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v1/clusters/searchclusters?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - cluster

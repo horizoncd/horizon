@@ -80,6 +80,11 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, name, apps[0].Name)
 
+	apps, err = Mgr.GetByIDs(ctx, []uint{application.ID})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(apps))
+	assert.Equal(t, name, apps[0].Name)
+
 	assert.Equal(t, appGetByName.Name, apps[0].Name)
 	err = Mgr.DeleteByID(ctx, appGetByName.ID)
 	assert.Nil(t, err)
