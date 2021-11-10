@@ -194,13 +194,13 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 	var configDiff *ConfigDiff
 	if pipelinerun.ConfigCommit != "" && pipelinerun.LastConfigCommit != "" {
 		diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
-			&pipelinerun.ConfigCommit, &pipelinerun.LastConfigCommit)
+			&pipelinerun.LastConfigCommit, &pipelinerun.ConfigCommit)
 		if err != nil {
 			return nil, err
 		}
 		configDiff = &ConfigDiff{
-			From: pipelinerun.ConfigCommit,
-			To:   pipelinerun.LastConfigCommit,
+			From: pipelinerun.LastConfigCommit,
+			To:   pipelinerun.ConfigCommit,
 			Diff: diff,
 		}
 	}

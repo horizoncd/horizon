@@ -77,7 +77,7 @@ func TestGetDiff(t *testing.T) {
 
 	diff := "this is mydiff"
 	mockClusterGitRepo.EXPECT().CompareConfig(ctx, applicationName, clusterName,
-		&configCommit, &lastConfigCommit).Return(diff, nil).Times(1)
+		&lastConfigCommit, &configCommit).Return(diff, nil).Times(1)
 
 	resp, err := ctl.GetDiff(ctx, pipelineID)
 	assert.Nil(t, err)
@@ -92,8 +92,8 @@ func TestGetDiff(t *testing.T) {
 			Link:      common.InternalSSHToHTTPURL(gitURL) + common.CommitHistoryMiddle + gitCommit,
 		},
 		ConfigDiff: &ConfigDiff{
-			From: configCommit,
-			To:   lastConfigCommit,
+			From: lastConfigCommit,
+			To:   configCommit,
 			Diff: diff,
 		},
 	}
