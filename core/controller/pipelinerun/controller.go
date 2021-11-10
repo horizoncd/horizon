@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
@@ -22,22 +21,20 @@ type Controller interface {
 }
 
 type controller struct {
-	prMgr          prmanager.Manager
-	clusterMgr     clustermanager.Manager
-	applicationMgr appmanager.Manager
-	envMgr         envmanager.Manager
-	tektonFty      factory.Factory
+	prMgr      prmanager.Manager
+	clusterMgr clustermanager.Manager
+	envMgr     envmanager.Manager
+	tektonFty  factory.Factory
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(tektonFty factory.Factory) Controller {
 	return &controller{
-		prMgr:          prmanager.Mgr,
-		clusterMgr:     clustermanager.Mgr,
-		applicationMgr: appmanager.Mgr,
-		envMgr:         envmanager.Mgr,
-		tektonFty:      tektonFty,
+		prMgr:      prmanager.Mgr,
+		clusterMgr: clustermanager.Mgr,
+		envMgr:     envmanager.Mgr,
+		tektonFty:  tektonFty,
 	}
 }
 
@@ -125,7 +122,7 @@ func (c *controller) getPrLog(ctx context.Context, pr *prmodels.Pipelinerun, clu
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	logBytes, err := tektonCollector.GetPipelineRunLog(ctx, pr.PrObject)
+	logBytes, err := tektonCollector.GetPipelineRunLog(ctx, pr.LogObject)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
