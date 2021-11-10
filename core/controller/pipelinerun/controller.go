@@ -24,11 +24,11 @@ import (
 )
 
 type Controller interface {
-	GetPrLog(ctx context.Context, prID uint) (*Log, error)
+	GetPipelinerunLog(ctx context.Context, prID uint) (*Log, error)
 	GetClusterLatestLog(ctx context.Context, clusterID uint) (*Log, error)
 	GetDiff(ctx context.Context, pipelinerunID uint) (*GetDiffResponse, error)
-	GetPipeline(ctx context.Context, pipelineID uint) (*PipelineBasic, error)
-	ListPipeline(ctx context.Context, clusterID uint, query q.Query) (int, []*PipelineBasic, error)
+	Get(ctx context.Context, pipelinerunID uint) (*PipelineBasic, error)
+	List(ctx context.Context, clusterID uint, query q.Query) (int, []*PipelineBasic, error)
 }
 
 type controller struct {
@@ -65,7 +65,7 @@ type Log struct {
 	LogBytes []byte
 }
 
-func (c *controller) GetPrLog(ctx context.Context, prID uint) (_ *Log, err error) {
+func (c *controller) GetPipelinerunLog(ctx context.Context, prID uint) (_ *Log, err error) {
 	const op = "pipelinerun controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -213,7 +213,7 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 	}, nil
 }
 
-func (c *controller) GetPipeline(ctx context.Context, pipelineID uint) (_ *PipelineBasic, err error) {
+func (c *controller) Get(ctx context.Context, pipelineID uint) (_ *PipelineBasic, err error) {
 	const op = "pipelinerun controller: get pipelinerun basic"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -224,7 +224,7 @@ func (c *controller) GetPipeline(ctx context.Context, pipelineID uint) (_ *Pipel
 	return c.ofPipelineBasic(ctx, pipelinerun)
 }
 
-func (c *controller) ListPipeline(ctx context.Context,
+func (c *controller) List(ctx context.Context,
 	clusterID uint, query q.Query) (_ int, _ []*PipelineBasic, err error) {
 	const op = "pipelinerun controller: list pipelinerun"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })

@@ -35,7 +35,7 @@ func (a *API) Log(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	l, err := a.prCtl.GetPrLog(c, uint(prID))
+	l, err := a.prCtl.GetPipelinerunLog(c, uint(prID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
@@ -111,7 +111,7 @@ func (a *API) Get(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	resp, err := a.prCtl.GetPipeline(c, uint(pipelinerunID))
+	resp, err := a.prCtl.Get(c, uint(pipelinerunID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
@@ -119,7 +119,7 @@ func (a *API) Get(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-func (a *API) ListPipeline(c *gin.Context) {
+func (a *API) List(c *gin.Context) {
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -133,7 +133,7 @@ func (a *API) ListPipeline(c *gin.Context) {
 		return
 	}
 
-	total, pipelines, err := a.prCtl.ListPipeline(c, uint(clusterID), q.Query{
+	total, pipelines, err := a.prCtl.List(c, uint(clusterID), q.Query{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	})

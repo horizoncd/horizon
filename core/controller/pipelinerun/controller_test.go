@@ -73,7 +73,7 @@ func TestGetAndListPipelinerun(t *testing.T) {
 		Name: UserName,
 	}, nil).Times(1)
 
-	pipelineBasic, err := ctl.GetPipeline(ctx, pipelineID)
+	pipelineBasic, err := ctl.Get(ctx, pipelineID)
 	assert.Nil(t, err)
 	assert.Equal(t, pipelineBasic.ID, pipelineID)
 	assert.Equal(t, pipelineBasic.CreatedBy, UserInfo{
@@ -109,7 +109,7 @@ func TestGetAndListPipelinerun(t *testing.T) {
 		PageNumber: 1,
 		PageSize:   10,
 	}
-	count, pipelineBasics, err := ctl.ListPipeline(ctx, clusterID, query)
+	count, pipelineBasics, err := ctl.List(ctx, clusterID, query)
 	assert.Nil(t, err)
 	assert.Equal(t, count, totalCount)
 	assert.Equal(t, len(pipelineBasics), 2)
@@ -272,7 +272,7 @@ func Test(t *testing.T) {
 	errCh := make(chan error)
 	tekton.EXPECT().GetPipelineRunLogByID(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(logCh, errCh, nil)
 
-	l, err := c.GetPrLog(ctx, pipelinerun.ID)
+	l, err := c.GetPipelinerunLog(ctx, pipelinerun.ID)
 	assert.Nil(t, err)
 	assert.Nil(t, l.LogChannel)
 	assert.Nil(t, l.ErrChannel)

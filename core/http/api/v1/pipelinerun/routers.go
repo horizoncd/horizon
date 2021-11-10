@@ -29,7 +29,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/pipelineruns", _clusterIDParam),
-			HandlerFunc: api.ListPipeline,
+			HandlerFunc: api.List,
 		},
 	}
 
