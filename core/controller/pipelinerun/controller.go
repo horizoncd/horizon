@@ -3,7 +3,12 @@ package pipelinerun
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"g.hz.netease.com/horizon/core/common"
+	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	"g.hz.netease.com/horizon/pkg/cluster/code"
+	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
@@ -18,23 +23,31 @@ import (
 type Controller interface {
 	GetPrLog(ctx context.Context, prID uint) (*Log, error)
 	GetClusterLatestLog(ctx context.Context, clusterID uint) (*Log, error)
+	GetDiff(ctx context.Context, pipelinerunID uint) (*GetDiffResponse, error)
 }
 
 type controller struct {
 	pipelinerunMgr prmanager.Manager
+	applicationMgr appmanager.Manager
 	clusterMgr     clustermanager.Manager
 	envMgr         envmanager.Manager
 	tektonFty      factory.Factory
+	commitGetter   code.CommitGetter
+	clusterGitRepo gitrepo.ClusterGitRepo
 }
 
 var _ Controller = (*controller)(nil)
 
-func NewController(tektonFty factory.Factory) Controller {
+func NewController(tektonFty factory.Factory, codeGetter code.CommitGetter,
+	clusterRepo gitrepo.ClusterGitRepo) Controller {
 	return &controller{
 		pipelinerunMgr: prmanager.Mgr,
 		clusterMgr:     clustermanager.Mgr,
 		envMgr:         envmanager.Mgr,
 		tektonFty:      tektonFty,
+		commitGetter:   codeGetter,
+		applicationMgr: appmanager.Mgr,
+		clusterGitRepo: clusterRepo,
 	}
 }
 
@@ -128,5 +141,67 @@ func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelin
 	}
 	return &Log{
 		LogBytes: logBytes,
+	}, nil
+}
+
+func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDiffResponse, err error) {
+	const op = "pipelinerun controller: get pipelinerun diff"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// 1. get pipeline
+	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. get cluster and application
+	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)
+	if err != nil {
+		return nil, err
+	}
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. get code diff
+	var codeDiff *CodeInfo
+	if pipelinerun.GitURL != "" && pipelinerun.GitCommit != "" &&
+		pipelinerun.GitBranch != "" {
+		commit, err := c.commitGetter.GetCommit(ctx, pipelinerun.GitURL, pipelinerun.GitCommit)
+		if err != nil {
+			return nil, err
+		}
+		var historyLink string
+		if strings.HasPrefix(pipelinerun.GitURL, common.InternalGitSSHPrefix) {
+			httpURL := common.InternalSSHToHTTPURL(pipelinerun.GitURL)
+			historyLink = httpURL + common.CommitHistoryMiddle + pipelinerun.GitCommit
+		}
+		codeDiff = &CodeInfo{
+			Branch:    pipelinerun.GitBranch,
+			CommitID:  pipelinerun.GitCommit,
+			CommitMsg: commit.Message,
+			Link:      historyLink,
+		}
+	}
+
+	// 4. get config diff
+	var configDiff *ConfigDiff
+	if pipelinerun.ConfigCommit != "" && pipelinerun.LastConfigCommit != "" {
+		diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
+			&pipelinerun.LastConfigCommit, &pipelinerun.ConfigCommit)
+		if err != nil {
+			return nil, err
+		}
+		configDiff = &ConfigDiff{
+			From: pipelinerun.LastConfigCommit,
+			To:   pipelinerun.ConfigCommit,
+			Diff: diff,
+		}
+	}
+
+	return &GetDiffResponse{
+		CodeInfo:   codeDiff,
+		ConfigDiff: configDiff,
 	}, nil
 }

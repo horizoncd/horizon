@@ -86,3 +86,18 @@ func (a *API) writeLog(c *gin.Context, l *prctl.Log) {
 		}
 	}
 }
+
+func (a *API) GetDiff(c *gin.Context) {
+	pipelinerunIDStr := c.Param(_pipelinerunIDParam)
+	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	diff, err := a.prCtl.GetDiff(c, uint(pipelinerunID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, diff)
+}

@@ -198,20 +198,16 @@ func (c *controller) GetDiff(ctx context.Context, clusterID uint, codeBranch str
 	return ofClusterDiff(cluster.GitURL, codeBranch, commit, diff), nil
 }
 
-const (
-	_internalGitSSHPrefix  string = "ssh://git@g.hz.netease.com:22222"
-	_internalGitHTTPPrefix string = "https://g.hz.netease.com"
-	_commitHistoryMiddle   string = "/-/commits/"
-)
-
 func ofClusterDiff(gitURL, branch string, commit *code.Commit, diff string) *GetDiffResponse {
 	var codeInfo *CodeInfo
+
+	// TODO: support any gitlab or gitlab not only internal
 	if commit != nil {
 		// git@github.com:demo/demo.git
 		var historyLink string
-		if strings.HasPrefix(gitURL, _internalGitSSHPrefix) {
-			httpURL := internalSSHToHTTPURL(gitURL)
-			historyLink = httpURL + _commitHistoryMiddle + branch
+		if strings.HasPrefix(gitURL, common.InternalGitSSHPrefix) {
+			httpURL := common.InternalSSHToHTTPURL(gitURL)
+			historyLink = httpURL + common.CommitHistoryMiddle + branch
 		}
 		codeInfo = &CodeInfo{
 			Branch:    branch,
@@ -225,11 +221,4 @@ func ofClusterDiff(gitURL, branch string, commit *code.Commit, diff string) *Get
 		CodeInfo:   codeInfo,
 		ConfigDiff: diff,
 	}
-}
-
-func internalSSHToHTTPURL(sshURL string) string {
-	tmp := strings.TrimPrefix(sshURL, _internalGitSSHPrefix)
-	middle := strings.TrimRight(tmp, ".git")
-	httpURL := _internalGitHTTPPrefix + middle
-	return httpURL
 }

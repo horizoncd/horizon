@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
@@ -712,7 +713,7 @@ func Test(t *testing.T) {
 			Branch:    codeBranch,
 			CommitID:  commitID,
 			CommitMsg: commitMsg,
-			Link:      internalSSHToHTTPURL(UpdateGitURL) + _commitHistoryMiddle + codeBranch,
+			Link:      common.InternalSSHToHTTPURL(UpdateGitURL) + common.CommitHistoryMiddle + codeBranch,
 		},
 		ConfigDiff: configDiff,
 	}, getdiffResp)
