@@ -53,3 +53,12 @@ type Pipelinerun struct {
 	UpdatedAt    time.Time
 	CreatedBy    uint
 }
+
+type Result struct {
+	S3Bucket   string
+	LogObject  string
+	PrObject   string
+	Result     string
+	StartedAt  *time.Time
+	FinishedAt *time.Time
+}

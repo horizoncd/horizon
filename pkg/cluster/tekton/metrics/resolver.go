@@ -18,23 +18,6 @@ type WrappedPipelineRun struct {
 	PipelineRun *v1beta1.PipelineRun `json:"pipelineRun"`
 }
 
-func (wpr *WrappedPipelineRun) IsFinished() bool {
-	if wpr.PipelineRun == nil {
-		return false
-	}
-	prc := wpr.PipelineRun.Status.GetCondition(apis.ConditionSucceeded)
-	if prc == nil {
-		return false
-	}
-	switch v1beta1.PipelineRunReason(prc.GetReason()) {
-	case v1beta1.PipelineRunReasonSuccessful, v1beta1.PipelineRunReasonCompleted,
-		v1beta1.PipelineRunReasonFailed, v1beta1.PipelineRunReasonTimedOut,
-		v1beta1.PipelineRunReasonCancelled, v1beta1.PipelineRunSpecStatusCancelled:
-		return true
-	}
-	return false
-}
-
 // PrMetadata pipelineRun的元信息
 type PrMetadata struct {
 	// pipelineRun的name
@@ -47,10 +30,12 @@ type PrMetadata struct {
 
 // PrBusinessData pipelineRun业务相关参数
 type PrBusinessData struct {
-	Application string
-	Cluster     string
-	Environment string
-	Operator    string
+	Application   string
+	Cluster       string
+	ApplicationID string
+	ClusterID     string
+	Environment   string
+	Operator      string
 }
 
 type Result string
@@ -158,12 +143,18 @@ func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
 	application := labels[common.ApplicationLabelKey]
 	cluster := labels[common.ClusterLabelKey]
 	environment := labels[common.EnvironmentLabelKey]
-	operator := labels[common.OperatorLabelKey]
+	applicationIDStr := labels[common.ApplicationIDLabelKey]
+	clusterIDStr := labels[common.ClusterIDLabelKey]
+
+	annotations := wpr.PipelineRun.Annotations
+	operator := annotations[common.OperatorAnnotationKey]
 	return &PrBusinessData{
-		Application: application,
-		Cluster:     cluster,
-		Environment: environment,
-		Operator:    operator,
+		Application:   application,
+		Cluster:       cluster,
+		ApplicationID: applicationIDStr,
+		ClusterID:     clusterIDStr,
+		Environment:   environment,
+		Operator:      operator,
 	}
 }
 

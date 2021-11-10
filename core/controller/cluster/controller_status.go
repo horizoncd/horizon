@@ -79,8 +79,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
-		// TODO(gjq): get pipelinerun object through the prObject & s3Bucket
-		obj, err := tektonCollector.GetLatestPipelineRunObject(ctx, application.Name, cluster.Name)
+		obj, err := tektonCollector.GetPipelineRunObject(ctx, pr.PrObject)
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
