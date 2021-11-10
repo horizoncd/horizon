@@ -8,33 +8,115 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	applicationmockmanager "g.hz.netease.com/horizon/mock/pkg/application/manager"
 	commitmock "g.hz.netease.com/horizon/mock/pkg/cluster/code"
 	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
 	clustermockmananger "g.hz.netease.com/horizon/mock/pkg/cluster/manager"
-	pipelinemockmanager "g.hz.netease.com/horizon/mock/pkg/pipelinerun/manager"
-	applicationmodel "g.hz.netease.com/horizon/pkg/application/models"
-	"g.hz.netease.com/horizon/pkg/cluster/code"
-	clustermodel "g.hz.netease.com/horizon/pkg/cluster/models"
-	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
-
-	"g.hz.netease.com/horizon/core/middleware/user"
-	"g.hz.netease.com/horizon/lib/orm"
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektoncollectormock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/collector"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
+	pipelinemockmanager "g.hz.netease.com/horizon/mock/pkg/pipelinerun/manager"
+	usermock "g.hz.netease.com/horizon/mock/pkg/user/manager"
+	applicationmodel "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	clustermodel "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	pipelinemodel "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	usermodel "g.hz.netease.com/horizon/pkg/user/models"
 )
+
+func TestGetAndListPipelinerun(t *testing.T) {
+	mockCtl := gomock.NewController(t)
+	ctx := context.TODO()
+
+	mockCommitGetter := commitmock.NewMockCommitGetter(mockCtl)
+	mockClusterManager := clustermockmananger.NewMockManager(mockCtl)
+	mockApplicationMananger := applicationmockmanager.NewMockManager(mockCtl)
+	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
+	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+	mockUserManager := usermock.NewMockManager(mockCtl)
+	var ctl Controller = &controller{
+		pipelinerunMgr: mockPipelineManager,
+		clusterMgr:     mockClusterManager,
+		applicationMgr: mockApplicationMananger,
+		envMgr:         nil,
+		tektonFty:      nil,
+		commitGetter:   mockCommitGetter,
+		clusterGitRepo: mockClusterGitRepo,
+		userManager:    mockUserManager,
+	}
+
+	// 1. test Get PipelineBasic
+	var pipelineID uint = 1932
+	var createUser uint = 32
+	mockPipelineManager.EXPECT().GetByID(ctx, pipelineID).Return(&models.Pipelinerun{
+		ID:        pipelineID,
+		CreatedBy: createUser,
+	}, nil).Times(1)
+	var UserName = "tom"
+	mockUserManager.EXPECT().GetUserByID(ctx, createUser).Return(&usermodel.User{
+		Name: UserName,
+	}, nil).Times(1)
+
+	pipelineBasic, err := ctl.GetPipeline(ctx, pipelineID)
+	assert.Nil(t, err)
+	assert.Equal(t, pipelineBasic.ID, pipelineID)
+	assert.Equal(t, pipelineBasic.CreatedBy, UserInfo{
+		UserID:   createUser,
+		UserName: UserName,
+	})
+	body, _ := json.MarshalIndent(pipelineBasic, "", " ")
+	t.Logf("%s", string(body))
+
+	// 2. test ListPipeline
+	var clusterID uint = 56
+	var totalCount int = 100
+	// var pipelineruns []*pipelinemodel.Pipelinerun
+	pipelineruns := make([]*pipelinemodel.Pipelinerun, 0)
+	pipelineruns = append(pipelineruns, &pipelinemodel.Pipelinerun{
+		ID:        2,
+		ClusterID: clusterID,
+		CreatedBy: 1,
+	})
+	pipelineruns = append(pipelineruns, &pipelinemodel.Pipelinerun{
+		ID:        3,
+		ClusterID: clusterID,
+		CreatedBy: 0,
+	})
+
+	mockPipelineManager.EXPECT().GetByClusterID(ctx,
+		clusterID, gomock.Any()).Return(totalCount, pipelineruns, nil).Times(1)
+	mockUserManager.EXPECT().GetUserByID(ctx, gomock.Any()).Return(&usermodel.User{
+		Name: UserName,
+	}, nil).AnyTimes()
+
+	query := q.Query{
+		PageNumber: 1,
+		PageSize:   10,
+	}
+	count, pipelineBasics, err := ctl.ListPipeline(ctx, clusterID, query)
+	assert.Nil(t, err)
+	assert.Equal(t, count, totalCount)
+	assert.Equal(t, len(pipelineBasics), 2)
+
+	body, _ = json.MarshalIndent(pipelineBasics, "", " ")
+	t.Logf("%s", string(body))
+}
 
 func TestGetDiff(t *testing.T) {
 	mockCtl := gomock.NewController(t)

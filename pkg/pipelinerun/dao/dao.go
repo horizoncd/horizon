@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 )
@@ -12,6 +13,7 @@ type DAO interface {
 	// Create create a pipelinerun
 	Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error)
 	GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error)
+	GetByClusterID(ctx context.Context, clusterID uint, query q.Query) (int, []*models.Pipelinerun, error)
 	// DeleteByID delete pipelinerun by id
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
@@ -103,4 +105,25 @@ func (d *dao) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *
 		result.LogObject, result.PrObject, result.StartedAt, result.FinishedAt, pipelinerunID)
 
 	return res.Error
+}
+
+func (d *dao) GetByClusterID(ctx context.Context, clusterID uint, query q.Query) (int, []*models.Pipelinerun, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	offset := (query.PageNumber - 1) * query.PageSize
+	limit := query.PageSize
+
+	var pipelineruns []*models.Pipelinerun
+	result := db.Raw(common.PipelinerunGetByClusterID,
+		clusterID, limit, offset).Scan(&pipelineruns)
+	if result.Error != nil {
+		return 0, pipelineruns, result.Error
+	}
+	var total int
+	result = db.Raw(common.PipelinerunGetByClusterIDTotalCount,
+		clusterID).Scan(&total)
+
+	return total, pipelineruns, result.Error
 }
