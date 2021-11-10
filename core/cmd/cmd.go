@@ -16,6 +16,7 @@ import (
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
+	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
 	"g.hz.netease.com/horizon/core/http/api/v1/environment"
@@ -24,6 +25,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
+	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
@@ -209,6 +211,7 @@ func Run(flags *Flags) {
 
 		templateCtl = templatectl.NewController(templateSchemaGetter)
 		roleCtl     = roltctl.NewController(roleService)
+		terminalCtl = terminalctl.NewController()
 	)
 
 	var (
@@ -222,6 +225,7 @@ func Run(flags *Flags) {
 		prAPI          = pipelinerun.NewAPI(prCtl)
 		environmentAPI = environment.NewAPI()
 		roleAPI        = roleapi.NewAPI(roleCtl)
+		terminalAPI    = terminalapi.NewAPI(terminalCtl)
 	)
 
 	// init server
@@ -248,7 +252,9 @@ func Run(flags *Flags) {
 		middlewares = append(middlewares,
 			usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
+				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal/sockjs")),
+			),
 		)
 		middlewares = append(middlewares,
 			auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
@@ -270,6 +276,7 @@ func Run(flags *Flags) {
 	environment.RegisterRoutes(r, environmentAPI)
 	member.RegisterRoutes(r, memberAPI)
 	roleapi.RegisterRoutes(r, roleAPI)
+	terminalapi.RegisterRoutes(r, terminalAPI)
 
 	// start cloud event server
 	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)
