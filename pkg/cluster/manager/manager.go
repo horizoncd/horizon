@@ -25,6 +25,7 @@ type Manager interface {
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
+	DeleteByID(ctx context.Context, id uint) error
 	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
@@ -64,6 +65,10 @@ func (m *manager) GetByName(ctx context.Context, clusterName string) (*models.Cl
 
 func (m *manager) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error) {
 	return m.dao.UpdateByID(ctx, id, cluster)
+}
+
+func (m *manager) DeleteByID(ctx context.Context, id uint) error {
+	return m.dao.DeleteByID(ctx, id)
 }
 
 func (m *manager) ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,

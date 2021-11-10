@@ -11,6 +11,13 @@ const (
 	ActionRollback    = "rollback"
 )
 
+const (
+	ResultOK        = "ok"
+	ResultFailed    = "failed"
+	ResultCancelled = "cancelled"
+	ResultUnknown   = "unknown"
+)
+
 type Pipelinerun struct {
 	// ID pipelinerun id
 	ID uint

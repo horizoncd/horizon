@@ -32,6 +32,7 @@ type Controller interface {
 		request *CreateClusterRequest) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
 		request *UpdateClusterRequest) (*GetClusterResponse, error)
+	DeleteCluster(ctx context.Context, clusterID uint) error
 	GetClusterByName(ctx context.Context,
 		clusterName string) (*GetClusterByNameResponse, error)
 
@@ -39,6 +40,7 @@ type Controller interface {
 		request *BuildDeployRequest) (*BuildDeployResponse, error)
 	GetDiff(ctx context.Context, clusterID uint, codeBranch string) (*GetDiffResponse, error)
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
+	Restart(ctx context.Context, clusterID uint) (*RestartResponse, error)
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,

@@ -111,4 +111,11 @@ func Test(t *testing.T) {
 	notExists, err := Mgr.CheckClusterExists(ctx, "not-exists")
 	assert.Nil(t, err)
 	assert.False(t, notExists)
+
+	err = Mgr.DeleteByID(ctx, cluster.ID)
+	assert.Nil(t, err)
+
+	clusterGetByID, err = Mgr.GetByID(ctx, cluster.ID)
+	assert.Nil(t, clusterGetByID)
+	assert.NotNil(t, err)
 }

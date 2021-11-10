@@ -15,7 +15,8 @@ import (
 
 const (
 	_pipelinerunIDParam = "pipelinerunID"
-	_clusterIDParam     = "cluster"
+	_clusterIDParam     = "clusterID"
+	_clusterParam       = "cluster"
 )
 
 type API struct {
@@ -44,7 +45,7 @@ func (a *API) Log(c *gin.Context) {
 }
 
 func (a *API) LatestLogForCluster(c *gin.Context) {
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(_clusterParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())

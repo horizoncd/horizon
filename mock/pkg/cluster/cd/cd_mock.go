@@ -34,6 +34,20 @@ func (m *MockCD) EXPECT() *MockCDMockRecorder {
 	return m.recorder
 }
 
+// CreateCluster mocks base method
+func (m *MockCD) CreateCluster(ctx context.Context, params *cd.CreateClusterParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCluster", ctx, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateCluster indicates an expected call of CreateCluster
+func (mr *MockCDMockRecorder) CreateCluster(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockCD)(nil).CreateCluster), ctx, params)
+}
+
 // DeployCluster mocks base method
 func (m *MockCD) DeployCluster(ctx context.Context, params *cd.DeployClusterParams) error {
 	m.ctrl.T.Helper()
@@ -46,6 +60,20 @@ func (m *MockCD) DeployCluster(ctx context.Context, params *cd.DeployClusterPara
 func (mr *MockCDMockRecorder) DeployCluster(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeployCluster", reflect.TypeOf((*MockCD)(nil).DeployCluster), ctx, params)
+}
+
+// DeleteCluster mocks base method
+func (m *MockCD) DeleteCluster(ctx context.Context, params *cd.DeleteClusterParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteCluster", ctx, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCluster indicates an expected call of DeleteCluster
+func (mr *MockCDMockRecorder) DeleteCluster(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCluster", reflect.TypeOf((*MockCD)(nil).DeleteCluster), ctx, params)
 }
 
 // GetClusterState mocks base method

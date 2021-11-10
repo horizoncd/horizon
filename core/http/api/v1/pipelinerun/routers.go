@@ -39,7 +39,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var frontRoutes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/log", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/log", _clusterParam),
 			HandlerFunc: api.LatestLogForCluster,
 		},
 	}

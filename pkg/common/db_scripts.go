@@ -112,6 +112,7 @@ const (
 /* sql about cluster */
 const (
 	ClusterQueryByID                = "select * from cluster where id = ? and deleted_at is null"
+	ClusterDeleteByID               = "update cluster set deleted_at = CURRENT_TIMESTAMP where id = ?"
 	ClusterQueryByName              = "select * from cluster where name = ? and deleted_at is null"
 	ClusterQueryByApplicationAndEnv = "select c.*, er.environment_name, er.region_name, " +
 		"r.display_name as region_display_name from cluster c " +

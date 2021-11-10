@@ -89,7 +89,7 @@ func resolveObjMetadata(pr *v1beta1.PipelineRun) *ObjectMeta {
 		stepMap[stepResult.TaskRun][stepResult.Name] = StepStatus{
 			StatusMeta: StatusMeta{
 				Name:            stepResult.Name,
-				Result:          stepResult.Result.String(),
+				Result:          stepResult.Result,
 				DurationSeconds: stepResult.DurationSeconds,
 			},
 		}
@@ -103,7 +103,7 @@ func resolveObjMetadata(pr *v1beta1.PipelineRun) *ObjectMeta {
 			trMap[trResult.Name] = TaskRunStatus{
 				StatusMeta: StatusMeta{
 					Name:            trResult.Name,
-					Result:          trResult.Result.String(),
+					Result:          trResult.Result,
 					DurationSeconds: trResult.DurationSeconds,
 				},
 				Pod:        trResult.Pod,
@@ -128,7 +128,7 @@ func resolveObjMetadata(pr *v1beta1.PipelineRun) *ObjectMeta {
 		PipelineRun: &PipelineRunStatus{
 			StatusMeta: StatusMeta{
 				Name:            prMetadata.Name,
-				Result:          prResult.Result.String(),
+				Result:          prResult.Result,
 				DurationSeconds: prResult.DurationSeconds,
 				StartTime:       prResult.StartTime,
 				CompletionTime:  prResult.CompletionTime,

@@ -168,6 +168,20 @@ func (a *API) GetByName(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
+func (a *API) Delete(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	if err := a.clusterCtl.DeleteCluster(c, uint(clusterID)); err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.Success(c)
+}
+
 func (a *API) ListByNameFuzzily(c *gin.Context) {
 	filter := c.Query(common.Filter)
 	environment := c.Query(_environment)

@@ -56,7 +56,7 @@ func Observe(wpr *WrappedPipelineRun) {
 		_cluster:     prBusinessData.Cluster,
 		_environment: prBusinessData.Environment,
 		_pipeline:    prMetadata.Pipeline,
-		_result:      prResult.Result.String(),
+		_result:      prResult.Result,
 	}).Observe(prResult.DurationSeconds)
 
 	for _, trResult := range trResults {
@@ -66,7 +66,7 @@ func Observe(wpr *WrappedPipelineRun) {
 			_environment: prBusinessData.Environment,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        trResult.Task,
-			_result:      trResult.Result.String(),
+			_result:      trResult.Result,
 		}).Observe(trResult.DurationSeconds)
 	}
 
@@ -78,7 +78,7 @@ func Observe(wpr *WrappedPipelineRun) {
 			_name:        stepResult.Name,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        stepResult.Task,
-			_result:      stepResult.Result.String(),
+			_result:      stepResult.Result,
 		}).Observe(stepResult.DurationSeconds)
 	}
 }

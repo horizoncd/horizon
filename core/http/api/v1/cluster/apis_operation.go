@@ -87,3 +87,19 @@ func (a *API) InternalDeploy(c *gin.Context) {
 	}
 	response.SuccessWithData(c, resp)
 }
+
+func (a *API) Restart(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	resp, err := a.clusterCtl.Restart(c, uint(clusterID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}

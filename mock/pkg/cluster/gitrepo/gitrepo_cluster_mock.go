@@ -136,6 +136,21 @@ func (mr *MockClusterGitRepoMockRecorder) UpdateImage(ctx, application, cluster,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockClusterGitRepo)(nil).UpdateImage), ctx, application, cluster, template, image)
 }
 
+// UpdateRestartTime mocks base method
+func (m *MockClusterGitRepo) UpdateRestartTime(ctx context.Context, application, cluster, template string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRestartTime", ctx, application, cluster, template)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateRestartTime indicates an expected call of UpdateRestartTime
+func (mr *MockClusterGitRepoMockRecorder) UpdateRestartTime(ctx, application, cluster, template interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRestartTime", reflect.TypeOf((*MockClusterGitRepo)(nil).UpdateRestartTime), ctx, application, cluster, template)
+}
+
 // GetConfigCommit mocks base method
 func (m *MockClusterGitRepo) GetConfigCommit(ctx context.Context, application, cluster string) (*gitrepo.ClusterCommit, error) {
 	m.ctrl.T.Helper()

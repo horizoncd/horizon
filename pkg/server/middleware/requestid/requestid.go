@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"g.hz.netease.com/horizon/pkg/server/middleware"
+
 	"github.com/gin-gonic/gin"
 	"github.com/satori/go.uuid"
 )

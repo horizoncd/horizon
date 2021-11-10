@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"g.hz.netease.com/horizon/pkg/cluster/common"
+	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -38,25 +39,12 @@ type PrBusinessData struct {
 	Operator      string
 }
 
-type Result string
-
-const (
-	ResultOK        Result = "ok"
-	ResultFailed    Result = "failed"
-	ResultCancelled Result = "cancelled"
-	ResultUnknown   Result = "unknown"
-)
-
-func (r Result) String() string {
-	return string(r)
-}
-
 // PrResult pipelineRun结果
 type PrResult struct {
 	// 花费的时间，单位为秒
 	DurationSeconds float64
 	// 执行结果
-	Result Result
+	Result string
 	// pipelineRun开始执行的时间，用于排序
 	StartTime *metav1.Time
 	// pipelineRun执行完成的时间
@@ -78,7 +66,7 @@ type TrResult struct {
 	// 花费的时间，单位为秒
 	DurationSeconds float64
 	// 执行结果
-	Result Result
+	Result string
 }
 
 type TrResults []*TrResult
@@ -109,7 +97,7 @@ type StepResult struct {
 	// 花费的时间，单位为秒
 	DurationSeconds float64
 	// 执行结果
-	Result Result
+	Result string
 }
 
 type StepResults []*StepResult
@@ -160,24 +148,24 @@ func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
 
 // ResolvePrResult 解析pipelineRun整体的执行结果
 func (wpr *WrappedPipelineRun) ResolvePrResult() *PrResult {
-	r := func() Result {
+	r := func() string {
 		prc := wpr.PipelineRun.Status.GetCondition(apis.ConditionSucceeded)
 		if prc == nil {
-			return ResultUnknown
+			return prmodels.ResultUnknown
 		}
 		switch v1beta1.PipelineRunReason(prc.GetReason()) {
 		case v1beta1.PipelineRunReasonSuccessful, v1beta1.PipelineRunReasonCompleted:
-			return ResultOK
+			return prmodels.ResultOK
 		case v1beta1.PipelineRunReasonFailed, v1beta1.PipelineRunReasonTimedOut:
-			return ResultFailed
+			return prmodels.ResultFailed
 			// tekton pipelines v0.18.1版本，取消的情况下，
 			// 实际用的是v1beta1.PipelineRunSpecStatusCancelled字段，
 			// ref: (1) https://github.com/tektoncd/pipeline/blob/v0.18.1/pkg/reconciler/pipelinerun/cancel.go#L67
 			// (2) https://github.com/tektoncd/pipeline/blob/v0.18.1/pkg/reconciler/pipelinerun/pipelinerun.go#L99
 		case v1beta1.PipelineRunReasonCancelled, v1beta1.PipelineRunSpecStatusCancelled:
-			return ResultCancelled
+			return prmodels.ResultCancelled
 		}
-		return ResultUnknown
+		return prmodels.ResultUnknown
 	}()
 
 	return &PrResult{
@@ -212,16 +200,16 @@ func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults
 		})
 
 		for _, step := range trStatus.Status.Steps {
-			stepResult := func() Result {
+			stepResult := func() string {
 				if step.Terminated == nil {
-					return ResultUnknown
+					return prmodels.ResultUnknown
 				}
 				if step.Terminated.ExitCode == 0 {
-					return ResultOK
+					return prmodels.ResultOK
 				}
-				return ResultFailed
+				return prmodels.ResultFailed
 			}()
-			if stepResult == ResultUnknown {
+			if stepResult == prmodels.ResultUnknown {
 				// ResultUnknown的情况表示pipelineRun取消执行，当前step被取消，此时可以跳过后续step
 				break
 			}
@@ -240,7 +228,7 @@ func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults
 				}(),
 				Result: stepResult,
 			})
-			if stepResult == ResultFailed {
+			if stepResult == prmodels.ResultFailed {
 				// 如果一个step失败了，那么后续的step都会跳过执行，故这里跳过后续step
 				break
 			}
@@ -254,20 +242,20 @@ func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults
 }
 
 // trResult 根据 v1beta1.PipelineRunTaskRunStatus 获取 taskRun 的执行结果
-func trResult(trStatus *v1beta1.PipelineRunTaskRunStatus) Result {
+func trResult(trStatus *v1beta1.PipelineRunTaskRunStatus) string {
 	if trStatus == nil {
-		return ResultUnknown
+		return prmodels.ResultUnknown
 	}
 	trc := trStatus.Status.GetCondition(apis.ConditionSucceeded)
 	switch v1beta1.TaskRunReason(trc.GetReason()) {
 	case v1beta1.TaskRunReasonSuccessful:
-		return ResultOK
+		return prmodels.ResultOK
 	case v1beta1.TaskRunReasonFailed, v1beta1.TaskRunReasonTimedOut:
-		return ResultFailed
+		return prmodels.ResultFailed
 	case v1beta1.TaskRunReasonCancelled:
-		return ResultCancelled
+		return prmodels.ResultCancelled
 	}
-	return ResultUnknown
+	return prmodels.ResultUnknown
 }
 
 // durationSeconds 根据起始时间计算以秒为单位的时间差
