@@ -392,6 +392,11 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		if err := c.clusterGitRepo.DeleteCluster(ctx, application.Name, cluster.Name, cluster.ID); err != nil {
 			log.Errorf(ctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
 		}
+
+		// 4. delete cluster in db
+		if err := c.clusterMgr.DeleteByID(ctx, clusterID); err != nil {
+			log.Errorf(ctx, "failed to delete cluster: %v in db, err: %v", cluster.Name, err)
+		}
 	}()
 
 	return nil
