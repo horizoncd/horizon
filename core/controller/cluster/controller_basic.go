@@ -333,6 +333,7 @@ func (c *controller) GetClusterByName(ctx context.Context,
 }
 
 // DeleteCluster TODO(gjq): failed to delete cluster, give user a alert.
+// TODO(gjq): add a deleting tag for cluster
 func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err error) {
 	const op = "cluster controller: delete cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
