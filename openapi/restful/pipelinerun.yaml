@@ -58,7 +58,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/pipelineruns/{pipelinerunID}/status:
+  /apis/core/v1/pipelineruns/{pipelinerunID}:
     parameters:
       - name: pipelinerunID
         in: query
@@ -67,9 +67,9 @@ paths:
     get:
       tags:
         - pipelinerun
-      operationId: getPipelinerunsStatus
+      operationId: getPipelinerun
       summary: |
-        Get the specified pipelinerun's status for a cluster.
+        Get the specified pipelinerun for a cluster.
       responses:
         "200":
           description: Success
@@ -78,26 +78,25 @@ paths:
               schema:
                 example: |
                   {
-                      "data":{
-                          "id":1,
-                          "//status":"running/ok/failed/cancelled",
-                          "status":"ok",
-                          "//action":"builddeploy/deploy/rollback/restart",
+                      "data":
+                      {
+                          "id":3,
+                          "title":"Feature123",
+                          "description":"release big rocket",
                           "action":"builddeploy",
-                          "title":"v1.0版本发布",
-                          "description":"This is a beautiful description",
-                          "//codeBranch":"code_branch and code_commit exists only when action is buildAndDeploy",
-                          "codeBranch":"develop",
-                          "codeCommit":"239b7aeedc1d2b3023871a85d1cd2b11590c6ba9",
-                          "//configCommit":"cluster config commit",
-                          "configCommit":"0ae7266acc62d7c2bacd74e3f0ef3edacc04c459",
-                          "//rollbackFrom":"pipelinerun this pipelinerun rollback from",
-                          "rollbackFrom":1000,
-                          "createdBy":"Tony",
-                          "//startedAt":"unix timestamp",
-                          "startedAt":1634182718327,
-                          "//finishedAt":"unix timestamp",
-                          "finishedAt":163418378923
+                          "status":"StatusCreated",
+                          "gitURL":"git@github.com:demo/demo.git",
+                          "gitBranch":"master",
+                          "gitCommit":"4234324dsdjasljl43",
+                          "imageURL":"",
+                          "lastConfigCommit":"4234324dsdjasljl43",
+                          "configCommit":"4234324dsdjasljl43",
+                          "startedAt":"2021-11-07 11:19:54",
+                          "finishedAt":"2021-11-07 11:19:54",
+                          "createBy":{
+                            "userID":0,
+                            "userName":"123",
+                          }
                       }
                   }
         default:

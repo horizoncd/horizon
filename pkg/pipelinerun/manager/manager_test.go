@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 
 	"github.com/stretchr/testify/assert"
@@ -82,6 +83,41 @@ func Test(t *testing.T) {
 	prGet, err = Mgr.GetByID(ctx, pr.ID)
 	assert.Nil(t, err)
 	assert.Nil(t, prGet)
+}
+func TestGetByClusterID(t *testing.T) {
+	var clusterID uint = 1
+	pr := &models.Pipelinerun{
+		ID:          0,
+		ClusterID:   clusterID,
+		Action:      models.ActionBuildDeploy,
+		Status:      "created",
+		Title:       "title",
+		Description: "description",
+		CreatedBy:   0,
+	}
+	_, err := Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pr.ID = 2
+	_, err = Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pr.ID = 3
+	_, err = Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	var PageSize int = 2
+	var PageNumber int = 1
+	query := q.Query{
+		PageNumber: PageNumber,
+		PageSize:   PageSize,
+	}
+	totalCount, pipelineruns, err := Mgr.GetByClusterID(ctx, clusterID, query)
+	assert.Nil(t, err)
+	assert.Equal(t, totalCount, 3)
+	assert.Equal(t, len(pipelineruns), PageSize)
+	body, _ := json.MarshalIndent(pipelineruns, "", " ")
+	t.Logf("%s", string(body))
 }
 
 func TestMain(m *testing.M) {

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/lib/q"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
@@ -15,15 +16,19 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
 type Controller interface {
-	GetPrLog(ctx context.Context, prID uint) (*Log, error)
+	GetPipelinerunLog(ctx context.Context, prID uint) (*Log, error)
 	GetClusterLatestLog(ctx context.Context, clusterID uint) (*Log, error)
 	GetDiff(ctx context.Context, pipelinerunID uint) (*GetDiffResponse, error)
+	Get(ctx context.Context, pipelinerunID uint) (*PipelineBasic, error)
+	List(ctx context.Context, clusterID uint, query q.Query) (int, []*PipelineBasic, error)
 }
 
 type controller struct {
@@ -34,6 +39,7 @@ type controller struct {
 	tektonFty      factory.Factory
 	commitGetter   code.CommitGetter
 	clusterGitRepo gitrepo.ClusterGitRepo
+	userManager    usermanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -48,6 +54,7 @@ func NewController(tektonFty factory.Factory, codeGetter code.CommitGetter,
 		commitGetter:   codeGetter,
 		applicationMgr: appmanager.Mgr,
 		clusterGitRepo: clusterRepo,
+		userManager:    usermanager.Mgr,
 	}
 }
 
@@ -58,7 +65,7 @@ type Log struct {
 	LogBytes []byte
 }
 
-func (c *controller) GetPrLog(ctx context.Context, prID uint) (_ *Log, err error) {
+func (c *controller) GetPipelinerunLog(ctx context.Context, prID uint) (_ *Log, err error) {
 	const op = "pipelinerun controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -204,4 +211,70 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 		CodeInfo:   codeDiff,
 		ConfigDiff: configDiff,
 	}, nil
+}
+
+func (c *controller) Get(ctx context.Context, pipelineID uint) (_ *PipelineBasic, err error) {
+	const op = "pipelinerun controller: get pipelinerun basic"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelineID)
+	if err != nil {
+		return nil, err
+	}
+	return c.ofPipelineBasic(ctx, pipelinerun)
+}
+
+func (c *controller) List(ctx context.Context,
+	clusterID uint, query q.Query) (_ int, _ []*PipelineBasic, err error) {
+	const op = "pipelinerun controller: list pipelinerun"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	totalCount, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, query)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	pipelineBasics, err := c.ofPipelineBasics(ctx, pipelineruns)
+	if err != nil {
+		return 0, nil, err
+	}
+	return totalCount, pipelineBasics, nil
+}
+
+func (c *controller) ofPipelineBasic(ctx context.Context, pr *models.Pipelinerun) (*PipelineBasic, error) {
+	user, err := c.userManager.GetUserByID(ctx, pr.CreatedBy)
+	if err != nil {
+		return nil, err
+	}
+	return &PipelineBasic{
+		ID:               pr.ID,
+		Title:            pr.Title,
+		Description:      pr.Description,
+		Action:           pr.Action,
+		Status:           pr.Status,
+		GitURL:           pr.GitURL,
+		GitBranch:        pr.GitBranch,
+		GitCommit:        pr.GitCommit,
+		ImageURL:         pr.ImageURL,
+		LastConfigCommit: pr.LastConfigCommit,
+		ConfigCommit:     pr.ConfigCommit,
+		StartedAt:        pr.StartedAt,
+		FinishedAt:       pr.FinishedAt,
+		CreatedBy: UserInfo{
+			UserID:   pr.CreatedBy,
+			UserName: user.Name,
+		},
+	}, nil
+}
+
+func (c *controller) ofPipelineBasics(ctx context.Context, prs []*models.Pipelinerun) ([]*PipelineBasic, error) {
+	var pipelineBasics []*PipelineBasic
+	for _, pr := range prs {
+		pipelineBasic, err := c.ofPipelineBasic(ctx, pr)
+		if err != nil {
+			return nil, err
+		}
+		pipelineBasics = append(pipelineBasics, pipelineBasic)
+	}
+	return pipelineBasics, nil
 }

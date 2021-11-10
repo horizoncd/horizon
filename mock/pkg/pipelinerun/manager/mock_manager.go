@@ -8,6 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	q "g.hz.netease.com/horizon/lib/q"
 	models "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -62,6 +63,22 @@ func (m *MockManager) DeleteByID(ctx context.Context, pipelinerunID uint) error 
 func (mr *MockManagerMockRecorder) DeleteByID(ctx, pipelinerunID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockManager)(nil).DeleteByID), ctx, pipelinerunID)
+}
+
+// GetByClusterID mocks base method.
+func (m *MockManager) GetByClusterID(ctx context.Context, clusterID uint, query q.Query) (int, []*models.Pipelinerun, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByClusterID", ctx, clusterID, query)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].([]*models.Pipelinerun)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetByClusterID indicates an expected call of GetByClusterID.
+func (mr *MockManagerMockRecorder) GetByClusterID(ctx, clusterID, query interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByClusterID", reflect.TypeOf((*MockManager)(nil).GetByClusterID), ctx, clusterID, query)
 }
 
 // GetByID mocks base method.
