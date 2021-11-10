@@ -17,6 +17,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/log", _pipelinerunIDParam),
 			HandlerFunc: api.Log,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/diffs", _pipelinerunIDParam),
+			HandlerFunc: api.GetDiff,
 		},
 	}
 
