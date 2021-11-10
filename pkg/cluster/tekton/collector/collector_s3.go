@@ -147,7 +147,7 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*Co
 }
 
 func (c *S3Collector) GetPipelineRunLog(ctx context.Context, logObject string) (_ []byte, err error) {
-	const op = "s3Collector: getLatestPipelineRunLog"
+	const op = "s3Collector: getPipelineRunLog"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	b, err := c.s3.GetObject(ctx, logObject)
@@ -163,7 +163,7 @@ func (c *S3Collector) GetPipelineRunLog(ctx context.Context, logObject string) (
 }
 
 func (c *S3Collector) GetPipelineRunObject(ctx context.Context, object string) (_ *Object, err error) {
-	const op = "s3Collector: GetPipelineRunObject"
+	const op = "s3Collector: getPipelineRunObject"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	b, err := c.s3.GetObject(ctx, object)
