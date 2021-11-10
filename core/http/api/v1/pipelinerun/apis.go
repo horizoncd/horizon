@@ -6,6 +6,8 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
+	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 
 	"github.com/gin-gonic/gin"
@@ -100,4 +102,47 @@ func (a *API) GetDiff(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, diff)
+}
+
+func (a *API) Get(c *gin.Context) {
+	pipelinerunIDStr := c.Param(_pipelinerunIDParam)
+	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	resp, err := a.prCtl.GetPipeline(c, uint(pipelinerunID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
+func (a *API) ListPipeline(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	pageNumber, pageSize, err := request.GetPageParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	total, pipelines, err := a.prCtl.ListPipeline(c, uint(clusterID), q.Query{
+		PageNumber: pageNumber,
+		PageSize:   pageSize,
+	})
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: int64(total),
+		Items: pipelines,
+	})
 }
