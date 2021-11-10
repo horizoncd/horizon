@@ -1,4 +1,3 @@
-// Package collector 负责上传pipelineRun相关资源（crd定义、日志等）到远端存储
 package collector
 
 import (
@@ -11,11 +10,11 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 )
 
-// Object 需要收集起来的pipelineRun元数据
+// Object the pipelinerun object to be collected
 type Object struct {
-	// 元数据
+	// Metadata meta data
 	Metadata *ObjectMeta `json:"metadata"`
-	// pipelineRun
+	// PipelineRun v1beta1.PipelineRun
 	PipelineRun *v1beta1.PipelineRun `json:"pipelineRun"`
 }
 
@@ -57,13 +56,13 @@ type (
 )
 
 type Interface interface {
-	// Collect 收集pipelineRun的资源对象 & 日志
+	// Collect log & object for pipelinerun
 	Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*CollectResult, error)
 
-	// GetPipelineRunLog 根据日志对象名称获取日志
+	// GetPipelineRunLog get pipelinerun log from collector
 	GetPipelineRunLog(ctx context.Context, logObject string) (_ []byte, err error)
 
-	// GetPipelineRunObject 根据对象名称获取pipelineRun对象
+	// GetPipelineRunObject get pipelinerun object from collector
 	GetPipelineRunObject(ctx context.Context, object string) (*Object, error)
 }
 

@@ -21,20 +21,20 @@ type Controller interface {
 }
 
 type controller struct {
-	prMgr      prmanager.Manager
-	clusterMgr clustermanager.Manager
-	envMgr     envmanager.Manager
-	tektonFty  factory.Factory
+	pipelinerunMgr prmanager.Manager
+	clusterMgr     clustermanager.Manager
+	envMgr         envmanager.Manager
+	tektonFty      factory.Factory
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(tektonFty factory.Factory) Controller {
 	return &controller{
-		prMgr:      prmanager.Mgr,
-		clusterMgr: clustermanager.Mgr,
-		envMgr:     envmanager.Mgr,
-		tektonFty:  tektonFty,
+		pipelinerunMgr: prmanager.Mgr,
+		clusterMgr:     clustermanager.Mgr,
+		envMgr:         envmanager.Mgr,
+		tektonFty:      tektonFty,
 	}
 }
 
@@ -49,7 +49,7 @@ func (c *controller) GetPrLog(ctx context.Context, prID uint) (_ *Log, err error
 	const op = "pipelinerun controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	pr, err := c.prMgr.GetByID(ctx, prID)
+	pr, err := c.pipelinerunMgr.GetByID(ctx, prID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -69,14 +69,14 @@ func (c *controller) GetPrLog(ctx context.Context, prID uint) (_ *Log, err error
 		return nil, errors.E(op, fmt.Errorf("%v action has no log", pr.Action))
 	}
 
-	return c.getPrLog(ctx, pr, cluster, er.EnvironmentName)
+	return c.getPipelinerunLog(ctx, pr, cluster, er.EnvironmentName)
 }
 
 func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_ *Log, err error) {
 	const op = "pipelinerun controller: get cluster latest log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	pr, err := c.prMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
+	pr, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -92,10 +92,10 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	return c.getPrLog(ctx, pr, cluster, er.EnvironmentName)
+	return c.getPipelinerunLog(ctx, pr, cluster, er.EnvironmentName)
 }
 
-func (c *controller) getPrLog(ctx context.Context, pr *prmodels.Pipelinerun, cluster *clustermodels.Cluster,
+func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelinerun, cluster *clustermodels.Cluster,
 	environment string) (_ *Log, err error) {
 	const op = "pipeline controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })

@@ -14,7 +14,6 @@ import (
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/stretchr/testify/assert"
@@ -218,7 +217,7 @@ func Test(t *testing.T) {
 		tektonFty:      tektonFty,
 	}
 
-	err = c.CloudEvent(ctx, &metrics.WrappedPipelineRun{
+	err = c.CloudEvent(ctx, &WrappedPipelineRun{
 		PipelineRun: pipelineRun,
 	})
 	assert.Nil(t, err)

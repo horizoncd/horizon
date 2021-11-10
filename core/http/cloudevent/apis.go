@@ -6,8 +6,8 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cloudevent"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"g.hz.netease.com/horizon/pkg/server/response"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,7 +30,7 @@ func (a *API) CloudEvent(c *gin.Context) {
 		return
 	}
 
-	var wpr *metrics.WrappedPipelineRun
+	var wpr *cloudevent.WrappedPipelineRun
 	if err := c.ShouldBindJSON(&wpr); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))

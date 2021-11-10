@@ -88,10 +88,10 @@ func Test(t *testing.T) {
 	assert.NotNil(t, pipelinerun)
 
 	c := &controller{
-		prMgr:      pipelinerunMgr,
-		clusterMgr: clusterMgr,
-		envMgr:     envMgr,
-		tektonFty:  tektonFty,
+		pipelinerunMgr: pipelinerunMgr,
+		clusterMgr:     clusterMgr,
+		envMgr:         envMgr,
+		tektonFty:      tektonFty,
 	}
 
 	logBytes := []byte("this is a log")

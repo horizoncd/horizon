@@ -17,7 +17,7 @@ import (
 )
 
 type Controller interface {
-	CloudEvent(ctx context.Context, wpr *metrics.WrappedPipelineRun) error
+	CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) error
 }
 
 type controller struct {
@@ -32,7 +32,7 @@ func NewController(tektonFty factory.Factory) Controller {
 	}
 }
 
-func (c *controller) CloudEvent(ctx context.Context, wpr *metrics.WrappedPipelineRun) (err error) {
+func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (err error) {
 	const op = "cloudEvent controller: cloudEvent"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -54,7 +54,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *metrics.WrappedPipelin
 		if errors.Status(err) == http.StatusNotFound {
 			// 如果pipelineRun已经不存在，直接忽略。
 			// 这种情况一般是 tekton pipeline controller重复上报了同一个pipelineRun所致
-			log.Infof(ctx, "received pipelineRun: %v is not found when collect", wpr.PipelineRun.Name)
+			log.Warningf(ctx, "received pipelineRun: %v is not found when collect", wpr.PipelineRun.Name)
 			return nil
 		}
 		return errors.E(op, err)
@@ -82,7 +82,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *metrics.WrappedPipelin
 
 	if err := tekton.DeletePipelineRun(ctx, wpr.PipelineRun); err != nil {
 		if errors.Status(err) == http.StatusNotFound {
-			log.Infof(ctx, "received pipelineRun: %v is not found when delete", wpr.PipelineRun.Name)
+			log.Warningf(ctx, "received pipelineRun: %v is not found when delete", wpr.PipelineRun.Name)
 			return nil
 		}
 		return errors.E(op, err)
@@ -90,7 +90,9 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *metrics.WrappedPipelin
 
 	// 4. observe metrics
 	// 最后指标上报，保证同一条pipelineRun，只上报一条指标
-	metrics.Observe(wpr)
+	metrics.Observe(&metrics.WrappedPipelineRun{
+		PipelineRun: wpr.PipelineRun,
+	})
 
 	return nil
 }
