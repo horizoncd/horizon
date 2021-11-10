@@ -52,8 +52,14 @@ type DeployClusterParams struct {
 	Revision      string
 }
 
+type DeleteClusterParams struct {
+	Environment string
+	Cluster     string
+}
+
 type CD interface {
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
+	DeleteCluster(ctx context.Context, params *DeleteClusterParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 }
@@ -98,6 +104,36 @@ func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (er
 	}
 
 	return argo.DeployApplication(ctx, params.Cluster, params.Revision)
+}
+
+func (c *cd) DeleteCluster(ctx context.Context, params *DeleteClusterParams) (err error) {
+	const op = "cd: delete cluster"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	argo, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	// 1. get application first
+	applicationCR, err := argo.GetApplication(ctx, params.Cluster)
+	if err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return errors.E(op, err)
+		}
+		return nil
+	}
+
+	// 2. delete application
+	if err := argo.DeleteApplication(ctx, params.Cluster); err != nil {
+		return errors.E(op, err)
+	}
+
+	// 3. wait for application to delete completely
+	if err := argo.WaitApplication(ctx, params.Cluster, string(applicationCR.UID), http.StatusNotFound); err != nil {
+		return errors.E(op, err)
+	}
+	return nil
 }
 
 // GetClusterState TODO(gjq) restructure

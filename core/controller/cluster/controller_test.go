@@ -38,11 +38,11 @@ import (
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -416,6 +416,7 @@ func TestMain(m *testing.M) {
 		Name: "Tony",
 		ID:   uint(1),
 	})
+	ctx = context.WithValue(ctx, requestid.HeaderXRequestID, "requestid")
 
 	if err := json.Unmarshal([]byte(applicationSchemaJSON), &applicationSchema); err != nil {
 		panic(err)
@@ -651,7 +652,7 @@ func Test(t *testing.T) {
 
 	registry := registrymock.NewMockRegistry(mockCtl)
 	registry.EXPECT().CreateProject(ctx, gomock.Any()).Return(1, nil)
-	registryFty.EXPECT().GetByHarborConfig(ctx, gomock.Any()).Return(registry)
+	registryFty.EXPECT().GetByHarborConfig(ctx, gomock.Any()).Return(registry).AnyTimes()
 
 	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any()).Return(&code.Commit{
 		ID:      "code-commit-id",

@@ -10,10 +10,14 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
+	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -326,6 +330,71 @@ func (c *controller) GetClusterByName(ctx context.Context,
 		CreatedAt: cluster.CreatedAt,
 		UpdatedAt: cluster.UpdatedAt,
 	}, nil
+}
+
+// DeleteCluster TODO(gjq): failed to delete cluster, give user a alert.
+func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err error) {
+	const op = "cluster controller: delete cluster"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// get some relevant models
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	// delete cluster asynchronously, if any error occurs, ignore and return
+	go func() {
+		// should use a new context
+		rid, err := requestid.FromContext(ctx)
+		if err != nil {
+			log.Errorf(ctx, "failed to get request id from context")
+		}
+		ctx := log.WithContext(context.Background(), rid)
+
+		// 1. delete cluster in cd system
+		if err := c.cd.DeleteCluster(ctx, &cd.DeleteClusterParams{
+			Environment: er.EnvironmentName,
+			Cluster:     cluster.Name,
+		}); err != nil {
+			log.Errorf(ctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
+			return
+		}
+
+		// 2. delete harbor repository
+		harbor := c.registryFty.GetByHarborConfig(ctx, &registry.HarborConfig{
+			Server:          regionEntity.Harbor.Server,
+			Token:           regionEntity.Harbor.Token,
+			PreheatPolicyID: regionEntity.Harbor.PreheatPolicyID,
+		})
+
+		if err := harbor.DeleteRepository(ctx, application.Name, cluster.Name); err != nil {
+			// log error, not return here, delete harbor repository failed has no effect
+			log.Errorf(ctx, "failed to delete harbor repository: %v, err: %v", cluster.Name, err)
+		}
+
+		// 3. delete cluster in git repo
+		if err := c.clusterGitRepo.DeleteCluster(ctx, application.Name, cluster.Name, cluster.ID); err != nil {
+			log.Errorf(ctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
+		}
+	}()
+
+	return nil
 }
 
 // validateCreate validate for create cluster
