@@ -16,6 +16,7 @@ type DAO interface {
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
 	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
+	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 }
 
 type dao struct{}
@@ -90,4 +91,16 @@ func (d *dao) GetLatestByClusterIDAndAction(ctx context.Context,
 		return nil, nil
 	}
 	return &pipelinerun, nil
+}
+
+func (d *dao) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	res := db.Exec(common.PipelinerunUpdateResultByID, result.Result, result.S3Bucket,
+		result.LogObject, result.PrObject, result.StartedAt, result.FinishedAt, pipelinerunID)
+
+	return res.Error
 }

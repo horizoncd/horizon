@@ -107,3 +107,17 @@ func (mr *MockManagerMockRecorder) UpdateConfigCommitByID(ctx, pipelinerunID, co
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfigCommitByID", reflect.TypeOf((*MockManager)(nil).UpdateConfigCommitByID), ctx, pipelinerunID, commit)
 }
+
+// UpdateResultByID mocks base method.
+func (m *MockManager) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateResultByID", ctx, pipelinerunID, result)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateResultByID indicates an expected call of UpdateResultByID.
+func (mr *MockManagerMockRecorder) UpdateResultByID(ctx, pipelinerunID, result interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateResultByID", reflect.TypeOf((*MockManager)(nil).UpdateResultByID), ctx, pipelinerunID, result)
+}

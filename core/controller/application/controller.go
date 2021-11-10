@@ -8,9 +8,11 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -32,12 +34,15 @@ type Controller interface {
 		request *UpdateApplicationRequest) (*GetApplicationResponse, error)
 	// DeleteApplication delete an application by name
 	DeleteApplication(ctx context.Context, id uint) error
+	// ListApplication list application by filter
+	ListApplication(ctx context.Context, filter string, query q.Query) (int, []*ListApplicationResponse, error)
 }
 
 type controller struct {
 	applicationGitRepo   gitrepo.ApplicationGitRepo
 	templateSchemaGetter templateschema.Getter
 	applicationMgr       manager.Manager
+	applicationSvc       applicationservice.Service
 	groupMgr             groupmanager.Manager
 	groupSvc             groupsvc.Service
 	templateReleaseMgr   trmanager.Manager
@@ -52,6 +57,7 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
 		applicationMgr:       manager.Mgr,
+		applicationSvc:       applicationservice.Svc,
 		groupMgr:             groupmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
 		templateReleaseMgr:   trmanager.Mgr,
@@ -364,4 +370,47 @@ func validateApplicationName(name string) error {
 	}
 
 	return nil
+}
+
+func (c *controller) ListApplication(ctx context.Context, filter string, query q.Query) (count int,
+	listApplicationResp []*ListApplicationResponse, err error) {
+	const op = "application controller: list application"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	listApplicationResp = []*ListApplicationResponse{}
+	// 1. get application in db
+	count, applications, err := c.applicationMgr.GetByNameFuzzilyByPagination(ctx, filter, query)
+	if err != nil {
+		return count, nil, err
+	}
+
+	// 2. get groups for full path, full name
+	var groupIDs []uint
+	for _, application := range applications {
+		groupIDs = append(groupIDs, application.GroupID)
+	}
+	groupMap, err := c.groupSvc.GetChildrenByIDs(ctx, groupIDs)
+	if err != nil {
+		return count, nil, err
+	}
+
+	// 3. convert models.Application to ListApplicationResponse
+	for _, application := range applications {
+		fullPath := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullPath, application.Name)
+		fullName := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullName, application.Name)
+		listApplicationResp = append(
+			listApplicationResp,
+			&ListApplicationResponse{
+				FullName:  fullName,
+				FullPath:  fullPath,
+				Name:      application.Name,
+				GroupID:   application.GroupID,
+				ID:        application.ID,
+				CreatedAt: application.CreatedAt,
+				UpdatedAt: application.UpdatedAt,
+			},
+		)
+	}
+
+	return count, listApplicationResp, nil
 }

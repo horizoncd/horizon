@@ -28,6 +28,8 @@ type Manager interface {
 	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
+	ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int,
+		[]*models.ClusterWithEnvAndRegion, error)
 }
 
 func New() Manager {
@@ -79,6 +81,23 @@ func (m *manager) ListByApplicationAndEnv(ctx context.Context, applicationID uin
 		query.PageSize = common.DefaultPageSize
 	}
 	return m.dao.ListByApplicationAndEnv(ctx, applicationID, environment, filter, query)
+}
+
+func (m *manager) ListByNameFuzzily(ctx context.Context, environment,
+	name string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	if query == nil {
+		query = &q.Query{
+			PageNumber: common.DefaultPageNumber,
+			PageSize:   common.DefaultPageSize,
+		}
+	}
+	if query.PageNumber < 1 {
+		query.PageNumber = common.DefaultPageNumber
+	}
+	if query.PageSize < 1 {
+		query.PageSize = common.DefaultPageSize
+	}
+	return m.dao.ListByNameFuzzily(ctx, environment, name, query)
 }
 
 func (m *manager) CheckClusterExists(ctx context.Context, cluster string) (bool, error) {

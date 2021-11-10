@@ -27,9 +27,9 @@ type Controller interface {
 }
 
 type controller struct {
-	prMgr          prmanager.Manager
-	clusterMgr     clustermanager.Manager
+	pipelinerunMgr prmanager.Manager
 	applicationMgr appmanager.Manager
+	clusterMgr     clustermanager.Manager
 	envMgr         envmanager.Manager
 	tektonFty      factory.Factory
 	commitGetter   code.CommitGetter
@@ -38,13 +38,16 @@ type controller struct {
 
 var _ Controller = (*controller)(nil)
 
-func NewController(tektonFty factory.Factory) Controller {
+func NewController(tektonFty factory.Factory, codeGetter code.CommitGetter,
+	clusterRepo gitrepo.ClusterGitRepo) Controller {
 	return &controller{
-		prMgr:          prmanager.Mgr,
+		pipelinerunMgr: prmanager.Mgr,
 		clusterMgr:     clustermanager.Mgr,
-		applicationMgr: appmanager.Mgr,
 		envMgr:         envmanager.Mgr,
 		tektonFty:      tektonFty,
+		commitGetter:   codeGetter,
+		applicationMgr: appmanager.Mgr,
+		clusterGitRepo: clusterRepo,
 	}
 }
 
@@ -59,7 +62,7 @@ func (c *controller) GetPrLog(ctx context.Context, prID uint) (_ *Log, err error
 	const op = "pipelinerun controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	pr, err := c.prMgr.GetByID(ctx, prID)
+	pr, err := c.pipelinerunMgr.GetByID(ctx, prID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -68,10 +71,7 @@ func (c *controller) GetPrLog(ctx context.Context, prID uint) (_ *Log, err error
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
+
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -82,14 +82,14 @@ func (c *controller) GetPrLog(ctx context.Context, prID uint) (_ *Log, err error
 		return nil, errors.E(op, fmt.Errorf("%v action has no log", pr.Action))
 	}
 
-	return c.getPrLog(ctx, pr, cluster, application.Name, er.EnvironmentName)
+	return c.getPipelinerunLog(ctx, pr, cluster, er.EnvironmentName)
 }
 
 func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_ *Log, err error) {
 	const op = "pipelinerun controller: get cluster latest log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	pr, err := c.prMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
+	pr, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -101,19 +101,15 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	return c.getPrLog(ctx, pr, cluster, application.Name, er.EnvironmentName)
+	return c.getPipelinerunLog(ctx, pr, cluster, er.EnvironmentName)
 }
 
-func (c *controller) getPrLog(ctx context.Context, pr *prmodels.Pipelinerun, cluster *clustermodels.Cluster,
-	application, environment string) (_ *Log, err error) {
+func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelinerun, cluster *clustermodels.Cluster,
+	environment string) (_ *Log, err error) {
 	const op = "pipeline controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -139,8 +135,7 @@ func (c *controller) getPrLog(ctx context.Context, pr *prmodels.Pipelinerun, clu
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	// TODO(gjq): get pipelinerun log by pr.Object
-	logBytes, err := tektonCollector.GetLatestPipelineRunLog(ctx, application, cluster.Name)
+	logBytes, err := tektonCollector.GetPipelineRunLog(ctx, pr.LogObject)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -154,7 +149,7 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	// 1. get pipeline
-	pipelinerun, err := c.prMgr.GetByID(ctx, pipelinerunID)
+	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
 	if err != nil {
 		return nil, err
 	}

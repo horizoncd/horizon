@@ -65,9 +65,13 @@ const (
 
 /* sql about application */
 const (
-	ApplicationQueryByID              = "select * from application where id = ? and deleted_at is null"
-	ApplicationQueryByName            = "select * from application where name = ? and deleted_at is null"
-	ApplicationQueryByFuzzily         = "select * from application where name like ? and deleted_at is null"
+	ApplicationQueryByIDs                  = "select * from application where id in ? and deleted_at is null"
+	ApplicationQueryByID                   = "select * from application where id = ? and deleted_at is null"
+	ApplicationQueryByName                 = "select * from application where name = ? and deleted_at is null"
+	ApplicationQueryByFuzzily              = "select * from application where name like ? and deleted_at is null"
+	ApplicationQueryByFuzzilyCount         = "select count(1) from application where name like ? and deleted_at is null"
+	ApplicationQueryByFuzzilyAndPagination = "select * from application where name like ? and deleted_at is null " +
+		"order by name desc limit ? offset ?"
 	ApplicationQueryByNamesUnderGroup = "select * from application where group_id = ? and name in ? " +
 		"and deleted_at is null"
 	ApplicationDeleteByID     = "update application set deleted_at = CURRENT_TIMESTAMP where id = ?"
@@ -120,6 +124,24 @@ const (
 		"join region r on r.name = er.region_name " +
 		"where c.application_id = ? and er.environment_name = ? " +
 		"and c.name like ? and c.deleted_at is null"
+	ClusterQueryByNameFuzzily = "select c.*, er.environment_name, er.region_name, " +
+		"r.display_name as region_display_name from cluster c " +
+		"join environment_region er on c.environment_region_id = er.id " +
+		"join region r on r.name = er.region_name " +
+		"where c.name like ? and c.deleted_at is null limit ? offset ?"
+	ClusterCountByNameFuzzily = "select count(1) from cluster c " +
+		"join environment_region er on c.environment_region_id = er.id " +
+		"join region r on r.name = er.region_name " +
+		"where c.name like ? and c.deleted_at is null"
+	ClusterQueryByEnvNameFuzzily = "select c.*, er.environment_name, er.region_name, " +
+		"r.display_name as region_display_name from cluster c " +
+		"join environment_region er on c.environment_region_id = er.id " +
+		"join region r on r.name = er.region_name " +
+		"where er.environment_name = ? and c.name like ? and c.deleted_at is null limit ? offset ?"
+	ClusterCountByEnvNameFuzzily = "select count(1) from cluster c " +
+		"join environment_region er on c.environment_region_id = er.id " +
+		"join region r on r.name = er.region_name " +
+		"where er.environment_name = ? and c.name like ? and c.deleted_at is null"
 	ClusterQueryByClusterName = "select * from cluster where name = ? and deleted_at is null"
 )
 
@@ -130,4 +152,6 @@ const (
 	PipelinerunUpdateConfigCommitByID        = "update pipelinerun set config_commit = ? where id = ?"
 	PipelinerunGetLatestByClusterIDAndAction = "select * from pipelinerun where cluster_id = ? " +
 		"and action = ? order by id desc limit 1"
+	PipelinerunUpdateResultByID = "update pipelinerun set status = ?, s3_bucket = ?, log_object = ?, " +
+		"pr_object = ?, started_at = ?, finished_at = ? where id = ?"
 )

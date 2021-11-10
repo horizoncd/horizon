@@ -30,8 +30,10 @@ type Interface interface {
 	ListObjects(ctx context.Context, prefix string, maxKeys int64) ([]*awss3.Object, error)
 	// DeleteObjects 删除所有以prefix开头的对象
 	DeleteObjects(ctx context.Context, prefix string) error
-	//GetSignedObjectURL  获取上传文件的url
+	// GetSignedObjectURL  获取上传文件的url
 	GetSignedObjectURL(path string, expire time.Duration) (string, error)
+	// GetBucket get s3 bucket
+	GetBucket(ctx context.Context) string
 }
 
 type Params struct {
@@ -221,4 +223,8 @@ func (d *Driver) DeleteObjects(ctx context.Context, prefix string) error {
 			return err
 		}
 	}
+}
+
+func (d *Driver) GetBucket(ctx context.Context) string {
+	return d.Bucket
 }

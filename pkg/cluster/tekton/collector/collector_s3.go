@@ -8,12 +8,10 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math"
 	"net/http"
 	"os"
 	"path"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -21,6 +19,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gopkg.in/natefinch/lumberjack.v2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"g.hz.netease.com/horizon/lib/s3"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
@@ -104,67 +103,54 @@ func NewLogStruct(prURL string, metadata *ObjectMeta, logURL string, logContent 
 	}
 }
 
-func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun) error {
+type CollectResult struct {
+	Bucket         string
+	LogObject      string
+	PrObject       string
+	Result         string
+	StartTime      *metav1.Time
+	CompletionTime *metav1.Time
+}
+
+func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*CollectResult, error) {
 	const op = "s3Collector: collect"
 	metadata := resolveObjMetadata(pr)
 	// 先收集日志，收集日志需要使用client-go访问k8s接口，
 	// 如果pipelineRun不存在，直接忽略即可
-	logURL, buildLog, err := c.collectLog(ctx, pr, metadata)
+	collectLogResult, err := c.collectLog(ctx, pr, metadata)
 	if err != nil {
-		return errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
-	prURL, err := c.collectObject(ctx, metadata, pr)
+	collectObjectResult, err := c.collectObject(ctx, metadata, pr)
 	if err != nil {
-		return errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
 
-	logStruct := NewLogStruct(prURL, metadata, logURL, buildLog)
+	logStruct := NewLogStruct(collectObjectResult.PrURL,
+		metadata, collectLogResult.LogURL, collectLogResult.LogContent)
 	b, err := json.Marshal(logStruct)
 	if err != nil {
 		logutil.Errorf(ctx, "failed to marshal log struct")
-		return nil
+		return nil, errors.E(op, err)
 	}
-	//如果日志长度大于2.5mb，则只保留前1mb与后1mb日志数据。
+	// 如果日志长度大于2.5mb，则只保留前1mb与后1mb日志数据。
 	b = cutByteInMiddle(b, _limitSize, _mb, len(b)-_mb)
 	c.logger.Println(string(b))
-	return nil
+	return &CollectResult{
+		Bucket:         c.s3.GetBucket(ctx),
+		LogObject:      collectLogResult.LogObject,
+		PrObject:       collectObjectResult.PrObject,
+		Result:         metadata.PipelineRun.Result,
+		StartTime:      metadata.PipelineRun.StartTime,
+		CompletionTime: metadata.PipelineRun.CompletionTime,
+	}, nil
 }
 
-func (c *S3Collector) Delete(ctx context.Context, application, cluster string) error {
-	const op = "s3Collector: delete"
-	var e1, e2 error
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		e1 = c.s3.DeleteObjects(ctx, c.getPrefixForPr(application, cluster))
-	}()
-	go func() {
-		defer wg.Done()
-		e2 = c.s3.DeleteObjects(ctx, c.getPrefixForPrLog(application, cluster))
-	}()
-	wg.Wait()
-
-	if e1 != nil {
-		return errors.E(op, e1)
-	}
-	if e2 != nil {
-		return errors.E(op, e2)
-	}
-	return nil
-}
-
-func (c *S3Collector) GetLatestPipelineRunLog(ctx context.Context,
-	application, cluster string) (_ []byte, err error) {
-	const op = "s3Collector: getLatestPipelineRunLog"
+func (c *S3Collector) GetPipelineRunLog(ctx context.Context, logObject string) (_ []byte, err error) {
+	const op = "s3Collector: getPipelineRunLog"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	path := c.getPathForLatestPrLog(&ObjectMeta{
-		Application: application,
-		Cluster:     cluster,
-	})
-	b, err := c.s3.GetObject(ctx, path)
+	b, err := c.s3.GetObject(ctx, logObject)
 	if err != nil {
 		if e, ok := err.(awserr.Error); ok {
 			if e.Code() == awss3.ErrCodeNoSuchKey {
@@ -176,16 +162,11 @@ func (c *S3Collector) GetLatestPipelineRunLog(ctx context.Context,
 	return b, nil
 }
 
-func (c *S3Collector) GetLatestPipelineRunObject(ctx context.Context,
-	application, cluster string) (_ *Object, err error) {
-	const op = "s3Collector: getLatestPipelineRunObject"
+func (c *S3Collector) GetPipelineRunObject(ctx context.Context, object string) (_ *Object, err error) {
+	const op = "s3Collector: getPipelineRunObject"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	path := c.getPathForLatestPr(&ObjectMeta{
-		Application: application,
-		Cluster:     cluster,
-	})
-	b, err := c.s3.GetObject(ctx, path)
+	b, err := c.s3.GetObject(ctx, object)
 	if err != nil {
 		if e, ok := err.(awserr.Error); ok {
 			if e.Code() == awss3.ErrCodeNoSuchKey {
@@ -201,8 +182,13 @@ func (c *S3Collector) GetLatestPipelineRunObject(ctx context.Context,
 	return obj, nil
 }
 
+type CollectObjectResult struct {
+	PrObject string
+	PrURL    string
+}
+
 func (c *S3Collector) collectObject(ctx context.Context, metadata *ObjectMeta,
-	pr *v1beta1.PipelineRun) (_ string, err error) {
+	pr *v1beta1.PipelineRun) (_ *CollectObjectResult, err error) {
 	const op = "s3Collector: collectObject"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 	object := &Object{
@@ -211,27 +197,31 @@ func (c *S3Collector) collectObject(ctx context.Context, metadata *ObjectMeta,
 	}
 	b, err := json.Marshal(object)
 	if err != nil {
-		return "", errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
-	prPath, err := c.getPathForPr(metadata)
-	if err != nil {
-		return "", errors.E(op, err)
-	}
+	prPath := c.getPathForPr(metadata)
+
 	prURL, err := c.s3.GetSignedObjectURL(prPath, _expireTimeDuration)
 	if err != nil {
-		return "", errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
 	if err := c.s3.PutObject(ctx, prPath, bytes.NewReader(b), c.resolveMetadata(metadata)); err != nil {
-		return "", errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
-	if err := c.s3.CopyObject(ctx, prPath, c.getPathForLatestPr(metadata)); err != nil {
-		return "", errors.E(op, err)
-	}
-	return prURL, nil
+	return &CollectObjectResult{
+		PrObject: prPath,
+		PrURL:    prURL,
+	}, nil
+}
+
+type CollectLogResult struct {
+	LogObject  string
+	LogURL     string
+	LogContent string
 }
 
 func (c *S3Collector) collectLog(ctx context.Context,
-	pr *v1beta1.PipelineRun, metadata *ObjectMeta) (_ string, _ string, err error) {
+	pr *v1beta1.PipelineRun, metadata *ObjectMeta) (_ *CollectLogResult, err error) {
 	const op = "s3Collector: collectLog"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -239,9 +229,9 @@ func (c *S3Collector) collectLog(ctx context.Context,
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// 如果pipelineRun没有找到，则error code返回http.StatusNotFound
-			return "", "", errors.E(op, http.StatusNotFound, err)
+			return nil, errors.E(op, http.StatusNotFound, err)
 		}
-		return "", "", errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
 	r, w := io.Pipe()
 	go func() {
@@ -268,82 +258,44 @@ func (c *S3Collector) collectLog(ctx context.Context,
 		}
 	}()
 
-	prPath, err := c.getPathForPr(metadata)
-	if err != nil {
-		return "", "", errors.E(op, err)
-	}
-	logPath, err := c.getPathForPrLog(metadata)
-	if err != nil {
-		return "", "", errors.E(op, err)
-	}
+	logPath := c.getPathForPrLog(metadata)
 
 	logURL, err := c.s3.GetSignedObjectURL(logPath, _expireTimeDuration)
 	if err != nil {
-		return "", "", errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
 
 	// TODO(demo) 日志先缓存到内存，再上传。如后续遇到内存占用很高的情况，可以考虑先存储到磁盘，再上传
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
-		return "", "", errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
-	if err := c.s3.PutObject(ctx, prPath, bytes.NewReader(b), nil); err != nil {
-		return "", "", errors.E(op, err)
+	if err := c.s3.PutObject(ctx, logPath, bytes.NewReader(b), nil); err != nil {
+		return nil, errors.E(op, err)
 	}
-	if err := c.s3.CopyObject(ctx, prPath, c.getPathForLatestPrLog(metadata)); err != nil {
-		return "", "", errors.E(op, err)
-	}
-	return logURL, string(b), nil
+	return &CollectLogResult{
+		LogObject:  logPath,
+		LogURL:     logURL,
+		LogContent: string(b),
+	}, nil
 }
 
 // getPathForPr 计算pr的路径
-// 由于s3的list接口返回的数据是按照字母序排序，故使用 maxInt64-{当前时间} 作为前缀，
-// 这样能保证后续上传的对象在list接口中排在前面，实现按照creationTime倒序排序
-func (c *S3Collector) getPathForPr(metadata *ObjectMeta) (string, error) {
-	const op = "s3Collector: getPathForPr"
-	creationTime, err := strconv.Atoi(metadata.CreationTimestamp)
-	if err != nil {
-		return "", errors.E(op, err)
-	}
-	prefix := math.MaxInt64 - creationTime
-	return fmt.Sprintf("pr/%s/%s/%d-%s",
-		metadata.Application, metadata.Cluster,
-		prefix, metadata.PipelineRun.Name), nil
+func (c *S3Collector) getPathForPr(metadata *ObjectMeta) string {
+	timeFormat := "200601"
+	timeStr := time.Now().Format(timeFormat)
+	return fmt.Sprintf("%s/pr/%s-%s/%s-%s/%s", timeStr,
+		metadata.Application, metadata.ApplicationID, metadata.Cluster, metadata.ClusterID,
+		metadata.PipelineRun.Name)
 }
 
-// getPathForLatestPr 计算pr的路径
-func (c *S3Collector) getPathForLatestPr(metadata *ObjectMeta) string {
-	return fmt.Sprintf("pr/%s/%s/latest",
-		metadata.Application, metadata.Cluster)
-}
-
-// getPathForPr 计算pr的路径
-// 由于s3的list接口返回的数据是按照字母序排序，故使用 maxInt64-{当前时间} 作为前缀，
-// 这样能保证后续上传的对象在list接口中排在前面，实现按照creationTime倒序排序
-func (c *S3Collector) getPathForPrLog(metadata *ObjectMeta) (string, error) {
-	const op = "s3Collector: getPathForPrLog"
-	creationTime, err := strconv.Atoi(metadata.CreationTimestamp)
-	if err != nil {
-		return "", errors.E(op, err)
-	}
-	prefix := math.MaxInt64 - creationTime
-	return fmt.Sprintf("pr-log/%s/%s/%d-%s",
-		metadata.Application, metadata.Cluster,
-		prefix, metadata.PipelineRun.Name), nil
-}
-
-// getPathForLatestPr 计算pr的路径
-func (c *S3Collector) getPathForLatestPrLog(metadata *ObjectMeta) string {
-	return fmt.Sprintf("pr-log/%s/%s/latest",
-		metadata.Application, metadata.Cluster)
-}
-
-func (c *S3Collector) getPrefixForPr(application, cluster string) string {
-	return fmt.Sprintf("pr/%s/%s", application, cluster)
-}
-
-func (c *S3Collector) getPrefixForPrLog(application, cluster string) string {
-	return fmt.Sprintf("pr-log/%s/%s", application, cluster)
+// getPathForPr 计算pr log的路径
+func (c *S3Collector) getPathForPrLog(metadata *ObjectMeta) string {
+	timeFormat := "200601"
+	timeStr := time.Now().Format(timeFormat)
+	return fmt.Sprintf("%s/pr-log/%s-%s/%s-%s/%s", timeStr,
+		metadata.Application, metadata.ApplicationID, metadata.Cluster, metadata.ClusterID,
+		metadata.PipelineRun.Name)
 }
 
 /**

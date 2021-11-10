@@ -1,4 +1,3 @@
-// collector 负责上传pipelineRun相关资源（crd定义、日志等）到远端存储
 package collector
 
 import (
@@ -6,22 +5,25 @@ import (
 	"time"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 )
 
-// Object 需要收集起来的pipelineRun元数据
+// Object the pipelinerun object to be collected
 type Object struct {
-	// 元数据
+	// Metadata meta data
 	Metadata *ObjectMeta `json:"metadata"`
-	// pipelineRun
+	// PipelineRun v1beta1.PipelineRun
 	PipelineRun *v1beta1.PipelineRun `json:"pipelineRun"`
 }
 
 type (
 	ObjectMeta struct {
 		Application       string             `json:"application"`
+		ApplicationID     string             `json:"applicationID"`
 		Cluster           string             `json:"cluster"`
+		ClusterID         string             `json:"clusterID"`
 		Environment       string             `json:"environment"`
 		Operator          string             `json:"operator"`
 		CreationTimestamp string             `json:"creationTimestamp"`
@@ -45,29 +47,26 @@ type (
 		StatusMeta `json:",inline"`
 	}
 	StatusMeta struct {
-		Name            string  `json:"name"`
-		Result          string  `json:"result"`
-		DurationSeconds float64 `json:"durationSeconds"`
+		Name            string       `json:"name"`
+		Result          string       `json:"result"`
+		DurationSeconds float64      `json:"durationSeconds"`
+		StartTime       *metav1.Time `json:"startTime"`
+		CompletionTime  *metav1.Time `json:"completionTime"`
 	}
 )
 
 type Interface interface {
-	// Collect 收集pipelineRun的资源对象 & 日志
-	Collect(ctx context.Context, pr *v1beta1.PipelineRun) error
+	// Collect log & object for pipelinerun
+	Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*CollectResult, error)
 
-	// Delete 删除应用、集群对应的所有内容。释放集群时需要
-	Delete(ctx context.Context, application, cluster string) error
+	// GetPipelineRunLog get pipelinerun log from collector
+	GetPipelineRunLog(ctx context.Context, logObject string) (_ []byte, err error)
 
-	// GetLatestPipelineRunLog 根据应用、集群获取该应用集群最近一次的构建日志
-	GetLatestPipelineRunLog(ctx context.Context, application, cluster string) ([]byte, error)
-
-	// GetLatestPipelineRunObject 根据应用、集群获取该应用集群最近一次的资源对象
-	GetLatestPipelineRunObject(ctx context.Context, application, cluster string) (*Object, error)
+	// GetPipelineRunObject get pipelinerun object from collector
+	GetPipelineRunObject(ctx context.Context, object string) (*Object, error)
 }
 
 var _ Interface = (*S3Collector)(nil)
-
-const CollectorTimeout = 15 * time.Second
 
 const timestampLayout = "20060102150405"
 
@@ -120,7 +119,9 @@ func resolveObjMetadata(pr *v1beta1.PipelineRun) *ObjectMeta {
 	cstSh, _ := time.LoadLocation("Asia/Shanghai")
 	return &ObjectMeta{
 		Application:       prBusinessData.Application,
+		ApplicationID:     prBusinessData.ApplicationID,
 		Cluster:           prBusinessData.Cluster,
+		ClusterID:         prBusinessData.ClusterID,
 		Environment:       prBusinessData.Environment,
 		Operator:          prBusinessData.Operator,
 		CreationTimestamp: pr.CreationTimestamp.In(cstSh).Format(timestampLayout),
@@ -129,6 +130,8 @@ func resolveObjMetadata(pr *v1beta1.PipelineRun) *ObjectMeta {
 				Name:            prMetadata.Name,
 				Result:          prResult.Result.String(),
 				DurationSeconds: prResult.DurationSeconds,
+				StartTime:       prResult.StartTime,
+				CompletionTime:  prResult.CompletionTime,
 			},
 			Pipeline:   prMetadata.Pipeline,
 			TaskRuns:   taskRuns,

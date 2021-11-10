@@ -1,56 +1,47 @@
-package collector
+package cloudevent
 
 import (
 	"context"
 	"encoding/json"
-	"net/http/httptest"
-	"reflect"
-	"strconv"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
-	"github.com/johannesboyne/gofakes3"
-	"github.com/johannesboyne/gofakes3/backend/s3mem"
+	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/lib/orm"
+	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
+	tektoncollectormock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/collector"
+	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
+	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"g.hz.netease.com/horizon/lib/s3"
-	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
+	"github.com/golang/mock/gomock"
 )
 
-func getPipelineRunLog(pr *v1beta1.PipelineRun) (<-chan log.Log, <-chan error, error) {
-	logCh := make(chan log.Log)
-	pipeline := pr.ObjectMeta.Labels["tekton.dev/pipeline"]
-	task := "test-task"
-	step := "test-step"
-	go func() {
-		defer close(logCh)
-		for i := 0; i < 10; i++ {
-			logCh <- log.Log{
-				Pipeline: pipeline,
-				Task:     task,
-				Step:     step,
-				Log:      "line" + strconv.Itoa(i),
-			}
-			time.Sleep(10 * time.Millisecond)
-		}
-	}()
-	return logCh, nil, nil
-}
+var (
+	ctx context.Context
 
-func TestNewS3Collector(t *testing.T) {
-	s3Driver := &s3.Driver{}
-	ctl := gomock.NewController(t)
-	tek := tektonmock.NewMockInterface(ctl)
-	s := NewS3Collector(s3Driver, tek)
-	assert.NotNil(t, s)
-}
+	pipelineRun *v1beta1.PipelineRun
+)
 
-//nolint:lll
-func TestS3Collector_Collect(t *testing.T) {
-	jsonBody1 := `{
+// nolint
+func TestMain(m *testing.M) {
+	db, _ := orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&prmodels.Pipelinerun{}); err != nil {
+		panic(err)
+	}
+	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+		Name: "Tony",
+		ID:   uint(1),
+	})
+
+	prJSON := `{
         "metadata":{
             "name":"test-music-docker-q58rp",
             "namespace":"tekton-resources",
@@ -60,10 +51,14 @@ func TestS3Collector_Collect(t *testing.T) {
                 "cloudnative.music.netease.com/application":"testapp-1",
                 "cloudnative.music.netease.com/cluster":"testcluster-1",
                 "cloudnative.music.netease.com/environment":"env",
+				"cloudnative.music.netease.com/pipelinerun-id":"1",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
                 "triggers.tekton.dev/triggers-eventid":"cttzw"
+            },
+			"annotations":{
+                "cloudnative.music.netease.com/operator":"demo@mail.com"
             }
         },
         "status":{
@@ -170,56 +165,65 @@ func TestS3Collector_Collect(t *testing.T) {
         }
     }
 	`
-	var pr *v1beta1.PipelineRun
-	if err := json.Unmarshal([]byte(jsonBody1), &pr); err != nil {
-		t.Fatal(err)
+
+	if err := json.Unmarshal([]byte(prJSON), &pipelineRun); err != nil {
+		panic(err)
 	}
 
-	ctx := context.Background()
+	os.Exit(m.Run())
+}
 
-	ctl := gomock.NewController(t)
-	tek := tektonmock.NewMockInterface(ctl)
-	tek.EXPECT().GetPipelineRunLog(ctx, pr).Return(getPipelineRunLog(pr))
+func Test(t *testing.T) {
+	mockCtl := gomock.NewController(t)
+	tektonFty := tektonftymock.NewMockFactory(mockCtl)
+	tekton := tektonmock.NewMockInterface(mockCtl)
+	tektonCollector := tektoncollectormock.NewMockInterface(mockCtl)
+	tektonFty.EXPECT().GetTekton(gomock.Any()).Return(tekton, nil).AnyTimes()
+	tektonFty.EXPECT().GetTektonCollector(gomock.Any()).Return(tektonCollector, nil).AnyTimes()
 
-	backend := s3mem.New()
-	_ = backend.CreateBucket("bucket")
-	faker := gofakes3.New(backend)
-	ts := httptest.NewServer(faker.Server())
-	defer ts.Close()
+	tektonCollector.EXPECT().Collect(ctx, gomock.Any()).Return(&collector.CollectResult{
+		Bucket:    "bucket",
+		LogObject: "log-object",
+		PrObject:  "pr-object",
+		Result:    "ok",
+		StartTime: func() *metav1.Time {
+			tt := time.Now()
+			return &metav1.Time{
+				Time: tt,
+			}
+		}(),
+		CompletionTime: func() *metav1.Time {
+			tt := time.Now()
+			return &metav1.Time{
+				Time: tt,
+			}
+		}(),
+	}, nil)
 
-	params := &s3.Params{
-		AccessKey:        "accessKey",
-		SecretKey:        "secretKey",
-		Region:           "us-east-1",
-		Endpoint:         ts.URL,
-		Bucket:           "bucket",
-		ContentType:      "text/plain",
-		SkipVerify:       true,
-		S3ForcePathStyle: true,
+	tekton.EXPECT().DeletePipelineRun(ctx, gomock.Any()).Return(nil)
+
+	pipelinerunMgr := prmanager.Mgr
+	_, err := pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID:   1,
+		Action:      "builddeploy",
+		Status:      "created",
+		Title:       "title",
+		Description: "description",
+	})
+	assert.Nil(t, err)
+
+	c := &controller{
+		pipelinerunMgr: pipelinerunMgr,
+		tektonFty:      tektonFty,
 	}
 
-	d, err := s3.NewDriver(*params)
+	err = c.CloudEvent(ctx, &WrappedPipelineRun{
+		PipelineRun: pipelineRun,
+	})
 	assert.Nil(t, err)
 
-	c := NewS3Collector(d, tek)
-
-	// collect
-	collectResult, err := c.Collect(ctx, pr)
+	pr, err := pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, uint(1), prmodels.ActionBuildDeploy)
 	assert.Nil(t, err)
-	b, _ := json.Marshal(collectResult)
-	t.Logf("%v", string(b))
-
-	// 验证collect
-	// 1. getLatestPipelineRunLog
-	b, err = c.GetPipelineRunLog(ctx, collectResult.LogObject)
-	assert.Nil(t, err)
-	t.Logf(string(b))
-	// 2. getLatestPipelineRunObject
-	obj, err := c.GetPipelineRunObject(ctx, collectResult.PrObject)
-	assert.Nil(t, err)
-	assert.NotNil(t, obj)
-	objectMeta := resolveObjMetadata(pr)
-	if !reflect.DeepEqual(objectMeta, obj.Metadata) {
-		t.Fatalf("pipelineRun objectMeta: expected %v, got %v", objectMeta, obj.Metadata)
-	}
+	assert.Equal(t, pr.Status, "ok")
+	assert.Equal(t, pr.LogObject, "log-object")
 }
