@@ -198,7 +198,7 @@ func Run(flags *Flags) {
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, nil)
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, commitGetter,
 			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, nil)
-		prCtl = prctl.NewController(tektonFty)
+		prCtl = prctl.NewController(tektonFty, commitGetter, clusterGitRepo)
 
 		templateCtl = templatectl.NewController(templateSchemaGetter)
 		roleCtl     = roltctl.NewController(roleService)

@@ -155,4 +155,9 @@ const (
 		"and action = ? order by id desc limit 1"
 	PipelinerunUpdateResultByID = "update pipelinerun set status = ?, s3_bucket = ?, log_object = ?, " +
 		"pr_object = ?, started_at = ?, finished_at = ? where id = ?"
+
+	PipelinerunGetByClusterID = "select * from pipelinerun where cluster_id = ?" +
+		" order by created_at desc limit ? offset ?"
+
+	PipelinerunGetByClusterIDTotalCount = "select count(1) from pipelinerun where cluster_id = ?"
 )

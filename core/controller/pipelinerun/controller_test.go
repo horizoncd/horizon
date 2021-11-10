@@ -2,37 +2,208 @@ package pipelinerun
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"strconv"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
+	applicationmockmanager "g.hz.netease.com/horizon/mock/pkg/application/manager"
+	commitmock "g.hz.netease.com/horizon/mock/pkg/cluster/code"
+	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
+	clustermockmananger "g.hz.netease.com/horizon/mock/pkg/cluster/manager"
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektoncollectormock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/collector"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
+	pipelinemockmanager "g.hz.netease.com/horizon/mock/pkg/pipelinerun/manager"
+	usermock "g.hz.netease.com/horizon/mock/pkg/user/manager"
+	applicationmodel "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/cluster/models"
+	clustermodel "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	pipelinemodel "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	usermodel "g.hz.netease.com/horizon/pkg/user/models"
 )
 
-var (
-	ctx context.Context
-)
+func TestGetAndListPipelinerun(t *testing.T) {
+	mockCtl := gomock.NewController(t)
+	ctx := context.TODO()
+
+	mockCommitGetter := commitmock.NewMockCommitGetter(mockCtl)
+	mockClusterManager := clustermockmananger.NewMockManager(mockCtl)
+	mockApplicationMananger := applicationmockmanager.NewMockManager(mockCtl)
+	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
+	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+	mockUserManager := usermock.NewMockManager(mockCtl)
+	var ctl Controller = &controller{
+		pipelinerunMgr: mockPipelineManager,
+		clusterMgr:     mockClusterManager,
+		applicationMgr: mockApplicationMananger,
+		envMgr:         nil,
+		tektonFty:      nil,
+		commitGetter:   mockCommitGetter,
+		clusterGitRepo: mockClusterGitRepo,
+		userManager:    mockUserManager,
+	}
+
+	// 1. test Get PipelineBasic
+	var pipelineID uint = 1932
+	var createUser uint = 32
+	mockPipelineManager.EXPECT().GetByID(ctx, pipelineID).Return(&models.Pipelinerun{
+		ID:        pipelineID,
+		CreatedBy: createUser,
+	}, nil).Times(1)
+	var UserName = "tom"
+	mockUserManager.EXPECT().GetUserByID(ctx, createUser).Return(&usermodel.User{
+		Name: UserName,
+	}, nil).Times(1)
+
+	pipelineBasic, err := ctl.Get(ctx, pipelineID)
+	assert.Nil(t, err)
+	assert.Equal(t, pipelineBasic.ID, pipelineID)
+	assert.Equal(t, pipelineBasic.CreatedBy, UserInfo{
+		UserID:   createUser,
+		UserName: UserName,
+	})
+	body, _ := json.MarshalIndent(pipelineBasic, "", " ")
+	t.Logf("%s", string(body))
+
+	// 2. test ListPipeline
+	var clusterID uint = 56
+	var totalCount int = 100
+	// var pipelineruns []*pipelinemodel.Pipelinerun
+	pipelineruns := make([]*pipelinemodel.Pipelinerun, 0)
+	pipelineruns = append(pipelineruns, &pipelinemodel.Pipelinerun{
+		ID:        2,
+		ClusterID: clusterID,
+		CreatedBy: 1,
+	})
+	pipelineruns = append(pipelineruns, &pipelinemodel.Pipelinerun{
+		ID:        3,
+		ClusterID: clusterID,
+		CreatedBy: 0,
+	})
+
+	mockPipelineManager.EXPECT().GetByClusterID(ctx,
+		clusterID, gomock.Any()).Return(totalCount, pipelineruns, nil).Times(1)
+	mockUserManager.EXPECT().GetUserByID(ctx, gomock.Any()).Return(&usermodel.User{
+		Name: UserName,
+	}, nil).AnyTimes()
+
+	query := q.Query{
+		PageNumber: 1,
+		PageSize:   10,
+	}
+	count, pipelineBasics, err := ctl.List(ctx, clusterID, query)
+	assert.Nil(t, err)
+	assert.Equal(t, count, totalCount)
+	assert.Equal(t, len(pipelineBasics), 2)
+
+	body, _ = json.MarshalIndent(pipelineBasics, "", " ")
+	t.Logf("%s", string(body))
+}
+
+func TestGetDiff(t *testing.T) {
+	mockCtl := gomock.NewController(t)
+	ctx := context.TODO()
+
+	mockCommitGetter := commitmock.NewMockCommitGetter(mockCtl)
+	mockClusterManager := clustermockmananger.NewMockManager(mockCtl)
+	mockApplicationMananger := applicationmockmanager.NewMockManager(mockCtl)
+	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
+	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+
+	var ctl Controller = &controller{
+		pipelinerunMgr: mockPipelineManager,
+		clusterMgr:     mockClusterManager,
+		applicationMgr: mockApplicationMananger,
+		envMgr:         nil,
+		tektonFty:      nil,
+		commitGetter:   mockCommitGetter,
+		clusterGitRepo: mockClusterGitRepo,
+	}
+
+	var pipelineID uint = 99854
+	var clusterID uint = 3213
+	gitURL := "git@github.com:demo/demo.git"
+	gitBranch := "master"
+	gitCommit := "12388508504390230802832"
+	configCommit := "123123"
+	lastConfigCommit := "23232"
+	mockPipelineManager.EXPECT().GetByID(ctx, pipelineID).Return(&models.Pipelinerun{
+		ID:               0,
+		ClusterID:        clusterID,
+		GitURL:           gitURL,
+		GitBranch:        gitBranch,
+		GitCommit:        gitCommit,
+		LastConfigCommit: lastConfigCommit,
+		ConfigCommit:     configCommit,
+	}, nil).Times(1)
+
+	clusterName := "mycluster"
+	var applicationID uint = 1234988
+	mockClusterManager.EXPECT().GetByID(ctx, clusterID).Return(&clustermodel.Cluster{
+		ApplicationID: uint(applicationID),
+		Name:          clusterName,
+	}, nil).Times(1)
+
+	applicationName := "myapplication"
+	mockApplicationMananger.EXPECT().GetByID(ctx, applicationID).Return(&applicationmodel.Application{
+		Name: applicationName,
+	}, nil).Times(1)
+
+	commitMsg := "hello world"
+	mockCommitGetter.EXPECT().GetCommit(ctx, gitURL, gitCommit).Return(&code.Commit{
+		ID:      gitCommit,
+		Message: commitMsg,
+	}, nil)
+
+	diff := "this is mydiff"
+	mockClusterGitRepo.EXPECT().CompareConfig(ctx, applicationName, clusterName,
+		&lastConfigCommit, &configCommit).Return(diff, nil).Times(1)
+
+	resp, err := ctl.GetDiff(ctx, pipelineID)
+	assert.Nil(t, err)
+	body, _ := json.Marshal(resp)
+	t.Logf("response = %s", string(body))
+
+	expectResp := &GetDiffResponse{
+		CodeInfo: &CodeInfo{
+			Branch:    gitBranch,
+			CommitID:  gitCommit,
+			CommitMsg: commitMsg,
+			Link:      common.InternalSSHToHTTPURL(gitURL) + common.CommitHistoryMiddle + gitCommit,
+		},
+		ConfigDiff: &ConfigDiff{
+			From: lastConfigCommit,
+			To:   configCommit,
+			Diff: diff,
+		},
+	}
+	assert.Equal(t, *expectResp, *resp)
+}
+
+var ctx context.Context
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&models.Cluster{}, &membermodels.Member{},
+	if err := db.AutoMigrate(&clustermodel.Cluster{}, &membermodels.Member{},
 		&envmodels.EnvironmentRegion{}, &prmodels.Pipelinerun{}); err != nil {
 		panic(err)
 	}
@@ -65,7 +236,7 @@ func Test(t *testing.T) {
 	assert.NotNil(t, er)
 
 	clusterMgr := clustermanager.Mgr
-	cluster, err := clusterMgr.Create(ctx, &models.Cluster{
+	cluster, err := clusterMgr.Create(ctx, &clustermodel.Cluster{
 		Name:                "cluster",
 		EnvironmentRegionID: er.ID,
 		CreatedBy:           0,
@@ -101,7 +272,7 @@ func Test(t *testing.T) {
 	errCh := make(chan error)
 	tekton.EXPECT().GetPipelineRunLogByID(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(logCh, errCh, nil)
 
-	l, err := c.GetPrLog(ctx, pipelinerun.ID)
+	l, err := c.GetPipelinerunLog(ctx, pipelinerun.ID)
 	assert.Nil(t, err)
 	assert.Nil(t, l.LogChannel)
 	assert.Nil(t, l.ErrChannel)
