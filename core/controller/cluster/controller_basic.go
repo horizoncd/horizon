@@ -9,6 +9,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
@@ -366,7 +367,13 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		if err != nil {
 			log.Errorf(ctx, "failed to get request id from context")
 		}
+		db, err := orm.FromContext(ctx)
+		if err != nil {
+			log.Errorf(ctx, "failed to get db from context")
+			return
+		}
 		ctx := log.WithContext(context.Background(), rid)
+		ctx = orm.NewContext(ctx, db)
 
 		// 1. delete cluster in cd system
 		if err := c.cd.DeleteCluster(ctx, &cd.DeleteClusterParams{

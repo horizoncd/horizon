@@ -105,16 +105,15 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-
   /apis/core/v1/pipelineruns/{pipelinerunID}/diffs:
     parameters:
       - name: pipelinerunID
         in: query
         description: the pipelinerun ID
         required: true
-      get:
-        tags:
-          - pipelinerun
+    get:
+      tags:
+        - pipelinerun
       operationId: getPipelineRunDiff
       summary: |
         Get the specified pipelinerun's diff for a cluster.
