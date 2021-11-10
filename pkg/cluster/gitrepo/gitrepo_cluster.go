@@ -114,7 +114,7 @@ type ClusterGitRepo interface {
 	MergeBranch(ctx context.Context, application, cluster string) (string, error)
 	UpdateImage(ctx context.Context, application, cluster, template, image string) (string, error)
 	// UpdateRestartTime update restartTime in git repo for restart
-	// TODO(gjq): some template cannot restart, for exmaple serverless, how to do it ?
+	// TODO(gjq): some template cannot restart, for example serverless, how to do it ?
 	UpdateRestartTime(ctx context.Context, application, cluster, template string) (string, error)
 	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
 	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
