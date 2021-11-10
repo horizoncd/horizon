@@ -201,6 +201,10 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("%v", com)
 
+	com, err = r.UpdateRestartTime(ctx, application, cluster, templateName)
+	assert.Nil(t, err)
+	t.Logf("%v", com)
+
 	repoInfo := r.GetRepoInfo(ctx, application, cluster)
 	assert.NotNil(t, repoInfo)
 	t.Logf("%v", repoInfo)

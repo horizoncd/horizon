@@ -559,7 +559,7 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().GetConfigCommit(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.ClusterCommit{
 		Master: "master-commit",
 		Gitops: "gitops-commit",
-	}, nil)
+	}, nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
 		Base: &Base{
@@ -677,7 +677,8 @@ func Test(t *testing.T) {
 		GitRepoSSHURL: "ssh://xxxx.git",
 		ValueFiles:    []string{"file1", "file2"},
 	})
-	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil)
+	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, errors.E("test", http.StatusNotFound))
 
 	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
@@ -718,5 +719,15 @@ func Test(t *testing.T) {
 		ConfigDiff: configDiff,
 	}, getdiffResp)
 	b, _ = json.Marshal(getdiffResp)
+	t.Logf("%s", string(b))
+
+	// test restart
+	clusterGitRepo.EXPECT().UpdateRestartTime(ctx, gomock.Any(), gomock.Any(),
+		gomock.Any()).Return("update-image-commit", nil)
+
+	restartResp, err := c.Restart(ctx, resp.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	b, _ = json.Marshal(restartResp)
 	t.Logf("%s", string(b))
 }

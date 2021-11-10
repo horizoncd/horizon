@@ -42,14 +42,19 @@ type GetClusterStateParams struct {
 	RegionEntity *regionmodels.RegionEntity
 }
 
-type DeployClusterParams struct {
+type CreateClusterParams struct {
 	Environment   string
 	Cluster       string
 	GitRepoSSHURL string
 	ValueFiles    []string
 	RegionEntity  *regionmodels.RegionEntity
 	Namespace     string
-	Revision      string
+}
+
+type DeployClusterParams struct {
+	Environment string
+	Cluster     string
+	Revision    string
 }
 
 type DeleteClusterParams struct {
@@ -58,6 +63,7 @@ type DeleteClusterParams struct {
 }
 
 type CD interface {
+	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
 	DeleteCluster(ctx context.Context, params *DeleteClusterParams) error
 	// GetClusterState get cluster state in cd system
@@ -76,8 +82,8 @@ func NewCD(argoCDMapper argocdconf.Mapper) CD {
 	}
 }
 
-func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (err error) {
-	const op = "cd: deploy cluster"
+func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
+	const op = "cd: create cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
@@ -85,22 +91,36 @@ func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (er
 		return errors.E(op, err)
 	}
 
-	// if argo application is not exists, create it first
-	if _, err = argo.GetApplication(ctx, params.Cluster); err != nil {
-		if errors.Status(err) != http.StatusNotFound {
-			return errors.E(op, err)
-		}
-		var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
-			params.GitRepoSSHURL, params.RegionEntity.K8SCluster.Server, params.ValueFiles)
+	// if argo application exists, return, else create it
+	_, err = argo.GetApplication(ctx, params.Cluster)
+	if err == nil {
+		return nil
+	}
+	if errors.Status(err) != http.StatusNotFound {
+		return errors.E(op, err)
+	}
+	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
+		params.GitRepoSSHURL, params.RegionEntity.K8SCluster.Server, params.ValueFiles)
 
-		manifest, err := json.Marshal(argoApplication)
-		if err != nil {
-			return errors.E(op, err)
-		}
+	manifest, err := json.Marshal(argoApplication)
+	if err != nil {
+		return errors.E(op, err)
+	}
 
-		if err := argo.CreateApplication(ctx, manifest); err != nil {
-			return errors.E(op, err)
-		}
+	if err := argo.CreateApplication(ctx, manifest); err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
+}
+
+func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (err error) {
+	const op = "cd: deploy cluster"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	argo, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return errors.E(op, err)
 	}
 
 	return argo.DeployApplication(ctx, params.Cluster, params.Revision)

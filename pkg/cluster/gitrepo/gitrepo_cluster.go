@@ -19,11 +19,12 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+	timeutil "g.hz.netease.com/horizon/pkg/util/time"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-	kyaml "sigs.k8s.io/yaml"
 
 	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
+	kyaml "sigs.k8s.io/yaml"
 )
 
 /*
@@ -43,6 +44,7 @@ music-cloud-native
                               │     └── sre.yaml              -- sre values数据
                               ├── system
                               │     ├── horizon.yaml          -- 基础数据
+                              │     ├── restart.yaml          -- 重启时间
                               │     └── env.yaml              -- 环境相关数据
                               └── pipeline
                                     ├── pipeline.yaml         -- pipeline模板参数
@@ -62,6 +64,7 @@ const (
 	_filePathSRE            = "sre/sre.yaml"
 	_filePathBase           = "system/horizon.yaml"
 	_filePathEnv            = "system/env.yaml"
+	_filePathRestart        = "system/restart.yaml"
 	_filePathPipeline       = "pipeline/pipeline.yaml"
 	_filePathPipelineOutput = "pipeline/pipeline-output.yaml"
 )
@@ -110,6 +113,7 @@ type ClusterGitRepo interface {
 	// MergeBranch merge gitops branch to master branch, and return master branch's newest commit
 	MergeBranch(ctx context.Context, application, cluster string) (string, error)
 	UpdateImage(ctx context.Context, application, cluster, template, image string) (string, error)
+	UpdateRestartTime(ctx context.Context, application, cluster, template string) (string, error)
 	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
 	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
 }
@@ -221,7 +225,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	// 3. write files to repo
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
 
-	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML, chartYAML []byte
+	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML, chartYAML, restartYAML []byte
 	var err1, err2, err3, err4, err5, err6, err7 error
 
 	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
@@ -234,6 +238,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		return errors.E(op, err)
 	}
 	marshal(&chartYAML, &err6, chart)
+	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.TemplateName))
 
 	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7} {
 		if err != nil {
@@ -272,6 +277,12 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathPipelineOutput,
 			Content:  "",
+		},
+		// create _filePathRestart file first
+		{
+			Action:   gitlablib.FileCreate,
+			FilePath: _filePathRestart,
+			Content:  string(restartYAML),
 		},
 	}
 
@@ -483,6 +494,49 @@ func (g *clusterGitRepo) UpdateImage(ctx context.Context, application, cluster,
 		Image: image,
 	})
 
+	// update in _branchMaster directly
+	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions)
+	if err != nil {
+		return "", errors.E(op, err)
+	}
+
+	return commit.ID, nil
+}
+
+func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
+	application, cluster, template string) (_ string, err error) {
+	const op = "cluster git repo: update restartTime"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return "", errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+
+	var restartYAML []byte
+	var err1 error
+	marshal(&restartYAML, &err1, assembleRestart(template))
+	if err1 != nil {
+		return "", errors.E(op, err1)
+	}
+
+	actions := []gitlablib.CommitAction{
+		{
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathRestart,
+			Content:  string(restartYAML),
+		},
+	}
+
+	commitMsg := angular.CommitMessage("cluster", angular.Subject{
+		Operator: currentUser.GetName(),
+		Action:   "restart cluster",
+		Cluster:  angular.StringPtr(cluster),
+	}, nil)
+
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
 	if err != nil {
 		return "", errors.E(op, err)
@@ -529,7 +583,7 @@ func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster s
 		GitRepoSSHURL: fmt.Sprintf("%v/%v/%v/%v.git",
 			g.gitlabLib.GetSSHURL(ctx), g.clusterRepoConf.Parent.Path, application, cluster),
 		ValueFiles: []string{_filePathApplication, _filePathPipelineOutput,
-			_filePathEnv, _filePathBase, _filePathSRE},
+			_filePathEnv, _filePathBase, _filePathRestart, _filePathSRE},
 	}
 }
 
@@ -664,6 +718,13 @@ func assemblePipelineOutput(templateName, image string) map[string]map[string]st
 	ret := make(map[string]map[string]string)
 	ret[templateName] = make(map[string]string)
 	ret[templateName]["image"] = image
+	return ret
+}
+
+func assembleRestart(templateName string) map[string]map[string]string {
+	ret := make(map[string]map[string]string)
+	ret[templateName] = make(map[string]string)
+	ret[templateName]["restartTime"] = timeutil.Now(nil)
 	return ret
 }
 
