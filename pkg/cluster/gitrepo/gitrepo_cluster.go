@@ -496,8 +496,7 @@ func (g *clusterGitRepo) UpdateImage(ctx context.Context, application, cluster,
 		Image: image,
 	})
 
-	// update in _branchMaster directly
-	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions)
+	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
 	if err != nil {
 		return "", errors.E(op, err)
 	}
@@ -539,7 +538,8 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 		Cluster:  angular.StringPtr(cluster),
 	}, nil)
 
-	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
+	// update in _branchMaster directly
+	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions)
 	if err != nil {
 		return "", errors.E(op, err)
 	}
