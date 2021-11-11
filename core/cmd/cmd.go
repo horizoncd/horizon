@@ -285,7 +285,7 @@ func Run(flags *Flags) {
 	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)
 	// start api server
 	log.Printf("Server started")
-	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
+	log.Print(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
 
 	// hook elegant stop
 	memHook.Stop()
