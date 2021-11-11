@@ -112,3 +112,7 @@ func FromContext(ctx context.Context) (userauth.User, error) {
 func Key() string {
 	return contextUserKey
 }
+
+func WithContext(parent context.Context, user userauth.User) context.Context {
+	return context.WithValue(parent, Key(), user) // nolint
+}
