@@ -120,6 +120,11 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+	body, err := json.MarshalIndent(config, "", " ")
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("config = %s\n", string(body))
 
 	// init roles
 	file, err := os.OpenFile(flags.RoleConfigFile, os.O_RDONLY, 0644)
@@ -194,7 +199,7 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	cmdbController := cmdb.NewController(config.cmdbConfig)
+	cmdbController := cmdb.NewController(config.CmdbConfig)
 	handler := handler.NewCMDBEventHandler(cmdbController)
 	memHook := hook.NewInMemHook(2000, handler)
 	go memHook.Process()
@@ -280,7 +285,7 @@ func Run(flags *Flags) {
 	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)
 	// start api server
 	log.Printf("Server started")
-	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
+	log.Print(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
 
 	// hook elegant stop
 	memHook.Stop()
