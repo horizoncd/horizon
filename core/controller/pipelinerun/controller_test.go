@@ -329,4 +329,26 @@ func Test(t *testing.T) {
 			t.Logf("%s\n", e)
 		}
 	}
+
+	// test for stop
+	err = c.StopPipelinerun(ctx, pipelinerun.ID)
+	assert.NotNil(t, err)
+	t.Logf("err: %v", err)
+
+	pipelinerun, err = pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID: cluster.ID,
+		Action:    "builddeploy",
+		Status:    prmodels.ResultCreated,
+		S3Bucket:  "",
+		LogObject: "",
+		PrObject:  "",
+		CreatedBy: 1,
+	})
+	assert.Nil(t, err)
+	tekton.EXPECT().StopPipelineRun(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	err = c.StopPipelinerun(ctx, pipelinerun.ID)
+	assert.Nil(t, err)
+
+	err = c.StopPipelinerunForCluster(ctx, pipelinerun.ClusterID)
+	assert.Nil(t, err)
 }
