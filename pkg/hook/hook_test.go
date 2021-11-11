@@ -6,6 +6,7 @@ import (
 
 	handlermock "g.hz.netease.com/horizon/mock/pkg/hook/handler"
 	hhook "g.hz.netease.com/horizon/pkg/hook/hook"
+	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"github.com/golang/mock/gomock"
 )
 
@@ -23,7 +24,7 @@ func TestHook(t *testing.T) {
 		quit:          make(chan bool),
 	}
 
-	ctx := context.TODO()
+	ctx := context.WithValue(context.TODO(), requestid.HeaderXRequestID, "123") // nolint
 	event1 := hhook.Event{
 		EventType: "event1",
 		Event:     nil,

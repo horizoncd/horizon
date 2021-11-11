@@ -39,9 +39,9 @@ func (h *InMemHook) WaitStop() {
 func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 	rid, err := requestid.FromContext(ctx)
 	if err != nil {
-		ctx = log.WithContext(context.Background(), rid)
-	} else {
 		ctx = context.Background()
+	} else {
+		ctx = log.WithContext(context.Background(), rid)
 	}
 	newEvent := &hook.EventCtx{
 		EventType: event.EventType,
@@ -49,12 +49,12 @@ func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 		Ctx:       ctx,
 	}
 	h.events <- newEvent
-	log.Infof(ctx, "received eventType = %s, event = %+v", event.EventType, event.Event)
+	log.Infof(ctx, "pushed event, eventType = %s, event = %+v", event.EventType, event.Event)
 }
 
 func (h *InMemHook) Process() {
 	for event := range h.events {
-		log.Infof(event.Ctx, "received event %s, event = %+v", event.EventType, event.Event)
+		log.Infof(event.Ctx, "received event, eventType = %s, event = %+v", event.EventType, event.Event)
 		for _, handlerEntry := range h.eventHandlers {
 			err := handlerEntry.Process(event)
 			if err != nil {
