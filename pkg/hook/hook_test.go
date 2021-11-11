@@ -26,9 +26,9 @@ func TestHook(t *testing.T) {
 		quit:          make(chan bool),
 	}
 
-	requestId := "123"
+	requestID := "123"
 	ctx := context.WithValue(context.TODO(), requestid.HeaderXRequestID, "123") // nolint
-	ctx = log.WithContext(ctx, requestId)
+	ctx = log.WithContext(ctx, requestID)
 	event1 := hhook.Event{
 		EventType: "event1",
 		Event:     nil,
