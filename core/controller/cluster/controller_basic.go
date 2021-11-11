@@ -406,7 +406,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 			log.Errorf(ctx, "failed to delete cluster: %v in db, err: %v", cluster.Name, err)
 		}
 
-		// 12. post hook
+		// 5. post hook
 		c.postHook(ctx, hook.DeleteCluster, cluster.Name)
 	}()
 
