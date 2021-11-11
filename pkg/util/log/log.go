@@ -3,6 +3,8 @@ package log
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"strconv"
 
 	rlog "github.com/sirupsen/logrus"
 )
@@ -12,9 +14,22 @@ type key string
 const (
 	traceKey = key("trace")
 )
+const (
+	fileKey = "File"
+)
 
 func Key() string {
 	return string(traceKey)
+}
+
+func getCallerInfo() (fileline string) {
+	_, file, line, ok := runtime.Caller(2)
+	if !ok {
+		panic("Could not get context info for logger!")
+	}
+	filename := file + ":" + strconv.Itoa(line)
+
+	return filename
 }
 
 func WithContext(parent context.Context, traceID string) context.Context {
@@ -34,7 +49,8 @@ func Info(ctx context.Context, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	rlog.WithField(string(traceKey), val).Info(args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Info(args...)
 }
 
 func Infof(ctx context.Context, format string, args ...interface{}) {
@@ -42,7 +58,8 @@ func Infof(ctx context.Context, format string, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	rlog.WithField(string(traceKey), val).Infof(format, args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Infof(format, args...)
 }
 
 func Error(ctx context.Context, args ...interface{}) {
@@ -50,7 +67,8 @@ func Error(ctx context.Context, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	rlog.WithField(string(traceKey), val).Error(args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Error(args...)
 }
 
 func Errorf(ctx context.Context, format string, args ...interface{}) {
@@ -58,7 +76,8 @@ func Errorf(ctx context.Context, format string, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	rlog.WithField(string(traceKey), val).Errorf(format, args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Errorf(format, args...)
 }
 
 func Warning(ctx context.Context, args ...interface{}) {
@@ -66,7 +85,8 @@ func Warning(ctx context.Context, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	rlog.WithField(string(traceKey), val).Warning(args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Warning(args...)
 }
 
 func Warningf(ctx context.Context, format string, args ...interface{}) {
@@ -74,7 +94,8 @@ func Warningf(ctx context.Context, format string, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	rlog.WithField(string(traceKey), val).Warningf(format, args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Warningf(format, args...)
 }
 
 func Debug(ctx context.Context, args ...interface{}) {
@@ -82,7 +103,8 @@ func Debug(ctx context.Context, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	rlog.WithField(string(traceKey), val).Debug(args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Debug(args...)
 }
 
 func Debugf(ctx context.Context, format string, args ...interface{}) {
@@ -90,5 +112,6 @@ func Debugf(ctx context.Context, format string, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	rlog.WithField(string(traceKey), val).Debugf(format, args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Debugf(format, args...)
 }

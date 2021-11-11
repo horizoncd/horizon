@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -43,6 +44,14 @@ func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 	} else {
 		ctx = log.WithContext(context.Background(), rid)
 	}
+
+	ctxUser, err := user.FromContext(ctx)
+	if err != nil {
+		log.Error(ctx, "can not find user in context")
+	} else {
+		ctx = user.WithContext(ctx, ctxUser)
+	}
+
 	newEvent := &hook.EventCtx{
 		EventType: event.EventType,
 		Event:     event.Event,

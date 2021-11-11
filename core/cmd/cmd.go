@@ -99,10 +99,8 @@ func ParseFlags() *Flags {
 func InitLog(flags *Flags) {
 	if flags.Environment == "production" {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
-		logrus.SetReportCaller(true)
 	} else {
 		logrus.SetFormatter(&logrus.TextFormatter{})
-		logrus.SetReportCaller(true)
 	}
 	logrus.SetOutput(os.Stdout)
 	level, err := logrus.ParseLevel(flags.LogLevel)
