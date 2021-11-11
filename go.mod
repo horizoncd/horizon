@@ -25,6 +25,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.4
 	github.com/xanzy/go-gitlab v0.50.4
 	github.com/xeipuuv/gojsonschema v1.2.0
+	gopkg.in/igm/sockjs-go.v3 v3.0.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/mysql v1.1.2
