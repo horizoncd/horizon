@@ -754,16 +754,18 @@ func (c *cd) GetContainerLog(ctx context.Context, params *GetContainerLogParams)
 	return logStrC, nil
 }
 
+// onlineCommand the location of online.sh in pod is /home/appops/.single/online.sh
 const onlineCommand = `
-export ONLINE_SHELL="/home/appops/.probe/online.sh"
-[[ -f "$ONLINE_SHELL" ]] || echo "there is no online config for this cluster." >&2 && return 1
+export ONLINE_SHELL="/home/appops/.single/online.sh"
+[[ -f "$ONLINE_SHELL" ]] || echo "there is no online config for this cluster." >&2 && exit 1
 
 bash "$ONLINE_SHELL"
 `
 
+// offlineCommand the location of offline.sh in pod is /home/appops/.single/offline.sh
 const offlineCommand = `
-export OFFLINE_SHELL="/home/appops/.probe/offline.sh"
-[[ -f "$OFFLINE_SHELL" ]] || echo "there is no offline config for this cluster." >&2 && return 1
+export OFFLINE_SHELL="/home/appops/.single/offline.sh"
+[[ -f "$OFFLINE_SHELL" ]] || echo "there is no offline config for this cluster." >&2 && exit 1
 
 bash "$OFFLINE_SHELL"
 `
