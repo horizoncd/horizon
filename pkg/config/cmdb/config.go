@@ -1,8 +1,8 @@
 package cmdb
 
 type Config struct {
-	URL        string
-	ClientID   string
-	SecretCode string
-	ParentID   int
+	URL        string `yaml:"url"`
+	ClientID   string `yaml:"clientID"`
+	SecretCode string `yaml:"secretCode"`
+	ParentID   int    `yaml:"parentID"`
 }

@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"g.hz.netease.com/horizon/pkg/hook/hook"
+	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
@@ -36,6 +37,12 @@ func (h *InMemHook) WaitStop() {
 }
 
 func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
+	rid, err := requestid.FromContext(ctx)
+	if err != nil {
+		ctx = log.WithContext(ctx, rid)
+	} else {
+		ctx = context.Background()
+	}
 	newEvent := &hook.EventCtx{
 		EventType: event.EventType,
 		Event:     event.Event,

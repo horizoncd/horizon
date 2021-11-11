@@ -37,9 +37,12 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
+	"g.hz.netease.com/horizon/pkg/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/region"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
+	"g.hz.netease.com/horizon/pkg/hook"
+	"g.hz.netease.com/horizon/pkg/hook/handler"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
@@ -191,13 +194,17 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+	cmdbController := cmdb.NewController(config.cmdbConfig)
+	handler := handler.NewCMDBEventHandler(cmdbController)
+	memHook := hook.NewInMemHook(2000, handler)
+	go memHook.Process()
 
 	var (
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
-		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, nil)
+		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, commitGetter,
-			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, nil)
+			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, memHook)
 		prCtl = prctl.NewController(tektonFty, commitGetter, clusterGitRepo)
 
 		templateCtl = templatectl.NewController(templateSchemaGetter)
@@ -269,4 +276,8 @@ func Run(flags *Flags) {
 	// start api server
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
+
+	// hook elegant stop
+	memHook.Stop()
+	memHook.WaitStop()
 }
