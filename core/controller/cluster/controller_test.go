@@ -673,7 +673,7 @@ func Test(t *testing.T) {
 
 	clusterGitRepo.EXPECT().UpdateImage(ctx, gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return("update-image-commit", nil)
-	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any()).Return("newest-commit", nil)
+	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
 		GitRepoSSHURL: "ssh://xxxx.git",
 		ValueFiles:    []string{"file1", "file2"},
@@ -730,5 +730,14 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 	b, _ = json.Marshal(restartResp)
+	t.Logf("%s", string(b))
+
+	deployResp, err := c.Deploy(ctx, resp.ID, &DeployRequest{
+		Title:       "deploy-title",
+		Description: "deploy-description",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, deployResp)
+	b, _ = json.Marshal(deployResp)
 	t.Logf("%s", string(b))
 }

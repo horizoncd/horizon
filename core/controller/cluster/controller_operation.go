@@ -14,7 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
-func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *RestartResponse, err error) {
+func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
 	const op = "cluster controller: restart "
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -75,7 +75,75 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *RestartRes
 		return nil, errors.E(op, err)
 	}
 
-	return &RestartResponse{
+	return &PipelinerunIDResponse{
+		PipelinerunID: prCreated.ID,
+	}, nil
+}
+
+func (c *controller) Deploy(ctx context.Context, clusterID uint,
+	r *DeployRequest) (_ *PipelinerunIDResponse, err error) {
+	const op = "cluster controller: deploy "
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 1. get config commit
+	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 2. merge branch
+	commit, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 3. deploy cluster in cd system
+	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
+		Environment: er.EnvironmentName,
+		Cluster:     cluster.Name,
+		Revision:    commit,
+	}); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 4. add pipelinerun in db
+	pr := &prmodels.Pipelinerun{
+		ClusterID:        clusterID,
+		Action:           prmodels.ActionDeploy,
+		Status:           prmodels.ResultOK,
+		Title:            r.Title,
+		Description:      r.Description,
+		LastConfigCommit: configCommit.Master,
+		ConfigCommit:     configCommit.Gitops,
+		CreatedBy:        currentUser.GetID(),
+	}
+	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,
 	}, nil
 }
