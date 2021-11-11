@@ -705,7 +705,7 @@ func Test(t *testing.T) {
 		}, nil)
 	}
 	clusterGitRepo.EXPECT().CompareConfig(ctx, gomock.Any(), gomock.Any(),
-		nil, nil).Return(configDiff, nil).Times(1)
+		gomock.Any(), gomock.Any()).Return(configDiff, nil).AnyTimes()
 
 	getdiffResp, err := c.GetDiff(ctx, resp.ID, codeBranch)
 	assert.Nil(t, err)
