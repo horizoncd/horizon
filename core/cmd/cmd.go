@@ -16,6 +16,7 @@ import (
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
+	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
 	"g.hz.netease.com/horizon/core/http/api/v1/environment"
@@ -24,6 +25,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
+	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
@@ -37,9 +39,12 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
+	"g.hz.netease.com/horizon/pkg/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/region"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
+	"g.hz.netease.com/horizon/pkg/hook"
+	"g.hz.netease.com/horizon/pkg/hook/handler"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
@@ -191,17 +196,22 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+	cmdbController := cmdb.NewController(config.cmdbConfig)
+	handler := handler.NewCMDBEventHandler(cmdbController)
+	memHook := hook.NewInMemHook(2000, handler)
+	go memHook.Process()
 
 	var (
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
-		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, nil)
+		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, commitGetter,
-			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, nil)
+			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, memHook)
 		prCtl = prctl.NewController(tektonFty, commitGetter, clusterGitRepo)
 
 		templateCtl = templatectl.NewController(templateSchemaGetter)
 		roleCtl     = roltctl.NewController(roleService)
+		terminalCtl = terminalctl.NewController()
 	)
 
 	var (
@@ -215,6 +225,7 @@ func Run(flags *Flags) {
 		prAPI          = pipelinerun.NewAPI(prCtl)
 		environmentAPI = environment.NewAPI()
 		roleAPI        = roleapi.NewAPI(roleCtl)
+		terminalAPI    = terminalapi.NewAPI(terminalCtl)
 	)
 
 	// init server
@@ -241,7 +252,9 @@ func Run(flags *Flags) {
 		middlewares = append(middlewares,
 			usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
+				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
+			),
 		)
 		middlewares = append(middlewares,
 			auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
@@ -263,10 +276,15 @@ func Run(flags *Flags) {
 	environment.RegisterRoutes(r, environmentAPI)
 	member.RegisterRoutes(r, memberAPI)
 	roleapi.RegisterRoutes(r, roleAPI)
+	terminalapi.RegisterRoutes(r, terminalAPI)
 
 	// start cloud event server
 	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)
 	// start api server
 	log.Printf("Server started")
 	log.Fatal(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
+
+	// hook elegant stop
+	memHook.Stop()
+	memHook.WaitStop()
 }

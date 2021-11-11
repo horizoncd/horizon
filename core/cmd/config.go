@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/pkg/config/argocd"
+	"g.hz.netease.com/horizon/pkg/config/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/db"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/helmrepo"
@@ -25,6 +26,7 @@ type Config struct {
 	ArgoCDMapper           argocd.Mapper     `yaml:"argoCDMapper"`
 	TektonMapper           tekton.Mapper     `yaml:"tektonMapper"`
 	HelmRepoMapper         helmrepo.Mapper   `yaml:"helmRepoMapper"`
+	cmdbConfig             cmdb.Config       `yaml:"cmdbConfig"`
 }
 
 func loadConfig(configFilePath string) (*Config, error) {
