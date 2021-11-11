@@ -18,6 +18,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/log", _pipelinerunIDParam),
 			HandlerFunc: api.Log,
 		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/pipelineruns/:%v/stop", _pipelinerunIDParam),
+			HandlerFunc: api.Stop,
+		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/diffs", _pipelinerunIDParam),
 			HandlerFunc: api.GetDiff,
@@ -34,6 +38,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	}
 
 	// get cluster latest pipelinerun log
+	// stop pipelinerun for cluster
 	// only used for overmind
 	frontGroup := engine.Group("/apis/front/v1")
 	var frontRoutes = route.Routes{
@@ -41,6 +46,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/log", _clusterParam),
 			HandlerFunc: api.LatestLogForCluster,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/clusters/:%v/stop", _clusterParam),
+			HandlerFunc: api.StopPipelinerunForCluster,
 		},
 	}
 
