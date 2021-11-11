@@ -40,7 +40,8 @@ type Controller interface {
 		request *BuildDeployRequest) (*BuildDeployResponse, error)
 	GetDiff(ctx context.Context, clusterID uint, codeBranch string) (*GetDiffResponse, error)
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
-	Restart(ctx context.Context, clusterID uint) (*RestartResponse, error)
+	Restart(ctx context.Context, clusterID uint) (*PipelinerunIDResponse, error)
+	Deploy(ctx context.Context, clusterID uint, request *DeployRequest) (*PipelinerunIDResponse, error)
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
