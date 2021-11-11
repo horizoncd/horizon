@@ -2,6 +2,7 @@ package hook
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	handlermock "g.hz.netease.com/horizon/mock/pkg/hook/handler"
@@ -41,4 +42,8 @@ func TestHook(t *testing.T) {
 	go memHook.Process()
 	memHook.Stop()
 	memHook.WaitStop()
+}
+
+func TestMain(m *testing.M) {
+	os.Exit(m.Run())
 }
