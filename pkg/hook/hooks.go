@@ -39,7 +39,7 @@ func (h *InMemHook) WaitStop() {
 func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 	rid, err := requestid.FromContext(ctx)
 	if err != nil {
-		ctx = log.WithContext(ctx, rid)
+		ctx = log.WithContext(context.Background(), rid)
 	} else {
 		ctx = context.Background()
 	}
