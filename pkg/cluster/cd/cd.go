@@ -62,10 +62,16 @@ type DeleteClusterParams struct {
 	Cluster     string
 }
 
+type ClusterNextParams struct {
+	Environment string
+	Cluster     string
+}
+
 type CD interface {
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
 	DeleteCluster(ctx context.Context, params *DeleteClusterParams) error
+	Next(ctx context.Context, params *ClusterNextParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 }
@@ -153,6 +159,22 @@ func (c *cd) DeleteCluster(ctx context.Context, params *DeleteClusterParams) (er
 	if err := argo.WaitApplication(ctx, params.Cluster, string(applicationCR.UID), http.StatusNotFound); err != nil {
 		return errors.E(op, err)
 	}
+	return nil
+}
+
+func (c *cd) Next(ctx context.Context, params *ClusterNextParams) (err error) {
+	const op = "cd: get cluster status"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	argo, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	if err := argo.ResumeRollout(ctx, params.Cluster); err != nil {
+		return errors.E(op, err)
+	}
+
 	return nil
 }
 

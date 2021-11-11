@@ -42,6 +42,7 @@ type Controller interface {
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
 	Restart(ctx context.Context, clusterID uint) (*PipelinerunIDResponse, error)
 	Deploy(ctx context.Context, clusterID uint, request *DeployRequest) (*PipelinerunIDResponse, error)
+	Next(ctx context.Context, clusterID uint) error
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,

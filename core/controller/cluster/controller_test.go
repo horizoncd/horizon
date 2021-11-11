@@ -44,6 +44,7 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -732,6 +733,7 @@ func Test(t *testing.T) {
 	b, _ = json.Marshal(restartResp)
 	t.Logf("%s", string(b))
 
+	// test deploy
 	deployResp, err := c.Deploy(ctx, resp.ID, &DeployRequest{
 		Title:       "deploy-title",
 		Description: "deploy-description",
@@ -740,4 +742,9 @@ func Test(t *testing.T) {
 	assert.NotNil(t, deployResp)
 	b, _ = json.Marshal(deployResp)
 	t.Logf("%s", string(b))
+
+	// test next
+	cd.EXPECT().Next(ctx, gomock.Any()).Return(nil)
+	err = c.Next(ctx, resp.ID)
+	assert.Nil(t, err)
 }
