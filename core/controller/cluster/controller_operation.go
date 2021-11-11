@@ -160,3 +160,26 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		PipelinerunID: prCreated.ID,
 	}, nil
 }
+
+func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
+	const op = "cluster controller: next"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	if err := c.cd.Next(ctx, &cd.ClusterNextParams{
+		Environment: er.EnvironmentName,
+		Cluster:     cluster.Name,
+	}); err != nil {
+		return errors.E(op, err)
+	}
+	return nil
+}

@@ -76,6 +76,20 @@ func (mr *MockCDMockRecorder) DeleteCluster(ctx, params interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCluster", reflect.TypeOf((*MockCD)(nil).DeleteCluster), ctx, params)
 }
 
+// Next mocks base method
+func (m *MockCD) Next(ctx context.Context, params *cd.ClusterNextParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Next", ctx, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Next indicates an expected call of Next
+func (mr *MockCDMockRecorder) Next(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockCD)(nil).Next), ctx, params)
+}
+
 // GetClusterState mocks base method
 func (m *MockCD) GetClusterState(ctx context.Context, params *cd.GetClusterStateParams) (*cd.ClusterState, error) {
 	m.ctrl.T.Helper()

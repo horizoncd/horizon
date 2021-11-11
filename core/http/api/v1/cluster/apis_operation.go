@@ -125,3 +125,19 @@ func (a *API) Deploy(c *gin.Context) {
 	}
 	response.SuccessWithData(c, resp)
 }
+
+func (a *API) Next(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	err = a.clusterCtl.Next(c, uint(clusterID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.Success(c)
+}
