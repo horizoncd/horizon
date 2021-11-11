@@ -18,7 +18,7 @@ func Key() string {
 }
 
 func WithContext(parent context.Context, traceID string) context.Context {
-	return context.WithValue(parent, Key(), fmt.Sprintf("[%v] ", traceID)) // nolint
+	return context.WithValue(parent, Key(), fmt.Sprintf("%v", traceID)) // nolint
 }
 
 func WithFiled(ctx context.Context, key string, value interface{}) *rlog.Entry {
