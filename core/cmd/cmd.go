@@ -253,7 +253,7 @@ func Run(flags *Flags) {
 			usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
-				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal/sockjs")),
+				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			),
 		)
 		middlewares = append(middlewares,

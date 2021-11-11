@@ -21,7 +21,7 @@ import (
 )
 
 type Controller interface {
-	GetSessionID(ctx context.Context, clusterID uint, podName, containerName string) (*SessionIDResp, error)
+	GetTerminalID(ctx context.Context, clusterID uint, podName, containerName string) (*SessionIDResp, error)
 	GetSockJSHandler(ctx context.Context, sessionID string) (http.Handler, error)
 }
 
@@ -45,7 +45,7 @@ func NewController() Controller {
 	}
 }
 
-func (c *controller) GetSessionID(ctx context.Context, clusterID uint, podName,
+func (c *controller) GetTerminalID(ctx context.Context, clusterID uint, podName,
 	containerName string) (*SessionIDResp, error) {
 	sessionID := &SessionIDResp{}
 	randomID, err := genRandomID()
@@ -107,7 +107,7 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 
 	go WaitForTerminal(kubeClient, kubeConfig, ref)
 
-	handler := sockjs.NewHandler("/apis/front/v1/terminal/sockjs", sockjs.DefaultOptions, handleTerminalSession)
+	handler := sockjs.NewHandler("/apis/front/v1", sockjs.DefaultOptions, handleTerminalSession)
 	return handler, nil
 }
 

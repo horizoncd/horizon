@@ -11,19 +11,24 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, api *API) {
-	apiGroup := engine.Group("/apis/front/v1")
-	var routes = route.Routes{
+	coreGroup := engine.Group("/apis/core/v1")
+	var coreRoutes = route.Routes{
 		{
-			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/terminal/sessionid", _clusterIDParam),
-			HandlerFunc: api.GetSessionID,
-		},
-		{
-			Method:      http.MethodGet,
-			Pattern:     "/terminal/sockjs/*name",
-			HandlerFunc: api.BindSockJs,
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/clusters/:%v/terminal", _clusterIDParam),
+			HandlerFunc: api.CreateTerminal,
 		},
 	}
 
-	route.RegisterRoutes(apiGroup, routes)
+	frontGroup := engine.Group("/apis/front/v1")
+	var frontRoutes = route.Routes{
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/terminal/:%v/websocket", _terminalIDParam),
+			HandlerFunc: api.ConnectTerminal,
+		},
+	}
+
+	route.RegisterRoutes(coreGroup, coreRoutes)
+	route.RegisterRoutes(frontGroup, frontRoutes)
 }
