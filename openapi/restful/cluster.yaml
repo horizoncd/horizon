@@ -757,3 +757,130 @@ paths:
                           }
                       }
                   }
+
+  /apis/core/v1/clusters/{clusterID}/online:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: online
+      summary: online pod for cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                  "podList": [
+                     "poc-javaapp-test-2-8597696689-v6g8v",
+                     "poc-javaapp-test-2-8597696689-v1g1y"
+                  ]
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//": "在该Pod内，命令执行成功, 只有stdout字段和result字段",
+                      "poc-javawebapp-test-2-8597696689-v6g8v": {
+                        "//stdout": "stdout是执行命令的标准输出",
+                        "stdout": "do online",
+                        "result": true
+                      },
+                      "//": "在该Pod内，命令执行失败, 一般含有stdout 或error, 一定会有result字段",
+                      "poc-javawebapp-test-2-8597696689-xxxxv": {
+                        "//": "stderr是执行命令的标准错误输出",
+                        "stderr": "time out",
+                        "result": false
+                      },
+                      "poc-javawebapp-test-2-8597696689-xxxxv": {
+                        "//error": "下发命令的过程中出现错误",
+                        "error": {
+                          "ErrStatus": {
+                            "metadata": {},
+                            "status": "Failure",
+                            "message": "pods \"poc-javawebapp-test-2-8597696689-v6g8vs\" not found",
+                            "reason": "NotFound",
+                            "details": {
+                              "name": "poc-javawebapp-test-2-8597696689-v6g8vs",
+                              "kind": "pods"
+                            },
+                            "code": 404
+                          }
+                        },
+                        "result": false
+                      }
+                    }
+                  }
+  /apis/core/v1/clusters/{clusterID}/offline:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: online
+      summary: online pod for cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                  "podList": [
+                     "poc-javaapp-test-2-8597696689-v6g8v",
+                     "poc-javaapp-test-2-8597696689-v1g1y"
+                  ]
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//": "在该Pod内，命令执行成功, 只有stdout字段和result字段",
+                      "poc-javawebapp-test-2-8597696689-v6g8v": {
+                        "//stdout": "stdout是执行命令的标准输出",
+                        "stdout": "do online",
+                        "result": true
+                      },
+                      "//": "在该Pod内，命令执行失败, 一般含有stdout 或error, 一定会有result字段",
+                      "poc-javawebapp-test-2-8597696689-xxxxv": {
+                        "//": "stderr是执行命令的标准错误输出",
+                        "stderr": "time out",
+                        "result": false
+                      },
+                      "poc-javawebapp-test-2-8597696689-xxxxv": {
+                        "//error": "下发命令的过程中出现错误",
+                        "error": {
+                          "ErrStatus": {
+                            "metadata": {},
+                            "status": "Failure",
+                            "message": "pods \"poc-javawebapp-test-2-8597696689-v6g8vs\" not found",
+                            "reason": "NotFound",
+                            "details": {
+                              "name": "poc-javawebapp-test-2-8597696689-v6g8vs",
+                              "kind": "pods"
+                            },
+                            "code": 404
+                          }
+                        },
+                        "result": false
+                      }
+                    }
+                  }
