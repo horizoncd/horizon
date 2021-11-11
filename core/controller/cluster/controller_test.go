@@ -21,6 +21,7 @@ import (
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustercd "g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
@@ -747,4 +748,33 @@ func Test(t *testing.T) {
 	cd.EXPECT().Next(ctx, gomock.Any()).Return(nil)
 	err = c.Next(ctx, resp.ID)
 	assert.Nil(t, err)
+
+	// test Online and Offline
+	execResp := map[string]clustercd.ExecResp{
+		"pod1": {
+			Result: true,
+		},
+		"pod2": {
+			Result: false,
+			Stderr: "error",
+		},
+	}
+
+	cd.EXPECT().Online(ctx, gomock.Any()).Return(execResp, nil)
+	cd.EXPECT().Offline(ctx, gomock.Any()).Return(execResp, nil)
+
+	execRequest := &ExecRequest{
+		PodList: []string{"pod1", "pod2"},
+	}
+	onlineResp, err := c.Online(ctx, resp.ID, execRequest)
+	assert.Nil(t, err)
+	assert.NotNil(t, onlineResp)
+	b, _ = json.Marshal(onlineResp)
+	t.Logf("%s", string(b))
+
+	offlineResp, err := c.Offline(ctx, resp.ID, execRequest)
+	assert.Nil(t, err)
+	assert.NotNil(t, offlineResp)
+	b, _ = json.Marshal(offlineResp)
+	t.Logf("%s", string(b))
 }

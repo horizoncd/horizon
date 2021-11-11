@@ -181,3 +181,49 @@ func (a *API) GetContainerLog(c *gin.Context) {
 		_, _ = c.Writer.Write([]byte(l))
 	}
 }
+
+func (a *API) Online(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	var request *cluster.ExecRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody,
+			fmt.Sprintf("request body is invalid, err: %v", err))
+		return
+	}
+
+	resp, err := a.clusterCtl.Online(c, uint(clusterID), request)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
+func (a *API) Offline(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	var request *cluster.ExecRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody,
+			fmt.Sprintf("request body is invalid, err: %v", err))
+		return
+	}
+
+	resp, err := a.clusterCtl.Offline(c, uint(clusterID), request)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}

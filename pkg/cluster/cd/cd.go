@@ -18,6 +18,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"k8s.io/kubectl/pkg/cmd/exec"
 
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
@@ -76,6 +77,24 @@ type GetContainerLogParams struct {
 	TailLines   int
 }
 
+type ExecParams struct {
+	Environment  string
+	Cluster      string
+	RegionEntity *regionmodels.RegionEntity
+	Namespace    string
+	PodList      []string
+}
+
+type ExecResp struct {
+	key    string
+	Result bool
+	Stdout string
+	Stderr string
+	Error  error
+}
+
+type ExecFunc func(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
+
 type CD interface {
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
@@ -84,6 +103,8 @@ type CD interface {
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
+	Online(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
+	Offline(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 }
 
 type cd struct {
@@ -731,4 +752,84 @@ func (c *cd) GetContainerLog(ctx context.Context, params *GetContainerLogParams)
 		close(logStrC)
 	}()
 	return logStrC, nil
+}
+
+const onlineCommand = `
+export ONLINE_SHELL="/home/appops/.probe/online.sh"
+[[ -f "$ONLINE_SHELL" ]] || echo "there is no online config for this cluster." >&2 && return 1
+
+bash "$ONLINE_SHELL"
+`
+
+const offlineCommand = `
+export OFFLINE_SHELL="/home/appops/.probe/offline.sh"
+[[ -f "$OFFLINE_SHELL" ]] || echo "there is no offline config for this cluster." >&2 && return 1
+
+bash "$OFFLINE_SHELL"
+`
+
+func (c *cd) Online(ctx context.Context, params *ExecParams) (_ map[string]ExecResp, err error) {
+	return c.exec(ctx, params, onlineCommand)
+}
+
+func (c *cd) Offline(ctx context.Context, params *ExecParams) (_ map[string]ExecResp, err error) {
+	return c.exec(ctx, params, offlineCommand)
+}
+
+func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ map[string]ExecResp, err error) {
+	const op = "cd: online"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	config, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	containers := make([]kube.ContainerRef, 0)
+	for _, pod := range params.PodList {
+		containers = append(containers, kube.ContainerRef{
+			Config:        config,
+			KubeClientset: kubeClient,
+			Namespace:     params.Namespace,
+			Pod:           pod,
+		})
+	}
+
+	return executeCommandInPods(ctx, containers, []string{"bash", "-c", command}, nil), nil
+}
+
+func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
+	command []string, executor exec.RemoteExecutor) map[string]ExecResp {
+	var wg sync.WaitGroup
+	ch := make(chan ExecResp, len(containers))
+	for _, containerRef := range containers {
+		wg.Add(1)
+		containerRef := containerRef
+		go func(key string) {
+			defer wg.Done()
+			stdout, stderr, err := kube.Exec(ctx, containerRef, command, executor)
+			if err != nil {
+				log.Errorf(ctx, "failed to do exec %v, err=%v", command, err)
+			}
+			ch <- ExecResp{
+				key: key,
+				Result: func() bool {
+					if stderr != "" || err != nil {
+						return false
+					}
+					return true
+				}(),
+				Stdout: stdout,
+				Stderr: stderr,
+				Error:  err,
+			}
+		}(containerRef.Pod)
+	}
+	wg.Wait()
+	close(ch)
+	result := make(map[string]ExecResp)
+	for val := range ch {
+		result[val.key] = val
+	}
+
+	return result
 }
