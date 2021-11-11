@@ -1,6 +1,6 @@
 openapi: 3.0.1
 info:
-  title: Horizon Cluster Front
+  title: Horizon Application Front
   version: 1.0.0
 servers:
   - url: 'http://localhost:8080/'
@@ -8,15 +8,15 @@ paths:
   /apis/front/v1/applications/searchapplications?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
-        - cluster
+        - application
       description: search applications by name fuzzily
       operationId: searchApplications
       parameters:
         - name: filter
           in: query
           description: "part of name for fuzzy matching"
-        - $ref: 'common.yaml/#/components/parameters/pageNumber'
-        - $ref: 'common.yaml/#/components/parameters/pageSize'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
         '200':
           description: Success

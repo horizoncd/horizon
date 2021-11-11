@@ -96,8 +96,8 @@ paths:
         - name: filter
           in: query
           description: "part of name for fuzzy matching"
-        - $ref: 'common.yaml/#/components/parameters/pageNumber'
-        - $ref: 'common.yaml/#/components/parameters/pageSize'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
         '200':
           description: Success
