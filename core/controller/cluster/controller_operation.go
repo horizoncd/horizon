@@ -162,7 +162,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 }
 
 func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
-	const op = "cluster controller: deploy "
+	const op = "cluster controller: next"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
