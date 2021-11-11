@@ -35,16 +35,8 @@ func TestHook(t *testing.T) {
 	memHook.Push(ctx, event1)
 	memHook.Push(ctx, event2)
 
-	mockHandler.EXPECT().Process(&hhook.EventCtx{
-		EventType: event1.EventType,
-		Event:     event1.Event,
-		Ctx:       ctx,
-	}).Times(1)
-	mockHandler.EXPECT().Process(&hhook.EventCtx{
-		EventType: event2.EventType,
-		Event:     event2.Event,
-		Ctx:       ctx,
-	}).Times(1)
+	mockHandler.EXPECT().Process(gomock.Any()).Times(1)
+	mockHandler.EXPECT().Process(gomock.Any()).Times(1)
 	go memHook.Process()
 	memHook.Stop()
 	memHook.WaitStop()
