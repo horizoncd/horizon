@@ -39,17 +39,19 @@ func (h *InMemHook) WaitStop() {
 
 func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 	rid, err := requestid.FromContext(ctx)
+
+	var newCtx context.Context
 	if err != nil {
-		ctx = context.Background()
+		newCtx = context.Background()
 	} else {
-		ctx = log.WithContext(context.Background(), rid)
+		newCtx = log.WithContext(context.Background(), rid)
 	}
 
 	ctxUser, err := user.FromContext(ctx)
 	if err != nil {
 		log.Error(ctx, "can not find user in context")
 	} else {
-		ctx = user.WithContext(ctx, ctxUser)
+		ctx = user.WithContext(newCtx, ctxUser)
 	}
 
 	newEvent := &hook.EventCtx{
