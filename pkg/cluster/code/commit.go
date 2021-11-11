@@ -20,9 +20,10 @@ type Commit struct {
 
 // CommitGetter interface to get commit for user code
 type CommitGetter interface {
-	// GetCommit to get commit for specified gitURL and branch
+	// GetCommit to get commit of a branch or a commitID for a specified git URL
+	// If branch and commit are both provided, use branch.
 	// gitURL is a ssh url, looks like: ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git
-	GetCommit(ctx context.Context, gitURL, branch string) (*Commit, error)
+	GetCommit(ctx context.Context, gitURL string, branch *string, commit *string) (*Commit, error)
 }
 
 var _ CommitGetter = (*commitGetter)(nil)
@@ -42,18 +43,31 @@ func NewCommitGetter(ctx context.Context, gitlabFactory gitlabfty.Factory) (Comm
 	}, nil
 }
 
-func (g *commitGetter) GetCommit(ctx context.Context, gitURL, branch string) (*Commit, error) {
+func (g *commitGetter) GetCommit(ctx context.Context, gitURL string, branch *string, commit *string) (*Commit, error) {
 	pid, err := extractProjectPathFromSSHURL(gitURL)
 	if err != nil {
 		return nil, err
 	}
-	gitlabBranch, err := g.gitlabLib.GetBranch(ctx, pid, branch)
+	if branch == nil && commit == nil {
+		return nil, fmt.Errorf("branch and commit cannot be empty at the same time")
+	}
+	if branch != nil {
+		gitlabBranch, err := g.gitlabLib.GetBranch(ctx, pid, *branch)
+		if err != nil {
+			return nil, err
+		}
+		return &Commit{
+			ID:      gitlabBranch.Commit.ID,
+			Message: gitlabBranch.Commit.Message,
+		}, nil
+	}
+	c, err := g.gitlabLib.GetCommit(ctx, pid, *commit)
 	if err != nil {
 		return nil, err
 	}
 	return &Commit{
-		ID:      gitlabBranch.Commit.ID,
-		Message: gitlabBranch.Commit.Message,
+		ID:      c.ID,
+		Message: c.Message,
 	}, nil
 }
 

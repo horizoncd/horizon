@@ -168,7 +168,7 @@ func TestGetDiff(t *testing.T) {
 	}, nil).Times(1)
 
 	commitMsg := "hello world"
-	mockCommitGetter.EXPECT().GetCommit(ctx, gitURL, gitCommit).Return(&code.Commit{
+	mockCommitGetter.EXPECT().GetCommit(ctx, gitURL, nil, &gitCommit).Return(&code.Commit{
 		ID:      gitCommit,
 		Message: commitMsg,
 	}, nil)

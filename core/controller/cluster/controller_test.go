@@ -655,7 +655,7 @@ func Test(t *testing.T) {
 	registry.EXPECT().CreateProject(ctx, gomock.Any()).Return(1, nil)
 	registryFty.EXPECT().GetByHarborConfig(ctx, gomock.Any()).Return(registry).AnyTimes()
 
-	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any()).Return(&code.Commit{
+	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&code.Commit{
 		ID:      "code-commit-id",
 		Message: "msg",
 	}, nil)
@@ -699,7 +699,7 @@ func Test(t *testing.T) {
 	commitMsg := "code-commit-msg"
 	configDiff := "config-diff"
 	if codeBranch != "" {
-		commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any()).Return(&code.Commit{
+		commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&code.Commit{
 			ID:      commitID,
 			Message: commitMsg,
 		}, nil)
