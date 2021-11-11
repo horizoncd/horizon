@@ -67,6 +67,15 @@ type ClusterNextParams struct {
 	Cluster     string
 }
 
+type GetContainerLogParams struct {
+	Namespace   string
+	Cluster     string
+	Pod         string
+	Container   string
+	Environment string
+	TailLines   int
+}
+
 type CD interface {
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
@@ -74,6 +83,7 @@ type CD interface {
 	Next(ctx context.Context, params *ClusterNextParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
+	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
 }
 
 type cd struct {
@@ -681,4 +691,44 @@ func getStep(rollout *v1alpha1.Rollout) *Step {
 		Index: stepIndex,
 		Total: stepTotal,
 	}
+}
+
+func (c *cd) GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error) {
+	logStrC := make(chan string)
+	logParam := argocd.ContainerLogParams{
+		Namespace:     params.Namespace,
+		PodName:       params.Pod,
+		ContainerName: params.Container,
+		TailLines:     params.TailLines,
+	}
+	argoCD, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return nil, err
+	}
+
+	logC, errC, err := argoCD.GetContainerLog(ctx, params.Cluster, logParam)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		for logC != nil || errC != nil {
+			select {
+			case l, ok := <-logC:
+				if !ok {
+					logC = nil
+					continue
+				}
+				logStrC <- fmt.Sprintf("[%s] %s\n", l.Result.Timestamp, l.Result.Content)
+			case e, ok := <-errC:
+				if !ok {
+					errC = nil
+					continue
+				}
+				logStrC <- fmt.Sprintf("%s\n", e)
+			}
+		}
+		close(logStrC)
+	}()
+	return logStrC, nil
 }

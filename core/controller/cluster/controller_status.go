@@ -169,3 +169,33 @@ func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun
 		TaskStatus: taskStatus,
 	}
 }
+
+func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string,
+	tailLines int) (
+	<-chan string, error) {
+	const op = "cluster controller: get cluster container log"
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	param := cd.GetContainerLogParams{
+		Namespace:   fmt.Sprintf("%v-%v", er.EnvironmentName, application.GroupID),
+		Environment: er.EnvironmentName,
+		Cluster:     cluster.Name,
+		Pod:         podName,
+		Container:   containerName,
+		TailLines:   tailLines,
+	}
+	return c.cd.GetContainerLog(ctx, &param)
+}

@@ -56,6 +56,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/next", _clusterIDParam),
 			HandlerFunc: api.Next,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/containerlog", _clusterIDParam),
+			HandlerFunc: api.GetContainerLog,
 		},
 	}
 
