@@ -45,6 +45,11 @@ type Interface interface {
 	// See https://docs.gitlab.com/ee/api/projects.html#delete-project for more information.
 	DeleteProject(ctx context.Context, pid interface{}) error
 
+	// GetCommit get a specified commit
+	// The pid can be the project's ID or relative path such as fist/second.
+	// See https://docs.gitlab.com/ee/api/commits.html#get-a-single-commit for more information.
+	GetCommit(ctx context.Context, pid interface{}, commit string) (_ *gitlab.Commit, err error)
+
 	// GetBranch get branch of the specified project.
 	// The pid can be the project's ID or relative path such as fist/second.
 	// See https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch for more information.
@@ -236,6 +241,18 @@ func (h *helper) GetBranch(ctx context.Context, pid interface{}, branch string) 
 	}
 
 	return b, nil
+}
+
+func (h *helper) GetCommit(ctx context.Context, pid interface{}, commit string) (_ *gitlab.Commit, err error) {
+	const op = "gitlab: get commit"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	c, resp, err := h.client.Commits.GetCommit(pid, commit, gitlab.WithContext(ctx))
+	if err != nil {
+		return nil, parseError(op, resp, err)
+	}
+
+	return c, nil
 }
 
 func (h *helper) CreateBranch(ctx context.Context, pid interface{},

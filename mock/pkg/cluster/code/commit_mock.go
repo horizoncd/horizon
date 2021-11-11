@@ -35,16 +35,16 @@ func (m *MockCommitGetter) EXPECT() *MockCommitGetterMockRecorder {
 }
 
 // GetCommit mocks base method
-func (m *MockCommitGetter) GetCommit(ctx context.Context, gitURL, branch string) (*code.Commit, error) {
+func (m *MockCommitGetter) GetCommit(ctx context.Context, gitURL string, branch, commit *string) (*code.Commit, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCommit", ctx, gitURL, branch)
+	ret := m.ctrl.Call(m, "GetCommit", ctx, gitURL, branch, commit)
 	ret0, _ := ret[0].(*code.Commit)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCommit indicates an expected call of GetCommit
-func (mr *MockCommitGetterMockRecorder) GetCommit(ctx, gitURL, branch interface{}) *gomock.Call {
+func (mr *MockCommitGetterMockRecorder) GetCommit(ctx, gitURL, branch, commit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockCommitGetter)(nil).GetCommit), ctx, gitURL, branch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockCommitGetter)(nil).GetCommit), ctx, gitURL, branch, commit)
 }

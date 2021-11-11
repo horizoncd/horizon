@@ -51,7 +51,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		branch = r.Git.Branch
 	}
 
-	commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, branch)
+	commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, &branch, nil)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -184,7 +184,7 @@ func (c *controller) GetDiff(ctx context.Context, clusterID uint, codeBranch str
 	// 3. get code commit
 	var commit *code.Commit
 	if codeBranch != "" {
-		commit, err = c.commitGetter.GetCommit(ctx, cluster.GitURL, codeBranch)
+		commit, err = c.commitGetter.GetCommit(ctx, cluster.GitURL, &codeBranch, nil)
 		if err != nil {
 			return nil, err
 		}

@@ -123,6 +123,21 @@ func (mr *MockInterfaceMockRecorder) DeleteProject(ctx, pid interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProject", reflect.TypeOf((*MockInterface)(nil).DeleteProject), ctx, pid)
 }
 
+// GetCommit mocks base method
+func (m *MockInterface) GetCommit(ctx context.Context, pid interface{}, commit string) (*gitlab0.Commit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCommit", ctx, pid, commit)
+	ret0, _ := ret[0].(*gitlab0.Commit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCommit indicates an expected call of GetCommit
+func (mr *MockInterfaceMockRecorder) GetCommit(ctx, pid, commit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockInterface)(nil).GetCommit), ctx, pid, commit)
+}
+
 // GetBranch mocks base method
 func (m *MockInterface) GetBranch(ctx context.Context, pid interface{}, branch string) (*gitlab0.Branch, error) {
 	m.ctrl.T.Helper()

@@ -40,7 +40,7 @@ export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
 }
 EOF
 )"
-go test -v ./pkg/lib/gitlab/
+go test -v ./lib/gitlab/
 
 NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this test.
 */
@@ -150,6 +150,11 @@ func Test(t *testing.T) {
 	branch, err = g.GetBranch(ctx, pid, newBranch)
 	assert.Nil(t, err)
 	assert.Equal(t, branch.Name, newBranch)
+
+	branchCommit, err := g.GetCommit(ctx, pid, branch.Commit.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, branchCommit.ID, branch.Commit.ID)
+	assert.Equal(t, branchCommit.Message, branch.Commit.Message)
 
 	// 9. delete a branch
 	err = g.DeleteBranch(ctx, pid, newBranch)

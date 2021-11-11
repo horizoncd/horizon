@@ -48,7 +48,7 @@ func (m *manager) Create(ctx context.Context, cluster *models.Cluster) (*models.
 }
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
-	const op = "cluster manager: get by name"
+	const op = "cluster manager: get by id"
 	cluster, err := m.dao.GetByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
