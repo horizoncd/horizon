@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
-	"strings"
 
 	rlog "github.com/sirupsen/logrus"
 )
@@ -17,22 +16,20 @@ const (
 )
 const (
 	fileKey = "File"
-	funcKey = "Func"
 )
 
 func Key() string {
 	return string(traceKey)
 }
 
-func getCallerInfo() (file, function string) {
-	pc, file, line, ok := runtime.Caller(2)
+func getCallerInfo() (fileline string) {
+	_, file, line, ok := runtime.Caller(2)
 	if !ok {
 		panic("Could not get context info for logger!")
 	}
 	filename := file + ":" + strconv.Itoa(line)
-	funcname := runtime.FuncForPC(pc).Name()
-	fn := funcname[strings.LastIndex(funcname, ".")+1:]
-	return filename, fn
+
+	return filename
 }
 
 func WithContext(parent context.Context, traceID string) context.Context {
@@ -52,8 +49,8 @@ func Info(ctx context.Context, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	filename, fn := getCallerInfo()
-	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).WithField(funcKey, fn).Info(args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Info(args...)
 }
 
 func Infof(ctx context.Context, format string, args ...interface{}) {
@@ -61,8 +58,8 @@ func Infof(ctx context.Context, format string, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	filename, fn := getCallerInfo()
-	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).WithField(funcKey, fn).Infof(format, args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Infof(format, args...)
 }
 
 func Error(ctx context.Context, args ...interface{}) {
@@ -70,8 +67,8 @@ func Error(ctx context.Context, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	filename, fn := getCallerInfo()
-	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).WithField(funcKey, fn).Error(args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Error(args...)
 }
 
 func Errorf(ctx context.Context, format string, args ...interface{}) {
@@ -79,8 +76,8 @@ func Errorf(ctx context.Context, format string, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	filename, fn := getCallerInfo()
-	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).WithField(funcKey, fn).Errorf(format, args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Errorf(format, args...)
 }
 
 func Warning(ctx context.Context, args ...interface{}) {
@@ -88,8 +85,8 @@ func Warning(ctx context.Context, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	filename, fn := getCallerInfo()
-	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).WithField(funcKey, fn).Warning(args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Warning(args...)
 }
 
 func Warningf(ctx context.Context, format string, args ...interface{}) {
@@ -97,8 +94,8 @@ func Warningf(ctx context.Context, format string, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	filename, fn := getCallerInfo()
-	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).WithField(funcKey, fn).Warningf(format, args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Warningf(format, args...)
 }
 
 func Debug(ctx context.Context, args ...interface{}) {
@@ -106,8 +103,8 @@ func Debug(ctx context.Context, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	filename, fn := getCallerInfo()
-	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).WithField(funcKey, fn).Debug(args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Debug(args...)
 }
 
 func Debugf(ctx context.Context, format string, args ...interface{}) {
@@ -115,6 +112,6 @@ func Debugf(ctx context.Context, format string, args ...interface{}) {
 	if !ok {
 		val = ""
 	}
-	filename, fn := getCallerInfo()
-	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).WithField(funcKey, fn).Debugf(format, args...)
+	filename := getCallerInfo()
+	rlog.WithField(string(traceKey), val).WithField(fileKey, filename).Debugf(format, args...)
 }
