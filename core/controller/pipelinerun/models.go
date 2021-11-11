@@ -57,7 +57,7 @@ type PipelineBasic struct {
 	// FinishedAt finish time of this pipelinerun
 	FinishedAt *time.Time `json:"finishedAt"`
 	// createInfo
-	CreatedBy UserInfo `json:"createBy"`
+	CreatedBy UserInfo `json:"createdBy"`
 }
 
 type UserInfo struct {

@@ -2,15 +2,14 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"time"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
-	timeutil "g.hz.netease.com/horizon/pkg/util/time"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -61,13 +60,16 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	}
 
 	// 4. add pipelinerun in db
+	timeNow := time.Now()
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionRestart,
 		Status:           prmodels.ResultOK,
-		Title:            fmt.Sprintf("%v-%v", "Restart", timeutil.Now(nil)),
+		Title:            "restart",
 		LastConfigCommit: lastConfigCommit.Master,
 		ConfigCommit:     commit,
+		StartedAt:        &timeNow,
+		FinishedAt:       &timeNow,
 		CreatedBy:        currentUser.GetID(),
 	}
 	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
@@ -111,6 +113,14 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
+	diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
+		&configCommit.Master, &configCommit.Gitops)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	if diff == "" {
+		return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode("NoChange"), "there is no change to deploy")
+	}
 
 	// 2. merge branch
 	commit, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
@@ -127,6 +137,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		return nil, errors.E(op, err)
 	}
 
+	timeNow := time.Now()
 	// 4. add pipelinerun in db
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
@@ -136,6 +147,8 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		Description:      r.Description,
 		LastConfigCommit: configCommit.Master,
 		ConfigCommit:     configCommit.Gitops,
+		StartedAt:        &timeNow,
+		FinishedAt:       &timeNow,
 		CreatedBy:        currentUser.GetID(),
 	}
 	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)

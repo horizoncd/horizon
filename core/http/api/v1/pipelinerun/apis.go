@@ -9,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +39,10 @@ func (a *API) Log(c *gin.Context) {
 	}
 	l, err := a.prCtl.GetPipelinerunLog(c, uint(prID))
 	if err != nil {
-		response.AbortWithError(c, err)
+		l := &prctl.Log{
+			LogBytes: []byte(errors.Message(err)),
+		}
+		a.writeLog(c, l)
 		return
 	}
 	a.writeLog(c, l)
