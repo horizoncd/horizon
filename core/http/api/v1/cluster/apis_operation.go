@@ -141,3 +141,43 @@ func (a *API) Next(c *gin.Context) {
 	}
 	response.Success(c)
 }
+
+const defaultTailLines = 1000
+
+func (a *API) GetContainerLog(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	tailLines := defaultTailLines
+	tailLinesStr := c.Query(_tailLines)
+	if tailLinesStr != "" {
+		tailLinesUint64, err := strconv.ParseUint(tailLinesStr, 10, 0)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+			return
+		}
+		tailLines = int(tailLinesUint64)
+	}
+
+	podName := c.Query(_podName)
+	containerName := c.Query(_containerName)
+
+	logC, err := a.clusterCtl.GetContainerLog(c, uint(clusterID), podName, containerName, tailLines)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+
+	for logC != nil {
+		l, ok := <-logC
+		if !ok {
+			logC = nil
+			continue
+		}
+		_, _ = c.Writer.Write([]byte(l))
+	}
+}
