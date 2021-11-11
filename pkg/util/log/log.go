@@ -2,7 +2,6 @@ package log
 
 import (
 	"context"
-	"fmt"
 	"runtime"
 	"strconv"
 
@@ -33,7 +32,7 @@ func getCallerInfo() (fileline string) {
 }
 
 func WithContext(parent context.Context, traceID string) context.Context {
-	return context.WithValue(parent, Key(), fmt.Sprintf("%v", traceID)) // nolint
+	return context.WithValue(parent, Key(), traceID) // nolint
 }
 
 func WithFiled(ctx context.Context, key string, value interface{}) *rlog.Entry {
