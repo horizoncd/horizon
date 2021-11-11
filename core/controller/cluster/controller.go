@@ -43,6 +43,8 @@ type Controller interface {
 	Restart(ctx context.Context, clusterID uint) (*PipelinerunIDResponse, error)
 	Deploy(ctx context.Context, clusterID uint, request *DeployRequest) (*PipelinerunIDResponse, error)
 	Next(ctx context.Context, clusterID uint) error
+	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
+		<-chan string, error)
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,

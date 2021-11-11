@@ -22,6 +22,9 @@ const (
 	_scope              = "scope"
 	_environment        = "environment"
 	_targetbranch       = "targetBranch"
+	_containerName      = "containerName"
+	_podName            = "podName"
+	_tailLines          = "tailLines"
 )
 
 type API struct {
