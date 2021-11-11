@@ -47,7 +47,7 @@ func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 
 	ctxUser, err := user.FromContext(ctx)
 	if err != nil {
-		log.Errorf(ctx, "can not find user in context")
+		log.Error(ctx, "can not find user in context")
 	} else {
 		ctx = user.WithContext(ctx, ctxUser)
 	}
