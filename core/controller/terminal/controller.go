@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
@@ -31,17 +32,19 @@ type controller struct {
 	applicationMgr applicationmanager.Manager
 	envMgr         envmanager.EnvironmentRegionManager
 	regionMgr      regionmanager.Manager
+	clusterGitRepo gitrepo.ClusterGitRepo
 }
 
 var _ Controller = (*controller)(nil)
 
-func NewController() Controller {
+func NewController(clusterGitRepo gitrepo.ClusterGitRepo) Controller {
 	return &controller{
 		kubeClientFty:  kubeclient.Fty,
 		clusterMgr:     clustermanager.Mgr,
 		applicationMgr: applicationmanager.Mgr,
 		envMgr:         envmanager.Mgr,
 		regionMgr:      regionmanager.Mgr,
+		clusterGitRepo: clusterGitRepo,
 	}
 }
 
@@ -89,11 +92,16 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 		return nil, errors.E(op, err)
 	}
 
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
 	ref := ContainerRef{
 		Environment: er.EnvironmentName,
 		Cluster:     cluster.Name,
 		ClusterID:   cluster.ID,
-		Namespace:   fmt.Sprintf("%v-%v", er.EnvironmentName, application.GroupID),
+		Namespace:   envValue.Namespace,
 		Pod:         podName,
 		Container:   containerName,
 		RandomID:    randomID,

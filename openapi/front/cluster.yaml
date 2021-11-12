@@ -68,6 +68,24 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v1/clusters/{clusterID}/stop:
+    post:
+      tags:
+        - cluster
+      description: stop pipelinerun for cluster
+      operationId: stopPipelienrunForCluster
+      parameters:
+        - name: clusterID
+          in: path
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
   /apis/front/v1/clusters/searchclusters?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
@@ -78,8 +96,8 @@ paths:
         - name: filter
           in: query
           description: "part of name for fuzzy matching"
-        - $ref: 'common.yaml/#/components/parameters/pageNumber'
-        - $ref: 'common.yaml/#/components/parameters/pageSize'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
         '200':
           description: Success

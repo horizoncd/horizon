@@ -45,6 +45,8 @@ type Controller interface {
 	Next(ctx context.Context, clusterID uint) error
 	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
 		<-chan string, error)
+	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
+	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,

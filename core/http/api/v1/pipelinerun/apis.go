@@ -151,3 +151,33 @@ func (a *API) List(c *gin.Context) {
 		Items: pipelines,
 	})
 }
+
+func (a *API) Stop(c *gin.Context) {
+	pipelinerunIDStr := c.Param(_pipelinerunIDParam)
+	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	err = a.prCtl.StopPipelinerun(c, uint(pipelinerunID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.Success(c)
+}
+
+func (a *API) StopPipelinerunForCluster(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	err = a.prCtl.StopPipelinerunForCluster(c, uint(clusterID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.Success(c)
+}

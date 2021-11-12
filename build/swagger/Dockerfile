@@ -12,12 +12,15 @@ RUN addgroup --gid $GROUP_ID $GROUP && adduser -h /home/$USER -u $USER_ID -G $GR
     curl -#sSL -o /usr/bin/yaml2json https://music-cloudnative.nos-jd.163yun.com/binary/yaml2json_linux_amd64 && \
     chmod +x /usr/bin/jq && chmod +x /usr/bin/yaml2json
 
-COPY ./openapi/restful /restful
-COPY ./build/swagger/build.sh /restful
+COPY ./openapi /openapi
+COPY ./build/swagger/build.sh /openapi
 
-RUN cd /restful && bash build.sh
+RUN cp /openapi/build.sh /openapi/restful/build.sh && cd /openapi/restful && bash build.sh && \
+    cp /openapi/build.sh /openapi/front/build.sh && cd /openapi/front && bash build.sh && \
+    cp /openapi/restful/swagger.json /openapi/restful.json && cp /openapi/restful/common.yaml /openapi/common.yaml && \
+    cp /openapi/front/swagger.json /openapi/front.json
 
-RUN chown -R $USER:$GROUP /restful
+RUN chown -R $USER:$GROUP /openapi
 
 USER $USER
 

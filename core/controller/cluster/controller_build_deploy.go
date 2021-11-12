@@ -21,10 +21,6 @@ import (
 	"github.com/mozillazg/go-pinyin"
 )
 
-const (
-	StatusCreated = "created"
-)
-
 func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	r *BuildDeployRequest) (_ *BuildDeployResponse, err error) {
 	const op = "cluster controller: build deploy"
@@ -88,7 +84,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionBuildDeploy,
-		Status:           StatusCreated,
+		Status:           prmodels.ResultCreated,
 		Title:            r.Title,
 		Description:      r.Description,
 		GitURL:           cluster.GitURL,

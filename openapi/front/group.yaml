@@ -74,8 +74,8 @@ paths:
       parameters:
         - name: groupID
           in: query
-        - $ref: 'common.yaml/#/components/parameters/pageNumber'
-        - $ref: 'common.yaml/#/components/parameters/pageSize'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
         "200":
           content:

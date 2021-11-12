@@ -214,7 +214,7 @@ func Run(flags *Flags) {
 
 		templateCtl = templatectl.NewController(templateSchemaGetter)
 		roleCtl     = roltctl.NewController(roleService)
-		terminalCtl = terminalctl.NewController()
+		terminalCtl = terminalctl.NewController(clusterGitRepo)
 	)
 
 	var (

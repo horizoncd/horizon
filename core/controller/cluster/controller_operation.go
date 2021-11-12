@@ -183,3 +183,59 @@ func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
 	}
 	return nil
 }
+
+func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
+	const op = "cluster controller: online"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	return c.exec(ctx, clusterID, r, c.cd.Online)
+}
+
+func (c *controller) Offline(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
+	const op = "cluster controller: offline"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	return c.exec(ctx, clusterID, r, c.cd.Offline)
+}
+
+func (c *controller) exec(ctx context.Context, clusterID uint,
+	r *ExecRequest, execFunc cd.ExecFunc) (_ ExecResponse, err error) {
+	const op = "cluster controller: exec"
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	execResp, err := execFunc(ctx, &cd.ExecParams{
+		Environment:  er.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+		Namespace:    envValue.Namespace,
+		PodList:      r.PodList,
+	})
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	return ofExecResp(execResp), nil
+}

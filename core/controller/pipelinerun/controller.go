@@ -3,6 +3,7 @@ package pipelinerun
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -24,11 +25,13 @@ import (
 )
 
 type Controller interface {
-	GetPipelinerunLog(ctx context.Context, prID uint) (*Log, error)
+	GetPipelinerunLog(ctx context.Context, pipelinerunID uint) (*Log, error)
 	GetClusterLatestLog(ctx context.Context, clusterID uint) (*Log, error)
 	GetDiff(ctx context.Context, pipelinerunID uint) (*GetDiffResponse, error)
 	Get(ctx context.Context, pipelinerunID uint) (*PipelineBasic, error)
 	List(ctx context.Context, clusterID uint, query q.Query) (int, []*PipelineBasic, error)
+	StopPipelinerun(ctx context.Context, pipelinerunID uint) error
+	StopPipelinerunForCluster(ctx context.Context, clusterID uint) error
 }
 
 type controller struct {
@@ -65,11 +68,11 @@ type Log struct {
 	LogBytes []byte
 }
 
-func (c *controller) GetPipelinerunLog(ctx context.Context, prID uint) (_ *Log, err error) {
+func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) (_ *Log, err error) {
 	const op = "pipelinerun controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	pr, err := c.pipelinerunMgr.GetByID(ctx, prID)
+	pr, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -277,4 +280,63 @@ func (c *controller) ofPipelineBasics(ctx context.Context, prs []*models.Pipelin
 		pipelineBasics = append(pipelineBasics, pipelineBasic)
 	}
 	return pipelineBasics, nil
+}
+
+func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (err error) {
+	const op = "pipelinerun controller: stop pipelinerun"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	if pipelinerun.Status != prmodels.ResultCreated {
+		return errors.E(op, http.StatusBadRequest, errors.ErrorCode("BadRequest"), "pipelinerun is already completed")
+	}
+	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	return tektonClient.StopPipelineRun(ctx, cluster.Name, cluster.ID, pipelinerunID)
+}
+
+func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID uint) (err error) {
+	const op = "pipelinerun controller: stop pipelinerun"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	if err != nil {
+		return errors.E(op, err)
+	}
+	// get cluster latest builddeploy pipelinerun
+	pipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
+
+	// if pipelinerun.Status is not created, ignore, and return success
+	if pipelinerun.Status != prmodels.ResultCreated {
+		return nil
+	}
+	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	return tektonClient.StopPipelineRun(ctx, cluster.Name, cluster.ID, pipelinerun.ID)
 }

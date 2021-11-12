@@ -12,6 +12,7 @@ const (
 )
 
 const (
+	ResultCreated   = "created"
 	ResultOK        = "ok"
 	ResultFailed    = "failed"
 	ResultCancelled = "cancelled"

@@ -53,12 +53,12 @@ music-cloud-native
 
 const (
 	_gitlabName = "compute"
-
 	// _branchMaster is the main branch
 	_branchMaster = "master"
 	// _branchGitops is the gitops branch, values updated in this branch, then merge into the _branchMaster
 	_branchGitops = "gitops"
 
+	// filePath
 	_filePathChart          = "Chart.yaml"
 	_filePathApplication    = "application.yaml"
 	_filePathSRE            = "sre/sre.yaml"
@@ -67,6 +67,10 @@ const (
 	_filePathRestart        = "system/restart.yaml"
 	_filePathPipeline       = "pipeline/pipeline.yaml"
 	_filePathPipelineOutput = "pipeline/pipeline-output.yaml"
+
+	// value namespace
+	_envValueNamespace  = "env"
+	_baseValueNamespace = "horizon"
 )
 
 type BaseParams struct {
@@ -118,6 +122,7 @@ type ClusterGitRepo interface {
 	UpdateRestartTime(ctx context.Context, application, cluster, template string) (string, error)
 	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
 	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
+	GetEnvValue(ctx context.Context, application, cluster, templateName string) (*EnvValue, error)
 }
 
 type clusterGitRepo struct {
@@ -589,6 +594,27 @@ func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster s
 	}
 }
 
+func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
+	application, cluster, templateName string) (_ *EnvValue, err error) {
+	const op = "cluster git repo: get config commit"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+
+	bytes, err := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathEnv)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	var envMap map[string]map[string]*EnvValue
+
+	if err := yaml.Unmarshal(bytes, &envMap); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return envMap[templateName][_envValueNamespace], nil
+}
+
 // assembleApplicationValue assemble application.yaml data
 func (g *clusterGitRepo) assembleApplicationValue(params *BaseParams) map[string]map[string]interface{} {
 	ret := make(map[string]map[string]interface{})
@@ -622,9 +648,8 @@ func getNamespace(params *CreateClusterParams) string {
 }
 
 func (g *clusterGitRepo) assembleEnvValue(params *CreateClusterParams) map[string]map[string]*EnvValue {
-	const envValueNamespace = "env"
 	envMap := make(map[string]*EnvValue)
-	envMap[envValueNamespace] = &EnvValue{
+	envMap[_envValueNamespace] = &EnvValue{
 		Environment: params.Environment,
 		Region:      params.RegionEntity.Name,
 		Namespace:   getNamespace(params),
@@ -652,9 +677,8 @@ type BaseValueTemplate struct {
 // assembleBaseValue assemble base value. return a map, key is template name,
 // and value is a map which key is "horizon", and value is *BaseValue
 func (g *clusterGitRepo) assembleBaseValue(params *BaseParams) map[string]map[string]*BaseValue {
-	const baseValueNamespace = "horizon"
 	baseMap := make(map[string]*BaseValue)
-	baseMap[baseValueNamespace] = &BaseValue{
+	baseMap[_baseValueNamespace] = &BaseValue{
 		Application: params.Application.Name,
 		Cluster:     params.Cluster,
 		Template: &BaseValueTemplate{

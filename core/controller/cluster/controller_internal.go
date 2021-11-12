@@ -61,6 +61,10 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 
 	// 5. deploy cluster in cd system
 	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
 	// create cluster if necessary
 	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
 		Environment:   er.EnvironmentName,
@@ -68,7 +72,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
 		ValueFiles:    repoInfo.ValueFiles,
 		RegionEntity:  regionEntity,
-		Namespace:     fmt.Sprintf("%v-%v", er.EnvironmentName, application.GroupID),
+		Namespace:     envValue.Namespace,
 	}); err != nil {
 		return nil, errors.E(op, err)
 	}
