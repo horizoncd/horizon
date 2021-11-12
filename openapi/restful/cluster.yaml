@@ -865,7 +865,7 @@ paths:
     post:
       tags:
         - cluster
-      operationId: online
+      operationId: offline
       summary: online pod for cluster
       requestBody:
         required: true
