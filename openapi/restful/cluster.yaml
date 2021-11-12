@@ -757,11 +757,19 @@ paths:
                           }
                       }
                   }
-  /apis/core/v1/clusters/{clusterID}/containerlog:
+  /apis/core/v1/clusters/{clusterID}/containerlog?podName={podName}&containerName={containerName}:
     parameters:
       - name: clusterID
         in: path
         description: id of cluster
+        required: true
+      - name: podName
+        in: query
+        description: name of pod
+        required: true
+      - name: containerName
+        in: query
+        description: name of container
         required: true
     get:
       tags:
