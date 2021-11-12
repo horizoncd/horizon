@@ -212,4 +212,8 @@ func Test(t *testing.T) {
 	com, err = r.MergeBranch(ctx, application, cluster)
 	assert.Nil(t, err)
 	t.Logf("%v", com)
+
+	envValue, err := r.GetEnvValue(ctx, application, cluster, templateName)
+	assert.Nil(t, err)
+	t.Logf("%v", envValue)
 }

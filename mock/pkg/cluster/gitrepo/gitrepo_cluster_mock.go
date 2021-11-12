@@ -179,3 +179,18 @@ func (mr *MockClusterGitRepoMockRecorder) GetRepoInfo(ctx, application, cluster 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepoInfo", reflect.TypeOf((*MockClusterGitRepo)(nil).GetRepoInfo), ctx, application, cluster)
 }
+
+// GetEnvValue mocks base method
+func (m *MockClusterGitRepo) GetEnvValue(ctx context.Context, application, cluster, templateName string) (*gitrepo.EnvValue, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEnvValue", ctx, application, cluster, templateName)
+	ret0, _ := ret[0].(*gitrepo.EnvValue)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEnvValue indicates an expected call of GetEnvValue
+func (mr *MockClusterGitRepoMockRecorder) GetEnvValue(ctx, application, cluster, templateName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnvValue", reflect.TypeOf((*MockClusterGitRepo)(nil).GetEnvValue), ctx, application, cluster, templateName)
+}

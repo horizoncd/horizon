@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -223,11 +222,16 @@ func (c *controller) exec(ctx context.Context, clusterID uint,
 		return nil, errors.E(op, err)
 	}
 
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
 	execResp, err := execFunc(ctx, &cd.ExecParams{
 		Environment:  er.EnvironmentName,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
-		Namespace:    fmt.Sprintf("%v-%v", er.EnvironmentName, application.GroupID),
+		Namespace:    envValue.Namespace,
 		PodList:      r.PodList,
 	})
 	if err != nil {

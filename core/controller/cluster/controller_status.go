@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -90,10 +89,15 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	resp.RunningTask = c.getRunningTask(ctx, latestPr)
 	resp.RunningTask.PipelinerunID = pr.ID
 
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
 	clusterState, err := c.cd.GetClusterState(ctx, &cd.GetClusterStateParams{
 		Environment:  er.EnvironmentName,
 		Cluster:      cluster.Name,
-		Namespace:    fmt.Sprintf("%v-%v", er.EnvironmentName, application.GroupID),
+		Namespace:    envValue.Namespace,
 		RegionEntity: regionEntity,
 	})
 	if err != nil {
@@ -189,8 +193,13 @@ func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podNam
 		return nil, errors.E(op, err)
 	}
 
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
 	param := cd.GetContainerLogParams{
-		Namespace:   fmt.Sprintf("%v-%v", er.EnvironmentName, application.GroupID),
+		Namespace:   envValue.Namespace,
 		Environment: er.EnvironmentName,
 		Cluster:     cluster.Name,
 		Pod:         podName,

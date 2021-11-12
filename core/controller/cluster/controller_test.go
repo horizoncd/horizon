@@ -563,6 +563,9 @@ func Test(t *testing.T) {
 		Master: "master-commit",
 		Gitops: "gitops-commit",
 	}, nil).AnyTimes()
+	clusterGitRepo.EXPECT().GetEnvValue(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.EnvValue{
+		Namespace: "test-1",
+	}, nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
 		Base: &Base{
@@ -700,12 +703,10 @@ func Test(t *testing.T) {
 	commitID := "code-commit-id"
 	commitMsg := "code-commit-msg"
 	configDiff := "config-diff"
-	if codeBranch != "" {
-		commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&code.Commit{
-			ID:      commitID,
-			Message: commitMsg,
-		}, nil)
-	}
+	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&code.Commit{
+		ID:      commitID,
+		Message: commitMsg,
+	}, nil)
 	clusterGitRepo.EXPECT().CompareConfig(ctx, gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return(configDiff, nil).AnyTimes()
 
