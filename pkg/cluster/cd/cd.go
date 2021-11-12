@@ -783,7 +783,7 @@ func (c *cd) Offline(ctx context.Context, params *ExecParams) (_ map[string]Exec
 }
 
 func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ map[string]ExecResp, err error) {
-	const op = "cd: online"
+	const op = "cd: exec"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	config, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
