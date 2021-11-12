@@ -865,8 +865,8 @@ paths:
     post:
       tags:
         - cluster
-      operationId: online
-      summary: online pod for cluster
+      operationId: offline
+      summary: offline pod for cluster
       requestBody:
         required: true
         content:
@@ -891,7 +891,7 @@ paths:
                       "//": "在该Pod内，命令执行成功, 只有stdout字段和result字段",
                       "poc-javawebapp-test-2-8597696689-v6g8v": {
                         "//stdout": "stdout是执行命令的标准输出",
-                        "stdout": "do online",
+                        "stdout": "do offline",
                         "result": true
                       },
                       "//": "在该Pod内，命令执行失败, 一般含有stdout 或error, 一定会有result字段",
