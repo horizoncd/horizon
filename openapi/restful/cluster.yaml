@@ -757,6 +757,41 @@ paths:
                           }
                       }
                   }
+  /apis/core/v1/clusters/{clusterID}/containerlog?podName={podName}&containerName={containerName}:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+      - name: podName
+        in: query
+        description: name of pod
+        required: true
+      - name: containerName
+        in: query
+        description: name of container
+        required: true
+    get:
+      tags:
+        - cluster
+      operationId: getContainerLog
+      summary: Get log of a cluster container
+      responses:
+        "200":
+          description: Success
+          content:
+            text/plain:
+              schema:
+                example: |
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
 
   /apis/core/v1/clusters/{clusterID}/online:
     parameters:
