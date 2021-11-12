@@ -18,32 +18,51 @@ type Commit struct {
 	Message string
 }
 
-// CommitGetter interface to get commit for user code
-type CommitGetter interface {
+// TODO: git  connector (support all kinds of git code repo)
+
+// GitGetter interface to get commit for user code
+type GitGetter interface {
 	// GetCommit to get commit of a branch or a commitID for a specified git URL
 	// If branch and commit are both provided, use branch.
 	// gitURL is a ssh url, looks like: ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git
 	GetCommit(ctx context.Context, gitURL string, branch *string, commit *string) (*Commit, error)
+	ListBranch(ctx context.Context, gitURL string) ([]string, error)
 }
 
-var _ CommitGetter = (*commitGetter)(nil)
+var _ GitGetter = (*gitGetter)(nil)
 
-type commitGetter struct {
+type gitGetter struct {
 	gitlabLib gitlablib.Interface
 }
 
-// NewCommitGetter new a CommitGetter instance
-func NewCommitGetter(ctx context.Context, gitlabFactory gitlabfty.Factory) (CommitGetter, error) {
+// NewGitGetter new a GitGetter instance
+func NewGitGetter(ctx context.Context, gitlabFactory gitlabfty.Factory) (GitGetter, error) {
 	gitlabLib, err := gitlabFactory.GetByName(ctx, _gitlabName)
 	if err != nil {
 		return nil, err
 	}
-	return &commitGetter{
+	return &gitGetter{
 		gitlabLib: gitlabLib,
 	}, nil
 }
 
-func (g *commitGetter) GetCommit(ctx context.Context, gitURL string, branch *string, commit *string) (*Commit, error) {
+func (g *gitGetter) ListBranch(ctx context.Context, gitURL string) ([]string, error) {
+	pid, err := extractProjectPathFromSSHURL(gitURL)
+	if err != nil {
+		return nil, err
+	}
+	branches, err := g.gitlabLib.ListBranch(ctx, pid)
+	if err != nil {
+		return nil, err
+	}
+	branchNames := make([]string, 0)
+	for _, branch := range branches {
+		branchNames = append(branchNames, branch.Name)
+	}
+	return branchNames, nil
+}
+
+func (g *gitGetter) GetCommit(ctx context.Context, gitURL string, branch *string, commit *string) (*Commit, error) {
 	pid, err := extractProjectPathFromSSHURL(gitURL)
 	if err != nil {
 		return nil, err
