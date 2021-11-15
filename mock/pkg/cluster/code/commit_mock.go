@@ -11,7 +11,7 @@ import (
 	reflect "reflect"
 )
 
-// MockCommitGetter is a mock of CommitGetter interface
+// MockCommitGetter is a mock of GitGetter interface
 type MockCommitGetter struct {
 	ctrl     *gomock.Controller
 	recorder *MockCommitGetterMockRecorder

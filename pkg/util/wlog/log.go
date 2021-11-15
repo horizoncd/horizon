@@ -2,6 +2,7 @@ package wlog
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"runtime/debug"
@@ -34,9 +35,11 @@ func (l Log) Stop(end func() string) {
 
 	str := end()
 	if str == Success {
-		log.WithFiled(l.ctx, "op", l.op).WithField("duration", duration).Info(Success)
+		log.WithFiled(l.ctx, "op",
+			l.op).WithField("duration", fmt.Sprintf("%s", duration)).Info(Success) // nolint
 	} else {
-		log.WithFiled(l.ctx, "op", l.op).WithField("duration", duration).Errorf(end())
+		log.WithFiled(l.ctx, "op",
+			l.op).WithField("duration", fmt.Sprintf("%s", duration)).Errorf(end()) // nolint
 	}
 }
 

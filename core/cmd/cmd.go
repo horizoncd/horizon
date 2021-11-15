@@ -12,6 +12,7 @@ import (
 
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
+	codectl "g.hz.netease.com/horizon/core/controller/code"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
@@ -19,6 +20,7 @@ import (
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
+	codeapi "g.hz.netease.com/horizon/core/http/api/v1/code"
 	"g.hz.netease.com/horizon/core/http/api/v1/environment"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
@@ -191,7 +193,7 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	commitGetter, err := code.NewCommitGetter(ctx, gitlabFactory)
+	gitGetter, err := code.NewGitGetter(ctx, gitlabFactory)
 	if err != nil {
 		panic(err)
 	}
@@ -208,13 +210,14 @@ func Run(flags *Flags) {
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
-		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, commitGetter,
+		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, gitGetter,
 			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, memHook)
-		prCtl = prctl.NewController(tektonFty, commitGetter, clusterGitRepo)
+		prCtl = prctl.NewController(tektonFty, gitGetter, clusterGitRepo)
 
 		templateCtl = templatectl.NewController(templateSchemaGetter)
 		roleCtl     = roltctl.NewController(roleService)
 		terminalCtl = terminalctl.NewController(clusterGitRepo)
+		codeGitCtl  = codectl.NewController(gitGetter)
 	)
 
 	var (
@@ -229,6 +232,7 @@ func Run(flags *Flags) {
 		environmentAPI = environment.NewAPI()
 		roleAPI        = roleapi.NewAPI(roleCtl)
 		terminalAPI    = terminalapi.NewAPI(terminalCtl)
+		codeGitAPI     = codeapi.NewAPI(codeGitCtl)
 	)
 
 	// init server
@@ -280,6 +284,7 @@ func Run(flags *Flags) {
 	member.RegisterRoutes(r, memberAPI)
 	roleapi.RegisterRoutes(r, roleAPI)
 	terminalapi.RegisterRoutes(r, terminalAPI)
+	codeapi.RegisterRoutes(r, codeGitAPI)
 
 	// start cloud event server
 	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)

@@ -76,6 +76,7 @@ func TestMain(m *testing.M) {
 	if err := json.Unmarshal([]byte(param), &p); err != nil {
 		panic(err)
 	}
+
 	g, err = New(p.Token, p.BaseURL, "")
 	if err != nil {
 		panic(err)
@@ -145,6 +146,19 @@ func Test(t *testing.T) {
 	branch, err := g.CreateBranch(ctx, pid, newBranch, startBranch)
 	assert.Nil(t, err)
 	assert.Equal(t, branch.Name, newBranch)
+
+	// 7.1 list branch
+	branches, err := g.ListBranch(ctx, pid, nil)
+	assert.Nil(t, err)
+	assert.Equal(t, len(branches), 2)
+
+	var filter string = "mas"
+	branches, err = g.ListBranch(ctx, pid, &gitlab.ListBranchesOptions{
+		Search: &filter,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, len(branches), 1)
+	assert.Equal(t, branches[0].Name, "master")
 
 	// 8. get a branch
 	branch, err = g.GetBranch(ctx, pid, newBranch)

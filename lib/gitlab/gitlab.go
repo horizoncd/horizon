@@ -66,6 +66,11 @@ type Interface interface {
 	// See https://docs.gitlab.com/ee/api/branches.html#delete-repository-branch for more information.
 	DeleteBranch(ctx context.Context, pid interface{}, branch string) error
 
+	// ListBranch list the branch, Get a list of repository branches from a project, sorted by name alphabetically.
+	// see https://docs.gitlab.com/ee/api/branches.html#list-repository-branches
+	ListBranch(ctx context.Context, pid interface{},
+		listBranchOptions *gitlab.ListBranchesOptions) (_ []*gitlab.Branch, err error)
+
 	// CreateMR create a merge request from source to target with the specified title in project.
 	// The pid can be the project's ID or relative path such as fist/second.
 	// See https://docs.gitlab.com/ee/api/merge_requests.html#create-mr for more information.
@@ -241,6 +246,18 @@ func (h *helper) GetBranch(ctx context.Context, pid interface{}, branch string) 
 	}
 
 	return b, nil
+}
+
+func (h *helper) ListBranch(ctx context.Context, pid interface{},
+	listBranchOptions *gitlab.ListBranchesOptions) (_ []*gitlab.Branch, err error) {
+	const op = "gitlab: list branch"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	branches, resp, err := h.client.Branches.ListBranches(pid, listBranchOptions, nil)
+	if err != nil {
+		return nil, parseError(op, resp, err)
+	}
+	return branches, nil
 }
 
 func (h *helper) GetCommit(ctx context.Context, pid interface{}, commit string) (_ *gitlab.Commit, err error) {
