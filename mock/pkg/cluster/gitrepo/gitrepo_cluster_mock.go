@@ -194,3 +194,18 @@ func (mr *MockClusterGitRepoMockRecorder) GetEnvValue(ctx, application, cluster,
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnvValue", reflect.TypeOf((*MockClusterGitRepo)(nil).GetEnvValue), ctx, application, cluster, templateName)
 }
+
+// Rollback mocks base method
+func (m *MockClusterGitRepo) Rollback(ctx context.Context, application, cluster, commit string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Rollback", ctx, application, cluster, commit)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Rollback indicates an expected call of Rollback
+func (mr *MockClusterGitRepoMockRecorder) Rollback(ctx, application, cluster, commit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockClusterGitRepo)(nil).Rollback), ctx, application, cluster, commit)
+}

@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -149,6 +150,103 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		ConfigCommit:     configCommit.Gitops,
 		StartedAt:        &timeNow,
 		FinishedAt:       &timeNow,
+		CreatedBy:        currentUser.GetID(),
+	}
+	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return &PipelinerunIDResponse{
+		PipelinerunID: prCreated.ID,
+	}, nil
+}
+
+func (c *controller) Rollback(ctx context.Context,
+	clusterID uint, r *RollbackRequest) (_ *PipelinerunIDResponse, err error) {
+	const op = "cluster controller: rollback "
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+
+	// 1. get pipelinerun to rollback, and do some validation
+	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	if pipelinerun.Action == prmodels.ActionRestart || pipelinerun.Status != prmodels.ResultOK ||
+		pipelinerun.ConfigCommit == "" {
+		return nil, errors.E(op, fmt.Errorf("the pipelinerun with id: %v can not be rollbacked", r.PipelinerunID))
+	}
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	if pipelinerun.ClusterID != cluster.ID {
+		return nil, errors.E(op, fmt.Errorf(
+			"the pipelinerun with id: %v is not belongs to cluster: %v", r.PipelinerunID, clusterID))
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 2. get config commit now
+	lastConfigCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 3. rollback cluster config in git repo
+	newConfigCommit, err := c.clusterGitRepo.Rollback(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 4. merge branch
+	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 5. deploy cluster in cd
+	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
+		Environment: er.EnvironmentName,
+		Cluster:     cluster.Name,
+		Revision:    masterRevision,
+	}); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	timeNow := time.Now()
+	// 6. add pipelinerun in db
+	pr := &prmodels.Pipelinerun{
+		ClusterID:        clusterID,
+		Action:           prmodels.ActionRollback,
+		Status:           prmodels.ResultOK,
+		Title:            prmodels.ActionRollback,
+		GitURL:           pipelinerun.GitURL,
+		GitBranch:        pipelinerun.GitBranch,
+		GitCommit:        pipelinerun.GitCommit,
+		ImageURL:         pipelinerun.ImageURL,
+		LastConfigCommit: lastConfigCommit.Master,
+		ConfigCommit:     newConfigCommit,
+		StartedAt:        &timeNow,
+		FinishedAt:       &timeNow,
+		RollbackFrom:     &r.PipelinerunID,
 		CreatedBy:        currentUser.GetID(),
 	}
 	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)

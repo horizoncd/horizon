@@ -42,6 +42,7 @@ type Controller interface {
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
 	Restart(ctx context.Context, clusterID uint) (*PipelinerunIDResponse, error)
 	Deploy(ctx context.Context, clusterID uint, request *DeployRequest) (*PipelinerunIDResponse, error)
+	Rollback(ctx context.Context, clusterID uint, request *RollbackRequest) (*PipelinerunIDResponse, error)
 	Next(ctx context.Context, clusterID uint) error
 	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
 		<-chan string, error)

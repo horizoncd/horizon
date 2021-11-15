@@ -37,3 +37,7 @@ func ofExecResp(resp map[string]cd.ExecResp) ExecResponse {
 	}
 	return resultMap
 }
+
+type RollbackRequest struct {
+	PipelinerunID uint `json:"pipelinerunID"`
+}

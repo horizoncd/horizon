@@ -227,3 +227,25 @@ func (a *API) Offline(c *gin.Context) {
 	}
 	response.SuccessWithData(c, resp)
 }
+
+func (a *API) Rollback(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	var request *cluster.RollbackRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody,
+			fmt.Sprintf("request body is invalid, err: %v", err))
+		return
+	}
+
+	resp, err := a.clusterCtl.Rollback(c, uint(clusterID), request)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}

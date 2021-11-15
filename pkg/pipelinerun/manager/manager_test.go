@@ -112,12 +112,23 @@ func TestGetByClusterID(t *testing.T) {
 		PageNumber: PageNumber,
 		PageSize:   PageSize,
 	}
-	totalCount, pipelineruns, err := Mgr.GetByClusterID(ctx, clusterID, query)
+	totalCount, pipelineruns, err := Mgr.GetByClusterID(ctx, clusterID, false, query)
 	assert.Nil(t, err)
 	assert.Equal(t, totalCount, 3)
 	assert.Equal(t, len(pipelineruns), PageSize)
 	body, _ := json.MarshalIndent(pipelineruns, "", " ")
 	t.Logf("%s", string(body))
+
+	pr.ID = 4
+	pr.Status = "ok"
+	_, err = Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	totalCount, pipelineruns, err = Mgr.GetByClusterID(ctx, clusterID, true, query)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, totalCount)
+	assert.Equal(t, 1, len(pipelineruns))
+	assert.Equal(t, "ok", pipelineruns[0].Status)
 }
 
 // nolint

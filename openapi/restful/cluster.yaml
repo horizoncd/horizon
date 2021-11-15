@@ -504,12 +504,16 @@ paths:
                       }
                   }
 
-  /apis/core/v1/clusters/{clusterID}/pipelineruns:
+  /apis/core/v1/clusters/{clusterID}/pipelineruns?canRollback={canRollback}:
     parameters:
       - name: clusterID
         in: path
         description: id of cluster
         required: true
+      - name: canRollback
+        in: query
+        description: pipelinerun can rollback, true of false. Default is false
+        required: false
     get:
       tags:
         - cluster
@@ -532,7 +536,7 @@ paths:
                                   "title":"Feature123",
                                   "description":"release big rocket",
                                   "action":"builddeploy",
-                                  "status":"StatusCreated",
+                                  "status":"ok",
                                   "gitURL":"git@github.com:demo/demo.git",
                                   "gitBranch":"master",
                                   "gitCommit":"4234324dsdjasljl43",
@@ -541,9 +545,11 @@ paths:
                                   "configCommit":"4234324dsdjasljl43",
                                   "startedAt":"2021-11-07 11:19:54",
                                   "finishedAt":"2021-11-07 11:19:54",
+                                  "//canRollback": "can this pipelinerun be rollbacked",
+                                  "canRollback": true,
                                   "createBy":{
                                     "userID":0,
-                                    "userName":"123",
+                                    "userName":"123"
                                   }
                               }
                           ]

@@ -123,6 +123,7 @@ type ClusterGitRepo interface {
 	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
 	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
 	GetEnvValue(ctx context.Context, application, cluster, templateName string) (*EnvValue, error)
+	Rollback(ctx context.Context, application, cluster, commit string) (string, error)
 }
 
 type clusterGitRepo struct {
@@ -613,6 +614,80 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 	}
 
 	return envMap[templateName][_envValueNamespace], nil
+}
+
+func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, commit string) (_ string, err error) {
+	const op = "cluster git repo: rollback"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return "", errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+
+	// 1. get cluster files of the specified commit
+	// the files contains: _filePathPipeline, _filePathApplication, _filePathBase, _filePathPipelineOutput
+	var err1, err2, err3, err4 error
+	var applicationBytes, pipelineBytes, baseValueBytes, pipelineOutPutBytes []byte
+	var wgReadFile sync.WaitGroup
+	wgReadFile.Add(4)
+	readFile := func(b *[]byte, err *error, filePath string) {
+		defer wgReadFile.Done()
+		bytes, e := g.gitlabLib.GetFile(ctx, pid, commit, filePath)
+		*b = bytes
+		*err = e
+	}
+	go readFile(&pipelineBytes, &err1, _filePathPipeline)
+	go readFile(&applicationBytes, &err2, _filePathApplication)
+	go readFile(&baseValueBytes, &err3, _filePathBase)
+	go readFile(&pipelineOutPutBytes, &err4, _filePathPipelineOutput)
+	wgReadFile.Wait()
+
+	for _, err := range []error{err1, err2, err3, err4} {
+		if err != nil {
+			return "", err
+		}
+	}
+
+	actions := []gitlablib.CommitAction{
+		{
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathPipeline,
+			Content:  string(pipelineBytes),
+		}, {
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathApplication,
+			Content:  string(applicationBytes),
+		}, {
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathBase,
+			Content:  string(baseValueBytes),
+		}, {
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathPipelineOutput,
+			Content:  string(pipelineOutPutBytes),
+		},
+	}
+
+	commitMsg := angular.CommitMessage("cluster", angular.Subject{
+		Operator: currentUser.GetName(),
+		Action:   "rollback cluster",
+		Cluster:  angular.StringPtr(cluster),
+	}, struct {
+		Commit string `json:"commit"`
+	}{
+		Commit: commit,
+	})
+
+	newCommit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
+	if err != nil {
+		return "", errors.E(op, err)
+	}
+
+	return newCommit.ID, nil
 }
 
 // assembleApplicationValue assemble application.yaml data

@@ -197,11 +197,11 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("\n%v\n", diff)
 
-	com, err := r.UpdateImage(ctx, application, cluster, templateName, "newImage")
+	updateImageCommit, err := r.UpdateImage(ctx, application, cluster, templateName, "newImage")
 	assert.Nil(t, err)
-	t.Logf("%v", com)
+	t.Logf("%v", updateImageCommit)
 
-	com, err = r.UpdateRestartTime(ctx, application, cluster, templateName)
+	com, err := r.UpdateRestartTime(ctx, application, cluster, templateName)
 	assert.Nil(t, err)
 	t.Logf("%v", com)
 
@@ -216,4 +216,12 @@ func Test(t *testing.T) {
 	envValue, err := r.GetEnvValue(ctx, application, cluster, templateName)
 	assert.Nil(t, err)
 	t.Logf("%v", envValue)
+
+	com, err = r.UpdateImage(ctx, application, cluster, templateName, "newImage2")
+	assert.Nil(t, err)
+	t.Logf("%v", com)
+
+	com, err = r.Rollback(ctx, application, cluster, updateImageCommit)
+	assert.Nil(t, err)
+	t.Logf("%v", com)
 }

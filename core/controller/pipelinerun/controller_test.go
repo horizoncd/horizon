@@ -100,7 +100,7 @@ func TestGetAndListPipelinerun(t *testing.T) {
 	})
 
 	mockPipelineManager.EXPECT().GetByClusterID(ctx,
-		clusterID, gomock.Any()).Return(totalCount, pipelineruns, nil).Times(1)
+		clusterID, gomock.Any(), gomock.Any()).Return(totalCount, pipelineruns, nil).Times(1)
 	mockUserManager.EXPECT().GetUserByID(ctx, gomock.Any()).Return(&usermodel.User{
 		Name: UserName,
 	}, nil).AnyTimes()
@@ -109,7 +109,7 @@ func TestGetAndListPipelinerun(t *testing.T) {
 		PageNumber: 1,
 		PageSize:   10,
 	}
-	count, pipelineBasics, err := ctl.List(ctx, clusterID, query)
+	count, pipelineBasics, err := ctl.List(ctx, clusterID, false, query)
 	assert.Nil(t, err)
 	assert.Equal(t, count, totalCount)
 	assert.Equal(t, len(pipelineBasics), 2)

@@ -29,7 +29,7 @@ type Controller interface {
 	GetClusterLatestLog(ctx context.Context, clusterID uint) (*Log, error)
 	GetDiff(ctx context.Context, pipelinerunID uint) (*GetDiffResponse, error)
 	Get(ctx context.Context, pipelinerunID uint) (*PipelineBasic, error)
-	List(ctx context.Context, clusterID uint, query q.Query) (int, []*PipelineBasic, error)
+	List(ctx context.Context, clusterID uint, canRollback bool, query q.Query) (int, []*PipelineBasic, error)
 	StopPipelinerun(ctx context.Context, pipelinerunID uint) error
 	StopPipelinerunForCluster(ctx context.Context, clusterID uint) error
 }
@@ -228,11 +228,11 @@ func (c *controller) Get(ctx context.Context, pipelineID uint) (_ *PipelineBasic
 }
 
 func (c *controller) List(ctx context.Context,
-	clusterID uint, query q.Query) (_ int, _ []*PipelineBasic, err error) {
+	clusterID uint, canRollback bool, query q.Query) (_ int, _ []*PipelineBasic, err error) {
 	const op = "pipelinerun controller: list pipelinerun"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	totalCount, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, query)
+	totalCount, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, canRollback, query)
 	if err != nil {
 		return 0, nil, err
 	}

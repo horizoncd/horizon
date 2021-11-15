@@ -162,4 +162,10 @@ const (
 		" order by created_at desc limit ? offset ?"
 
 	PipelinerunGetByClusterIDTotalCount = "select count(1) from pipelinerun where cluster_id = ?"
+
+	PipelinerunCanRollbackGetByClusterID = "select * from pipelinerun where cluster_id = ?" +
+		" and action != 'restart' and status = 'ok' order by created_at desc limit ? offset ?"
+
+	PipelinerunCanRollbackGetByClusterIDTotalCount = "select count(1) from pipelinerun where cluster_id = ?" +
+		" and action != 'restart' and status = 'ok' "
 )
