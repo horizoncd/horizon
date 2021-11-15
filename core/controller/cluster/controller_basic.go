@@ -108,8 +108,19 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	return ofClusterModel(application, cluster, er, fullPath,
-		clusterFiles.PipelineJSONBlob, clusterFiles.ApplicationJSONBlob), nil
+	// 6. transfer model
+	clusterResp := ofClusterModel(application, cluster, er, fullPath,
+		clusterFiles.PipelineJSONBlob, clusterFiles.ApplicationJSONBlob)
+
+	// 7. get latest deployed commit
+	latestPR, err := c.pipelinerunMgr.GetLatestSuccessByClusterID(ctx, clusterID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	if latestPR != nil {
+		clusterResp.LatestDeployedCommit = latestPR.GitCommit
+	}
+	return clusterResp, nil
 }
 
 func (c *controller) CreateCluster(ctx context.Context, applicationID uint,

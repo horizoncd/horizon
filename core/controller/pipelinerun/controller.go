@@ -40,14 +40,14 @@ type controller struct {
 	clusterMgr     clustermanager.Manager
 	envMgr         envmanager.Manager
 	tektonFty      factory.Factory
-	commitGetter   code.CommitGetter
+	commitGetter   code.GitGetter
 	clusterGitRepo gitrepo.ClusterGitRepo
 	userManager    usermanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
 
-func NewController(tektonFty factory.Factory, codeGetter code.CommitGetter,
+func NewController(tektonFty factory.Factory, codeGetter code.GitGetter,
 	clusterRepo gitrepo.ClusterGitRepo) Controller {
 	return &controller{
 		pipelinerunMgr: prmanager.Mgr,

@@ -58,7 +58,7 @@ type controller struct {
 	clusterMgr           clustermanager.Manager
 	clusterGitRepo       gitrepo.ClusterGitRepo
 	applicationGitRepo   appgitrepo.ApplicationGitRepo
-	commitGetter         code.CommitGetter
+	commitGetter         code.GitGetter
 	cd                   cd.CD
 	applicationMgr       appmanager.Manager
 	applicationSvc       applicationservice.Service
@@ -76,7 +76,7 @@ type controller struct {
 var _ Controller = (*controller)(nil)
 
 func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo appgitrepo.ApplicationGitRepo,
-	commitGetter code.CommitGetter, cd cd.CD, tektonFty factory.Factory,
+	commitGetter code.GitGetter, cd cd.CD, tektonFty factory.Factory,
 	templateSchemaGetter templateschema.Getter, hook hook.Hook) Controller {
 	return &controller{
 		clusterMgr:           clustermanager.Mgr,

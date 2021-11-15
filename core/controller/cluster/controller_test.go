@@ -447,7 +447,7 @@ func Test(t *testing.T) {
 	cd := cdmock.NewMockCD(mockCtl)
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockFactory(mockCtl)
-	commitGetter := commitmock.NewMockCommitGetter(mockCtl)
+	commitGetter := commitmock.NewMockGitGetter(mockCtl)
 
 	templateSchemaGetter := trschemamock.NewMockSchemaGetter(mockCtl)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0").

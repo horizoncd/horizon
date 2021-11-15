@@ -44,7 +44,7 @@ func TestGetAndListPipelinerun(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	ctx := context.TODO()
 
-	mockCommitGetter := commitmock.NewMockCommitGetter(mockCtl)
+	mockCommitGetter := commitmock.NewMockGitGetter(mockCtl)
 	mockClusterManager := clustermockmananger.NewMockManager(mockCtl)
 	mockApplicationMananger := applicationmockmanager.NewMockManager(mockCtl)
 	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
@@ -122,7 +122,7 @@ func TestGetDiff(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	ctx := context.TODO()
 
-	mockCommitGetter := commitmock.NewMockCommitGetter(mockCtl)
+	mockCommitGetter := commitmock.NewMockGitGetter(mockCtl)
 	mockClusterManager := clustermockmananger.NewMockManager(mockCtl)
 	mockApplicationMananger := applicationmockmanager.NewMockManager(mockCtl)
 	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
