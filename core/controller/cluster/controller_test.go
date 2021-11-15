@@ -778,4 +778,20 @@ func Test(t *testing.T) {
 	assert.NotNil(t, offlineResp)
 	b, _ = json.Marshal(offlineResp)
 	t.Logf("%s", string(b))
+
+	// test rollback
+	clusterGitRepo.EXPECT().Rollback(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("rollback-commit", nil).AnyTimes()
+	// update status to 'ok'
+	err = prmanager.Mgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
+		Result: prmodels.ResultOK,
+	})
+	assert.Nil(t, err)
+	rollbackResp, err := c.Rollback(ctx, resp.ID, &RollbackRequest{
+		PipelinerunID: buildDeployResp.PipelinerunID,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, rollbackResp)
+	b, _ = json.Marshal(rollbackResp)
+	t.Logf("%s", string(b))
 }

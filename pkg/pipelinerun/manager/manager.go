@@ -16,7 +16,8 @@ var (
 type Manager interface {
 	Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error)
 	GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error)
-	GetByClusterID(ctx context.Context, clusterID uint, query q.Query) (int, []*models.Pipelinerun, error)
+	GetByClusterID(ctx context.Context, clusterID uint, canRollback bool,
+		query q.Query) (int, []*models.Pipelinerun, error)
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
 	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
@@ -59,6 +60,6 @@ func (m *manager) UpdateResultByID(ctx context.Context, pipelinerunID uint, resu
 }
 
 func (m *manager) GetByClusterID(ctx context.Context,
-	clusterID uint, query q.Query) (int, []*models.Pipelinerun, error) {
-	return m.dao.GetByClusterID(ctx, clusterID, query)
+	clusterID uint, canRollback bool, query q.Query) (int, []*models.Pipelinerun, error) {
+	return m.dao.GetByClusterID(ctx, clusterID, canRollback, query)
 }

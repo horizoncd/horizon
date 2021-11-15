@@ -18,6 +18,7 @@ const (
 	_pipelinerunIDParam = "pipelinerunID"
 	_clusterIDParam     = "clusterID"
 	_clusterParam       = "cluster"
+	_canRollbackParam   = "canRollback"
 )
 
 type API struct {
@@ -138,7 +139,13 @@ func (a *API) List(c *gin.Context) {
 		return
 	}
 
-	total, pipelines, err := a.prCtl.List(c, uint(clusterID), q.Query{
+	canRollbackStr := c.Query(_canRollbackParam)
+	canRollback, err := strconv.ParseBool(canRollbackStr)
+	if err != nil {
+		canRollback = false
+	}
+
+	total, pipelines, err := a.prCtl.List(c, uint(clusterID), canRollback, q.Query{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	})

@@ -54,6 +54,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.Deploy,
 		}, {
 			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/clusters/:%v/rollback", _clusterIDParam),
+			HandlerFunc: api.Rollback,
+		}, {
+			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/next", _clusterIDParam),
 			HandlerFunc: api.Next,
 		}, {

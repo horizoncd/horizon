@@ -13,7 +13,8 @@ type DAO interface {
 	// Create create a pipelinerun
 	Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error)
 	GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error)
-	GetByClusterID(ctx context.Context, clusterID uint, query q.Query) (int, []*models.Pipelinerun, error)
+	GetByClusterID(ctx context.Context, clusterID uint,
+		canRollback bool, query q.Query) (int, []*models.Pipelinerun, error)
 	// DeleteByID delete pipelinerun by id
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
@@ -107,7 +108,8 @@ func (d *dao) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *
 	return res.Error
 }
 
-func (d *dao) GetByClusterID(ctx context.Context, clusterID uint, query q.Query) (int, []*models.Pipelinerun, error) {
+func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
+	canRollback bool, query q.Query) (int, []*models.Pipelinerun, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -116,13 +118,19 @@ func (d *dao) GetByClusterID(ctx context.Context, clusterID uint, query q.Query)
 	limit := query.PageSize
 
 	var pipelineruns []*models.Pipelinerun
-	result := db.Raw(common.PipelinerunGetByClusterID,
+	queryScript := common.PipelinerunGetByClusterID
+	countScript := common.PipelinerunGetByClusterIDTotalCount
+	if canRollback {
+		queryScript = common.PipelinerunCanRollbackGetByClusterID
+		countScript = common.PipelinerunCanRollbackGetByClusterIDTotalCount
+	}
+	result := db.Raw(queryScript,
 		clusterID, limit, offset).Scan(&pipelineruns)
 	if result.Error != nil {
 		return 0, pipelineruns, result.Error
 	}
 	var total int
-	result = db.Raw(common.PipelinerunGetByClusterIDTotalCount,
+	result = db.Raw(countScript,
 		clusterID).Scan(&total)
 
 	return total, pipelineruns, result.Error
