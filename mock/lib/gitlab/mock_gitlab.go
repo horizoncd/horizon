@@ -272,18 +272,18 @@ func (mr *MockInterfaceMockRecorder) GetSSHURL(ctx interface{}) *gomock.Call {
 }
 
 // ListBranch mocks base method.
-func (m *MockInterface) ListBranch(ctx context.Context, pid interface{}) ([]*gitlab0.Branch, error) {
+func (m *MockInterface) ListBranch(ctx context.Context, pid interface{}, listBranchOptions *gitlab0.ListBranchesOptions) ([]*gitlab0.Branch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListBranch", ctx, pid)
+	ret := m.ctrl.Call(m, "ListBranch", ctx, pid, listBranchOptions)
 	ret0, _ := ret[0].([]*gitlab0.Branch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListBranch indicates an expected call of ListBranch.
-func (mr *MockInterfaceMockRecorder) ListBranch(ctx, pid interface{}) *gomock.Call {
+func (mr *MockInterfaceMockRecorder) ListBranch(ctx, pid, listBranchOptions interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranch", reflect.TypeOf((*MockInterface)(nil).ListBranch), ctx, pid)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranch", reflect.TypeOf((*MockInterface)(nil).ListBranch), ctx, pid, listBranchOptions)
 }
 
 // TransferProject mocks base method.

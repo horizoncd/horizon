@@ -12,6 +12,17 @@ paths:
         in: query
         description: giturl the the code repo
         required: true
+      - name: filter
+        in: query
+        description: the filter
+        required: false
+      - name: pageNumber
+        in: query
+        description: the page number
+        required: false
+      - name: pageSize
+        in: query
+        description: the page size of per page
     get:
       tags:
         - code

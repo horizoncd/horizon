@@ -177,7 +177,7 @@ func (a *API) GetChildren(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	pageNumber, pageSize, err := checkPageParamsOnListingGroups(c)
+	pageNumber, pageSize, err := common.CheckPageParams(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
@@ -203,7 +203,7 @@ func (a *API) GetSubGroups(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	pageNumber, pageSize, err := checkPageParamsOnListingGroups(c)
+	pageNumber, pageSize, err := common.CheckPageParams(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
@@ -229,7 +229,7 @@ func (a *API) SearchChildren(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	pageNumber, pageSize, err := checkPageParamsOnListingGroups(c)
+	pageNumber, pageSize, err := common.CheckPageParams(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
@@ -262,7 +262,7 @@ func (a *API) SearchGroups(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	pageNumber, pageSize, err := checkPageParamsOnListingGroups(c)
+	pageNumber, pageSize, err := common.CheckPageParams(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
@@ -285,20 +285,4 @@ func (a *API) SearchGroups(c *gin.Context) {
 		Total: count,
 		Items: searchGroups,
 	})
-}
-
-// checkPageParamsOnListingGroups check whether the params for listing groups is valid
-func checkPageParamsOnListingGroups(c *gin.Context) (int, int, error) {
-	pNumber := c.Query(common.PageNumber)
-	pageNumber, err := strconv.Atoi(pNumber)
-	if err != nil || pageNumber <= 0 {
-		return 0, 0, fmt.Errorf("invalid param, pageNumber: %d", pageNumber)
-	}
-	pSize := c.Query(common.PageSize)
-	pageSize, err := strconv.Atoi(pSize)
-	if err != nil || pageSize <= 0 || pageSize > common.MaxPageSize {
-		return 0, 0, fmt.Errorf("invalid param, pageSize: %d", pageSize)
-	}
-
-	return pageNumber, pageSize, nil
 }

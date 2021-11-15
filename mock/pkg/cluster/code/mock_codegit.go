@@ -51,16 +51,16 @@ func (mr *MockGitGetterMockRecorder) GetCommit(ctx, gitURL, branch, commit inter
 }
 
 // ListBranch mocks base method.
-func (m *MockGitGetter) ListBranch(ctx context.Context, gitURL string) ([]string, error) {
+func (m *MockGitGetter) ListBranch(ctx context.Context, gitURL string, params *code.SearchParams) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListBranch", ctx, gitURL)
+	ret := m.ctrl.Call(m, "ListBranch", ctx, gitURL, params)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListBranch indicates an expected call of ListBranch.
-func (mr *MockGitGetterMockRecorder) ListBranch(ctx, gitURL interface{}) *gomock.Call {
+func (mr *MockGitGetterMockRecorder) ListBranch(ctx, gitURL, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranch", reflect.TypeOf((*MockGitGetter)(nil).ListBranch), ctx, gitURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranch", reflect.TypeOf((*MockGitGetter)(nil).ListBranch), ctx, gitURL, params)
 }

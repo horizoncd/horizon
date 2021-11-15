@@ -7,7 +7,7 @@ import (
 )
 
 type Controller interface {
-	ListBranch(ctx context.Context, gitURL string) ([]string, error)
+	ListBranch(ctx context.Context, gitURL string, params *code.SearchParams) ([]string, error)
 }
 
 func NewController(getter code.GitGetter) Controller {
@@ -18,6 +18,6 @@ type controller struct {
 	gitGetter code.GitGetter
 }
 
-func (c *controller) ListBranch(ctx context.Context, gitURL string) ([]string, error) {
-	return c.gitGetter.ListBranch(ctx, gitURL)
+func (c *controller) ListBranch(ctx context.Context, gitURL string, params *code.SearchParams) ([]string, error) {
+	return c.gitGetter.ListBranch(ctx, gitURL, params)
 }

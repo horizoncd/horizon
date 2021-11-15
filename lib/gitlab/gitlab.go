@@ -68,7 +68,8 @@ type Interface interface {
 
 	// ListBranch list the branch, Get a list of repository branches from a project, sorted by name alphabetically.
 	// see https://docs.gitlab.com/ee/api/branches.html#list-repository-branches
-	ListBranch(ctx context.Context, pid interface{}) ([]*gitlab.Branch, error)
+	ListBranch(ctx context.Context, pid interface{},
+		listBranchOptions *gitlab.ListBranchesOptions) (_ []*gitlab.Branch, err error)
 
 	// CreateMR create a merge request from source to target with the specified title in project.
 	// The pid can be the project's ID or relative path such as fist/second.
@@ -247,11 +248,12 @@ func (h *helper) GetBranch(ctx context.Context, pid interface{}, branch string) 
 	return b, nil
 }
 
-func (h *helper) ListBranch(ctx context.Context, pid interface{}) (_ []*gitlab.Branch, err error) {
+func (h *helper) ListBranch(ctx context.Context, pid interface{},
+	listBranchOptions *gitlab.ListBranchesOptions) (_ []*gitlab.Branch, err error) {
 	const op = "gitlab: list branch"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	branches, resp, err := h.client.Branches.ListBranches(pid, nil, nil)
+	branches, resp, err := h.client.Branches.ListBranches(pid, listBranchOptions, nil)
 	if err != nil {
 		return nil, parseError(op, resp, err)
 	}
