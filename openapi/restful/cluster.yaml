@@ -227,6 +227,7 @@ paths:
                               "name":"javaapp",
                               "release":"v1.1.0"
                           },
+                          "latestDeployedCommit": "xxxxxx",
                           "git":{
                               "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
                               "subfolder":"/",
