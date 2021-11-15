@@ -124,6 +124,21 @@ func (mr *MockManagerMockRecorder) GetLatestByClusterIDAndAction(ctx, clusterID,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestByClusterIDAndAction", reflect.TypeOf((*MockManager)(nil).GetLatestByClusterIDAndAction), ctx, clusterID, action)
 }
 
+// GetLatestSuccessByClusterID mocks base method
+func (m *MockManager) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestSuccessByClusterID", ctx, clusterID)
+	ret0, _ := ret[0].(*models.Pipelinerun)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestSuccessByClusterID indicates an expected call of GetLatestSuccessByClusterID
+func (mr *MockManagerMockRecorder) GetLatestSuccessByClusterID(ctx, clusterID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestSuccessByClusterID", reflect.TypeOf((*MockManager)(nil).GetLatestSuccessByClusterID), ctx, clusterID)
+}
+
 // UpdateResultByID mocks base method
 func (m *MockManager) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {
 	m.ctrl.T.Helper()
