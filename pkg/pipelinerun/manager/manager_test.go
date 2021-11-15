@@ -120,6 +120,46 @@ func TestGetByClusterID(t *testing.T) {
 	t.Logf("%s", string(body))
 }
 
+// nolint
+func TestGetLatestSuccessByClusterID(t *testing.T) {
+	var clusterID uint = 1
+	pr := &models.Pipelinerun{
+		ID:          5,
+		ClusterID:   clusterID,
+		Action:      models.ActionBuildDeploy,
+		Status:      "ok",
+		Title:       "title",
+		Description: "description",
+		CreatedBy:   0,
+		GitCommit: "xxxxxx",
+		UpdatedAt: time.Now(),
+	}
+	_, err := Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pr.ID = 6
+	pr.UpdatedAt = time.Now()
+	_, err = Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pr.ID = 7
+	pr.UpdatedAt = time.Now()
+	pr.Action = models.ActionRollback
+	_, err = Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pr.ID = 8
+	pr.UpdatedAt = time.Now()
+	pr.Action = models.ActionBuildDeploy
+	pr.Status = "created"
+	_, err = Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pipelinerun, err := Mgr.GetLatestSuccessByClusterID(ctx, clusterID)
+	assert.Nil(t, err)
+	assert.Equal(t, uint(7), pipelinerun.ID)
+}
+
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Pipelinerun{}); err != nil {

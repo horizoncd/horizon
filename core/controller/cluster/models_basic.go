@@ -40,14 +40,15 @@ type UpdateClusterRequest struct {
 type GetClusterResponse struct {
 	*CreateClusterRequest
 
-	ID          uint         `json:"id"`
-	FullPath    string       `json:"fullPath"`
-	Application *Application `json:"application"`
-	Priority    string       `json:"priority"`
-	Template    *Template    `json:"template"`
-	Scope       *Scope       `json:"scope"`
-	CreatedAt   time.Time    `json:"createdAt"`
-	UpdatedAt   time.Time    `json:"updatedAt"`
+	ID                   uint         `json:"id"`
+	FullPath             string       `json:"fullPath"`
+	Application          *Application `json:"application"`
+	Priority             string       `json:"priority"`
+	Template             *Template    `json:"template"`
+	Scope                *Scope       `json:"scope"`
+	LatestDeployedCommit string       `json:"latestDeployedCommit,omitempty"`
+	CreatedAt            time.Time    `json:"createdAt"`
+	UpdatedAt            time.Time    `json:"updatedAt"`
 }
 
 type Application struct {
