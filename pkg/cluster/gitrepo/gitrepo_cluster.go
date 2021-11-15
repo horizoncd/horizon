@@ -682,7 +682,6 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 		Commit: commit,
 	})
 
-	// update in _branchMaster directly
 	newCommit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
 	if err != nil {
 		return "", errors.E(op, err)
