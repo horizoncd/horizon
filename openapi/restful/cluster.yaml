@@ -504,12 +504,18 @@ paths:
                       }
                   }
 
-  /apis/core/v1/clusters/{clusterID}/pipelineruns?canRollback={canRollback}:
+  /apis/core/v1/clusters/{clusterID}/pipelineruns?pageNumber=${pageNumber}&pageSize={pageSize}&canRollback={canRollback}:
     parameters:
       - name: clusterID
         in: path
         description: id of cluster
         required: true
+      - name: pageNumber
+        in: query
+        required: false
+      - name: pageSize
+        in: query
+        required: false
       - name: canRollback
         in: query
         description: pipelinerun can rollback, true of false. Default is false
