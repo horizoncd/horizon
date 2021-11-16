@@ -136,7 +136,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 // SearchGroups search subGroups of a group
 func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error) {
 	if params.Filter == "" {
-		return c.GetSubGroups(ctx, params.GroupID, common.DefaultPageNumber, common.DefaultPageSize)
+		return c.GetSubGroups(ctx, params.GroupID, params.PageNumber, params.PageSize)
 	}
 
 	// query groups by the name fuzzily
