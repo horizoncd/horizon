@@ -93,9 +93,10 @@ paths:
                           "configCommit":"4234324dsdjasljl43",
                           "startedAt":"2021-11-07 11:19:54",
                           "finishedAt":"2021-11-07 11:19:54",
+                          "canRollback": false,
                           "createBy":{
                             "userID":0,
-                            "userName":"123",
+                            "userName":"123"
                           }
                       }
                   }

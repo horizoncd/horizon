@@ -56,6 +56,8 @@ type PipelineBasic struct {
 	StartedAt *time.Time `json:"startedAt"`
 	// FinishedAt finish time of this pipelinerun
 	FinishedAt *time.Time `json:"finishedAt"`
+	// CanRollback can this pipelinerun be rollback, default is false
+	CanRollback bool `json:"canRollback"`
 	// createInfo
 	CreatedBy UserInfo `json:"createdBy"`
 }

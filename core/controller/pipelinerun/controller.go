@@ -263,6 +263,7 @@ func (c *controller) ofPipelineBasic(ctx context.Context, pr *models.Pipelinerun
 		ConfigCommit:     pr.ConfigCommit,
 		StartedAt:        pr.StartedAt,
 		FinishedAt:       pr.FinishedAt,
+		CanRollback:      pr.Action != prmodels.ActionRestart && pr.Status == prmodels.ResultOK,
 		CreatedBy: UserInfo{
 			UserID:   pr.CreatedBy,
 			UserName: user.Name,
