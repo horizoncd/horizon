@@ -182,7 +182,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 7. create cluster, after created, params.Cluster is the newest cluster
-	cluster := r.toClusterModel(application, er)
+	cluster, clusterTags := r.toClusterModel(application, er)
 	cluster.CreatedBy = currentUser.GetID()
 	cluster.UpdatedBy = currentUser.GetID()
 
@@ -203,7 +203,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 9. create cluster in db
-	cluster, err = c.clusterMgr.Create(ctx, cluster)
+	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -437,6 +437,28 @@ func (c *controller) validateCreate(applicationName string, r *CreateClusterRequ
 	}
 	if r.TemplateInput != nil && r.TemplateInput.Pipeline == nil {
 		return fmt.Errorf("pipeline config for template cannot be empty")
+	}
+	if len(r.Tags) > 20 {
+		return fmt.Errorf("the count of tags must be less than 20")
+	}
+	pattern := regexp.MustCompile(`^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$`)
+	const lengthInvalid = "tag %v: %v is invalid, length must be 63 or less"
+	const patternInvalid = "tag %v: %v is invalid, " +
+		"should beginning and ending with an alphanumeric character ([a-z0-9A-Z]) " +
+		"with dashes (-), underscores (_), dots (.), and alphanumerics between"
+	for _, tag := range r.Tags {
+		if len(tag.Key) > 63 {
+			return fmt.Errorf(lengthInvalid, "key", tag.Key)
+		}
+		if len(tag.Value) > 63 {
+			return fmt.Errorf(lengthInvalid, "value", tag.Value)
+		}
+		if !pattern.MatchString(tag.Key) {
+			return fmt.Errorf(patternInvalid, "key", tag.Key)
+		}
+		if !pattern.MatchString(tag.Value) {
+			return fmt.Errorf(patternInvalid, "value", tag.Value)
+		}
 	}
 	return nil
 }

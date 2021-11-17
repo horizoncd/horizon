@@ -89,6 +89,16 @@ paths:
                         "//branch":"branch can be edited",
                         "branch":"develop"
                     },
+                    "//tags": "tags is an array constructed by key-value pairs, key and value are must be string, and must be 63 characters or less, beginning and ending with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between. ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$ ",
+                    "tags": [
+                      {
+                        "key": "rpc.tag",
+                        "value": "qa-abc"
+                      }, {
+                        "key": "dubble.tag",
+                        "value": "qa-abc"
+                      }
+                    ],
                     "templateInput":{
                         "application":{
                             "app":{
