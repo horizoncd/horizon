@@ -95,8 +95,9 @@ const (
 const (
 	// EnvironmentListAll ...
 	EnvironmentListAll    = "select * from environment where deleted_at is null"
-	EnvironmentListRegion = "select region_name from environment_region where environment_name = ? and deleted_at is null"
-	EnvironmentRegionGet  = "select * from environment_region where" +
+	EnvironmentListRegion = "select region_name from environment_region " +
+		"where environment_name = ? and disabled == 0 and deleted_at is null"
+	EnvironmentRegionGet = "select * from environment_region where" +
 		" environment_name = ? and region_name = ? and deleted_at is null"
 	EnvironmentRegionGetByID = "select * from environment_region where id = ? and deleted_at is null"
 )

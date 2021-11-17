@@ -168,7 +168,7 @@ func (a *API) GetContainerLog(c *gin.Context) {
 
 	logC, err := a.clusterCtl.GetContainerLog(c, uint(clusterID), podName, containerName, tailLines)
 	if err != nil {
-		response.AbortWithError(c, err)
+		_, _ = c.Writer.Write([]byte(err.Error()))
 		return
 	}
 
