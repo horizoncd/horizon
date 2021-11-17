@@ -71,7 +71,7 @@ const (
 	ApplicationQueryByFuzzily              = "select * from application where name like ? and deleted_at is null"
 	ApplicationQueryByFuzzilyCount         = "select count(1) from application where name like ? and deleted_at is null"
 	ApplicationQueryByFuzzilyAndPagination = "select * from application where name like ? and deleted_at is null " +
-		"order by name desc limit ? offset ?"
+		"order by updated_at desc limit ? offset ?"
 	ApplicationQueryByNamesUnderGroup = "select * from application where group_id = ? and name in ? " +
 		"and deleted_at is null"
 	ApplicationDeleteByID     = "update application set deleted_at = CURRENT_TIMESTAMP where id = ?"
@@ -129,7 +129,7 @@ const (
 		"r.display_name as region_display_name from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
-		"where c.name like ? and c.deleted_at is null limit ? offset ?"
+		"where c.name like ? and c.deleted_at is null order by updated_at desc limit ? offset ?"
 	ClusterCountByNameFuzzily = "select count(1) from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
@@ -138,7 +138,7 @@ const (
 		"r.display_name as region_display_name from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
-		"where er.environment_name = ? and c.name like ? and c.deleted_at is null limit ? offset ?"
+		"where er.environment_name = ? and c.name like ? and c.deleted_at is null order by updated_at desc limit ? offset ?"
 	ClusterCountByEnvNameFuzzily = "select count(1) from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
