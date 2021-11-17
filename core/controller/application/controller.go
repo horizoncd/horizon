@@ -396,8 +396,12 @@ func (c *controller) ListApplication(ctx context.Context, filter string, query q
 
 	// 3. convert models.Application to ListApplicationResponse
 	for _, application := range applications {
-		fullPath := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullPath, application.Name)
-		fullName := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullName, application.Name)
+		group, exist := groupMap[application.GroupID]
+		if !exist {
+			continue
+		}
+		fullPath := fmt.Sprintf("%v/%v", group.FullPath, application.Name)
+		fullName := fmt.Sprintf("%v/%v", group.FullName, application.Name)
 		listApplicationResp = append(
 			listApplicationResp,
 			&ListApplicationResponse{

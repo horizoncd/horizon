@@ -61,8 +61,12 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 
 	// 3. convert and add full path, full name
 	for _, cluster := range clustersWithEnvAndRegion {
-		fullPath := fmt.Sprintf("%v/%v", applicationMap[cluster.ApplicationID].FullPath, cluster.Name)
-		fullName := fmt.Sprintf("%v/%v", applicationMap[cluster.ApplicationID].FullName, cluster.Name)
+		application, exist := applicationMap[cluster.ApplicationID]
+		if !exist {
+			continue
+		}
+		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
+		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
 		listClusterWithFullResp = append(listClusterWithFullResp, &ListClusterWithFullResponse{
 			ofClusterWithEnvAndRegion(cluster),
 			fullName,
