@@ -125,6 +125,21 @@ func (mr *MockManagerMockRecorder) ListByApplicationAndEnv(ctx, applicationID, e
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByApplicationAndEnv", reflect.TypeOf((*MockManager)(nil).ListByApplicationAndEnv), ctx, applicationID, environment, filter, query)
 }
 
+// ListByApplicationID mocks base method
+func (m *MockManager) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByApplicationID", ctx, applicationID)
+	ret0, _ := ret[0].([]*models.Cluster)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByApplicationID indicates an expected call of ListByApplicationID
+func (mr *MockManagerMockRecorder) ListByApplicationID(ctx, applicationID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByApplicationID", reflect.TypeOf((*MockManager)(nil).ListByApplicationID), ctx, applicationID)
+}
+
 // CheckClusterExists mocks base method
 func (m *MockManager) CheckClusterExists(ctx context.Context, cluster string) (bool, error) {
 	m.ctrl.T.Helper()
