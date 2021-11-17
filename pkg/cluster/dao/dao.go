@@ -24,6 +24,7 @@ type DAO interface {
 	DeleteByID(ctx context.Context, id uint) error
 	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	ListByNameFuzzily(context.Context, string, string, *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 }
@@ -172,6 +173,22 @@ func (d *dao) ListByApplicationAndEnv(ctx context.Context, applicationID uint, e
 	}
 
 	return count, clusters, nil
+}
+
+func (d *dao) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var clusters []*models.Cluster
+	result := db.Raw(common.ClusterListByApplicationID, applicationID).Scan(&clusters)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return clusters, nil
 }
 
 func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,

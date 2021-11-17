@@ -98,6 +98,11 @@ func Test(t *testing.T) {
 	assert.Equal(t, er.EnvironmentName, clustersWithEnvAndRegion[0].EnvironmentName)
 	assert.Equal(t, er.RegionName, clustersWithEnvAndRegion[0].RegionName)
 
+	clusters, err := Mgr.ListByApplicationID(ctx, applicationID)
+	assert.Nil(t, err)
+	assert.NotNil(t, clusters)
+	assert.Equal(t, 1, len(clusters))
+
 	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, er.EnvironmentName, "clu",
 		&q.Query{PageNumber: 1, PageSize: 1})
 	assert.Nil(t, err)

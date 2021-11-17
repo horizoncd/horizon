@@ -13,6 +13,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -46,6 +47,7 @@ type controller struct {
 	groupMgr             groupmanager.Manager
 	groupSvc             groupsvc.Service
 	templateReleaseMgr   trmanager.Manager
+	clusterMgr           clustermanager.Manager
 	hook                 hook.Hook
 }
 
@@ -61,6 +63,7 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
 		groupMgr:             groupmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
 		templateReleaseMgr:   trmanager.Mgr,
+		clusterMgr:           clustermanager.Mgr,
 		hook:                 hook,
 	}
 }
@@ -274,6 +277,16 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error)
 	app, err := c.applicationMgr.GetByID(ctx, id)
 	if err != nil {
 		return errors.E(op, err)
+	}
+
+	clusters, err := c.clusterMgr.ListByApplicationID(ctx, id)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	if len(clusters) > 0 {
+		return errors.E(op, http.StatusBadRequest,
+			"this application cannot be deleted because there are clusters under this application.")
 	}
 
 	// 2. delete application in git repo
