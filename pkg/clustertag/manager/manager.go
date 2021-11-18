@@ -65,9 +65,6 @@ func ValidateUpsert(tags []*models.ClusterTag) error {
 		if !pattern.MatchString(tag.Key) {
 			return fmt.Errorf(patternInvalid, "key", tag.Key)
 		}
-		if !pattern.MatchString(tag.Value) {
-			return fmt.Errorf(patternInvalid, "value", tag.Value)
-		}
 	}
 	return nil
 }
