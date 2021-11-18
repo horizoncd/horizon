@@ -8,6 +8,7 @@ import (
 	context "context"
 	q "g.hz.netease.com/horizon/lib/q"
 	models "g.hz.netease.com/horizon/pkg/cluster/models"
+	models0 "g.hz.netease.com/horizon/pkg/clustertag/models"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
@@ -36,18 +37,18 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 }
 
 // Create mocks base method
-func (m *MockManager) Create(ctx context.Context, cluster *models.Cluster) (*models.Cluster, error) {
+func (m *MockManager) Create(ctx context.Context, cluster *models.Cluster, clusterTags []*models0.ClusterTag) (*models.Cluster, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, cluster)
+	ret := m.ctrl.Call(m, "Create", ctx, cluster, clusterTags)
 	ret0, _ := ret[0].(*models.Cluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create
-func (mr *MockManagerMockRecorder) Create(ctx, cluster interface{}) *gomock.Call {
+func (mr *MockManagerMockRecorder) Create(ctx, cluster, clusterTags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockManager)(nil).Create), ctx, cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockManager)(nil).Create), ctx, cluster, clusterTags)
 }
 
 // GetByID mocks base method

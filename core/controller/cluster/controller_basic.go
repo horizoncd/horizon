@@ -14,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
+	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -189,6 +190,11 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	cluster, clusterTags := r.toClusterModel(application, er)
 	cluster.CreatedBy = currentUser.GetID()
 	cluster.UpdatedBy = currentUser.GetID()
+
+	if err := clustertagmanager.ValidateUpsert(clusterTags); err != nil {
+		return nil, errors.E(op, http.StatusBadRequest,
+			errors.ErrorCode(common.InvalidRequestBody), err)
+	}
 
 	// 8. create cluster in git repo
 	err = c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
@@ -441,28 +447,6 @@ func (c *controller) validateCreate(applicationName string, r *CreateClusterRequ
 	}
 	if r.TemplateInput != nil && r.TemplateInput.Pipeline == nil {
 		return fmt.Errorf("pipeline config for template cannot be empty")
-	}
-	if len(r.Tags) > 20 {
-		return fmt.Errorf("the count of tags must be less than 20")
-	}
-	pattern := regexp.MustCompile(`^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$`)
-	const lengthInvalid = "tag %v: %v is invalid, length must be 63 or less"
-	const patternInvalid = "tag %v: %v is invalid, " +
-		"should beginning and ending with an alphanumeric character ([a-z0-9A-Z]) " +
-		"with dashes (-), underscores (_), dots (.), and alphanumerics between"
-	for _, tag := range r.Tags {
-		if len(tag.Key) > 63 {
-			return fmt.Errorf(lengthInvalid, "key", tag.Key)
-		}
-		if len(tag.Value) > 63 {
-			return fmt.Errorf(lengthInvalid, "value", tag.Value)
-		}
-		if !pattern.MatchString(tag.Key) {
-			return fmt.Errorf(patternInvalid, "key", tag.Key)
-		}
-		if !pattern.MatchString(tag.Value) {
-			return fmt.Errorf(patternInvalid, "value", tag.Value)
-		}
 	}
 	return nil
 }

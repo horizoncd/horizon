@@ -66,6 +66,9 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 			return goerrors.New("create member error")
 		}
 
+		if len(clusterTags) == 0 {
+			return nil
+		}
 		for i := 0; i < len(clusterTags); i++ {
 			clusterTags[i].ClusterID = cluster.ID
 			clusterTags[i].CreatedBy = cluster.CreatedBy
