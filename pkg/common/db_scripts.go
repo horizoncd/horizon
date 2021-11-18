@@ -96,7 +96,7 @@ const (
 	// EnvironmentListAll ...
 	EnvironmentListAll    = "select * from environment where deleted_at is null"
 	EnvironmentListRegion = "select region_name from environment_region " +
-		"where environment_name = ? and disabled == 0 and deleted_at is null"
+		"where environment_name = ? and disabled = 0 and deleted_at is null"
 	EnvironmentRegionGet = "select * from environment_region where" +
 		" environment_name = ? and region_name = ? and deleted_at is null"
 	EnvironmentRegionGetByID = "select * from environment_region where id = ? and deleted_at is null"
@@ -115,6 +115,7 @@ const (
 	ClusterQueryByID                = "select * from cluster where id = ? and deleted_at is null"
 	ClusterDeleteByID               = "update cluster set deleted_at = CURRENT_TIMESTAMP where id = ?"
 	ClusterQueryByName              = "select * from cluster where name = ? and deleted_at is null"
+	ClusterListByApplicationID      = "select * from cluster where application_id = ? and deleted_at is null"
 	ClusterQueryByApplicationAndEnv = "select c.*, er.environment_name, er.region_name, " +
 		"r.display_name as region_display_name from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +

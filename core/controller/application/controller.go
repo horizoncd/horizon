@@ -13,6 +13,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -46,6 +47,7 @@ type controller struct {
 	groupMgr             groupmanager.Manager
 	groupSvc             groupsvc.Service
 	templateReleaseMgr   trmanager.Manager
+	clusterMgr           clustermanager.Manager
 	hook                 hook.Hook
 }
 
@@ -61,6 +63,7 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
 		groupMgr:             groupmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
 		templateReleaseMgr:   trmanager.Mgr,
+		clusterMgr:           clustermanager.Mgr,
 		hook:                 hook,
 	}
 }
@@ -276,6 +279,16 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error)
 		return errors.E(op, err)
 	}
 
+	clusters, err := c.clusterMgr.ListByApplicationID(ctx, id)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	if len(clusters) > 0 {
+		return errors.E(op, http.StatusBadRequest,
+			"this application cannot be deleted because there are clusters under this application.")
+	}
+
 	// 2. delete application in git repo
 	if err := c.applicationGitRepo.DeleteApplication(ctx, app.Name, app.ID); err != nil {
 		return errors.E(op, err)
@@ -396,8 +409,12 @@ func (c *controller) ListApplication(ctx context.Context, filter string, query q
 
 	// 3. convert models.Application to ListApplicationResponse
 	for _, application := range applications {
-		fullPath := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullPath, application.Name)
-		fullName := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullName, application.Name)
+		group, exist := groupMap[application.GroupID]
+		if !exist {
+			continue
+		}
+		fullPath := fmt.Sprintf("%v/%v", group.FullPath, application.Name)
+		fullName := fmt.Sprintf("%v/%v", group.FullName, application.Name)
 		listApplicationResp = append(
 			listApplicationResp,
 			&ListApplicationResponse{

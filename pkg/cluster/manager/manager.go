@@ -30,6 +30,7 @@ type Manager interface {
 	DeleteByID(ctx context.Context, id uint) error
 	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int,
 		[]*models.ClusterWithEnvAndRegion, error)
@@ -89,6 +90,10 @@ func (m *manager) ListByApplicationAndEnv(ctx context.Context, applicationID uin
 		query.PageSize = common.DefaultPageSize
 	}
 	return m.dao.ListByApplicationAndEnv(ctx, applicationID, environment, filter, query)
+}
+
+func (m *manager) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error) {
+	return m.dao.ListByApplicationID(ctx, applicationID)
 }
 
 func (m *manager) ListByNameFuzzily(ctx context.Context, environment,
