@@ -661,8 +661,10 @@ func TestControllerSearchChildren(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1, err := Ctl.SearchChildren(tt.args.ctx, &SearchParams{
-				GroupID: tt.args.id,
-				Filter:  tt.args.filter,
+				GroupID:    tt.args.id,
+				Filter:     tt.args.filter,
+				PageNumber: 1,
+				PageSize:   10,
 			})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SearchChildren() error = %v, wantErr %v", err, tt.wantErr)
