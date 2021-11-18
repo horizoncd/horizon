@@ -207,6 +207,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		},
 		Environment:  environment,
 		RegionEntity: regionEntity,
+		ClusterTags:  clusterTags,
 	})
 	if err != nil {
 		return nil, errors.E(op, err)

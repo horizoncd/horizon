@@ -18,9 +18,9 @@ type API struct {
 	clusterTagCtl clustertag.Controller
 }
 
-func NewAPI() *API {
+func NewAPI(clusterTagCtl clustertag.Controller) *API {
 	return &API{
-		clusterTagCtl: clustertag.Ctl,
+		clusterTagCtl: clusterTagCtl,
 	}
 }
 

@@ -161,7 +161,7 @@ func Test_ValidateUpsert(t *testing.T) {
 	tags = tags[0:0]
 	tags = append(tags, &models.ClusterTag{
 		Key:   "a",
-		Value: strings.Repeat("a", 64),
+		Value: strings.Repeat("a", 1025),
 	})
 	err = ValidateUpsert(tags)
 	assert.NotNil(t, err)
@@ -171,15 +171,6 @@ func Test_ValidateUpsert(t *testing.T) {
 	tags = append(tags, &models.ClusterTag{
 		Key:   "a(d",
 		Value: "a",
-	})
-	err = ValidateUpsert(tags)
-	assert.NotNil(t, err)
-	t.Logf("%v", err.Error())
-
-	tags = tags[0:0]
-	tags = append(tags, &models.ClusterTag{
-		Key:   "a",
-		Value: "a)",
 	})
 	err = ValidateUpsert(tags)
 	assert.NotNil(t, err)

@@ -11,6 +11,7 @@ import (
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
@@ -224,4 +225,12 @@ func Test(t *testing.T) {
 	com, err = r.Rollback(ctx, application, cluster, updateImageCommit)
 	assert.Nil(t, err)
 	t.Logf("%v", com)
+
+	err = r.UpdateTags(ctx, application, cluster, templateName, []*clustertagmodels.ClusterTag{
+		{
+			Key:   "a",
+			Value: "b",
+		},
+	})
+	assert.Nil(t, err)
 }
