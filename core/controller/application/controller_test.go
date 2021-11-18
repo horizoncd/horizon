@@ -13,6 +13,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
@@ -242,7 +244,7 @@ var (
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&models.Application{}); err != nil {
+	if err := db.AutoMigrate(&models.Application{}, &clustermodels.Cluster{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
@@ -302,6 +304,7 @@ func Test(t *testing.T) {
 		groupMgr:             groupmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
 		templateReleaseMgr:   trmanager.Mgr,
+		clusterMgr:           clustermanager.Mgr,
 	}
 
 	group, err := groupmanager.Mgr.Create(ctx, &groupmodels.Group{
