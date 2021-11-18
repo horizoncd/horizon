@@ -84,7 +84,7 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 		return auth.DecisionDeny, InternalError, err
 	}
 
-	// 2. get the rolez
+	// 2. get the role
 	var role *types.Role
 	if member == nil {
 		// TODO(tom): non public resources
