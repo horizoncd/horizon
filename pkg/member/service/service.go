@@ -12,7 +12,9 @@ import (
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/member"
 	"g.hz.netease.com/horizon/pkg/member/models"
+	pipelinerunmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
+	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
 var (
@@ -43,6 +45,7 @@ type service struct {
 	groupManager              groupmanager.Manager
 	applicationManager        applicationmanager.Manager
 	applicationClusterManager applicationclustermanager.Manager
+	pipelineManager           pipelinerunmanager.Manager
 	roleService               roleservice.Service
 }
 
@@ -52,6 +55,7 @@ func NewService(roleService roleservice.Service) Service {
 		groupManager:              groupmanager.Mgr,
 		applicationManager:        applicationmanager.Mgr,
 		applicationClusterManager: applicationclustermanager.Mgr,
+		pipelineManager:           pipelinerunmanager.Mgr,
 		roleService:               roleService,
 	}
 }
@@ -102,6 +106,23 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 	return s.memberManager.Create(ctx, member)
 }
 
+func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) (*models.Member, error) {
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	pipeline, err := s.pipelineManager.GetByID(ctx, pipelinerunID)
+	if err != nil {
+		return nil, err
+	}
+	if pipeline == nil {
+		log.Warningf(ctx, "pipeline do not found, pipelineID = %d", pipelinerunID)
+		return nil, ErrMemberNotExist
+	}
+	return s.getMember(ctx, models.TypeApplicationClusterStr,
+		pipeline.ClusterID, models.MemberUser, currentUser.GetID())
+}
+
 func (s *service) GetMemberOfResource(ctx context.Context,
 	resourceType string, resourceID uint) (*models.Member, error) {
 	var currentUser userauth.User
@@ -109,7 +130,12 @@ func (s *service) GetMemberOfResource(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	memberInfo, err := s.getMember(ctx, resourceType, resourceID, models.MemberUser, currentUser.GetID())
+	var memberInfo *models.Member
+	if resourceType == models.TypePipelinerunStr {
+		memberInfo, err = s.getPipelinerunMember(ctx, resourceID)
+	} else {
+		memberInfo, err = s.getMember(ctx, resourceType, resourceID, models.MemberUser, currentUser.GetID())
+	}
 	if err != nil {
 		return nil, err
 	}

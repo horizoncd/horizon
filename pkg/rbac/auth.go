@@ -62,7 +62,6 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 
 	// TODO(tom): members and pipelineruns and environments need to add to auth check
 	if attr.IsResourceRequest() && (attr.GetResource() == "members" ||
-		attr.GetResource() == "pipelineruns" ||
 		attr.GetResource() == "templates" ||
 		attr.GetResource() == "environments") {
 		log.Warning(ctx,

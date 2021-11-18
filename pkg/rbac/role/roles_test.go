@@ -56,7 +56,7 @@ Roles:
         resources:
           - clusters
           - clusters/members
-          - clusters/pipelines
+          - clusters/pipelineruns
           - clusters/builddeploy
           - clusters/deploy
           - clusters/diff
@@ -119,7 +119,7 @@ Roles:
         resources:
           - clusters
           - clusters/members
-          - clusters/pipelines
+          - clusters/pipelineruns
           - clusters/builddeploy
           - clusters/deploy
           - clusters/diff

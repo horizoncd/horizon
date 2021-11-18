@@ -20,6 +20,10 @@ const (
 	TypeApplicationClusterStr string = "clusters"
 	// TypeApplicationCluster represent the application instance member entry
 	TypeApplicationCluster ResourceType = (ResourceType)(TypeApplicationClusterStr)
+
+	// TypePipelinerunStr currently pipelineruns do not have direct member info, will
+	// use the pipeline's cluster's member info
+	TypePipelinerunStr string = "pipelineruns"
 )
 
 type MemberType uint8
