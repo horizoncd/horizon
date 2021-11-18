@@ -20,6 +20,7 @@ import (
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
+	"g.hz.netease.com/horizon/core/http/api/v1/clustertag"
 	codeapi "g.hz.netease.com/horizon/core/http/api/v1/code"
 	"g.hz.netease.com/horizon/core/http/api/v1/environment"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
@@ -233,6 +234,7 @@ func Run(flags *Flags) {
 		roleAPI        = roleapi.NewAPI(roleCtl)
 		terminalAPI    = terminalapi.NewAPI(terminalCtl)
 		codeGitAPI     = codeapi.NewAPI(codeGitCtl)
+		clusterTagAPI  = clustertag.NewAPI()
 	)
 
 	// init server
@@ -286,6 +288,7 @@ func Run(flags *Flags) {
 	roleapi.RegisterRoutes(r, roleAPI)
 	terminalapi.RegisterRoutes(r, terminalAPI)
 	codeapi.RegisterRoutes(r, codeGitAPI)
+	clustertag.RegisterRoutes(r, clusterTagAPI)
 
 	// start cloud event server
 	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)

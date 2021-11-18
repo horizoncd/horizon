@@ -11,6 +11,10 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
+var (
+	Ctl = NewController()
+)
+
 type Controller interface {
 	List(ctx context.Context, clusterID uint) (*ListResponse, error)
 	Update(ctx context.Context, clusterID uint, r *UpdateRequest) error
