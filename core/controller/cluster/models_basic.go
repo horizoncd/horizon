@@ -5,6 +5,7 @@ import (
 
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
+	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 )
 
@@ -12,6 +13,7 @@ type Base struct {
 	Description   string         `json:"description"`
 	Git           *Git           `json:"git"`
 	TemplateInput *TemplateInput `json:"templateInput"`
+	Tags          []*Tag         `json:"tags"`
 }
 
 type TemplateInput struct {
@@ -23,6 +25,11 @@ type Git struct {
 	URL       string `json:"url"`
 	Subfolder string `json:"subfolder"`
 	Branch    string `json:"branch"`
+}
+
+type Tag struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type CreateClusterRequest struct {
@@ -68,8 +75,8 @@ type Scope struct {
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
-	er *envmodels.EnvironmentRegion) *models.Cluster {
-	return &models.Cluster{
+	er *envmodels.EnvironmentRegion) (*models.Cluster, []*clustertagmodels.ClusterTag) {
+	cluster := &models.Cluster{
 		ApplicationID:       application.ID,
 		Name:                r.Name,
 		Description:         r.Description,
@@ -80,6 +87,14 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		TemplateRelease:     application.TemplateRelease,
 		EnvironmentRegionID: er.ID,
 	}
+	clusterTags := make([]*clustertagmodels.ClusterTag, 0)
+	for _, tag := range r.Tags {
+		clusterTags = append(clusterTags, &clustertagmodels.ClusterTag{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+	return cluster, clusterTags
 }
 
 func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,

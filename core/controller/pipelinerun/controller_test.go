@@ -241,7 +241,7 @@ func Test(t *testing.T) {
 		EnvironmentRegionID: er.ID,
 		CreatedBy:           0,
 		UpdatedBy:           0,
-	})
+	}, nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, cluster)
 

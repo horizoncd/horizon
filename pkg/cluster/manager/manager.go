@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/dao"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
+	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
@@ -21,7 +22,8 @@ var (
 const _errCodeClusterNotFound = errors.ErrorCode("ClusterNotFound")
 
 type Manager interface {
-	Create(ctx context.Context, cluster *models.Cluster) (*models.Cluster, error)
+	Create(ctx context.Context, cluster *models.Cluster,
+		clusterTags []*clustertagmodels.ClusterTag) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
@@ -44,8 +46,9 @@ type manager struct {
 	dao dao.DAO
 }
 
-func (m *manager) Create(ctx context.Context, cluster *models.Cluster) (*models.Cluster, error) {
-	return m.dao.Create(ctx, cluster)
+func (m *manager) Create(ctx context.Context, cluster *models.Cluster,
+	clusterTags []*clustertagmodels.ClusterTag) (*models.Cluster, error) {
+	return m.dao.Create(ctx, cluster, clusterTags)
 }
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
