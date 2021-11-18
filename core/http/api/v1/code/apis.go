@@ -4,6 +4,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/code"
 	codegetter "g.hz.netease.com/horizon/pkg/cluster/code"
+	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
 )
@@ -26,7 +27,7 @@ func (a *API) ListBranch(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, "giturl is empty")
 		return
 	}
-	pageNumber, pageSize, err := common.CheckPageParams(c)
+	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return

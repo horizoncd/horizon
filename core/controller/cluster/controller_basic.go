@@ -14,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
+	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -186,9 +187,14 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 7. create cluster, after created, params.Cluster is the newest cluster
-	cluster := r.toClusterModel(application, er)
+	cluster, clusterTags := r.toClusterModel(application, er)
 	cluster.CreatedBy = currentUser.GetID()
 	cluster.UpdatedBy = currentUser.GetID()
+
+	if err := clustertagmanager.ValidateUpsert(clusterTags); err != nil {
+		return nil, errors.E(op, http.StatusBadRequest,
+			errors.ErrorCode(common.InvalidRequestBody), err)
+	}
 
 	// 8. create cluster in git repo
 	err = c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
@@ -207,7 +213,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 9. create cluster in db
-	cluster, err = c.clusterMgr.Create(ctx, cluster)
+	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

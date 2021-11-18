@@ -1,0 +1,71 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Cluster-Tag-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/clusters/{clusterID}/tags:
+    parameters:
+      - name: clusterID
+        in: path
+        description: cluster id
+        required: true
+    get:
+      tags:
+        - tag
+      operationId: listClusterTags
+      summary: List tags of a specified cluster
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "tags":[
+                              {
+                                  "key":"rpc.tag",
+                                  "value":"qa-abc"
+                              }
+                          ]
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - tag
+      operationId: updateClusterTags
+      summary: Create or update cluster tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "data":{
+                        "tags":[
+                            {
+                                "key":"rpc.tag",
+                                "value":"qa-abc"
+                            }
+                        ]
+                    }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

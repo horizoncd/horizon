@@ -171,3 +171,11 @@ const (
 	PipelinerunCanRollbackGetByClusterIDTotalCount = "select count(1) from pipelinerun where cluster_id = ?" +
 		" and action != 'restart' and status = 'ok' "
 )
+
+/* sql about cluster tag */
+const (
+	// ClusterTagListByClusterID ...
+	ClusterTagListByClusterID          = "select * from cluster_tag where cluster_id = ? order by id"
+	ClusterTagDeleteAllByClusterID     = "delete from cluster_tag where cluster_id = ?"
+	ClusterTagDeleteByClusterIDAndKeys = "delete from cluster_tag where cluster_id = ? and key not in ?"
+)

@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
+	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
@@ -17,7 +18,8 @@ import (
 )
 
 type DAO interface {
-	Create(ctx context.Context, cluster *models.Cluster) (*models.Cluster, error)
+	Create(ctx context.Context, cluster *models.Cluster,
+		clusterTags []*clustertagmodels.ClusterTag) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
@@ -36,7 +38,8 @@ func NewDAO() DAO {
 	return &dao{}
 }
 
-func (d *dao) Create(ctx context.Context, cluster *models.Cluster) (*models.Cluster, error) {
+func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
+	clusterTags []*clustertagmodels.ClusterTag) (*models.Cluster, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -62,6 +65,21 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster) (*models.Clus
 		if result.RowsAffected == 0 {
 			return goerrors.New("create member error")
 		}
+
+		if len(clusterTags) == 0 {
+			return nil
+		}
+		for i := 0; i < len(clusterTags); i++ {
+			clusterTags[i].ClusterID = cluster.ID
+			clusterTags[i].CreatedBy = cluster.CreatedBy
+			clusterTags[i].UpdatedBy = cluster.CreatedBy
+		}
+
+		result = tx.Create(clusterTags)
+		if result.Error != nil {
+			return result.Error
+		}
+
 		return nil
 	})
 

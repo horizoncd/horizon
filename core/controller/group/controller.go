@@ -173,7 +173,7 @@ func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]
 // SearchChildren search children of a group, including subgroups and applications
 func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error) {
 	if params.Filter == "" {
-		return c.GetChildren(ctx, params.GroupID, common.DefaultPageNumber, common.DefaultPageSize)
+		return c.GetChildren(ctx, params.GroupID, params.PageNumber, params.PageSize)
 	}
 
 	// query groups by the name fuzzily
