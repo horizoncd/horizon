@@ -142,8 +142,8 @@ func TestGetLatestSuccessByClusterID(t *testing.T) {
 		Title:       "title",
 		Description: "description",
 		CreatedBy:   0,
-		GitCommit: "xxxxxx",
-		UpdatedAt: time.Now(),
+		GitCommit:   "xxxxxx",
+		UpdatedAt:   time.Now(),
 	}
 	_, err := Mgr.Create(ctx, pr)
 	assert.Nil(t, err)

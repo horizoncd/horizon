@@ -6,6 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/group"
+	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 
 	"github.com/gin-gonic/gin"
@@ -177,7 +178,7 @@ func (a *API) GetChildren(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	pageNumber, pageSize, err := common.CheckPageParams(c)
+	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
@@ -203,7 +204,7 @@ func (a *API) GetSubGroups(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	pageNumber, pageSize, err := common.CheckPageParams(c)
+	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
@@ -229,7 +230,7 @@ func (a *API) SearchChildren(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	pageNumber, pageSize, err := common.CheckPageParams(c)
+	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
@@ -262,7 +263,7 @@ func (a *API) SearchGroups(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	pageNumber, pageSize, err := common.CheckPageParams(c)
+	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
