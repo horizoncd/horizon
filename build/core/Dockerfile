@@ -21,6 +21,9 @@ COPY --from=builder /horizon/bin/app /usr/local/bin/app
 RUN addgroup --gid $GROUP_ID $GROUP && adduser -h /home/$USER -u $USER_ID -G $GROUP -D $USER && \
     chown -R $USER:$GROUP /usr/local/bin/app
 
+
+RUN  echo "hosts: files dns" > /etc/nsswitch.conf
+
 USER $USER
 
 ENTRYPOINT ["/usr/local/bin/app"]
