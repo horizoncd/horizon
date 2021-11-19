@@ -6,13 +6,12 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
+	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/clustertag/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-)
-
-var (
-	Ctl = NewController()
 )
 
 type Controller interface {
@@ -21,12 +20,18 @@ type Controller interface {
 }
 
 type controller struct {
-	clusterTagMgr manager.Manager
+	clusterMgr     clustermanager.Manager
+	clusterTagMgr  manager.Manager
+	clusterGitRepo gitrepo.ClusterGitRepo
+	applicationMgr appmanager.Manager
 }
 
-func NewController() Controller {
+func NewController(clusterGitRepo gitrepo.ClusterGitRepo) Controller {
 	return &controller{
-		clusterTagMgr: manager.Mgr,
+		clusterMgr:     clustermanager.Mgr,
+		clusterTagMgr:  manager.Mgr,
+		clusterGitRepo: clusterGitRepo,
+		applicationMgr: appmanager.Mgr,
 	}
 }
 
@@ -57,6 +62,22 @@ func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateReques
 	if err := manager.ValidateUpsert(clusterTags); err != nil {
 		return errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), err)
+	}
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	if err := c.clusterGitRepo.UpdateTags(ctx, application.Name, cluster.Name,
+		cluster.Template, clusterTags); err != nil {
+		if err != nil {
+			return errors.E(op, err)
+		}
 	}
 
 	if err := c.clusterTagMgr.UpsertByClusterID(ctx, clusterID, clusterTags); err != nil {

@@ -8,11 +8,17 @@ import (
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
+	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
-
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +30,8 @@ var (
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&clustertagmodels.ClusterTag{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
+		&clustertagmodels.ClusterTag{}, &membermodels.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
@@ -38,12 +45,42 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
+	mockCtl := gomock.NewController(t)
+	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+	clusterGitRepo.EXPECT().UpdateTags(ctx, gomock.Any(), gomock.Any(),
+		gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	appMgr := appmanager.Mgr
+	clusterMgr := clustermanager.Mgr
+
+	// init data
+	application, err := appMgr.Create(ctx, &appmodels.Application{
+		GroupID:         uint(1),
+		Name:            "app",
+		Priority:        "P3",
+		GitURL:          "ssh://git.com",
+		GitSubfolder:    "/test",
+		GitBranch:       "master",
+		Template:        "javaapp",
+		TemplateRelease: "v1.0.0",
+	})
+	assert.Nil(t, err)
+
+	cluster, err := clusterMgr.Create(ctx, &models.Cluster{
+		ApplicationID: application.ID,
+		Name:          "cluster",
+	}, nil)
+	assert.Nil(t, err)
+
 	c = &controller{
-		clusterTagMgr: clustertagmanager.Mgr,
+		clusterMgr:     clusterMgr,
+		clusterTagMgr:  clustertagmanager.Mgr,
+		clusterGitRepo: clusterGitRepo,
+		applicationMgr: appMgr,
 	}
 
-	clusterID := uint(1)
-	err := c.Update(ctx, clusterID, &UpdateRequest{
+	clusterID := cluster.ID
+	err = c.Update(ctx, clusterID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "a",

@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/helmrepo"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
@@ -40,6 +41,7 @@ music-cloud-native
                     └──Cluster-1                              -- 集群 repo
                               ├── Chart.yaml
                               ├── application.yaml            -- 用户实际数据
+							  ├── tags.yaml                   -- tags数据
                               ├── sre                         -- sre目录
                               │     └── sre.yaml              -- sre values数据
                               ├── system
@@ -61,6 +63,7 @@ const (
 	// filePath
 	_filePathChart          = "Chart.yaml"
 	_filePathApplication    = "application.yaml"
+	_filePathTags           = "tags.yaml"
 	_filePathSRE            = "sre/sre.yaml"
 	_filePathBase           = "system/horizon.yaml"
 	_filePathEnv            = "system/env.yaml"
@@ -86,6 +89,7 @@ type CreateClusterParams struct {
 
 	Environment  string
 	RegionEntity *regionmodels.RegionEntity
+	ClusterTags  []*clustertagmodels.ClusterTag
 }
 
 type UpdateClusterParams struct {
@@ -124,6 +128,8 @@ type ClusterGitRepo interface {
 	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
 	GetEnvValue(ctx context.Context, application, cluster, templateName string) (*EnvValue, error)
 	Rollback(ctx context.Context, application, cluster, commit string) (string, error)
+	UpdateTags(ctx context.Context, application, cluster, templateName string,
+		clusterTags []*clustertagmodels.ClusterTag) error
 }
 
 type clusterGitRepo struct {
@@ -233,8 +239,8 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	// 3. write files to repo
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
 
-	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML, chartYAML, restartYAML []byte
-	var err1, err2, err3, err4, err5, err6, err7 error
+	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML, chartYAML, restartYAML, tagsYAML []byte
+	var err1, err2, err3, err4, err5, err6, err7, err8 error
 
 	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
 	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
@@ -247,8 +253,9 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	}
 	marshal(&chartYAML, &err6, chart)
 	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.TemplateName))
+	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.TemplateName, params.ClusterTags))
 
-	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7} {
+	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8} {
 		if err != nil {
 			return errors.E(op, err)
 		}
@@ -259,6 +266,10 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathApplication,
 			Content:  string(applicationYAML),
+		}, {
+			Action:   gitlablib.FileCreate,
+			FilePath: _filePathTags,
+			Content:  string(tagsYAML),
 		}, {
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathPipeline,
@@ -630,10 +641,10 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 
 	// 1. get cluster files of the specified commit
 	// the files contains: _filePathPipeline, _filePathApplication, _filePathBase, _filePathPipelineOutput
-	var err1, err2, err3, err4 error
-	var applicationBytes, pipelineBytes, baseValueBytes, pipelineOutPutBytes []byte
+	var err1, err2, err3, err4, err5 error
+	var applicationBytes, pipelineBytes, baseValueBytes, pipelineOutPutBytes, tagsBytes []byte
 	var wgReadFile sync.WaitGroup
-	wgReadFile.Add(4)
+	wgReadFile.Add(5)
 	readFile := func(b *[]byte, err *error, filePath string) {
 		defer wgReadFile.Done()
 		bytes, e := g.gitlabLib.GetFile(ctx, pid, commit, filePath)
@@ -644,6 +655,7 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	go readFile(&applicationBytes, &err2, _filePathApplication)
 	go readFile(&baseValueBytes, &err3, _filePathBase)
 	go readFile(&pipelineOutPutBytes, &err4, _filePathPipelineOutput)
+	go readFile(&tagsBytes, &err5, _filePathTags)
 	wgReadFile.Wait()
 
 	for _, err := range []error{err1, err2, err3, err4} {
@@ -669,6 +681,10 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathPipelineOutput,
 			Content:  string(pipelineOutPutBytes),
+		}, {
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathTags,
+			Content:  string(tagsBytes),
 		},
 	}
 
@@ -688,6 +704,64 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	}
 
 	return newCommit.ID, nil
+}
+
+func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, templateName string,
+	clusterTags []*clustertagmodels.ClusterTag) (err error) {
+	const op = "cluster git repo: update tags"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+
+	var tagsYAML []byte
+	marshal(&tagsYAML, &err, assembleTags(templateName, clusterTags))
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	actions := []gitlablib.CommitAction{
+		{
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathTags,
+			Content:  string(tagsYAML),
+		},
+	}
+
+	type Tag struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	}
+	commitMsg := angular.CommitMessage("cluster", angular.Subject{
+		Operator: currentUser.GetName(),
+		Action:   "update tags",
+		Cluster:  angular.StringPtr(cluster),
+	}, struct {
+		Tags []*Tag `json:"tags"`
+	}{
+		Tags: func(clusterTags []*clustertagmodels.ClusterTag) []*Tag {
+			tags := make([]*Tag, 0, len(clusterTags))
+			for _, tag := range clusterTags {
+				tags = append(tags, &Tag{
+					Key:   tag.Key,
+					Value: tag.Value,
+				})
+			}
+			return tags
+		}(clusterTags),
+	})
+
+	_, err = g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
 }
 
 // assembleApplicationValue assemble application.yaml data
@@ -826,6 +900,15 @@ func assembleRestart(templateName string) map[string]map[string]string {
 	ret := make(map[string]map[string]string)
 	ret[templateName] = make(map[string]string)
 	ret[templateName]["restartTime"] = timeutil.Now(nil)
+	return ret
+}
+
+func assembleTags(templateName string, clusterTags []*clustertagmodels.ClusterTag) map[string]map[string]string {
+	ret := make(map[string]map[string]string)
+	ret[templateName] = make(map[string]string)
+	for _, tag := range clusterTags {
+		ret[templateName][tag.Key] = tag.Value
+	}
 	return ret
 }
 

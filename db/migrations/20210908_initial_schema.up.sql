@@ -254,7 +254,7 @@ CREATE TABLE `cluster_tag`
     `id`         int(11) unsigned NOT NULL AUTO_INCREMENT,
     `cluster_id` int(11) unsigned NOT NULL COMMENT 'cluster id',
     `key`        varchar(64) NOT NULL DEFAULT '' COMMENT 'key of tag',
-    `value`      varchar(64) NOT NULL DEFAULT '' COMMENT 'value of tag',
+    `value`      varchar(1280) NOT NULL DEFAULT '' COMMENT 'value of tag',
     `created_at` datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created_by` int(11) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',

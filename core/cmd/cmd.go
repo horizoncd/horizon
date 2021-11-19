@@ -12,6 +12,7 @@ import (
 
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
+	clustertagctl "g.hz.netease.com/horizon/core/controller/clustertag"
 	codectl "g.hz.netease.com/horizon/core/controller/code"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
@@ -215,10 +216,11 @@ func Run(flags *Flags) {
 			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, memHook)
 		prCtl = prctl.NewController(tektonFty, gitGetter, clusterGitRepo)
 
-		templateCtl = templatectl.NewController(templateSchemaGetter)
-		roleCtl     = roltctl.NewController(roleService)
-		terminalCtl = terminalctl.NewController(clusterGitRepo)
-		codeGitCtl  = codectl.NewController(gitGetter)
+		templateCtl   = templatectl.NewController(templateSchemaGetter)
+		roleCtl       = roltctl.NewController(roleService)
+		terminalCtl   = terminalctl.NewController(clusterGitRepo)
+		codeGitCtl    = codectl.NewController(gitGetter)
+		clusterTagCtl = clustertagctl.NewController(clusterGitRepo)
 	)
 
 	var (
@@ -234,7 +236,7 @@ func Run(flags *Flags) {
 		roleAPI        = roleapi.NewAPI(roleCtl)
 		terminalAPI    = terminalapi.NewAPI(terminalCtl)
 		codeGitAPI     = codeapi.NewAPI(codeGitCtl)
-		clusterTagAPI  = clustertag.NewAPI()
+		clusterTagAPI  = clustertag.NewAPI(clusterTagCtl)
 	)
 
 	// init server
