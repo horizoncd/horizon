@@ -18,7 +18,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-	"k8s.io/kubectl/pkg/cmd/exec"
 
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
@@ -27,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/kubectl/pkg/cmd/exec"
 )
 
 const (
