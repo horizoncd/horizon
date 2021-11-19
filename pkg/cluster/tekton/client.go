@@ -1,12 +1,14 @@
 package tekton
 
 import (
+	"strings"
+
+	"g.hz.netease.com/horizon/pkg/util/kube"
 	"github.com/pkg/errors"
 	tektonclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // Client 组装需要用到的Client
@@ -24,17 +26,17 @@ type Client struct {
 func InitClient(kubeconfig string) (*Client, error) {
 	var config *rest.Config
 	var err error
-	if len(kubeconfig) > 0 {
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-		if err != nil {
-			return nil, err
-		}
+
+	// startWith "/", kubeconfig is a filePath, else kubeconfig is fileContent
+	if strings.HasPrefix(kubeconfig, "/") || len(kubeconfig) == 0 {
+		config, _, err = kube.BuildClient(kubeconfig)
 	} else {
-		config, err = rest.InClusterConfig()
-		if err != nil {
-			return nil, err
-		}
+		config, _, err = kube.BuildClientFromContent(kubeconfig)
 	}
+	if err != nil {
+		return nil, err
+	}
+
 	tekton, err := tektonClient(config)
 	if err != nil {
 		return nil, err
