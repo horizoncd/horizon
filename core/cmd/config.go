@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/db"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
+	"g.hz.netease.com/horizon/pkg/config/grafana"
 	"g.hz.netease.com/horizon/pkg/config/helmrepo"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
 	"g.hz.netease.com/horizon/pkg/config/server"
@@ -27,6 +28,7 @@ type Config struct {
 	TektonMapper           tekton.Mapper     `yaml:"tektonMapper"`
 	HelmRepoMapper         helmrepo.Mapper   `yaml:"helmRepoMapper"`
 	CmdbConfig             cmdb.Config       `yaml:"cmdbConfig"`
+	GrafanaMapper          grafana.Mapper    `yaml:"grafanaMapper"`
 }
 
 func loadConfig(configFilePath string) (*Config, error) {
@@ -66,6 +68,15 @@ func loadConfig(configFilePath string) (*Config, error) {
 		}
 	}
 	config.HelmRepoMapper = newHelmRepoMapper
+
+	newGrafanaMapper := grafana.Mapper{}
+	for key, v := range config.GrafanaMapper {
+		ks := strings.Split(key, ",")
+		for i := 0; i < len(ks); i++ {
+			newGrafanaMapper[ks[i]] = v
+		}
+	}
+	config.GrafanaMapper = newGrafanaMapper
 
 	return &config, nil
 }

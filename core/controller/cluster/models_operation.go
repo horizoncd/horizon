@@ -2,6 +2,8 @@ package cluster
 
 import "g.hz.netease.com/horizon/pkg/cluster/cd"
 
+const ServerlessTemplateName = "serverless"
+
 type PipelinerunIDResponse struct {
 	PipelinerunID uint `json:"pipelinerunID"`
 }

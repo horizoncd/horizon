@@ -59,3 +59,7 @@ tektonMapper:
       bucket: yufeng-collector-dev
       skipVerify: true
       s3ForcePathStyle: true
+grafanaMapper:
+  hz,hz-onlinetest:
+    basicDashboard: "http://grafana.mockserver.org/d/R3l8AsF7z/pod-resources?orgId=1&kiosk&theme=light&var-namespace=%s&var-datasource=compute-1&var-cluster=%s"
+    serverlessDashboard: "http://grafana.mockserver.org/d/mkwWamKnk/knative-user?orgId=1&kiosk&theme=light&var-datasource=compute-1&var-cluster=%s"

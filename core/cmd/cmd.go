@@ -213,7 +213,7 @@ func Run(flags *Flags) {
 		memberCtl      = memberctl.NewController(mservice)
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, gitGetter,
-			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, memHook)
+			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, memHook, config.GrafanaMapper)
 		prCtl = prctl.NewController(tektonFty, gitGetter, clusterGitRepo)
 
 		templateCtl   = templatectl.NewController(templateSchemaGetter)

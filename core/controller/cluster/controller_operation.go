@@ -337,3 +337,36 @@ func (c *controller) exec(ctx context.Context, clusterID uint,
 	}
 	return ofExecResp(execResp), nil
 }
+
+func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error) {
+	const op = "cluster controller: get dashboard"
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	grafanaURL, ok := c.grafanaMapper[envValue.Region]
+	if !ok {
+		return nil, errors.E(op, fmt.Errorf("grafana does not support this region"))
+	}
+
+	getDashboardResp := &GetDashboardResponse{
+		Basic: fmt.Sprintf(grafanaURL.BasicDashboard, envValue.Namespace, cluster.Name),
+	}
+
+	if cluster.Template == ServerlessTemplateName {
+		getDashboardResp.Serverless = fmt.Sprintf(grafanaURL.ServerlessDashboard, cluster.Name)
+	}
+
+	return getDashboardResp, nil
+}
