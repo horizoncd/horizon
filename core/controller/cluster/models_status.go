@@ -11,3 +11,8 @@ type RunningTask struct {
 	PipelinerunID uint   `json:"pipelinerunID,omitempty"`
 	TaskStatus    string `json:"taskStatus,omitempty" yaml:"taskStatus,omitempty"`
 }
+
+type GetDashboardResponse struct {
+	Basic      string `json:"basic" yaml:"basic"`
+	Serverless string `json:"serverless,omitempty" yaml:"serverless,omitempty"`
+}

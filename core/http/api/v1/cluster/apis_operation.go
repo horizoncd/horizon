@@ -249,3 +249,19 @@ func (a *API) Rollback(c *gin.Context) {
 	}
 	response.SuccessWithData(c, resp)
 }
+
+func (a *API) GetDashBoard(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	resp, err := a.clusterCtl.GetDashboard(c, uint(clusterID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}

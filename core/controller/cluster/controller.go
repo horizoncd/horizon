@@ -13,6 +13,7 @@ import (
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	registryfty "g.hz.netease.com/horizon/pkg/cluster/registry/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
+	"g.hz.netease.com/horizon/pkg/config/grafana"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -48,6 +49,7 @@ type Controller interface {
 		<-chan string, error)
 	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
+	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
@@ -71,13 +73,14 @@ type controller struct {
 	pipelinerunMgr       prmanager.Manager
 	tektonFty            factory.Factory
 	registryFty          registryfty.Factory
+	grafanaMapper        grafana.Mapper
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo appgitrepo.ApplicationGitRepo,
 	commitGetter code.GitGetter, cd cd.CD, tektonFty factory.Factory,
-	templateSchemaGetter templateschema.Getter, hook hook.Hook) Controller {
+	templateSchemaGetter templateschema.Getter, hook hook.Hook, grafanaMapper grafana.Mapper) Controller {
 	return &controller{
 		clusterMgr:           clustermanager.Mgr,
 		clusterGitRepo:       clusterGitRepo,
@@ -95,6 +98,7 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		tektonFty:            tektonFty,
 		registryFty:          registryfty.Fty,
 		hook:                 hook,
+		grafanaMapper:        grafanaMapper,
 	}
 }
 
