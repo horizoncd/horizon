@@ -177,5 +177,5 @@ const (
 	// ClusterTagListByClusterID ...
 	ClusterTagListByClusterID          = "select * from cluster_tag where cluster_id = ? order by id"
 	ClusterTagDeleteAllByClusterID     = "delete from cluster_tag where cluster_id = ?"
-	ClusterTagDeleteByClusterIDAndKeys = "delete from cluster_tag where cluster_id = ? and `key` not in ?"
+	ClusterTagDeleteByClusterIDAndKeys = "delete from cluster_tag where cluster_id = ? and `tag_key` not in ?"
 )

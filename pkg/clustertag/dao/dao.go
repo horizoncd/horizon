@@ -65,9 +65,9 @@ func (d dao) UpsertByClusterID(ctx context.Context, clusterID uint, tags []*mode
 			{
 				Name: "cluster_id",
 			}, {
-				Name: "key",
+				Name: "tag_key",
 			},
 		},
-		DoUpdates: clause.AssignmentColumns([]string{"value"}),
+		DoUpdates: clause.AssignmentColumns([]string{"tag_value"}),
 	}).Create(tags).Error
 }
