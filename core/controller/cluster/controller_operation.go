@@ -361,11 +361,11 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 	}
 
 	getDashboardResp := &GetDashboardResponse{
-		Basic: fmt.Sprintf(grafanaURL.BasicDashboard, envValue.Namespace, application.Name),
+		Basic: fmt.Sprintf(grafanaURL.BasicDashboard, envValue.Namespace, cluster.Name),
 	}
 
-	if application.Template == ServerlessTemplateName {
-		getDashboardResp.Serverless = fmt.Sprintf(grafanaURL.ServerlessDashboard, application.Name)
+	if cluster.Template == ServerlessTemplateName {
+		getDashboardResp.Serverless = fmt.Sprintf(grafanaURL.ServerlessDashboard, cluster.Name)
 	}
 
 	return getDashboardResp, nil
