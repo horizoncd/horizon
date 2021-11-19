@@ -1,0 +1,94 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Environments-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/environments:
+    get:
+      tags:
+        - environment
+      operationId: listEnvironments
+      summary: list environments
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":[
+                          {
+                              "name":"dev",
+                              "displayName":"开发"
+                          },
+                          {
+                              "name":"test",
+                              "displayName":"测试"
+                          },
+                          {
+                              "name":"reg",
+                              "displayName":"回归"
+                          },
+                          {
+                              "name":"perf",
+                              "displayName":"性能"
+                          },
+                          {
+                              "name":"pre",
+                              "displayName":"预发"
+                          },
+                          {
+                              "name":"beta",
+                              "displayName":"灰度"
+                          },
+                          {
+                              "name":"online",
+                              "displayName":"线上"
+                          }
+                      ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/environments/{environment}/regions:
+    get:
+      tags:
+        - environment
+      operationId: listRegions
+      summary: list regions of a environment
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":[
+                          {
+                              "name": "yq",
+                              "displayName": "义桥"
+                          },
+                          {
+                              "name": "dg",
+                              "displayName": "东冠"
+                          },
+                          {
+                              "name": "eks",
+                              "displayName": "海外EKS"
+                          }
+                      ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

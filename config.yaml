@@ -1,6 +1,8 @@
 # "horizon:O{AyroRA@@tcp(music-horizon-dev-jd-26519.rds.cn-east-p1.internal:3331)/horizon?charset=utf8mb4&parseTime=True&loc=Local"
 serverConfig:
   port: 8080
+cloudEventServerConfig:
+  port: 8181
 dbConfig:
   host: music-horizon-dev-jd-26519.rds.cn-east-p1.internal
   port: 3331
@@ -10,6 +12,54 @@ dbConfig:
   prometheusEnabled: true
 oidcConfig:
   userHeader: X-HORIZON-OIDC-USER
+  fullNameHeader: X-HORIZON-OIDC-FULLNAME
   emailHeader: X-HORIZON-OIDC-EMAIL
   oidcIDHeader: X-HORIZON-OIDC-ID
   oidcTypeHeader: X-HORIZON-OIDC-TYPE
+gitlabMapper:
+  control:
+    httpURL: https://g.hz.netease.com
+    # token for grp.cloudnative
+    token: ""
+  compute:
+    httpURL: http://cicd.mockserver.org
+    sshURL: ssh://git@music-cicd-gitlab-test.hz.netease.com:22222
+    token: ""
+gitlabRepoConfig:
+  application:
+    parent:
+      path: music-cloud-native/applications
+      id: 4278
+    recyclingParent:
+      path: music-cloud-native/recycling-applications
+      id: 4586
+  cluster:
+    parent:
+      path: music-cloud-native/clusters
+      id: 4279
+    recyclingParent:
+      path: music-cloud-native/recycling-clusters
+      id: 4587
+helmRepoMapper:
+  dev,test,reg,perf,beta,pre,online: "https://harbor.mock.org/chartrepo/horizon-template"
+argoCDMapper:
+  dev,test,reg,perf,beta,pre,online:
+    url: http://argocd.mockserver.org
+    token: 
+tektonMapper:
+  dev,test,reg,perf,beta,pre,online:
+    server: http://el-horizon-listener.tekton-resources:8080
+    namespace: tekton-resources
+    kubeconfig: ""
+    s3:
+      accessKey: 
+      secretKey: 
+      region: us-east-1
+      endpoint: nos-jd.service.163.org
+      bucket: yufeng-collector-dev
+      skipVerify: true
+      s3ForcePathStyle: true
+grafanaMapper:
+  hz,hz-onlinetest:
+    basicDashboard: "http://grafana.mockserver.org/d/R3l8AsF7z/pod-resources?orgId=1&kiosk&theme=light&var-namespace=%s&var-datasource=compute-1&var-cluster=%s"
+    serverlessDashboard: "http://grafana.mockserver.org/d/mkwWamKnk/knative-user?orgId=1&kiosk&theme=light&var-datasource=compute-1&var-cluster=%s"

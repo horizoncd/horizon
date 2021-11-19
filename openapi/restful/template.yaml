@@ -1,0 +1,355 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Template-Restful
+  description: Restful API About Template
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/templates:
+    get:
+      tags:
+        - template
+      operationId: listTemplates
+      summary: List all templates
+      description: |
+        List all available templates.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: the template name
+                        description:
+                          type: string
+                          description: the template description
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/templates/{template}/releases:
+    parameters:
+    - name: template
+      in: path
+      description: name of template
+      required: true
+    get:
+      tags:
+        - template
+      operationId: listTemplateReleases
+      summary: List releases for a specified template
+      description: |
+        List releases for a specified template. Maybe there are so many releases
+        for a template, but this API will only return 3 recently releases. And the most
+        recently release is the most recommended release.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: the template release name
+                        description:
+                          type: string
+                          description: the template release description
+                        recommended:
+                          type: boolean
+                          description: is the most recommended release
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/templates/{template}/releases/{release}/schema:
+    parameters:
+    - name: template
+      in: path
+      description: name of template
+      required: true
+    - name: release
+      in: path
+      description: release name of template
+      required: true
+    get:
+      tags:
+        - template
+      operationId: getTemplateInputSchema
+      summary: Get input schema for a specified template
+      description: |
+        Get input schema for a specified template. This API will return the template's cd.schema.json file and ci.schema.json file.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "application":{
+                              "jsonSchema":{
+                                  "properties":{
+                                      "app":{
+                                          "properties":{
+                                              "health":{
+                                                  "dependencies":{
+                                                      "check":[
+                                                          "port"
+                                                      ],
+                                                      "offline":[
+                                                          "port"
+                                                      ],
+                                                      "online":[
+                                                          "port"
+                                                      ],
+                                                      "status":[
+                                                          "port"
+                                                      ]
+                                                  },
+                                                  "properties":{
+                                                      "check":{
+                                                          "description":"存活状态会在应用运行期间检测应用健康情况，检测失败时会对应用进行重启",
+                                                          "pattern":"^/.*$",
+                                                          "title":"存活状态",
+                                                          "type":"string"
+                                                      },
+                                                      "offline":{
+                                                          "description":"下线接口会在应用停止之前进行调用，如果调用失败，则忽略",
+                                                          "pattern":"^/.*$",
+                                                          "title":"下线",
+                                                          "type":"string"
+                                                      },
+                                                      "online":{
+                                                          "description":"上线接口会在应用启动之后进行调用，如果调用失败，则应用启动失败",
+                                                          "pattern":"^/.*$",
+                                                          "title":"上线",
+                                                          "type":"string"
+                                                      },
+                                                      "port":{
+                                                          "maximum":65535,
+                                                          "minimum":1024,
+                                                          "type":"integer"
+                                                      },
+                                                      "status":{
+                                                          "description":"就绪状态会在应用运行期间检测应用是否处于上线状态，检测失败时显示下线状态",
+                                                          "pattern":"^/.*$",
+                                                          "title":"就绪状态",
+                                                          "type":"string"
+                                                      }
+                                                  },
+                                                  "title":"健康检查",
+                                                  "type":"object"
+                                              },
+                                              "params":{
+                                                  "properties":{
+                                                      "jvmExtra":{
+                                                          "type":"string"
+                                                      },
+                                                      "mainClassName":{
+                                                          "type":"string"
+                                                      },
+                                                      "xdebugAddress":{
+                                                          "pattern":"^\\d*$",
+                                                          "type":"string"
+                                                      },
+                                                      "xms":{
+                                                          "default":"512",
+                                                          "pattern":"^\\d*$",
+                                                          "type":"string"
+                                                      },
+                                                      "xmx":{
+                                                          "default":"512",
+                                                          "pattern":"^\\d*$",
+                                                          "type":"string"
+                                                      }
+                                                  },
+                                                  "required":[
+                                                      "mainClassName"
+                                                  ],
+                                                  "title":"参数",
+                                                  "type":"object"
+                                              },
+                                              "spec":{
+                                                  "properties":{
+                                                      "replicas":{
+                                                          "title":"副本数",
+                                                          "type":"integer"
+                                                      },
+                                                      "resource":{
+                                                          "oneOf":[
+                                                              {
+                                                                  "enum":[
+                                                                      "x-small"
+                                                                  ],
+                                                                  "title":"x-small(1C2G)"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "small"
+                                                                  ],
+                                                                  "title":"small(2C4G)"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "middle"
+                                                                  ],
+                                                                  "title":"middle(4C8G)"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "large"
+                                                                  ],
+                                                                  "title":"large(8C16G)"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "x-large"
+                                                                  ],
+                                                                  "title":"x-large(16C32G)"
+                                                              }
+                                                          ],
+                                                          "title":"规格",
+                                                          "type":"string"
+                                                      }
+                                                  },
+                                                  "title":"规格",
+                                                  "type":"object"
+                                              },
+                                              "strategy":{
+                                                  "properties":{
+                                                      "pauseType":{
+                                                          "oneOf":[
+                                                              {
+                                                                  "enum":[
+                                                                      "first"
+                                                                  ],
+                                                                  "title":"第一批暂停"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "all"
+                                                                  ],
+                                                                  "title":"全部暂停"
+                                                              },
+                                                              {
+                                                                  "enum":[
+                                                                      "none"
+                                                                  ],
+                                                                  "title":"全不暂停"
+                                                              }
+                                                          ],
+                                                          "title":"暂停策略",
+                                                          "type":"string"
+                                                      },
+                                                      "stepsTotal":{
+                                                          "enum":[
+                                                              1,
+                                                              2,
+                                                              3,
+                                                              4,
+                                                              5
+                                                          ],
+                                                          "title":"发布批次（多批次情况下，第一批默认为1个实例）",
+                                                          "type":"integer"
+                                                      }
+                                                  },
+                                                  "title":"发布策略",
+                                                  "type":"object"
+                                              }
+                                          },
+                                          "title":"",
+                                          "type":"object"
+                                      }
+                                  },
+                                  "type":"object"
+                              },
+                              "uiSchema":{
+                                  "app":{
+                                      "health":{
+                                          "check":{
+                                              "ui:placeholder":"如: /api/test"
+                                          },
+                                          "offline":{
+                                              "ui:placeholder":"如: /health/offline"
+                                          },
+                                          "online":{
+                                              "ui:placeholder":"如: /health/online"
+                                          },
+                                          "status":{
+                                              "ui:placeholder":"如: /health/status"
+                                          },
+                                          "ui:order":[
+                                              "port",
+                                              "check",
+                                              "status",
+                                              "online",
+                                              "offline"
+                                          ]
+                                      },
+                                      "params":{
+                                          "ui:order":[
+                                              "mainClassName",
+                                              "*",
+                                              "xdebugAddress"
+                                          ]
+                                      },
+                                      "ui:order":[
+                                          "spec",
+                                          "strategy",
+                                          "params",
+                                          "health"
+                                      ]
+                                  }
+                              }
+                          },
+                          "pipeline":{
+                              "jsonSchema":{
+                                  "properties":{
+                                      "buildxml":{
+                                          "default":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>",
+                                          "title":"build.xml",
+                                          "type":"string"
+                                      }
+                                  },
+                                  "title":"Ant",
+                                  "type":"object"
+                              },
+                              "uiSchema":{
+                                  "buildxml":{
+                                      "ui:options":{
+                                          "rows":18
+                                      },
+                                      "ui:widget":"textarea"
+                                  }
+                              }
+                          }
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

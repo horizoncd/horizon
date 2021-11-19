@@ -1,0 +1,194 @@
+openapi: 3.0.1
+info:
+  title: Horizon Cluster Front
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v1/clusters/{clusterName}:
+    get:
+      tags:
+        - cluster
+      description: get cluster by name
+      operationId: getClusterByName
+      parameters:
+        - name: clusterName
+          in: path
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "id":1,
+                          "name":"cluster",
+                          "description":"xxxxxxxxxxxx",
+                          "template":{
+                              "name":"javaapp",
+                              "release":"v1.1.0"
+                          },
+                          "git":{
+                              "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                              "subfolder":"/",
+                              "branch":"develop"
+                          }
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v1/clusters/{clusterID}/log:
+    get:
+      tags:
+        - cluster
+      description: get cluster's latest pipelinerun log
+      operationId: getClusterLatestLog
+      parameters:
+        - name: clusterID
+          in: path
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                example: |
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v1/clusters/{clusterID}/stop:
+    post:
+      tags:
+        - cluster
+      description: stop pipelinerun for cluster
+      operationId: stopPipelienrunForCluster
+      parameters:
+        - name: clusterID
+          in: path
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v1/clusters/searchclusters?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+    get:
+      tags:
+        - cluster
+      description: search clusters by name fuzzily
+      operationId: searchClusters
+      parameters:
+        - name: filter
+          in: query
+          description: "part of name for fuzzy matching"
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/listClustersResp'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    listClustersResp:
+      type: object
+      properties:
+        total:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/cluster'
+    cluster:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/id'
+        name:
+          $ref: '#/components/schemas/name'
+        scope:
+          $ref: '#/components/schemas/scope'
+        environment:
+          $ref: '#/components/schemas/environment'
+        createdAt:
+          $ref: '#/components/schemas/createdAt'
+        updatedAt:
+          $ref: '#/components/schemas/updatedAt'
+        fullPath:
+          $ref: '#/components/schemas/fullPath'
+        fullName:
+          $ref: '#/components/schemas/fullName'
+    id:
+      type: integer
+      format: int64
+      description: id of cluster
+    name:
+      type: string
+      description: name of cluster
+    environment:
+      type: string
+      description: name of environment
+    region:
+      type: string
+      description: name of region
+    regionDisplayName:
+      type: string
+      description: display name of region
+    scope:
+      type: object
+      description: scope of cluster, including environment and region
+      properties:
+        environment:
+          $ref: '#/components/schemas/environment'
+        region:
+          $ref: '#/components/schemas/region'
+        regionDisplayName:
+          $ref: '#/components/schemas/regionDisplayName'
+    template:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/templateName'
+        release:
+          $ref: '#/components/schemas/templateRelease'
+    templateName:
+      type: string
+      description: name of template
+    templateRelease:
+      type: string
+      description: release version of template
+    createdAt:
+      type: string
+      description: creation time of cluster, contains the timezone
+    updatedAt:
+      type: string
+      description: creation time of cluster, contains the timezone
+    fullName:
+      type: string
+      description: full name of cluster
+    fullPath:
+      type: string
+      description: full path of cluster

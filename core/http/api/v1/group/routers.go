@@ -4,53 +4,74 @@ import (
 	"fmt"
 	"net/http"
 
-	"g.hz.netease.com/horizon/server/route"
+	"g.hz.netease.com/horizon/pkg/server/route"
+
 	"github.com/gin-gonic/gin"
 )
 
 // RegisterRoutes register routes
-func RegisterRoutes(engine *gin.Engine, c *Controller) {
-	api := engine.Group("/api/v1/groups")
-
-	var routes = route.Routes{
+func RegisterRoutes(engine *gin.Engine, a *API) {
+	coreAPI := engine.Group("/apis/core/v1/groups")
+	var coreRoutes = route.Routes{
 		{
-			Method:      http.MethodGet,
-			Pattern:     "/search",
-			HandlerFunc: c.SearchGroups,
+			Method:      http.MethodPost,
+			HandlerFunc: a.CreateGroup,
 		},
 		{
 			Method:      http.MethodPost,
-			HandlerFunc: c.CreateGroup,
+			Pattern:     fmt.Sprintf("/:%s/groups", _paramGroupID),
+			HandlerFunc: a.CreateSubGroup,
 		},
 		{
 			Method:      http.MethodDelete,
-			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
-			HandlerFunc: c.DeleteGroup,
+			Pattern:     fmt.Sprintf("/:%s", _paramGroupID),
+			HandlerFunc: a.DeleteGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
-			HandlerFunc: c.GetGroup,
-		},
-		{
-			Method:      http.MethodGet,
-			HandlerFunc: c.GetGroupByPath,
+			Pattern:     fmt.Sprintf("/:%s", _paramGroupID),
+			HandlerFunc: a.GetGroup,
 		},
 		{
 			Method:      http.MethodPut,
-			Pattern:     fmt.Sprintf("/:%s", ParamGroupID),
-			HandlerFunc: c.UpdateGroup,
+			Pattern:     fmt.Sprintf("/:%s", _paramGroupID),
+			HandlerFunc: a.UpdateGroup,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%s/children", ParamGroupID),
-			HandlerFunc: c.GetChildren,
+			Pattern:     fmt.Sprintf("/:%s/groups", _paramGroupID),
+			HandlerFunc: a.GetSubGroups,
 		},
 		{
-			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%s/subgroups", ParamGroupID),
-			HandlerFunc: c.GetSubGroups,
+			Method:      http.MethodPut,
+			Pattern:     fmt.Sprintf("/:%s/transfer", _paramGroupID),
+			HandlerFunc: a.TransferGroup,
 		},
 	}
-	route.RegisterRoutes(api, routes)
+
+	frontAPI := engine.Group("/apis/front/v1/groups")
+	var frontRoutes = route.Routes{
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%s/children", _paramGroupID),
+			HandlerFunc: a.GetChildren,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     "/searchgroups",
+			HandlerFunc: a.SearchGroups,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     "/searchchildren",
+			HandlerFunc: a.SearchChildren,
+		},
+		{
+			Method:      http.MethodGet,
+			HandlerFunc: a.GetGroupByFullPath,
+		},
+	}
+
+	route.RegisterRoutes(coreAPI, coreRoutes)
+	route.RegisterRoutes(frontAPI, frontRoutes)
 }

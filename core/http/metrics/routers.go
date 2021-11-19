@@ -3,7 +3,8 @@ package metrics
 import (
 	"net/http"
 
-	"g.hz.netease.com/horizon/server/route"
+	"g.hz.netease.com/horizon/pkg/server/route"
+
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

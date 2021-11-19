@@ -1,0 +1,944 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Cluster-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/applications/{applicationID}/clusters?environment={environment}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+    parameters:
+      - name: applicationID
+        in: path
+        description: application id
+        required: true
+      - name: environment
+        in: query
+        description: environment name
+        required: false
+      - name: filter
+        in: query
+        description: filter clusters by name
+      - name: pageNumber
+        in: query
+      - name: pageSize
+        in: query
+    get:
+      tags:
+        - cluster
+      operationId: listClusters
+      summary: List clusters of a specified application
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "total":100,
+                          "items":[
+                              {
+                                  "id":1,
+                                  "name":"gitops-dg-online",
+                                  "scope":{
+                                      "environment":"online",
+                                      "region":"dg"
+                                  },
+                                  "template":{
+                                      "name":"javaapp",
+                                      "release":"v1.0.0"
+                                  }
+                              }
+                          ]
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/applications/{applicationID}/clusters?scope={scope}:
+    parameters:
+      - name: applicationID
+        in: path
+        description: application id
+        required: true
+      - name: scope
+        in: query
+        description: scope is environment/region, this value can not be edited after created.
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: createCluster
+      summary: Create a cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "//name":"name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
+                    "name":"cluster",
+                    "description":"xxxxxxxxxxxx",
+                    "git":{
+                        "//branch":"branch can be edited",
+                        "branch":"develop"
+                    },
+                    "//tags": "tags is an array constructed by key-value pairs, key and value are must be string, and must be 63 characters or less, beginning and ending with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between. ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$ ",
+                    "tags": [
+                      {
+                        "key": "rpc.tag",
+                        "value": "qa-abc"
+                      }, {
+                        "key": "dubble.tag",
+                        "value": "qa-abc"
+                      }
+                    ],
+                    "templateInput":{
+                        "application":{
+                            "app":{
+                                "spec":{
+                                    "replicas":1,
+                                    "resource":"small"
+                                },
+                                "strategy":{
+                                    "stepsTotal":1,
+                                    "pauseType":"first"
+                                },
+                                "params":{
+                                    "xmx":"512",
+                                    "xms":"512",
+                                    "maxPerm":"128",
+                                    "mainClassName":"com.netease.horizon.WebApplication",
+                                    "jvmExtra":"-Dserver.port=8080"
+                                },
+                                "health":{
+                                    "check":"/api/test",
+                                    "status":"/health/status",
+                                    "online":"/health/online",
+                                    "offline":"/health/offline",
+                                    "port":8080
+                                }
+                            }
+                        },
+                        "pipeline":{
+                            "buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+                        }
+                    }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/clusters/{clusterID}:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    put:
+      tags:
+        - cluster
+      operationId: updateCluster
+      summary: Update a cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "description":"xxxxxxxxxxxx",
+                    "template":{
+                        "//release": "template release can be edited",
+                        "release":"v1.1.0"
+                    },
+                    "//git": "git params can be edited",
+                    "git":{
+                        "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                        "subfolder":"/",
+                        "branch":"develop"
+                    },
+                    "templateInput":{
+                        "application":{
+                            "app":{
+                                "spec":{
+                                    "replicas":1,
+                                    "resource":"small"
+                                },
+                                "strategy":{
+                                    "stepsTotal":1,
+                                    "pauseType":"first"
+                                },
+                                "params":{
+                                    "xmx":"512",
+                                    "xms":"512",
+                                    "maxPerm":"128",
+                                    "mainClassName":"com.netease.horizon.WebApplication",
+                                    "jvmExtra":"-Dserver.port=8080"
+                                },
+                                "health":{
+                                    "check":"/api/test",
+                                    "status":"/health/status",
+                                    "online":"/health/online",
+                                    "offline":"/health/offline",
+                                    "port":8080
+                                }
+                            }
+                        },
+                        "pipeline":{
+                            "buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+                        }
+                    }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - cluster
+      operationId: getCluster
+      summary: Get a cluster
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "application":{
+                              "id":2,
+                              "name":"app"
+                          },
+                          "id":1,
+                          "name":"cluster",
+                          "fullPath": "/a/b/c",
+                          "description":"xxxxxxxxxxxx",
+                          "priority":"P0",
+                          "template":{
+                              "name":"javaapp",
+                              "release":"v1.1.0"
+                          },
+                          "latestDeployedCommit": "xxxxxx",
+                          "git":{
+                              "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                              "subfolder":"/",
+                              "branch":"develop"
+                          },
+                          "scope":{
+                              "environment":"test",
+                              "region":"hz"
+                          },
+                          "templateInput":{
+                              "application":{
+                                  "app":{
+                                      "spec":{
+                                          "replicas":1,
+                                          "resource":"small"
+                                      },
+                                      "strategy":{
+                                          "stepsTotal":1,
+                                          "pauseType":"first"
+                                      },
+                                      "params":{
+                                          "xmx":"512",
+                                          "xms":"512",
+                                          "maxPerm":"128",
+                                          "mainClassName":"com.netease.horizon.WebApplication",
+                                          "jvmExtra":"-Dserver.port=8080"
+                                      },
+                                      "health":{
+                                          "check":"/api/test",
+                                          "status":"/health/status",
+                                          "online":"/health/online",
+                                          "offline":"/health/offline",
+                                          "port":8080
+                                      }
+                                  }
+                              },
+                              "pipeline":{
+                                  "buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+                              }
+                          }
+                      }
+                  }
+    delete:
+      tags:
+        - cluster
+      operationId: deleteCluster
+      summary: Delete a cluster
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/clusters/{clusterID}/builddeploy:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: builddeploy
+      summary: |
+        Build and deploy for a cluster.
+        This operation will create a pipelinerun for cluster.
+        A cluster can only has one running pipelinerun.
+        Return error if there exists a running pipelinerun already.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "title": "1.1 版本发布",
+                    "description": "xxxxxxxxxxxxxxx",
+                    "git": {
+                        "branch": "develop"
+                    }
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//id": "pipelinerun record id",
+                      "pipelinerunID": 1000
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/clusters/{clusterID}/deploy:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: deploy
+      summary: |
+        Deploy for a cluster with no build.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "title": "1.1 版本发布",
+                    "description": "xxxxxxxxxxxxxxx"
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//id": "pipelinerun record id",
+                      "pipelinerunID": 1000
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/clusters/{clusterID}/rollback:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: rollback
+      summary: Rollback a cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "//pipelinerunID":"the pipelinerunID to rollback",
+                    "pipelinerunID": 1000
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//id": "pipelinerun record id",
+                      "pipelinerunID": 1000
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/clusters/{clusterID}/restart:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: restart
+      summary: Restart a cluster
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//id": "pipelinerun record id",
+                      "pipelinerunID": 1000
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/clusters/{clusterID}/next:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: nextCluster
+      summary: |
+        Promote a cluster to next step.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/clusters/{clusterID}/diffs?targetBranch={targetBranch}:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+      - name: targetBranch
+        in: query
+        description: targetBranch. If targetBranch is empty, codeDiff will not be returned.
+        required: false
+    get:
+      tags:
+        - cluster
+      operationId: diffsOfCode
+      summary: |
+        Get code diffs of a cluster,
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "codeInfo":{
+                              "Branch": "master"
+                              "CommitMsg": "last commit msg"
+                              "CommitID":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
+                              "Link": https://g.hz.netease.com/music-cloud-native/horizon/horizon/-/commits/feature/applications
+                          },
+                          "configDiff ":"diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: music-cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
+                      }
+                  }
+
+  /apis/core/v1/clusters/{clusterID}/pipelineruns?pageNumber=${pageNumber}&pageSize={pageSize}&canRollback={canRollback}:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+      - name: pageNumber
+        in: query
+        required: false
+      - name: pageSize
+        in: query
+        required: false
+      - name: canRollback
+        in: query
+        description: pipelinerun can rollback, true of false. Default is false
+        required: false
+    get:
+      tags:
+        - cluster
+      operationId: getPipelineRuns
+      summary: |
+        List pipelineruns of a cluster.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "total":100,
+                          "items":[
+                              {
+                                  "id":3,
+                                  "title":"Feature123",
+                                  "description":"release big rocket",
+                                  "action":"builddeploy",
+                                  "status":"ok",
+                                  "gitURL":"git@github.com:demo/demo.git",
+                                  "gitBranch":"master",
+                                  "gitCommit":"4234324dsdjasljl43",
+                                  "imageURL":"",
+                                  "lastConfigCommit":"4234324dsdjasljl43",
+                                  "configCommit":"4234324dsdjasljl43",
+                                  "startedAt":"2021-11-07 11:19:54",
+                                  "finishedAt":"2021-11-07 11:19:54",
+                                  "//canRollback": "can this pipelinerun be rollbacked",
+                                  "canRollback": true,
+                                  "createBy":{
+                                    "userID":0,
+                                    "userName":"123"
+                                  }
+                              }
+                          ]
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/clusters/{clusterID}/status:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    get:
+      tags:
+        - cluster
+      operationId: getClusterStatus
+      summary: Get status of a cluster, return the pods and status
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "runningTask":{
+                              "//task":"build: building, deploy: deploying, none: no building and deploying",
+                              "task":"build",
+                              "//pipelinerunID": "This pipelinerunID can be used to get log, get status, etc.",
+                              "pipelinerunID": 1000,
+                              "//taskStatus":"Running, Pending, Succeeded, Cancelled, Failed. When task is none，this field is empty",
+                              "taskStatus":"Running"
+                          },
+                          "//":"任何时候都会返回clusterStatus字段，该字段表示集群在k8s中的部署状态",
+                          "clusterStatus":{
+                              "//status":"Progressing(正在部署), Healthy(部署完成), Suspended(已暂停), Degraded(已降级/失败), NotFound(未部署)",
+                              "status":"Progressing",
+                              "//step": "step represents the progress of the cluster",
+                              "step": {
+                                "//index": "current step index",
+                                "index": 1,
+                                "//total": "total step index",
+                                "total": 3
+                              },
+                              "//podTemplateHash":"当前最新的ReplicaSet对象的pod template hash",
+                              "podTemplateHash":"7b5c8d976d",
+                              "//replicas":"集群中实际运行的副本数",
+                              "replicas":2,
+                              "//versions":"版本详情",
+                              "versions":{
+                                  "//7b5c8d976d":"因为与pod-template-hash的值相同，该版本是要升级的版本",
+                                  "7b5c8d976d":{
+                                      "//replicas":"当前副本数是1",
+                                      "replicas":1,
+                                      "pods":{
+                                          "poc-javawebapp-test-2-7b5c8d976d-tjcrw":{
+                                              "metadata":{
+                                                  "//namespace":"命名空间",
+                                                  "namespace":"test-1"
+                                              },
+                                              "spec":{
+                                                  "nodeName":"node-1",
+                                                  "initContainers":[
+                                                      {
+                                                          "name":"artifacts",
+                                                          "image":"habor-server/quku/music-stores-web:develop-122f9hbr-20201112144663"
+                                                      }
+                                                  ],
+                                                  "containers":[
+                                                      {
+                                                          "name":"app",
+                                                          "image":"harbor.mockserver.org/staffyun163music/cloudnative/template/tomcat7_jdk8:develop-r542525"
+                                                      }
+                                                  ]
+                                              },
+                                              "status":{
+                                                  "hostIP":"182.32.3.4",
+                                                  "podIP":"172.32.3.4",
+                                                  "//phase":"Pod的状态为Pending, Running等",
+                                                  "phase":"Pending",
+                                                  "//containerStatuses":"数量与上面的sepc.containers字段一致",
+                                                  "containerStatuses":[
+                                                      {
+                                                          "name":"app",
+                                                          "//ready":"如果Ready=true， 表示Pod处于上线状态; 如果Ready=false，表示Pod处于下线状态",
+                                                          "ready":true,
+                                                          "//state":"state表示容器的状态",
+                                                          "state":{
+                                                              "//state":"可以是running, waiting, terminated; 如果state是running, reason 和 message 为空",
+                                                              "state":"running",
+                                                              "//reason":"如果 state 是 wating 或terminated, 这里会简要说明原因。用于展示",
+                                                              "reason":"",
+                                                              "//message":"如果 state 是 wating 或terminated, 这里会给出具体的原因",
+                                                              "message":""
+                                                          }
+                                                      }
+                                                  ],
+                                                  "//events":"事件信息，用于出错时排查问题",
+                                                  "events":[
+                                                      {
+                                                          "//type":"Normal, Warning",
+                                                          "type":"Normal",
+                                                          "reason":"Pulling",
+                                                          "message":"Pulling image \"hub.c.163.com/commonwork/poc-templatm:tomcat7_jdk8\"",
+                                                          "count":85,
+                                                          "event-timestamp":"2020-10-13T17:02:01Z"
+                                                      },
+                                                      {
+                                                          "type":"Warning",
+                                                          "reason":"Failed",
+                                                          "message":"Error: ImagePullBackOff",
+                                                          "count":2003,
+                                                          "event-timestamp":"2020-10-13T17:02:01Z"
+                                                      }
+                                                  ]
+                                              }
+                                          }
+                                      }
+                                  },
+                                  "//5d9d5cc4fb":"因为与pod-template-hash的值不相同，该版本是老版本",
+                                  "5d9d5cc4fb":{
+                                      "replicas":2,
+                                      "pods":{
+                                          "poc-javawebapp-test-2-5d9d5cc4fb-5c7nl":{
+                                              "metadata":{
+                                                  "namespace":"test-1"
+                                              },
+                                              "spec":{
+                                                  "nodeName":"node-2",
+                                                  "initContainers":[
+                                                      {
+                                                          "name":"artifacts",
+                                                          "image":"habor-server/quku/music-stores-web:develop-122f9hbr-20201112144663"
+                                                      }
+                                                  ],
+                                                  "containers":[
+                                                      {
+                                                          "name":"app",
+                                                          "image":"harbor.mockserver.org/staffyun163music/cloudnative/template/tomcat7_jdk8:develop-r542525"
+                                                      }
+                                                  ]
+                                              },
+                                              "status":{
+                                                  "hostIP":"182.32.3.4",
+                                                  "podIP":"172.32.3.4",
+                                                  "phase":"Running",
+                                                  "containerStatuses":[
+                                                      {
+                                                          "name":"app",
+                                                          "ready":true,
+                                                          "state":{
+                                                              "running":{
+                                                                  "startedAt":"2021-05-11T13:14:23Z"
+                                                              }
+                                                          }
+                                                      }
+                                                  ],
+                                                  "events":[
+
+                                                  ]
+                                              }
+                                          },
+                                          "poc-javawebapp-test-2-5d9d5cc4fb-lmqxn":{
+                                              "metadata":{
+                                                  "namespace":"test-1"
+                                              },
+                                              "spec":{
+                                                  "nodeName":"node-3",
+                                                  "initContainers":[
+                                                      {
+                                                          "name":"artifacts",
+                                                          "image":"habor-server/quku/music-stores-web:develop-122f9hbr-20201112144663"
+                                                      }
+                                                  ],
+                                                  "containers":[
+                                                      {
+                                                          "name":"app",
+                                                          "image":"harbor.mockserver.org/staffyun163music/cloudnative/template/tomcat7_jdk8:develop-r542525"
+                                                      }
+                                                  ]
+                                              },
+                                              "status":{
+                                                  "hostIP":"182.32.3.4",
+                                                  "podIP":"172.32.3.4",
+                                                  "phase":"Running",
+                                                  "containerStatuses":[
+                                                      {
+                                                          "name":"app",
+                                                          "ready":true,
+                                                          "state":{
+                                                              "running":{
+                                                                  "startedAt":"2021-05-11T13:14:23Z"
+                                                              }
+                                                          }
+                                                      }
+                                                  ],
+                                                  "event":[
+
+                                                  ]
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+  /apis/core/v1/clusters/{clusterID}/containerlog?podName={podName}&containerName={containerName}:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+      - name: podName
+        in: query
+        description: name of pod
+        required: true
+      - name: containerName
+        in: query
+        description: name of container
+        required: true
+    get:
+      tags:
+        - cluster
+      operationId: getContainerLog
+      summary: Get log of a cluster container
+      responses:
+        "200":
+          description: Success
+          content:
+            text/plain:
+              schema:
+                example: |
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/clusters/{clusterID}/online:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: online
+      summary: online pod for cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                  "podList": [
+                     "poc-javaapp-test-2-8597696689-v6g8v",
+                     "poc-javaapp-test-2-8597696689-v1g1y"
+                  ]
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//": "在该Pod内，命令执行成功, 只有stdout字段和result字段",
+                      "poc-javawebapp-test-2-8597696689-v6g8v": {
+                        "//stdout": "stdout是执行命令的标准输出",
+                        "stdout": "do online",
+                        "result": true
+                      },
+                      "//": "在该Pod内，命令执行失败, 一般含有stdout 或error, 一定会有result字段",
+                      "poc-javawebapp-test-2-8597696689-xxxxv": {
+                        "//": "stderr是执行命令的标准错误输出",
+                        "stderr": "time out",
+                        "result": false
+                      },
+                      "poc-javawebapp-test-2-8597696689-xxxxv": {
+                        "//error": "下发命令的过程中出现错误",
+                        "error": {
+                          "ErrStatus": {
+                            "metadata": {},
+                            "status": "Failure",
+                            "message": "pods \"poc-javawebapp-test-2-8597696689-v6g8vs\" not found",
+                            "reason": "NotFound",
+                            "details": {
+                              "name": "poc-javawebapp-test-2-8597696689-v6g8vs",
+                              "kind": "pods"
+                            },
+                            "code": 404
+                          }
+                        },
+                        "result": false
+                      }
+                    }
+                  }
+  /apis/core/v1/clusters/{clusterID}/offline:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: offline
+      summary: offline pod for cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                  "podList": [
+                     "poc-javaapp-test-2-8597696689-v6g8v",
+                     "poc-javaapp-test-2-8597696689-v1g1y"
+                  ]
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//": "在该Pod内，命令执行成功, 只有stdout字段和result字段",
+                      "poc-javawebapp-test-2-8597696689-v6g8v": {
+                        "//stdout": "stdout是执行命令的标准输出",
+                        "stdout": "do offline",
+                        "result": true
+                      },
+                      "//": "在该Pod内，命令执行失败, 一般含有stdout 或error, 一定会有result字段",
+                      "poc-javawebapp-test-2-8597696689-xxxxv": {
+                        "//": "stderr是执行命令的标准错误输出",
+                        "stderr": "time out",
+                        "result": false
+                      },
+                      "poc-javawebapp-test-2-8597696689-xxxxv": {
+                        "//error": "下发命令的过程中出现错误",
+                        "error": {
+                          "ErrStatus": {
+                            "metadata": {},
+                            "status": "Failure",
+                            "message": "pods \"poc-javawebapp-test-2-8597696689-v6g8vs\" not found",
+                            "reason": "NotFound",
+                            "details": {
+                              "name": "poc-javawebapp-test-2-8597696689-v6g8vs",
+                              "kind": "pods"
+                            },
+                            "code": 404
+                          }
+                        },
+                        "result": false
+                      }
+                    }
+                  }

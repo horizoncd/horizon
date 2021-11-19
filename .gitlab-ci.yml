@@ -7,6 +7,7 @@ stages:
 variables:
   COVERAGE_STANDARD: 70
   REPOSITORY_PREFIX: harbor.mock.org/cloudnative/horizon/
+  GOPROXY: https://goproxycn,direct
 
 before_script:
   - export APP_REVISION="${CI_COMMIT_TAG:-${CI_COMMIT_REF_NAME##*/}-r$CI_PIPELINE_ID}"
@@ -48,6 +49,7 @@ build:
   only:
     - develop
     - tags
+    - feature/applications
   except:
     - schedules
 
@@ -73,6 +75,7 @@ helm_package:
   only:
     - develop
     - tags
+    - feature/applications
   except:
     - schedules
 
@@ -87,3 +90,4 @@ deploy_dev:
     - helm upgrade  $RELEASE_NAME target/"$(ls target/ | grep tgz)" -n $NAMESPACE  --install --create-namespace
   only:
     - develop
+    - feature/applications

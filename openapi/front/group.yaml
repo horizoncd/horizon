@@ -5,20 +5,18 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /api/v1/groups/search?parentId={parentId}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v1/groups/searchgroups?groupID={groupID}&filter={filter}:
     get:
       tags:
         - group
-      description: query groups
-      summary: query groups
-      operationId: queryGroups
+      description: search subGroups of a group
+      summary: search subGroups
+      operationId: searchGroups
       parameters:
-        - name: parentId
+        - name: groupID
           in: query
         - name: filter
           in: query
-        - $ref: '../core.yaml/#/components/parameters/pageNumber'
-        - $ref: '../core.yaml/#/components/parameters/pageSize'
       responses:
         '200':
           description: Success
@@ -29,25 +27,55 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/SearchGroupResult'
+                      $ref: '#/components/schemas/GroupChild'
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
-  /api/v1/groups/children?parentId={groupId}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v1/groups/searchchildren?groupID={groupID}&filter={filter}:
+    get:
+      tags:
+        - group
+      description: search children of a group
+      summary: search children
+      operationId: searchChildren
+      parameters:
+        - name: groupID
+          in: query
+        - name: filter
+          in: query
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupChild'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/front/v1/groups/children?groupID={groupID}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
       operationId: queryGroupChildren
       summary: query children of a group
       parameters:
-        - name: groupId
+        - name: groupID
           in: query
-        - $ref: '../core.yaml/#/components/parameters/pageNumber'
-        - $ref: '../core.yaml/#/components/parameters/pageSize'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
         "200":
           content:
@@ -64,11 +92,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../core.yaml#/components/schemas/Error"
+                $ref: "common.yaml#/components/schemas/Error"
 
 components:
   schemas:
-
     GroupChild:
       type: object
       properties:
@@ -76,58 +103,28 @@ components:
           type: integer
         name:
           type: string
-        fullName:
-          type: string
         description:
           type: string
         path:
+          type: string
+        fullName:
+          type: string
+        fullPath:
           type: string
         type:
           $ref: '#/components/schemas/GroupChildType'
         childrenCount:
           type: integer
-        subGroupCount:
-          type: integer
-        applicationCount:
-          type: integer
-        parentId:
-          type: integer
-        createdAt:
-          $ref: "../core.yaml#/components/schemas/Date"
-        updatedAt:
-          $ref: "../core.yaml#/components/schemas/Date"
-
-    SearchGroupResult:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        fullName:
-          type: string
-        description:
-          type: string
-        path:
-          type: string
-        type:
-          $ref: '#/components/schemas/GroupChildType'
-        childrenCount:
-          type: integer
-        subGroupCount:
-          type: integer
-        applicationCount:
-          type: integer
-        children:
+        Children:
           type: array
           items:
-            $ref: '#/components/schemas/SearchGroupResult'
-        parentId:
+            $ref: '#/components/schemas/GroupChild'
+        parentID:
           type: integer
         createdAt:
-          $ref: "../core.yaml#/components/schemas/Date"
+          $ref: "../restful/common.yaml#/components/schemas/Date"
         updatedAt:
-          $ref: "../core.yaml#/components/schemas/Date"
+          $ref: "../restful/common.yaml#/components/schemas/Date"
 
     GroupChildType:
       type: string

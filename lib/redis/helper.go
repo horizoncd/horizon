@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"g.hz.netease.com/horizon/lib/log"
+	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/gomodule/redigo/redis"
 )
 
@@ -54,13 +54,16 @@ func NewHelperWithPool(pool *redis.Pool, opts *Options) (*Helper, error) {
 }
 
 func (h *Helper) Ping(ctx context.Context) (err error) {
-	defer log.TRACE.Debug(ctx)(func() error { return err })
+	const op = "redis helper: ping"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
 	_, err = h.do(ctx, "PING")
 	return err
 }
 
 func (h *Helper) Get(ctx context.Context, key string, value interface{}) (err error) {
-	defer log.TRACE.Debug(ctx)(func() error { return err })
+	const op = "redis helper: get"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	data, err := redis.Bytes(h.do(ctx, "GET", h.opts.Key(key)))
 	if err != nil {
@@ -77,7 +80,8 @@ func (h *Helper) Get(ctx context.Context, key string, value interface{}) (err er
 }
 
 func (h *Helper) Save(ctx context.Context, key string, value interface{}, expiration ...time.Duration) (err error) {
-	defer log.TRACE.Debug(ctx)(func() error { return err })
+	const op = "redis helper: save"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	data, err := h.opts.Codec.Encode(value)
 	if err != nil {
@@ -102,15 +106,14 @@ func (h *Helper) Save(ctx context.Context, key string, value interface{}, expira
 }
 
 func (h *Helper) Delete(ctx context.Context, key string) (err error) {
-	defer log.TRACE.Debug(ctx)(func() error { return err })
+	const op = "redis helper: delete"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	_, err = h.do(ctx, "DEL", h.opts.Key(key))
 	return err
 }
 
 func (h *Helper) do(ctx context.Context, command string, args ...interface{}) (reply interface{}, err error) {
-	defer log.TRACE.Debug(ctx)(func() error { return err })
-
 	conn := h.pool.Get()
 	defer func() { _ = conn.Close() }()
 
