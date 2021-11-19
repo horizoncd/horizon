@@ -903,11 +903,14 @@ func assembleRestart(templateName string) map[string]map[string]string {
 	return ret
 }
 
-func assembleTags(templateName string, clusterTags []*clustertagmodels.ClusterTag) map[string]map[string]string {
-	ret := make(map[string]map[string]string)
-	ret[templateName] = make(map[string]string)
+func assembleTags(templateName string,
+	clusterTags []*clustertagmodels.ClusterTag) map[string]map[string]map[string]string {
+	const tags = "tags"
+	ret := make(map[string]map[string]map[string]string)
+	ret[templateName] = make(map[string]map[string]string)
+	ret[templateName][tags] = make(map[string]string)
 	for _, tag := range clusterTags {
-		ret[templateName][tag.Key] = tag.Value
+		ret[templateName][tags][tag.Key] = tag.Value
 	}
 	return ret
 }
