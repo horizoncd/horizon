@@ -213,13 +213,27 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, errors.E(op, err)
 	}
 
-	// 9. create cluster in db
+	// 9. create cluster in cd system
+	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
+	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
+		Environment:   er.EnvironmentName,
+		Cluster:       cluster.Name,
+		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
+		ValueFiles:    repoInfo.ValueFiles,
+		RegionEntity:  regionEntity,
+		// when create cluster, namespace can use this initial namespace
+		Namespace: fmt.Sprintf("%v-%v", er.EnvironmentName, application.GroupID),
+	}); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 10. create cluster in db
 	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
-	// 10. get full path
+	// 11. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
 		return nil, errors.E(op, err)

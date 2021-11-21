@@ -92,9 +92,7 @@ func (m *UpdateApplicationRequest) toApplicationModel(appExistsInDB *models.Appl
 		Template:        appExistsInDB.Template,
 		TemplateRelease: appExistsInDB.TemplateRelease,
 	}
-	if m.Description != "" {
-		application.Description = m.Description
-	}
+	application.Description = m.Description
 	if m.Priority != "" {
 		application.Priority = models.Priority(m.Priority)
 	}
@@ -105,9 +103,7 @@ func (m *UpdateApplicationRequest) toApplicationModel(appExistsInDB *models.Appl
 		if m.Git.Branch != "" {
 			application.GitBranch = m.Git.Branch
 		}
-		if m.Git.Subfolder != "" {
-			application.GitSubfolder = m.Git.Subfolder
-		}
+		application.GitSubfolder = m.Git.Subfolder
 	}
 	if m.Template != nil {
 		if m.Template.Name != "" {
