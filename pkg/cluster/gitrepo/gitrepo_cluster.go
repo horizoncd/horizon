@@ -786,10 +786,11 @@ func (g *clusterGitRepo) assembleSREValue(params *CreateClusterParams) map[strin
 }
 
 type EnvValue struct {
-	Environment  string `yaml:"environment"`
-	Region       string `yaml:"region"`
-	Namespace    string `yaml:"namespace"`
-	BaseRegistry string `yaml:"baseRegistry"`
+	Environment   string `yaml:"environment"`
+	Region        string `yaml:"region"`
+	Namespace     string `yaml:"namespace"`
+	BaseRegistry  string `yaml:"baseRegistry"`
+	IngressDomain string `yaml:"ingressDomain"`
 }
 
 func getNamespace(params *CreateClusterParams) string {
@@ -804,6 +805,7 @@ func (g *clusterGitRepo) assembleEnvValue(params *CreateClusterParams) map[strin
 		Namespace:   getNamespace(params),
 		BaseRegistry: strings.TrimPrefix(strings.TrimPrefix(
 			params.RegionEntity.Harbor.Server, "https://"), "http://"),
+		IngressDomain: params.RegionEntity.K8SCluster.IngressDomain,
 	}
 
 	ret := make(map[string]map[string]*EnvValue)
