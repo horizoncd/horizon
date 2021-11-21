@@ -566,6 +566,11 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().GetEnvValue(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.EnvValue{
 		Namespace: "test-1",
 	}, nil).AnyTimes()
+	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
+		GitRepoSSHURL: "ssh://xxxx",
+		ValueFiles:    []string{},
+	}).AnyTimes()
+	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
 		Base: &Base{
@@ -682,8 +687,8 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
 		GitRepoSSHURL: "ssh://xxxx.git",
 		ValueFiles:    []string{"file1", "file2"},
-	})
-	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
+	}).AnyTimes()
+
 	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, errors.E("test", http.StatusNotFound))
 
