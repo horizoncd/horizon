@@ -39,11 +39,6 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		return nil, errors.E(op, err)
 	}
 
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-
 	// 3. update image in git repo, and update newest commit to pr
 	commit, err := c.clusterGitRepo.UpdateImage(ctx, application.Name, cluster.Name, cluster.Template, pr.ImageURL)
 	if err != nil {
@@ -60,23 +55,6 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 5. deploy cluster in cd system
-	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-	// create cluster if necessary
-	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:   er.EnvironmentName,
-		Cluster:       cluster.Name,
-		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
-		ValueFiles:    repoInfo.ValueFiles,
-		RegionEntity:  regionEntity,
-		Namespace:     envValue.Namespace,
-	}); err != nil {
-		return nil, errors.E(op, err)
-	}
-	// then deploy cluster
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: er.EnvironmentName,
 		Cluster:     cluster.Name,
