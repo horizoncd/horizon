@@ -105,6 +105,7 @@ func (h *CMDBEventHandler) ProcessCreateCluster(event *hook.EventCtx) error {
 			ApplicationName:     info.Application.Name,
 			Env:                 env,
 			ClusterServerStatus: cmdb.StatusReady,
+			AutoAddDocker:       cmdb.AutoAddContainer,
 			Admin:               accounts,
 		}
 		return h.ctl.CreateCluster(event.Ctx, req)
