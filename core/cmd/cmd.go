@@ -199,11 +199,10 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	var tektonFty factory.Factory = nil
-	//tektonFty, err := factory.NewFactory(config.TektonMapper)
-	//if err != nil {
-	//	panic(err)
-	//}
+	tektonFty, err := factory.NewFactory(config.TektonMapper)
+	if err != nil {
+		panic(err)
+	}
 	cmdbController := cmdb.NewController(config.CmdbConfig)
 	handler := handler.NewCMDBEventHandler(cmdbController)
 	memHook := hook.NewInMemHook(2000, handler)
