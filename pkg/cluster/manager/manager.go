@@ -28,7 +28,7 @@ type Manager interface {
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
-	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environments []string,
+	ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
@@ -75,7 +75,7 @@ func (m *manager) DeleteByID(ctx context.Context, id uint) error {
 	return m.dao.DeleteByID(ctx, id)
 }
 
-func (m *manager) ListByApplicationAndEnv(ctx context.Context, applicationID uint, environments []string,
+func (m *manager) ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
 	filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
 	if query == nil {
 		query = &q.Query{
@@ -89,7 +89,7 @@ func (m *manager) ListByApplicationAndEnv(ctx context.Context, applicationID uin
 	if query.PageSize < 1 {
 		query.PageSize = common.DefaultPageSize
 	}
-	return m.dao.ListByApplicationAndEnv(ctx, applicationID, environments, filter, query)
+	return m.dao.ListByApplicationAndEnvs(ctx, applicationID, environments, filter, query)
 }
 
 func (m *manager) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error) {

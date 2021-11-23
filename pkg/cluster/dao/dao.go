@@ -24,7 +24,7 @@ type DAO interface {
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
-	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environments []string,
+	ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
@@ -165,7 +165,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	return result.Error
 }
 
-func (d *dao) ListByApplicationAndEnv(ctx context.Context, applicationID uint, environments []string,
+func (d *dao) ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
 	filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {

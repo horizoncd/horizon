@@ -28,7 +28,7 @@ func (c *controller) ListCluster(ctx context.Context, applicationID uint, enviro
 	const op = "cluster controller: list cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationAndEnv(ctx,
+	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationAndEnvs(ctx,
 		applicationID, environments, filter, query)
 	if err != nil {
 		return 0, nil, errors.E(op, err)
