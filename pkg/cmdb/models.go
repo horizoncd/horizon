@@ -74,6 +74,9 @@ const (
 	StatusReady  ClusterStatusType = "ready"
 	StatusOnline ClusterStatusType = "online"
 )
+const (
+	AutoAddContainer int = 1
+)
 
 type CreateClusterRequest struct {
 	Name                string            `json:"name"`
@@ -81,6 +84,7 @@ type CreateClusterRequest struct {
 	Env                 Env               `json:"env"`
 	ClusterServerStatus ClusterStatusType `json:"clusterServerStatus"`
 	ClusterStyle        ClusterStyle      `json:"clusterStyle"`
+	AutoAddDocker       int               `json:"autoAddDocker"`
 	Admin               []Account         `json:"admin"`
 }
 
