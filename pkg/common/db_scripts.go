@@ -112,20 +112,31 @@ const (
 
 /* sql about cluster */
 const (
-	ClusterQueryByID                = "select * from cluster where id = ? and deleted_at is null"
-	ClusterDeleteByID               = "update cluster set deleted_at = CURRENT_TIMESTAMP where id = ?"
-	ClusterQueryByName              = "select * from cluster where name = ? and deleted_at is null"
-	ClusterListByApplicationID      = "select * from cluster where application_id = ? and deleted_at is null"
-	ClusterQueryByApplicationAndEnv = "select c.*, er.environment_name, er.region_name, " +
+	ClusterQueryByID           = "select * from cluster where id = ? and deleted_at is null"
+	ClusterDeleteByID          = "update cluster set deleted_at = CURRENT_TIMESTAMP where id = ?"
+	ClusterQueryByName         = "select * from cluster where name = ? and deleted_at is null"
+	ClusterListByApplicationID = "select * from cluster where application_id = ? and deleted_at is null"
+	ClusterQueryByApplication  = "select c.*, er.environment_name, er.region_name, " +
 		"r.display_name as region_display_name from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
-		"where c.application_id = ? and er.environment_name = ? " +
+		"where c.application_id = ? " +
 		"and c.name like ? and c.deleted_at is null limit ? offset ?"
-	ClusterCountByApplicationAndEnv = "select count(1) from cluster c " +
+	ClusterCountByApplication = "select count(1) from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
-		"where c.application_id = ? and er.environment_name = ? " +
+		"where c.application_id = ? " +
+		"and c.name like ? and c.deleted_at is null"
+	ClusterQueryByApplicationAndEnvs = "select c.*, er.environment_name, er.region_name, " +
+		"r.display_name as region_display_name from cluster c " +
+		"join environment_region er on c.environment_region_id = er.id " +
+		"join region r on r.name = er.region_name " +
+		"where c.application_id = ? and er.environment_name in ? " +
+		"and c.name like ? and c.deleted_at is null limit ? offset ?"
+	ClusterCountByApplicationAndEnvs = "select count(1) from cluster c " +
+		"join environment_region er on c.environment_region_id = er.id " +
+		"join region r on r.name = er.region_name " +
+		"where c.application_id = ? and er.environment_name in ? " +
 		"and c.name like ? and c.deleted_at is null"
 	ClusterQueryByNameFuzzily = "select c.*, er.environment_name, er.region_name, " +
 		"r.display_name as region_display_name from cluster c " +
