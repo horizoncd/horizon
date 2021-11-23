@@ -533,6 +533,10 @@ func Test(t *testing.T) {
 		EnvironmentName: "test",
 		RegionName:      "hz",
 	})
+	er, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+		EnvironmentName: "dev",
+		RegionName:      "hz",
+	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
 
@@ -587,6 +591,7 @@ func Test(t *testing.T) {
 	}
 
 	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest)
+	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest)
 	assert.Nil(t, err)
 	b, _ := json.MarshalIndent(resp, "", "  ")
 	t.Logf("%v", string(b))
@@ -645,12 +650,24 @@ func Test(t *testing.T) {
 	assert.Equal(t, resp.TemplateInput.Application, applicationJSONBlob)
 	assert.Equal(t, resp.TemplateInput.Pipeline, pipelineJSONBlob)
 
-	count, respList, err := c.ListCluster(ctx, application.ID, "test", "", nil)
+	count, respList, err := c.ListCluster(ctx, application.ID, []string{"test"}, "", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, count, 1)
 	t.Logf("%v", respList[0])
 	assert.Equal(t, respList[0].Template.Name, "javaapp")
 	assert.Equal(t, respList[0].Template.Release, "v1.0.1")
+
+	count, respList, err = c.ListCluster(ctx, application.ID, []string{}, "", nil)
+	assert.Nil(t, err)
+	assert.Equal(t, count, 2)
+	t.Logf("%+v", respList[0].Scope)
+	t.Logf("%+v", respList[1].Scope)
+
+	count, respList, err = c.ListCluster(ctx, application.ID, []string{"test", "dev"}, "", nil)
+	assert.Nil(t, err)
+	assert.Equal(t, count, 2)
+	t.Logf("%+v", respList[0].Scope)
+	t.Logf("%+v", respList[1].Scope)
 
 	getByName, err := c.GetClusterByName(ctx, "app-cluster")
 	assert.Nil(t, err)

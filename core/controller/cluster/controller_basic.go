@@ -23,13 +23,13 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
-func (c *controller) ListCluster(ctx context.Context, applicationID uint, environment,
+func (c *controller) ListCluster(ctx context.Context, applicationID uint, environments []string,
 	filter string, query *q.Query) (_ int, _ []*ListClusterResponse, err error) {
 	const op = "cluster controller: list cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationAndEnv(ctx,
-		applicationID, environment, filter, query)
+		applicationID, environments, filter, query)
 	if err != nil {
 		return 0, nil, errors.E(op, err)
 	}

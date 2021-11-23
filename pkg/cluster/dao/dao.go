@@ -24,7 +24,7 @@ type DAO interface {
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
-	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
+	ListByApplicationAndEnv(ctx context.Context, applicationID uint, environments []string,
 		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
@@ -165,7 +165,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	return result.Error
 }
 
-func (d *dao) ListByApplicationAndEnv(ctx context.Context, applicationID uint, environment,
+func (d *dao) ListByApplicationAndEnv(ctx context.Context, applicationID uint, environments []string,
 	filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -177,15 +177,25 @@ func (d *dao) ListByApplicationAndEnv(ctx context.Context, applicationID uint, e
 
 	like := "%" + filter + "%"
 	var clusters []*models.ClusterWithEnvAndRegion
-	result := db.Raw(common.ClusterQueryByApplicationAndEnv, applicationID,
-		environment, like, limit, offset).Scan(&clusters)
+
+	var result *gorm.DB
+	if len(environments) > 0 {
+		result = db.Raw(common.ClusterQueryByApplicationAndEnvs, applicationID,
+			environments, like, limit, offset).Scan(&clusters)
+	} else {
+		result = db.Raw(common.ClusterQueryByApplication, applicationID, like, limit, offset).Scan(&clusters)
+	}
 
 	if result.Error != nil {
 		return 0, nil, result.Error
 	}
 
 	var count int
-	result = db.Raw(common.ClusterCountByApplicationAndEnv, applicationID, environment, like).Scan(&count)
+	if len(environments) > 0 {
+		result = db.Raw(common.ClusterCountByApplicationAndEnvs, applicationID, environments, like).Scan(&count)
+	} else {
+		result = db.Raw(common.ClusterCountByApplication, applicationID, like).Scan(&count)
+	}
 	if result.Error != nil {
 		return 0, nil, result.Error
 	}
