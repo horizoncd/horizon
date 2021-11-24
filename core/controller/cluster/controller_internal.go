@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -54,7 +55,37 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		return nil, errors.E(op, err)
 	}
 
-	// 5. deploy cluster in cd system
+	// 5. create cluster in cd system
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
+	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
+		Environment:   er.EnvironmentName,
+		Cluster:       cluster.Name,
+		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
+		ValueFiles:    repoInfo.ValueFiles,
+		RegionEntity:  regionEntity,
+		Namespace:     envValue.Namespace,
+	}); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 6. reset cluster status
+	if cluster.Status == common.StatusFreed {
+		cluster.Status = common.StatusEmpty
+		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+	}
+
+	// 7. deploy cluster in cd system
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: er.EnvironmentName,
 		Cluster:     cluster.Name,

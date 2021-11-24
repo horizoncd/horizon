@@ -46,11 +46,7 @@ func (a *API) List(c *gin.Context) {
 	}
 
 	filter := c.Query(common.Filter)
-	environment := c.Query(_environment)
-	if environment == "" {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, "environment cannot be empty")
-		return
-	}
+	environments := c.QueryArray(_environment)
 
 	var (
 		pageNumber, pageSize int
@@ -77,7 +73,7 @@ func (a *API) List(c *gin.Context) {
 		}
 	}
 
-	count, respList, err := a.clusterCtl.ListCluster(c, uint(applicationID), environment, filter, &q.Query{
+	count, respList, err := a.clusterCtl.ListCluster(c, uint(applicationID), environments, filter, &q.Query{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	})
@@ -208,4 +204,20 @@ func (a *API) ListByNameFuzzily(c *gin.Context) {
 		Total: int64(count),
 		Items: respList,
 	})
+}
+
+func (a *API) Free(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	err = a.clusterCtl.FreeCluster(c, uint(clusterID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.Success(c)
 }

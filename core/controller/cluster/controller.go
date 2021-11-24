@@ -25,7 +25,7 @@ import (
 
 type Controller interface {
 	GetCluster(ctx context.Context, clusterID uint) (*GetClusterResponse, error)
-	ListCluster(ctx context.Context, applicationID uint, environment,
+	ListCluster(ctx context.Context, applicationID uint, environments []string,
 		filter string, query *q.Query) (int, []*ListClusterResponse, error)
 	ListClusterByNameFuzzily(ctx context.Context, environment,
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
@@ -50,6 +50,7 @@ type Controller interface {
 	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
+	FreeCluster(ctx context.Context, clusterID uint) (err error)
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,

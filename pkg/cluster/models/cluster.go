@@ -15,6 +15,7 @@ type Cluster struct {
 	GitBranch           string
 	Template            string
 	TemplateRelease     string
+	Status              string
 	EnvironmentRegionID uint
 	CreatedBy           uint
 	UpdatedBy           uint

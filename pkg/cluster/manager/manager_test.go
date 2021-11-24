@@ -95,8 +95,8 @@ func Test(t *testing.T) {
 	assert.Equal(t, clusterGetByID.Name, cluster.Name)
 	t.Logf("%v", clusterGetByID)
 
-	count, clustersWithEnvAndRegion, err := Mgr.ListByApplicationAndEnv(ctx, applicationID,
-		er.EnvironmentName, "", nil)
+	count, clustersWithEnvAndRegion, err := Mgr.ListByApplicationAndEnvs(ctx, applicationID,
+		[]string{er.EnvironmentName}, "", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
