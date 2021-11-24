@@ -449,6 +449,7 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 	for i := range events {
 		clusterPod.Status.Events = append(clusterPod.Status.Events,
 			Event{
+				Type:           events[i].Type,
 				Reason:         events[i].Reason,
 				Message:        events[i].Message,
 				Count:          events[i].Count,
@@ -605,6 +606,7 @@ type (
 	}
 
 	Event struct {
+		Type           string      `json:"type" yaml:"type"`
 		Reason         string      `json:"reason,omitempty" yaml:"reason,omitempty"`
 		Message        string      `json:"message,omitempty" yaml:"message,omitempty"`
 		Count          int32       `json:"count,omitempty" yaml:"count,omitempty"`
