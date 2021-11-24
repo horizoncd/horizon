@@ -205,3 +205,19 @@ func (a *API) ListByNameFuzzily(c *gin.Context) {
 		Items: respList,
 	})
 }
+
+func (a *API) Free(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	err = a.clusterCtl.FreeCluster(c, uint(clusterID))
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.Success(c)
+}

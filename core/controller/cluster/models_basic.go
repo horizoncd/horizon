@@ -54,6 +54,7 @@ type GetClusterResponse struct {
 	Template             *Template    `json:"template"`
 	Scope                *Scope       `json:"scope"`
 	LatestDeployedCommit string       `json:"latestDeployedCommit,omitempty"`
+	Status               string       `json:"status,omitempty"`
 	CreatedAt            time.Time    `json:"createdAt"`
 	UpdatedAt            time.Time    `json:"updatedAt"`
 }
@@ -158,6 +159,7 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 			Environment: er.EnvironmentName,
 			Region:      er.RegionName,
 		},
+		Status:    cluster.Status,
 		CreatedAt: cluster.CreatedAt,
 		UpdatedAt: cluster.UpdatedAt,
 	}

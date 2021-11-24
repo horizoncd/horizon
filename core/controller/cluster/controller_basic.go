@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
@@ -213,27 +214,13 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, errors.E(op, err)
 	}
 
-	// 9. create cluster in cd system
-	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
-	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:   er.EnvironmentName,
-		Cluster:       cluster.Name,
-		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
-		ValueFiles:    repoInfo.ValueFiles,
-		RegionEntity:  regionEntity,
-		// when create cluster, namespace can use this initial namespace
-		Namespace: fmt.Sprintf("%v-%v", er.EnvironmentName, application.GroupID),
-	}); err != nil {
-		return nil, errors.E(op, err)
-	}
-
-	// 10. create cluster in db
+	// 9. create cluster in db
 	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
-	// 11. get full path
+	// 10. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -243,7 +230,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	ret := ofClusterModel(application, cluster, er, fullPath,
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
-	// 12. post hook
+	// 11. post hook
 	c.postHook(ctx, hook.CreateCluster, ret)
 	return ret, nil
 }
@@ -396,6 +383,13 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		return errors.E(op, err)
 	}
 
+	// 0. set cluster status
+	cluster.Status = clustercommon.StatusDeleting
+	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
 		// should use a new context
@@ -444,6 +438,65 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 
 		// 5. post hook
 		c.postHook(ctx, hook.DeleteCluster, cluster.Name)
+	}()
+
+	return nil
+}
+
+// FreeCluster to set cluster free
+func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error) {
+	const op = "cluster controller: free cluster"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// get some relevant models
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	// 1. set cluster status
+	cluster.Status = clustercommon.StatusFreeing
+	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	// delete cluster asynchronously, if any error occurs, ignore and return
+	go func() {
+		// should use a new context
+		rid, err := requestid.FromContext(ctx)
+		if err != nil {
+			log.Errorf(ctx, "failed to get request id from context")
+		}
+		db, err := orm.FromContext(ctx)
+		if err != nil {
+			log.Errorf(ctx, "failed to get db from context")
+			return
+		}
+		ctx := log.WithContext(context.Background(), rid)
+		ctx = orm.NewContext(ctx, db)
+
+		// 2. delete cluster in cd system
+		if err := c.cd.DeleteCluster(ctx, &cd.DeleteClusterParams{
+			Environment: er.EnvironmentName,
+			Cluster:     cluster.Name,
+		}); err != nil {
+			log.Errorf(ctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
+			return
+		}
+
+		// 3. set cluster status
+		cluster.Status = clustercommon.StatusFreed
+		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+		if err != nil {
+			log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+			return
+		}
 	}()
 
 	return nil

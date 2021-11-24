@@ -76,6 +76,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/dashboards", _clusterIDParam),
 			HandlerFunc: api.GetDashBoard,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/clusters/:%v/free", _clusterIDParam),
+			HandlerFunc: api.Free,
 		},
 	}
 
