@@ -143,6 +143,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 		clusterInDB.GitBranch = cluster.GitBranch
 		clusterInDB.TemplateRelease = cluster.TemplateRelease
 		clusterInDB.UpdatedBy = cluster.UpdatedBy
+		clusterInDB.Status = cluster.Status
 
 		// 3. save application after updated
 		tx.Save(&clusterInDB)

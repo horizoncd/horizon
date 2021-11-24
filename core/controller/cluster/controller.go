@@ -50,6 +50,7 @@ type Controller interface {
 	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
+	FreeCluster(ctx context.Context, clusterID uint) (err error)
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,

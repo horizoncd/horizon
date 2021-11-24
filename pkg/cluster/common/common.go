@@ -9,3 +9,11 @@ const (
 	PipelinerunIDLabelKey = "cloudnative.music.netease.com/pipelinerun-id"
 	OperatorAnnotationKey = "cloudnative.music.netease.com/operator"
 )
+
+// status of cluster
+const (
+	StatusEmpty    = ""
+	StatusFreeing  = "Freeing"
+	StatusFreed    = "Freed"
+	StatusDeleting = "Deleting"
+)
