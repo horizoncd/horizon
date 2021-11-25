@@ -286,8 +286,8 @@ func Test(t *testing.T) {
 	applicationGitRepo.EXPECT().DeleteApplication(ctx, appName, uint(1)).Return(nil).AnyTimes()
 	applicationGitRepo.EXPECT().GetApplication(ctx, appName).Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
 
-	templateSchemaGetter := trschemamock.NewMockSchemaGetter(mockCtl)
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0").
+	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", nil).
 		Return(&templatesvc.Schemas{
 			Application: &templatesvc.Schema{
 				JSONSchema: applicationSchema,
