@@ -58,6 +58,13 @@ type DeployClusterParams struct {
 	Revision    string
 }
 
+type GetPodEventsParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Pod          string
+}
+
 type DeleteClusterParams struct {
 	Environment string
 	Cluster     string
@@ -103,6 +110,7 @@ type CD interface {
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
+	GetPodEvents(ctx context.Context, params *GetPodEventsParams) ([]Event, error)
 	Online(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 	Offline(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 }
@@ -323,6 +331,46 @@ func (c *cd) GetClusterState(ctx context.Context,
 	}
 
 	return clusterState, nil
+}
+
+func (c *cd) GetPodEvents(ctx context.Context,
+	params *GetPodEventsParams) (events []Event, err error) {
+	const op = "cd: get cluster pod events"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
+		common.ClusterLabelKey, params.Cluster))
+	pods, err := kube.GetPods(ctx, kubeClient, params.Namespace, labelSelector.String())
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	for _, pod := range pods {
+		if pod.Name == params.Pod {
+			k8sEvents, err := kube.GetPodEvents(ctx, kubeClient, params.Namespace, params.Pod)
+			if err != nil {
+				return nil, errors.E(op, err)
+			}
+
+			for _, event := range k8sEvents {
+				events = append(events, Event{
+					Type:           event.Type,
+					Reason:         event.Reason,
+					Message:        event.Message,
+					Count:          event.Count,
+					EventTimestamp: event.FirstTimestamp,
+				})
+			}
+			return events, nil
+		}
+	}
+
+	return nil, fmt.Errorf("pod does not exist")
 }
 
 func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace string,

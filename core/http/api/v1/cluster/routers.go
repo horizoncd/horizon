@@ -80,6 +80,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/free", _clusterIDParam),
 			HandlerFunc: api.Free,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/events", _clusterIDParam),
+			HandlerFunc: api.PodEvents,
 		},
 	}
 
