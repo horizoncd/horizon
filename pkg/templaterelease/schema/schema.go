@@ -67,20 +67,22 @@ func NewSchemaGetter(ctx context.Context, gitlabFty gitlabfty.Factory) (Getter, 
 }
 
 func (g *getter) GeneratorRenderParams(ctx context.Context, params map[string]string) (map[string]string, error) {
-	clusterIDStr, ok := params[ClusterIDKey]
-	if ok {
-		clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-		if err != nil {
-			return nil, err
+	if params != nil {
+		clusterIDStr, ok := params[ClusterIDKey]
+		if ok {
+			clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+			if err != nil {
+				return nil, err
+			}
+			tags, err := g.templateSchemaTagMGr.ListByClusterID(ctx, uint(clusterID))
+			if err != nil {
+				return nil, err
+			}
+			for _, tag := range tags {
+				params[tag.Key] = tag.Value
+			}
+			delete(params, ClusterIDKey)
 		}
-		tags, err := g.templateSchemaTagMGr.ListByClusterID(ctx, uint(clusterID))
-		if err != nil {
-			return nil, err
-		}
-		for _, tag := range tags {
-			params[tag.Key] = tag.Value
-		}
-		delete(params, ClusterIDKey)
 	}
 	return params, nil
 }
@@ -131,18 +133,16 @@ func (g *getter) GetTemplateSchema(ctx context.Context,
 	}
 
 	// 2. get template schema tags and do template
-	if len(params) != 0 {
-		params, err = g.GeneratorRenderParams(ctx, params)
-		if err != nil {
-			return nil, err
-		}
-		readerSchemas, err := RenderFiles(params, pipelineSchemaBytes, applicationSchemaBytes)
-		if err != nil {
-			return nil, err
-		}
-		pipelineSchemaBytes = readerSchemas[0]
-		applicationSchemaBytes = readerSchemas[1]
+	params, err = g.GeneratorRenderParams(ctx, params)
+	if err != nil {
+		return nil, err
 	}
+	readerSchemas, err := RenderFiles(params, pipelineSchemaBytes, applicationSchemaBytes)
+	if err != nil {
+		return nil, err
+	}
+	pipelineSchemaBytes = readerSchemas[0]
+	applicationSchemaBytes = readerSchemas[1]
 
 	// 2. unmarshal concurrently
 	var pipelineSchema, applicationSchema, pipelineUISchema, applicationUISchema map[string]interface{}
