@@ -22,6 +22,8 @@ import (
 	"k8s.io/kubectl/pkg/cmd/exec"
 )
 
+const DefaultEventsLimit = 100
+
 // GetEvents 返回一个map。key是Pod的基本信息，name-uid-namespace
 func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
 	namespace string) (_ map[string][]*v1.Event, err error) {
@@ -30,6 +32,7 @@ func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
 
 	eventsMapper := make(map[string][]*v1.Event)
 	events, err := kubeClientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
+		Limit: DefaultEventsLimit,
 		FieldSelector: fields.SelectorFromSet(map[string]string{
 			"involvedObject.kind": "Pod",
 		}).String(),
