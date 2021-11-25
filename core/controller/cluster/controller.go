@@ -51,6 +51,7 @@ type Controller interface {
 	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
 	FreeCluster(ctx context.Context, clusterID uint) (err error)
+	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,

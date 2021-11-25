@@ -175,8 +175,7 @@ func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun
 }
 
 func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string,
-	tailLines int) (
-	<-chan string, error) {
+	tailLines int) (<-chan string, error) {
 	const op = "cluster controller: get cluster container log"
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
@@ -207,4 +206,40 @@ func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podNam
 		TailLines:   tailLines,
 	}
 	return c.cd.GetContainerLog(ctx, &param)
+}
+
+func (c *controller) GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error) {
+	const op = "cluster controller: get pod events"
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	param := cd.GetPodEventsParams{
+		Namespace:    envValue.Namespace,
+		Cluster:      cluster.Name,
+		Pod:          podName,
+		RegionEntity: regionEntity,
+	}
+	return c.cd.GetPodEvents(ctx, &param)
 }
