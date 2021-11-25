@@ -9,9 +9,9 @@ import (
 
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
-	tsmock "g.hz.netease.com/horizon/mock/pkg/templateschema/manager"
+	tsmock "g.hz.netease.com/horizon/mock/pkg/templateschematag/manager"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	tsmodels "g.hz.netease.com/horizon/pkg/templateschema/models"
+	tsmodels "g.hz.netease.com/horizon/pkg/templateschematag/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -266,7 +266,7 @@ func TestHaveTag(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	gitlabLib := gitlablibmock.NewMockInterface(mockCtl)
 	templateReleaseMgr := trmock.NewMockManager(mockCtl)
-	templateSchemaMgr := tsmock.NewMockManager(mockCtl)
+	templateSchemaTagMgr := tsmock.NewMockManager(mockCtl)
 
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
 		releaseName).Return(&trmodels.TemplateRelease{
@@ -290,7 +290,7 @@ func TestHaveTag(t *testing.T) {
 		UpdatedBy: 0,
 	})
 
-	templateSchemaMgr.EXPECT().ListByClusterID(ctx, uint(1)).Return(clusterTemplateTags, nil)
+	templateSchemaTagMgr.EXPECT().ListByClusterID(ctx, uint(1)).Return(clusterTemplateTags, nil)
 
 	templateJSONSchema := `{
     "type":"object",
@@ -481,9 +481,9 @@ func TestHaveTag(t *testing.T) {
 		[]byte(unTemplateJSONSchema), nil)
 
 	g := &getter{
-		templateReleaseMgr: templateReleaseMgr,
-		gitlabLib:          gitlabLib,
-		templateSchemaMGr:  templateSchemaMgr,
+		templateReleaseMgr:   templateReleaseMgr,
+		gitlabLib:            gitlabLib,
+		templateSchemaTagMGr: templateSchemaTagMgr,
 	}
 
 	// release exists

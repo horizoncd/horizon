@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/templateschema"
+	"g.hz.netease.com/horizon/core/controller/templateschematag"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
 )
@@ -15,10 +15,10 @@ const (
 )
 
 type API struct {
-	templateSchemaTagCtl templateschema.Controller
+	templateSchemaTagCtl templateschematag.Controller
 }
 
-func NewAPI(clusterTagCtl templateschema.Controller) *API {
+func NewAPI(clusterTagCtl templateschematag.Controller) *API {
 	return &API{
 		templateSchemaTagCtl: clusterTagCtl,
 	}
@@ -48,7 +48,7 @@ func (a *API) Update(c *gin.Context) {
 		return
 	}
 
-	var request *templateschema.UpdateRequest
+	var request *templateschematag.UpdateRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))

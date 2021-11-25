@@ -193,7 +193,6 @@ const (
 
 /* sql about cluster template tag */
 const (
-	// ClusterTagListByClusterID ...
 	ClusterTemplateSchemaTagListByClusterID = "select * from cluster_template_schema_tag where cluster_id = ?" +
 		"order by id"
 	ClusterTemplateSchemaTagDeleteAllByClusterID     = "delete from cluster_template_schema_tag where cluster_id = ?"

@@ -1,4 +1,4 @@
-package templateschema
+package templateschematag
 
 import (
 	"os"
@@ -14,8 +14,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
-	clustertagmanager "g.hz.netease.com/horizon/pkg/templateschema/manager"
-	templateschemamodels "g.hz.netease.com/horizon/pkg/templateschema/models"
+	clustertagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
+	templateschemamodels "g.hz.netease.com/horizon/pkg/templateschematag/models"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 )

@@ -11,7 +11,7 @@ import (
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
-	templateschemamanager "g.hz.netease.com/horizon/pkg/templateschema/manager"
+	templateschemamanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/Masterminds/sprig"
 )
@@ -49,9 +49,9 @@ const (
 )
 
 type getter struct {
-	gitlabLib          gitlablib.Interface
-	templateReleaseMgr manager.Manager
-	templateSchemaMGr  templateschemamanager.Manager
+	gitlabLib            gitlablib.Interface
+	templateReleaseMgr   manager.Manager
+	templateSchemaTagMGr templateschemamanager.Manager
 }
 
 func NewSchemaGetter(ctx context.Context, gitlabFty gitlabfty.Factory) (Getter, error) {
@@ -60,9 +60,9 @@ func NewSchemaGetter(ctx context.Context, gitlabFty gitlabfty.Factory) (Getter, 
 		return nil, err
 	}
 	return &getter{
-		gitlabLib:          gitlabLib,
-		templateReleaseMgr: manager.Mgr,
-		templateSchemaMGr:  templateschemamanager.Mgr,
+		gitlabLib:            gitlabLib,
+		templateReleaseMgr:   manager.Mgr,
+		templateSchemaTagMGr: templateschemamanager.Mgr,
 	}, nil
 }
 
@@ -73,7 +73,7 @@ func (g *getter) GeneratorRenderParams(ctx context.Context, params map[string]st
 		if err != nil {
 			return nil, err
 		}
-		tags, err := g.templateSchemaMGr.ListByClusterID(ctx, uint(clusterID))
+		tags, err := g.templateSchemaTagMGr.ListByClusterID(ctx, uint(clusterID))
 		if err != nil {
 			return nil, err
 		}

@@ -5,7 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
-	"g.hz.netease.com/horizon/pkg/templateschema/models"
+	"g.hz.netease.com/horizon/pkg/templateschematag/models"
 	"gorm.io/gorm/clause"
 )
 

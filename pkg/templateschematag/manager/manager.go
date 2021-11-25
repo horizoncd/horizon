@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"g.hz.netease.com/horizon/pkg/templateschema/dao"
-	"g.hz.netease.com/horizon/pkg/templateschema/models"
+	"g.hz.netease.com/horizon/pkg/templateschematag/dao"
+	"g.hz.netease.com/horizon/pkg/templateschematag/models"
 )
 
 var (

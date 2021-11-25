@@ -95,13 +95,15 @@ paths:
     - name: clusterID
       in: query
       required: false
+      description: where we edit cluster config, use it when update cluster config
     - name: env
       in: query
       required: false
+      description: todo
     - name: type
       in: query
       required: false
-      description: todo, add
+      description: todo
     get:
       tags:
         - template

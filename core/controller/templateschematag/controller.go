@@ -1,4 +1,4 @@
-package templateschema
+package templateschematag
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/templateschema/manager"
+	"g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -30,7 +30,7 @@ func NewController() Controller {
 }
 
 func (c *controller) List(ctx context.Context, clusterID uint) (_ *ListResponse, err error) {
-	const op = "cluster teplate scheme tag controller: list"
+	const op = "cluster template scheme tag controller: list"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	clusterTags, err := c.clusterSchemaTagMgr.ListByClusterID(ctx, clusterID)
@@ -38,7 +38,7 @@ func (c *controller) List(ctx context.Context, clusterID uint) (_ *ListResponse,
 		return nil, errors.E(op, err)
 	}
 
-	return ofClusterTags(clusterTags), nil
+	return ofClusterTemplateSchemaTags(clusterTags), nil
 }
 
 func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateRequest) (err error) {
@@ -51,7 +51,7 @@ func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateReques
 			errors.ErrorCode(common.InternalError), "no user in context")
 	}
 
-	clusterTemplateSchemaTags := r.toClusterTags(clusterID, currentUser)
+	clusterTemplateSchemaTags := r.toClusterTemplateSchemaTags(clusterID, currentUser)
 
 	if err := manager.ValidateUpsert(clusterTemplateSchemaTags); err != nil {
 		return errors.E(op, http.StatusBadRequest,

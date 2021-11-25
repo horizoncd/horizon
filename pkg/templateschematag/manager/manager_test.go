@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/pkg/templateschema/models"
+	"g.hz.netease.com/horizon/pkg/templateschematag/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
