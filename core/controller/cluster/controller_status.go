@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
+	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -29,7 +31,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	// get latest builddeploy action pipelinerun
-	pr, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
+	pipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -46,36 +48,19 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 
 	resp := &GetClusterStatusResponse{}
 
-	if pr == nil {
+	if pipelinerun == nil {
 		// if latest builddeploy pr is not exists, runningTask is noneRunningTask
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}
 	} else {
-		var latestPr *v1beta1.PipelineRun
-		if pr.PrObject == "" {
-			tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
-			if err != nil {
-				return nil, errors.E(op, err)
-			}
-			latestPr, err = tektonClient.GetPipelineRunByID(ctx, cluster.Name, cluster.ID, pr.ID)
-			if err != nil {
-				return nil, errors.E(op, err)
-			}
-		} else {
-			tektonCollector, err := c.tektonFty.GetTektonCollector(er.EnvironmentName)
-			if err != nil {
-				return nil, errors.E(op, err)
-			}
-			obj, err := tektonCollector.GetPipelineRunObject(ctx, pr.PrObject)
-			if err != nil {
-				return nil, errors.E(op, err)
-			}
-			latestPr = obj.PipelineRun
+		latestPipelineRun, err := c.getLatestPipelineRunObject(ctx, cluster, pipelinerun, er)
+		if err != nil {
+			return nil, errors.E(op, err)
 		}
 
-		resp.RunningTask = c.getRunningTask(ctx, latestPr)
-		resp.RunningTask.PipelinerunID = pr.ID
+		resp.RunningTask = c.getRunningTask(ctx, latestPipelineRun)
+		resp.RunningTask.PipelinerunID = pipelinerun.ID
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
@@ -126,6 +111,32 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	}
 
 	return resp, nil
+}
+
+func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *clustermodels.Cluster,
+	pipelinerun *prmodels.Pipelinerun, er *envmodels.EnvironmentRegion) (*v1beta1.PipelineRun, error) {
+	var latestPr *v1beta1.PipelineRun
+	if pipelinerun.PrObject == "" {
+		tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
+		if err != nil {
+			return nil, err
+		}
+		latestPr, err = tektonClient.GetPipelineRunByID(ctx, cluster.Name, cluster.ID, pipelinerun.ID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		tektonCollector, err := c.tektonFty.GetTektonCollector(er.EnvironmentName)
+		if err != nil {
+			return nil, err
+		}
+		obj, err := tektonCollector.GetPipelineRunObject(ctx, pipelinerun.PrObject)
+		if err != nil {
+			return nil, err
+		}
+		latestPr = obj.PipelineRun
+	}
+	return latestPr, nil
 }
 
 // getRunningTask 获取pipelineRun当前最近一次处于执行中的Task。如果最近一次执行的pipelineRun是成功状态，
