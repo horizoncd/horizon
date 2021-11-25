@@ -66,6 +66,27 @@ func (a *API) ClusterStatus(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
+func (a *API) PodEvents(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	podName := c.Query(_podName)
+	if podName == "" {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, "podName is empty")
+		return
+	}
+
+	resp, err := a.clusterCtl.GetPodEvents(c, uint(clusterID), podName)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
 func (a *API) InternalDeploy(c *gin.Context) {
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
