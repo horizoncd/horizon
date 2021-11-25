@@ -33,27 +33,52 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	// if latest builddeploy pr is not exists
-	if pr == nil {
-		return &GetClusterStatusResponse{
-			RunningTask: &RunningTask{
-				Task: "none",
-			},
-			ClusterStatus: map[string]string{
-				"status": _notFound,
-			},
-		}, nil
-	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+
+	resp := &GetClusterStatusResponse{}
+
+	if pr == nil {
+		// if latest builddeploy pr is not exists, runningTask is noneRunningTask
+		resp.RunningTask = &RunningTask{
+			Task: _taskNone,
+		}
+	} else {
+		var latestPr *v1beta1.PipelineRun
+		if pr.PrObject == "" {
+			tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
+			if err != nil {
+				return nil, errors.E(op, err)
+			}
+			latestPr, err = tektonClient.GetPipelineRunByID(ctx, cluster.Name, cluster.ID, pr.ID)
+			if err != nil {
+				return nil, errors.E(op, err)
+			}
+		} else {
+			tektonCollector, err := c.tektonFty.GetTektonCollector(er.EnvironmentName)
+			if err != nil {
+				return nil, errors.E(op, err)
+			}
+			obj, err := tektonCollector.GetPipelineRunObject(ctx, pr.PrObject)
+			if err != nil {
+				return nil, errors.E(op, err)
+			}
+			latestPr = obj.PipelineRun
+		}
+
+		resp.RunningTask = c.getRunningTask(ctx, latestPr)
+		resp.RunningTask.PipelinerunID = pr.ID
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -62,32 +87,6 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-
-	var latestPr *v1beta1.PipelineRun
-	if pr.PrObject == "" {
-		tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
-		if err != nil {
-			return nil, errors.E(op, err)
-		}
-		latestPr, err = tektonClient.GetPipelineRunByID(ctx, cluster.Name, cluster.ID, pr.ID)
-		if err != nil {
-			return nil, errors.E(op, err)
-		}
-	} else {
-		tektonCollector, err := c.tektonFty.GetTektonCollector(er.EnvironmentName)
-		if err != nil {
-			return nil, errors.E(op, err)
-		}
-		obj, err := tektonCollector.GetPipelineRunObject(ctx, pr.PrObject)
-		if err != nil {
-			return nil, errors.E(op, err)
-		}
-		latestPr = obj.PipelineRun
-	}
-
-	resp := &GetClusterStatusResponse{}
-	resp.RunningTask = c.getRunningTask(ctx, latestPr)
-	resp.RunningTask.PipelinerunID = pr.ID
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
