@@ -89,7 +89,7 @@ func TestList(t *testing.T) {
 
 func TestGetSchema(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	templateSchemaGetter := trschemamock.NewMockSchemaGetter(mockCtl)
+	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	schema := map[string]interface{}{
 		"type": "object",
 	}
@@ -103,13 +103,13 @@ func TestGetSchema(t *testing.T) {
 			UISchema:   schema,
 		},
 	}
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, templateName, releaseName).Return(schemas, nil)
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, templateName, releaseName, nil).Return(schemas, nil)
 
 	ctl := &controller{
 		templateSchemaGetter: templateSchemaGetter,
 	}
 
-	ss, err := ctl.GetTemplateSchema(ctx, templateName, releaseName)
+	ss, err := ctl.GetTemplateSchema(ctx, templateName, releaseName, nil)
 	assert.Nil(t, err)
 	if !reflect.DeepEqual(ss, &Schemas{
 		Application: &Schema{

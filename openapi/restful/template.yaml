@@ -92,6 +92,16 @@ paths:
       in: path
       description: release name of template
       required: true
+    - name: clusterID
+      in: query
+      required: false
+    - name: env
+      in: query
+      required: false
+    - name: type
+      in: query
+      required: false
+      description: todo, add
     get:
       tags:
         - template

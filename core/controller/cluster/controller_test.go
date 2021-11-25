@@ -18,6 +18,7 @@ import (
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
@@ -44,6 +45,7 @@ import (
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"github.com/golang/mock/gomock"
@@ -449,8 +451,11 @@ func Test(t *testing.T) {
 	registryFty := registryftymock.NewMockFactory(mockCtl)
 	commitGetter := commitmock.NewMockGitGetter(mockCtl)
 
-	templateSchemaGetter := trschemamock.NewMockSchemaGetter(mockCtl)
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0").
+	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
+	expectparams := make(map[string]string)
+	expectparams[trschema.ClusterIDKey] = "1"
+
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", nil).
 		Return(&templatesvc.Schemas{
 			Application: &templatesvc.Schema{
 				JSONSchema: applicationSchema,
@@ -459,7 +464,7 @@ func Test(t *testing.T) {
 				JSONSchema: pipelineSchema,
 			},
 		}, nil).AnyTimes()
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.1").
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.1", expectparams).
 		Return(&templatesvc.Schemas{
 			Application: &templatesvc.Schema{
 				JSONSchema: applicationSchema,

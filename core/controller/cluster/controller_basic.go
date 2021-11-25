@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -17,6 +18,7 @@ import (
 	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -162,7 +164,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		r.TemplateInput.Pipeline = pipelineJSONBlob
 	} else {
 		if err := c.validateTemplateInput(ctx, application.Template,
-			application.TemplateRelease, r.TemplateInput); err != nil {
+			application.TemplateRelease, r.TemplateInput, nil); err != nil {
 			return nil, errors.E(op, http.StatusBadRequest,
 				errors.ErrorCode(common.InvalidRequestBody), err)
 		}
@@ -288,8 +290,12 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
+
+		renderValues := make(map[string]string)
+		clusterIDStr := strconv.FormatUint(uint64(clusterID), 10)
+		renderValues[templateschema.ClusterIDKey] = clusterIDStr
 		if err := c.validateTemplateInput(ctx,
-			cluster.Template, templateRelease, r.TemplateInput); err != nil {
+			cluster.Template, templateRelease, r.TemplateInput, renderValues); err != nil {
 			return nil, errors.E(op, http.StatusBadRequest,
 				errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
 		}
@@ -468,8 +474,8 @@ func (c *controller) validateCreate(applicationName string, r *CreateClusterRequ
 
 // validateTemplateInput validate templateInput is valid for template schema
 func (c *controller) validateTemplateInput(ctx context.Context,
-	template, release string, templateInput *TemplateInput) error {
-	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release)
+	template, release string, templateInput *TemplateInput, templateSchemaRenderVal map[string]string) error {
+	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release, templateSchemaRenderVal)
 	if err != nil {
 		return err
 	}
