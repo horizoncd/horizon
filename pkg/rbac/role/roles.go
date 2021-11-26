@@ -65,11 +65,6 @@ func NewFileRoleFrom2(ctx context.Context, config roleconfig.Config) (Service, e
 		log.Error(ctx, "role number in RolePriorityRank not equal with Roles")
 		return nil, ErrorLoadCheckError
 	}
-	// the most powerful role must be named owner
-	if fRole.RolePriorityRankDesc[0] != Owner {
-		log.Errorf(ctx, "the first(most powerful) role must be %s", Owner)
-		return nil, ErrorLoadCheckError
-	}
 
 	roleRankMap := make(map[string]int)
 	for i, roleStr := range fRole.RolePriorityRankDesc {
