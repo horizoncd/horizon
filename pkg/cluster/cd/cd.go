@@ -358,12 +358,16 @@ func (c *cd) GetPodEvents(ctx context.Context,
 			}
 
 			for _, event := range k8sEvents {
+				eventTimeStamp := metav1.Time{Time: event.EventTime.Time}
+				if eventTimeStamp.IsZero() {
+					eventTimeStamp = event.FirstTimestamp
+				}
 				events = append(events, Event{
 					Type:           event.Type,
 					Reason:         event.Reason,
 					Message:        event.Message,
 					Count:          event.Count,
-					EventTimestamp: event.FirstTimestamp,
+					EventTimestamp: eventTimeStamp,
 				})
 			}
 			return events, nil
@@ -495,13 +499,17 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 	clusterPod.Status.ContainerStatuses = containerStatuses
 
 	for i := range events {
+		eventTimeStamp := metav1.Time{Time: events[i].EventTime.Time}
+		if eventTimeStamp.IsZero() {
+			eventTimeStamp = events[i].FirstTimestamp
+		}
 		clusterPod.Status.Events = append(clusterPod.Status.Events,
 			Event{
 				Type:           events[i].Type,
 				Reason:         events[i].Reason,
 				Message:        events[i].Message,
 				Count:          events[i].Count,
-				EventTimestamp: events[i].FirstTimestamp,
+				EventTimestamp: eventTimeStamp,
 			})
 	}
 	clusterInfo.Versions[podTemplateHash].Pods[pod.Name] = clusterPod
