@@ -280,7 +280,6 @@ CREATE TABLE `cluster_template_schema_tag`
     `created_by` bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     `updated_by` bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
-    KEY          `idx_cluster_id` (`cluster_id`),
     KEY          `idx_key` (`tag_key`),
     UNIQUE KEY `idx_cluster_id_key` (`cluster_id`, `tag_key`)
 ) ENGINE = InnoDB
