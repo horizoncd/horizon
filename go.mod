@@ -3,6 +3,7 @@ module g.hz.netease.com/horizon
 go 1.15
 
 require (
+	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/alicebob/miniredis/v2 v2.15.1
 	github.com/argoproj/argo-cd v1.7.8
 	github.com/argoproj/argo-rollouts v0.9.2

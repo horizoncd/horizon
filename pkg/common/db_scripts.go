@@ -190,3 +190,12 @@ const (
 	ClusterTagDeleteAllByClusterID     = "delete from cluster_tag where cluster_id = ?"
 	ClusterTagDeleteByClusterIDAndKeys = "delete from cluster_tag where cluster_id = ? and `tag_key` not in ?"
 )
+
+/* sql about cluster template tag */
+const (
+	ClusterTemplateSchemaTagListByClusterID = "select * from cluster_template_schema_tag where cluster_id = ? " +
+		"order by id"
+	ClusterTemplateSchemaTagDeleteAllByClusterID     = "delete from cluster_template_schema_tag where cluster_id = ?"
+	ClusterTemplateSchemaTagDeleteByClusterIDAndKeys = "delete from cluster_template_schema_tag where cluster_id = ?" +
+		" and `tag_key` not in ?"
+)

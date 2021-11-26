@@ -27,7 +27,7 @@ const DefaultEventsLimit = 100
 // GetEvents 返回一个map。key是Pod的基本信息，name-uid-namespace
 func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
 	namespace string) (_ map[string][]*v1.Event, err error) {
-	const op = "kube: get pod events from k8s "
+	const op = "kube: get multi pod events from k8s "
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	eventsMapper := make(map[string][]*v1.Event)
@@ -49,6 +49,27 @@ func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
 	}
 
 	return eventsMapper, nil
+}
+
+// GetPodEvents returns event list of a pod, notice that it will return events from oldest to latest by
+// DefaultEventsLimit
+func GetPodEvents(ctx context.Context, kubeClientset kubernetes.Interface, namespace, pod string) (_ []v1.Event,
+	err error) {
+	const op = "kube: get single pod events from k8s "
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	events, err := kubeClientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
+		Limit: DefaultEventsLimit,
+		FieldSelector: fields.SelectorFromSet(map[string]string{
+			"involvedObject.kind": "Pod",
+			"involvedObject.name": pod,
+		}).String(),
+	})
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return events.Items, nil
 }
 
 func GetPods(ctx context.Context, kubeClientset kubernetes.Interface,

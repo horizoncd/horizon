@@ -942,3 +942,42 @@ paths:
                       }
                     }
                   }
+  /apis/core/v1/clusters/{clusterID}/events?podName={podName}:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+      - name: podName
+        in: query
+        description: name of pod
+        required: true
+    get:
+      tags:
+        - cluster
+      operationId: getPodEvents
+      summary: get events of pod
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data": [
+                          {
+                              "eventTimestamp": null,
+                              "message": "Successfully assigned test-1/sph-xxxx-78dd96647c-szj2g to k8s1.mock.org",
+                              "reason": "Scheduled",
+                              "type": "Normal"
+                          },
+                          {
+                              "count": 1,
+                              "eventTimestamp": "2021-11-24T12:54:10Z",
+                              "message": "Started container sph-xxxx",
+                              "reason": "Started",
+                              "type": "Normal"
+                          }
+                      ]
+                  }

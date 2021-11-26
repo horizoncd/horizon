@@ -65,11 +65,6 @@ func NewFileRoleFrom2(ctx context.Context, config roleconfig.Config) (Service, e
 		log.Error(ctx, "role number in RolePriorityRank not equal with Roles")
 		return nil, ErrorLoadCheckError
 	}
-	// the most powerful role must be named owner
-	if fRole.RolePriorityRankDesc[0] != Owner {
-		log.Errorf(ctx, "the first(most powerful) role must be %s", Owner)
-		return nil, ErrorLoadCheckError
-	}
 
 	roleRankMap := make(map[string]int)
 	for i, roleStr := range fRole.RolePriorityRankDesc {
@@ -114,7 +109,15 @@ func NewFileRole(ctx context.Context, reader io.Reader) (Service, error) {
 }
 
 func (fRole *fileRoleService) ListRole(ctx context.Context) ([]types.Role, error) {
-	return fRole.Roles, nil
+	var roles []types.Role
+	for _, roleName := range fRole.RolePriorityRankDesc {
+		roleRank, ok := fRole.roleRankMap[roleName]
+		if !ok {
+			log.Errorf(ctx, "role %s cannot found", roleName)
+		}
+		roles = append(roles, roleRank.role)
+	}
+	return roles, nil
 }
 
 func (fRole *fileRoleService) GetRole(ctx context.Context, roleName string) (*types.Role, error) {

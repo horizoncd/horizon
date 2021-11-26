@@ -15,7 +15,7 @@ type Controller interface {
 	// ListTemplateRelease list all releases of the specified template
 	ListTemplateRelease(ctx context.Context, templateName string) (Releases, error)
 	// GetTemplateSchema get schema for a template release
-	GetTemplateSchema(ctx context.Context, templateName, releaseName string) (*Schemas, error)
+	GetTemplateSchema(ctx context.Context, templateName, releaseName string, params map[string]string) (*Schemas, error)
 }
 
 type controller struct {
@@ -57,11 +57,12 @@ func (c *controller) ListTemplateRelease(ctx context.Context, templateName strin
 	return toReleases(templateReleaseModels), nil
 }
 
-func (c *controller) GetTemplateSchema(ctx context.Context, templateName, releaseName string) (_ *Schemas, err error) {
+func (c *controller) GetTemplateSchema(ctx context.Context, templateName, releaseName string,
+	param map[string]string) (_ *Schemas, err error) {
 	const op = "template controller: getTemplateSchema"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	schemas, err := c.templateSchemaGetter.GetTemplateSchema(ctx, templateName, releaseName)
+	schemas, err := c.templateSchemaGetter.GetTemplateSchema(ctx, templateName, releaseName, param)
 	if err != nil {
 		return nil, err
 	}

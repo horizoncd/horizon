@@ -133,6 +133,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 		return nil, errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), "templateInput cannot be empty")
 	}
+
 	if err := c.validateTemplateInput(ctx, request.Template.Name,
 		request.Template.Release, request.TemplateInput); err != nil {
 		return nil, errors.E(op, http.StatusBadRequest,
@@ -339,7 +340,7 @@ func validateGit(b Base) error {
 // validateTemplateInput validate templateInput is valid for template schema
 func (c *controller) validateTemplateInput(ctx context.Context,
 	template, release string, templateInput *TemplateInput) error {
-	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release)
+	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release, nil)
 	if err != nil {
 		return err
 	}
