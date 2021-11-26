@@ -45,7 +45,15 @@ func (a *API) GetTemplateSchema(c *gin.Context) {
 	t := c.Param(_templateParam)
 	r := c.Param(_releaseParam)
 	// get template schema by templateName and releaseName
-	schema, err := a.templateCtl.GetTemplateSchema(c, t, r)
+	params := make(map[string]string)
+
+	for key, values := range c.Request.URL.Query() {
+		for _, value := range values {
+			params[key] = value
+		}
+	}
+
+	schema, err := a.templateCtl.GetTemplateSchema(c, t, r, params)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return

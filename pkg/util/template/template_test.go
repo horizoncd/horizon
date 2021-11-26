@@ -1,32 +1,16 @@
-package schema
+package template
 
 import (
-	"context"
-	"encoding/json"
-	"net/http"
+	"os"
 	"testing"
-	"time"
+	"text/template"
 
-	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
-	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
-	tsmock "g.hz.netease.com/horizon/mock/pkg/templateschematag/manager"
-	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	tsmodels "g.hz.netease.com/horizon/pkg/templateschematag/models"
-	"g.hz.netease.com/horizon/pkg/util/errors"
-	"github.com/golang/mock/gomock"
+	"github.com/Masterminds/sprig"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
-var (
-	ctx                   = context.Background()
-	templateName          = "javaapp"
-	releaseName           = "v1.0.0"
-	templateGitlabProject = "helm-template/javaapp"
-)
-
-func TestFunc(t *testing.T) {
-	file := `
+func TestTextTemplateFromTextInCode(t *testing.T) {
+	textNotTemplate := `
 {
     "type":"object",
     "properties":{
@@ -43,7 +27,7 @@ func TestFunc(t *testing.T) {
                             "title":"副本数",
                             "default": 1,
                             "minimum":0,
-                            "maximum":{{ .maxReplicas | default 30}}
+                            "maximum":50,
                         },
                         "resource":{
                             "type":"string",
@@ -73,6 +57,12 @@ func TestFunc(t *testing.T) {
                                         "large"
                                     ],
                                     "title":"large(8C16G)"
+                                },
+                                {
+                                    "enum":[
+                                        "x-large"
+                                    ],
+                                    "title":"x-large(16C32G)"
                                 }
                             ]
                         }
@@ -204,95 +194,15 @@ func TestFunc(t *testing.T) {
     }
 }
 `
-	params := make(map[string]string)
-	params["maxReplicas"] = "122"
-	files, err := RenderFiles(params, []byte(file))
+	template1 := template.Must(template.New("template1.text").Funcs(sprig.TxtFuncMap()).Parse(textNotTemplate))
+
+	vals := make(map[string]string)
+	vals["TomAddInt"] = "100"
+	err := template1.ExecuteTemplate(os.Stdout, "template1.text", vals)
 	assert.Nil(t, err)
-	t.Logf("%s", string(files[0]))
-}
 
-func TestNoTag(t *testing.T) {
-	mockCtl := gomock.NewController(t)
-	gitlabLib := gitlablibmock.NewMockInterface(mockCtl)
-	templateReleaseMgr := trmock.NewMockManager(mockCtl)
-
-	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
-		releaseName).Return(&trmodels.TemplateRelease{
-		Model: gorm.Model{
-			ID: 1,
-		},
-		TemplateName:  templateName,
-		Name:          releaseName,
-		GitlabProject: templateGitlabProject,
-	}, nil)
-
-	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
-		"release-not-exists").Return(nil, errors.E("", http.StatusNotFound))
-
-	jsonSchema := `{"type": "object"}`
-	var jsonSchemaMap map[string]interface{}
-	_ = json.Unmarshal([]byte(jsonSchema), &jsonSchemaMap)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _pipelineSchemaPath).Return(
-		[]byte(jsonSchema), nil)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _applicationSchemaPath).Return(
-		[]byte(jsonSchema), nil)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _pipelineUISchemaPath).Return(
-		[]byte(jsonSchema), nil)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _applicationUISchemaPath).Return(
-		[]byte(jsonSchema), nil)
-
-	g := &getter{
-		templateReleaseMgr: templateReleaseMgr,
-		gitlabLib:          gitlabLib,
-	}
-
-	// release exists
-	schema, err := g.GetTemplateSchema(ctx, templateName, releaseName, nil)
-	assert.Nil(t, err)
-	assert.NotNil(t, schema)
-	assert.Equal(t, jsonSchemaMap, schema.Application.JSONSchema)
-	assert.Equal(t, jsonSchemaMap, schema.Application.UISchema)
-	assert.Equal(t, jsonSchemaMap, schema.Pipeline.JSONSchema)
-	assert.Equal(t, jsonSchemaMap, schema.Pipeline.UISchema)
-
-	// release not exists
-	schema, err = g.GetTemplateSchema(ctx, templateName, "release-not-exists", nil)
-	assert.Nil(t, schema)
-	assert.NotNil(t, err)
-	assert.Equal(t, http.StatusNotFound, errors.Status(err))
-}
-
-func TestHaveTag(t *testing.T) {
-	mockCtl := gomock.NewController(t)
-	gitlabLib := gitlablibmock.NewMockInterface(mockCtl)
-	templateReleaseMgr := trmock.NewMockManager(mockCtl)
-	templateSchemaTagMgr := tsmock.NewMockManager(mockCtl)
-
-	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
-		releaseName).Return(&trmodels.TemplateRelease{
-		Model: gorm.Model{
-			ID: 1,
-		},
-		TemplateName:  templateName,
-		Name:          releaseName,
-		GitlabProject: templateGitlabProject,
-	}, nil)
-
-	clusterTemplateTags := make([]*tsmodels.ClusterTemplateSchemaTag, 0)
-	clusterTemplateTags = append(clusterTemplateTags, &tsmodels.ClusterTemplateSchemaTag{
-		ID:        0,
-		ClusterID: 0,
-		Key:       "minReplica",
-		Value:     "3",
-		CreatedAt: time.Time{},
-		UpdatedAt: time.Time{},
-		CreatedBy: 0,
-		UpdatedBy: 0,
-	})
-
-	templateSchemaTagMgr.EXPECT().ListByClusterID(ctx, uint(1)).Return(clusterTemplateTags, nil)
-
-	templateJSONSchema := `{
+	textTemplate := `
+{
     "type":"object",
     "properties":{
         "app":{
@@ -307,8 +217,8 @@ func TestHaveTag(t *testing.T) {
                             "type":"integer",
                             "title":"副本数",
                             "default": 1,
-                            "minimum": {{ .minReplica | default 0 }},
-                            "maximum": {{ .maxReplicas | default 30 }}
+                            "minimum":0,
+                            "maximum":{{ add .TomAddInt 2 }}
                         },
                         "resource":{
                             "type":"string",
@@ -338,6 +248,12 @@ func TestHaveTag(t *testing.T) {
                                         "large"
                                     ],
                                     "title":"large(8C16G)"
+                                },
+                                {
+                                    "enum":[
+                                        "x-large"
+                                    ],
+                                    "title":"x-large(16C32G)"
                                 }
                             ]
                         }
@@ -467,32 +383,9 @@ func TestHaveTag(t *testing.T) {
             }
         }
     }
-}`
-	unTemplateJSONSchema := `{"type": "object"}`
-	var jsonSchemaMap map[string]interface{}
-	_ = json.Unmarshal([]byte(templateJSONSchema), &jsonSchemaMap)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _pipelineSchemaPath).Return(
-		[]byte(templateJSONSchema), nil)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _applicationSchemaPath).Return(
-		[]byte(templateJSONSchema), nil)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _pipelineUISchemaPath).Return(
-		[]byte(unTemplateJSONSchema), nil)
-	gitlabLib.EXPECT().GetFile(ctx, templateGitlabProject, releaseName, _applicationUISchemaPath).Return(
-		[]byte(unTemplateJSONSchema), nil)
-
-	g := &getter{
-		templateReleaseMgr:   templateReleaseMgr,
-		gitlabLib:            gitlabLib,
-		templateSchemaTagMGr: templateSchemaTagMgr,
-	}
-
-	// release exists
-	params := make(map[string]string)
-	params["maxReplicas"] = "234"
-	params[ClusterIDKey] = "1"
-	schema, err := g.GetTemplateSchema(ctx, templateName, releaseName, params)
+}
+`
+	template2 := template.Must(template.New("template2.text").Funcs(sprig.TxtFuncMap()).Parse(textTemplate))
+	err = template2.ExecuteTemplate(os.Stdout, "template2.text", vals)
 	assert.Nil(t, err)
-	assert.NotNil(t, schema)
-	bytes, _ := json.MarshalIndent(schema, "", " ")
-	t.Logf("%+s", string(bytes))
 }

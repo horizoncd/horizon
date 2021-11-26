@@ -18,6 +18,7 @@ import (
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
+	templateschematagctl "g.hz.netease.com/horizon/core/controller/templateschematag"
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
@@ -29,6 +30,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
+	templateshematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateshematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
@@ -216,27 +218,29 @@ func Run(flags *Flags) {
 			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, memHook, config.GrafanaMapper)
 		prCtl = prctl.NewController(tektonFty, gitGetter, clusterGitRepo)
 
-		templateCtl   = templatectl.NewController(templateSchemaGetter)
-		roleCtl       = roltctl.NewController(roleService)
-		terminalCtl   = terminalctl.NewController(clusterGitRepo)
-		codeGitCtl    = codectl.NewController(gitGetter)
-		clusterTagCtl = clustertagctl.NewController(clusterGitRepo)
+		templateCtl          = templatectl.NewController(templateSchemaGetter)
+		roleCtl              = roltctl.NewController(roleService)
+		terminalCtl          = terminalctl.NewController(clusterGitRepo)
+		codeGitCtl           = codectl.NewController(gitGetter)
+		clusterTagCtl        = clustertagctl.NewController(clusterGitRepo)
+		templateSchemaTagCtl = templateschematagctl.NewController()
 	)
 
 	var (
 		// init API
-		groupAPI       = group.NewAPI()
-		templateAPI    = template.NewAPI(templateCtl)
-		userAPI        = user.NewAPI()
-		applicationAPI = application.NewAPI(applicationCtl)
-		memberAPI      = member.NewAPI(memberCtl, roleService)
-		clusterAPI     = cluster.NewAPI(clusterCtl)
-		prAPI          = pipelinerun.NewAPI(prCtl)
-		environmentAPI = environment.NewAPI()
-		roleAPI        = roleapi.NewAPI(roleCtl)
-		terminalAPI    = terminalapi.NewAPI(terminalCtl)
-		codeGitAPI     = codeapi.NewAPI(codeGitCtl)
-		clusterTagAPI  = clustertag.NewAPI(clusterTagCtl)
+		groupAPI             = group.NewAPI()
+		templateAPI          = template.NewAPI(templateCtl)
+		userAPI              = user.NewAPI()
+		applicationAPI       = application.NewAPI(applicationCtl)
+		memberAPI            = member.NewAPI(memberCtl, roleService)
+		clusterAPI           = cluster.NewAPI(clusterCtl)
+		prAPI                = pipelinerun.NewAPI(prCtl)
+		environmentAPI       = environment.NewAPI()
+		roleAPI              = roleapi.NewAPI(roleCtl)
+		terminalAPI          = terminalapi.NewAPI(terminalCtl)
+		codeGitAPI           = codeapi.NewAPI(codeGitCtl)
+		clusterTagAPI        = clustertag.NewAPI(clusterTagCtl)
+		templateSchemaTagAPI = templateshematagapi.NewAPI(templateSchemaTagCtl)
 	)
 
 	// init server
@@ -291,7 +295,7 @@ func Run(flags *Flags) {
 	terminalapi.RegisterRoutes(r, terminalAPI)
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	clustertag.RegisterRoutes(r, clusterTagAPI)
-
+	templateshematagapi.RegisterRoutes(r, templateSchemaTagAPI)
 	// start cloud event server
 	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)
 	// start api server
