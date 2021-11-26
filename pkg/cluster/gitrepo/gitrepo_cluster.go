@@ -602,7 +602,7 @@ func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster s
 		GitRepoSSHURL: fmt.Sprintf("%v/%v/%v/%v.git",
 			g.gitlabLib.GetSSHURL(ctx), g.clusterRepoConf.Parent.Path, application, cluster),
 		ValueFiles: []string{_filePathApplication, _filePathPipelineOutput,
-			_filePathEnv, _filePathBase, _filePathRestart, _filePathSRE},
+			_filePathEnv, _filePathBase, _filePathTags, _filePathRestart, _filePathSRE},
 	}
 }
 
