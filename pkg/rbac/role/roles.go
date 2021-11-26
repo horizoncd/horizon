@@ -109,7 +109,15 @@ func NewFileRole(ctx context.Context, reader io.Reader) (Service, error) {
 }
 
 func (fRole *fileRoleService) ListRole(ctx context.Context) ([]types.Role, error) {
-	return fRole.Roles, nil
+	var roles []types.Role
+	for _, roleName := range fRole.RolePriorityRankDesc {
+		roleRank, ok := fRole.roleRankMap[roleName]
+		if !ok {
+			log.Errorf(ctx, "role %s cannot found", roleName)
+		}
+		roles = append(roles, roleRank.role)
+	}
+	return roles, nil
 }
 
 func (fRole *fileRoleService) GetRole(ctx context.Context, roleName string) (*types.Role, error) {
