@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
@@ -554,10 +553,6 @@ func validateClusterName(applicationName, name string) error {
 	// cannot start with a digit.
 	if name[0] >= '0' && name[0] <= '9' {
 		return fmt.Errorf("name cannot start with a digit")
-	}
-
-	if !strings.HasPrefix(name, applicationName) {
-		return fmt.Errorf("cluster name must start with application name")
 	}
 
 	pattern := `^(([a-z][-a-z0-9]*)?[a-z0-9])?$`
