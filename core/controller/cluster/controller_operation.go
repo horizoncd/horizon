@@ -2,8 +2,12 @@ package cluster
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strconv"
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -13,6 +17,10 @@ import (
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+)
+
+const (
+	QueryPodsMetric = "kube_pod_info{namespace=\"%s\",pod=~\"%s.*\"}"
 )
 
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
@@ -400,4 +408,63 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 	}
 
 	return getDashboardResp, nil
+}
+
+func (c *controller) GetClusterPods(ctx context.Context, clusterID uint, start, end int64) (
+	*GetClusterPodsResponse, error) {
+	const op = "cluster controller: get cluster pods"
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	grafanaURL, ok := c.grafanaMapper[envValue.Region]
+	if !ok {
+		return nil, errors.E(op, fmt.Errorf("grafana does not support this region"))
+	}
+
+	u := url.Values{}
+	match := fmt.Sprintf(QueryPodsMetric, envValue.Namespace, cluster.Name)
+	u.Set("match[]", match)
+	u.Set("start", strconv.FormatInt(start, 10))
+	u.Set("end", strconv.FormatInt(end, 10))
+
+	queryURL := grafanaURL.QuerySeries + "?" + u.Encode()
+
+	resp, err := http.Get(queryURL)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.E(op, resp.StatusCode, "grafana query series interface return fail")
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	var result *QueryPodsSeriesResult
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	if result.Status != "success" {
+		return nil, errors.E(op, "grafana query series interface return fail")
+	}
+
+	return &GetClusterPodsResponse{
+		Pods: result.Data,
+	}, nil
 }

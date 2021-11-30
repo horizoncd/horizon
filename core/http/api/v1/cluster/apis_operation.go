@@ -286,3 +286,34 @@ func (a *API) GetDashBoard(c *gin.Context) {
 	}
 	response.SuccessWithData(c, resp)
 }
+
+func (a *API) GetClusterPods(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	// start means start timestamp(seconds) of the query range
+	startStr := c.Query(_start)
+	start, err := strconv.ParseInt(startStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	// end means end timestamp(seconds) of the query range
+	endStr := c.Query(_end)
+	end, err := strconv.ParseInt(endStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	resp, err := a.clusterCtl.GetClusterPods(c, uint(clusterID), start, end)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}

@@ -981,3 +981,38 @@ paths:
                           }
                       ]
                   }
+  /apis/core/v1/clusters/{clusterID}/pods?start={start}&end={end}:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+      - name: start
+        in: query
+        description: start timestamp(seconds) of the time range
+        required: true
+      - name: end
+        in: query
+        description: end timestamp(seconds) of the time range
+        required: true
+    get:
+      tags:
+        - cluster
+      operationId: getClusterPods
+      summary: get pods of the cluster in the given time range
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data": {
+                        "pods": [
+                          {
+                            "pod": "123-xxx"
+                          }
+                        ]
+                      }
+                  }

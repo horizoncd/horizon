@@ -16,3 +16,16 @@ type GetDashboardResponse struct {
 	Basic      string `json:"basic" yaml:"basic"`
 	Serverless string `json:"serverless,omitempty" yaml:"serverless,omitempty"`
 }
+
+type GetClusterPodsResponse struct {
+	Pods []KubePodInfo `json:"pods" yaml:"pods"`
+}
+
+type KubePodInfo struct {
+	Pod string `json:"pod"`
+}
+
+type QueryPodsSeriesResult struct {
+	Status string        `json:"status"`
+	Data   []KubePodInfo `json:"data"`
+}

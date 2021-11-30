@@ -50,6 +50,7 @@ type Controller interface {
 	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
+	GetClusterPods(ctx context.Context, clusterID uint, start, end int64) (*GetClusterPodsResponse, error)
 	FreeCluster(ctx context.Context, clusterID uint) (err error)
 	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
 
