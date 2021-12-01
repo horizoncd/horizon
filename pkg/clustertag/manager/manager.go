@@ -49,9 +49,6 @@ func ValidateUpsert(tags []*models.ClusterTag) error {
 		if len(tag.Key) == 0 {
 			return fmt.Errorf("tag key cannot be empty")
 		}
-		if len(tag.Value) == 0 {
-			return fmt.Errorf("tag value cannot be empty")
-		}
 		if len(tag.Key) > 63 {
 			return fmt.Errorf("tag key: %v is invalid, length must be 63 or less", tag.Key)
 		}
