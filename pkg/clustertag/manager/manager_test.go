@@ -141,15 +141,6 @@ func Test_ValidateUpsert(t *testing.T) {
 	assert.NotNil(t, err)
 	t.Logf("%v", err.Error())
 
-	tags = tags[0:0]
-	tags = append(tags, &models.ClusterTag{
-		Key:   "a",
-		Value: "",
-	})
-	err = ValidateUpsert(tags)
-	assert.NotNil(t, err)
-	t.Logf("%v", err.Error())
-
 	tags = append(tags, &models.ClusterTag{
 		Key:   strings.Repeat("a", 64),
 		Value: "a",
