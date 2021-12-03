@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"g.hz.netease.com/horizon/pkg/config/authenticate"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -33,13 +34,7 @@ const (
 	errCodeForbidden = "Forbidden"
 )
 
-// TODO(gjq): change to config ak sk
-const (
-	omAccessKey = ""
-	omSecretKey = ""
-)
-
-func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
+func Middleware(keys authenticate.KeysConfig, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// 解析 Date Header
 		r := c.Request
@@ -90,9 +85,21 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 
 		accessKey := strings.TrimSpace(strs[0])
 		secretKey := ""
-		if accessKey == omAccessKey {
-			secretKey = omSecretKey
-		} else {
+		for user, ks := range keys {
+			found := false
+			for i := range ks {
+				if ks[i].AccessKey == accessKey {
+					secretKey = ks[i].SecretKey
+					found = true
+					break
+				}
+			}
+			if found {
+				log.Infof(c, "the caller name: %v", user)
+				break
+			}
+		}
+		if secretKey == "" {
 			response.Abort(c, http.StatusForbidden, errCodeForbidden, "invalid access key")
 		}
 
