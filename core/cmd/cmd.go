@@ -261,7 +261,7 @@ func Run(flags *Flags) {
 	// enable usermiddle and auth when current env is not dev
 	if !flags.Dev {
 		// TODO(gjq): remove this authentication, add OIDC provider
-		middlewares = append(middlewares, authenticate.Middleware(
+		middlewares = append(middlewares, authenticate.Middleware(config.AccessSecretKeys,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))))
 		middlewares = append(middlewares,

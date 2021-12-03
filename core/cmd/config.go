@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/pkg/config/argocd"
+	"g.hz.netease.com/horizon/pkg/config/authenticate"
 	"g.hz.netease.com/horizon/pkg/config/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/db"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
@@ -18,17 +19,18 @@ import (
 )
 
 type Config struct {
-	ServerConfig           server.Config     `yaml:"serverConfig"`
-	CloudEventServerConfig server.Config     `yaml:"cloudEventServerConfig"`
-	DBConfig               db.Config         `yaml:"dbConfig"`
-	OIDCConfig             oidc.Config       `yaml:"oidcConfig"`
-	GitlabMapper           gitlab.Mapper     `yaml:"gitlabMapper"`
-	GitlabRepoConfig       gitlab.RepoConfig `yaml:"gitlabRepoConfig"`
-	ArgoCDMapper           argocd.Mapper     `yaml:"argoCDMapper"`
-	TektonMapper           tekton.Mapper     `yaml:"tektonMapper"`
-	HelmRepoMapper         helmrepo.Mapper   `yaml:"helmRepoMapper"`
-	CmdbConfig             cmdb.Config       `yaml:"cmdbConfig"`
-	GrafanaMapper          grafana.Mapper    `yaml:"grafanaMapper"`
+	ServerConfig           server.Config           `yaml:"serverConfig"`
+	CloudEventServerConfig server.Config           `yaml:"cloudEventServerConfig"`
+	DBConfig               db.Config               `yaml:"dbConfig"`
+	OIDCConfig             oidc.Config             `yaml:"oidcConfig"`
+	GitlabMapper           gitlab.Mapper           `yaml:"gitlabMapper"`
+	GitlabRepoConfig       gitlab.RepoConfig       `yaml:"gitlabRepoConfig"`
+	ArgoCDMapper           argocd.Mapper           `yaml:"argoCDMapper"`
+	TektonMapper           tekton.Mapper           `yaml:"tektonMapper"`
+	HelmRepoMapper         helmrepo.Mapper         `yaml:"helmRepoMapper"`
+	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
+	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
+	GrafanaMapper          grafana.Mapper          `yaml:"grafanaMapper"`
 }
 
 func loadConfig(configFilePath string) (*Config, error) {
