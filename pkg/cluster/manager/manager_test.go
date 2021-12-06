@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"testing"
 
@@ -18,6 +19,7 @@ import (
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -108,6 +110,15 @@ func Test(t *testing.T) {
 	assert.Equal(t, 2, len(clusterMembers))
 	assert.Equal(t, user2.ID, clusterMembers[1].MemberNameID)
 	assert.Equal(t, role.Owner, clusterMembers[1].Role)
+
+	cluster2 := &models.Cluster{
+		Name: "cluster2",
+	}
+	cluster2, err2 := Mgr.Create(ctx, cluster2, nil, []string{user2.Email, "not-exist@corp.com"})
+	assert.Nil(t, cluster2)
+	assert.NotNil(t, err2)
+	t.Logf("%v", err2)
+	assert.Equal(t, http.StatusNotFound, errors.Status(err2))
 
 	cluster.Description = "new Description"
 	newCluster, err := Mgr.UpdateByID(ctx, cluster.ID, cluster)

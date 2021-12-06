@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"os"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -76,6 +78,15 @@ func Test(t *testing.T) {
 	assert.Equal(t, 2, len(clusterMembers))
 	assert.Equal(t, user2.ID, clusterMembers[1].MemberNameID)
 	assert.Equal(t, role.Owner, clusterMembers[1].Role)
+
+	application2 := &models.Application{
+		Name: "application2",
+	}
+	application2, err2 := Mgr.Create(ctx, application2, []string{user2.Email, "not-exist@corp.com"})
+	assert.Nil(t, application2)
+	assert.NotNil(t, err2)
+	t.Logf("%v", err2)
+	assert.Equal(t, http.StatusNotFound, errors.Status(err2))
 
 	b, err := json.Marshal(application)
 	assert.Nil(t, err)

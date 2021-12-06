@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -11,6 +12,7 @@ import (
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/sets"
 
 	"gorm.io/gorm"
 )
@@ -21,6 +23,7 @@ var (
 )
 
 const _errCodeClusterNotFound = errors.ErrorCode("ClusterNotFound")
+const _errCodeUserNotFound = errors.ErrorCode("UserNotFound")
 
 type Manager interface {
 	Create(ctx context.Context, cluster *models.Cluster,
@@ -51,9 +54,23 @@ type manager struct {
 
 func (m *manager) Create(ctx context.Context, cluster *models.Cluster,
 	clusterTags []*clustertagmodels.ClusterTag, extraOwners []string) (*models.Cluster, error) {
+	const op = "cluster manager: create cluster"
 	users, err := m.userDAO.ListByEmail(ctx, extraOwners)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(users) < len(extraOwners) {
+		userSet := sets.NewString()
+		for _, user := range users {
+			userSet.Insert(user.Email)
+		}
+		for _, owner := range extraOwners {
+			if !userSet.Has(owner) {
+				return nil, errors.E(op, http.StatusNotFound, _errCodeUserNotFound,
+					fmt.Sprintf("user with email %s not found, please login in horizon first.", owner))
+			}
+		}
 	}
 
 	return m.dao.Create(ctx, cluster, clusterTags, users)
