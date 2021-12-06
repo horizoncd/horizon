@@ -11,9 +11,13 @@ import (
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	userdao "g.hz.netease.com/horizon/pkg/user/dao"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -26,7 +30,7 @@ var (
 
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&models.Cluster{}, &clustertagmodels.ClusterTag{},
+	if err := db.AutoMigrate(&models.Cluster{}, &clustertagmodels.ClusterTag{}, &usermodels.User{},
 		&envmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{}); err != nil {
 		panic(err)
 	}
@@ -35,6 +39,21 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
+	userDAO := userdao.NewDAO()
+	user1, err := userDAO.Create(ctx, &usermodels.User{
+		Name:  "tony",
+		Email: "tony@corp.com",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, user1)
+
+	user2, err := userDAO.Create(ctx, &usermodels.User{
+		Name:  "leo",
+		Email: "leo@corp.com",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, user2)
+
 	var (
 		applicationID   = uint(1)
 		name            = "cluster"
@@ -44,8 +63,8 @@ func Test(t *testing.T) {
 		gitBranch       = "develop"
 		template        = "javaapp"
 		templateRelease = "v1.1.0"
-		createdBy       = uint(1)
-		updatedBy       = uint(1)
+		createdBy       = user1.ID
+		updatedBy       = user1.ID
 	)
 
 	er, err := envmanager.Mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
@@ -80,9 +99,15 @@ func Test(t *testing.T) {
 			Key:   "k1",
 			Value: "v1",
 		},
-	})
+	}, []string{user2.Email})
 	assert.Nil(t, err)
 	t.Logf("%v", cluster)
+
+	clusterMembers, err := member.Mgr.ListDirectMember(ctx, membermodels.TypeApplicationCluster, cluster.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(clusterMembers))
+	assert.Equal(t, user2.ID, clusterMembers[1].MemberNameID)
+	assert.Equal(t, role.Owner, clusterMembers[1].Role)
 
 	cluster.Description = "new Description"
 	newCluster, err := Mgr.UpdateByID(ctx, cluster.ID, cluster)

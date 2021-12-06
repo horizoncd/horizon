@@ -40,7 +40,7 @@ func (a *API) GetDiff(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	targetBranch := c.Query(_targetbranch)
+	targetBranch := c.Query(_targetBranch)
 	resp, err := a.clusterCtl.GetDiff(c, uint(clusterID), targetBranch)
 
 	if err != nil {

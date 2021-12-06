@@ -298,7 +298,7 @@ func TestControllerGetByPath(t *testing.T) {
 		Name:        "app",
 		Description: "this is a description",
 		Priority:    "P0",
-	})
+	}, nil)
 	assert.Nil(t, err)
 
 	type args struct {
@@ -397,7 +397,7 @@ func TestControllerGetChildren(t *testing.T) {
 	app, err := applicationDAO.Create(ctx, &appmodels.Application{
 		GroupID: id,
 		Name:    "c",
-	})
+	}, nil)
 	assert.Nil(t, err)
 
 	type args struct {
@@ -594,7 +594,7 @@ func TestControllerSearchChildren(t *testing.T) {
 	app, err := applicationDAO.Create(ctx, &appmodels.Application{
 		GroupID: id,
 		Name:    "c",
-	})
+	}, nil)
 	assert.Nil(t, err)
 
 	type args struct {

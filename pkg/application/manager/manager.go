@@ -8,6 +8,7 @@ import (
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
+	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
@@ -28,7 +29,7 @@ type Manager interface {
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
 	// GetByNameFuzzilyByPagination get applications that fuzzily matching the given name
 	GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int, []*models.Application, error)
-	Create(ctx context.Context, application *models.Application) (*models.Application, error)
+	Create(ctx context.Context, application *models.Application, extraOwners []string) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
 }
@@ -37,12 +38,14 @@ func New() Manager {
 	return &manager{
 		applicationDAO: applicationdao.NewDAO(),
 		groupDAO:       groupdao.NewDAO(),
+		userDAO:        userdao.NewDAO(),
 	}
 }
 
 type manager struct {
 	applicationDAO applicationdao.DAO
 	groupDAO       groupdao.DAO
+	userDAO        userdao.DAO
 }
 
 func (m *manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error) {
@@ -88,8 +91,13 @@ func (m *manager) GetByName(ctx context.Context, name string) (*models.Applicati
 	return application, nil
 }
 
-func (m *manager) Create(ctx context.Context, application *models.Application) (*models.Application, error) {
-	return m.applicationDAO.Create(ctx, application)
+func (m *manager) Create(ctx context.Context, application *models.Application,
+	extraOwners []string) (*models.Application, error) {
+	users, err := m.userDAO.ListByEmail(ctx, extraOwners)
+	if err != nil {
+		return nil, err
+	}
+	return m.applicationDAO.Create(ctx, application, users)
 }
 
 func (m *manager) UpdateByID(ctx context.Context,

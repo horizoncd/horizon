@@ -25,6 +25,7 @@ type DAO interface {
 	// SearchUser search user with a given filter, search for name/full_name/email.
 	SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	ListByEmail(ctx context.Context, emails []string) ([]*models.User, error)
 	GetByIDs(ctx context.Context, userID []uint) ([]models.User, error)
 }
 
@@ -93,6 +94,27 @@ func (d *dao) GetByEmail(ctx context.Context, email string) (*models.User, error
 		return nil, nil
 	}
 	return &user, nil
+}
+
+func (d *dao) ListByEmail(ctx context.Context, emails []string) ([]*models.User, error) {
+	if len(emails) == 0 {
+		return nil, nil
+	}
+
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []*models.User
+	result := db.Raw(common.UserListByEmail, emails).Scan(&users)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+	return users, nil
 }
 
 func (d *dao) SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error) {

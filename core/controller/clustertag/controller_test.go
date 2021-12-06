@@ -63,13 +63,13 @@ func Test(t *testing.T) {
 		GitBranch:       "master",
 		Template:        "javaapp",
 		TemplateRelease: "v1.0.0",
-	})
+	}, nil)
 	assert.Nil(t, err)
 
 	cluster, err := clusterMgr.Create(ctx, &models.Cluster{
 		ApplicationID: application.ID,
 		Name:          "cluster",
-	}, nil)
+	}, nil, nil)
 	assert.Nil(t, err)
 
 	c = &controller{

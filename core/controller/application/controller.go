@@ -28,7 +28,7 @@ type Controller interface {
 	// GetApplication get an application
 	GetApplication(ctx context.Context, id uint) (*GetApplicationResponse, error)
 	// CreateApplication create an application
-	CreateApplication(ctx context.Context, groupID uint,
+	CreateApplication(ctx context.Context, groupID uint, extraOwners []string,
 		request *CreateApplicationRequest) (*GetApplicationResponse, error)
 	// UpdateApplication update an application
 	UpdateApplication(ctx context.Context, id uint,
@@ -109,7 +109,7 @@ func (c *controller) postHook(ctx context.Context, eventType hook.EventType, con
 	}
 }
 
-func (c *controller) CreateApplication(ctx context.Context, groupID uint,
+func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraOwners []string,
 	request *CreateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: create application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
@@ -173,7 +173,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	applicationModel := request.toApplicationModel(groupID)
 	applicationModel.CreatedBy = currentUser.GetID()
 	applicationModel.UpdatedBy = currentUser.GetID()
-	applicationModel, err = c.applicationMgr.Create(ctx, applicationModel)
+	applicationModel, err = c.applicationMgr.Create(ctx, applicationModel, extraOwners)
 	if err != nil {
 		return nil, errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), err)

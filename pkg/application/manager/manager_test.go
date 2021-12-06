@@ -9,7 +9,11 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
+	userdao "g.hz.netease.com/horizon/pkg/user/dao"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -21,6 +25,21 @@ var (
 )
 
 func Test(t *testing.T) {
+	userDAO := userdao.NewDAO()
+	user1, err := userDAO.Create(ctx, &usermodels.User{
+		Name:  "tony",
+		Email: "tony@corp.com",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, user1)
+
+	user2, err := userDAO.Create(ctx, &usermodels.User{
+		Name:  "leo",
+		Email: "leo@corp.com",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, user2)
+
 	var (
 		groupID         = 1
 		name            = "application"
@@ -31,8 +50,8 @@ func Test(t *testing.T) {
 		gitBranch       = "develop"
 		template        = "javaapp"
 		templateRelease = "v1.1.0"
-		createdBy       = uint(1)
-		updatedBy       = uint(1)
+		createdBy       = user1.ID
+		updatedBy       = user1.ID
 	)
 	application := &models.Application{
 		GroupID:         uint(groupID),
@@ -47,11 +66,16 @@ func Test(t *testing.T) {
 		CreatedBy:       createdBy,
 		UpdatedBy:       updatedBy,
 	}
-	application, err := Mgr.Create(ctx, application)
+	application, err = Mgr.Create(ctx, application, []string{user2.Email})
 	assert.Nil(t, err)
 
 	assert.Equal(t, name, application.Name)
 	assert.Equal(t, 1, int(application.ID))
+	clusterMembers, err := member.Mgr.ListDirectMember(ctx, membermodels.TypeApplication, application.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(clusterMembers))
+	assert.Equal(t, user2.ID, clusterMembers[1].MemberNameID)
+	assert.Equal(t, role.Owner, clusterMembers[1].Role)
 
 	b, err := json.Marshal(application)
 	assert.Nil(t, err)
@@ -95,7 +119,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&models.Application{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
+	if err := db.AutoMigrate(&membermodels.Member{}, &usermodels.User{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
