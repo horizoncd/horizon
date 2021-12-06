@@ -17,6 +17,7 @@ const (
 	// param
 	_groupIDParam       = "groupID"
 	_applicationIDParam = "applicationID"
+	_extraOwner         = "extraOwner"
 )
 
 type API struct {
@@ -52,13 +53,15 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 
+	extraOwners := c.QueryArray(_extraOwner)
+
 	var request *application.CreateApplicationRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	resp, err := a.applicationCtl.CreateApplication(c, uint(groupID), request)
+	resp, err := a.applicationCtl.CreateApplication(c, uint(groupID), extraOwners, request)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return

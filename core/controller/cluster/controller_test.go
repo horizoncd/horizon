@@ -501,7 +501,7 @@ func Test(t *testing.T) {
 		GitBranch:       "master",
 		Template:        "javaapp",
 		TemplateRelease: "v1.0.0",
-	})
+	}, nil)
 
 	tr, err := trMgr.Create(ctx, &trmodels.TemplateRelease{
 		TemplateName: "javaapp",
@@ -595,8 +595,8 @@ func Test(t *testing.T) {
 		Name: "app-cluster",
 	}
 
-	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest)
-	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest)
+	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", nil, createClusterRequest)
+	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", nil, createClusterRequest)
 	assert.Nil(t, err)
 	b, _ := json.MarshalIndent(resp, "", "  ")
 	t.Logf("%v", string(b))
@@ -619,10 +619,10 @@ func Test(t *testing.T) {
 				Application: applicationJSONBlob,
 				Pipeline:    pipelineJSONBlob,
 			},
-		},
-		Template: &Template{
-			Name:    "tomcat7_jdk8",
-			Release: "v1.0.1",
+			Template: &Template{
+				Name:    "tomcat7_jdk8",
+				Release: "v1.0.1",
+			},
 		},
 	}
 

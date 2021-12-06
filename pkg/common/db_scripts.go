@@ -14,6 +14,7 @@ const (
 	// UserQueryByOIDC ...
 	UserQueryByOIDC  = "select * from user where oidc_type = ? and email = ?"
 	UserQueryByEmail = "select * from user where email = ? "
+	UserListByEmail  = "select * from user where email in ? "
 	UserSearch       = "select * from user where name like ? or full_name like ? or email like ? limit ? offset ?"
 	UserSearchCount  = "select count(1) from user where name like ? or full_name like ? or email like ?"
 	UserGetByID      = "select * from user where id in ?"

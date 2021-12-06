@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/common"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
@@ -19,7 +20,7 @@ import (
 
 type DAO interface {
 	Create(ctx context.Context, cluster *models.Cluster,
-		clusterTags []*clustertagmodels.ClusterTag) (*models.Cluster, error)
+		clusterTags []*clustertagmodels.ClusterTag, extraOwners []*usermodels.User) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
@@ -39,7 +40,7 @@ func NewDAO() DAO {
 }
 
 func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
-	clusterTags []*clustertagmodels.ClusterTag) (*models.Cluster, error) {
+	clusterTags []*clustertagmodels.ClusterTag, extraOwners []*usermodels.User) (*models.Cluster, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -49,16 +50,32 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 		if err := tx.Create(cluster).Error; err != nil {
 			return err
 		}
-		// insert a record to member table
-		member := &membermodels.Member{
+		// insert records to member table
+		members := make([]*membermodels.Member, 0)
+
+		// the owner who created this cluster
+		members = append(members, &membermodels.Member{
 			ResourceType: membermodels.TypeApplicationCluster,
 			ResourceID:   cluster.ID,
 			Role:         role.Owner,
 			MemberType:   membermodels.MemberUser,
 			MemberNameID: cluster.CreatedBy,
 			GrantedBy:    cluster.UpdatedBy,
+		})
+
+		// the extra owners
+		for _, extraOwner := range extraOwners {
+			members = append(members, &membermodels.Member{
+				ResourceType: membermodels.TypeApplicationCluster,
+				ResourceID:   cluster.ID,
+				Role:         role.Owner,
+				MemberType:   membermodels.MemberUser,
+				MemberNameID: extraOwner.ID,
+				GrantedBy:    cluster.CreatedBy,
+			})
 		}
-		result := tx.Create(member)
+
+		result := tx.Create(members)
 		if result.Error != nil {
 			return result.Error
 		}

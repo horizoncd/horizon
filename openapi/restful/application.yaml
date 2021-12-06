@@ -5,12 +5,16 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/groups/{groupID}/applications:
+  /apis/core/v1/groups/{groupID}/applications?extraOwner={extraOwner}:
     parameters:
       - name: groupID
         in: path
         description: group id
         required: true
+      - name: extraOwner
+        in: query
+        description: extra owner's email
+        required: false
     post:
       tags:
         - application

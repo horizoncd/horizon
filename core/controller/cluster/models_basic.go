@@ -12,6 +12,7 @@ import (
 type Base struct {
 	Description   string         `json:"description"`
 	Git           *Git           `json:"git"`
+	Template      *Template      `json:"template"`
 	TemplateInput *TemplateInput `json:"templateInput"`
 	Tags          []*Tag         `json:"tags"`
 }
@@ -40,8 +41,6 @@ type CreateClusterRequest struct {
 
 type UpdateClusterRequest struct {
 	*Base
-
-	Template *Template `json:"template"`
 }
 
 type GetClusterResponse struct {
@@ -84,8 +83,8 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		GitURL:              application.GitURL,
 		GitSubfolder:        application.GitSubfolder,
 		GitBranch:           r.Git.Branch,
-		Template:            application.Template,
-		TemplateRelease:     application.TemplateRelease,
+		Template:            r.Template.Name,
+		TemplateRelease:     r.Template.Release,
 		EnvironmentRegionID: er.ID,
 	}
 	clusterTags := make([]*clustertagmodels.ClusterTag, 0)
