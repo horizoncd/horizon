@@ -60,7 +60,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/applications/{applicationID}/clusters?scope={scope}:
+  /apis/core/v1/applications/{applicationID}/clusters?scope={scope}&extraOwner={extraOwner}:
     parameters:
       - name: applicationID
         in: path
@@ -70,6 +70,10 @@ paths:
         in: query
         description: scope is environment/region, this value can not be edited after created.
         required: true
+      - name: extraOwner
+        in: query
+        description: extra owner's email
+        required: false
     post:
       tags:
         - cluster
