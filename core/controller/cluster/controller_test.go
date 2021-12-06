@@ -619,10 +619,10 @@ func Test(t *testing.T) {
 				Application: applicationJSONBlob,
 				Pipeline:    pipelineJSONBlob,
 			},
-		},
-		Template: &Template{
-			Name:    "tomcat7_jdk8",
-			Release: "v1.0.1",
+			Template: &Template{
+				Name:    "tomcat7_jdk8",
+				Release: "v1.0.1",
+			},
 		},
 	}
 

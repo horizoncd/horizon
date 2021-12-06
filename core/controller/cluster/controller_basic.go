@@ -153,7 +153,22 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 			errors.ErrorCode(common.InvalidRequestBody), err)
 	}
 
-	// 3. if templateInput is empty, set it with application's templateInput
+	// 3. if template is empty, set it with application's template
+	if r.Template == nil {
+		r.Template = &Template{
+			Name:    application.Template,
+			Release: application.TemplateRelease,
+		}
+	} else {
+		if r.Template.Name == "" {
+			r.Template.Name = application.Template
+		}
+		if r.Template.Release == "" {
+			r.Template.Release = application.TemplateRelease
+		}
+	}
+
+	// 4. if templateInput is empty, set it with application's templateInput
 	if r.TemplateInput == nil {
 		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.GetApplication(ctx, application.Name)
 		if err != nil {
@@ -163,32 +178,32 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		r.TemplateInput.Application = applicationJSONBlob
 		r.TemplateInput.Pipeline = pipelineJSONBlob
 	} else {
-		if err := c.validateTemplateInput(ctx, application.Template,
-			application.TemplateRelease, r.TemplateInput, nil); err != nil {
+		if err := c.validateTemplateInput(ctx, r.Template.Name,
+			r.Template.Release, r.TemplateInput, nil); err != nil {
 			return nil, errors.E(op, http.StatusBadRequest,
 				errors.ErrorCode(common.InvalidRequestBody), err)
 		}
 	}
 
-	// 4. get environmentRegion
+	// 5. get environmentRegion
 	er, err := c.envMgr.GetByEnvironmentAndRegion(ctx, environment, region)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
-	// 5. get regionEntity
+	// 6. get regionEntity
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, region)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
-	// 6. get templateRelease
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, application.Template, application.TemplateRelease)
+	// 7. get templateRelease
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, r.Template.Name, r.Template.Release)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
-	// 7. create cluster, after created, params.Cluster is the newest cluster
+	// 8. create cluster, after created, params.Cluster is the newest cluster
 	cluster, clusterTags := r.toClusterModel(application, er)
 	cluster.CreatedBy = currentUser.GetID()
 	cluster.UpdatedBy = currentUser.GetID()
@@ -198,7 +213,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 			errors.ErrorCode(common.InvalidRequestBody), err)
 	}
 
-	// 8. create cluster in git repo
+	// 9. create cluster in git repo
 	err = c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
 		BaseParams: &gitrepo.BaseParams{
 			Cluster:             cluster.Name,
@@ -215,13 +230,13 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, errors.E(op, err)
 	}
 
-	// 9. create cluster in db
+	// 10. create cluster in db
 	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
-	// 10. get full path
+	// 11. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -231,7 +246,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	ret := ofClusterModel(application, cluster, er, fullPath,
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
-	// 11. post hook
+	// 12. post hook
 	c.postHook(ctx, hook.CreateCluster, ret)
 	return ret, nil
 }
