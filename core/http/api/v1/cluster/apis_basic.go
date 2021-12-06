@@ -21,12 +21,13 @@ const (
 	_clusterParam       = "cluster"
 	_scope              = "scope"
 	_environment        = "environment"
-	_targetbranch       = "targetBranch"
+	_targetBranch       = "targetBranch"
 	_containerName      = "containerName"
 	_podName            = "podName"
 	_tailLines          = "tailLines"
 	_start              = "start"
 	_end                = "end"
+	_extraOwner         = "extraOwner"
 )
 
 type API struct {
@@ -108,13 +109,15 @@ func (a *API) Create(c *gin.Context) {
 	environment := scopeArray[0]
 	region := scopeArray[1]
 
+	extraOwners := c.QueryArray(_extraOwner)
+
 	var request *cluster.CreateClusterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment, region, request)
+	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment, region, extraOwners, request)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return

@@ -88,7 +88,7 @@ func TestCreate(t *testing.T) {
 	name := "app"
 	_, err = applicationdao.NewDAO().Create(ctx, &appmodels.Application{
 		Name: name,
-	})
+	}, nil)
 	assert.Nil(t, err)
 	_, err = Mgr.Create(ctx, getGroup(0, name, "a"))
 	assert.Equal(t, err, ErrConflictWithApplication)
@@ -250,7 +250,7 @@ func TestManagerGetChildren(t *testing.T) {
 	a1, err := applicationdao.NewDAO().Create(ctx, &appmodels.Application{
 		Name:    "3",
 		GroupID: g0.ID,
-	})
+	}, nil)
 	assert.Nil(t, err)
 
 	type args struct {

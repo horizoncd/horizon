@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/common"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
@@ -28,7 +29,8 @@ type DAO interface {
 	GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int, []*models.Application, error)
 	// CountByGroupID get the count of the records matching the given groupID
 	CountByGroupID(ctx context.Context, groupID uint) (int64, error)
-	Create(ctx context.Context, application *models.Application) (*models.Application, error)
+	Create(ctx context.Context, application *models.Application,
+		extraOwners []*usermodels.User) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
 }
@@ -138,7 +140,8 @@ func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []st
 	return applications, result.Error
 }
 
-func (d *dao) Create(ctx context.Context, application *models.Application) (*models.Application, error) {
+func (d *dao) Create(ctx context.Context, application *models.Application,
+	extraOwners []*usermodels.User) (*models.Application, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -148,16 +151,32 @@ func (d *dao) Create(ctx context.Context, application *models.Application) (*mod
 		if err := tx.Create(application).Error; err != nil {
 			return err
 		}
-		// insert a record to member table
-		member := &membermodels.Member{
+		// insert records to member table
+		members := make([]*membermodels.Member, 0)
+
+		// the owner who created this application
+		members = append(members, &membermodels.Member{
 			ResourceType: membermodels.TypeApplication,
 			ResourceID:   application.ID,
 			Role:         role.Owner,
 			MemberType:   membermodels.MemberUser,
 			MemberNameID: application.CreatedBy,
 			GrantedBy:    application.UpdatedBy,
+		})
+
+		// the extra owners
+		for _, extraOwner := range extraOwners {
+			members = append(members, &membermodels.Member{
+				ResourceType: membermodels.TypeApplication,
+				ResourceID:   application.ID,
+				Role:         role.Owner,
+				MemberType:   membermodels.MemberUser,
+				MemberNameID: extraOwner.ID,
+				GrantedBy:    application.CreatedBy,
+			})
 		}
-		result := tx.Create(member)
+
+		result := tx.Create(members)
 		if result.Error != nil {
 			return result.Error
 		}
