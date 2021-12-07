@@ -90,6 +90,8 @@ type CreateClusterParams struct {
 
 	RegionEntity *regionmodels.RegionEntity
 	ClusterTags  []*clustertagmodels.ClusterTag
+	Namespace    string
+	Image        string
 }
 
 type UpdateClusterParams struct {
@@ -261,6 +263,16 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		}
 	}
 
+	pipelineOutPut := ""
+	if params.Image != "" {
+		// if params.Image is not empty, write image to git repo
+		pipelineOutPutMap := assemblePipelineOutput(params.TemplateRelease.TemplateName, params.Image)
+		pipelineOutPutYAML, err := yaml.Marshal(pipelineOutPutMap)
+		if err != nil {
+			return errors.E(op, err)
+		}
+		pipelineOutPut = string(pipelineOutPutYAML)
+	}
 	actions := []gitlablib.CommitAction{
 		{
 			Action:   gitlablib.FileCreate,
@@ -295,7 +307,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		{
 			Action:   gitlablib.FileCreate,
 			FilePath: _filePathPipelineOutput,
-			Content:  "",
+			Content:  pipelineOutPut,
 		},
 		// create _filePathRestart file first
 		{
@@ -804,6 +816,9 @@ type EnvValue struct {
 }
 
 func getNamespace(params *CreateClusterParams) string {
+	if params.Namespace != "" {
+		return params.Namespace
+	}
 	return fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
 }
 

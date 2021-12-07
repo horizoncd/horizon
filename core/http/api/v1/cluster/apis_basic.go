@@ -111,13 +111,18 @@ func (a *API) Create(c *gin.Context) {
 
 	extraOwners := c.QueryArray(_extraOwner)
 
+	// add query for migration
+	namespace := c.Query("namespace")
+	image := c.Query("image")
+
 	var request *cluster.CreateClusterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment, region, extraOwners, request)
+	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment, region, extraOwners, request,
+		namespace, image)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return

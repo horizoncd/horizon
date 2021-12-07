@@ -31,7 +31,7 @@ type Controller interface {
 	ListClusterByNameFuzzily(ctx context.Context, environment,
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
 	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
-		extraOwners []string, request *CreateClusterRequest) (*GetClusterResponse, error)
+		extraOwners []string, request *CreateClusterRequest, namespace, image string) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
 		request *UpdateClusterRequest) (*GetClusterResponse, error)
 	DeleteCluster(ctx context.Context, clusterID uint) error
