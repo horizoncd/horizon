@@ -230,8 +230,8 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 			ApplicationJSONBlob: r.TemplateInput.Application,
 			TemplateRelease:     tr,
 			Application:         application,
+			Environment:         environment,
 		},
-		Environment:  environment,
 		RegionEntity: regionEntity,
 		ClusterTags:  clusterTags,
 	})
@@ -283,6 +283,12 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		return nil, errors.E(op, err)
 	}
 
+	// 3. get environmentRegion for this cluster
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
 	var templateRelease string
 	if r.Template == nil || r.Template.Release == "" {
 		templateRelease = cluster.TemplateRelease
@@ -290,7 +296,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		templateRelease = r.Template.Release
 	}
 
-	// 3. if templateInput is not empty, validate templateInput and update templateInput in git repo
+	// 4. if templateInput is not empty, validate templateInput and update templateInput in git repo
 	var applicationJSONBlob, pipelineJSONBlob map[string]interface{}
 	if r.TemplateInput != nil {
 		applicationJSONBlob = r.TemplateInput.Application
@@ -317,6 +323,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 				ApplicationJSONBlob: r.TemplateInput.Application,
 				TemplateRelease:     tr,
 				Application:         application,
+				Environment:         er.EnvironmentName,
 			},
 		}); err != nil {
 			return nil, errors.E(op, err)
@@ -330,16 +337,10 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		pipelineJSONBlob = files.PipelineJSONBlob
 	}
 
-	// 4. update cluster in db
+	// 5. update cluster in db
 	clusterModel := r.toClusterModel(cluster, templateRelease)
 	clusterModel.UpdatedBy = currentUser.GetID()
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-
-	// 5. get environmentRegion for this cluster
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

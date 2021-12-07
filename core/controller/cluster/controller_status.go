@@ -123,7 +123,8 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	return resp, nil
 }
 
-func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context, clusterID uint) (*prmodels.Pipelinerun, error) {
+func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,
+	clusterID uint) (*prmodels.Pipelinerun, error) {
 	_, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, false, q.Query{
 		PageNumber: 1,
 		PageSize:   1,
