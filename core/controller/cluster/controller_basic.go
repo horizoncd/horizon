@@ -127,6 +127,15 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	if latestPR != nil {
 		clusterResp.LatestDeployedCommit = latestPR.GitCommit
 	}
+
+	// 8. get createdBy and updatedBy users
+	userMap, err := c.userManager.GetUserMapByIDs(ctx, []uint{cluster.CreatedBy, cluster.UpdatedBy})
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	clusterResp.CreatedBy = toUser(getUserFromMap(cluster.CreatedBy, userMap))
+	clusterResp.UpdatedBy = toUser(getUserFromMap(cluster.UpdatedBy, userMap))
+
 	return clusterResp, nil
 }
 
@@ -148,7 +157,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 2. validate
-	if err := c.validateCreate(application.Name, r); err != nil {
+	if err := c.validateCreate(r); err != nil {
 		return nil, errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), err)
 	}
@@ -221,8 +230,8 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 			ApplicationJSONBlob: r.TemplateInput.Application,
 			TemplateRelease:     tr,
 			Application:         application,
+			Environment:         environment,
 		},
-		Environment:  environment,
 		RegionEntity: regionEntity,
 		ClusterTags:  clusterTags,
 	})
@@ -274,6 +283,12 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		return nil, errors.E(op, err)
 	}
 
+	// 3. get environmentRegion for this cluster
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
 	var templateRelease string
 	if r.Template == nil || r.Template.Release == "" {
 		templateRelease = cluster.TemplateRelease
@@ -281,7 +296,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		templateRelease = r.Template.Release
 	}
 
-	// 3. if templateInput is not empty, validate templateInput and update templateInput in git repo
+	// 4. if templateInput is not empty, validate templateInput and update templateInput in git repo
 	var applicationJSONBlob, pipelineJSONBlob map[string]interface{}
 	if r.TemplateInput != nil {
 		applicationJSONBlob = r.TemplateInput.Application
@@ -308,6 +323,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 				ApplicationJSONBlob: r.TemplateInput.Application,
 				TemplateRelease:     tr,
 				Application:         application,
+				Environment:         er.EnvironmentName,
 			},
 		}); err != nil {
 			return nil, errors.E(op, err)
@@ -321,16 +337,10 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		pipelineJSONBlob = files.PipelineJSONBlob
 	}
 
-	// 4. update cluster in db
+	// 5. update cluster in db
 	clusterModel := r.toClusterModel(cluster, templateRelease)
 	clusterModel.UpdatedBy = currentUser.GetID()
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-
-	// 5. get environmentRegion for this cluster
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -351,6 +361,7 @@ func (c *controller) GetClusterByName(ctx context.Context,
 	const op = "cluster controller: get cluster by name"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
+	// 1. get cluster
 	cluster, err := c.clusterMgr.GetByName(ctx, clusterName)
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -358,6 +369,20 @@ func (c *controller) GetClusterByName(ctx context.Context,
 	if cluster == nil {
 		return nil, errors.E(op, http.StatusNotFound, errors.ErrorCode("ClusterNotFound"))
 	}
+
+	// 2. get application
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 3. get full path
+	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
+
 	return &GetClusterByNameResponse{
 		ID:          cluster.ID,
 		Name:        cluster.Name,
@@ -373,6 +398,7 @@ func (c *controller) GetClusterByName(ctx context.Context,
 		},
 		CreatedAt: cluster.CreatedAt,
 		UpdatedAt: cluster.UpdatedAt,
+		FullPath:  fullPath,
 	}, nil
 }
 
@@ -523,8 +549,8 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 }
 
 // validateCreate validate for create cluster
-func (c *controller) validateCreate(applicationName string, r *CreateClusterRequest) error {
-	if err := validateClusterName(applicationName, r.Name); err != nil {
+func (c *controller) validateCreate(r *CreateClusterRequest) error {
+	if err := validateClusterName(r.Name); err != nil {
 		return err
 	}
 	if r.Git == nil || r.Git.Branch == "" {
@@ -556,7 +582,7 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 // 1. name length must be less than 53
 // 2. name must match pattern ^(([a-z][-a-z0-9]*)?[a-z0-9])?$
 // 3. name must start with application name
-func validateClusterName(applicationName, name string) error {
+func validateClusterName(name string) error {
 	if len(name) == 0 {
 		return fmt.Errorf("name cannot be empty")
 	}

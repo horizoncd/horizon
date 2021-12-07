@@ -51,18 +51,18 @@ func (mr *MockManagerMockRecorder) Create(ctx, user interface{}) *gomock.Call {
 }
 
 // GetByOIDCMeta mocks base method
-func (m *MockManager) GetByOIDCMeta(ctx context.Context, oidcID, oidcType string) (*models.User, error) {
+func (m *MockManager) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*models.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByOIDCMeta", ctx, oidcID, oidcType)
+	ret := m.ctrl.Call(m, "GetByOIDCMeta", ctx, oidcType, email)
 	ret0, _ := ret[0].(*models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByOIDCMeta indicates an expected call of GetByOIDCMeta
-func (mr *MockManagerMockRecorder) GetByOIDCMeta(ctx, oidcID, oidcType interface{}) *gomock.Call {
+func (mr *MockManagerMockRecorder) GetByOIDCMeta(ctx, oidcType, email interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOIDCMeta", reflect.TypeOf((*MockManager)(nil).GetByOIDCMeta), ctx, oidcID, oidcType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOIDCMeta", reflect.TypeOf((*MockManager)(nil).GetByOIDCMeta), ctx, oidcType, email)
 }
 
 // SearchUser mocks base method
@@ -124,4 +124,19 @@ func (m *MockManager) GetUserByIDs(ctx context.Context, userIDs []uint) ([]model
 func (mr *MockManagerMockRecorder) GetUserByIDs(ctx, userIDs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByIDs", reflect.TypeOf((*MockManager)(nil).GetUserByIDs), ctx, userIDs)
+}
+
+// GetUserMapByIDs mocks base method
+func (m *MockManager) GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint]*models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserMapByIDs", ctx, userIDs)
+	ret0, _ := ret[0].(map[uint]*models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserMapByIDs indicates an expected call of GetUserMapByIDs
+func (mr *MockManagerMockRecorder) GetUserMapByIDs(ctx, userIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserMapByIDs", reflect.TypeOf((*MockManager)(nil).GetUserMapByIDs), ctx, userIDs)
 }

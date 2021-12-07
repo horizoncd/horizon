@@ -23,6 +23,7 @@ type Manager interface {
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByID(ctx context.Context, userID uint) (*models.User, error)
 	GetUserByIDs(ctx context.Context, userIDs []uint) ([]models.User, error)
+	GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint]*models.User, error)
 }
 
 type manager struct {
@@ -62,4 +63,16 @@ func (m *manager) GetUserByID(ctx context.Context, userID uint) (*models.User, e
 
 func (m *manager) GetUserByIDs(ctx context.Context, userIDs []uint) ([]models.User, error) {
 	return m.dao.GetByIDs(ctx, userIDs)
+}
+
+func (m *manager) GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint]*models.User, error) {
+	users, err := m.GetUserByIDs(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	userMap := make(map[uint]*models.User)
+	for _, user := range users {
+		userMap[user.ID] = &user
+	}
+	return userMap, nil
 }

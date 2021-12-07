@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
 
 type Base struct {
@@ -56,6 +57,14 @@ type GetClusterResponse struct {
 	Status               string       `json:"status,omitempty"`
 	CreatedAt            time.Time    `json:"createdAt"`
 	UpdatedAt            time.Time    `json:"updatedAt"`
+	CreatedBy            *User        `json:"createdBy,omitempty"`
+	UpdatedBy            *User        `json:"updatedBy,omitempty"`
+}
+
+type User struct {
+	ID    uint   `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 type Application struct {
@@ -121,6 +130,25 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		GitSubfolder:    gitSubfolder,
 		GitBranch:       gitBranch,
 		TemplateRelease: templateRelease,
+	}
+}
+
+func getUserFromMap(id uint, userMap map[uint]*usermodels.User) *usermodels.User {
+	user, ok := userMap[id]
+	if !ok {
+		return nil
+	}
+	return user
+}
+
+func toUser(user *usermodels.User) *User {
+	if user == nil {
+		return nil
+	}
+	return &User{
+		ID:    user.ID,
+		Name:  user.FullName,
+		Email: user.Email,
 	}
 }
 
@@ -207,6 +235,7 @@ type GetClusterByNameResponse struct {
 	Git         *Git      `json:"git"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	FullPath    string    `json:"fullPath"`
 }
 
 type ListClusterWithFullResponse struct {
