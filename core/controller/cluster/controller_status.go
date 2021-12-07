@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
@@ -31,7 +32,8 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	// get latest builddeploy action pipelinerun
-	pipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
+	latestBuildDeployPipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx,
+		clusterID, prmodels.ActionBuildDeploy)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -48,19 +50,30 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 
 	resp := &GetClusterStatusResponse{}
 
-	if pipelinerun == nil {
+	if latestBuildDeployPipelinerun == nil {
 		// if latest builddeploy pr is not exists, runningTask is noneRunningTask
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}
 	} else {
-		latestPipelineRun, err := c.getLatestPipelineRunObject(ctx, cluster, pipelinerun, er)
+		latestPipelineRun, err := c.getLatestPipelineRunObject(ctx, cluster, latestBuildDeployPipelinerun, er)
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
 
 		resp.RunningTask = c.getRunningTask(ctx, latestPipelineRun)
-		resp.RunningTask.PipelinerunID = pipelinerun.ID
+	}
+
+	// get latest pipelineruns
+	_, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, cluster.ID, false, q.Query{
+		PageNumber: 1,
+		PageSize:   1,
+	})
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	if len(pipelineruns) == 1 {
+		resp.RunningTask.PipelinerunID = pipelineruns[0].ID
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)

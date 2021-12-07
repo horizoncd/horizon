@@ -18,6 +18,8 @@ import (
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -407,7 +409,7 @@ var (
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
-		&trmodels.TemplateRelease{}, &membermodels.Member{},
+		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&harbormodels.Harbor{}, &k8sclustermodels.K8SCluster{},
 		&regionmodels.Region{}, &envmodels.EnvironmentRegion{},
 		&prmodels.Pipelinerun{}); err != nil {
@@ -559,6 +561,7 @@ func Test(t *testing.T) {
 		pipelinerunMgr:       prmanager.Mgr,
 		tektonFty:            tektonFty,
 		registryFty:          registryFty,
+		userManager:          usermanager.Mgr,
 	}
 
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
