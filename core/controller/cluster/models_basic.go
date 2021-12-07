@@ -235,6 +235,7 @@ type GetClusterByNameResponse struct {
 	Git         *Git      `json:"git"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	FullPath    string    `json:"fullPath"`
 }
 
 type ListClusterWithFullResponse struct {
