@@ -112,6 +112,7 @@ func (a *API) Create(c *gin.Context) {
 	extraOwners := c.QueryArray(_extraOwner)
 
 	// add query for migration
+	// TODO(gjq): remove these two query params after migration
 	namespace := c.Query("namespace")
 	image := c.Query("image")
 
