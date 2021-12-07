@@ -127,6 +127,15 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	if latestPR != nil {
 		clusterResp.LatestDeployedCommit = latestPR.GitCommit
 	}
+
+	// 8. get createdBy and updatedBy users
+	userMap, err := c.userManager.GetUserMapByIDs(ctx, []uint{cluster.CreatedBy, cluster.UpdatedBy})
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	clusterResp.CreatedBy = toUser(getUserFromMap(cluster.CreatedBy, userMap))
+	clusterResp.UpdatedBy = toUser(getUserFromMap(cluster.UpdatedBy, userMap))
+
 	return clusterResp, nil
 }
 

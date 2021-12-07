@@ -21,6 +21,7 @@ import (
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 )
 
 type Controller interface {
@@ -77,6 +78,7 @@ type controller struct {
 	tektonFty            factory.Factory
 	registryFty          registryfty.Factory
 	grafanaMapper        grafana.Mapper
+	userManager          usermanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -102,6 +104,7 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		registryFty:          registryfty.Fty,
 		hook:                 hook,
 		grafanaMapper:        grafanaMapper,
+		userManager:          usermanager.Mgr,
 	}
 }
 
