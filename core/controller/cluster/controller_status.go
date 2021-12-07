@@ -65,15 +65,12 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	}
 
 	// get latest pipelineruns
-	_, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, cluster.ID, false, q.Query{
-		PageNumber: 1,
-		PageSize:   1,
-	})
+	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, cluster.ID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	if len(pipelineruns) == 1 {
-		resp.RunningTask.PipelinerunID = pipelineruns[0].ID
+	if latestPipelinerun != nil {
+		resp.RunningTask.PipelinerunID = latestPipelinerun.ID
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
@@ -124,6 +121,20 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	}
 
 	return resp, nil
+}
+
+func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context, clusterID uint) (*prmodels.Pipelinerun, error) {
+	_, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, false, q.Query{
+		PageNumber: 1,
+		PageSize:   1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(pipelineruns) == 1 {
+		return pipelineruns[0], nil
+	}
+	return nil, nil
 }
 
 func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *clustermodels.Cluster,
