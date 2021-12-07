@@ -82,12 +82,12 @@ type BaseParams struct {
 	ApplicationJSONBlob map[string]interface{}
 	TemplateRelease     *trmodels.TemplateRelease
 	Application         *models.Application
+	Environment         string
 }
 
 type CreateClusterParams struct {
 	*BaseParams
 
-	Environment  string
 	RegionEntity *regionmodels.RegionEntity
 	ClusterTags  []*clustertagmodels.ClusterTag
 }
@@ -247,7 +247,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
 	marshal(&envValueYAML, &err4, g.assembleEnvValue(params))
 	marshal(&sreValueYAML, &err5, g.assembleSREValue(params))
-	chart, err := g.assembleChart(params)
+	chart, err := g.assembleChart(params.BaseParams)
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -341,16 +341,22 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 
 	// 1. write files to repo
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
-	var applicationYAML, pipelineYAML, baseValueYAML []byte
-	var err1, err2, err3 error
+	var applicationYAML, pipelineYAML, baseValueYAML, chartYAML []byte
+	var err1, err2, err3, err4 error
 	marshal := func(b *[]byte, err *error, data interface{}) {
 		*b, *err = yaml.Marshal(data)
 	}
+
 	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
 	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
+	chart, err := g.assembleChart(params.BaseParams)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	marshal(&chartYAML, &err4, chart)
 
-	for _, err := range []error{err1, err2, err3} {
+	for _, err := range []error{err1, err2, err3, err4} {
 		if err != nil {
 			return err
 		}
@@ -369,6 +375,10 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathBase,
 			Content:  string(baseValueYAML),
+		}, {
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathChart,
+			Content:  string(chartYAML),
 		},
 	}
 
@@ -857,7 +867,7 @@ type Dependency struct {
 	Repository string `yaml:"repository"`
 }
 
-func (g *clusterGitRepo) assembleChart(params *CreateClusterParams) (*Chart, error) {
+func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
 	const op = "cluster git repo: assemble chart"
 	helmRepo, ok := g.helmRepoMapper[params.Environment]
 	if !ok {

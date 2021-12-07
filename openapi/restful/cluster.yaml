@@ -251,6 +251,18 @@ paths:
                               "environment":"test",
                               "region":"hz"
                           },
+                          "createdAt": "2021-12-02T11:29:01+08:00",
+                          "updatedAt": "2021-12-02T11:29:01+08:00",
+                          "createdBy": {
+                            "id": 1,
+                            "name": "tony",
+                            "email": "tony@corp.com"
+                          },
+                          "updatedBy": {
+                             "id": 1,
+                             "name": "tony",
+                             "email": "tony@corp.com"
+                           },
                           "templateInput":{
                               "application":{
                                   "app":{

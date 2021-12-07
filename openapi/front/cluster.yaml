@@ -34,7 +34,10 @@ paths:
                               "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
                               "subfolder":"/",
                               "branch":"develop"
-                          }
+                          },
+                          "createdAt": "2021-12-02T11:29:01+08:00",
+                          "updatedAt": "2021-12-02T11:29:01+08:00",
+                          "fullPath": "/a/b/c"
                       }
                   }
         default:

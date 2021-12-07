@@ -60,6 +60,18 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, u4)
 	assert.Equal(t, u4.Name, name)
+
+	users, err := Mgr.GetUserByIDs(ctx, []uint{u4.ID})
+	assert.Nil(t, err)
+	assert.NotNil(t, users)
+	assert.Equal(t, 1, len(users))
+	assert.Equal(t, u4.Name, users[0].Name)
+
+	userMap, err := Mgr.GetUserMapByIDs(ctx, []uint{u4.ID})
+	assert.Nil(t, err)
+	assert.NotNil(t, userMap)
+	assert.Equal(t, 1, len(userMap))
+	assert.Equal(t, u4.Name, userMap[u4.ID].Name)
 }
 
 func TestSearchUser(t *testing.T) {
