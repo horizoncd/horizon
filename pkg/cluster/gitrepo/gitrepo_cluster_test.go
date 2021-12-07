@@ -145,10 +145,10 @@ func Test(t *testing.T) {
 			Name:     application,
 			Priority: "P0",
 		},
+		Environment: "test",
 	}
 	createParams := &CreateClusterParams{
-		BaseParams:  baseParams,
-		Environment: "test",
+		BaseParams: baseParams,
 		RegionEntity: &regionmodels.RegionEntity{
 			Region: &regionmodels.Region{
 				Name:        "hz",
