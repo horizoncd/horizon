@@ -234,6 +234,8 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		},
 		RegionEntity: regionEntity,
 		ClusterTags:  clusterTags,
+		Namespace:    r.Namespace,
+		Image:        r.Image,
 	})
 	if err != nil {
 		return nil, errors.E(op, err)
