@@ -599,6 +599,7 @@ func Test(t *testing.T) {
 	}
 
 	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", nil, createClusterRequest)
+	createClusterRequest.Name = "app-cluster-new"
 	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", nil, createClusterRequest)
 	assert.Nil(t, err)
 	b, _ := json.MarshalIndent(resp, "", "  ")
