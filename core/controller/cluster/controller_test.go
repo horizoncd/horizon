@@ -20,6 +20,7 @@ import (
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -562,6 +563,7 @@ func Test(t *testing.T) {
 		tektonFty:            tektonFty,
 		registryFty:          registryFty,
 		userManager:          usermanager.Mgr,
+		userSvc:              usersvc.Svc,
 	}
 
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()

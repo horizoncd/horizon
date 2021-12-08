@@ -169,6 +169,11 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 			errors.ErrorCode(common.InvalidRequestBody), err)
 	}
 
+	err = c.userSvc.CheckUsersExists(ctx, extraOwners)
+	if err != nil {
+		return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode(common.InvalidRequestParam), err)
+	}
+
 	// 3. if template is empty, set it with application's template
 	if r.Template == nil {
 		r.Template = &Template{
