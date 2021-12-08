@@ -62,15 +62,19 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		}
 
 		resp.RunningTask = c.getRunningTask(ctx, latestPipelineRun)
+		resp.RunningTask.PipelinerunID = latestBuildDeployPipelinerun.ID
 	}
 
-	// get latest pipelineruns
+	// get latest pipelinerun
 	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, cluster.ID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 	if latestPipelinerun != nil {
-		resp.RunningTask.PipelinerunID = latestPipelinerun.ID
+		resp.LatestPipelinerun = &LatestPipelinerun{
+			ID:     latestPipelinerun.ID,
+			Action: latestPipelinerun.Action,
+		}
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
