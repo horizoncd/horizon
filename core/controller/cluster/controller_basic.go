@@ -140,8 +140,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 }
 
 func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
-	environment, region string, extraOwners []string, r *CreateClusterRequest,
-	namespace, image string) (_ *GetClusterResponse, err error) {
+	environment, region string, extraOwners []string, r *CreateClusterRequest) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: create cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
@@ -235,8 +234,8 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		},
 		RegionEntity: regionEntity,
 		ClusterTags:  clusterTags,
-		Namespace:    namespace,
-		Image:        image,
+		Namespace:    r.Namespace,
+		Image:        r.Image,
 	})
 	if err != nil {
 		return nil, errors.E(op, err)
