@@ -157,6 +157,13 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 2. validate
+	exists, err := c.clusterMgr.CheckClusterExists(ctx, r.Name)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	if exists {
+		return nil, errors.E(op, http.StatusConflict, errors.ErrorCode("Conflict"), "已存在同名集群，请勿重复创建！")
+	}
 	if err := c.validateCreate(r); err != nil {
 		return nil, errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), err)
