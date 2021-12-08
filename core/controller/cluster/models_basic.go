@@ -38,6 +38,9 @@ type CreateClusterRequest struct {
 	*Base
 
 	Name string `json:"name"`
+	// TODO(gjq): remove these two params after migration
+	Namespace string `json:"namespace"`
+	Image     string `json:"image"`
 }
 
 type UpdateClusterRequest struct {
