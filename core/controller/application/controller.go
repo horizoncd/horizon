@@ -19,6 +19,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -49,6 +50,7 @@ type controller struct {
 	templateReleaseMgr   trmanager.Manager
 	clusterMgr           clustermanager.Manager
 	hook                 hook.Hook
+	userSvc              usersvc.Service
 }
 
 var _ Controller = (*controller)(nil)
@@ -65,6 +67,7 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
 		templateReleaseMgr:   trmanager.Mgr,
 		clusterMgr:           clustermanager.Mgr,
 		hook:                 hook,
+		userSvc:              usersvc.Svc,
 	}
 }
 
@@ -121,6 +124,11 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 	}
 
 	// 1. validate
+	err = c.userSvc.CheckUsersExists(ctx, extraOwners)
+	if err != nil {
+		return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode(common.InvalidRequestParam), err)
+	}
+
 	if err := validateApplicationName(request.Name); err != nil {
 		return nil, errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), err)

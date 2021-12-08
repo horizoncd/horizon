@@ -24,6 +24,7 @@ type Manager interface {
 	GetUserByID(ctx context.Context, userID uint) (*models.User, error)
 	GetUserByIDs(ctx context.Context, userIDs []uint) ([]models.User, error)
 	GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint]*models.User, error)
+	ListByEmail(ctx context.Context, emails []string) ([]*models.User, error)
 }
 
 type manager struct {
@@ -48,6 +49,10 @@ func (m *manager) SearchUser(ctx context.Context, filter string, query *q.Query)
 
 func (m *manager) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	return m.dao.GetByEmail(ctx, email)
+}
+
+func (m *manager) ListByEmail(ctx context.Context, emails []string) ([]*models.User, error) {
+	return m.dao.ListByEmail(ctx, emails)
 }
 
 func (m *manager) GetUserByID(ctx context.Context, userID uint) (*models.User, error) {
