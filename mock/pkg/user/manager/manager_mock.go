@@ -140,3 +140,18 @@ func (mr *MockManagerMockRecorder) GetUserMapByIDs(ctx, userIDs interface{}) *go
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserMapByIDs", reflect.TypeOf((*MockManager)(nil).GetUserMapByIDs), ctx, userIDs)
 }
+
+// ListByEmail mocks base method
+func (m *MockManager) ListByEmail(ctx context.Context, emails []string) ([]*models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByEmail", ctx, emails)
+	ret0, _ := ret[0].([]*models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByEmail indicates an expected call of ListByEmail
+func (mr *MockManagerMockRecorder) ListByEmail(ctx, emails interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByEmail", reflect.TypeOf((*MockManager)(nil).ListByEmail), ctx, emails)
+}

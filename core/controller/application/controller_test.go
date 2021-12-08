@@ -22,6 +22,7 @@ import (
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -305,6 +306,7 @@ func Test(t *testing.T) {
 		groupSvc:             groupsvc.Svc,
 		templateReleaseMgr:   trmanager.Mgr,
 		clusterMgr:           clustermanager.Mgr,
+		userSvc:              usersvc.Svc,
 	}
 
 	group, err := groupmanager.Mgr.Create(ctx, &groupmodels.Group{
