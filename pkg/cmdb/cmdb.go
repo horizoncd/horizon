@@ -39,7 +39,8 @@ const (
 	CreateApplicationFormat string = "http://%s/api/v2/createApplication?signature=%s&client=%s"
 	DeleteApplicationFormat string = "http://%s/api/v2/deleteApplication?signature=%s&client=%s&applicationName=%s"
 	CreateClusterFormat     string = "http://%s/api/v2/createCluster?signature=%s&client=%s"
-	DeleteClusterFormat     string = "http://%s/api/v2/deleteCluster?signature=%s&client=%s&clusterName=%s&forceDelete=true"
+	DeleteClusterFormat     string = "http://%s/api/v2/deleteCluster?signature=%s&client=%s&clusterName=%s" +
+		"&forceDelete=true"
 )
 
 func (c *controller) getSignature() (string, error) {
