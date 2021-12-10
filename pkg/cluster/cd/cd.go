@@ -36,6 +36,24 @@ const (
 	RolloutPodTemplateHash    = "rollouts-pod-template-hash"
 )
 
+const (
+	// PodLifeCycleSchedule specifies whether pod has been scheduled
+	PodLifeCycleSchedule = "PodSchedule"
+	// PodLifeCycleInitialize specifies whether all init containers have finished
+	PodLifeCycleInitialize = "PodInitialize"
+	// PodLifeCycleContainerStartup specifies whether the container has passed its startup probe
+	PodLifeCycleContainerStartup = "ContainerStartup"
+	// PodLifeCycleContainerOnline specified whether the container has passed its postStart hook
+	PodLifeCycleContainerOnline = "ContainerOnline"
+	// PodLifeCycleHealthCheck specifies whether the container has passed its readiness probe
+	PodLifeCycleHealthCheck = "HealthCheck"
+
+	LifeCycleStatusSuccess  = "Success"
+	LifeCycleStatusWaiting  = "Waiting"
+	LifeCycleStatusRunning  = "Running"
+	LifeCycleStatusAbnormal = "Abnormal"
+)
+
 type GetClusterStateParams struct {
 	Environment  string
 	Cluster      string
@@ -497,6 +515,12 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 		containerStatuses = append(containerStatuses, c)
 	}
 	clusterPod.Status.ContainerStatuses = containerStatuses
+	podLifeCycle, err := parsePodLifeCycle(pod.Status)
+	if err != nil {
+		log.Errorf(ctx, "failed to parse pod %s lifecycle, err: %v", pod.Name, err)
+		return nil
+	}
+	clusterPod.Status.LifeCycle = podLifeCycle
 
 	for i := range events {
 		eventTimeStamp := metav1.Time{Time: events[i].EventTime.Time}
@@ -538,6 +562,94 @@ func (c *containerList) Less(i, j int) bool {
 
 func (c *containerList) Swap(i, j int) {
 	c.containers[i], c.containers[j] = c.containers[j], c.containers[i]
+}
+
+// parsePodLifecycle parse pod lifecycle by pod status
+func parsePodLifeCycle(status corev1.PodStatus) ([]*LifeCycleItem, error) {
+	if len(status.ContainerStatuses) == 0 {
+		return nil, fmt.Errorf("pod container status is empty")
+	}
+	var (
+		conditionMap  = map[corev1.PodConditionType]corev1.PodCondition{}
+		mainContainer = status.ContainerStatuses[0]
+		schedule      = LifeCycleItem{
+			Type:   PodLifeCycleSchedule,
+			Status: LifeCycleStatusWaiting,
+		}
+		initialize = LifeCycleItem{
+			Type:   PodLifeCycleInitialize,
+			Status: LifeCycleStatusWaiting,
+		}
+		containerStartup = LifeCycleItem{
+			Type:   PodLifeCycleContainerStartup,
+			Status: LifeCycleStatusWaiting,
+		}
+		containerOnline = LifeCycleItem{
+			Type:   PodLifeCycleContainerOnline,
+			Status: LifeCycleStatusWaiting,
+		}
+		healthCheck = LifeCycleItem{
+			Type:   PodLifeCycleHealthCheck,
+			Status: LifeCycleStatusWaiting,
+		}
+		lifeCycle = []*LifeCycleItem{
+			&schedule,
+			&initialize,
+			&containerStartup,
+			&containerOnline,
+			&healthCheck,
+		}
+	)
+	for _, condition := range status.Conditions {
+		conditionMap[condition.Type] = condition
+	}
+	if condition, ok := conditionMap[corev1.PodScheduled]; ok {
+		if condition.Status == corev1.ConditionTrue {
+			schedule.Status = LifeCycleStatusSuccess
+			schedule.CompleteTime = condition.LastTransitionTime
+			initialize.Status = LifeCycleStatusRunning
+		} else if condition.Message != "" {
+			schedule.Status = LifeCycleStatusAbnormal
+			schedule.Message = condition.Message
+		}
+	} else {
+		schedule.Status = LifeCycleStatusWaiting
+	}
+
+	if condition, ok := conditionMap[corev1.PodInitialized]; ok {
+		if condition.Status == corev1.ConditionTrue {
+			initialize.Status = LifeCycleStatusSuccess
+			initialize.CompleteTime = condition.LastTransitionTime
+			containerStartup.Status = LifeCycleStatusRunning
+		}
+	} else {
+		initialize.Status = LifeCycleStatusWaiting
+	}
+
+	if mainContainer.Started != nil && *(mainContainer.Started) {
+		containerStartup.Status = LifeCycleStatusSuccess
+		containerOnline.Status = LifeCycleStatusRunning
+	}
+
+	if mainContainer.State.Running != nil {
+		containerOnline.Status = LifeCycleStatusSuccess
+		healthCheck.Status = LifeCycleStatusRunning
+	}
+
+	if mainContainer.Ready {
+		healthCheck.Status = LifeCycleStatusSuccess
+	}
+
+	// CrashLoopBackOff means rest items are abnormal
+	if mainContainer.State.Waiting != nil && mainContainer.State.Waiting.Reason == "CrashLoopBackOff" {
+		for i := 0; i < len(lifeCycle); i++ {
+			if lifeCycle[i].Status == LifeCycleStatusRunning {
+				lifeCycle[i].Status = LifeCycleStatusAbnormal
+			}
+		}
+	}
+
+	return lifeCycle, nil
 }
 
 func parseContainerState(containerStatus corev1.ContainerStatus) ContainerState {
@@ -652,6 +764,7 @@ type (
 		Phase             string             `json:"phase,omitempty" yaml:"phase,omitempty"`
 		Events            []Event            `json:"events,omitempty" yaml:"events,omitempty"`
 		ContainerStatuses []*ContainerStatus `json:"containerStatuses,omitempty" yaml:"containerStatuses,omitempty"`
+		LifeCycle         []*LifeCycleItem   `json:"lifeCycle" yaml:"lifeCycle"`
 	}
 
 	ContainerStatus struct {
@@ -673,6 +786,13 @@ type (
 		State   string `json:"state" yaml:"state"`
 		Reason  string `json:"reason" yaml:"reason"`
 		Message string `json:"message" yaml:"message"`
+	}
+
+	LifeCycleItem struct {
+		Type         string      `json:"type" yaml:"type"`
+		Status       string      `json:"status" yaml:"status"`
+		Message      string      `json:"message" yaml:"status"`
+		CompleteTime metav1.Time `json:"completeTime" yaml:"completeTime"`
 	}
 )
 
