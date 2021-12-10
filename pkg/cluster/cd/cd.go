@@ -239,7 +239,16 @@ func (c *cd) Next(ctx context.Context, params *ClusterNextParams) (err error) {
 func (c *cd) GetClusterState(ctx context.Context,
 	params *GetClusterStateParams) (clusterState *ClusterState, err error) {
 	const op = "cd: get cluster status"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	l := wlog.Start(ctx, op)
+	defer func() {
+		// errors like ClusterNotFound are logged with info level
+		if err != nil && errors.Status(err) == http.StatusNotFound {
+			log.WithFiled(ctx, "op",
+				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
+		} else {
+			l.Stop(func() string { return wlog.ByErr(err) })
+		}
+	}()
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
@@ -515,12 +524,7 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 		containerStatuses = append(containerStatuses, c)
 	}
 	clusterPod.Status.ContainerStatuses = containerStatuses
-	podLifeCycle, err := parsePodLifeCycle(pod.Status)
-	if err != nil {
-		log.Errorf(ctx, "failed to parse pod %s lifecycle, err: %v", pod.Name, err)
-		return nil
-	}
-	clusterPod.Status.LifeCycle = podLifeCycle
+	clusterPod.Status.LifeCycle = parsePodLifeCycle(pod.Status)
 
 	for i := range events {
 		eventTimeStamp := metav1.Time{Time: events[i].EventTime.Time}
@@ -565,10 +569,7 @@ func (c *containerList) Swap(i, j int) {
 }
 
 // parsePodLifecycle parse pod lifecycle by pod status
-func parsePodLifeCycle(status corev1.PodStatus) ([]*LifeCycleItem, error) {
-	if len(status.ContainerStatuses) == 0 {
-		return nil, fmt.Errorf("pod container status is empty")
-	}
+func parsePodLifeCycle(status corev1.PodStatus) []*LifeCycleItem {
 	var (
 		conditionMap  = map[corev1.PodConditionType]corev1.PodCondition{}
 		mainContainer = status.ContainerStatuses[0]
@@ -600,6 +601,9 @@ func parsePodLifeCycle(status corev1.PodStatus) ([]*LifeCycleItem, error) {
 			&healthCheck,
 		}
 	)
+	if len(status.ContainerStatuses) == 0 {
+		return lifeCycle
+	}
 	for _, condition := range status.Conditions {
 		conditionMap[condition.Type] = condition
 	}
@@ -649,7 +653,7 @@ func parsePodLifeCycle(status corev1.PodStatus) ([]*LifeCycleItem, error) {
 		}
 	}
 
-	return lifeCycle, nil
+	return lifeCycle
 }
 
 func parseContainerState(containerStatus corev1.ContainerStatus) ContainerState {
