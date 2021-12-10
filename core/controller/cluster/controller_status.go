@@ -12,6 +12,7 @@ import (
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/argoproj/gitops-engine/pkg/health"
@@ -29,7 +30,16 @@ const (
 
 func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error) {
 	const op = "cluster controller: get cluster status"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	l := wlog.Start(ctx, op)
+	defer func() {
+		// errors like ClusterNotFound are logged with info level
+		if err != nil && errors.Status(err) == http.StatusNotFound {
+			log.WithFiled(ctx, "op",
+				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
+		} else {
+			l.Stop(func() string { return wlog.ByErr(err) })
+		}
+	}()
 
 	// get latest builddeploy action pipelinerun
 	latestBuildDeployPipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx,
