@@ -261,7 +261,37 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, errors.E(op, err)
 	}
 
-	// 5. deploy cluster in cd
+	// 5. create cluster in cd system
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
+	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
+		Environment:   er.EnvironmentName,
+		Cluster:       cluster.Name,
+		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
+		ValueFiles:    repoInfo.ValueFiles,
+		RegionEntity:  regionEntity,
+		Namespace:     envValue.Namespace,
+	}); err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 6. reset cluster status
+	if cluster.Status == clustercommon.StatusFreed {
+		cluster.Status = clustercommon.StatusEmpty
+		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+	}
+
+	// 7. deploy cluster in cd
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: er.EnvironmentName,
 		Cluster:     cluster.Name,
@@ -271,7 +301,7 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 
 	timeNow := time.Now()
-	// 6. add pipelinerun in db
+	// 8. add pipelinerun in db
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionRollback,

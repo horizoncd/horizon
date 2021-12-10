@@ -291,7 +291,16 @@ func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string
 func (h *helper) GetApplication(ctx context.Context,
 	application string) (applicationCRD *v1alpha1.Application, err error) {
 	const op = "argo: get application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	l := wlog.Start(ctx, op)
+	defer func() {
+		// errors like ClusterNotFound are logged with info level
+		if err != nil && errors.Status(err) == http.StatusNotFound {
+			log.WithFiled(ctx, "op",
+				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
+		} else {
+			l.Stop(func() string { return wlog.ByErr(err) })
+		}
+	}()
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v", h.URL, application)
 	return h.getOrRefreshApplication(ctx, url)
