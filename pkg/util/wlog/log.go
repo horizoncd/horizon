@@ -43,6 +43,10 @@ func (l Log) Stop(end func() string) {
 	}
 }
 
+func (l Log) GetDuration() time.Duration {
+	return time.Since(l.start)
+}
+
 func ByErr(err error) string {
 	if err == nil {
 		return Success
