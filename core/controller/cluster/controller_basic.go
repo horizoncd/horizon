@@ -82,7 +82,16 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 
 func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: get cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	l := wlog.Start(ctx, op)
+	defer func() {
+		// errors like ClusterNotFound are logged with info level
+		if err != nil && errors.Status(err) == http.StatusNotFound {
+			log.WithFiled(ctx, "op",
+				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
+		} else {
+			l.Stop(func() string { return wlog.ByErr(err) })
+		}
+	}()
 
 	// 1. get cluster from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -373,7 +382,16 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 func (c *controller) GetClusterByName(ctx context.Context,
 	clusterName string) (_ *GetClusterByNameResponse, err error) {
 	const op = "cluster controller: get cluster by name"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	l := wlog.Start(ctx, op)
+	defer func() {
+		// errors like ClusterNotFound are logged with info level
+		if err != nil && errors.Status(err) == http.StatusNotFound {
+			log.WithFiled(ctx, "op",
+				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
+		} else {
+			l.Stop(func() string { return wlog.ByErr(err) })
+		}
+	}()
 
 	// 1. get cluster
 	cluster, err := c.clusterMgr.GetByName(ctx, clusterName)
