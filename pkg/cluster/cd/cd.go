@@ -571,9 +571,8 @@ func (c *containerList) Swap(i, j int) {
 // parsePodLifecycle parse pod lifecycle by pod status
 func parsePodLifeCycle(status corev1.PodStatus) []*LifeCycleItem {
 	var (
-		conditionMap  = map[corev1.PodConditionType]corev1.PodCondition{}
-		mainContainer = status.ContainerStatuses[0]
-		schedule      = LifeCycleItem{
+		conditionMap = map[corev1.PodConditionType]corev1.PodCondition{}
+		schedule     = LifeCycleItem{
 			Type:   PodLifeCycleSchedule,
 			Status: LifeCycleStatusWaiting,
 		}
@@ -604,6 +603,7 @@ func parsePodLifeCycle(status corev1.PodStatus) []*LifeCycleItem {
 	if len(status.ContainerStatuses) == 0 {
 		return lifeCycle
 	}
+	var mainContainer = status.ContainerStatuses[0]
 	for _, condition := range status.Conditions {
 		conditionMap[condition.Type] = condition
 	}
