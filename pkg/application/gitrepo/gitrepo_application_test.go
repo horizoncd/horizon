@@ -189,4 +189,30 @@ func Test(t *testing.T) {
 	if reflect.DeepEqual(applicationJSON, pipelineJSONBlob) {
 		t.Fatal("wrong application")
 	}
+
+	env := "dev"
+	pipelineJSON, applicationJSON, err = r.GetApplicationEnvTemplate(ctx, app, env)
+	assert.Nil(t, err)
+	if reflect.DeepEqual(pipelineJSON, applicationJSONBlob) {
+		t.Fatal("wrong pipeline")
+	}
+
+	if reflect.DeepEqual(applicationJSON, pipelineJSONBlob) {
+		t.Fatal("wrong application")
+	}
+
+	pipelineJSONBlob["test"] = "test"
+	applicationJSONBlob["application"] = "application"
+	err = r.UpdateApplicationEnvTemplate(ctx, app, env, pipelineJSONBlob, applicationJSONBlob)
+	assert.Nil(t, err)
+
+	pipelineJSON, applicationJSON, err = r.GetApplicationEnvTemplate(ctx, app, env)
+	assert.Nil(t, err)
+	if reflect.DeepEqual(pipelineJSON, applicationJSONBlob) {
+		t.Fatal("wrong pipeline")
+	}
+
+	if reflect.DeepEqual(applicationJSON, pipelineJSONBlob) {
+		t.Fatal("wrong application")
+	}
 }

@@ -77,6 +77,36 @@ func (mr *MockApplicationGitRepoMockRecorder) GetApplication(ctx, application in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).GetApplication), ctx, application)
 }
 
+// UpdateApplicationEnvTemplate mocks base method
+func (m *MockApplicationGitRepo) UpdateApplicationEnvTemplate(ctx context.Context, application, env string, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateApplicationEnvTemplate", ctx, application, env, pipelineJSONBlob, applicationJSONBlob)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateApplicationEnvTemplate indicates an expected call of UpdateApplicationEnvTemplate
+func (mr *MockApplicationGitRepoMockRecorder) UpdateApplicationEnvTemplate(ctx, application, env, pipelineJSONBlob, applicationJSONBlob interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplicationEnvTemplate", reflect.TypeOf((*MockApplicationGitRepo)(nil).UpdateApplicationEnvTemplate), ctx, application, env, pipelineJSONBlob, applicationJSONBlob)
+}
+
+// GetApplicationEnvTemplate mocks base method
+func (m *MockApplicationGitRepo) GetApplicationEnvTemplate(ctx context.Context, application, env string) (map[string]interface{}, map[string]interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetApplicationEnvTemplate", ctx, application, env)
+	ret0, _ := ret[0].(map[string]interface{})
+	ret1, _ := ret[1].(map[string]interface{})
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetApplicationEnvTemplate indicates an expected call of GetApplicationEnvTemplate
+func (mr *MockApplicationGitRepoMockRecorder) GetApplicationEnvTemplate(ctx, application, env interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationEnvTemplate", reflect.TypeOf((*MockApplicationGitRepo)(nil).GetApplicationEnvTemplate), ctx, application, env)
+}
+
 // DeleteApplication mocks base method
 func (m *MockApplicationGitRepo) DeleteApplication(ctx context.Context, application string, applicationID uint) error {
 	m.ctrl.T.Helper()
