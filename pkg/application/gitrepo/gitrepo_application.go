@@ -192,17 +192,6 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
 	pid := fmt.Sprintf("%v/%v", gid, _default)
 
-	// TODO(gjq): after migration, remove this check
-	// check if '{application}/default' project exists
-	_, err = g.gitlabLib.GetProject(ctx, pid)
-	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
-			return nil, nil, errors.E(op, err)
-		}
-		// if not found, use '{application}', pid = gid
-		pid = gid
-	}
-
 	var applicationBytes, pipelineBytes []byte
 	var err1, err2 error
 
