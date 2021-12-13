@@ -43,6 +43,18 @@ func (l Log) Stop(end func() string) {
 	}
 }
 
+func (l Log) StopPrint() {
+	if err := recover(); err != nil {
+		log.Error(l.ctx, string(debug.Stack()))
+
+		panic(err)
+	}
+	duration := time.Since(l.start)
+
+	log.WithFiled(l.ctx, "op",
+		l.op).WithField("duration", fmt.Sprintf("%s", duration))
+}
+
 func (l Log) GetDuration() time.Duration {
 	return time.Since(l.start)
 }

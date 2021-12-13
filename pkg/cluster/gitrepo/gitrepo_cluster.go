@@ -107,6 +107,13 @@ type ClusterFiles struct {
 	PipelineJSONBlob, ApplicationJSONBlob map[string]interface{}
 }
 
+type ClusterValueFiles struct {
+	systemHorizonYamlFile map[string]interface{}
+	systemEnvYamlFile     map[string]interface{}
+	applicationYamlFile   map[string]interface{}
+	sreYamlFile           map[string]interface{}
+}
+
 type ClusterCommit struct {
 	Master string
 	Gitops string
@@ -114,6 +121,8 @@ type ClusterCommit struct {
 
 type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
+	GetClusterValueFiles(ctx context.Context,
+		application, cluster, templateName string) (*ClusterValueFiles, error)
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
 	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
@@ -207,6 +216,12 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 	}, nil
+}
+
+func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
+	application, cluster, templateName string) (_ *ClusterValueFiles, err error) {
+
+	return nil, nil
 }
 
 func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {

@@ -148,6 +148,40 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	return clusterResp, nil
 }
 
+func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ *OutPutResponse, err error) {
+	const op = "cluster controller: get cluster output"
+	defer wlog.Start(ctx, op).StopPrint()
+	// 1. get cluster from db
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			log.Errorf(ctx, "get cluster error, err = ", err.Error())
+		}
+		return nil, errors.E(op, err)
+	}
+	// 2. get application
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			log.Errorf(ctx, "get cluster error, err = ", err.Error())
+		}
+		return nil, errors.E(op, err)
+	}
+
+	// 2. get files in  git repo
+	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		log.Error(ctx, "get cluster from error, err  = %s", err.Error())
+		return nil, err
+	}
+
+	// 3. get output in template
+
+	// 4. reader output in template and return
+
+	return nil, nil
+}
+
 func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	environment, region string, extraOwners []string, r *CreateClusterRequest) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: create cluster"
