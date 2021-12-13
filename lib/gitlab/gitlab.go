@@ -20,6 +20,9 @@ type Interface interface {
 	// See https://docs.gitlab.com/ee/api/groups.html#details-of-a-group for more information.
 	GetGroup(ctx context.Context, gid interface{}) (*gitlab.Group, error)
 
+	// ListGroupProjects list a group's project
+	ListGroupProjects(ctx context.Context, gid interface{}, page, perPage int) ([]*gitlab.Project, error)
+
 	// CreateGroup create a gitlab group with the given name and path.
 	// The parentID is alternative, if you specify the parentID, it will
 	// create a subgroup of this parent.
@@ -170,6 +173,31 @@ func (h *helper) GetGroup(ctx context.Context, gid interface{}) (_ *gitlab.Group
 	}
 
 	return group, nil
+}
+
+func (h *helper) ListGroupProjects(ctx context.Context, gid interface{},
+	page, perPage int) (_ []*gitlab.Project, err error) {
+	const op = "gitlab: list group projects"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	if page < 1 {
+		return nil, errors.E(op, "page cannot be less 1")
+	}
+	if perPage < 1 {
+		return nil, errors.E(op, "perPage cannot be less 1")
+	}
+
+	projects, resp, err := h.client.Groups.ListGroupProjects(gid, &gitlab.ListGroupProjectsOptions{
+		ListOptions: gitlab.ListOptions{
+			Page:    page,
+			PerPage: perPage,
+		},
+	}, gitlab.WithContext(ctx))
+	if err != nil {
+		return nil, parseError(op, resp, err)
+	}
+
+	return projects, nil
 }
 
 func (h *helper) CreateGroup(ctx context.Context, name, path string, parentID *int) (_ *gitlab.Group, err error) {

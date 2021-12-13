@@ -16,6 +16,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
+	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
 	kyaml "sigs.k8s.io/yaml"
 )
@@ -27,6 +28,8 @@ const (
 
 	_filePathApplication = "application.yaml"
 	_filePathPipeline    = "pipeline.yaml"
+
+	_default = "default"
 )
 
 // ApplicationGitRepo interface to provide the management functions with git repo for applications
@@ -72,13 +75,19 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 			errors.ErrorCode(common.InternalError), "no user in context")
 	}
 
-	// 1. create application repo
-	if _, err := g.gitlabLib.CreateProject(ctx, application, g.applicationRepoConf.Parent.ID); err != nil {
+	// 1. create application group
+	group, err := g.gitlabLib.CreateGroup(ctx, application, application, &g.applicationRepoConf.Parent.ID)
+	if err != nil {
 		return errors.E(op, err)
 	}
 
-	// 2. write files to application repo
-	pid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	// 2. create application default repo
+	if _, err := g.gitlabLib.CreateProject(ctx, _default, group.ID); err != nil {
+		return errors.E(op, err)
+	}
+
+	// 3. write files to application repo
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, _default)
 	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
@@ -132,7 +141,7 @@ func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, applicati
 	}
 
 	// 1. write files to gitlab
-	pid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, _default)
 	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
@@ -180,7 +189,9 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	// 1. get template and pipeline from gitlab
-	pid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	pid := fmt.Sprintf("%v/%v", gid, _default)
+
 	var applicationBytes, pipelineBytes []byte
 	var err1, err2 error
 
@@ -222,21 +233,54 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 
 func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 	application string, applicationID uint) (err error) {
-	const op = "gitlab repo: get application"
+	const op = "gitlab repo: delete application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	// 1. delete gitlab project
-	pid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
-	// 1.1 edit project's name and path to {application}-{applicationID}
-	newName := fmt.Sprintf("%v-%d", application, applicationID)
-	newPath := newName
-	if err := g.gitlabLib.EditNameAndPathForProject(ctx, pid, &newName, &newPath); err != nil {
+	// page and perPage used for list projects.
+	// the count of project under the application's group cannot be greater than 8,
+	// because we only have 7 envs: dev, test, reg, perf, pre, beta, online
+	// so the default page is 1, and the default perPage is 8
+	const (
+		page    = 1
+		perPage = 8
+	)
+
+	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+
+	recyclingGroupName := fmt.Sprintf("%v-%d", application, applicationID)
+
+	// 1. create recyclingGroup
+	recyclingGroup, err := g.gitlabLib.CreateGroup(ctx, recyclingGroupName,
+		recyclingGroupName, &g.applicationRepoConf.RecyclingParent.ID)
+	if err != nil {
 		return errors.E(op, err)
 	}
 
-	// 1.2 transfer project to RecyclingParent
-	newPid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, newPath)
-	if err := g.gitlabLib.TransferProject(ctx, newPid, g.applicationRepoConf.RecyclingParent.Path); err != nil {
+	// 2. transfer all project to recyclingGroup
+	projects, err := g.gitlabLib.ListGroupProjects(ctx, gid, page, perPage)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	var wg sync.WaitGroup
+	var errs []error
+	for _, project := range projects {
+		wg.Add(1)
+		go func(project *gitlab.Project) {
+			defer wg.Done()
+			if err := g.gitlabLib.TransferProject(ctx, project.ID, recyclingGroup.ID); err != nil {
+				errs = append(errs, err)
+			}
+		}(project)
+	}
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return errors.E(op, errs[0])
+	}
+
+	// 3. delete old application group
+	if err := g.gitlabLib.DeleteGroup(ctx, gid); err != nil {
 		return errors.E(op, err)
 	}
 
