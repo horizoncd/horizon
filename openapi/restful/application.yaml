@@ -342,6 +342,10 @@ paths:
         in: path
         description: application id
         required: true
+      - name: env
+        in: path
+        description: env
+        required: true
     post:
       tags:
         - application
