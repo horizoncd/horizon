@@ -55,6 +55,7 @@ type Controller interface {
 	GetClusterPods(ctx context.Context, clusterID uint, start, end int64) (*GetClusterPodsResponse, error)
 	FreeCluster(ctx context.Context, clusterID uint) (err error)
 	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
+	SkipAllSteps(ctx context.Context, clusterID uint) (err error)
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,

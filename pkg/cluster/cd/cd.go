@@ -25,6 +25,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubectl/pkg/cmd/exec"
 )
@@ -93,6 +95,13 @@ type ClusterNextParams struct {
 	Cluster     string
 }
 
+type ClusterSkipAllStepsParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Environment  string
+}
+
 type GetContainerLogParams struct {
 	Namespace   string
 	Cluster     string
@@ -125,6 +134,7 @@ type CD interface {
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
 	DeleteCluster(ctx context.Context, params *DeleteClusterParams) error
 	Next(ctx context.Context, params *ClusterNextParams) error
+	SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
@@ -229,6 +239,58 @@ func (c *cd) Next(ctx context.Context, params *ClusterNextParams) (err error) {
 	}
 
 	if err := argo.ResumeRollout(ctx, params.Cluster); err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
+}
+
+var rolloutResource = schema.GroupVersionResource{
+	Group:    "argoproj.io",
+	Version:  "v1alpha1",
+	Resource: "rollouts",
+}
+
+func (c *cd) SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams) (err error) {
+	const op = "cd: skip all steps"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// 1. get argo rollout steps count
+	argo, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	argoApp, err := argo.GetApplication(ctx, params.Cluster)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	var rollout *v1alpha1.Rollout
+	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
+		Group:        "argoproj.io",
+		Version:      "v1alpha1",
+		Kind:         "Rollout",
+		Namespace:    argoApp.Spec.Destination.Namespace,
+		ResourceName: params.Cluster,
+	}, &rollout); err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return errors.E(op, err)
+		}
+	}
+
+	if !(len(rollout.Status.PauseConditions) != 0 || rollout.Spec.Paused) {
+		return errors.E(op, fmt.Errorf("this cluster is not in Suspended state"))
+	}
+
+	// 2. patch rollout currentStepIndex
+	_, dynamicKubeClient, err := c.kubeClientFty.GetDynamicByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	patchBody := []byte(getCurrentStepIndexPatchStr(len(rollout.Spec.Strategy.Canary.Steps)))
+	_, err = dynamicKubeClient.Resource(rolloutResource).
+		Namespace(params.Namespace).
+		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
+	if err != nil {
 		return errors.E(op, err)
 	}
 
@@ -1020,4 +1082,8 @@ func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
 	}
 
 	return result
+}
+
+func getCurrentStepIndexPatchStr(stepCnt int) string {
+	return fmt.Sprintf(`{"status": {"currentStepIndex": %d}}`, stepCnt)
 }
