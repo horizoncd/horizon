@@ -167,7 +167,7 @@ func Test(t *testing.T) {
 
 	defer func() {
 		_ = r.DeleteApplication(ctx, app, 1)
-		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v-%v", rootGroupName, "recycling-applications", app, 1))
+		_ = g.DeleteGroup(ctx, fmt.Sprintf("%v/%v/%v-%v", rootGroupName, "recycling-applications", app, 1))
 	}()
 
 	err := r.CreateApplication(ctx, app, pipelineJSONBlob, applicationJSONBlob)
