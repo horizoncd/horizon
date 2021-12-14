@@ -282,12 +282,12 @@ func (c *cd) SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams
 	}
 
 	// 2. patch rollout currentStepIndex
-	_, dynamicKubeClient, err := c.kubeClientFty.GetDynamicByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
 		return errors.E(op, err)
 	}
 	patchBody := []byte(getCurrentStepIndexPatchStr(len(rollout.Spec.Strategy.Canary.Steps)))
-	_, err = dynamicKubeClient.Resource(rolloutResource).
+	_, err = kubeClient.Dynamic.Resource(rolloutResource).
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
@@ -358,7 +358,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	var latestReplicaSet *appsv1.ReplicaSet
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
 		common.ClusterLabelKey, params.Cluster))
-	rss, err := kube.GetReplicaSets(ctx, kubeClient, params.Namespace, labelSelector.String())
+	rss, err := kube.GetReplicaSets(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 	if err != nil {
 		return nil, err
 	} else if len(rss) == 0 {
@@ -392,7 +392,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		labelSelector := fields.ParseSelectorOrDie(
 			fmt.Sprintf("%v=%v", common.ClusterLabelKey, params.Cluster))
 		// serverless 应用会有多个 Deployment 对象
-		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient, params.Namespace, labelSelector.String())
+		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
@@ -415,7 +415,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	}
 
 	if err := c.paddingPodAndEventInfo(ctx, params.Cluster, params.Namespace,
-		kubeClient, clusterState); err != nil {
+		kubeClient.Basic, clusterState); err != nil {
 		return nil, errors.E(op, err)
 	}
 
@@ -434,14 +434,14 @@ func (c *cd) GetPodEvents(ctx context.Context,
 
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
 		common.ClusterLabelKey, params.Cluster))
-	pods, err := kube.GetPods(ctx, kubeClient, params.Namespace, labelSelector.String())
+	pods, err := kube.GetPods(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
 	for _, pod := range pods {
 		if pod.Name == params.Pod {
-			k8sEvents, err := kube.GetPodEvents(ctx, kubeClient, params.Namespace, params.Pod)
+			k8sEvents, err := kube.GetPodEvents(ctx, kubeClient.Basic, params.Namespace, params.Pod)
 			if err != nil {
 				return nil, errors.E(op, err)
 			}
@@ -1038,7 +1038,7 @@ func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ ma
 	for _, pod := range params.PodList {
 		containers = append(containers, kube.ContainerRef{
 			Config:        config,
-			KubeClientset: kubeClient,
+			KubeClientset: kubeClient.Basic,
 			Namespace:     params.Namespace,
 			Pod:           pod,
 		})

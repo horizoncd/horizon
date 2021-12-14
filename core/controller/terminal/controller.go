@@ -113,7 +113,7 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 		sizeChan: make(chan remotecommand.TerminalSize),
 	})
 
-	go WaitForTerminal(kubeClient, kubeConfig, ref)
+	go WaitForTerminal(kubeClient.Basic, kubeConfig, ref)
 
 	handler := sockjs.NewHandler("/apis/front/v1", sockjs.DefaultOptions, handleTerminalSession)
 	return handler, nil

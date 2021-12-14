@@ -117,8 +117,13 @@ func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) 
 	return restConfig, k8sClient, nil
 }
 
+type Client struct {
+	Basic   kubernetes.Interface
+	Dynamic dynamic.Interface
+}
+
 // BuildClientFromContent build client from k8s kubeconfig content, not file path
-func BuildClientFromContent(kubeconfigContent string) (*rest.Config, kubernetes.Interface, error) {
+func BuildClientFromContent(kubeconfigContent string) (*rest.Config, *Client, error) {
 	var restConfig *rest.Config
 	var err error
 	if len(kubeconfigContent) > 0 {
@@ -143,43 +148,22 @@ func BuildClientFromContent(kubeconfigContent string) (*rest.Config, kubernetes.
 	restConfig.ContentType = runtime.ContentTypeJSON
 	restConfig.NegotiatedSerializer = scheme.Codecs
 
-	k8sClient, err := kubernetes.NewForConfig(restConfig)
+	basicClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
-	return restConfig, k8sClient, nil
-}
 
-// BuildDynamicClientFromContent build dynamic client from k8s kubeconfig content, not file path
-func BuildDynamicClientFromContent(kubeconfigContent string) (*rest.Config, dynamic.Interface, error) {
-	var restConfig *rest.Config
-	var err error
-	if len(kubeconfigContent) > 0 {
-		clientConfig, err := clientcmd.NewClientConfigFromBytes([]byte(kubeconfigContent))
-		if err != nil {
-			return nil, nil, err
-		}
-		restConfig, err = clientConfig.ClientConfig()
-		if err != nil {
-			return nil, nil, err
-		}
-	} else {
-		restConfig, err = rest.InClusterConfig()
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	groupVersion := &schema.GroupVersion{Group: "", Version: "v1"}
-	restConfig.GroupVersion = groupVersion
-	restConfig.ContentType = runtime.ContentTypeJSON
-	restConfig.NegotiatedSerializer = scheme.Codecs
-
-	k8sClient, err := dynamic.NewForConfig(restConfig)
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
-	return restConfig, k8sClient, nil
+
+	kubeClient := &Client{
+		Basic:   basicClient,
+		Dynamic: dynamicClient,
+	}
+
+	return restConfig, kubeClient, nil
 }
 
 type ContainerRef struct {
