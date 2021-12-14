@@ -133,6 +133,7 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		GitSubfolder:    gitSubfolder,
 		GitBranch:       gitBranch,
 		TemplateRelease: templateRelease,
+		Status:          cluster.Status,
 	}
 }
 
