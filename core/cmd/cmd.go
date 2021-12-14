@@ -14,6 +14,7 @@ import (
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	clustertagctl "g.hz.netease.com/horizon/core/controller/clustertag"
 	codectl "g.hz.netease.com/horizon/core/controller/code"
+	envtemplatectl "g.hz.netease.com/horizon/core/controller/envtemplate"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
@@ -25,6 +26,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/clustertag"
 	codeapi "g.hz.netease.com/horizon/core/http/api/v1/code"
 	"g.hz.netease.com/horizon/core/http/api/v1/environment"
+	"g.hz.netease.com/horizon/core/http/api/v1/envtemplate"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
@@ -214,6 +216,7 @@ func Run(flags *Flags) {
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
+		envTemplateCtl = envtemplatectl.NewController(applicationGitRepo, templateSchemaGetter)
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, gitGetter,
 			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, memHook, config.GrafanaMapper)
 		prCtl = prctl.NewController(tektonFty, gitGetter, clusterGitRepo)
@@ -232,6 +235,7 @@ func Run(flags *Flags) {
 		templateAPI          = template.NewAPI(templateCtl)
 		userAPI              = user.NewAPI()
 		applicationAPI       = application.NewAPI(applicationCtl)
+		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
 		memberAPI            = member.NewAPI(memberCtl, roleService)
 		clusterAPI           = cluster.NewAPI(clusterCtl)
 		prAPI                = pipelinerun.NewAPI(prCtl)
@@ -287,6 +291,7 @@ func Run(flags *Flags) {
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
 	application.RegisterRoutes(r, applicationAPI)
+	envtemplate.RegisterRoutes(r, envTemplateAPI)
 	cluster.RegisterRoutes(r, clusterAPI)
 	pipelinerun.RegisterRoutes(r, prAPI)
 	environment.RegisterRoutes(r, environmentAPI)
