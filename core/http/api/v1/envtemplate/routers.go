@@ -14,12 +14,12 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/applications/:%v/envtemplates/:%v", _applicationIDParam, _envParam),
+			Pattern:     fmt.Sprintf("/applications/:%v/envtemplates", _applicationIDParam),
 			HandlerFunc: api.Get,
 		},
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/applications/:%v/envtemplates/:%v", _applicationIDParam, _envParam),
+			Pattern:     fmt.Sprintf("/applications/:%v/envtemplates", _applicationIDParam),
 			HandlerFunc: api.Update,
 		},
 	}

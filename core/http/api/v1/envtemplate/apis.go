@@ -12,7 +12,7 @@ import (
 
 const (
 	_applicationIDParam = "applicationID"
-	_envParam           = "env"
+	_envParam           = "environment"
 )
 
 type API struct {
@@ -32,7 +32,13 @@ func (a *API) Get(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	env := c.Param(_envParam)
+
+	env := c.Query(_envParam)
+	if len(env) == 0 {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, "env cannot be empty")
+		return
+	}
+
 	var res *envtemplate.GetEnvTemplateResponse
 	if res, err = a.envTemplateCtl.GetEnvTemplate(c, uint(appID), env); err != nil {
 		response.AbortWithError(c, err)
@@ -48,7 +54,12 @@ func (a *API) Update(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	env := c.Param(_envParam)
+
+	env := c.Query(_envParam)
+	if len(env) == 0 {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, "env cannot be empty")
+		return
+	}
 
 	var r *envtemplate.UpdateEnvTemplateRequest
 	if err := c.ShouldBindJSON(&r); err != nil {

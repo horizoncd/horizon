@@ -336,15 +336,15 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/applications/{applicationID}/envtemplates/{env}:
+  /apis/core/v1/applications/{applicationID}/envtemplates?environment={environment}:
     parameters:
       - name: applicationID
         in: path
         description: application id
         required: true
-      - name: env
-        in: path
-        description: env
+      - name: environment
+        in: query
+        description: environment
         required: true
     post:
       tags:
@@ -403,48 +403,46 @@ paths:
       operationId: getEnvTemplate
       summary: get a specified env template for an application
       description: if template for specified env is not exists, return the default template of this application.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              example: |
-                {
-                    "data":{
-                        "application":{
-                            "app":{
-                                "spec":{
-                                    "replicas":1,
-                                    "resource":"small"
-                                },
-                                "strategy":{
-                                    "stepsTotal":1,
-                                    "pauseType":"first"
-                                },
-                                "params":{
-                                    "xmx":"512",
-                                    "xms":"512",
-                                    "maxPerm":"128",
-                                    "mainClassName":"com.netease.horizon.WebApplication",
-                                    "jvmExtra":"-Dserver.port=8080"
-                                },
-                                "health":{
-                                    "check":"/api/test",
-                                    "status":"/health/status",
-                                    "online":"/health/online",
-                                    "offline":"/health/offline",
-                                    "port":8080
-                                }
-                            }
-                        },
-                        "pipeline":{
-                            "buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
-                        }
-                    }
-                }
       responses:
         "200":
           description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "application":{
+                              "app":{
+                                  "spec":{
+                                      "replicas":1,
+                                      "resource":"small"
+                                  },
+                                  "strategy":{
+                                      "stepsTotal":1,
+                                      "pauseType":"first"
+                                  },
+                                  "params":{
+                                      "xmx":"512",
+                                      "xms":"512",
+                                      "maxPerm":"128",
+                                      "mainClassName":"com.netease.horizon.WebApplication",
+                                      "jvmExtra":"-Dserver.port=8080"
+                                  },
+                                  "health":{
+                                      "check":"/api/test",
+                                      "status":"/health/status",
+                                      "online":"/health/online",
+                                      "offline":"/health/offline",
+                                      "port":8080
+                                  }
+                              }
+                          },
+                          "pipeline":{
+                              "buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+                          }
+                      }
+                  }
         default:
           description: Unexpected error
           content:
