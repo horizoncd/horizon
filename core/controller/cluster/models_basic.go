@@ -47,8 +47,6 @@ type UpdateClusterRequest struct {
 	*Base
 }
 
-type OutPutResponse map[string]interface{}
-
 type GetClusterResponse struct {
 	*CreateClusterRequest
 

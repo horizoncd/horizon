@@ -90,8 +90,8 @@ func (g *getter) GeneratorRenderParams(ctx context.Context, params map[string]st
 func RenderFiles(params map[string]string, files ...[]byte) (retFiles [][]byte, _ error) {
 	for _, file := range files {
 		var b bytes.Buffer
-		dotemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(string(file)))
-		err := dotemplate.ExecuteTemplate(&b, "", params)
+		doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(string(file)))
+		err := doTemplate.ExecuteTemplate(&b, "", params)
 		if err != nil {
 			return nil, err
 		}

@@ -2,14 +2,15 @@ package output
 
 import (
 	"errors"
+	"net/http"
 
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
+	errors2 "g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"golang.org/x/net/context"
-	"gopkg.in/yaml.v2"
 )
 
 const _gitlabName = "control"
@@ -17,7 +18,7 @@ const _gitlabName = "control"
 // Getter provides som functions for output
 type Getter interface {
 	// GetTemplateOutPut get horizon template's output for specified template release.
-	GetTemplateOutPut(ctx context.Context, templateName, releaseName string) (map[string]interface{}, error)
+	GetTemplateOutPut(ctx context.Context, templateName, releaseName string) (string, error)
 }
 
 type getter struct {
@@ -46,27 +47,21 @@ func NewOutPutGetter(ctx context.Context, gitlabFty gitlabfty.Factory) (Getter, 
 }
 
 func (g *getter) GetTemplateOutPut(ctx context.Context,
-	templateName, releaseName string) (map[string]interface{}, error) {
+	templateName, releaseName string) (string, error) {
 	const op = "template output getter: getTemplateOutPut"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	tr, err := g.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, releaseName)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	bytes, err := g.gitlabLib.GetFile(ctx, tr.GitlabProject, tr.Name, _outputsPath)
 	if err != nil {
-		log.Errorf(ctx, "Get Output file error, err = %s", err.Error())
-		return nil, ErrGitlab
+		if errors2.Status(err) != http.StatusNotFound {
+			log.Errorf(ctx, "Get Output file error, err = %s", err.Error())
+			return "", err
+		}
 	}
-
-	outPutMap := make(map[interface{}]interface{})
-	err = yaml.Unmarshal(bytes, &outPutMap)
-	if err != nil {
-		log.Errorf(ctx, "yaml unmarshal error, err = %s", err.Error())
-		return nil, ErrFormat
-	}
-
-	return nil, nil
+	return string(bytes), nil
 }

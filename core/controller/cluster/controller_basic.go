@@ -1,11 +1,13 @@
 package cluster
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
+	"text/template"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
@@ -23,6 +25,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/Masterminds/sprig"
+	"github.com/go-yaml/yaml"
 )
 
 func (c *controller) ListCluster(ctx context.Context, applicationID uint, environments []string,
@@ -148,38 +152,79 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	return clusterResp, nil
 }
 
-func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ *OutPutResponse, err error) {
+func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ string, err error) {
 	const op = "cluster controller: get cluster output"
 	defer wlog.Start(ctx, op).StopPrint()
 	// 1. get cluster from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		if errors.Status(err) != http.StatusNotFound {
-			log.Errorf(ctx, "get cluster error, err = ", err.Error())
+			log.Errorf(ctx, "get cluster error, err = %s", err.Error())
 		}
-		return nil, errors.E(op, err)
+		return "", errors.E(op, err)
 	}
 	// 2. get application
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		if errors.Status(err) != http.StatusNotFound {
-			log.Errorf(ctx, "get cluster error, err = ", err.Error())
+			log.Errorf(ctx, "get cluster error, err = %s", err.Error())
 		}
-		return nil, errors.E(op, err)
+		return "", errors.E(op, err)
 	}
 
 	// 2. get files in  git repo
-	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name, cluster.Template)
+	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
 	if err != nil {
-		log.Error(ctx, "get cluster from error, err  = %s", err.Error())
-		return nil, err
+		log.Errorf(ctx, "get cluster from error, err  = %s", err.Error())
+		return "", err
 	}
 
 	// 3. get output in template
+	outputStr, err := c.outputGetter.GetTemplateOutPut(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		log.Errorf(ctx, "get template output error, err = %s", err.Error())
+		return "", err
+	}
+
+	log.Debugf(ctx, "clusterFiles = %+v, outputStr = %+v", clusterFiles, outputStr)
 
 	// 4. reader output in template and return
+	outputRenderStr, err := RenderOutPutStr(outputStr, cluster.Template, clusterFiles...)
+	if err != nil {
+		log.Errorf(ctx, "render outputstr error, err = %s", err.Error())
+		return "", err
+	}
+	return outputRenderStr, nil
+}
 
-	return nil, nil
+func RenderOutPutStr(outPutStr, templateName string, clusterValueFiles ...gitrepo.ClusterValueFile) (string, error) {
+	// remove the  template prefix level, and merge to on doc
+	var oneDoc string
+	for _, clusterValueFile := range clusterValueFiles {
+		if clusterValueFile.Content != nil {
+			if content, ok := clusterValueFile.Content[templateName]; ok {
+				binaryContent, err := yaml.Marshal(content)
+				if err != nil {
+					return "", err
+				}
+				oneDoc += string(binaryContent) + "\n"
+			}
+		}
+	}
+	var oneDocMap map[interface{}]interface{}
+	err := yaml.Unmarshal([]byte(oneDoc), &oneDocMap)
+	if err != nil {
+		return "", err
+	}
+
+	// template the outPutStr
+	var b bytes.Buffer
+	doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(outPutStr))
+	err = doTemplate.ExecuteTemplate(&b, "", oneDocMap)
+	if err != nil {
+		return "", err
+	}
+	return b.String(), nil
 }
 
 func (c *controller) CreateCluster(ctx context.Context, applicationID uint,

@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func TestYamlTemplate(t *testing.T) {
+func TestYamlTemplate(t *testing.T) { // nolint
 	yamlTextTemplate := `
 SyncDomain:
    Description: The URL to access the service
@@ -35,7 +35,7 @@ AsyncDomain:
 	var b bytes.Buffer
 	template2 := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(yamlTextTemplate))
 	err := template2.ExecuteTemplate(&b, "", vals)
-
+	assert.Nil(t, err)
 	t.Logf("the bytes is %s", b.String())
 
 	m := make(map[interface{}]interface{})

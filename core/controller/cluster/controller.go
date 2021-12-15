@@ -20,6 +20,7 @@ import (
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
+	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
@@ -71,6 +72,7 @@ type controller struct {
 	applicationSvc       applicationservice.Service
 	templateReleaseMgr   trmanager.Manager
 	templateSchemaGetter templateschema.Getter
+	outputGetter         output.Getter
 	envMgr               envmanager.Manager
 	regionMgr            regionmanager.Manager
 	groupSvc             groupsvc.Service
@@ -87,7 +89,8 @@ var _ Controller = (*controller)(nil)
 
 func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo appgitrepo.ApplicationGitRepo,
 	commitGetter code.GitGetter, cd cd.CD, tektonFty factory.Factory,
-	templateSchemaGetter templateschema.Getter, hook hook.Hook, grafanaMapper grafana.Mapper) Controller {
+	templateSchemaGetter templateschema.Getter, outputGetter output.Getter,
+	hook hook.Hook, grafanaMapper grafana.Mapper) Controller {
 	return &controller{
 		clusterMgr:           clustermanager.Mgr,
 		clusterGitRepo:       clusterGitRepo,
@@ -98,6 +101,7 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		applicationSvc:       applicationservice.Svc,
 		templateReleaseMgr:   trmanager.Mgr,
 		templateSchemaGetter: templateSchemaGetter,
+		outputGetter:         outputGetter,
 		envMgr:               envmanager.Mgr,
 		regionMgr:            regionmanager.Mgr,
 		groupSvc:             groupsvc.Svc,

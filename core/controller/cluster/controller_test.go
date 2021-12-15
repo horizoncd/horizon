@@ -21,6 +21,7 @@ import (
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
+	"github.com/go-yaml/yaml"
 
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -827,4 +828,69 @@ func Test(t *testing.T) {
 	assert.NotNil(t, rollbackResp)
 	b, _ = json.Marshal(rollbackResp)
 	t.Logf("%s", string(b))
+}
+
+var envValue = `
+javaapp:
+  env:
+    environment: pre
+    region: hz
+    namespace: pre-54
+    baseRegistry: harbor.mock.org
+    ingressDomain: mock.org
+
+`
+var horizonValue = `
+javaapp:
+  horizon:
+    application: music-social-zone
+    cluster: music-social-zone-pre
+    template:
+      name: javaapp
+      release: v1.0.0
+    priority: P2
+`
+var applicationValue = `
+javaapp:
+  app:
+    health:
+      check: /api/test
+      offline: /health/offline
+      online: /health/active
+      port: 8888
+      status: /health/status
+    params:
+      jvmExtra: -Dserver.port=8888
+      mainClassName: com.netease.music.social.zone.WebApplication
+      xdebugAddress: "10000"
+      xms: "2048"
+      xmx: "2048"
+    spec:
+      resource: large
+`
+
+func TestRenderOutPutStr(t *testing.T) {
+	var envValueFile, horizonValueFile, applicationValueFile gitrepo.ClusterValueFile
+	err := yaml.Unmarshal([]byte(envValue), &(envValueFile.Content))
+	assert.Nil(t, err)
+
+	err = yaml.Unmarshal([]byte(horizonValue), &(horizonValueFile.Content))
+	assert.Nil(t, err)
+
+	err = yaml.Unmarshal([]byte(applicationValue), &(applicationValueFile.Content))
+	assert.Nil(t, err)
+
+	var outPutStr = `syncDomainName:
+  Description: sync domain name
+  Value: {{ .horizon.cluster}}.{{ .env.ingressDomain}}`
+	outPutRenderStr, err := RenderOutPutStr(outPutStr, "javaapp",
+		horizonValueFile, envValueFile, applicationValueFile)
+
+	assert.Nil(t, err)
+	t.Logf("outPutRenderStr = \n%s", outPutRenderStr)
+
+	var expectOutPutStr = `syncDomainName:
+  Description: sync domain name
+  Value: music-social-zone-pre.mock.org`
+	assert.Equal(t, expectOutPutStr, outPutRenderStr)
 }
