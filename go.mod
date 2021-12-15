@@ -10,6 +10,7 @@ require (
 	github.com/argoproj/gitops-engine v0.1.3-0.20200925215903-d25b8fd69f0d
 	github.com/aws/aws-sdk-go v1.31.12
 	github.com/gin-gonic/gin v1.7.3
+	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/mux v1.7.4
@@ -26,6 +27,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.4
 	github.com/xanzy/go-gitlab v0.50.4
 	github.com/xeipuuv/gojsonschema v1.2.0
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	gopkg.in/igm/sockjs-go.v3 v3.0.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
