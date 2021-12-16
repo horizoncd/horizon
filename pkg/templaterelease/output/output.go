@@ -42,7 +42,8 @@ func NewOutPutGetter(ctx context.Context, gitlabFty gitlabfty.Factory) (Getter, 
 		return nil, err
 	}
 	return &getter{
-		gitlabLib: gitlabLib,
+		gitlabLib:          gitlabLib,
+		templateReleaseMgr: manager.Mgr,
 	}, nil
 }
 

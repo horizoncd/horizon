@@ -221,6 +221,10 @@ func RenderOutputObject(outPutStr, templateName string,
 	for _, clusterValueFile := range clusterValueFiles {
 		if clusterValueFile.Content != nil {
 			if content, ok := clusterValueFile.Content[templateName]; ok {
+				// if content is empty or {}, continue
+				if contentMap, ok := content.(map[interface{}]interface{}); !ok || len(contentMap) == 0 {
+					continue
+				}
 				binaryContent, err := yaml.Marshal(content)
 				if err != nil {
 					return nil, err
