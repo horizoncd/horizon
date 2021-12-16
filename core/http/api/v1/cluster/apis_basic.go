@@ -235,9 +235,9 @@ func (a *API) GetOutput(c *gin.Context) {
 		return
 	}
 
-	outPutStr, err := a.clusterCtl.GetClusterOutput(c, uint(clusterID))
+	outPut, err := a.clusterCtl.GetClusterOutput(c, uint(clusterID))
 	if err != nil {
 		response.AbortWithError(c, err)
 	}
-	response.SuccessWithData(c, outPutStr)
+	response.SuccessWithData(c, outPut)
 }

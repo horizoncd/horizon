@@ -869,7 +869,7 @@ javaapp:
       resource: large
 `
 
-func TestRenderOutPutStr(t *testing.T) {
+func TestRenderOutPutObject(t *testing.T) {
 	var envValueFile, horizonValueFile, applicationValueFile gitrepo.ClusterValueFile
 	err := yaml.Unmarshal([]byte(envValue), &(envValueFile.Content))
 	assert.Nil(t, err)
@@ -882,15 +882,16 @@ func TestRenderOutPutStr(t *testing.T) {
 
 	var outPutStr = `syncDomainName:
   Description: sync domain name
-  Value: {{ .horizon.cluster}}.{{ .env.ingressDomain}}`
-	outPutRenderStr, err := RenderOutPutStr(outPutStr, "javaapp",
+  Value: {{ .Values.horizon.cluster}}.{{ .Values.env.ingressDomain}}`
+	outPutRenderJSONObject, err := RenderOutputObject(outPutStr, "javaapp",
 		horizonValueFile, envValueFile, applicationValueFile)
 
 	assert.Nil(t, err)
-	t.Logf("outPutRenderStr = \n%s", outPutRenderStr)
+	t.Logf("outPutRenderStr = \n%+v", outPutRenderJSONObject)
 
-	var expectOutPutStr = `syncDomainName:
-  Description: sync domain name
-  Value: music-social-zone-pre.mock.org`
-	assert.Equal(t, expectOutPutStr, outPutRenderStr)
+	jsonBytes, err := json.Marshal(outPutRenderJSONObject)
+	assert.Nil(t, err)
+	t.Logf("outPutRenderStr = \n%+s", string(jsonBytes))
+	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"music-social-zone-pre.mock.org"}}` //nolint
+	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }

@@ -3,6 +3,7 @@ package cluster
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -27,6 +28,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/Masterminds/sprig"
 	"github.com/go-yaml/yaml"
+	kyaml "sigs.k8s.io/yaml"
 )
 
 func (c *controller) ListCluster(ctx context.Context, applicationID uint, environments []string,
@@ -152,7 +154,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	return clusterResp, nil
 }
 
-func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ string, err error) {
+func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ interface{}, err error) {
 	const op = "cluster controller: get cluster output"
 	defer wlog.Start(ctx, op).StopPrint()
 	// 1. get cluster from db
@@ -161,7 +163,7 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ st
 		if errors.Status(err) != http.StatusNotFound {
 			log.Errorf(ctx, "get cluster error, err = %s", err.Error())
 		}
-		return "", errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
 
 	// 2. get application
@@ -170,47 +172,52 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ st
 		if errors.Status(err) != http.StatusNotFound {
 			log.Errorf(ctx, "get application error, err = %s", err.Error())
 		}
-		return "", errors.E(op, err)
+		return nil, errors.E(op, err)
 	}
 
 	// 3. get output in template
 	outputStr, err := c.outputGetter.GetTemplateOutPut(ctx, cluster.Template, cluster.TemplateRelease)
 	if err != nil {
 		log.Errorf(ctx, "get template output error, err = %s", err.Error())
-		return "", err
+		return nil, err
 	}
 	if outputStr == "" {
-		return "", nil
+		return nil, nil
 	}
 
 	// 4. get files in  git repo
 	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
 	if err != nil {
 		log.Errorf(ctx, "get clusterValueFile from gitRepo error, err  = %s", err.Error())
-		return "", err
+		return nil, err
 	}
 
 	log.Debugf(ctx, "clusterFiles = %+v, outputStr = %+v", clusterFiles, outputStr)
 
 	// 5. reader output in template and return
-	outputRenderStr, err := RenderOutPutStr(outputStr, cluster.Template, clusterFiles...)
+	outputRenderJSONObject, err := RenderOutputObject(outputStr, cluster.Template, clusterFiles...)
 	if err != nil {
 		log.Errorf(ctx, "render outputstr error, err = %s", err.Error())
-		return "", err
+		return nil, err
 	}
 
-	return outputRenderStr, nil
+	return outputRenderJSONObject, nil
 }
 
-func RenderOutPutStr(outPutStr, templateName string, clusterValueFiles ...gitrepo.ClusterValueFile) (string, error) {
-	// remove the  template prefix level, and merge to on doc
+const (
+	_valuePrefix = "Values"
+)
+
+func RenderOutputObject(outPutStr, templateName string,
+	clusterValueFiles ...gitrepo.ClusterValueFile) (interface{}, error) {
+	// remove the  template prefix level, add Value prefix(as helm) and merge to one doc
 	var oneDoc string
 	for _, clusterValueFile := range clusterValueFiles {
 		if clusterValueFile.Content != nil {
 			if content, ok := clusterValueFile.Content[templateName]; ok {
 				binaryContent, err := yaml.Marshal(content)
 				if err != nil {
-					return "", err
+					return nil, err
 				}
 				oneDoc += string(binaryContent) + "\n"
 			}
@@ -219,17 +226,29 @@ func RenderOutPutStr(outPutStr, templateName string, clusterValueFiles ...gitrep
 	var oneDocMap map[interface{}]interface{}
 	err := yaml.Unmarshal([]byte(oneDoc), &oneDocMap)
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("RenderOutputObject yaml Unmarshal  error, err  = %s", err.Error())
 	}
 
-	// template the outPutStr
+	var addValuePrefixDocMap = make(map[interface{}]interface{})
+	addValuePrefixDocMap[_valuePrefix] = oneDocMap
+
 	var b bytes.Buffer
 	doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(outPutStr))
-	err = doTemplate.ExecuteTemplate(&b, "", oneDocMap)
+	err = doTemplate.ExecuteTemplate(&b, "", addValuePrefixDocMap)
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("RenderOutputObject template error, err  = %s", err.Error())
 	}
-	return b.String(), nil
+
+	var retJSONObject interface{}
+	jsonBytes, err := kyaml.YAMLToJSON(b.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("RenderOutputObject YAMLToJSON error, err  = %s", err.Error())
+	}
+	err = json.Unmarshal(jsonBytes, &retJSONObject)
+	if err != nil {
+		return nil, fmt.Errorf("RenderOutputObject json Unmarshal error, err  = %s", err.Error())
+	}
+	return retJSONObject, nil
 }
 
 func (c *controller) CreateCluster(ctx context.Context, applicationID uint,

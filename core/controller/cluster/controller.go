@@ -28,7 +28,7 @@ import (
 
 type Controller interface {
 	GetCluster(ctx context.Context, clusterID uint) (*GetClusterResponse, error)
-	GetClusterOutput(ctx context.Context, clusterID uint) (_ string, err error)
+	GetClusterOutput(ctx context.Context, clusterID uint) (interface{}, error)
 	ListCluster(ctx context.Context, applicationID uint, environments []string,
 		filter string, query *q.Query) (int, []*ListClusterResponse, error)
 	ListClusterByNameFuzzily(ctx context.Context, environment,
