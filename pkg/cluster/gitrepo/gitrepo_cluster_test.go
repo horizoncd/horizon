@@ -269,7 +269,7 @@ func TestGetClusterValueFile(t *testing.T) {
 	// 1. test gitlab get file error
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(),
 		_branchMaster, gomock.Any()).Return(
-		nil, errors.New("gitlab getFile error")).Times(4)
+		nil, errors.New("gitlab getFile error")).Times(5)
 	clusterValueFiles, err := clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
 		"app", "cluster")
 	assert.Nil(t, clusterValueFiles)
@@ -277,7 +277,7 @@ func TestGetClusterValueFile(t *testing.T) {
 
 	// 2. test gitlab return ok
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
-		[]byte("cluster: xxx"), nil).Times(4)
+		[]byte("cluster: xxx"), nil).Times(5)
 	clusterValueFiles, err = clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
 		"app", "cluster")
 	assert.Nil(t, err)
@@ -285,7 +285,7 @@ func TestGetClusterValueFile(t *testing.T) {
 
 	// 3. test gitlab return 404
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
-		[]byte("cluster: xxx"), nil).Times(3)
+		[]byte("cluster: xxx"), nil).Times(4)
 	var herr = herrors.E(
 		"Test", http.StatusNotFound)
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(

@@ -235,6 +235,8 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 		}, {
 			fileName: _filePathApplication,
 		}, {
+			fileName: _filePathTags,
+		}, {
 			fileName: _filePathSRE,
 		},
 	}
