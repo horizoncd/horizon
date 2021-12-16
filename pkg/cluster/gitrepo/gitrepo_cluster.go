@@ -244,7 +244,8 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 	for i := 0; i < len(cases); i++ {
 		go func(index int) {
 			defer wg.Done()
-			cases[index].retBytes, cases[index].err = g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathBase)
+			cases[index].retBytes, cases[index].err = g.gitlabLib.GetFile(ctx, pid,
+				_branchMaster, cases[index].fileName)
 			if cases[index].err != nil {
 				log.Warningf(ctx, "get file %s error, err = %s", cases[index].fileName, cases[index].err.Error())
 				return

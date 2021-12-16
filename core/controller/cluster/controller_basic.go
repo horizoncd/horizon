@@ -163,37 +163,42 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ st
 		}
 		return "", errors.E(op, err)
 	}
+
 	// 2. get application
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		if errors.Status(err) != http.StatusNotFound {
-			log.Errorf(ctx, "get cluster error, err = %s", err.Error())
+			log.Errorf(ctx, "get application error, err = %s", err.Error())
 		}
 		return "", errors.E(op, err)
 	}
 
-	// 2. get files in  git repo
+	// 3. get files in  git repo
 	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
 	if err != nil {
-		log.Errorf(ctx, "get cluster from error, err  = %s", err.Error())
+		log.Errorf(ctx, "get clusterValueFile from gitRepo error, err  = %s", err.Error())
 		return "", err
 	}
 
-	// 3. get output in template
+	// 4. get output in template
 	outputStr, err := c.outputGetter.GetTemplateOutPut(ctx, cluster.Template, cluster.TemplateRelease)
 	if err != nil {
 		log.Errorf(ctx, "get template output error, err = %s", err.Error())
 		return "", err
 	}
+	if outputStr == "" {
+		return "", nil
+	}
 
 	log.Debugf(ctx, "clusterFiles = %+v, outputStr = %+v", clusterFiles, outputStr)
 
-	// 4. reader output in template and return
+	// 5. reader output in template and return
 	outputRenderStr, err := RenderOutPutStr(outputStr, cluster.Template, clusterFiles...)
 	if err != nil {
 		log.Errorf(ctx, "render outputstr error, err = %s", err.Error())
 		return "", err
 	}
+
 	return outputRenderStr, nil
 }
 
