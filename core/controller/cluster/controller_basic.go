@@ -1,11 +1,14 @@
 package cluster
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
+	"text/template"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
@@ -23,6 +26,9 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/Masterminds/sprig"
+	"github.com/go-yaml/yaml"
+	kyaml "sigs.k8s.io/yaml"
 )
 
 func (c *controller) ListCluster(ctx context.Context, applicationID uint, environments []string,
@@ -124,11 +130,17 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	// 6. transfer model
-	clusterResp := ofClusterModel(application, cluster, er, fullPath,
+	// 6. get namespace
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 7. transfer model
+	clusterResp := ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
 		clusterFiles.PipelineJSONBlob, clusterFiles.ApplicationJSONBlob)
 
-	// 7. get latest deployed commit
+	// 8. get latest deployed commit
 	latestPR, err := c.pipelinerunMgr.GetLatestSuccessByClusterID(ctx, clusterID)
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -137,7 +149,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 		clusterResp.LatestDeployedCommit = latestPR.GitCommit
 	}
 
-	// 8. get createdBy and updatedBy users
+	// 9. get createdBy and updatedBy users
 	userMap, err := c.userManager.GetUserMapByIDs(ctx, []uint{cluster.CreatedBy, cluster.UpdatedBy})
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -146,6 +158,107 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	clusterResp.UpdatedBy = toUser(getUserFromMap(cluster.UpdatedBy, userMap))
 
 	return clusterResp, nil
+}
+
+func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ interface{}, err error) {
+	const op = "cluster controller: get cluster output"
+	defer wlog.Start(ctx, op).StopPrint()
+	// 1. get cluster from db
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			log.Errorf(ctx, "get cluster error, err = %s", err.Error())
+		}
+		return nil, errors.E(op, err)
+	}
+
+	// 2. get application
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			log.Errorf(ctx, "get application error, err = %s", err.Error())
+		}
+		return nil, errors.E(op, err)
+	}
+
+	// 3. get output in template
+	outputStr, err := c.outputGetter.GetTemplateOutPut(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		log.Errorf(ctx, "get template output error, err = %s", err.Error())
+		return nil, err
+	}
+	if outputStr == "" {
+		return nil, nil
+	}
+
+	// 4. get files in  git repo
+	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
+	if err != nil {
+		log.Errorf(ctx, "get clusterValueFile from gitRepo error, err  = %s", err.Error())
+		return nil, err
+	}
+
+	log.Debugf(ctx, "clusterFiles = %+v, outputStr = %+v", clusterFiles, outputStr)
+
+	// 5. reader output in template and return
+	outputRenderJSONObject, err := RenderOutputObject(outputStr, cluster.Template, clusterFiles...)
+	if err != nil {
+		log.Errorf(ctx, "render outputstr error, err = %s", err.Error())
+		return nil, err
+	}
+
+	return outputRenderJSONObject, nil
+}
+
+const (
+	_valuePrefix = "Values"
+)
+
+func RenderOutputObject(outPutStr, templateName string,
+	clusterValueFiles ...gitrepo.ClusterValueFile) (interface{}, error) {
+	// remove the  template prefix level, add Value prefix(as helm) and merge to one doc
+	var oneDoc string
+	for _, clusterValueFile := range clusterValueFiles {
+		if clusterValueFile.Content != nil {
+			if content, ok := clusterValueFile.Content[templateName]; ok {
+				// if content is empty or {}, continue
+				if contentMap, ok := content.(map[interface{}]interface{}); !ok || len(contentMap) == 0 {
+					continue
+				}
+				binaryContent, err := yaml.Marshal(content)
+				if err != nil {
+					return nil, err
+				}
+				oneDoc += string(binaryContent) + "\n"
+			}
+		}
+	}
+	var oneDocMap map[interface{}]interface{}
+	err := yaml.Unmarshal([]byte(oneDoc), &oneDocMap)
+	if err != nil {
+		return nil, fmt.Errorf("RenderOutputObject yaml Unmarshal  error, err  = %s", err.Error())
+	}
+
+	var addValuePrefixDocMap = make(map[interface{}]interface{})
+	addValuePrefixDocMap[_valuePrefix] = oneDocMap
+
+	var b bytes.Buffer
+	doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(outPutStr))
+	err = doTemplate.ExecuteTemplate(&b, "", addValuePrefixDocMap)
+	if err != nil {
+		return nil, fmt.Errorf("RenderOutputObject template error, err  = %s", err.Error())
+	}
+
+	var retJSONObject interface{}
+	jsonBytes, err := kyaml.YAMLToJSON(b.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("RenderOutputObject YAMLToJSON error, err  = %s", err.Error())
+	}
+	err = json.Unmarshal(jsonBytes, &retJSONObject)
+	if err != nil {
+		return nil, fmt.Errorf("RenderOutputObject json Unmarshal error, err  = %s", err.Error())
+	}
+	return retJSONObject, nil
 }
 
 func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
@@ -198,9 +311,10 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		}
 	}
 
-	// 4. if templateInput is empty, set it with application's templateInput
+	// 4. if templateInput is empty, set it with application's env template
 	if r.TemplateInput == nil {
-		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.GetApplication(ctx, application.Name)
+		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.
+			GetApplicationEnvTemplate(ctx, application.Name, environment)
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
@@ -275,10 +389,16 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	ret := ofClusterModel(application, cluster, er, fullPath,
+	// 12. get namespace
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	ret := ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
-	// 12. post hook
+	// 13. post hook
 	c.postHook(ctx, hook.CreateCluster, ret)
 	return ret, nil
 }
@@ -375,7 +495,13 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	return ofClusterModel(application, cluster, er, fullPath,
+	// 7. get namespace
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
 		pipelineJSONBlob, applicationJSONBlob), nil
 }
 

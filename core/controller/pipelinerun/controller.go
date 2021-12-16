@@ -261,6 +261,7 @@ func (c *controller) ofPipelineBasic(ctx context.Context, pr *models.Pipelinerun
 		ImageURL:         pr.ImageURL,
 		LastConfigCommit: pr.LastConfigCommit,
 		ConfigCommit:     pr.ConfigCommit,
+		CreatedAt:        pr.CreatedAt,
 		StartedAt:        pr.StartedAt,
 		FinishedAt:       pr.FinishedAt,
 		CanRollback:      pr.Action != prmodels.ActionRestart && pr.Status == prmodels.ResultOK,

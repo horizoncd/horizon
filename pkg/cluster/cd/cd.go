@@ -19,12 +19,16 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
+	v1alpha12 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
+	kube2 "github.com/argoproj/gitops-engine/pkg/utils/kube"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubectl/pkg/cmd/exec"
 )
@@ -93,6 +97,13 @@ type ClusterNextParams struct {
 	Cluster     string
 }
 
+type ClusterSkipAllStepsParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Environment  string
+}
+
 type GetContainerLogParams struct {
 	Namespace   string
 	Cluster     string
@@ -125,6 +136,7 @@ type CD interface {
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
 	DeleteCluster(ctx context.Context, params *DeleteClusterParams) error
 	Next(ctx context.Context, params *ClusterNextParams) error
+	SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
@@ -235,6 +247,58 @@ func (c *cd) Next(ctx context.Context, params *ClusterNextParams) (err error) {
 	return nil
 }
 
+var rolloutResource = schema.GroupVersionResource{
+	Group:    "argoproj.io",
+	Version:  "v1alpha1",
+	Resource: "rollouts",
+}
+
+func (c *cd) SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams) (err error) {
+	const op = "cd: skip all steps"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// 1. get argo rollout steps count
+	argo, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	argoApp, err := argo.GetApplication(ctx, params.Cluster)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	var rollout *v1alpha1.Rollout
+	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
+		Group:        "argoproj.io",
+		Version:      "v1alpha1",
+		Kind:         "Rollout",
+		Namespace:    argoApp.Spec.Destination.Namespace,
+		ResourceName: params.Cluster,
+	}, &rollout); err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return errors.E(op, err)
+		}
+	}
+
+	if !(len(rollout.Status.PauseConditions) != 0 || rollout.Spec.Paused) {
+		return errors.E(op, fmt.Errorf("this cluster is not in Suspended state"))
+	}
+
+	// 2. patch rollout currentStepIndex
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	patchBody := []byte(getCurrentStepIndexPatchStr(len(rollout.Spec.Strategy.Canary.Steps)))
+	_, err = kubeClient.Dynamic.Resource(rolloutResource).
+		Namespace(params.Namespace).
+		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
+}
+
 // GetClusterState TODO(gjq) restructure
 func (c *cd) GetClusterState(ctx context.Context,
 	params *GetClusterStateParams) (clusterState *ClusterState, err error) {
@@ -279,6 +343,8 @@ func (c *cd) GetClusterState(ctx context.Context,
 	}
 
 	var rollout *v1alpha1.Rollout
+	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
+		common.ClusterLabelKey, params.Cluster))
 	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
 		Group:        "argoproj.io",
 		Version:      "v1alpha1",
@@ -286,17 +352,54 @@ func (c *cd) GetClusterState(ctx context.Context,
 		Namespace:    argoApp.Spec.Destination.Namespace,
 		ResourceName: params.Cluster,
 	}, &rollout); err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if errors.Status(err) == http.StatusNotFound {
+			// get pods by resourceTree
+			var (
+				clusterPodMap = map[string]*ClusterPod{}
+				podMap        = map[string]corev1.Pod{}
+			)
+			resourceTree, err := argo.GetApplicationTree(ctx, params.Cluster)
+			if err != nil {
+				return nil, errors.E(op, err)
+			}
+			// application with deployment may be serverless
+			if !resourceTreeContains(resourceTree, kube2.DeploymentKind) {
+				allPods, err := kube.GetPods(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
+				if err != nil {
+					return nil, errors.E(op, err)
+				}
+				for _, pod := range allPods {
+					podMap[pod.Name] = pod
+				}
+				for _, node := range resourceTree.Nodes {
+					if node.Kind == kube2.PodKind {
+						if _, ok := podMap[node.Name]; !ok {
+							return nil, errors.E(op, fmt.Errorf("pod %s does not exist", node.Name))
+						}
+						clusterPodMap[node.Name] = podToClusterPod(podMap[node.Name])
+					}
+				}
+				clusterState.PodTemplateHash = "default"
+				clusterState.PodTemplateHashKey = "default"
+				clusterState.Replicas = len(clusterPodMap)
+				clusterState.Versions["default"] = &ClusterVersion{
+					Replicas: len(clusterPodMap),
+					Pods:     clusterPodMap,
+				}
+				clusterState.Step = &Step{
+					Index: 1,
+					Total: 1,
+				}
+				return clusterState, nil
+			}
+		} else {
 			return nil, errors.E(op, err)
 		}
 	}
-
 	clusterState.Step = getStep(rollout)
 
 	var latestReplicaSet *appsv1.ReplicaSet
-	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
-		common.ClusterLabelKey, params.Cluster))
-	rss, err := kube.GetReplicaSets(ctx, kubeClient, params.Namespace, labelSelector.String())
+	rss, err := kube.GetReplicaSets(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 	if err != nil {
 		return nil, err
 	} else if len(rss) == 0 {
@@ -330,7 +433,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		labelSelector := fields.ParseSelectorOrDie(
 			fmt.Sprintf("%v=%v", common.ClusterLabelKey, params.Cluster))
 		// serverless 应用会有多个 Deployment 对象
-		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient, params.Namespace, labelSelector.String())
+		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
@@ -353,7 +456,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	}
 
 	if err := c.paddingPodAndEventInfo(ctx, params.Cluster, params.Namespace,
-		kubeClient, clusterState); err != nil {
+		kubeClient.Basic, clusterState); err != nil {
 		return nil, errors.E(op, err)
 	}
 
@@ -372,14 +475,14 @@ func (c *cd) GetPodEvents(ctx context.Context,
 
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
 		common.ClusterLabelKey, params.Cluster))
-	pods, err := kube.GetPods(ctx, kubeClient, params.Namespace, labelSelector.String())
+	pods, err := kube.GetPods(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
 	for _, pod := range pods {
 		if pod.Name == params.Pod {
-			k8sEvents, err := kube.GetPodEvents(ctx, kubeClient, params.Namespace, params.Pod)
+			k8sEvents, err := kube.GetPodEvents(ctx, kubeClient.Basic, params.Namespace, params.Pod)
 			if err != nil {
 				return nil, errors.E(op, err)
 			}
@@ -444,6 +547,76 @@ func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace stri
 		}
 	}
 	return nil
+}
+
+func resourceTreeContains(resourceTree *v1alpha12.ApplicationTree, resourceKind string) bool {
+	for _, node := range resourceTree.Nodes {
+		if node.Kind == resourceKind {
+			return true
+		}
+	}
+	return false
+}
+
+func podToClusterPod(pod corev1.Pod) (clusterPod *ClusterPod) {
+	clusterPod = &ClusterPod{
+		Metadata: PodMetadata{
+			CreationTimestamp: pod.CreationTimestamp,
+			Namespace:         pod.Namespace,
+			Annotations:       pod.Annotations,
+		},
+		Spec: PodSpec{
+			NodeName:       pod.Spec.NodeName,
+			InitContainers: nil,
+			Containers:     nil,
+		},
+		Status: PodStatus{
+			HostIP: pod.Status.HostIP,
+			PodIP:  pod.Status.PodIP,
+			Phase:  string(pod.Status.Phase),
+		},
+	}
+
+	var initContainers []*Container
+	for i := range pod.Spec.InitContainers {
+		c := pod.Spec.InitContainers[i]
+		initContainers = append(initContainers, &Container{
+			Name:  c.Name,
+			Image: c.Image,
+		})
+	}
+	clusterPod.Spec.InitContainers = initContainers
+
+	cs := &containerList{}
+	for i := range pod.Spec.Containers {
+		cs.containers = append(cs.containers, &pod.Spec.Containers[i])
+	}
+	sort.Sort(cs)
+
+	var containers []*Container
+	for i := range cs.containers {
+		c := cs.containers[i]
+		containers = append(containers, &Container{
+			Name:  c.Name,
+			Image: c.Image,
+		})
+	}
+	clusterPod.Spec.Containers = containers
+
+	var containerStatuses []*ContainerStatus
+	for i := range pod.Status.ContainerStatuses {
+		containerStatus := pod.Status.ContainerStatuses[i]
+		c := &ContainerStatus{
+			Name:         containerStatus.Name,
+			Ready:        containerStatus.Ready,
+			RestartCount: containerStatus.RestartCount,
+			State:        parseContainerState(containerStatus),
+		}
+		containerStatuses = append(containerStatuses, c)
+	}
+	clusterPod.Status.ContainerStatuses = containerStatuses
+	clusterPod.Status.LifeCycle = parsePodLifeCycle(pod.Status)
+	return
 }
 
 func parsePod(ctx context.Context, clusterInfo *ClusterState,
@@ -976,7 +1149,7 @@ func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ ma
 	for _, pod := range params.PodList {
 		containers = append(containers, kube.ContainerRef{
 			Config:        config,
-			KubeClientset: kubeClient,
+			KubeClientset: kubeClient.Basic,
 			Namespace:     params.Namespace,
 			Pod:           pod,
 		})
@@ -1020,4 +1193,8 @@ func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
 	}
 
 	return result
+}
+
+func getCurrentStepIndexPatchStr(stepCnt int) string {
+	return fmt.Sprintf(`{"status": {"currentStepIndex": %d}}`, stepCnt)
 }

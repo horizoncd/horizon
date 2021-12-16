@@ -37,10 +37,10 @@ type Tag struct {
 type CreateClusterRequest struct {
 	*Base
 
-	Name string `json:"name"`
-	// TODO(gjq): remove these two params after migration
+	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
-	Image     string `json:"image"`
+	// TODO(gjq): remove these two params after migration
+	Image string `json:"image"`
 }
 
 type UpdateClusterRequest struct {
@@ -133,6 +133,7 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		GitSubfolder:    gitSubfolder,
 		GitBranch:       gitBranch,
 		TemplateRelease: templateRelease,
+		Status:          cluster.Status,
 	}
 }
 
@@ -156,7 +157,7 @@ func toUser(user *usermodels.User) *User {
 }
 
 func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
-	er *envmodels.EnvironmentRegion, fullPath string,
+	er *envmodels.EnvironmentRegion, fullPath, namespace string,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetClusterResponse {
 	return &GetClusterResponse{
 		CreateClusterRequest: &CreateClusterRequest{
@@ -172,7 +173,8 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 					Pipeline:    pipelineJSONBlob,
 				},
 			},
-			Name: cluster.Name,
+			Name:      cluster.Name,
+			Namespace: namespace,
 		},
 		ID:       cluster.ID,
 		FullPath: fullPath,

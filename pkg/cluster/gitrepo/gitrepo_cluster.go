@@ -20,9 +20,9 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	timeutil "g.hz.netease.com/horizon/pkg/util/time"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-
 	"github.com/xanzy/go-gitlab"
 	"gopkg.in/yaml.v2"
 	kyaml "sigs.k8s.io/yaml"
@@ -60,7 +60,7 @@ const (
 	// _branchGitops is the gitops branch, values updated in this branch, then merge into the _branchMaster
 	_branchGitops = "gitops"
 
-	// filePath
+	// fileName
 	_filePathChart          = "Chart.yaml"
 	_filePathApplication    = "application.yaml"
 	_filePathTags           = "tags.yaml"
@@ -107,6 +107,11 @@ type ClusterFiles struct {
 	PipelineJSONBlob, ApplicationJSONBlob map[string]interface{}
 }
 
+type ClusterValueFile struct {
+	FileName string
+	Content  map[interface{}]interface{}
+}
+
 type ClusterCommit struct {
 	Master string
 	Gitops string
@@ -114,6 +119,8 @@ type ClusterCommit struct {
 
 type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
+	GetClusterValueFiles(ctx context.Context,
+		application, cluster string) ([]ClusterValueFile, error)
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
 	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
@@ -209,6 +216,76 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	}, nil
 }
 
+func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
+	application, cluster string) (_ []ClusterValueFile, err error) {
+	const op = "cluster git repo: get cluster value files"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	// 1. get  value file from git
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	cases := []struct {
+		retBytes []byte
+		err      error
+		fileName string
+	}{
+		{
+			fileName: _filePathBase,
+		}, {
+			fileName: _filePathEnv,
+		}, {
+			fileName: _filePathApplication,
+		}, {
+			fileName: _filePathTags,
+		}, {
+			fileName: _filePathSRE,
+		},
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(cases))
+	for i := 0; i < len(cases); i++ {
+		go func(index int) {
+			defer wg.Done()
+			cases[index].retBytes, cases[index].err = g.gitlabLib.GetFile(ctx, pid,
+				_branchMaster, cases[index].fileName)
+			if cases[index].err != nil {
+				log.Warningf(ctx, "get file %s error, err = %s", cases[index].fileName, cases[index].err.Error())
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	for i := 0; i < len(cases); i++ {
+		if cases[i].err != nil {
+			if errors.Status(cases[i].err) != http.StatusNotFound {
+				log.Errorf(ctx, "get cluster value file error, err = %s", cases[i].err.Error())
+				return nil, cases[i].err
+			}
+		}
+	}
+
+	// 2. check yaml format ok
+	var clusterValueFiles []ClusterValueFile
+	for _, oneCase := range cases {
+		var out map[interface{}]interface{}
+		err = yaml.Unmarshal(oneCase.retBytes, &out)
+		if err != nil {
+			err = fmt.Errorf("yaml Unmarshal err, file = %s", oneCase.fileName)
+			break
+		}
+
+		clusterValueFiles = append(clusterValueFiles, ClusterValueFile{
+			FileName: oneCase.fileName,
+			Content:  out,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return clusterValueFiles, nil
+}
+
 func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
 	const op = "cluster git repo: create cluster"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
@@ -238,9 +315,13 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		return errors.E(op, err)
 	}
 
-	// 3. write files to repo
+	// 3. create gitops branch from master
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
+	if _, err := g.gitlabLib.CreateBranch(ctx, pid, _branchGitops, _branchMaster); err != nil {
+		return errors.E(op, err)
+	}
 
+	// 4. write files to repo, to gitops branch
 	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML, chartYAML, restartYAML, tagsYAML []byte
 	var err1, err2, err3, err4, err5, err6, err7, err8 error
 
@@ -329,12 +410,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		Pipeline:    params.PipelineJSONBlob,
 	})
 
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
-		return errors.E(op, err)
-	}
-
-	// 3. create gitops branch from master
-	if _, err := g.gitlabLib.CreateBranch(ctx, pid, _branchGitops, _branchMaster); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions); err != nil {
 		return errors.E(op, err)
 	}
 
@@ -635,7 +711,7 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
-	bytes, err := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathEnv)
+	bytes, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathEnv)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

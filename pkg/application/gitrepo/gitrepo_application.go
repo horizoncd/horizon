@@ -43,6 +43,13 @@ type ApplicationGitRepo interface {
 	// GetApplication get an application, return the pipeline jsonBlob and application jsonBlob
 	GetApplication(ctx context.Context, application string) (pipelineJSONBlob,
 		applicationJSONBlob map[string]interface{}, err error)
+	// UpdateApplicationEnvTemplate update application's env template
+	UpdateApplicationEnvTemplate(ctx context.Context, application, env string,
+		pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error
+	// GetApplicationEnvTemplate get application's env template
+	// if env template is not exists, return the default template
+	GetApplicationEnvTemplate(ctx context.Context, application, env string) (pipelineJSONBlob,
+		applicationJSONBlob map[string]interface{}, err error)
 	// DeleteApplication delete an application by the specified application name
 	DeleteApplication(ctx context.Context, application string, applicationID uint) error
 }
@@ -69,12 +76,6 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 	const op = "gitlab repo: create application"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
-	}
-
 	// 1. create application group
 	group, err := g.gitlabLib.CreateGroup(ctx, application, application, &g.applicationRepoConf.Parent.ID)
 	if err != nil {
@@ -86,149 +87,76 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 		return errors.E(op, err)
 	}
 
-	// 3. write files to application repo
-	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, _default)
-	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
-	}
-	pipelineYAML, err := yaml.Marshal(pipelineJSONBlob)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
-	}
-	actions := []gitlablib.CommitAction{
-		{
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathApplication,
-			Content:  string(applicationYAML),
-		}, {
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathPipeline,
-			Content:  string(pipelineYAML),
-		},
-	}
-
-	commitMsg := angular.CommitMessage("application", angular.Subject{
-		Operator:    currentUser.GetName(),
-		Action:      "create application",
-		Application: angular.StringPtr(application),
-	}, struct {
-		Application map[string]interface{} `json:"application"`
-		Pipeline    map[string]interface{} `json:"pipeline"`
-	}{
-		Application: applicationJSONBlob,
-		Pipeline:    pipelineJSONBlob,
-	})
-
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
-		return errors.E(op, err)
-	}
-
-	return nil
+	// 3. write files
+	return g.createOrUpdateApplication(ctx, application, _default, gitlablib.FileCreate,
+		pipelineJSONBlob, applicationJSONBlob)
 }
 
 func (g *applicationGitlabRepo) UpdateApplication(ctx context.Context, application string,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) (err error) {
-	const op = "gitlab repo: update application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
-	}
-
-	// 1. write files to gitlab
-	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, _default)
-	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
-	}
-	pipelineYAML, err := yaml.Marshal(pipelineJSONBlob)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
-	}
-	actions := []gitlablib.CommitAction{
-		{
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathApplication,
-			Content:  string(applicationYAML),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathPipeline,
-			Content:  string(pipelineYAML),
-		},
-	}
-
-	commitMsg := angular.CommitMessage("application", angular.Subject{
-		Operator:    currentUser.GetName(),
-		Action:      "update application",
-		Application: angular.StringPtr(application),
-	}, struct {
-		Application map[string]interface{} `json:"application"`
-		Pipeline    map[string]interface{} `json:"pipeline"`
-	}{
-		Application: applicationJSONBlob,
-		Pipeline:    pipelineJSONBlob,
-	})
-
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
-		return errors.E(op, err)
-	}
-
-	return nil
+	return g.createOrUpdateApplication(ctx, application, _default, gitlablib.FileUpdate,
+		pipelineJSONBlob, applicationJSONBlob)
 }
 
 func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 	application string) (pipelineJSONBlob, applicationJSONBlob map[string]interface{}, err error) {
-	const op = "gitlab repo: get application"
+	return g.getApplication(ctx, application, _default)
+}
+
+func (g *applicationGitlabRepo) UpdateApplicationEnvTemplate(ctx context.Context, application, env string,
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) (err error) {
+	const op = "gitlab repo: update application env template"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	// 1. get template and pipeline from gitlab
-	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
-	pid := fmt.Sprintf("%v/%v", gid, _default)
-
-	var applicationBytes, pipelineBytes []byte
-	var err1, err2 error
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		pipelineBytes, err1 = g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
-		if err1 != nil {
-			return
+	// 1. check env template repo exists
+	var envProjectExists = false
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
+	_, err = g.gitlabLib.GetProject(ctx, pid)
+	if err != nil {
+		if errors.Status(err) != http.StatusNotFound {
+			return errors.E(op, err)
 		}
-		pipelineBytes, err1 = kyaml.YAMLToJSON(pipelineBytes)
-	}()
-	go func() {
-		defer wg.Done()
-		applicationBytes, err2 = g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
-		if err2 != nil {
-			return
-		}
-		applicationBytes, err2 = kyaml.YAMLToJSON(applicationBytes)
-	}()
-	wg.Wait()
-
-	for _, err := range []error{err1, err2} {
+		// if not found, create this repo first
+		gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+		parentGroup, err := g.gitlabLib.GetGroup(ctx, gid)
 		if err != nil {
+			return errors.E(op, err)
+		}
+		_, err = g.gitlabLib.CreateProject(ctx, env, parentGroup.ID)
+		if err != nil {
+			return errors.E(op, err)
+		}
+	} else {
+		envProjectExists = true
+	}
+
+	// 2. if env template repo exists, the gitlab action is update, else the action is create
+	var action = gitlablib.FileCreate
+	if envProjectExists {
+		action = gitlablib.FileUpdate
+	}
+
+	// 3. write files
+	return g.createOrUpdateApplication(ctx, application, env, action, pipelineJSONBlob, applicationJSONBlob)
+}
+
+func (g *applicationGitlabRepo) GetApplicationEnvTemplate(ctx context.Context,
+	application, env string) (pipelineJSONBlob, applicationJSONBlob map[string]interface{}, err error) {
+	const op = "gitlab repo: get application env template"
+
+	// 1. check env template repo exists
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
+	_, err = g.gitlabLib.GetProject(ctx, pid)
+	if err != nil {
+		if errors.Status(err) != http.StatusNotFound {
 			return nil, nil, errors.E(op, err)
 		}
+		// if not found, return the default template
+		return g.getApplication(ctx, application, _default)
 	}
 
-	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
-		return nil, nil, errors.E(op, err)
-	}
-	if err := json.Unmarshal(applicationBytes, &applicationJSONBlob); err != nil {
-		return nil, nil, errors.E(op, err)
-	}
-
-	return pipelineJSONBlob, applicationJSONBlob, nil
+	// 2. if env template repo exists, return the env template
+	return g.getApplication(ctx, application, env)
 }
 
 func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
@@ -285,4 +213,106 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 	}
 
 	return nil
+}
+
+func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, application, repo string,
+	action gitlablib.FileAction, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
+	const op = "gitlab repo: createOrUpdate application"
+
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), "no user in context")
+	}
+
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, repo)
+
+	// 2. write files to gitlab
+	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
+	if err != nil {
+		return errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), err)
+	}
+	pipelineYAML, err := yaml.Marshal(pipelineJSONBlob)
+	if err != nil {
+		return errors.E(op, http.StatusInternalServerError,
+			errors.ErrorCode(common.InternalError), err)
+	}
+	actions := []gitlablib.CommitAction{
+		{
+			Action:   action,
+			FilePath: _filePathApplication,
+			Content:  string(applicationYAML),
+		}, {
+			Action:   action,
+			FilePath: _filePathPipeline,
+			Content:  string(pipelineYAML),
+		},
+	}
+
+	commitMsg := angular.CommitMessage("application", angular.Subject{
+		Operator:    currentUser.GetName(),
+		Action:      fmt.Sprintf("%s application %s template", string(action), repo),
+		Application: angular.StringPtr(application),
+	}, struct {
+		Application map[string]interface{} `json:"application"`
+		Pipeline    map[string]interface{} `json:"pipeline"`
+	}{
+		Application: applicationJSONBlob,
+		Pipeline:    pipelineJSONBlob,
+	})
+
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
+}
+
+func (g *applicationGitlabRepo) getApplication(ctx context.Context,
+	application, repo string) (pipelineJSONBlob, applicationJSONBlob map[string]interface{}, err error) {
+	const op = "gitlab repo: get application"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// 1. get template and pipeline from gitlab
+	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	pid := fmt.Sprintf("%v/%v", gid, repo)
+
+	var applicationBytes, pipelineBytes []byte
+	var err1, err2 error
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		pipelineBytes, err1 = g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
+		if err1 != nil {
+			return
+		}
+		pipelineBytes, err1 = kyaml.YAMLToJSON(pipelineBytes)
+	}()
+	go func() {
+		defer wg.Done()
+		applicationBytes, err2 = g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
+		if err2 != nil {
+			return
+		}
+		applicationBytes, err2 = kyaml.YAMLToJSON(applicationBytes)
+	}()
+	wg.Wait()
+
+	for _, err := range []error{err1, err2} {
+		if err != nil {
+			return nil, nil, errors.E(op, err)
+		}
+	}
+
+	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
+		return nil, nil, errors.E(op, err)
+	}
+	if err := json.Unmarshal(applicationBytes, &applicationJSONBlob); err != nil {
+		return nil, nil, errors.E(op, err)
+	}
+
+	return pipelineJSONBlob, applicationJSONBlob, nil
 }

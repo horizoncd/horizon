@@ -128,14 +128,23 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
+	var commit string
 	if diff == "" {
-		return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode("NoChange"), "there is no change to deploy")
-	}
-
-	// 2. merge branch
-	commit, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
-	if err != nil {
-		return nil, errors.E(op, err)
+		if cluster.Status != clustercommon.StatusFreed {
+			return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode("NoChange"), "there is no change to deploy")
+		}
+		// freed cluster is allowed to deploy without diff
+		commitInfo, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+		commit = commitInfo.Master
+	} else {
+		// 2. merge branch
+		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
 	}
 
 	// 3. create cluster in cd system
@@ -349,6 +358,43 @@ func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
 		return errors.E(op, err)
 	}
 	return nil
+}
+
+func (c *controller) SkipAllSteps(ctx context.Context, clusterID uint) (err error) {
+	const op = "cluster controller: skip all steps"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	param := cd.ClusterSkipAllStepsParams{
+		Namespace:    envValue.Namespace,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+		Environment:  er.EnvironmentName,
+	}
+	return c.cd.SkipAllSteps(ctx, &param)
 }
 
 func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {

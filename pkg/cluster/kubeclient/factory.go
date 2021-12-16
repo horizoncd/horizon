@@ -6,7 +6,6 @@ import (
 
 	k8sclustermanager "g.hz.netease.com/horizon/pkg/k8scluster/manager"
 	"g.hz.netease.com/horizon/pkg/util/kube"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -15,7 +14,7 @@ var (
 )
 
 type Factory interface {
-	GetByK8SServer(ctx context.Context, server string) (*rest.Config, kubernetes.Interface, error)
+	GetByK8SServer(ctx context.Context, server string) (*rest.Config, *kube.Client, error)
 }
 
 type factory struct {
@@ -32,10 +31,10 @@ func NewFactory() Factory {
 
 type k8sClientCache struct {
 	config *rest.Config
-	client kubernetes.Interface
+	client *kube.Client
 }
 
-func (f *factory) GetByK8SServer(ctx context.Context, server string) (*rest.Config, kubernetes.Interface, error) {
+func (f *factory) GetByK8SServer(ctx context.Context, server string) (*rest.Config, *kube.Client, error) {
 	ret, ok := f.cache.Load(server)
 	if ok {
 		clientCache := ret.(*k8sClientCache)
