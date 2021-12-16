@@ -130,11 +130,17 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	// 6. transfer model
-	clusterResp := ofClusterModel(application, cluster, er, fullPath,
+	// 6. get namespace
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	// 7. transfer model
+	clusterResp := ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
 		clusterFiles.PipelineJSONBlob, clusterFiles.ApplicationJSONBlob)
 
-	// 7. get latest deployed commit
+	// 8. get latest deployed commit
 	latestPR, err := c.pipelinerunMgr.GetLatestSuccessByClusterID(ctx, clusterID)
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -143,7 +149,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 		clusterResp.LatestDeployedCommit = latestPR.GitCommit
 	}
 
-	// 8. get createdBy and updatedBy users
+	// 9. get createdBy and updatedBy users
 	userMap, err := c.userManager.GetUserMapByIDs(ctx, []uint{cluster.CreatedBy, cluster.UpdatedBy})
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -379,10 +385,16 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	ret := ofClusterModel(application, cluster, er, fullPath,
+	// 12. get namespace
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	ret := ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
-	// 12. post hook
+	// 13. post hook
 	c.postHook(ctx, hook.CreateCluster, ret)
 	return ret, nil
 }
@@ -479,7 +491,13 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	return ofClusterModel(application, cluster, er, fullPath,
+	// 7. get namespace
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+
+	return ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
 		pipelineJSONBlob, applicationJSONBlob), nil
 }
 

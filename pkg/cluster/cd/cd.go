@@ -19,8 +19,10 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
+	v1alpha12 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
+	kube2 "github.com/argoproj/gitops-engine/pkg/utils/kube"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -341,6 +343,8 @@ func (c *cd) GetClusterState(ctx context.Context,
 	}
 
 	var rollout *v1alpha1.Rollout
+	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
+		common.ClusterLabelKey, params.Cluster))
 	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
 		Group:        "argoproj.io",
 		Version:      "v1alpha1",
@@ -348,16 +352,49 @@ func (c *cd) GetClusterState(ctx context.Context,
 		Namespace:    argoApp.Spec.Destination.Namespace,
 		ResourceName: params.Cluster,
 	}, &rollout); err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if errors.Status(err) == http.StatusNotFound {
+			// get pods by resourceTree
+			var (
+				clusterPodMap = map[string]*ClusterPod{}
+				podMap        = map[string]corev1.Pod{}
+			)
+			resourceTree, err := argo.GetApplicationTree(ctx, params.Cluster)
+			if err != nil {
+				return nil, errors.E(op, err)
+			}
+			// application with deployment may be serverless
+			if !resourceTreeContains(resourceTree, kube2.DeploymentKind) {
+				allPods, err := kube.GetPods(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
+				if err != nil {
+					return nil, errors.E(op, err)
+				}
+				for _, pod := range allPods {
+					podMap[pod.Name] = pod
+				}
+				for _, node := range resourceTree.Nodes {
+					if node.Kind == kube2.PodKind {
+						if _, ok := podMap[node.Name]; !ok {
+							return nil, errors.E(op, fmt.Errorf("pod %s does not exist", node.Name))
+						}
+						clusterPodMap[node.Name] = podToClusterPod(podMap[node.Name])
+					}
+				}
+				clusterState.PodTemplateHash = "default"
+				clusterState.PodTemplateHashKey = "default"
+				clusterState.Replicas = len(clusterPodMap)
+				clusterState.Versions["default"] = &ClusterVersion{
+					Replicas: len(clusterPodMap),
+					Pods:     clusterPodMap,
+				}
+				return clusterState, nil
+			}
+		} else {
 			return nil, errors.E(op, err)
 		}
 	}
-
 	clusterState.Step = getStep(rollout)
 
 	var latestReplicaSet *appsv1.ReplicaSet
-	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
-		common.ClusterLabelKey, params.Cluster))
 	rss, err := kube.GetReplicaSets(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 	if err != nil {
 		return nil, err
@@ -506,6 +543,76 @@ func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace stri
 		}
 	}
 	return nil
+}
+
+func resourceTreeContains(resourceTree *v1alpha12.ApplicationTree, resourceKind string) bool {
+	for _, node := range resourceTree.Nodes {
+		if node.Kind == resourceKind {
+			return true
+		}
+	}
+	return false
+}
+
+func podToClusterPod(pod corev1.Pod) (clusterPod *ClusterPod) {
+	clusterPod = &ClusterPod{
+		Metadata: PodMetadata{
+			CreationTimestamp: pod.CreationTimestamp,
+			Namespace:         pod.Namespace,
+			Annotations:       pod.Annotations,
+		},
+		Spec: PodSpec{
+			NodeName:       pod.Spec.NodeName,
+			InitContainers: nil,
+			Containers:     nil,
+		},
+		Status: PodStatus{
+			HostIP: pod.Status.HostIP,
+			PodIP:  pod.Status.PodIP,
+			Phase:  string(pod.Status.Phase),
+		},
+	}
+
+	var initContainers []*Container
+	for i := range pod.Spec.InitContainers {
+		c := pod.Spec.InitContainers[i]
+		initContainers = append(initContainers, &Container{
+			Name:  c.Name,
+			Image: c.Image,
+		})
+	}
+	clusterPod.Spec.InitContainers = initContainers
+
+	cs := &containerList{}
+	for i := range pod.Spec.Containers {
+		cs.containers = append(cs.containers, &pod.Spec.Containers[i])
+	}
+	sort.Sort(cs)
+
+	var containers []*Container
+	for i := range cs.containers {
+		c := cs.containers[i]
+		containers = append(containers, &Container{
+			Name:  c.Name,
+			Image: c.Image,
+		})
+	}
+	clusterPod.Spec.Containers = containers
+
+	var containerStatuses []*ContainerStatus
+	for i := range pod.Status.ContainerStatuses {
+		containerStatus := pod.Status.ContainerStatuses[i]
+		c := &ContainerStatus{
+			Name:         containerStatus.Name,
+			Ready:        containerStatus.Ready,
+			RestartCount: containerStatus.RestartCount,
+			State:        parseContainerState(containerStatus),
+		}
+		containerStatuses = append(containerStatuses, c)
+	}
+	clusterPod.Status.ContainerStatuses = containerStatuses
+	clusterPod.Status.LifeCycle = parsePodLifeCycle(pod.Status)
+	return
 }
 
 func parsePod(ctx context.Context, clusterInfo *ClusterState,
