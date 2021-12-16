@@ -19,8 +19,9 @@ func TestLogOK(t *testing.T) {
 
 	const op = "app: create application"
 	defer Start(ctx, op).Stop(func() string { return ByErr(err) })
-
 	log.Info(ctx, "hello world")
+
+	Start(ctx, "test: stopPrint").StopPrint()
 }
 
 func TestPanic(t *testing.T) {
