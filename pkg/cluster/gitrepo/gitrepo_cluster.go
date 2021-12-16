@@ -314,9 +314,13 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		return errors.E(op, err)
 	}
 
-	// 3. write files to repo
+	// 3. create gitops branch from master
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
+	if _, err := g.gitlabLib.CreateBranch(ctx, pid, _branchGitops, _branchMaster); err != nil {
+		return errors.E(op, err)
+	}
 
+	// 4. write files to repo, to gitops branch
 	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML, chartYAML, restartYAML, tagsYAML []byte
 	var err1, err2, err3, err4, err5, err6, err7, err8 error
 
@@ -405,12 +409,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		Pipeline:    params.PipelineJSONBlob,
 	})
 
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
-		return errors.E(op, err)
-	}
-
-	// 3. create gitops branch from master
-	if _, err := g.gitlabLib.CreateBranch(ctx, pid, _branchGitops, _branchMaster); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions); err != nil {
 		return errors.E(op, err)
 	}
 
@@ -711,7 +710,7 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
-	bytes, err := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathEnv)
+	bytes, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathEnv)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

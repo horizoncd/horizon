@@ -165,3 +165,17 @@ func (mr *MockCDMockRecorder) Online(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Online", reflect.TypeOf((*MockCD)(nil).Online), ctx, params)
 }
+
+// SkipAllSteps mocks base method.
+func (m *MockCD) SkipAllSteps(ctx context.Context, params *cd.ClusterSkipAllStepsParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SkipAllSteps", ctx, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SkipAllSteps indicates an expected call of SkipAllSteps.
+func (mr *MockCDMockRecorder) SkipAllSteps(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SkipAllSteps", reflect.TypeOf((*MockCD)(nil).SkipAllSteps), ctx, params)
+}

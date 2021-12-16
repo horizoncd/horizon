@@ -282,9 +282,10 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		}
 	}
 
-	// 4. if templateInput is empty, set it with application's templateInput
+	// 4. if templateInput is empty, set it with application's env template
 	if r.TemplateInput == nil {
-		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.GetApplication(ctx, application.Name)
+		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.
+			GetApplicationEnvTemplate(ctx, application.Name, environment)
 		if err != nil {
 			return nil, errors.E(op, err)
 		}

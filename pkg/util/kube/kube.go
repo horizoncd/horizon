@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -116,8 +117,13 @@ func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) 
 	return restConfig, k8sClient, nil
 }
 
+type Client struct {
+	Basic   kubernetes.Interface
+	Dynamic dynamic.Interface
+}
+
 // BuildClientFromContent build client from k8s kubeconfig content, not file path
-func BuildClientFromContent(kubeconfigContent string) (*rest.Config, kubernetes.Interface, error) {
+func BuildClientFromContent(kubeconfigContent string) (*rest.Config, *Client, error) {
 	var restConfig *rest.Config
 	var err error
 	if len(kubeconfigContent) > 0 {
@@ -142,11 +148,22 @@ func BuildClientFromContent(kubeconfigContent string) (*rest.Config, kubernetes.
 	restConfig.ContentType = runtime.ContentTypeJSON
 	restConfig.NegotiatedSerializer = scheme.Codecs
 
-	k8sClient, err := kubernetes.NewForConfig(restConfig)
+	basicClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, err
 	}
-	return restConfig, k8sClient, nil
+
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	kubeClient := &Client{
+		Basic:   basicClient,
+		Dynamic: dynamicClient,
+	}
+
+	return restConfig, kubeClient, nil
 }
 
 type ContainerRef struct {
