@@ -250,7 +250,6 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 				_branchMaster, cases[index].fileName)
 			if cases[index].err != nil {
 				log.Warningf(ctx, "get file %s error, err = %s", cases[index].fileName, cases[index].err.Error())
-				return
 			}
 		}(i)
 	}
