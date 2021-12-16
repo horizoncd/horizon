@@ -155,16 +155,7 @@ func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,
 func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *clustermodels.Cluster,
 	pipelinerun *prmodels.Pipelinerun, er *envmodels.EnvironmentRegion) (*v1beta1.PipelineRun, error) {
 	var latestPr *v1beta1.PipelineRun
-	if pipelinerun.PrObject == "" {
-		tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
-		if err != nil {
-			return nil, err
-		}
-		latestPr, err = tektonClient.GetPipelineRunByID(ctx, cluster.Name, cluster.ID, pipelinerun.ID)
-		if err != nil {
-			return nil, err
-		}
-	} else {
+	getPipelineRunFromCollector := func() (*v1beta1.PipelineRun, error) {
 		tektonCollector, err := c.tektonFty.GetTektonCollector(er.EnvironmentName)
 		if err != nil {
 			return nil, err
@@ -173,7 +164,31 @@ func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *cl
 		if err != nil {
 			return nil, err
 		}
-		latestPr = obj.PipelineRun
+		return obj.PipelineRun, nil
+	}
+	var (
+		err          error
+		tektonClient tekton.Interface
+	)
+	if pipelinerun.PrObject == "" {
+		tektonClient, err = c.tektonFty.GetTekton(er.EnvironmentName)
+		if err != nil {
+			return nil, err
+		}
+		latestPr, err = tektonClient.GetPipelineRunByID(ctx, cluster.Name, cluster.ID, pipelinerun.ID)
+		if err != nil {
+			// get pipelineRun from k8s error, it can be deleted and uploaded to collector,
+			// so try to get pipelineRun from collector again
+			latestPr, err = getPipelineRunFromCollector()
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		latestPr, err = getPipelineRunFromCollector()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return latestPr, nil
 }
