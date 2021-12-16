@@ -52,7 +52,7 @@ func (l Log) StopPrint() {
 	duration := time.Since(l.start)
 
 	log.WithFiled(l.ctx, "op",
-		l.op).WithField("duration", duration)
+		l.op).WithField("duration", duration).Info("")
 }
 
 func (l Log) GetDuration() time.Duration {
