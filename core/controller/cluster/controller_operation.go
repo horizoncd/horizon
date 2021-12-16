@@ -128,7 +128,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	if diff == "" {
+	if diff == "" && cluster.Status != clustercommon.StatusFreed {
 		return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode("NoChange"), "there is no change to deploy")
 	}
 
