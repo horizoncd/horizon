@@ -226,3 +226,18 @@ func (a *API) Free(c *gin.Context) {
 	}
 	response.Success(c)
 }
+
+func (a *API) GetOutput(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	outPutStr, err := a.clusterCtl.GetClusterOutput(c, uint(clusterID))
+	if err != nil {
+		response.AbortWithError(c, err)
+	}
+	response.SuccessWithData(c, outPutStr)
+}

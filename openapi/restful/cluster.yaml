@@ -1015,7 +1015,7 @@ paths:
       tags:
         - cluster
       operationId: getClusterPods
-      summary: get pods of the cluster in the given time range
+      summary: get pods of the cluster in the given time range in grafana
       responses:
         "200":
           description: Success
@@ -1032,3 +1032,23 @@ paths:
                         ]
                       }
                   }
+
+  /apis/core/v1/clusters/{clusterID}/outputs:
+    get:
+      tags:
+        - cluster
+      operationId: getClusterOutputs
+      summary: get cluster outputs
+      responses:
+        "200":
+          description: Success
+          content:
+            application/yaml:
+              schema:
+                example: |
+                  SyncDomainName:
+                    Description: the sync domain of the the
+                    Value: horizon.mockserver.org
+                  DebugPort:
+                    Description: the debug port
+                    Value: 1000
