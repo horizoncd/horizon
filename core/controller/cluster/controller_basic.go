@@ -173,14 +173,7 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ st
 		return "", errors.E(op, err)
 	}
 
-	// 3. get files in  git repo
-	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
-	if err != nil {
-		log.Errorf(ctx, "get clusterValueFile from gitRepo error, err  = %s", err.Error())
-		return "", err
-	}
-
-	// 4. get output in template
+	// 3. get output in template
 	outputStr, err := c.outputGetter.GetTemplateOutPut(ctx, cluster.Template, cluster.TemplateRelease)
 	if err != nil {
 		log.Errorf(ctx, "get template output error, err = %s", err.Error())
@@ -188,6 +181,13 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ st
 	}
 	if outputStr == "" {
 		return "", nil
+	}
+
+	// 4. get files in  git repo
+	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
+	if err != nil {
+		log.Errorf(ctx, "get clusterValueFile from gitRepo error, err  = %s", err.Error())
+		return "", err
 	}
 
 	log.Debugf(ctx, "clusterFiles = %+v, outputStr = %+v", clusterFiles, outputStr)
