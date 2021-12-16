@@ -3,20 +3,26 @@ package gitrepo
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
+	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
+	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
+	herrors "g.hz.netease.com/horizon/pkg/util/errors"
+	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -232,5 +238,61 @@ func Test(t *testing.T) {
 			Value: "b",
 		},
 	})
+	assert.Nil(t, err)
+}
+
+func TestGetClusterValueFile(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	gitlabmockLib := gitlablibmock.NewMockInterface(mockCtrl)
+
+	repoConfig := gitlabconf.Repo{
+		Parent: &gitlabconf.Parent{
+			Path: "horizon",
+			ID:   1,
+		},
+		RecyclingParent: &gitlabconf.Parent{
+			Path: "horizon-recycle",
+			ID:   2,
+		},
+	}
+
+	var clusterGitRepoInstance ClusterGitRepo // nolint
+
+	clusterGitRepoInstance = &clusterGitRepo{
+		gitlabLib:       gitlabmockLib,
+		clusterRepoConf: &repoConfig,
+		helmRepoMapper:  nil,
+	}
+
+	// 1. test gitlab get file error
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(),
+		_branchMaster, gomock.Any()).Return(
+		nil, errors.New("gitlab getFile error")).Times(5)
+	clusterValueFiles, err := clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
+		"app", "cluster")
+	assert.Nil(t, clusterValueFiles)
+	assert.NotNil(t, err)
+
+	// 2. test gitlab return ok
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
+		[]byte("cluster: xxx"), nil).Times(5)
+	clusterValueFiles, err = clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
+		"app", "cluster")
+	assert.Nil(t, err)
+	assert.NotNil(t, clusterValueFiles)
+
+	// 3. test gitlab return 404
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
+		[]byte("cluster: xxx"), nil).Times(4)
+	var herr = herrors.E(
+		"Test", http.StatusNotFound)
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
+		nil, herr).Times(1)
+
+	clusterValueFile1, err := clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
+		"app", "cluster")
+	assert.NotNil(t, clusterValueFile1)
 	assert.Nil(t, err)
 }

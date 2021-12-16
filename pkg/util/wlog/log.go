@@ -28,8 +28,6 @@ func Start(ctx context.Context, op string) Log {
 func (l Log) Stop(end func() string) {
 	if err := recover(); err != nil {
 		log.Error(l.ctx, string(debug.Stack()))
-
-		panic(err)
 	}
 	duration := time.Since(l.start)
 
@@ -41,6 +39,16 @@ func (l Log) Stop(end func() string) {
 		log.WithFiled(l.ctx, "op",
 			l.op).WithField("duration", fmt.Sprintf("%s", duration)).Errorf(end()) // nolint
 	}
+}
+
+func (l Log) StopPrint() {
+	if err := recover(); err != nil {
+		log.Error(l.ctx, string(debug.Stack()))
+	}
+	duration := time.Since(l.start)
+
+	log.WithFiled(l.ctx, "op",
+		l.op).WithField("duration", duration).Info("")
 }
 
 func (l Log) GetDuration() time.Duration {

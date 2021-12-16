@@ -196,10 +196,12 @@ func TestTextTemplateFromTextInCode(t *testing.T) {
 `
 	template1 := template.Must(template.New("template1.text").Funcs(sprig.TxtFuncMap()).Parse(textNotTemplate))
 
-	vals := make(map[string]string)
+	vals := make(map[interface{}]interface{})
 	vals["TomAddInt"] = "100"
 	err := template1.ExecuteTemplate(os.Stdout, "template1.text", vals)
 	assert.Nil(t, err)
+
+	vals["TomAddInt"] = "102"
 
 	textTemplate := `
 {

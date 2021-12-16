@@ -61,6 +61,7 @@ import (
 	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
 	ormmiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 
 	"github.com/gin-gonic/gin"
@@ -199,6 +200,12 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+
+	outputGetter, err := output.NewOutPutGetter(ctx, gitlabFactory)
+	if err != nil {
+		panic(err)
+	}
+
 	gitGetter, err := code.NewGitGetter(ctx, gitlabFactory)
 	if err != nil {
 		panic(err)
@@ -218,7 +225,7 @@ func Run(flags *Flags) {
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
 		envTemplateCtl = envtemplatectl.NewController(applicationGitRepo, templateSchemaGetter)
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, gitGetter,
-			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, memHook, config.GrafanaMapper)
+			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, outputGetter, memHook, config.GrafanaMapper)
 		prCtl = prctl.NewController(tektonFty, gitGetter, clusterGitRepo)
 
 		templateCtl          = templatectl.NewController(templateSchemaGetter)
