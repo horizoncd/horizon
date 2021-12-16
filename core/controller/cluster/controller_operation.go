@@ -128,14 +128,23 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	if diff == "" && cluster.Status != clustercommon.StatusFreed {
-		return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode("NoChange"), "there is no change to deploy")
-	}
-
-	// 2. merge branch
-	commit, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
-	if err != nil {
-		return nil, errors.E(op, err)
+	var commit string
+	if diff == "" {
+		if cluster.Status != clustercommon.StatusFreed {
+			return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode("NoChange"), "there is no change to deploy")
+		}
+		// freed cluster is allowed to deploy without diff
+		commitInfo, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+		commit = commitInfo.Master
+	} else {
+		// 2. merge branch
+		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
 	}
 
 	// 3. create cluster in cd system
