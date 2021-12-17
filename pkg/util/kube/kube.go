@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 
 	"g.hz.netease.com/horizon/pkg/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -24,6 +27,29 @@ import (
 )
 
 const DefaultEventsLimit = 100
+
+const (
+	EnvK8sClientQPS   = "HORIZON_K8S_CLIENT_QPS"
+	EnvK8sClientBurst = "HORIZON_K8S_CLIENT_BURST"
+)
+
+var (
+	K8sClientConfigQPS   float32 = 50
+	K8sClientConfigBurst int     = 100
+)
+
+func init() {
+	if envQPS := os.Getenv(EnvK8sClientQPS); envQPS != "" {
+		if qps, err := strconv.ParseFloat(envQPS, 32); err == nil {
+			K8sClientConfigQPS = float32(qps)
+		}
+	}
+	if envBurst := os.Getenv(EnvK8sClientBurst); envBurst != "" {
+		if burst, err := strconv.Atoi(envBurst); err == nil {
+			K8sClientConfigBurst = burst
+		}
+	}
+}
 
 // GetEvents 返回一个map。key是Pod的基本信息，name-uid-namespace
 func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
@@ -109,6 +135,10 @@ func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) 
 	restConfig.APIPath = "/api"
 	restConfig.ContentType = runtime.ContentTypeJSON
 	restConfig.NegotiatedSerializer = scheme.Codecs
+	restConfig.QPS = K8sClientConfigQPS
+	restConfig.Burst = K8sClientConfigBurst
+	log.Infof(context.Background(), "BuildClient set kube qps: %v, burst: %v", K8sClientConfigQPS,
+		K8sClientConfigBurst)
 
 	k8sClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
@@ -147,6 +177,10 @@ func BuildClientFromContent(kubeconfigContent string) (*rest.Config, *Client, er
 	restConfig.APIPath = "/api"
 	restConfig.ContentType = runtime.ContentTypeJSON
 	restConfig.NegotiatedSerializer = scheme.Codecs
+	restConfig.QPS = K8sClientConfigQPS
+	restConfig.Burst = K8sClientConfigBurst
+	log.Infof(context.Background(), "BuildClientFromContent set kube qps: %v, burst: %v", K8sClientConfigQPS,
+		K8sClientConfigBurst)
 
 	basicClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
