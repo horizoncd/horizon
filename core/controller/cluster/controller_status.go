@@ -110,13 +110,22 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	})
 	if err != nil {
 		if errors.Status(err) == http.StatusNotFound {
-			resp.ClusterStatus = map[string]string{
-				"status": _notFound,
+			if cluster.Status != "" {
+				resp.ClusterStatus = map[string]string{
+					"status": cluster.Status,
+				}
+			} else {
+				resp.ClusterStatus = map[string]string{
+					"status": _notFound,
+				}
 			}
 		} else {
 			return nil, errors.E(op, err)
 		}
 	} else {
+		if cluster.Status != "" {
+			clusterState.Status = health.HealthStatusCode(cluster.Status)
+		}
 		resp.ClusterStatus = clusterState
 		if resp.RunningTask.Task == _taskNone && clusterState.Status != "" {
 			// task为none的情况下，判断是否单独在发布（重启、回滚等）
@@ -133,7 +142,6 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 			}
 		}
 	}
-
 	return resp, nil
 }
 
