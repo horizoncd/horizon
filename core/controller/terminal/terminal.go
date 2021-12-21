@@ -117,10 +117,7 @@ func (t Session) Toast(p string) error {
 		return err
 	}
 
-	if err = t.sockJSSession.Send(string(msg)); err != nil {
-		return err
-	}
-	return nil
+	return t.sockJSSession.Send(string(msg))
 }
 
 // SessionMap stores a map of all TerminalSession objects and a lock to avoid concurrent conflict
