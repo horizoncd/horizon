@@ -18,8 +18,8 @@ import (
 
 var cmdbctl cmdb.Controller
 var handler EventHandler
-var applicationName string = "horizon-tmo-test"
-var clusterName string = "horizon-tmo-test-1"
+var applicationName = "horizon-tmo-test"
+var clusterName = "horizon-tmo-test-1"
 
 // nolint
 func TestApplication(t *testing.T) {

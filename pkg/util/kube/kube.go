@@ -35,7 +35,7 @@ const (
 
 var (
 	K8sClientConfigQPS   float32 = 50
-	K8sClientConfigBurst int     = 100
+	K8sClientConfigBurst         = 100
 )
 
 func init() {

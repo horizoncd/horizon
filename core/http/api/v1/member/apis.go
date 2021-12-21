@@ -333,10 +333,8 @@ func (a *API) validatePostMember(ctx context.Context,
 	if err := validMemberType(postMember.MemberType); err != nil {
 		return err
 	}
-	if err := a.validRole(ctx, postMember.Role); err != nil {
-		return err
-	}
-	return nil
+
+	return a.validRole(ctx, postMember.Role)
 }
 
 func validMemberType(memberType membermodels.MemberType) error {

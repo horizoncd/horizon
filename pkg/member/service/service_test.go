@@ -57,7 +57,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	//    group2 member: tom(2), jerry(2)
 	var group1ID uint = 3
 	var group2ID uint = 4
-	var traversalIDs string = "3,4"
+	var traversalIDs = "3,4"
 	var tomID uint = 1
 	var jerryID uint = 2
 	var catID uint = 3
@@ -258,7 +258,7 @@ func TestListGroupMember(t *testing.T) {
 	//    ret: tom(2), jerry(2), cat(1)
 	var group2ID uint = 2
 	var group1ID uint = 1
-	var traversalIDs string = "1,2"
+	var traversalIDs = "1,2"
 	var tomID uint = 1
 	var jerryID uint = 2
 	var catID uint = 3
@@ -361,7 +361,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 		application3ID uint = 3
 		cluster4ID     uint = 4
 
-		traversalIDs string        = "1,2"
+		traversalIDs               = "1,2"
 		sphID        uint          = 1
 		jerryID      uint          = 2
 		catID        uint          = 3

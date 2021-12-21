@@ -25,25 +25,25 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _                      = orm.NewSqliteDB("")
-	ctx                        = orm.NewContext(context.TODO(), db)
-	contextUserID       uint   = 1
-	contextUserName     string = "Tony"
-	contextUserFullName string = "TonyWu"
+	db, _                    = orm.NewSqliteDB("")
+	ctx                      = orm.NewContext(context.TODO(), db)
+	contextUserID       uint = 1
+	contextUserName          = "Tony"
+	contextUserFullName      = "TonyWu"
 )
 
 var (
-	user1ID   uint   = 1
-	user1Name string = contextUserName
+	user1ID   uint = 1
+	user1Name      = contextUserName
 
-	user2ID   uint   = 2
-	user2Name string = "tom"
+	user2ID   uint = 2
+	user2Name      = "tom"
 
-	user3Name string = "jerry"
+	user3Name = "jerry"
 
-	user4Name string = "alias"
+	user4Name = "alias"
 
-	user5Name string = "henry"
+	user5Name = "henry"
 )
 
 // nolint

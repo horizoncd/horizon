@@ -11,15 +11,15 @@ type ResourceType string
 const (
 	TypeGroupStr string = "groups"
 	// TypeGroup represent the group member entry.
-	TypeGroup ResourceType = (ResourceType)(TypeGroupStr)
+	TypeGroup = (ResourceType)(TypeGroupStr)
 
 	TypeApplicationStr string = "applications"
 	// TypeApplication represent the application  member entry.
-	TypeApplication ResourceType = (ResourceType)(TypeApplicationStr)
+	TypeApplication = (ResourceType)(TypeApplicationStr)
 
 	TypeApplicationClusterStr string = "clusters"
 	// TypeApplicationCluster represent the application instance member entry
-	TypeApplicationCluster ResourceType = (ResourceType)(TypeApplicationClusterStr)
+	TypeApplicationCluster = (ResourceType)(TypeApplicationClusterStr)
 
 	// TypePipelinerunStr currently pipelineruns do not have direct member info, will
 	// use the pipeline's cluster's member info

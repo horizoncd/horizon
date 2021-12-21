@@ -85,7 +85,7 @@ func TestGetAndListPipelinerun(t *testing.T) {
 
 	// 2. test ListPipeline
 	var clusterID uint = 56
-	var totalCount int = 100
+	var totalCount = 100
 	// var pipelineruns []*pipelinemodel.Pipelinerun
 	pipelineruns := make([]*pipelinemodel.Pipelinerun, 0)
 	pipelineruns = append(pipelineruns, &pipelinemodel.Pipelinerun{
