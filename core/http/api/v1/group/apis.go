@@ -54,6 +54,11 @@ func (a *API) CreateSubGroup(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("%v", err))
 		return
 	}
+	if intID <= 0 {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			"group id should be a positive integer")
+		return
+	}
 
 	var newGroup *group.NewGroup
 	err = c.ShouldBindJSON(&newGroup)
