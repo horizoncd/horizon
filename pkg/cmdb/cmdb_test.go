@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var applicationName string = "horizon-test"
-var clusterName string = "horizon-test-cluster-1"
+var applicationName = "horizon-test"
+var clusterName = "horizon-test-cluster-1"
 
 var c Controller
 

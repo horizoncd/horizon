@@ -152,7 +152,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(branches), 2)
 
-	var filter string = "mas"
+	var filter = "mas"
 	branches, err = g.ListBranch(ctx, pid, &gitlab.ListBranchesOptions{
 		Search: &filter,
 	})

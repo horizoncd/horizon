@@ -85,7 +85,7 @@ func TestBasic(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	var grantedByAdmin uint = 0
+	var grantedByAdmin uint
 
 	member1 := &models.Member{
 		ResourceType: "group",
