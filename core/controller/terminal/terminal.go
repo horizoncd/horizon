@@ -199,6 +199,42 @@ func handleTerminalSession(session sockjs.Session) {
 	terminalSession.bound <- nil
 }
 
+// handleShellSession is Called by net/http for any new /api/sockjs connections
+func handleShellSession(sessionID string) func(session sockjs.Session) {
+	return func(session sockjs.Session) {
+		var (
+			buf             string
+			err             error
+			msg             Message
+			terminalSession Session
+		)
+
+		if buf, err = session.Recv(); err != nil {
+			log.Printf("handleTerminalSession: can't Recv: %v", err)
+			return
+		}
+
+		if err = json.Unmarshal([]byte(buf), &msg); err != nil {
+			log.Printf("handleTerminalSession: can't UnMarshal (%v): %s", err, buf)
+			return
+		}
+
+		if msg.Op != "bind" {
+			log.Printf("handleTerminalSession: expected 'bind' message, got: %s", buf)
+			return
+		}
+
+		if terminalSession = terminalSessions.Get(sessionID); terminalSession.id == "" {
+			log.Printf("handleTerminalSession: can't find session '%s'", msg.SessionID)
+			return
+		}
+
+		terminalSession.sockJSSession = session
+		terminalSessions.Set(sessionID, terminalSession)
+		terminalSession.bound <- nil
+	}
+}
+
 // CreateAttachHandler is called from main for /api/sockjs
 func CreateAttachHandler(path string) http.Handler {
 	return sockjs.NewHandler(path, sockjs.DefaultOptions, handleTerminalSession)
