@@ -14,6 +14,14 @@ defaultRegions:
   dev,test,reg,perf,beta: hz-test
   pre,online: hz
 
+groupRegions:
+  dev,test,reg,perf,beta:
+    1,2: hz-test
+    3,4: hz-test
+  pre,online:
+    1,2: hz
+    3,4: hz
+
 applicationRegions:
   dev,test,reg,perf,beta:
     app1,app2: hz-test
@@ -34,6 +42,10 @@ applicationRegions:
 	assert.Equal(t, "eks-test", config.ApplicationRegions["beta"]["app3"])
 	assert.Equal(t, "hz", config.ApplicationRegions["pre"]["app2"])
 	assert.Equal(t, "eks", config.ApplicationRegions["online"]["app3"])
+	assert.Equal(t, "hz-test", config.GroupRegions["test"]["1"])
+	assert.Equal(t, "hz-test", config.GroupRegions["test"]["4"])
+	assert.Equal(t, "hz", config.GroupRegions["pre"]["2"])
+	assert.Equal(t, "hz", config.GroupRegions["online"]["3"])
 
 	reader = bytes.NewReader([]byte(`
 defaultRegions:
