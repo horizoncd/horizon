@@ -2,17 +2,17 @@ package common
 
 type HorizonErrorCode string
 
-type HorizonError struct {
+type HorizonRPCError struct {
 	httpCode int
 	ErrCode  HorizonErrorCode
 	ErrMsg   string
 }
 
-func (e *HorizonError) WithErrMsg(errorMsg string) {
+func (e *HorizonRPCError) WithErrMsg(errorMsg string) {
 	e.ErrMsg = errorMsg
 }
 
 var (
-	AccessError   = HorizonError{403, "AccessDeny", ""}
-	InternalError = HorizonError{500, "InternalError", ""}
+	AccessError   = HorizonRPCError{403, "AccessDeny", ""}
+	InternalError = HorizonRPCError{500, "InternalError", ""}
 )
