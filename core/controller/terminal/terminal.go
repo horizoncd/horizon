@@ -4,6 +4,7 @@
 package terminal
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"sync"
 
+	utillog "g.hz.netease.com/horizon/pkg/util/log"
 	"gopkg.in/igm/sockjs-go.v3/sockjs"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -197,6 +199,43 @@ func handleTerminalSession(session sockjs.Session) {
 	terminalSession.sockJSSession = session
 	terminalSessions.Set(msg.SessionID, terminalSession)
 	terminalSession.bound <- nil
+}
+
+// handleShellSession is Called by net/http for any new /api/sockjs connections
+func handleShellSession(ctx context.Context, sessionID string) func(session sockjs.Session) {
+	const op = "terminal controller: handler shell session"
+	return func(session sockjs.Session) {
+		var (
+			buf             string
+			err             error
+			msg             Message
+			terminalSession Session
+		)
+
+		if buf, err = session.Recv(); err != nil {
+			utillog.WithFiled(ctx, "op", op).Errorf("handleTerminalSession: can't Recv: %v", err)
+			return
+		}
+
+		if err = json.Unmarshal([]byte(buf), &msg); err != nil {
+			utillog.WithFiled(ctx, "op", op).Errorf("handleTerminalSession: can't UnMarshal (%v): %s", err, buf)
+			return
+		}
+
+		if msg.Op != "bind" {
+			utillog.WithFiled(ctx, "op", op).Errorf("handleTerminalSession: expected 'bind' message, got: %s", buf)
+			return
+		}
+
+		if terminalSession = terminalSessions.Get(sessionID); terminalSession.id == "" {
+			utillog.WithFiled(ctx, "op", op).Errorf("handleTerminalSession: can't find session '%s'", msg.SessionID)
+			return
+		}
+
+		terminalSession.sockJSSession = session
+		terminalSessions.Set(sessionID, terminalSession)
+		terminalSession.bound <- nil
+	}
 }
 
 // CreateAttachHandler is called from main for /api/sockjs

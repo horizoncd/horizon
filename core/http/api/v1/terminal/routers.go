@@ -18,6 +18,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/clusters/:%v/terminal", _clusterIDParam),
 			HandlerFunc: api.CreateTerminal,
 		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/shell", _clusterIDParam),
+			HandlerFunc: api.CreateShell,
+		},
 	}
 
 	frontGroup := engine.Group("/apis/front/v1")
