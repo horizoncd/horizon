@@ -14,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"k8s.io/client-go/tools/remotecommand"
@@ -24,7 +25,9 @@ import (
 type Controller interface {
 	GetTerminalID(ctx context.Context, clusterID uint, podName, containerName string) (*SessionIDResp, error)
 	GetSockJSHandler(ctx context.Context, sessionID string) (http.Handler, error)
-	CreateShell(ctx context.Context, clusterID uint, podName, containerName string) (string, http.Handler, error)
+	// CreateShell returns sessionID and sockJSHandler according to clusterID,podName,containerName
+	CreateShell(ctx context.Context, clusterID uint, podName, containerName string) (sessionID string,
+		sockJSHandler http.Handler, err error)
 }
 
 type controller struct {
@@ -122,43 +125,41 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 
 func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 	containerName string) (string, http.Handler, error) {
-	const op = "terminal controller: create shell"
-
 	// 1. 获取各类关联资源
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return "", nil, errors.E(op, err)
+		return "", nil, perrors.WithMessage(err, "failed to get cluster by id when creating shell")
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return "", nil, errors.E(op, err)
+		return "", nil, perrors.WithMessage(err, "failed to get application by id when creating shell")
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return "", nil, errors.E(op, err)
+		return "", nil, perrors.WithMessage(err, "failed to get environment-region by id when creating shell")
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return "", nil, errors.E(op, err)
+		return "", nil, perrors.WithMessage(err, "failed to get region by name when creating shell")
 	}
 
 	kubeConfig, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, regionEntity.K8SCluster.Server)
 	if err != nil {
-		return "", nil, errors.E(op, err)
+		return "", nil, perrors.WithMessage(err, "failed to get k8s info by server addr when creating shell")
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return "", nil, errors.E(op, err)
+		return "", nil, perrors.WithMessage(err, "failed to get envValue by cluster when creating shell")
 	}
 
 	// 2. 生成随机数，作为session id
 	randomID, err := genRandomID()
 	if err != nil {
-		return "", nil, err
+		return "", nil, perrors.WithMessage(err, "failed to generate session id when creating shell")
 	}
 
 	ref := ContainerRef{
@@ -178,7 +179,7 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 	})
 
 	// 3. 初始化sockJS处理函数
-	handler := sockjs.NewHandler("/apis/core/v1", sockjs.DefaultOptions, handleShellSession(ref.String()))
+	handler := sockjs.NewHandler("/apis/core/v1", sockjs.DefaultOptions, handleShellSession(ctx, ref.String()))
 
 	// 4. 启动协程，等待客户端发送绑定请求，连接容器
 	go WaitForTerminal(kubeClient.Basic, kubeConfig, ref)
