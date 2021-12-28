@@ -9,6 +9,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/config/region"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -61,7 +62,7 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 				fmt.Sprintf("failed to get application by id: %v", applicationID))
 			return
 		}
-		r := getRegionByEnvironmentAndApplication(config, environment, application.Name)
+		r := getRegion(config, environment, application)
 		if len(r) == 0 {
 			response.AbortWithRequestError(c, common.InternalError,
 				fmt.Sprintf("cannot find region for environment %v, application %v",
@@ -74,20 +75,37 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 	}, skippers...)
 }
 
-func getRegionByEnvironmentAndApplication(config *region.Config, environment, application string) string {
+func getRegion(config *region.Config, environment string, application *appmodels.Application) string {
 	if config == nil {
 		return ""
 	}
+	// getDefaultRegion get default region of environment
 	getDefaultRegion := func(environment string) string {
 		return strings.TrimSpace(config.DefaultRegions[environment])
 	}
+
+	// getGroupRegion get group default region
+	getGroupRegion := func(environment string, groupID string) string {
+		groupMap, ok := config.GroupRegions[environment]
+		if !ok {
+			return getDefaultRegion(environment)
+		}
+		r, ok := groupMap[groupID]
+		if !ok {
+			return getDefaultRegion(environment)
+		}
+		return strings.TrimSpace(r)
+	}
+
+	groupIDStr := strconv.Itoa(int(application.GroupID))
+	// get application default region first
 	applicationMap, ok := config.ApplicationRegions[environment]
 	if !ok {
-		return getDefaultRegion(environment)
+		return getGroupRegion(environment, groupIDStr)
 	}
-	r, ok := applicationMap[application]
+	r, ok := applicationMap[application.Name]
 	if !ok {
-		return getDefaultRegion(environment)
+		return getGroupRegion(environment, groupIDStr)
 	}
 	return strings.TrimSpace(r)
 }
