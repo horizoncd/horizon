@@ -23,19 +23,19 @@ const (
 
 func init() {
 	_prHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "gitops_pipelinerun_duration_seconds",
+		Name:    "horizon_pipelinerun_duration_seconds",
 		Help:    "PipelineRun duration info",
 		Buckets: append([]float64{0}, prometheus.ExponentialBuckets(1, 2, 12)...),
 	}, []string{_application, _cluster, _environment, _pipeline, _result})
 
 	_trHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "gitops_taskrun_duration_seconds",
+		Name:    "horizon_taskrun_duration_seconds",
 		Help:    "Taskrun duration info",
 		Buckets: append([]float64{0}, prometheus.ExponentialBuckets(1, 2, 12)...),
 	}, []string{_application, _cluster, _environment, _pipeline, _task, _result})
 
 	_stepHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "gitops_step_duration_seconds",
+		Name:    "horizon_step_duration_seconds",
 		Help:    "Step duration info",
 		Buckets: append([]float64{0}, prometheus.ExponentialBuckets(1, 2, 12)...),
 	}, []string{_application, _cluster, _environment,
