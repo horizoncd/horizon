@@ -34,10 +34,6 @@ func (a *API) Get(c *gin.Context) {
 	}
 
 	env := c.Query(_envParam)
-	if len(env) == 0 {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, "env cannot be empty")
-		return
-	}
 
 	var res *envtemplate.GetEnvTemplateResponse
 	if res, err = a.envTemplateCtl.GetEnvTemplate(c, uint(appID), env); err != nil {
@@ -56,10 +52,6 @@ func (a *API) Update(c *gin.Context) {
 	}
 
 	env := c.Query(_envParam)
-	if len(env) == 0 {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, "env cannot be empty")
-		return
-	}
 
 	var r *envtemplate.UpdateEnvTemplateRequest
 	if err := c.ShouldBindJSON(&r); err != nil {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/tektoncd/cli/pkg/pods"
 	tr "github.com/tektoncd/cli/pkg/taskrun"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -73,8 +72,8 @@ func (r *Reader) readAvailableTaskLogs(tr *v1beta1.TaskRun) (<-chan Log, <-chan 
 	p := pods.New(podName, r.ns, kube, r.streamer)
 	pod, err := p.Get()
 	if err != nil {
-		return nil, nil, errors.New(fmt.Sprintf("task %s failed: %s. Run tkn tr desc %s for more details.",
-			r.task, strings.TrimSpace(err.Error()), tr.Name))
+		return nil, nil, fmt.Errorf("task %s failed: %s. Run tkn tr desc %s for more details",
+			r.task, strings.TrimSpace(err.Error()), tr.Name)
 	}
 
 	steps := filterSteps(pod, r.allSteps, r.steps)

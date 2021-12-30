@@ -106,8 +106,8 @@ func TestGetByClusterID(t *testing.T) {
 	_, err = Mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
-	var PageSize int = 2
-	var PageNumber int = 1
+	var PageSize = 2
+	var PageNumber = 1
 	query := q.Query{
 		PageNumber: PageNumber,
 		PageSize:   PageSize,

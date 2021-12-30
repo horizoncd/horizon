@@ -40,18 +40,13 @@ func (c *controller) UpdateEnvTemplate(ctx context.Context,
 	applicationID uint, env string, r *UpdateEnvTemplateRequest) error {
 	const op = "env template controller: update env templates"
 
-	// 1. check env exists
-	if err := c.checkEnvExists(ctx, env); err != nil {
-		return errors.E(op, err)
-	}
-
-	// 2. get application
+	// 1. get application
 	application, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {
 		return errors.E(op, err)
 	}
 
-	// 3. validate schema
+	// 2. validate schema
 	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, application.Template, application.TemplateRelease, nil)
 	if err != nil {
 		return errors.E(op, http.StatusBadRequest, err)
@@ -63,7 +58,20 @@ func (c *controller) UpdateEnvTemplate(ctx context.Context,
 		return errors.E(op, http.StatusBadRequest, err)
 	}
 
-	// update application env template in git repo
+	// 3.1 update application's git repo if env is empty
+	if env == "" {
+		if err := c.applicationGitRepo.UpdateApplication(ctx, application.Name,
+			r.Pipeline, r.Application); err != nil {
+			return errors.E(op, err)
+		}
+		return nil
+	}
+
+	// 3.2 check env exists
+	if err := c.checkEnvExists(ctx, env); err != nil {
+		return errors.E(op, err)
+	}
+	// 4. update application env template in git repo
 	return c.applicationGitRepo.UpdateApplicationEnvTemplate(ctx, application.Name, env, r.Pipeline, r.Application)
 }
 
@@ -71,20 +79,26 @@ func (c *controller) GetEnvTemplate(ctx context.Context,
 	applicationID uint, env string) (*GetEnvTemplateResponse, error) {
 	const op = "env template controller: get env templates"
 
-	// 1. check env exists
-	if err := c.checkEnvExists(ctx, env); err != nil {
-		return nil, errors.E(op, err)
-	}
-
-	// 2. get application
+	// 1. get application
 	application, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 
-	// 3. get application env template
-	pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.GetApplicationEnvTemplate(ctx,
-		application.Name, env)
+	var pipelineJSONBlob, applicationJSONBlob map[string]interface{}
+	// 2.1 get application's git repo if env is empty
+	if env == "" {
+		pipelineJSONBlob, applicationJSONBlob, err = c.applicationGitRepo.GetApplication(ctx, application.Name)
+	} else {
+		// 2.2 check env exists
+		if err := c.checkEnvExists(ctx, env); err != nil {
+			return nil, errors.E(op, err)
+		}
+		// 3. get application env template
+		pipelineJSONBlob, applicationJSONBlob, err = c.applicationGitRepo.GetApplicationEnvTemplate(ctx,
+			application.Name, env)
+	}
+
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

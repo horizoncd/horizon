@@ -22,7 +22,7 @@ linters:
   enable:
     - lll
     - gofmt
-    - golint
+    - revive
     - misspell
     - whitespace
     - goconst

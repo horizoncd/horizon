@@ -4,9 +4,9 @@ info:
   description: Restful API About Terminal
   version: 1.0.0
 servers:
-  - url: 'http://localhost:8080/'
+  - url: 'ws://localhost:8080/'
 paths:
-  /apis/core/v1/clusters/{clusterID}/terminal?podName={podName}&containerName={containerName}:
+  /apis/core/v1/clusters/{clusterID}/shell?podName={podName}&containerName={containerName}:
     parameters:
       - name: clusterID
         in: path
@@ -20,31 +20,17 @@ paths:
         in: query
         required: true
         description: container name
-    post:
+    get:
       tags:
         - terminal
-      operationId: createTerminal
-      summary: create a terminal associated with specified cluster container
+      operationId: getShell
+      summary: get a shell associated with specified cluster container
       responses:
         '200':
           description: Succuss
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/GetTerminalID'
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-components:
-  schemas:
-    GetTerminalID:
-      type: object
-      properties:
-        id:
-          type: string
-          description: "id of terminal session"

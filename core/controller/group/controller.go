@@ -348,6 +348,10 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.C
 	var errNotMatch = errors.E(op, http.StatusNotFound, ErrCodeNotFound,
 		fmt.Sprintf("no resource matching the path: %s", path))
 
+	if len(path) == 0 {
+		return nil, errNotMatch
+	}
+
 	// path: /a/b => {a, b}
 	paths := strings.Split(path[1:], "/")
 	groups, err := c.groupManager.GetByPaths(ctx, paths)

@@ -147,6 +147,10 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 		return nil, errors.E(op, http.StatusBadRequest,
 			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("invalid templateInput, err: %v", err))
 	}
+	group, err := c.groupSvc.GetChildByID(ctx, groupID)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
 
 	// 2. check groups or applications with the same name exists
 	groups, err := c.groupMgr.GetByNameOrPathUnderParent(ctx, request.Name, request.Name, groupID)
@@ -188,10 +192,6 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 	}
 
 	// 5. get fullPath
-	group, err := c.groupSvc.GetChildByID(ctx, groupID)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, applicationModel.Name)
 
 	// 6. list template release
