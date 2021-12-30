@@ -15,7 +15,7 @@ const (
 	_application = "application"
 	_cluster     = "cluster"
 	_environment = "environment"
-	_name        = "name"
+	_step        = "step"
 	_pipeline    = "pipeline"
 	_task        = "task"
 	_result      = "result"
@@ -23,23 +23,22 @@ const (
 
 func init() {
 	_prHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "gitops_pipelinerun_duration_seconds",
+		Name:    "horizon_pipelinerun_duration_seconds",
 		Help:    "PipelineRun duration info",
 		Buckets: append([]float64{0}, prometheus.ExponentialBuckets(1, 2, 12)...),
 	}, []string{_application, _cluster, _environment, _pipeline, _result})
 
 	_trHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "gitops_taskrun_duration_seconds",
+		Name:    "horizon_taskrun_duration_seconds",
 		Help:    "Taskrun duration info",
 		Buckets: append([]float64{0}, prometheus.ExponentialBuckets(1, 2, 12)...),
-	}, []string{_application, _cluster, _environment, _pipeline, _task, _result})
+	}, []string{_application, _cluster, _environment, _pipeline, _result, _task})
 
 	_stepHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "gitops_step_duration_seconds",
+		Name:    "horizon_step_duration_seconds",
 		Help:    "Step duration info",
 		Buckets: append([]float64{0}, prometheus.ExponentialBuckets(1, 2, 12)...),
-	}, []string{_application, _cluster, _environment,
-		_name, _pipeline, _task, _result})
+	}, []string{_application, _cluster, _environment, _pipeline, _result, _task, _step})
 }
 
 func Observe(wpr *WrappedPipelineRun) {
@@ -75,7 +74,7 @@ func Observe(wpr *WrappedPipelineRun) {
 			_application: prBusinessData.Application,
 			_cluster:     prBusinessData.Cluster,
 			_environment: prBusinessData.Environment,
-			_name:        stepResult.Name,
+			_step:        stepResult.Name,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        stepResult.Task,
 			_result:      stepResult.Result,
