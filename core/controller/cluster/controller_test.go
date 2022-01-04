@@ -585,6 +585,11 @@ func Test(t *testing.T) {
 		GitRepoSSHURL: "ssh://xxxx",
 		ValueFiles:    []string{},
 	}).AnyTimes()
+	imageName := "image"
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{
+		Image: &imageName,
+	}, nil).AnyTimes()
+	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
@@ -710,8 +715,6 @@ func Test(t *testing.T) {
 	b, _ = json.Marshal(buildDeployResp)
 	t.Logf("%v", string(b))
 
-	clusterGitRepo.EXPECT().UpdateImage(ctx, gomock.Any(), gomock.Any(),
-		gomock.Any(), gomock.Any()).Return("update-image-commit", nil)
 	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
 		GitRepoSSHURL: "ssh://xxxx.git",

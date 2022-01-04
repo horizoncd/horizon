@@ -84,9 +84,13 @@ type Param struct {
 // nolint
 func TestMain(m *testing.M) {
 	var err error
-	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
+	ctx = context.WithValue(context.Background(), user.Key(), &userauth.DefaultInfo{
+		Name: "Tony",
+	})
 
+	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
 	if param == "" {
+		os.Exit(m.Run())
 		return
 	}
 
@@ -101,10 +105,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-
-	ctx = context.WithValue(context.Background(), user.Key(), &userauth.DefaultInfo{
-		Name: "Tony",
-	})
 
 	rootGroupName = p.RootGroupName
 	templateName = "javaapp"
@@ -204,7 +204,10 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("\n%v\n", diff)
 
-	updateImageCommit, err := r.UpdateImage(ctx, application, cluster, templateName, "newImage")
+	imageName := "newImage"
+	updateImageCommit, err := r.UpdatePipelineOutput(ctx, application, cluster, templateName, PipelineOutput{
+		Image: &imageName,
+	})
 	assert.Nil(t, err)
 	t.Logf("%v", updateImageCommit)
 
@@ -224,7 +227,10 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("%v", envValue)
 
-	com, err = r.UpdateImage(ctx, application, cluster, templateName, "newImage2")
+	imageName = "newImage2"
+	com, err = r.UpdatePipelineOutput(ctx, application, cluster, templateName, PipelineOutput{
+		Image: &imageName,
+	})
 	assert.Nil(t, err)
 	t.Logf("%v", com)
 
@@ -295,4 +301,66 @@ func TestGetClusterValueFile(t *testing.T) {
 		"app", "cluster")
 	assert.NotNil(t, clusterValueFile1)
 	assert.Nil(t, err)
+}
+
+// nolint
+func TestClusterGitRepo_UpdatePipelineOutput(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	templateName := "java"
+	output := `
+java:
+  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
+`
+	gitlabmockLib := gitlablibmock.NewMockInterface(mockCtrl)
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(),
+		gomock.Any(), gomock.Any()).Return(
+		[]byte(output), nil).AnyTimes()
+	gitlabmockLib.EXPECT().WriteFiles(gomock.Any(), gomock.Any(),
+		gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx, pid, branch, commitMsg, startBranch, actions interface{}) (string, error) {
+			output = actions.([]gitlablib.CommitAction)[0].Content
+			return "", nil
+		}).AnyTimes()
+
+	repoConfig := gitlabconf.Repo{
+		Parent: &gitlabconf.Parent{
+			Path: "horizon",
+			ID:   1,
+		},
+		RecyclingParent: &gitlabconf.Parent{
+			Path: "horizon-recycle",
+			ID:   2,
+		},
+	}
+
+	var clusterGitRepoInstance ClusterGitRepo // nolint
+
+	clusterGitRepoInstance = &clusterGitRepo{
+		gitlabLib:       gitlabmockLib,
+		clusterRepoConf: &repoConfig,
+		helmRepoMapper:  nil,
+	}
+
+	expectedOutput := `java:
+  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
+  git:
+    url: aaa
+    commitID: ccc
+    branch: bbb
+`
+	url := "aaa"
+	branch := "bbb"
+	commit := "ccc"
+	_, err := clusterGitRepoInstance.UpdatePipelineOutput(ctx, "", "", templateName, PipelineOutput{
+		Git: &Git{
+			URL:      &url,
+			Branch:   &branch,
+			CommitID: &commit,
+		},
+	})
+	assert.Nil(t, err)
+	fmt.Println(output)
+	assert.Equal(t, expectedOutput,output)
 }

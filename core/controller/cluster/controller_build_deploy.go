@@ -105,7 +105,6 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-
 	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx,
 		application.Name, cluster.Name, cluster.Template)
 	if err != nil {
