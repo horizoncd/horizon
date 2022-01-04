@@ -133,7 +133,30 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/listClustersResp'
+                example: |
+                  {
+                      "data":{
+                          "total":2,
+                          "items":[
+                              {
+                                  "id":3028,
+                                  "name":"yufeng-helloworld-online",
+                                  "createdAt":"2021-12-15T21:17:20+08:00",
+                                  "updatedAt":"2021-12-15T21:17:20+08:00",
+                                  "fullName":"其他/yufeng-helloworld/yufeng-helloworld-online",
+                                  "fullPath":"/others/yufeng-helloworld/yufeng-helloworld-online"
+                              },
+                              {
+                                  "id":2412,
+                                  "name":"yufeng-tomtest-online",
+                                  "createdAt":"2021-12-15T12:26:41+08:00",
+                                  "updatedAt":"2021-12-15T13:14:20+08:00",
+                                  "fullName":"公共技术/yufeng-tomtest/yufeng-tomtest-online",
+                                  "fullPath":"/ggjs/yufeng-tomtest/yufeng-tomtest-online"
+                              }
+                          ]
+                      }
+                  }
         default:
           description: Unexpected error
           content:
