@@ -6,6 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
+	ccommon "g.hz.netease.com/horizon/core/controller/common"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -133,7 +134,7 @@ func (a *API) SearchApplication(c *gin.Context) {
 func (a *API) SearchMyApplication(c *gin.Context) {
 	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		ccommon.Response(c, ccommon.ParamError.WithErrMsg(err.Error()))
 		return
 	}
 
@@ -144,7 +145,7 @@ func (a *API) SearchMyApplication(c *gin.Context) {
 		PageNumber: pageNumber,
 	})
 	if err != nil {
-		response.AbortWithError(c, err)
+		ccommon.Response(c, ccommon.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 
