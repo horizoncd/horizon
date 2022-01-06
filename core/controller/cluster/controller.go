@@ -15,8 +15,10 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
+	"g.hz.netease.com/horizon/pkg/member"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
@@ -33,6 +35,8 @@ type Controller interface {
 		filter string, query *q.Query) (int, []*ListClusterResponse, error)
 	ListClusterByNameFuzzily(ctx context.Context, environment,
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
+	ListUserClusterByNameFuzzily(ctx context.Context,
+		filter string, query *q.Query) (int, []*ListUserClustersResponse, error)
 	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
 		extraOwners []string, request *CreateClusterRequest) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
@@ -85,6 +89,8 @@ type controller struct {
 	grafanaMapper        grafana.Mapper
 	userManager          usermanager.Manager
 	userSvc              usersvc.Service
+	memberManager        member.Manager
+	groupManager         groupmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -114,6 +120,8 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		grafanaMapper:        grafanaMapper,
 		userManager:          usermanager.Mgr,
 		userSvc:              usersvc.Svc,
+		memberManager:        member.Mgr,
+		groupManager:         groupmanager.Mgr,
 	}
 }
 

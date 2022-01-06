@@ -65,6 +65,21 @@ func (mr *MockManagerMockRecorder) GetByIDs(ctx, ids interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIDs", reflect.TypeOf((*MockManager)(nil).GetByIDs), ctx, ids)
 }
 
+// GetByGroupIDs mocks base method
+func (m *MockManager) GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Application, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByGroupIDs", ctx, groupIDs)
+	ret0, _ := ret[0].([]*models.Application)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByGroupIDs indicates an expected call of GetByGroupIDs
+func (mr *MockManagerMockRecorder) GetByGroupIDs(ctx, groupIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByGroupIDs", reflect.TypeOf((*MockManager)(nil).GetByGroupIDs), ctx, groupIDs)
+}
+
 // GetByName mocks base method
 func (m *MockManager) GetByName(ctx context.Context, name string) (*models.Application, error) {
 	m.ctrl.T.Helper()
@@ -153,4 +168,20 @@ func (m *MockManager) DeleteByID(ctx context.Context, id uint) error {
 func (mr *MockManagerMockRecorder) DeleteByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockManager)(nil).DeleteByID), ctx, id)
+}
+
+// ListUserAuthorizedApplicationByNameFuzzily mocks base method
+func (m *MockManager) ListUserAuthorizedApplicationByNameFuzzily(ctx context.Context, name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListUserAuthorizedApplicationByNameFuzzily", ctx, name, groupIDs, userInfo, query)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].([]*models.Application)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListUserAuthorizedApplicationByNameFuzzily indicates an expected call of ListUserAuthorizedApplicationByNameFuzzily
+func (mr *MockManagerMockRecorder) ListUserAuthorizedApplicationByNameFuzzily(ctx, name, groupIDs, userInfo, query interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserAuthorizedApplicationByNameFuzzily", reflect.TypeOf((*MockManager)(nil).ListUserAuthorizedApplicationByNameFuzzily), ctx, name, groupIDs, userInfo, query)
 }

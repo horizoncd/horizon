@@ -30,6 +30,8 @@ type DAO interface {
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	ListByNameFuzzily(context.Context, string, string, *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+	ListUserAuthorizedClusterByNameFuzzily(ctx context.Context,
+		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.Cluster, error)
 }
 
 type dao struct {
@@ -298,4 +300,35 @@ func (d *dao) CheckClusterExists(ctx context.Context, cluster string) (bool, err
 	}
 
 	return true, nil
+}
+
+func (d *dao) ListUserAuthorizedClusterByNameFuzzily(ctx context.Context,
+	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.Cluster, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	offset := (query.PageNumber - 1) * query.PageSize
+	limit := query.PageSize
+
+	like := "%" + name + "%"
+	var (
+		clusters []*models.Cluster
+		count    int
+		result   *gorm.DB
+	)
+
+	result = db.Raw(common.ClusterQueryByUserAndNameFuzzily,
+		userInfo, like, applicationIDs, like, limit, offset).Scan(&clusters)
+	if result.Error != nil {
+		return 0, nil, result.Error
+	}
+
+	result = db.Raw(common.ClusterCountByUserAndNameFuzzily, userInfo, like, applicationIDs, like).Scan(&count)
+	if result.Error != nil {
+		return 0, nil, result.Error
+	}
+
+	return count, clusters, nil
 }

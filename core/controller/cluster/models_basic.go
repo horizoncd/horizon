@@ -248,3 +248,23 @@ type ListClusterWithFullResponse struct {
 	FullName string `json:"fullName"`
 	FullPath string `json:"fullPath"`
 }
+
+type ListUserClustersResponse struct {
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	FullName  string    `json:"fullName"`
+	FullPath  string    `json:"fullPath"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func ofCluster(cluster *models.Cluster, fullName, fullPath string) *ListUserClustersResponse {
+	return &ListUserClustersResponse{
+		ID:        cluster.ID,
+		Name:      cluster.Name,
+		FullName:  fullName,
+		FullPath:  fullPath,
+		CreatedAt: cluster.CreatedAt,
+		UpdatedAt: cluster.UpdatedAt,
+	}
+}

@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strconv"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	appgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/application/manager"
@@ -18,11 +21,13 @@ import (
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
+	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -260,6 +265,7 @@ func TestMain(m *testing.M) {
 	ctx = orm.NewContext(context.TODO(), db)
 	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
 		Name: "Tony",
+		ID:   1,
 	})
 
 	if err := json.Unmarshal([]byte(applicationSchemaJSON), &applicationSchema); err != nil {
@@ -434,4 +440,100 @@ func Test_validateApplicationName(t *testing.T) {
 	err = validateApplicationName(name)
 	assert.NotNil(t, err)
 	t.Logf("%v", err)
+}
+
+func TestListUserApplication(t *testing.T) {
+	appMgr := manager.Mgr
+	groupMgr := groupmanager.Mgr
+	memberMgr := member.Mgr
+
+	// init data
+	var groups []*groupmodels.Group
+	for i := 0; i < 5; i++ {
+		name := "groupForAppFuzzily" + strconv.Itoa(i)
+		group, err := groupMgr.Create(ctx, &groupmodels.Group{
+			Name:     name,
+			Path:     name,
+			ParentID: 0,
+		})
+		assert.Nil(t, err)
+		assert.NotNil(t, group)
+		groups = append(groups, group)
+	}
+
+	var applications []*models.Application
+	for i := 0; i < 5; i++ {
+		group := groups[i]
+		name := "appFuzzily" + strconv.Itoa(i)
+		application, err := appMgr.Create(ctx, &models.Application{
+			GroupID:         group.ID,
+			Name:            name,
+			Priority:        "P3",
+			GitURL:          "ssh://git.com",
+			GitSubfolder:    "/test",
+			GitBranch:       "master",
+			Template:        "javaapp",
+			TemplateRelease: "v1.0.0",
+		}, nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, application)
+		applications = append(applications, application)
+	}
+
+	c = &controller{
+		applicationMgr: appMgr,
+		groupMgr:       groupMgr,
+		groupSvc:       groupsvc.Svc,
+		memberManager:  memberMgr,
+	}
+
+	_, err := memberMgr.Create(ctx, &membermodels.Member{
+		ResourceType: membermodels.TypeGroup,
+		ResourceID:   groups[0].ID,
+		Role:         "owner",
+		MemberType:   membermodels.MemberUser,
+		MemberNameID: 1,
+	})
+	assert.Nil(t, err)
+
+	_, err = memberMgr.Create(ctx, &membermodels.Member{
+		ResourceType: membermodels.TypeApplication,
+		ResourceID:   applications[1].ID,
+		Role:         "owner",
+		MemberType:   membermodels.MemberUser,
+		MemberNameID: 1,
+	})
+	assert.Nil(t, err)
+
+	count, resps, err := c.ListUserApplication(ctx, "appFu", &q.Query{
+		PageNumber: 0,
+		PageSize:   common.DefaultPageSize,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, count)
+	assert.Equal(t, "appFuzzily1", resps[0].Name)
+	assert.Equal(t, "appFuzzily0", resps[1].Name)
+	for _, resp := range resps {
+		t.Logf("%v", resp)
+	}
+
+	_, err = memberMgr.Create(ctx, &membermodels.Member{
+		ResourceType: membermodels.TypeGroup,
+		ResourceID:   groups[2].ID,
+		Role:         "owner",
+		MemberType:   membermodels.MemberUser,
+		MemberNameID: 1,
+	})
+	assert.Nil(t, err)
+	count, resps, err = c.ListUserApplication(ctx, "appFu", &q.Query{
+		PageNumber: 0,
+		PageSize:   common.DefaultPageSize,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, count)
+	assert.Equal(t, "appFuzzily2", resps[0].Name)
+	assert.Equal(t, "appFuzzily1", resps[1].Name)
+	for _, resp := range resps {
+		t.Logf("%v", resp)
+	}
 }

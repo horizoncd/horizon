@@ -34,6 +34,12 @@ type Manager interface {
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int,
 		[]*models.ClusterWithEnvAndRegion, error)
+	// ListUserAuthorizedClusterByNameFuzzily list cluster which is authorized to the specified user.
+	// 1. name is the cluster's fuzzily name.
+	// 2. applicationIDs is the applications' id which are authorized to the specified user.
+	// 3. userInfo is the user id
+	ListUserAuthorizedClusterByNameFuzzily(ctx context.Context,
+		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.Cluster, error)
 }
 
 func New() Manager {
@@ -122,4 +128,21 @@ func (m *manager) ListByNameFuzzily(ctx context.Context, environment,
 
 func (m *manager) CheckClusterExists(ctx context.Context, cluster string) (bool, error) {
 	return m.dao.CheckClusterExists(ctx, cluster)
+}
+
+func (m *manager) ListUserAuthorizedClusterByNameFuzzily(ctx context.Context,
+	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.Cluster, error) {
+	if query == nil {
+		query = &q.Query{
+			PageNumber: common.DefaultPageNumber,
+			PageSize:   common.DefaultPageSize,
+		}
+	}
+	if query.PageNumber < 1 {
+		query.PageNumber = common.DefaultPageNumber
+	}
+	if query.PageSize < 1 {
+		query.PageSize = common.DefaultPageSize
+	}
+	return m.dao.ListUserAuthorizedClusterByNameFuzzily(ctx, name, applicationIDs, userInfo, query)
 }

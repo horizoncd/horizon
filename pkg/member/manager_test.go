@@ -121,6 +121,44 @@ func TestList(t *testing.T) {
 	assert.True(t, MemberValueEqual(&members[1], retMember2))
 }
 
+func TestListResourceOfMemberInfo(t *testing.T) {
+	var grantedByAdmin uint
+
+	member1 := &models.Member{
+		ResourceType: models.TypeGroup,
+		ResourceID:   11,
+		Role:         "owner",
+		MemberType:   models.MemberUser,
+		MemberNameID: 1,
+		GrantedBy:    grantedByAdmin,
+	}
+
+	// create 1
+	retMember1, err := Mgr.Create(ctx, member1)
+	assert.Nil(t, err)
+	assert.True(t, MemberValueEqual(member1, retMember1))
+
+	// create 2
+	member2 := &models.Member{
+		ResourceType: models.TypeGroup,
+		ResourceID:   22,
+		Role:         "owner",
+		MemberType:   models.MemberUser,
+		MemberNameID: 1,
+		GrantedBy:    grantedByAdmin,
+	}
+	retMember2, err := Mgr.Create(ctx, member2)
+	assert.Nil(t, err)
+	assert.True(t, MemberValueEqual(member2, retMember2))
+
+	resourceIDs, err := Mgr.ListResourceOfMemberInfo(ctx, models.TypeGroup, 1)
+	assert.Nil(t, err)
+	t.Logf("%v", resourceIDs)
+	assert.Equal(t, 2, len(resourceIDs))
+	assert.Equal(t, uint(11), resourceIDs[0])
+	assert.Equal(t, uint(22), resourceIDs[1])
+}
+
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Member{}); err != nil {

@@ -42,6 +42,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     "/applications/searchapplications",
 			HandlerFunc: api.SearchApplication,
 		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     "/applications/searchmyapplications",
+			HandlerFunc: api.SearchMyApplication,
+		},
 	}
 
 	route.RegisterRoutes(apiGroup, routes)

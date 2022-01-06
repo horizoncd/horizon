@@ -7,6 +7,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cluster"
+	ccommon "g.hz.netease.com/horizon/core/controller/common"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -202,6 +203,30 @@ func (a *API) ListByNameFuzzily(c *gin.Context) {
 	})
 	if err != nil {
 		response.AbortWithError(c, err)
+		return
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: int64(count),
+		Items: respList,
+	})
+}
+
+func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
+	filter := c.Query(common.Filter)
+
+	pageNumber, pageSize, err := request.GetPageParam(c)
+	if err != nil {
+		ccommon.Response(c, ccommon.ParamError.WithErrMsg(err.Error()))
+		return
+	}
+
+	count, respList, err := a.clusterCtl.ListUserClusterByNameFuzzily(c, filter, &q.Query{
+		PageNumber: pageNumber,
+		PageSize:   pageSize,
+	})
+	if err != nil {
+		ccommon.Response(c, ccommon.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 

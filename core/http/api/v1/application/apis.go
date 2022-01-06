@@ -128,3 +128,28 @@ func (a *API) SearchApplication(c *gin.Context) {
 		Items: applications,
 	})
 }
+
+// SearchMyApplication search all applications that authorized to current user
+func (a *API) SearchMyApplication(c *gin.Context) {
+	pageNumber, pageSize, err := request.GetPageParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	filter := c.Query(common.Filter)
+
+	total, applications, err := a.applicationCtl.ListUserApplication(c, filter, &q.Query{
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+	})
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: int64(total),
+		Items: applications,
+	})
+}

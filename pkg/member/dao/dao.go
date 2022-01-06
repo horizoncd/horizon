@@ -21,6 +21,7 @@ type DAO interface {
 	UpdateByID(ctx context.Context, memberID uint, role string) (*models.Member, error)
 	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
+	ListResourceOfMemberInfo(ctx context.Context, resourceType models.ResourceType, memberInfo uint) ([]uint, error)
 }
 
 func New() DAO {
@@ -134,4 +135,19 @@ func (d *dao) ListDirectMember(ctx context.Context, resourceType models.Resource
 		return nil, result.Error
 	}
 	return members, nil
+}
+
+func (d *dao) ListResourceOfMemberInfo(ctx context.Context,
+	resourceType models.ResourceType, memberInfo uint) ([]uint, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []uint
+	result := db.Raw(common.MemberListResource, resourceType, memberInfo).Scan(&resources)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return resources, nil
 }
