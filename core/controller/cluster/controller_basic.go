@@ -156,6 +156,7 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context,
 			perrors.WithMessage(err, "failed to list application for clusters")
 	}
 
+	resp = make([]*ListUserClustersResponse, 0)
 	// 3. convert and add full path, full name
 	for _, cluster := range clusters {
 		application, exist := applicationMap[cluster.ApplicationID]
