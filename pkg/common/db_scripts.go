@@ -82,7 +82,7 @@ const (
 	ApplicationCountByGroupID            = "select count(1) from application where group_id = ? and deleted_at is null"
 	ApplicationQueryByUserAndNameFuzzily = "select * from ( " +
 		"select a.* from application a join member m on m.resource_id = a.id " +
-		"where m.resource_type = 'applications' and m.membername_id = ? " +
+		"where m.resource_type = 'applications' and m.member_type = '0' and m.membername_id = ? " +
 		"and a.name like ? and a.deleted_at is null and m.deleted_at is null " +
 		"union " +
 		"select a.* from application a where a.group_id in ? " +
@@ -90,7 +90,7 @@ const (
 		") da order by updated_at desc limit ? offset ?"
 	ApplicationCountByUserAndNameFuzzily = "select count(1) from ( " +
 		"select a.* from application a join member m on m.resource_id = a.id " +
-		"where m.resource_type = 'applications' and m.membername_id = ? " +
+		"where m.resource_type = 'applications' and m.member_type = '0' and m.membername_id = ? " +
 		"and a.name like ? and a.deleted_at is null and m.deleted_at is null " +
 		"union " +
 		"select a.* from application a where a.group_id in ? " +
@@ -181,7 +181,7 @@ const (
 		"from cluster c join member m on m.resource_id = c.id " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where m.resource_type = 'clusters' and m.membername_id = ? and c.name like ? " +
+		"where m.resource_type = 'clusters' and m.member_type = '0' and m.membername_id = ? and c.name like ? " +
 		"and c.deleted_at is null and m.deleted_at is null " +
 		"union " +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
@@ -195,7 +195,7 @@ const (
 		"from cluster c join member m on m.resource_id = c.id " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where m.resource_type = 'clusters' and m.membername_id = ? and c.name like ? " +
+		"where m.resource_type = 'clusters' and m.member_type = '0' and m.membername_id = ? and c.name like ? " +
 		"and c.deleted_at is null and m.deleted_at is null " +
 		"union " +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
@@ -208,7 +208,8 @@ const (
 		"from cluster c join member m on m.resource_id = c.id " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where m.resource_type = 'clusters' and m.membername_id = ? and er.environment_name = ? and c.name like ? " +
+		"where m.resource_type = 'clusters' and m.member_type = '0' " +
+		"and m.membername_id = ? and er.environment_name = ? and c.name like ? " +
 		"and c.deleted_at is null and m.deleted_at is null " +
 		"union " +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
@@ -222,7 +223,8 @@ const (
 		"from cluster c join member m on m.resource_id = c.id " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where m.resource_type = 'clusters' and m.membername_id = ? and er.environment_name = ? and c.name like ? " +
+		"where m.resource_type = 'clusters' and m.member_type = '0' " +
+		"and m.membername_id = ? and er.environment_name = ? and c.name like ? " +
 		"and c.deleted_at is null and m.deleted_at is null " +
 		"union " +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
