@@ -105,7 +105,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, name, apps[0].Name)
 
-	totalForUser, appsForUser, err := Mgr.ListUserAuthorizedApplicationByNameFuzzily(ctx,
+	totalForUser, appsForUser, err := Mgr.ListUserAuthorizedByNameFuzzily(ctx,
 		"app", []uint{1}, user2.ID, &q.Query{
 			PageNumber: 0,
 			PageSize:   common.DefaultPageSize,

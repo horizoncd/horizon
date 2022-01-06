@@ -32,11 +32,11 @@ type Manager interface {
 	Create(ctx context.Context, application *models.Application, extraOwners []string) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
-	// ListUserAuthorizedApplicationByNameFuzzily list application which is authorized to the specified user.
+	// ListUserAuthorizedByNameFuzzily list application which is authorized to the specified user.
 	// 1. name is the application's fuzzily name.
 	// 2. groupIDs is the groups' id which are authorized to the specified user.
 	// 3. userInfo is the user id
-	ListUserAuthorizedApplicationByNameFuzzily(ctx context.Context,
+	ListUserAuthorizedByNameFuzzily(ctx context.Context,
 		name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error)
 }
 
@@ -120,7 +120,7 @@ func (m *manager) DeleteByID(ctx context.Context, id uint) error {
 	return m.applicationDAO.DeleteByID(ctx, id)
 }
 
-func (m *manager) ListUserAuthorizedApplicationByNameFuzzily(ctx context.Context,
+func (m *manager) ListUserAuthorizedByNameFuzzily(ctx context.Context,
 	name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error) {
-	return m.applicationDAO.ListUserAuthorizedApplicationByNameFuzzily(ctx, name, groupIDs, userInfo, query)
+	return m.applicationDAO.ListUserAuthorizedByNameFuzzily(ctx, name, groupIDs, userInfo, query)
 }

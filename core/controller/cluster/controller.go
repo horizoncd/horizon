@@ -35,8 +35,8 @@ type Controller interface {
 		filter string, query *q.Query) (int, []*ListClusterResponse, error)
 	ListClusterByNameFuzzily(ctx context.Context, environment,
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
-	ListUserClusterByNameFuzzily(ctx context.Context,
-		filter string, query *q.Query) (int, []*ListUserClustersResponse, error)
+	ListUserClusterByNameFuzzily(ctx context.Context, environment,
+		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
 	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
 		extraOwners []string, request *CreateClusterRequest) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,

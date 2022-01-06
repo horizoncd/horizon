@@ -30,8 +30,8 @@ type DAO interface {
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	ListByNameFuzzily(context.Context, string, string, *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
-	ListUserAuthorizedClusterByNameFuzzily(ctx context.Context,
-		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.Cluster, error)
+	ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
+		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
 }
 
 type dao struct {
@@ -302,8 +302,8 @@ func (d *dao) CheckClusterExists(ctx context.Context, cluster string) (bool, err
 	return true, nil
 }
 
-func (d *dao) ListUserAuthorizedClusterByNameFuzzily(ctx context.Context,
-	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.Cluster, error) {
+func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
+	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -314,20 +314,34 @@ func (d *dao) ListUserAuthorizedClusterByNameFuzzily(ctx context.Context,
 
 	like := "%" + name + "%"
 	var (
-		clusters []*models.Cluster
+		clusters []*models.ClusterWithEnvAndRegion
 		count    int
 		result   *gorm.DB
 	)
 
-	result = db.Raw(common.ClusterQueryByUserAndNameFuzzily,
-		userInfo, like, applicationIDs, like, limit, offset).Scan(&clusters)
-	if result.Error != nil {
-		return 0, nil, result.Error
-	}
+	if len(environment) == 0 {
+		result = db.Raw(common.ClusterQueryByUserAndNameFuzzily,
+			userInfo, like, applicationIDs, like, limit, offset).Scan(&clusters)
+		if result.Error != nil {
+			return 0, nil, result.Error
+		}
 
-	result = db.Raw(common.ClusterCountByUserAndNameFuzzily, userInfo, like, applicationIDs, like).Scan(&count)
-	if result.Error != nil {
-		return 0, nil, result.Error
+		result = db.Raw(common.ClusterCountByUserAndNameFuzzily, userInfo, like, applicationIDs, like).Scan(&count)
+		if result.Error != nil {
+			return 0, nil, result.Error
+		}
+	} else {
+		result = db.Raw(common.ClusterQueryByUserAndEnvAndNameFuzzily,
+			userInfo, environment, like, applicationIDs, environment, like, limit, offset).Scan(&clusters)
+		if result.Error != nil {
+			return 0, nil, result.Error
+		}
+
+		result = db.Raw(common.ClusterCountByUserAndEnvAndNameFuzzily,
+			userInfo, environment, like, applicationIDs, environment, like, limit, offset).Scan(&count)
+		if result.Error != nil {
+			return 0, nil, result.Error
+		}
 	}
 
 	return count, clusters, nil

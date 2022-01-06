@@ -34,7 +34,7 @@ type DAO interface {
 		extraOwners []*usermodels.User) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
-	ListUserAuthorizedApplicationByNameFuzzily(ctx context.Context,
+	ListUserAuthorizedByNameFuzzily(ctx context.Context,
 		name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error)
 }
 
@@ -258,7 +258,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (d *dao) ListUserAuthorizedApplicationByNameFuzzily(ctx context.Context,
+func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context,
 	name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error) {
 	var (
 		applications []*models.Application

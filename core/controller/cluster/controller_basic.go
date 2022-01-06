@@ -88,8 +88,8 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 	return count, listClusterWithFullResp, nil
 }
 
-func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context,
-	filter string, query *q.Query) (count int, resp []*ListUserClustersResponse, err error) {
+func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environment,
+	filter string, query *q.Query) (count int, resp []*ListClusterWithFullResponse, err error) {
 	// get current user
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
@@ -138,7 +138,7 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context,
 	// (2) authorized applications directly
 	applicationIDs = append(applicationIDs, authorizedApplicationIDs...)
 
-	count, clusters, err := c.clusterMgr.ListUserAuthorizedClusterByNameFuzzily(ctx,
+	count, clusters, err := c.clusterMgr.ListUserAuthorizedByNameFuzzily(ctx, environment,
 		filter, applicationIDs, currentUser.GetID(), query)
 	if err != nil {
 		return 0, nil,
@@ -156,7 +156,7 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context,
 			perrors.WithMessage(err, "failed to list application for clusters")
 	}
 
-	resp = make([]*ListUserClustersResponse, 0)
+	resp = make([]*ListClusterWithFullResponse, 0)
 	// 3. convert and add full path, full name
 	for _, cluster := range clusters {
 		application, exist := applicationMap[cluster.ApplicationID]
@@ -165,7 +165,11 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context,
 		}
 		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
 		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
-		resp = append(resp, ofCluster(cluster, fullName, fullPath))
+		resp = append(resp, &ListClusterWithFullResponse{
+			ofClusterWithEnvAndRegion(cluster),
+			fullName,
+			fullPath,
+		})
 	}
 
 	return count, resp, nil

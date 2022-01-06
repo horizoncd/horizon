@@ -115,7 +115,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/front/v1/clusters/searchmyclusters?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v1/clusters/searchmyclusters?filter={filter}&environment={environment}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - cluster
@@ -125,6 +125,11 @@ paths:
         - name: filter
           in: query
           description: "part of name for fuzzy matching"
+          required: false
+        - name: environment
+          in: query
+          description: environment name
+          required: false
         - $ref: 'common.yaml#/components/parameters/pageNumber'
         - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
@@ -141,6 +146,19 @@ paths:
                               {
                                   "id":3028,
                                   "name":"yufeng-helloworld-online",
+                                  "scope":{
+                                      "environment":"dev",
+                                      "region":"hz",
+                                      "regionDisplayName":"杭州"
+                                  },
+                                  "template":{
+                                      "name":"javaapp",
+                                      "release":"v1.1.0"
+                                  },
+                                  "git": {
+                                    "sshURL": "git@github.com:demo/demo.git",
+                                    "httpURL": "https://github.com/demo/demo"
+                                  },
                                   "createdAt":"2021-12-15T21:17:20+08:00",
                                   "updatedAt":"2021-12-15T21:17:20+08:00",
                                   "fullName":"其他/yufeng-helloworld/yufeng-helloworld-online",
@@ -149,6 +167,19 @@ paths:
                               {
                                   "id":2412,
                                   "name":"yufeng-tomtest-online",
+                                  "scope":{
+                                      "environment":"dev",
+                                      "region":"hz",
+                                      "regionDisplayName":"杭州"
+                                  },
+                                  "template":{
+                                      "name":"javaapp",
+                                      "release":"v1.1.0"
+                                  },
+                                  "git": {
+                                    "sshURL": "git@github.com:demo/demo.git",
+                                    "httpURL": "https://github.com/demo/demo"
+                                  },
                                   "createdAt":"2021-12-15T12:26:41+08:00",
                                   "updatedAt":"2021-12-15T13:14:20+08:00",
                                   "fullName":"公共技术/yufeng-tomtest/yufeng-tomtest-online",

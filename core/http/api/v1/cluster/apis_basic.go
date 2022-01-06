@@ -214,6 +214,7 @@ func (a *API) ListByNameFuzzily(c *gin.Context) {
 
 func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
 	filter := c.Query(common.Filter)
+	environment := c.Query(_environment)
 
 	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
@@ -221,7 +222,7 @@ func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
 		return
 	}
 
-	count, respList, err := a.clusterCtl.ListUserClusterByNameFuzzily(c, filter, &q.Query{
+	count, respList, err := a.clusterCtl.ListUserClusterByNameFuzzily(c, environment, filter, &q.Query{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	})

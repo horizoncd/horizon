@@ -474,7 +474,7 @@ func (c *controller) ListUserApplication(ctx context.Context,
 		subGroupIDs = append(subGroupIDs, group.ID)
 	}
 
-	count, applications, err := c.applicationMgr.ListUserAuthorizedApplicationByNameFuzzily(ctx,
+	count, applications, err := c.applicationMgr.ListUserAuthorizedByNameFuzzily(ctx,
 		filter, subGroupIDs, currentUser.GetID(), query)
 	if err != nil {
 		return 0, nil, perrors.WithMessage(err, "failed to list user applications")

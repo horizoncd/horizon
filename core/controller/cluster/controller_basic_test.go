@@ -114,8 +114,23 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	groupMgr := groupmanager.Mgr
 	clusterMgr := clustermanager.Mgr
 	memberMgr := member.Mgr
+	envMgr := envmanager.Mgr
+	regionMgr := regionmanager.Mgr
 
 	// init data
+	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+		Name:        "hzUserClustersFuzzily",
+		DisplayName: "HZUserClusters",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, region)
+
+	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+		EnvironmentName: "testUserClustersFuzzily",
+		RegionName:      "hzUserClustersFuzzily",
+	})
+	assert.Nil(t, err)
+
 	var groups []*groupmodels.Group
 	for i := 0; i < 5; i++ {
 		name := "groupForUserClusterFuzzily" + strconv.Itoa(i)
@@ -153,15 +168,17 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 		application := applications[i]
 		name := "userClusterFuzzily" + strconv.Itoa(i)
 		cluster, err := clusterMgr.Create(ctx, &clustermodels.Cluster{
-			ApplicationID: application.ID,
-			Name:          name,
+			ApplicationID:       application.ID,
+			Name:                name,
+			EnvironmentRegionID: er.ID,
+			GitURL:              "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
 		}, nil, nil)
 		assert.Nil(t, err)
 		assert.NotNil(t, cluster)
 		clusters = append(clusters, cluster)
 	}
 
-	_, err := memberMgr.Create(ctx, &membermodels.Member{
+	_, err = memberMgr.Create(ctx, &membermodels.Member{
 		ResourceType: membermodels.TypeGroup,
 		ResourceID:   groups[0].ID,
 		Role:         "owner",
@@ -196,17 +213,18 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 		memberManager:  memberMgr,
 	}
 
-	count, resps, err := c.ListUserClusterByNameFuzzily(ctx, "cluster", nil)
+	count, resps, err := c.ListUserClusterByNameFuzzily(ctx, er.EnvironmentName, "cluster", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, count)
 	assert.Equal(t, "userClusterFuzzily3", resps[0].Name)
 	assert.Equal(t, "userClusterFuzzily1", resps[1].Name)
 	assert.Equal(t, "userClusterFuzzily0", resps[2].Name)
 	for _, resp := range resps {
-		t.Logf("%v", resp)
+		b, _ := json.Marshal(resp)
+		t.Logf("%v", string(b))
 	}
 
-	count, resps, err = c.ListUserClusterByNameFuzzily(ctx, "userCluster", &q.Query{
+	count, resps, err = c.ListUserClusterByNameFuzzily(ctx, er.EnvironmentName, "userCluster", &q.Query{
 		PageSize: 2,
 	})
 	assert.Nil(t, err)
@@ -214,6 +232,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	assert.Equal(t, "userClusterFuzzily3", resps[0].Name)
 	assert.Equal(t, "userClusterFuzzily1", resps[1].Name)
 	for _, resp := range resps {
-		t.Logf("%v", resp)
+		b, _ := json.Marshal(resp)
+		t.Logf("%v", string(b))
 	}
 }
