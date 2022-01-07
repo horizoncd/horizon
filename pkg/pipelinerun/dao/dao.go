@@ -141,7 +141,7 @@ func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
 	countScript := common.PipelinerunGetByClusterIDTotalCount
 	if canRollback {
 		// remove the first canRollback pipelinerun
-		offset += 1
+		offset++
 		queryScript = common.PipelinerunCanRollbackGetByClusterID
 		countScript = common.PipelinerunCanRollbackGetByClusterIDTotalCount
 	}
