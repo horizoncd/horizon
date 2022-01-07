@@ -172,18 +172,18 @@ func (mr *MockManagerMockRecorder) ListByNameFuzzily(ctx, environment, name, que
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByNameFuzzily", reflect.TypeOf((*MockManager)(nil).ListByNameFuzzily), ctx, environment, name, query)
 }
 
-// ListUserAuthorizedClusterByNameFuzzily mocks base method
-func (m *MockManager) ListUserAuthorizedClusterByNameFuzzily(ctx context.Context, name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.Cluster, error) {
+// ListUserAuthorizedByNameFuzzily mocks base method
+func (m *MockManager) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment, name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListUserAuthorizedClusterByNameFuzzily", ctx, name, applicationIDs, userInfo, query)
+	ret := m.ctrl.Call(m, "ListUserAuthorizedByNameFuzzily", ctx, environment, name, applicationIDs, userInfo, query)
 	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].([]*models.Cluster)
+	ret1, _ := ret[1].([]*models.ClusterWithEnvAndRegion)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// ListUserAuthorizedClusterByNameFuzzily indicates an expected call of ListUserAuthorizedClusterByNameFuzzily
-func (mr *MockManagerMockRecorder) ListUserAuthorizedClusterByNameFuzzily(ctx, name, applicationIDs, userInfo, query interface{}) *gomock.Call {
+// ListUserAuthorizedByNameFuzzily indicates an expected call of ListUserAuthorizedByNameFuzzily
+func (mr *MockManagerMockRecorder) ListUserAuthorizedByNameFuzzily(ctx, environment, name, applicationIDs, userInfo, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserAuthorizedClusterByNameFuzzily", reflect.TypeOf((*MockManager)(nil).ListUserAuthorizedClusterByNameFuzzily), ctx, name, applicationIDs, userInfo, query)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserAuthorizedByNameFuzzily", reflect.TypeOf((*MockManager)(nil).ListUserAuthorizedByNameFuzzily), ctx, environment, name, applicationIDs, userInfo, query)
 }
