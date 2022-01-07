@@ -21,6 +21,7 @@ type DAO interface {
 	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
+	GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 }
 
 type dao struct{}
@@ -139,6 +140,8 @@ func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
 	queryScript := common.PipelinerunGetByClusterID
 	countScript := common.PipelinerunGetByClusterIDTotalCount
 	if canRollback {
+		// remove the first canRollback pipelinerun
+		offset += 1
 		queryScript = common.PipelinerunCanRollbackGetByClusterID
 		countScript = common.PipelinerunCanRollbackGetByClusterIDTotalCount
 	}
@@ -152,4 +155,22 @@ func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
 		clusterID).Scan(&total)
 
 	return total, pipelineruns, result.Error
+}
+
+func (d *dao) GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var pipelinerun models.Pipelinerun
+	result := db.Raw(common.PipelinerunGetFirstCanRollbackByClusterID, clusterID).Scan(&pipelinerun)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+	return &pipelinerun, nil
 }

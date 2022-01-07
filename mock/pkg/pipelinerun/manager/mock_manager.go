@@ -81,6 +81,21 @@ func (mr *MockManagerMockRecorder) GetByClusterID(ctx, clusterID, canRollback, q
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByClusterID", reflect.TypeOf((*MockManager)(nil).GetByClusterID), ctx, clusterID, canRollback, query)
 }
 
+// GetFirstCanRollbackPipelinerun mocks base method
+func (m *MockManager) GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFirstCanRollbackPipelinerun", ctx, clusterID)
+	ret0, _ := ret[0].(*models.Pipelinerun)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFirstCanRollbackPipelinerun indicates an expected call of GetFirstCanRollbackPipelinerun
+func (mr *MockManagerMockRecorder) GetFirstCanRollbackPipelinerun(ctx, clusterID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFirstCanRollbackPipelinerun", reflect.TypeOf((*MockManager)(nil).GetFirstCanRollbackPipelinerun), ctx, clusterID)
+}
+
 // DeleteByID mocks base method
 func (m *MockManager) DeleteByID(ctx context.Context, pipelinerunID uint) error {
 	m.ctrl.T.Helper()

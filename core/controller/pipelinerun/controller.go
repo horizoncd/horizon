@@ -224,7 +224,12 @@ func (c *controller) Get(ctx context.Context, pipelineID uint) (_ *PipelineBasic
 	if err != nil {
 		return nil, err
 	}
-	return c.ofPipelineBasic(ctx, pipelinerun)
+	firstCanRollbackPipelinerun, err := c.pipelinerunMgr.GetFirstCanRollbackPipelinerun(ctx, pipelinerun.ClusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.ofPipelineBasic(ctx, pipelinerun, firstCanRollbackPipelinerun)
 }
 
 func (c *controller) List(ctx context.Context,
@@ -237,18 +242,34 @@ func (c *controller) List(ctx context.Context,
 		return 0, nil, err
 	}
 
-	pipelineBasics, err := c.ofPipelineBasics(ctx, pipelineruns)
+	// remove the first pipelinerun than can be rollback
+	firstCanRollbackPipelinerun, err := c.pipelinerunMgr.GetFirstCanRollbackPipelinerun(ctx, clusterID)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	pipelineBasics, err := c.ofPipelineBasics(ctx, pipelineruns, firstCanRollbackPipelinerun)
 	if err != nil {
 		return 0, nil, err
 	}
 	return totalCount, pipelineBasics, nil
 }
 
-func (c *controller) ofPipelineBasic(ctx context.Context, pr *models.Pipelinerun) (*PipelineBasic, error) {
+func (c *controller) ofPipelineBasic(ctx context.Context,
+	pr, firstCanRollbackPipelinerun *models.Pipelinerun) (*PipelineBasic, error) {
 	user, err := c.userManager.GetUserByID(ctx, pr.CreatedBy)
 	if err != nil {
 		return nil, err
 	}
+
+	canRollback := func() bool {
+		// set the firstCanRollbackPipelinerun that cannot rollback
+		if firstCanRollbackPipelinerun != nil && pr.ID == firstCanRollbackPipelinerun.ID {
+			return false
+		}
+		return pr.Action != prmodels.ActionRestart && pr.Status == prmodels.ResultOK
+	}()
+
 	return &PipelineBasic{
 		ID:               pr.ID,
 		Title:            pr.Title,
@@ -264,7 +285,7 @@ func (c *controller) ofPipelineBasic(ctx context.Context, pr *models.Pipelinerun
 		CreatedAt:        pr.CreatedAt,
 		StartedAt:        pr.StartedAt,
 		FinishedAt:       pr.FinishedAt,
-		CanRollback:      pr.Action != prmodels.ActionRestart && pr.Status == prmodels.ResultOK,
+		CanRollback:      canRollback,
 		CreatedBy: UserInfo{
 			UserID:   pr.CreatedBy,
 			UserName: user.Name,
@@ -272,10 +293,11 @@ func (c *controller) ofPipelineBasic(ctx context.Context, pr *models.Pipelinerun
 	}, nil
 }
 
-func (c *controller) ofPipelineBasics(ctx context.Context, prs []*models.Pipelinerun) ([]*PipelineBasic, error) {
+func (c *controller) ofPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
+	firstCanRollbackPipelinerun *models.Pipelinerun) ([]*PipelineBasic, error) {
 	var pipelineBasics []*PipelineBasic
 	for _, pr := range prs {
-		pipelineBasic, err := c.ofPipelineBasic(ctx, pr)
+		pipelineBasic, err := c.ofPipelineBasic(ctx, pr, firstCanRollbackPipelinerun)
 		if err != nil {
 			return nil, err
 		}

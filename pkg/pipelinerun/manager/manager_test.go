@@ -171,6 +171,48 @@ func TestGetLatestSuccessByClusterID(t *testing.T) {
 	assert.Equal(t, uint(7), pipelinerun.ID)
 }
 
+func TestGetFirstCanRollbackPipelinerun(t *testing.T) {
+	var clusterID uint = 1
+	pr := &models.Pipelinerun{
+		ID:          5,
+		ClusterID:   clusterID,
+		Action:      models.ActionBuildDeploy,
+		Status:      "ok",
+		Title:       "title",
+		Description: "description",
+		CreatedBy:   0,
+		GitCommit:   "xxxxxx",
+		UpdatedAt:   time.Now(),
+		CreatedAt:   time.Now(),
+	}
+	_, err := Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pr = &models.Pipelinerun{
+		ID:          6,
+		ClusterID:   clusterID,
+		Action:      models.ActionBuildDeploy,
+		Status:      "ok",
+		Title:       "title",
+		Description: "description",
+		CreatedBy:   0,
+		GitCommit:   "xxxxxx",
+		UpdatedAt:   time.Now(),
+	}
+	_, err = Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pipelinerun, err := Mgr.GetFirstCanRollbackPipelinerun(ctx, clusterID)
+	assert.Nil(t, err)
+	assert.NotNil(t, pipelinerun)
+	assert.Equal(t, 6, int(pipelinerun.ID))
+	t.Logf("%v", pipelinerun)
+
+	pipelinerun, err = Mgr.GetFirstCanRollbackPipelinerun(ctx, 10000)
+	assert.Nil(t, err)
+	assert.Nil(t, pipelinerun)
+}
+
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Pipelinerun{}); err != nil {
