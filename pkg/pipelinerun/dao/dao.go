@@ -154,6 +154,10 @@ func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
 	result = db.Raw(countScript,
 		clusterID).Scan(&total)
 
+	if total < 0 {
+		total = 0
+	}
+
 	return total, pipelineruns, result.Error
 }
 

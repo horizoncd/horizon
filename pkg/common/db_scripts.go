@@ -180,7 +180,7 @@ const (
 	PipelinerunCanRollbackGetByClusterID = "select * from pipelinerun where cluster_id = ?" +
 		" and action != 'restart' and status = 'ok' order by created_at desc limit ? offset ?"
 
-	PipelinerunCanRollbackGetByClusterIDTotalCount = "select greatest(0, (count(1) - 1)) from pipelinerun " +
+	PipelinerunCanRollbackGetByClusterIDTotalCount = "select count(1) - 1 from pipelinerun " +
 		"where cluster_id = ? and action != 'restart' and status = 'ok' "
 
 	PipelinerunGetFirstCanRollbackByClusterID = "select * from pipelinerun where cluster_id = ?" +
