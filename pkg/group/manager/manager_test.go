@@ -337,3 +337,50 @@ func TestManagerGetChildren(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSubGroupsByGroupIDs(t *testing.T) {
+	g1, err := Mgr.Create(ctx, getGroup(0, "a", "a"))
+	assert.Nil(t, err)
+	get, _ := Mgr.GetByID(ctx, g1.ID)
+	assert.Equal(t, fmt.Sprintf("%d", g1.ID), get.TraversalIDs)
+
+	g2, err := Mgr.Create(ctx, getGroup(0, "b", "b"))
+	assert.Nil(t, err)
+	get2, _ := Mgr.GetByID(ctx, g2.ID)
+	assert.Equal(t, fmt.Sprintf("%d", g2.ID), get2.TraversalIDs)
+
+	g3, err := Mgr.Create(ctx, getGroup(g1.ID, "c", "c"))
+	assert.Nil(t, err)
+	get3, _ := Mgr.GetByID(ctx, g3.ID)
+	assert.Equal(t, fmt.Sprintf("%d,%d", g1.ID, g3.ID), get3.TraversalIDs)
+
+	g4, err := Mgr.Create(ctx, getGroup(g2.ID, "c", "c"))
+	assert.Nil(t, err)
+	get4, _ := Mgr.GetByID(ctx, g4.ID)
+	assert.Equal(t, fmt.Sprintf("%d,%d", g2.ID, g4.ID), get4.TraversalIDs)
+
+	ids := []uint{g1.ID, g2.ID}
+	groups, err := Mgr.GetSubGroupsByGroupIDs(ctx, ids)
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(groups))
+	for _, group := range groups {
+		t.Logf("group: %v", group)
+	}
+
+	ids2 := []uint{g2.ID}
+	groups2, err := Mgr.GetSubGroupsByGroupIDs(ctx, ids2)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(groups2))
+	for _, group := range groups2 {
+		t.Logf("group: %v", group)
+	}
+
+	ids3 := []uint{g3.ID}
+	groups3, err := Mgr.GetSubGroupsByGroupIDs(ctx, ids3)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(groups3))
+	assert.Equal(t, g3.ID, groups3[0].ID)
+	for _, group := range groups3 {
+		t.Logf("group: %v", group)
+	}
+}

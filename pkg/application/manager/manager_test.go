@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
@@ -104,7 +105,22 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, name, apps[0].Name)
 
+	totalForUser, appsForUser, err := Mgr.ListUserAuthorizedByNameFuzzily(ctx,
+		"app", []uint{1}, user2.ID, &q.Query{
+			PageNumber: 0,
+			PageSize:   common.DefaultPageSize,
+		})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, totalForUser)
+	assert.Equal(t, 1, len(appsForUser))
+	assert.Equal(t, name, apps[0].Name)
+
 	apps, err = Mgr.GetByIDs(ctx, []uint{application.ID})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(apps))
+	assert.Equal(t, name, apps[0].Name)
+
+	apps, err = Mgr.GetByGroupIDs(ctx, []uint{uint(groupID)})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, name, apps[0].Name)

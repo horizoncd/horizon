@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -397,6 +398,13 @@ func (c *cd) GetClusterState(ctx context.Context,
 		}
 	}
 	clusterState.Step = getStep(rollout)
+	if rollout != nil {
+		desiredReplicas := 1
+		if rollout.Spec.Replicas != nil {
+			desiredReplicas = int(*rollout.Spec.Replicas)
+		}
+		clusterState.DesiredReplicas = &desiredReplicas
+	}
 
 	var latestReplicaSet *appsv1.ReplicaSet
 	rss, err := kube.GetReplicaSets(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
@@ -898,8 +906,9 @@ type (
 	}
 
 	Step struct {
-		Index int `json:"index"`
-		Total int `json:"total"`
+		Index    int   `json:"index"`
+		Total    int   `json:"total"`
+		Replicas []int `json:"replicas"`
 	}
 
 	// ClusterVersion version information
@@ -1041,19 +1050,44 @@ func getDeploymentCondition(status appsv1.DeploymentStatus,
 }
 
 func getStep(rollout *v1alpha1.Rollout) *Step {
-	if rollout == nil || rollout.Spec.Strategy.Canary == nil ||
+	if rollout == nil {
+		return &Step{
+			Index:    0,
+			Total:    1,
+			Replicas: []int{1},
+		}
+	}
+
+	var replicasTotal = 1
+	if rollout.Spec.Replicas != nil {
+		replicasTotal = int(*rollout.Spec.Replicas)
+	}
+
+	if rollout.Spec.Strategy.Canary == nil ||
 		len(rollout.Spec.Strategy.Canary.Steps) == 0 {
 		return &Step{
-			Index: 0,
-			Total: 1,
+			Index:    0,
+			Total:    1,
+			Replicas: []int{replicasTotal},
 		}
 	}
-	var stepTotal = 0
+
+	replicasList := make([]int, 0)
 	for _, step := range rollout.Spec.Strategy.Canary.Steps {
 		if step.SetWeight != nil {
-			stepTotal++
+			replicasList = append(replicasList, int(math.Ceil(float64(*step.SetWeight)/100*float64(replicasTotal))))
 		}
 	}
+
+	incrementReplicasList := make([]int, 0, len(replicasList))
+	for i := 0; i < len(replicasList); i++ {
+		replicas := replicasList[i]
+		if i > 0 {
+			replicas = replicasList[i] - replicasList[i-1]
+		}
+		incrementReplicasList = append(incrementReplicasList, replicas)
+	}
+
 	var stepIndex = 0
 	if rollout.Status.CurrentStepIndex != nil {
 		index := int(*rollout.Status.CurrentStepIndex)
@@ -1063,9 +1097,11 @@ func getStep(rollout *v1alpha1.Rollout) *Step {
 			}
 		}
 	}
+
 	return &Step{
-		Index: stepIndex,
-		Total: stepTotal,
+		Index:    stepIndex,
+		Total:    len(incrementReplicasList),
+		Replicas: incrementReplicasList,
 	}
 }
 

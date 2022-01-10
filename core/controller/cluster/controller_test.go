@@ -459,7 +459,7 @@ func Test(t *testing.T) {
 	expectparams := make(map[string]string)
 	expectparams[trschema.ClusterIDKey] = "1"
 
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", nil).
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", gomock.Any()).
 		Return(&templatesvc.Schemas{
 			Application: &templatesvc.Schema{
 				JSONSchema: applicationSchema,
@@ -468,7 +468,7 @@ func Test(t *testing.T) {
 				JSONSchema: pipelineSchema,
 			},
 		}, nil).AnyTimes()
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.1", expectparams).
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.1", gomock.Any()).
 		Return(&templatesvc.Schemas{
 			Application: &templatesvc.Schema{
 				JSONSchema: applicationSchema,

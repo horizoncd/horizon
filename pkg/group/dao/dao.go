@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
@@ -53,6 +54,7 @@ type DAO interface {
 	Transfer(ctx context.Context, id, newParentID uint, userID uint) error
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
+	ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*models.Group, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -378,6 +380,30 @@ func (d *dao) GetByNameOrPathUnderParent(ctx context.Context,
 
 	var groups []*models.Group
 	result := db.Raw(common.GroupQueryByNameOrPathUnderParent, parentID, name, path).Scan(&groups)
+
+	return groups, result.Error
+}
+
+func (d *dao) ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*models.Group, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	idsStr := make([]string, 0)
+	for _, id := range ids {
+		idsStr = append(idsStr, "'%"+strconv.Itoa(int(id))+"%'")
+	}
+	traversalIDLike := strings.Join(idsStr, ` or traversal_ids like `)
+	traversalIDLike = "traversal_ids like " + traversalIDLike
+
+	const sql = "select * from `group` where %s and deleted_at is null"
+	var groups []*models.Group
+	result := db.Raw(fmt.Sprintf(sql, traversalIDLike)).Scan(&groups)
 
 	return groups, result.Error
 }

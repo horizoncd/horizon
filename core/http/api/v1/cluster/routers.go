@@ -108,6 +108,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 		{
 			Method:      http.MethodGet,
+			Pattern:     "/searchmyclusters",
+			HandlerFunc: api.ListUserClusterByNameFuzzily,
+		},
+		{
+			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%v", _clusterParam),
 			HandlerFunc: api.GetByName,
 		},
