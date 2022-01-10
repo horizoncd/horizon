@@ -204,19 +204,21 @@ type GitResponse struct {
 }
 
 type ListClusterResponse struct {
-	ID        uint         `json:"id"`
-	Name      string       `json:"name"`
-	Scope     *Scope       `json:"scope"`
-	Template  *Template    `json:"template"`
-	Git       *GitResponse `json:"git"`
-	CreatedAt time.Time    `json:"createdAt"`
-	UpdatedAt time.Time    `json:"updatedAt"`
+	ID          uint         `json:"id"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	Scope       *Scope       `json:"scope"`
+	Template    *Template    `json:"template"`
+	Git         *GitResponse `json:"git"`
+	CreatedAt   time.Time    `json:"createdAt"`
+	UpdatedAt   time.Time    `json:"updatedAt"`
 }
 
 func ofClusterWithEnvAndRegion(cluster *models.ClusterWithEnvAndRegion) *ListClusterResponse {
 	return &ListClusterResponse{
-		ID:   cluster.ID,
-		Name: cluster.Name,
+		ID:          cluster.ID,
+		Name:        cluster.Name,
+		Description: cluster.Description,
 		Scope: &Scope{
 			Environment:       cluster.EnvironmentName,
 			Region:            cluster.RegionName,
