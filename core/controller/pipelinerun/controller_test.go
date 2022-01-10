@@ -64,6 +64,7 @@ func TestGetAndListPipelinerun(t *testing.T) {
 	// 1. test Get PipelineBasic
 	var pipelineID uint = 1932
 	var createUser uint = 32
+	mockPipelineManager.EXPECT().GetFirstCanRollbackPipelinerun(ctx, gomock.Any()).Return(nil, nil).AnyTimes()
 	mockPipelineManager.EXPECT().GetByID(ctx, pipelineID).Return(&models.Pipelinerun{
 		ID:        pipelineID,
 		CreatedBy: createUser,

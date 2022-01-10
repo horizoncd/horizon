@@ -126,9 +126,8 @@ func TestGetByClusterID(t *testing.T) {
 
 	totalCount, pipelineruns, err = Mgr.GetByClusterID(ctx, clusterID, true, query)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, totalCount)
-	assert.Equal(t, 1, len(pipelineruns))
-	assert.Equal(t, "ok", pipelineruns[0].Status)
+	assert.Equal(t, 0, totalCount)
+	assert.Equal(t, 0, len(pipelineruns))
 }
 
 // nolint
@@ -169,6 +168,48 @@ func TestGetLatestSuccessByClusterID(t *testing.T) {
 	pipelinerun, err := Mgr.GetLatestSuccessByClusterID(ctx, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, uint(7), pipelinerun.ID)
+}
+
+func TestGetFirstCanRollbackPipelinerun(t *testing.T) {
+	var clusterID uint = 1
+	pr := &models.Pipelinerun{
+		ID:          10,
+		ClusterID:   clusterID,
+		Action:      models.ActionBuildDeploy,
+		Status:      "ok",
+		Title:       "title",
+		Description: "description",
+		CreatedBy:   0,
+		GitCommit:   "xxxxxx",
+		UpdatedAt:   time.Now(),
+		CreatedAt:   time.Now(),
+	}
+	_, err := Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pr = &models.Pipelinerun{
+		ID:          11,
+		ClusterID:   clusterID,
+		Action:      models.ActionBuildDeploy,
+		Status:      "ok",
+		Title:       "title",
+		Description: "description",
+		CreatedBy:   0,
+		GitCommit:   "xxxxxx",
+		UpdatedAt:   time.Now(),
+	}
+	_, err = Mgr.Create(ctx, pr)
+	assert.Nil(t, err)
+
+	pipelinerun, err := Mgr.GetFirstCanRollbackPipelinerun(ctx, clusterID)
+	assert.Nil(t, err)
+	assert.NotNil(t, pipelinerun)
+	assert.Equal(t, 11, int(pipelinerun.ID))
+	t.Logf("%v", pipelinerun)
+
+	pipelinerun, err = Mgr.GetFirstCanRollbackPipelinerun(ctx, 10000)
+	assert.Nil(t, err)
+	assert.Nil(t, pipelinerun)
 }
 
 func TestMain(m *testing.M) {
