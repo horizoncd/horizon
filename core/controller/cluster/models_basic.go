@@ -3,6 +3,7 @@ package cluster
 import (
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
@@ -197,13 +198,19 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 	}
 }
 
+type GitResponse struct {
+	SSHURL  string `json:"sshURL"`
+	HTTPURL string `json:"httpURL"`
+}
+
 type ListClusterResponse struct {
-	ID        uint      `json:"id"`
-	Name      string    `json:"name"`
-	Scope     *Scope    `json:"scope"`
-	Template  *Template `json:"template"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID        uint         `json:"id"`
+	Name      string       `json:"name"`
+	Scope     *Scope       `json:"scope"`
+	Template  *Template    `json:"template"`
+	Git       *GitResponse `json:"git"`
+	CreatedAt time.Time    `json:"createdAt"`
+	UpdatedAt time.Time    `json:"updatedAt"`
 }
 
 func ofClusterWithEnvAndRegion(cluster *models.ClusterWithEnvAndRegion) *ListClusterResponse {
@@ -218,6 +225,10 @@ func ofClusterWithEnvAndRegion(cluster *models.ClusterWithEnvAndRegion) *ListClu
 		Template: &Template{
 			Name:    cluster.Template,
 			Release: cluster.TemplateRelease,
+		},
+		Git: &GitResponse{
+			SSHURL:  cluster.GitURL,
+			HTTPURL: common.InternalSSHToHTTPURL(cluster.GitURL),
 		},
 		CreatedAt: cluster.CreatedAt,
 		UpdatedAt: cluster.UpdatedAt,

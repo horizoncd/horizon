@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/common"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
@@ -21,6 +22,7 @@ import (
 type DAO interface {
 	GetByID(ctx context.Context, id uint) (*models.Application, error)
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
+	GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Application, error)
 	GetByName(ctx context.Context, name string) (*models.Application, error)
 	GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error)
 	// GetByNameFuzzily get applications that fuzzily matching the given name
@@ -33,6 +35,8 @@ type DAO interface {
 		extraOwners []*usermodels.User) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
+	ListUserAuthorizedByNameFuzzily(ctx context.Context,
+		name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -112,6 +116,22 @@ func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, 
 
 	var applications []*models.Application
 	result := db.Raw(common.ApplicationQueryByIDs, ids).Scan(&applications)
+
+	if result.Error != nil {
+		return nil, perrors.Wrap(result.Error, "failed to get applications of specified groups")
+	}
+
+	return applications, nil
+}
+
+func (d *dao) GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Application, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var applications []*models.Application
+	result := db.Raw(common.ApplicationQueryByGroupIDs, groupIDs).Scan(&applications)
 
 	return applications, result.Error
 }
@@ -241,4 +261,34 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return errors.E(op, http.StatusNotFound)
 	}
 	return nil
+}
+
+func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context,
+	name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error) {
+	var (
+		applications []*models.Application
+		total        int
+	)
+
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return total, nil, err
+	}
+
+	offset := (query.PageNumber - 1) * query.PageSize
+	limit := query.PageSize
+	like := "%" + name + "%"
+
+	result := db.Raw(common.ApplicationQueryByUserAndNameFuzzily, userInfo, like, groupIDs, like, limit, offset).
+		Scan(&applications)
+	if result.Error != nil {
+		return 0, nil, perrors.Wrap(result.Error, "failed to search applications by name fuzzily")
+	}
+
+	result = db.Raw(common.ApplicationCountByUserAndNameFuzzily, userInfo, like, groupIDs, like).Scan(&total)
+	if result.Error != nil {
+		return 0, nil, perrors.Wrap(result.Error, "failed to count applications by name fuzzily")
+	}
+
+	return total, applications, nil
 }

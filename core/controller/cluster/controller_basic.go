@@ -19,7 +19,9 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -84,6 +86,93 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 	}
 
 	return count, listClusterWithFullResp, nil
+}
+
+func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environment,
+	filter string, query *q.Query) (count int, resp []*ListClusterWithFullResponse, err error) {
+	// get current user
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return 0, nil, perrors.WithMessage(err, "no user in context")
+	}
+
+	// get groups authorized to current user
+	groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, currentUser.GetID())
+	if err != nil {
+		return 0, nil,
+			perrors.WithMessage(err, "failed to list group resource of current user")
+	}
+
+	// get these groups' subGroups
+	subGroups, err := c.groupManager.GetSubGroupsByGroupIDs(ctx, groupIDs)
+	if err != nil {
+		return 0, nil, perrors.WithMessage(err, "failed to get groups")
+	}
+
+	subGroupIDs := make([]uint, 0)
+	for _, group := range subGroups {
+		subGroupIDs = append(subGroupIDs, group.ID)
+	}
+
+	// list applications of these subGroups
+	applications, err := c.applicationMgr.GetByGroupIDs(ctx, subGroupIDs)
+	if err != nil {
+		return 0, nil, perrors.WithMessage(err, "failed to get applications")
+	}
+
+	applicationIDs := make([]uint, 0)
+	for _, application := range applications {
+		applicationIDs = append(applicationIDs, application.ID)
+	}
+
+	// get applications authorized to current user
+	authorizedApplicationIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx,
+		membermodels.TypeApplication, currentUser.GetID())
+	if err != nil {
+		return 0, nil,
+			perrors.WithMessage(err, "failed to list application resource of current user")
+	}
+
+	// all applicationIDs, including:
+	// (1) applications under the authorized groups
+	// (2) authorized applications directly
+	applicationIDs = append(applicationIDs, authorizedApplicationIDs...)
+
+	count, clusters, err := c.clusterMgr.ListUserAuthorizedByNameFuzzily(ctx, environment,
+		filter, applicationIDs, currentUser.GetID(), query)
+	if err != nil {
+		return 0, nil,
+			perrors.WithMessage(err, "failed to list user clusters")
+	}
+
+	// 2. get applications
+	clusterApplicationIDs := make([]uint, 0)
+	for _, cluster := range clusters {
+		clusterApplicationIDs = append(clusterApplicationIDs, cluster.ApplicationID)
+	}
+	applicationMap, err := c.applicationSvc.GetByIDs(ctx, clusterApplicationIDs)
+	if err != nil {
+		return 0, nil,
+			perrors.WithMessage(err, "failed to list application for clusters")
+	}
+
+	resp = make([]*ListClusterWithFullResponse, 0)
+	// 3. convert and add full path, full name
+	for _, cluster := range clusters {
+		application, exist := applicationMap[cluster.ApplicationID]
+		if !exist {
+			continue
+		}
+		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
+		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
+		resp = append(resp, &ListClusterWithFullResponse{
+			ofClusterWithEnvAndRegion(cluster),
+			fullName,
+			fullPath,
+		})
+	}
+
+	return count, resp, nil
 }
 
 func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClusterResponse, err error) {

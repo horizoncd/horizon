@@ -139,6 +139,14 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 
+	clusterCountForUser, clustersForUser, err := Mgr.ListUserAuthorizedByNameFuzzily(ctx,
+		er.EnvironmentName, "clu", []uint{applicationID}, user2.ID, nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, clusterCountForUser)
+	for _, cluster := range clustersForUser {
+		t.Logf("%v", cluster)
+	}
+
 	exists, err := Mgr.CheckClusterExists(ctx, name)
 	assert.Nil(t, err)
 	assert.True(t, exists)

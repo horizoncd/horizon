@@ -14,9 +14,12 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
+	"g.hz.netease.com/horizon/pkg/member"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
@@ -38,6 +41,8 @@ type Controller interface {
 	DeleteApplication(ctx context.Context, id uint) error
 	// ListApplication list application by filter
 	ListApplication(ctx context.Context, filter string, query q.Query) (int, []*ListApplicationResponse, error)
+	// ListUserApplication list application that authorized to current user by filter
+	ListUserApplication(ctx context.Context, filter string, query *q.Query) (int, []*ListApplicationResponse, error)
 }
 
 type controller struct {
@@ -51,6 +56,7 @@ type controller struct {
 	clusterMgr           clustermanager.Manager
 	hook                 hook.Hook
 	userSvc              usersvc.Service
+	memberManager        member.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -68,6 +74,7 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
 		clusterMgr:           clustermanager.Mgr,
 		hook:                 hook,
 		userSvc:              usersvc.Svc,
+		memberManager:        member.Mgr,
 	}
 }
 
@@ -417,6 +424,74 @@ func (c *controller) ListApplication(ctx context.Context, filter string, query q
 	}
 
 	// 3. convert models.Application to ListApplicationResponse
+	for _, application := range applications {
+		group, exist := groupMap[application.GroupID]
+		if !exist {
+			continue
+		}
+		fullPath := fmt.Sprintf("%v/%v", group.FullPath, application.Name)
+		fullName := fmt.Sprintf("%v/%v", group.FullName, application.Name)
+		listApplicationResp = append(
+			listApplicationResp,
+			&ListApplicationResponse{
+				FullName:  fullName,
+				FullPath:  fullPath,
+				Name:      application.Name,
+				GroupID:   application.GroupID,
+				ID:        application.ID,
+				CreatedAt: application.CreatedAt,
+				UpdatedAt: application.UpdatedAt,
+			},
+		)
+	}
+
+	return count, listApplicationResp, nil
+}
+
+func (c *controller) ListUserApplication(ctx context.Context,
+	filter string, query *q.Query) (int, []*ListApplicationResponse, error) {
+	// get current user
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return 0, nil, perrors.WithMessage(err, "no user in context")
+	}
+
+	// get groups authorized to current user
+	groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, currentUser.GetID())
+	if err != nil {
+		return 0, nil,
+			perrors.WithMessage(err, "failed to list group resource of current user")
+	}
+
+	// get these groups' subGroups
+	subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
+	if err != nil {
+		return 0, nil, perrors.WithMessage(err, "failed to get groups")
+	}
+
+	subGroupIDs := make([]uint, 0)
+	for _, group := range subGroups {
+		subGroupIDs = append(subGroupIDs, group.ID)
+	}
+
+	count, applications, err := c.applicationMgr.ListUserAuthorizedByNameFuzzily(ctx,
+		filter, subGroupIDs, currentUser.GetID(), query)
+	if err != nil {
+		return 0, nil, perrors.WithMessage(err, "failed to list user applications")
+	}
+
+	// get groups for full path, full name
+	var applicationGroupIDs []uint
+	for _, application := range applications {
+		applicationGroupIDs = append(applicationGroupIDs, application.GroupID)
+	}
+	groupMap, err := c.groupSvc.GetChildrenByIDs(ctx, applicationGroupIDs)
+	if err != nil {
+		return count, nil, err
+	}
+
+	// convert models.Application to ListApplicationResponse
+	listApplicationResp := make([]*ListApplicationResponse, 0)
 	for _, application := range applications {
 		group, exist := groupMap[application.GroupID]
 		if !exist {

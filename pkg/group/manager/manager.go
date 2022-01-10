@@ -57,6 +57,8 @@ type Manager interface {
 	GetChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error)
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
+	// GetSubGroupsByGroupIDs get groups and its subGroups by specified groupIDs
+	GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Group, error)
 }
 
 type manager struct {
@@ -211,4 +213,28 @@ func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
 		ids[i] = uint(ii)
 	}
 	return ids
+}
+
+// GetSubGroupsByGroupIDs get groups and its subGroups by specified groupIDs
+func (m manager) GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Group, error) {
+	groupIDSet := make(map[uint]bool)
+	for _, groupID := range groupIDs {
+		groupIDSet[groupID] = true
+	}
+
+	groups, err := m.groupDAO.ListByTraversalIDsContains(ctx, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+	retGroupIDs := make([]uint, 0)
+	for _, group := range groups {
+		traversalIDs := FormatIDsFromTraversalIDs(group.TraversalIDs)
+		for index, traversalID := range traversalIDs {
+			if _, ok := groupIDSet[traversalID]; ok {
+				retGroupIDs = append(retGroupIDs, traversalIDs[index:]...)
+				break
+			}
+		}
+	}
+	return m.groupDAO.GetByIDs(ctx, retGroupIDs)
 }
