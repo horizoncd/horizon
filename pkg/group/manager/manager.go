@@ -217,32 +217,24 @@ func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
 
 // GetSubGroupsByGroupIDs get groups and its subGroups by specified groupIDs
 func (m manager) GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Group, error) {
-	groupIDSet := make(map[string]bool)
+	groupIDSet := make(map[uint]bool)
 	for _, groupID := range groupIDs {
-		groupIDSet[strconv.Itoa(int(groupID))] = true
+		groupIDSet[groupID] = true
 	}
 
 	groups, err := m.groupDAO.ListByTraversalIDsContains(ctx, groupIDs)
 	if err != nil {
 		return nil, err
 	}
-	retGroupIDStr := make([]string, 0)
+	retGroupIDs := make([]uint, 0)
 	for _, group := range groups {
-		traversalIDs := strings.Split(group.TraversalIDs, ",")
+		traversalIDs := FormatIDsFromTraversalIDs(group.TraversalIDs)
 		for index, traversalID := range traversalIDs {
 			if _, ok := groupIDSet[traversalID]; ok {
-				retGroupIDStr = append(retGroupIDStr, traversalIDs[index:]...)
+				retGroupIDs = append(retGroupIDs, traversalIDs[index:]...)
 				break
 			}
 		}
-	}
-	retGroupIDs := make([]uint, 0, len(retGroupIDStr))
-	for _, groupIDStr := range retGroupIDStr {
-		groupID, err := strconv.ParseUint(groupIDStr, 10, 0)
-		if err != nil {
-			return nil, err
-		}
-		retGroupIDs = append(retGroupIDs, uint(groupID))
 	}
 	return m.groupDAO.GetByIDs(ctx, retGroupIDs)
 }

@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/common"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
@@ -116,7 +117,11 @@ func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, 
 	var applications []*models.Application
 	result := db.Raw(common.ApplicationQueryByIDs, ids).Scan(&applications)
 
-	return applications, result.Error
+	if result.Error != nil {
+		return nil, perrors.Wrap(result.Error, "failed to get applications of specified groups")
+	}
+
+	return applications, nil
 }
 
 func (d *dao) GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Application, error) {
@@ -277,10 +282,13 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context,
 	result := db.Raw(common.ApplicationQueryByUserAndNameFuzzily, userInfo, like, groupIDs, like, limit, offset).
 		Scan(&applications)
 	if result.Error != nil {
-		return total, applications, result.Error
+		return 0, nil, perrors.Wrap(result.Error, "failed to search applications by name fuzzily")
 	}
 
 	result = db.Raw(common.ApplicationCountByUserAndNameFuzzily, userInfo, like, groupIDs, like).Scan(&total)
+	if result.Error != nil {
+		return 0, nil, perrors.Wrap(result.Error, "failed to count applications by name fuzzily")
+	}
 
-	return total, applications, result.Error
+	return total, applications, nil
 }
