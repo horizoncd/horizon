@@ -388,7 +388,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 					Pods:     clusterPodMap,
 				}
 				clusterState.Step = &Step{
-					Index:    1,
+					Index:    0,
 					Total:    1,
 					Replicas: []int{1},
 				}
