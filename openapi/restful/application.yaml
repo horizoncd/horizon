@@ -449,3 +449,67 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/applications/{applicationID}/regions:
+    parameters:
+      - name: applicationID
+        in: path
+        description: application id
+        required: true
+    get:
+      tags:
+        - application
+      operationId: getApplicationRegions
+      summary: get default regions for an application
+      description: |
+        There are different regions for different environments. If the region of an environment is not exists,
+        return the default region of this environment.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "test":{
+                              "region":"hz-test",
+                              "regionDisplayName":"杭州测试"
+                          },
+                          "online":{
+                              "region":"hz",
+                              "regionDisplayName":"杭州（义桥）"
+                          }
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - application
+      operationId: updateApplicationRegions
+      summary: update the default regions for an application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "test":"hz-test",
+                    "online":"hz"
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
