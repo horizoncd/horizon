@@ -5,32 +5,6 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/groups?fullPath={fullPath}:
-    get:
-      tags:
-        - group
-      operationId: queryGroups
-      summary: query group by fullPath
-      parameters:
-        - name: fullPath
-          in: query
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                properties:
-                  data:
-                    $ref: "../front/group.yaml#/components/schemas/GroupChild"
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-
   /apis/core/v1/groups:
     post:
       tags:

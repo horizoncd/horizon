@@ -10,6 +10,7 @@ import (
 	"os"
 	"regexp"
 
+	accessctl "g.hz.netease.com/horizon/core/controller/access"
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
@@ -22,6 +23,7 @@ import (
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
 	templateschematagctl "g.hz.netease.com/horizon/core/controller/templateschematag"
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
+	accessapi "g.hz.netease.com/horizon/core/http/api/v1/access"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/applicationregion"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
@@ -222,6 +224,10 @@ func Run(flags *Flags) {
 	go memHook.Process()
 
 	var (
+		rbacSkippers = middleware.MethodAndPathSkipper("*",
+			regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
+				"(^/apis/core/v1/roles)|(^/apis/internal/.*)"))
+
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
@@ -236,6 +242,7 @@ func Run(flags *Flags) {
 		codeGitCtl           = codectl.NewController(gitGetter)
 		clusterTagCtl        = clustertagctl.NewController(clusterGitRepo)
 		templateSchemaTagCtl = templateschematagctl.NewController()
+		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers)
 		applicationRegionCtl = applicationregionctl.NewController(regionConfig)
 	)
 
@@ -255,6 +262,7 @@ func Run(flags *Flags) {
 		codeGitAPI           = codeapi.NewAPI(codeGitCtl)
 		clusterTagAPI        = clustertag.NewAPI(clusterTagCtl)
 		templateSchemaTagAPI = templateshematagapi.NewAPI(templateSchemaTagCtl)
+		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 	)
 
@@ -286,10 +294,7 @@ func Run(flags *Flags) {
 				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			),
 		)
-		middlewares = append(middlewares,
-			auth.Middleware(rbacAuthorizer, middleware.MethodAndPathSkipper("*",
-				regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
-					"(^/apis/core/v1/roles)|(^/apis/internal/.*)"))))
+		middlewares = append(middlewares, auth.Middleware(rbacAuthorizer, rbacSkippers))
 	}
 	r.Use(middlewares...)
 
@@ -312,6 +317,7 @@ func Run(flags *Flags) {
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	clustertag.RegisterRoutes(r, clusterTagAPI)
 	templateshematagapi.RegisterRoutes(r, templateSchemaTagAPI)
+	accessapi.RegisterRoutes(r, accessAPI)
 	applicationregion.RegisterRoutes(r, applicationRegionAPI)
 
 	// start cloud event server
