@@ -6,6 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/controller/applicationregion"
 	ccommon "g.hz.netease.com/horizon/core/controller/common"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 
 	"github.com/gin-gonic/gin"
@@ -56,7 +57,12 @@ func (a *API) Update(c *gin.Context) {
 	}
 
 	if err := a.applicationRegionCtl.Update(c, uint(applicationID), request); err != nil {
-		ccommon.Response(c, ccommon.InternalError.WithErrMsg(err.Error()))
+		switch perrors.Cause(err) {
+		case applicationregion.ErrEnvironmentNotFound, applicationregion.ErrRegionNotFound:
+			ccommon.Response(c, ccommon.ParamError.WithErrMsg(err.Error()))
+		default:
+			ccommon.Response(c, ccommon.InternalError.WithErrMsg(err.Error()))
+		}
 		return
 	}
 

@@ -2,7 +2,7 @@ package applicationregion
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/applicationregion/manager"
@@ -12,6 +12,11 @@ import (
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/util/sets"
+)
+
+var (
+	ErrEnvironmentNotFound = errors.New("environment not found")
+	ErrRegionNotFound      = errors.New("region not found")
 )
 
 type Controller interface {
@@ -86,10 +91,10 @@ func (c *controller) Update(ctx context.Context, applicationID uint, application
 
 	for k, v := range applicationRegionMap {
 		if !environmentSet.Has(k) {
-			return fmt.Errorf("environment %s is not exists", k)
+			return perrors.Wrapf(ErrEnvironmentNotFound, "environment %s is not exists", k)
 		}
 		if !regionSet.Has(v) {
-			return fmt.Errorf("region %s is not exists", v)
+			return perrors.Wrapf(ErrRegionNotFound, "region %s is not exists", v)
 		}
 		applicationRegions = append(applicationRegions, &models.ApplicationRegion{
 			ApplicationID:   applicationID,
