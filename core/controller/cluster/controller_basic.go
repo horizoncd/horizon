@@ -332,7 +332,7 @@ func RenderOutputObject(outPutStr, templateName string,
 	addValuePrefixDocMap[_valuePrefix] = oneDocMap
 
 	var b bytes.Buffer
-	doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(outPutStr))
+	doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(outPutStr))
 	err = doTemplate.ExecuteTemplate(&b, "", addValuePrefixDocMap)
 	if err != nil {
 		return nil, fmt.Errorf("RenderOutputObject template error, err  = %s", err.Error())
