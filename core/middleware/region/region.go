@@ -109,7 +109,7 @@ func getRegionFromConfig(config *region.Config, environment string, application 
 		return strings.TrimSpace(config.DefaultRegions[environment])
 	}
 
-	// TODO(remove getGroupRegion and getApplicationRegion later)
+	// TODO(gjq) remove getGroupRegion and getApplicationRegion later
 	// getGroupRegion get group default region
 	getGroupRegion := func(environment string, groupID string) string {
 		groupMap, ok := config.GroupRegions[environment]

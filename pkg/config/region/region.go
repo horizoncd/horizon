@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	DefaultRegions DefaultRegions `yaml:"defaultRegions"`
-	// TODO(remove ApplicationRegions and GroupRegions later)
+	// TODO(gjq) remove ApplicationRegions and GroupRegions later
 	ApplicationRegions ApplicationRegions `yaml:"applicationRegions"`
 	GroupRegions       GroupRegions       `yaml:"groupRegions"`
 }
