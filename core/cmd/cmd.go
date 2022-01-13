@@ -11,6 +11,7 @@ import (
 	"regexp"
 
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
+	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	clustertagctl "g.hz.netease.com/horizon/core/controller/clustertag"
 	codectl "g.hz.netease.com/horizon/core/controller/code"
@@ -22,6 +23,7 @@ import (
 	templateschematagctl "g.hz.netease.com/horizon/core/controller/templateschematag"
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
+	"g.hz.netease.com/horizon/core/http/api/v1/applicationregion"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
 	"g.hz.netease.com/horizon/core/http/api/v1/clustertag"
 	codeapi "g.hz.netease.com/horizon/core/http/api/v1/code"
@@ -234,6 +236,7 @@ func Run(flags *Flags) {
 		codeGitCtl           = codectl.NewController(gitGetter)
 		clusterTagCtl        = clustertagctl.NewController(clusterGitRepo)
 		templateSchemaTagCtl = templateschematagctl.NewController()
+		applicationRegionCtl = applicationregionctl.NewController(regionConfig)
 	)
 
 	var (
@@ -252,6 +255,7 @@ func Run(flags *Flags) {
 		codeGitAPI           = codeapi.NewAPI(codeGitCtl)
 		clusterTagAPI        = clustertag.NewAPI(clusterTagCtl)
 		templateSchemaTagAPI = templateshematagapi.NewAPI(templateSchemaTagCtl)
+		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 	)
 
 	// init server
@@ -308,6 +312,8 @@ func Run(flags *Flags) {
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	clustertag.RegisterRoutes(r, clusterTagAPI)
 	templateshematagapi.RegisterRoutes(r, templateSchemaTagAPI)
+	applicationregion.RegisterRoutes(r, applicationRegionAPI)
+
 	// start cloud event server
 	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)
 	// start api server

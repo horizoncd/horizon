@@ -21,7 +21,7 @@ func GetPageParam(c *gin.Context) (int, int, error) {
 	} else {
 		pageNumber, err = strconv.Atoi(pNumber)
 		if err != nil || pageNumber <= 0 {
-			return 0, 0, fmt.Errorf("invalid param, pageNumber: %d", pageNumber)
+			return 0, 0, fmt.Errorf("invalid param, pageNumber: %s", pNumber)
 		}
 	}
 	pSize := c.Query(common.PageSize)
@@ -30,7 +30,7 @@ func GetPageParam(c *gin.Context) (int, int, error) {
 	} else {
 		pageSize, err = strconv.Atoi(pSize)
 		if err != nil || pageSize <= 0 || pageSize > common.MaxPageSize {
-			return 0, 0, fmt.Errorf("invalid param, pageSize: %d", pageSize)
+			return 0, 0, fmt.Errorf("invalid param, pageSize: %s", pSize)
 		}
 	}
 
