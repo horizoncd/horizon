@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/applications/{applicationID}/clusters?environment={environment}&filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/core/v1/applications/{applicationID}/clusters?environment={environment}&filter={filter}&pageNumber={pageNumber}&pageSize={pageSize}:
     parameters:
       - name: applicationID
         in: path
@@ -552,7 +552,7 @@ paths:
                       }
                   }
 
-  /apis/core/v1/clusters/{clusterID}/pipelineruns?pageNumber=${pageNumber}&pageSize={pageSize}&canRollback={canRollback}:
+  /apis/core/v1/clusters/{clusterID}/pipelineruns?pageNumber={pageNumber}&pageSize={pageSize}&canRollback={canRollback}:
     parameters:
       - name: clusterID
         in: path

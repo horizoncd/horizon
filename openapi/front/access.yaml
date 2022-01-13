@@ -1,0 +1,98 @@
+openapi: 3.0.1
+info:
+  title: Horizon Access Front
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v1/accessreview:
+    post:
+      tags:
+        - user
+      description: review access for apis
+      operationId: reviewAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewReq"
+            example: |
+              {
+                  "apis": [
+                      {
+                          "url": "/apis/core/v1/applications/xx/clusters?scope=test/hz",
+                          "method": "POST"
+                      },
+                      {
+                          "url": "/apis/core/v1/applications/xx/clusters?scope=dev/hz",
+                          "method": "POST"
+                      },
+                      {
+                          "url": "/apis/core/v1/clusters/xx/shell",
+                          "method": "GET"
+                      }
+                  ]
+              }
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewResp"
+              example: |
+                {
+                    "data": {
+                        "/apis/core/v1/applications/xx/clusters?scope=dev/hz": {
+                            "POST": {
+                                "allowed": false,
+                                "reason": ""
+                            }
+                        },
+                        "/apis/core/v1/applications/xx/clusters?scope=test/hz": {
+                            "POST": {
+                                "allowed": true,
+                                "reason": ""
+                            }
+                        },
+                        "/apis/core/v1/clusters/xx/shell": {
+                            "GET": {
+                                "allowed": false,
+                                "reason": ""
+                            }
+                        }
+                    }
+                }
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    ReviewReq:
+      type: object
+      properties:
+        url:
+          type: string
+          description: url of api
+        method:
+          type: string
+          description: method of api
+    ReviewResp:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          type: object
+          properties:
+            allowed:
+              type: boolean
+              description: review result
+            reason:
+              type: string
+              description: reason for review result
