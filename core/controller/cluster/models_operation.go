@@ -43,3 +43,7 @@ func ofExecResp(resp map[string]cd.ExecResp) ExecResponse {
 type RollbackRequest struct {
 	PipelinerunID uint `json:"pipelinerunID"`
 }
+
+type MemcachedSchema struct {
+	Enabled bool `json:"enabled"`
+}

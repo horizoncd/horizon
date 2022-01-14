@@ -21,6 +21,8 @@ import (
 
 const (
 	QueryPodsMetric = "kube_pod_info{namespace=\"%s\",pod=~\"%s.*\"}"
+
+	Memcached = "memcached"
 )
 
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
@@ -483,6 +485,18 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 		getDashboardResp.Serverless = fmt.Sprintf(grafanaURL.ServerlessDashboard, cluster.Name)
 	}
 
+	// Memcached dashboard
+	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	//nolint
+	if memcached, ok := clusterFiles.ApplicationJSONBlob[Memcached]; ok {
+		//nolint
+		if memcached.(MemcachedSchema).Enabled {
+
+		}
+	}
 	return getDashboardResp, nil
 }
 
