@@ -59,6 +59,8 @@ const (
 	LifeCycleStatusWaiting  = "Waiting"
 	LifeCycleStatusRunning  = "Running"
 	LifeCycleStatusAbnormal = "Abnormal"
+
+	PodErrCrashLoopBackOff = "CrashLoopBackOff"
 )
 
 type GetClusterStateParams struct {
@@ -887,7 +889,7 @@ func allContainersReady(containerStatuses []corev1.ContainerStatus) bool {
 // oneOfContainersCrash determine if one of containers crash
 func oneOfContainersCrash(containerStatuses []corev1.ContainerStatus) bool {
 	for _, containerStatus := range containerStatuses {
-		if containerStatus.State.Waiting != nil && containerStatus.State.Waiting.Reason == "CrashLoopBackOff" {
+		if containerStatus.State.Waiting != nil && containerStatus.State.Waiting.Reason == PodErrCrashLoopBackOff {
 			return true
 		}
 	}
@@ -919,9 +921,10 @@ func parseContainerState(containerStatus corev1.ContainerStatus) ContainerState 
 
 	if state.Terminated != nil {
 		return ContainerState{
-			State:   terminated,
-			Reason:  state.Terminated.Reason,
-			Message: state.Terminated.Message,
+			State:     terminated,
+			Reason:    state.Terminated.Reason,
+			Message:   state.Terminated.Message,
+			StartedAt: &state.Terminated.StartedAt,
 		}
 	}
 

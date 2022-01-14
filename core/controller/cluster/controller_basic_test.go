@@ -2,10 +2,13 @@ package cluster
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 	"testing"
+	"time"
 
 	"g.hz.netease.com/horizon/lib/q"
+	mockcd "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	applicationsvc "g.hz.netease.com/horizon/pkg/application/service"
@@ -15,11 +18,15 @@ import (
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
+	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
+	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
+	k8sclustermanager "g.hz.netease.com/horizon/pkg/k8scluster/manager"
+	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -235,4 +242,96 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 		b, _ := json.Marshal(resp)
 		t.Logf("%v", string(b))
 	}
+}
+
+func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
+	appMgr := appmanager.Mgr
+	groupMgr := groupmanager.Mgr
+	clusterMgr := clustermanager.Mgr
+	envMgr := envmanager.Mgr
+	regionMgr := regionmanager.Mgr
+
+	mockCtl := gomock.NewController(t)
+	cd := mockcd.NewMockCD(mockCtl)
+	cd.EXPECT().DeleteCluster(gomock.Any(), gomock.Any()).Return(errors.New("test")).AnyTimes()
+
+	c = &controller{
+		cd:             cd,
+		clusterMgr:     clusterMgr,
+		applicationMgr: appMgr,
+		applicationSvc: applicationsvc.Svc,
+		groupManager:   groupmanager.Mgr,
+		envMgr:         envmanager.Mgr,
+		regionMgr:      regionmanager.Mgr,
+	}
+
+	// init data
+	k8sCluster, err := k8sclustermanager.Mgr.Create(ctx, &k8sclustermodels.K8SCluster{
+		Name: "TestController_FreeOrDeleteClusterFailed",
+	})
+	assert.Nil(t, err)
+	harbor, err := harbordao.NewDAO().Create(ctx, &harbormodels.Harbor{
+		Server: "http://127.0.0.1",
+	})
+	assert.Nil(t, err)
+	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+		Name:         "TestController_FreeOrDeleteClusterFailed",
+		DisplayName:  "TestController_FreeOrDeleteClusterFailed",
+		K8SClusterID: k8sCluster.ID,
+		HarborID:     harbor.ID,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, region)
+
+	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+		EnvironmentName: "TestController_FreeOrDeleteClusterFailed",
+		RegionName:      region.Name,
+	})
+	assert.Nil(t, err)
+
+	group, err := groupMgr.Create(ctx, &groupmodels.Group{
+		Name:     "TestController_FreeOrDeleteClusterFailed",
+		Path:     "/TestController_FreeOrDeleteClusterFailed",
+		ParentID: 0,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, group)
+
+	application, err := appMgr.Create(ctx, &appmodels.Application{
+		GroupID:         group.ID,
+		Name:            "TestController_FreeOrDeleteClusterFailed",
+		Priority:        "P3",
+		GitURL:          "ssh://git.com",
+		GitSubfolder:    "/test",
+		GitBranch:       "master",
+		Template:        "javaapp",
+		TemplateRelease: "v1.0.0",
+	}, nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, application)
+
+	cluster, err := clusterMgr.Create(ctx, &clustermodels.Cluster{
+		ApplicationID:       application.ID,
+		Name:                "TestController_FreeOrDeleteClusterFailed",
+		EnvironmentRegionID: er.ID,
+		GitURL:              "",
+	}, nil, nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, cluster)
+
+	// if failed to free, status should be set to empty
+	err = c.FreeCluster(ctx, cluster.ID)
+	assert.Nil(t, err)
+	time.Sleep(time.Second)
+	cluster, err = clusterMgr.GetByID(ctx, cluster.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "", cluster.Status)
+
+	// if failed to delete, status should be set to empty
+	err = c.DeleteCluster(ctx, cluster.ID)
+	assert.Nil(t, err)
+	time.Sleep(time.Second)
+	cluster, err = clusterMgr.GetByID(ctx, cluster.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "", cluster.Status)
 }
