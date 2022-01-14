@@ -5,6 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 
@@ -67,10 +68,11 @@ func AbortWithInternalError(c *gin.Context, message string) {
 	Abort(c, http.StatusInternalServerError, common.InternalError, message)
 }
 
-func AbortWithNotFoundError(c *gin.Context, errorCode, message string) {
-	Abort(c, http.StatusNotFound, errorCode, message)
+func AbortWithRPCError(c *gin.Context, rpcError rpcerror.RPCError) {
+	Abort(c, http.StatusNotFound, string(rpcError.ErrorCode), rpcError.ErrorMessage)
 }
 
+// AbortWithError TODO: remove this function after all error changed to rpcerror.RPCError
 func AbortWithError(c *gin.Context, err error) {
 	Abort(c, errors.Status(err), errors.Code(err), err.Error())
 }
