@@ -89,8 +89,7 @@ func Test(t *testing.T) {
 	regions, err := c.List(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(regions))
-	assert.Equal(t, "hz", regions["pre"].Region)
-	assert.Equal(t, "杭州", regions["pre"].RegionDisplayName)
+	assert.Equal(t, "hz", regions["pre"])
 	b, _ := json.Marshal(regions)
 	t.Logf("%v", string(b))
 
@@ -104,8 +103,7 @@ func Test(t *testing.T) {
 	regions, err = c.List(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(regions))
-	assert.Equal(t, "hz", regions["pre"].Region)
-	assert.Equal(t, "杭州", regions["pre"].RegionDisplayName)
+	assert.Equal(t, "hz", regions["pre"])
 	b, _ = json.Marshal(regions)
 	t.Logf("%v", string(b))
 
@@ -117,8 +115,7 @@ func Test(t *testing.T) {
 	regions, err = c.List(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(regions))
-	assert.Equal(t, "singapore", regions["pre"].Region)
-	assert.Equal(t, "新加坡", regions["pre"].RegionDisplayName)
+	assert.Equal(t, "singapore", regions["pre"])
 	b, _ = json.Marshal(regions)
 	t.Logf("%v", string(b))
 }

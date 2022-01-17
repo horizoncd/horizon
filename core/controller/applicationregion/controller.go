@@ -21,7 +21,7 @@ var (
 
 type Controller interface {
 	List(ctx context.Context, applicationID uint) (ApplicationRegion, error)
-	Update(ctx context.Context, applicationID uint, applicationRegionMap map[string]string) error
+	Update(ctx context.Context, applicationID uint, applicationRegionMap ApplicationRegion) error
 }
 
 type controller struct {
@@ -54,15 +54,10 @@ func (c *controller) List(ctx context.Context, applicationID uint) (ApplicationR
 		return nil, perrors.WithMessage(err, "failed to list environment")
 	}
 
-	regions, err := c.regionMgr.ListAll(ctx)
-	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to list region")
-	}
-
-	return ofApplicationRegion(applicationRegions, regions, environments, c.regionConfig), nil
+	return ofApplicationRegion(applicationRegions, environments, c.regionConfig), nil
 }
 
-func (c *controller) Update(ctx context.Context, applicationID uint, applicationRegionMap map[string]string) error {
+func (c *controller) Update(ctx context.Context, applicationID uint, applicationRegionMap ApplicationRegion) error {
 	applicationRegions := make([]*models.ApplicationRegion, 0)
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {

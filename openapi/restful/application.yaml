@@ -473,14 +473,8 @@ paths:
                 example: |
                   {
                       "data":{
-                          "test":{
-                              "region":"hz-test",
-                              "regionDisplayName":"杭州测试"
-                          },
-                          "online":{
-                              "region":"hz",
-                              "regionDisplayName":"杭州（义桥）"
-                          }
+                          "test":"hz-test",
+                          "online":"hz"
                       }
                   }
         default:
@@ -493,7 +487,12 @@ paths:
       tags:
         - application
       operationId: updateApplicationRegions
-      summary: update the default regions for an application
+      summary: update the default regions for an application.
+      description: |
+        Update the default regions for an application.
+        The update operation using database upsert function, if the environment exists for this application,
+        it will update the region, and if not, it will add this environment-region pair for this application.
+        The most import, if the request body is empty, it will delete all environment-region pairs for this application.
       requestBody:
         required: true
         content:

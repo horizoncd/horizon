@@ -50,7 +50,7 @@ func (a *API) Update(c *gin.Context) {
 		return
 	}
 
-	var request map[string]string
+	var request applicationregion.ApplicationRegion
 	if err := c.ShouldBindJSON(&request); err != nil {
 		ccommon.Response(c, ccommon.ParamError.WithErrMsg(fmt.Sprintf("request body is invalid, err: %v", err)))
 		return
