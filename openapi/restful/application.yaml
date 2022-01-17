@@ -450,7 +450,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/applications/{applicationID}/regions:
+  /apis/core/v1/applications/{applicationID}/defaultregions:
     parameters:
       - name: applicationID
         in: path
@@ -459,7 +459,7 @@ paths:
     get:
       tags:
         - application
-      operationId: getApplicationRegions
+      operationId: getApplicationDefaultRegions
       summary: get default regions for an application
       description: |
         There are different regions for different environments. If the region of an environment is not exists,
@@ -472,10 +472,15 @@ paths:
               schema:
                 example: |
                   {
-                      "data":{
-                          "test":"hz-test",
-                          "online":"hz"
-                      }
+                      "data": [
+                        {
+                          "environment": "test",
+                          "region": "hz-test"
+                        }, {
+                          "environment": "pre",
+                          "region": "hz"
+                        }
+                      ]
                   }
         default:
           description: Unexpected error
@@ -486,7 +491,7 @@ paths:
     post:
       tags:
         - application
-      operationId: updateApplicationRegions
+      operationId: updateApplicationDefaultRegions
       summary: update the default regions for an application.
       description: |
         Update the default regions for an application.
@@ -499,10 +504,15 @@ paths:
           application/json:
             schema:
               example: |
-                {
-                    "test":"hz-test",
-                    "online":"hz"
-                }
+                [
+                  {
+                    "environment": "test",
+                    "region": "hz-test"
+                  }, {
+                    "environment": "pre",
+                    "region": "hz"
+                  }
+                ]
       responses:
         "200":
           description: Success

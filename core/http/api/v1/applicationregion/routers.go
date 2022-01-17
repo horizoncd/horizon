@@ -15,12 +15,12 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/applications/:%v/regions", _applicationIDParam),
+			Pattern:     fmt.Sprintf("/applications/:%v/defaultregions", _applicationIDParam),
 			HandlerFunc: api.List,
 		},
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/applications/:%v/regions", _applicationIDParam),
+			Pattern:     fmt.Sprintf("/applications/:%v/defaultregions", _applicationIDParam),
 			HandlerFunc: api.Update,
 		},
 	}

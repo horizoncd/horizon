@@ -65,7 +65,7 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 
 		application, err := mgr.GetByID(c, uint(applicationID))
 		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam,
+			response.AbortWithInternalError(c,
 				fmt.Sprintf("failed to get application by id: %v", applicationID))
 			return
 		}

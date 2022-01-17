@@ -16,6 +16,7 @@ import (
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -89,33 +90,51 @@ func Test(t *testing.T) {
 	regions, err := c.List(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(regions))
-	assert.Equal(t, "hz", regions["pre"])
+	assert.Equal(t, "hz", getRegionByEnvironment("pre", regions))
 	b, _ := json.Marshal(regions)
 	t.Logf("%v", string(b))
 
-	applicationRegionMap := map[string]string{
-		"test": "hz-test",
-		"pre":  "hz",
+	applicationRegions := []*Region{
+		{
+			Environment: "test",
+			Region:      "hz-test",
+		},
+		{
+			Environment: "pre",
+			Region:      "hz",
+		},
 	}
-	err = c.Update(ctx, applicationID, applicationRegionMap)
+	err = c.Update(ctx, applicationID, applicationRegions)
 	assert.Nil(t, err)
 
 	regions, err = c.List(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(regions))
-	assert.Equal(t, "hz", regions["pre"])
+	assert.Equal(t, "hz", getRegionByEnvironment("pre", regions))
 	b, _ = json.Marshal(regions)
 	t.Logf("%v", string(b))
 
-	applicationRegionMap = map[string]string{
-		"pre": "singapore",
+	applicationRegions = []*Region{
+		{
+			Environment: "pre",
+			Region:      "singapore",
+		},
 	}
-	err = c.Update(ctx, applicationID, applicationRegionMap)
+	err = c.Update(ctx, applicationID, applicationRegions)
 	assert.Nil(t, err)
 	regions, err = c.List(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(regions))
-	assert.Equal(t, "singapore", regions["pre"])
+	assert.Equal(t, "singapore", getRegionByEnvironment("pre", regions))
 	b, _ = json.Marshal(regions)
 	t.Logf("%v", string(b))
+}
+
+func getRegionByEnvironment(environment string, regions []*Region) string {
+	for _, r := range regions {
+		if r.Environment == environment {
+			return r.Region
+		}
+	}
+	return ""
 }

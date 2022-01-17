@@ -21,7 +21,7 @@ var (
 
 type Controller interface {
 	List(ctx context.Context, applicationID uint) (ApplicationRegion, error)
-	Update(ctx context.Context, applicationID uint, applicationRegionMap ApplicationRegion) error
+	Update(ctx context.Context, applicationID uint, regions ApplicationRegion) error
 }
 
 type controller struct {
@@ -57,7 +57,7 @@ func (c *controller) List(ctx context.Context, applicationID uint) (ApplicationR
 	return ofApplicationRegion(applicationRegions, environments, c.regionConfig), nil
 }
 
-func (c *controller) Update(ctx context.Context, applicationID uint, applicationRegionMap ApplicationRegion) error {
+func (c *controller) Update(ctx context.Context, applicationID uint, regions ApplicationRegion) error {
 	applicationRegions := make([]*models.ApplicationRegion, 0)
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
@@ -80,21 +80,21 @@ func (c *controller) Update(ctx context.Context, applicationID uint, application
 		return perrors.WithMessage(err, "failed to list all regions")
 	}
 	regionSet := sets.NewString()
-	for _, region := range allRegions {
-		regionSet.Insert(region.Name)
+	for _, r := range allRegions {
+		regionSet.Insert(r.Name)
 	}
 
-	for k, v := range applicationRegionMap {
-		if !environmentSet.Has(k) {
-			return perrors.Wrapf(ErrEnvironmentNotFound, "environment %s is not exists", k)
+	for _, r := range regions {
+		if !environmentSet.Has(r.Environment) {
+			return perrors.Wrapf(ErrEnvironmentNotFound, "environment %s is not exists", r.Environment)
 		}
-		if !regionSet.Has(v) {
-			return perrors.Wrapf(ErrRegionNotFound, "region %s is not exists", v)
+		if !regionSet.Has(r.Region) {
+			return perrors.Wrapf(ErrRegionNotFound, "region %s is not exists", r.Region)
 		}
 		applicationRegions = append(applicationRegions, &models.ApplicationRegion{
 			ApplicationID:   applicationID,
-			EnvironmentName: k,
-			RegionName:      v,
+			EnvironmentName: r.Environment,
+			RegionName:      r.Region,
 			CreatedBy:       currentUser.GetID(),
 			UpdatedBy:       currentUser.GetID(),
 		})
