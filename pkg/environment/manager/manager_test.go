@@ -24,6 +24,20 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(envs), 0)
 
+	onlineEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
+		Name:        "online",
+		DisplayName: "线上",
+	})
+	assert.Nil(t, err)
+	t.Logf("%v", onlineEnv)
+
+	preEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
+		Name:        "pre",
+		DisplayName: "预发",
+	})
+	assert.Nil(t, err)
+	t.Logf("%v", preEnv)
+
 	testEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "test",
 		DisplayName: "测试",
@@ -40,9 +54,11 @@ func Test(t *testing.T) {
 
 	envs, err = Mgr.ListAllEnvironment(ctx)
 	assert.Nil(t, err)
-	assert.Equal(t, len(envs), 2)
+	assert.Equal(t, len(envs), 4)
 	t.Logf("%v", envs[0])
 	t.Logf("%v", envs[1])
+	t.Logf("%v", envs[2])
+	t.Logf("%v", envs[3])
 
 	devHzEr, err := Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
