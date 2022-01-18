@@ -895,3 +895,46 @@ func TestRenderOutPutObject(t *testing.T) {
 	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"music-social-zone-pre.mock.org"}}` //nolint
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }
+
+func TestRenderOutPutObject_missingKey(t *testing.T) {
+	var envValueFile, horizonValueFile, applicationValueFile gitrepo.ClusterValueFile
+	var envValue = `
+javaapp:
+  env:
+    environment: pre
+    region: hz
+    namespace: pre-54
+    baseRegistry: harbor.mock.org
+`
+	var horizonValue = `
+javaapp:
+  horizon:
+    application: music-social-zone
+    template:
+      name: javaapp
+      release: v1.0.0
+    priority: P2
+`
+	err := yaml.Unmarshal([]byte(envValue), &(envValueFile.Content))
+	assert.Nil(t, err)
+
+	err = yaml.Unmarshal([]byte(horizonValue), &(horizonValueFile.Content))
+	assert.Nil(t, err)
+
+	err = yaml.Unmarshal([]byte(applicationValue), &(applicationValueFile.Content))
+	assert.Nil(t, err)
+	var outPutStr = `syncDomainName:
+  Description: sync domain name
+  Value: {{ .Values.horizon.cluster}}.{{ .Values.env.ingressDomain}}`
+	outPutRenderJSONObject, err := RenderOutputObject(outPutStr, "javaapp",
+		horizonValueFile, envValueFile)
+
+	assert.Nil(t, err)
+	t.Logf("outPutRenderStr = \n%+v", outPutRenderJSONObject)
+
+	jsonBytes, err := json.Marshal(outPutRenderJSONObject)
+	assert.Nil(t, err)
+	t.Logf("outPutRenderStr = \n%+s", string(jsonBytes))
+	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"."}}` //nolint
+	assert.Equal(t, expectOutPutStr, string(jsonBytes))
+}

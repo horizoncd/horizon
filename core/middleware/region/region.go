@@ -10,6 +10,8 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	appregionmanager "g.hz.netease.com/horizon/pkg/applicationregion/manager"
+	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/config/region"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -55,16 +57,29 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 			return
 		}
 		environment := params[0]
-		mgr := applicationmanager.Mgr
+
+		var (
+			mgr                  = applicationmanager.Mgr
+			applicationRegionMgr = appregionmanager.Mgr
+		)
+
 		application, err := mgr.GetByID(c, uint(applicationID))
 		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam,
+			response.AbortWithInternalError(c,
 				fmt.Sprintf("failed to get application by id: %v", applicationID))
 			return
 		}
-		r := getRegion(config, environment, application)
+
+		applicationRegions, err := applicationRegionMgr.ListByApplicationID(c, uint(applicationID))
+		if err != nil {
+			response.AbortWithInternalError(c,
+				fmt.Sprintf("failed to get application by id: %v", applicationID))
+			return
+		}
+
+		r := getRegion(applicationRegions, config, environment, application)
 		if len(r) == 0 {
-			response.AbortWithRequestError(c, common.InternalError,
+			response.AbortWithNotFoundError(c, common.NotFound,
 				fmt.Sprintf("cannot find region for environment %v, application %v",
 					environment, application.Name))
 			return
@@ -75,7 +90,17 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 	}, skippers...)
 }
 
-func getRegion(config *region.Config, environment string, application *appmodels.Application) string {
+func getRegion(applicationRegions []*models.ApplicationRegion, config *region.Config,
+	environment string, application *appmodels.Application) string {
+	for _, applicationRegion := range applicationRegions {
+		if applicationRegion.EnvironmentName == environment {
+			return applicationRegion.RegionName
+		}
+	}
+	return getRegionFromConfig(config, environment, application)
+}
+
+func getRegionFromConfig(config *region.Config, environment string, application *appmodels.Application) string {
 	if config == nil {
 		return ""
 	}
@@ -84,6 +109,7 @@ func getRegion(config *region.Config, environment string, application *appmodels
 		return strings.TrimSpace(config.DefaultRegions[environment])
 	}
 
+	// TODO(gjq) remove getGroupRegion and getApplicationRegion later
 	// getGroupRegion get group default region
 	getGroupRegion := func(environment string, groupID string) string {
 		groupMap, ok := config.GroupRegions[environment]

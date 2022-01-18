@@ -15,13 +15,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var RequestInfoFty RequestInfoFactory
+
+func init() {
+	RequestInfoFty = RequestInfoFactory{
+		APIPrefixes: sets.NewString("apis"),
+	}
+}
+
 func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// 1. get requestInfo
-		requestInfoFactory := RequestInfoFactory{
-			APIPrefixes: sets.NewString("apis"),
-		}
-		requestInfo, err := requestInfoFactory.NewRequestInfo(c.Request)
+		requestInfo, err := RequestInfoFty.NewRequestInfo(c.Request)
 		if err != nil {
 			response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
 			return
