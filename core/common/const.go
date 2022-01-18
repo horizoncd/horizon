@@ -31,6 +31,9 @@ const (
 
 	// Forbidden 403 Forbidden error code
 	Forbidden = "Forbidden"
+
+	// NotFound 404 NotFound error code
+	NotFound = "NotFound"
 )
 
 var (

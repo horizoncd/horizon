@@ -5,16 +5,16 @@ import "github.com/gin-gonic/gin"
 type HorizonErrorCode string
 
 type HorizonRPCError struct {
-	httpCode int
-	ErrCode  HorizonErrorCode `json:"errCode"`
-	ErrMsg   string           `json:"errMsg"`
+	httpCode  int
+	ErrorCode HorizonErrorCode `json:"errorCode"`
+	ErrorMsg  string           `json:"errorMessage"`
 }
 
 func (e HorizonRPCError) WithErrMsg(errorMsg string) HorizonRPCError {
 	return HorizonRPCError{
-		httpCode: e.httpCode,
-		ErrCode:  e.ErrCode,
-		ErrMsg:   errorMsg,
+		httpCode:  e.httpCode,
+		ErrorCode: e.ErrorCode,
+		ErrorMsg:  errorMsg,
 	}
 }
 
