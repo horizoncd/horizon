@@ -240,6 +240,9 @@ func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun
 	if taskStatus == strings.TrimPrefix(string(v1beta1.TaskRunReasonTimedOut), "TaskRun") {
 		taskStatus = string(v1beta1.TaskRunReasonFailed)
 	}
+	if prs.Status == string(v1beta1.PipelineRunReasonTimedOut) {
+		taskStatus = string(v1beta1.TaskRunReasonFailed)
+	}
 	return &RunningTask{
 		Task:       runningTask.Name,
 		TaskStatus: taskStatus,
