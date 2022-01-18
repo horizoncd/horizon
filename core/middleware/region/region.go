@@ -79,7 +79,7 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 
 		r := getRegion(applicationRegions, config, environment, application)
 		if len(r) == 0 {
-			response.AbortWithRequestError(c, common.InternalError,
+			response.AbortWithNotFoundError(c, common.NotFound,
 				fmt.Sprintf("cannot find region for environment %v, application %v",
 					environment, application.Name))
 			return
