@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"sort"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -59,7 +60,12 @@ func (d *dao) ListAllEnvironment(ctx context.Context) ([]*models.Environment, er
 
 	result := db.Raw(common.EnvironmentListAll).Scan(&environments)
 
-	return environments, result.Error
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	sort.Sort(models.EnvironmentList(environments))
+	return environments, nil
 }
 
 func (d *dao) CreateEnvironmentRegion(ctx context.Context,

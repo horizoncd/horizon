@@ -1,6 +1,8 @@
 package applicationregion
 
 import (
+	"sort"
+
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/config/region"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
@@ -31,10 +33,39 @@ func ofApplicationRegion(applicationRegions []*models.ApplicationRegion,
 		}
 	}
 
+	sort.Sort(RegionList(retApplicationRegions))
 	return retApplicationRegions
 }
 
 type Region struct {
 	Environment string `json:"environment"`
 	Region      string `json:"region"`
+}
+
+type RegionList []*Region
+
+func (r RegionList) Len() int {
+	return len(r)
+}
+
+func (r RegionList) Less(i, j int) bool {
+	const pre = "pre"
+	const online = "online"
+	if r[i].Environment == online {
+		return false
+	}
+	if r[j].Environment == online {
+		return true
+	}
+	if r[i].Environment == pre {
+		return false
+	}
+	if r[j].Environment == pre {
+		return true
+	}
+	return r[i].Environment < r[j].Environment
+}
+
+func (r RegionList) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
 }
