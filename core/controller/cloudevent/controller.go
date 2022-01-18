@@ -94,5 +94,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		PipelineRun: wpr.PipelineRun,
 	})
 
+	// 5. 指标存储db
+
 	return nil
 }
