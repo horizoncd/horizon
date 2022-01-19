@@ -10,8 +10,6 @@ import (
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
-
-	"gorm.io/gorm"
 )
 
 var (
@@ -67,7 +65,7 @@ func (m *manager) CreateEnvironmentRegion(ctx context.Context,
 	_, err := m.envDAO.GetEnvironmentRegionByEnvAndRegion(ctx,
 		er.EnvironmentName, er.RegionName)
 	if err != nil {
-		if perrors.Cause(err) != gorm.ErrRecordNotFound {
+		if perrors.Cause(err) != dao.ErrEnvironmentRegionNotFound {
 			return nil, err
 		}
 	} else {

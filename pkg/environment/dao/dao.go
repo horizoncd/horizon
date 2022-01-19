@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"sort"
 
 	"g.hz.netease.com/horizon/lib/orm"
@@ -9,6 +10,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/environment/models"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 )
+
+var ErrEnvironmentRegionNotFound = errors.New("EnvironmentRegion not found")
 
 type DAO interface {
 	EnvironmentDAO
@@ -115,7 +118,7 @@ func (d *dao) GetEnvironmentRegionByEnvAndRegion(ctx context.Context,
 	result := db.Raw(common.EnvironmentRegionGet, env, region).First(&environmentRegion)
 
 	if result.Error != nil {
-		return nil, perrors.Wrap(result.Error, "failed to get environment region")
+		return nil, perrors.Wrap(ErrEnvironmentRegionNotFound, result.Error.Error())
 	}
 	return &environmentRegion, nil
 }

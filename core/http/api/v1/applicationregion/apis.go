@@ -6,9 +6,9 @@ import (
 
 	"g.hz.netease.com/horizon/core/controller/applicationregion"
 	ccommon "g.hz.netease.com/horizon/core/controller/common"
+	envdao "g.hz.netease.com/horizon/pkg/environment/dao"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
-	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 )
@@ -59,7 +59,7 @@ func (a *API) Update(c *gin.Context) {
 
 	if err := a.applicationRegionCtl.Update(c, uint(applicationID), request); err != nil {
 		switch perrors.Cause(err) {
-		case gorm.ErrRecordNotFound:
+		case envdao.ErrEnvironmentRegionNotFound:
 			ccommon.Response(c, ccommon.ParamError.WithErrMsg(err.Error()))
 		default:
 			ccommon.Response(c, ccommon.InternalError.WithErrMsg(err.Error()))
