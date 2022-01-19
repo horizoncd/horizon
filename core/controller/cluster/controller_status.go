@@ -41,11 +41,18 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		}
 	}()
 
-	// get latest builddeploy action pipelinerun
-	latestBuildDeployPipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx,
-		clusterID, prmodels.ActionBuildDeploy)
+	resp := &GetClusterStatusResponse{}
+
+	// get latest pipelinerun
+	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, clusterID)
 	if err != nil {
 		return nil, errors.E(op, err)
+	}
+	if latestPipelinerun != nil {
+		resp.LatestPipelinerun = &LatestPipelinerun{
+			ID:     latestPipelinerun.ID,
+			Action: latestPipelinerun.Action,
+		}
 	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -58,33 +65,19 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, errors.E(op, err)
 	}
 
-	resp := &GetClusterStatusResponse{}
-
-	if latestBuildDeployPipelinerun == nil {
+	if latestPipelinerun == nil || latestPipelinerun.Action != prmodels.ActionBuildDeploy {
 		// if latest builddeploy pr is not exists, runningTask is noneRunningTask
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}
 	} else {
-		latestPipelineRun, err := c.getLatestPipelineRunObject(ctx, cluster, latestBuildDeployPipelinerun, er)
+		latestPipelineRunObject, err := c.getLatestPipelineRunObject(ctx, cluster, latestPipelinerun, er)
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
 
-		resp.RunningTask = c.getRunningTask(ctx, latestPipelineRun)
-		resp.RunningTask.PipelinerunID = latestBuildDeployPipelinerun.ID
-	}
-
-	// get latest pipelinerun
-	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, cluster.ID)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-	if latestPipelinerun != nil {
-		resp.LatestPipelinerun = &LatestPipelinerun{
-			ID:     latestPipelinerun.ID,
-			Action: latestPipelinerun.Action,
-		}
+		resp.RunningTask = c.getRunningTask(ctx, latestPipelineRunObject)
+		resp.RunningTask.PipelinerunID = latestPipelinerun.ID
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
@@ -127,7 +120,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 			clusterState.Status = health.HealthStatusCode(cluster.Status)
 		}
 		resp.ClusterStatus = clusterState
-		if resp.RunningTask.Task == _taskNone && clusterState.Status != "" {
+		if cluster.Status == "" && resp.RunningTask.Task == _taskNone && clusterState.Status != "" {
 			// task为none的情况下，判断是否单独在发布（重启、回滚等）
 			// 如果是的话，把runningTask.task设置为deploy，并设置runningTask.taskStatus对应的状态，
 			// 这个逻辑是因为overmind想统一通过runningTask判断是否发布完成
@@ -238,6 +231,9 @@ func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun
 	taskStatus := strings.TrimPrefix(runningTask.Status, "TaskRun")
 	// 如果是Timeout，则认为是Failed
 	if taskStatus == strings.TrimPrefix(string(v1beta1.TaskRunReasonTimedOut), "TaskRun") {
+		taskStatus = string(v1beta1.TaskRunReasonFailed)
+	}
+	if prs.Status == string(v1beta1.PipelineRunReasonTimedOut) {
 		taskStatus = string(v1beta1.TaskRunReasonFailed)
 	}
 	return &RunningTask{

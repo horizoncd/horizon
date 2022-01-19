@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"regexp"
 	"strconv"
-	"text/template"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/middleware/user"
@@ -331,9 +331,8 @@ func RenderOutputObject(outPutStr, templateName string,
 
 	var addValuePrefixDocMap = make(map[interface{}]interface{})
 	addValuePrefixDocMap[_valuePrefix] = oneDocMap
-
 	var b bytes.Buffer
-	doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(outPutStr))
+	doTemplate := template.Must(template.New("").Funcs(sprig.HtmlFuncMap()).Parse(outPutStr))
 	err = doTemplate.ExecuteTemplate(&b, "", addValuePrefixDocMap)
 	if err != nil {
 		return nil, fmt.Errorf("RenderOutputObject template error, err  = %s", err.Error())
@@ -686,6 +685,16 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
+		var err error
+		defer func() {
+			if err != nil {
+				cluster.Status = ""
+				cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+				if err != nil {
+					log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+				}
+			}
+		}()
 		// should use a new context
 		rid, err := requestid.FromContext(ctx)
 		if err != nil {
@@ -700,7 +709,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		ctx = orm.NewContext(ctx, db)
 
 		// 1. delete cluster in cd system
-		if err := c.cd.DeleteCluster(ctx, &cd.DeleteClusterParams{
+		if err = c.cd.DeleteCluster(ctx, &cd.DeleteClusterParams{
 			Environment: er.EnvironmentName,
 			Cluster:     cluster.Name,
 		}); err != nil {
@@ -715,18 +724,18 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 			PreheatPolicyID: regionEntity.Harbor.PreheatPolicyID,
 		})
 
-		if err := harbor.DeleteRepository(ctx, application.Name, cluster.Name); err != nil {
+		if err = harbor.DeleteRepository(ctx, application.Name, cluster.Name); err != nil {
 			// log error, not return here, delete harbor repository failed has no effect
 			log.Errorf(ctx, "failed to delete harbor repository: %v, err: %v", cluster.Name, err)
 		}
 
 		// 3. delete cluster in git repo
-		if err := c.clusterGitRepo.DeleteCluster(ctx, application.Name, cluster.Name, cluster.ID); err != nil {
+		if err = c.clusterGitRepo.DeleteCluster(ctx, application.Name, cluster.Name, cluster.ID); err != nil {
 			log.Errorf(ctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
 		}
 
 		// 4. delete cluster in db
-		if err := c.clusterMgr.DeleteByID(ctx, clusterID); err != nil {
+		if err = c.clusterMgr.DeleteByID(ctx, clusterID); err != nil {
 			log.Errorf(ctx, "failed to delete cluster: %v in db, err: %v", cluster.Name, err)
 		}
 
@@ -762,6 +771,18 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
+		var err error
+		defer func() {
+			cluster.Status = clustercommon.StatusFreed
+			if err != nil {
+				cluster.Status = ""
+			}
+			cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+			if err != nil {
+				log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+				return
+			}
+		}()
 		// should use a new context
 		rid, err := requestid.FromContext(ctx)
 		if err != nil {
@@ -776,7 +797,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		ctx = orm.NewContext(ctx, db)
 
 		// 2. delete cluster in cd system
-		if err := c.cd.DeleteCluster(ctx, &cd.DeleteClusterParams{
+		if err = c.cd.DeleteCluster(ctx, &cd.DeleteClusterParams{
 			Environment: er.EnvironmentName,
 			Cluster:     cluster.Name,
 		}); err != nil {

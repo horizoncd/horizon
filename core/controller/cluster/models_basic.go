@@ -89,12 +89,24 @@ type Scope struct {
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
 	er *envmodels.EnvironmentRegion) (*models.Cluster, []*clustertagmodels.ClusterTag) {
+	var (
+		// r.Git cannot be nil
+		gitURL       = r.Git.URL
+		gitSubfolder = r.Git.Subfolder
+	)
+	// if gitURL or gitSubfolder is empty, use application's gitURL or gitSubfolder
+	if gitURL == "" {
+		gitURL = application.GitURL
+	}
+	if gitSubfolder == "" {
+		gitSubfolder = application.GitSubfolder
+	}
 	cluster := &models.Cluster{
 		ApplicationID:       application.ID,
 		Name:                r.Name,
 		Description:         r.Description,
-		GitURL:              application.GitURL,
-		GitSubfolder:        application.GitSubfolder,
+		GitURL:              gitURL,
+		GitSubfolder:        gitSubfolder,
 		GitBranch:           r.Git.Branch,
 		Template:            r.Template.Name,
 		TemplateRelease:     r.Template.Release,

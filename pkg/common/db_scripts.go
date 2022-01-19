@@ -277,3 +277,9 @@ const (
 	ClusterTemplateSchemaTagDeleteByClusterIDAndKeys = "delete from cluster_template_schema_tag where cluster_id = ?" +
 		" and `tag_key` not in ?"
 )
+
+/* sql about application region */
+const (
+	ApplicationRegionListByApplicationID      = "select * from application_region where application_id = ?"
+	ApplicationRegionDeleteAllByApplicationID = "delete from application_region where application_id = ?"
+)

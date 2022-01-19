@@ -274,7 +274,7 @@ func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string
 		return waitError
 	}
 
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 700; i++ {
 		err := waitFunc(i)
 		if err == nil {
 			return nil
