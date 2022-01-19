@@ -1306,6 +1306,10 @@ func getCurrentStepIndexPatchStr(stepCnt int) string {
 	return fmt.Sprintf(`{"status": {"currentStepIndex": %d}}`, stepCnt)
 }
 
+// computeStepHash returns a hash value calculated from the Rollout's steps. The hash will
+// be safe encoded to avoid bad words.
+// source code ref:
+// g.hz.netease.com/music-cloud-native/kubernetes/argo-rollouts/-/blob/develop/utils/conditions/conditions.go#L240
 func computeStepHash(rollout *v1alpha1.Rollout) string {
 	if rollout.Spec.Strategy.BlueGreen != nil || rollout.Spec.Strategy.Canary == nil {
 		return ""
