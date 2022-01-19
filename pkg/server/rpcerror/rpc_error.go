@@ -5,14 +5,14 @@ import "net/http"
 type ErrorCode string
 
 type RPCError struct {
-	HttpCode     int       `json:"-"`
+	HTTPCode     int       `json:"-"`
 	ErrorCode    ErrorCode `json:"errorCode"`
 	ErrorMessage string    `json:"errorMessage"`
 }
 
 func (e RPCError) WithErrMsg(errorMsg string) RPCError {
 	return RPCError{
-		HttpCode:     e.HttpCode,
+		HTTPCode:     e.HTTPCode,
 		ErrorCode:    e.ErrorCode,
 		ErrorMessage: errorMsg,
 	}
@@ -20,19 +20,19 @@ func (e RPCError) WithErrMsg(errorMsg string) RPCError {
 
 var (
 	ForbiddenError = RPCError{
-		HttpCode:  http.StatusForbidden,
+		HTTPCode:  http.StatusForbidden,
 		ErrorCode: "AccessDeny",
 	}
 	InternalError = RPCError{
-		HttpCode:  http.StatusInternalServerError,
+		HTTPCode:  http.StatusInternalServerError,
 		ErrorCode: "InternalError",
 	}
 	ParamError = RPCError{
-		HttpCode:  http.StatusBadRequest,
+		HTTPCode:  http.StatusBadRequest,
 		ErrorCode: "InvalidParam",
 	}
 	NotFoundError = RPCError{
-		HttpCode:  http.StatusNotFound,
+		HTTPCode:  http.StatusNotFound,
 		ErrorCode: "NotFound",
 	}
 )
