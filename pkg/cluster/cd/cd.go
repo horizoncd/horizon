@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"math"
 	"net/http"
 	"sort"
@@ -30,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubectl/pkg/cmd/exec"
 )
@@ -1155,9 +1157,12 @@ func getStep(rollout *v1alpha1.Rollout) *Step {
 	}
 
 	var stepIndex = 0
-	if rollout.Status.CurrentStepIndex != nil {
-		index := int(*rollout.Status.CurrentStepIndex)
-		for i := 0; i < index; i++ {
+	// if steps changes, stepIndex = 0
+	if rollout.Status.CurrentStepHash == computeStepHash(rollout) &&
+		rollout.Status.CurrentStepIndex != nil {
+		index := float64(*rollout.Status.CurrentStepIndex)
+		index = math.Min(index, float64(len(rollout.Spec.Strategy.Canary.Steps)))
+		for i := 0; i < int(index); i++ {
 			if rollout.Spec.Strategy.Canary.Steps[i].SetWeight != nil {
 				stepIndex++
 			}
@@ -1299,4 +1304,20 @@ func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
 
 func getCurrentStepIndexPatchStr(stepCnt int) string {
 	return fmt.Sprintf(`{"status": {"currentStepIndex": %d}}`, stepCnt)
+}
+
+func computeStepHash(rollout *v1alpha1.Rollout) string {
+	if rollout.Spec.Strategy.BlueGreen != nil || rollout.Spec.Strategy.Canary == nil {
+		return ""
+	}
+	rolloutStepHasher := fnv.New32a()
+	stepsBytes, err := json.Marshal(rollout.Spec.Strategy.Canary.Steps)
+	if err != nil {
+		panic(err)
+	}
+	_, err = rolloutStepHasher.Write(stepsBytes)
+	if err != nil {
+		panic(err)
+	}
+	return rand.SafeEncodeString(fmt.Sprint(rolloutStepHasher.Sum32()))
 }
