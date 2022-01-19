@@ -479,10 +479,36 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 		Basic: fmt.Sprintf(grafanaURL.BasicDashboard, envValue.Namespace, cluster.Name),
 	}
 
+	// TODO(tom): special dashboard about same template should be placed in the horizon template
+	// get serverless dashboard
 	if cluster.Template == ServerlessTemplateName {
 		getDashboardResp.Serverless = fmt.Sprintf(grafanaURL.ServerlessDashboard, cluster.Name)
 	}
 
+	// get memcached dashboard
+	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	if memcached, ok := clusterFiles.ApplicationJSONBlob["memcached"]; ok {
+		blob, err := json.Marshal(memcached)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+
+		type MemcachedSchema struct {
+			Enabled bool `json:"enabled"`
+		}
+		var memcachedVal MemcachedSchema
+		err = json.Unmarshal(blob, &memcachedVal)
+		if err != nil {
+			return nil, errors.E(op, err)
+		}
+
+		if memcachedVal.Enabled {
+			getDashboardResp.Memcached = fmt.Sprintf(grafanaURL.MemcachedDashboard, envValue.Namespace, cluster.Name)
+		}
+	}
 	return getDashboardResp, nil
 }
 
