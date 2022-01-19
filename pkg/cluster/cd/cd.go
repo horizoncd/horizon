@@ -625,6 +625,7 @@ func podToClusterPod(pod corev1.Pod) (clusterPod *ClusterPod) {
 			Ready:        containerStatus.Ready,
 			RestartCount: containerStatus.RestartCount,
 			State:        parseContainerState(containerStatus),
+			ImageID:      containerStatus.ImageID,
 		}
 		containerStatuses = append(containerStatuses, c)
 	}
@@ -708,6 +709,7 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 			Ready:        containerStatus.Ready,
 			RestartCount: containerStatus.RestartCount,
 			State:        parseContainerState(containerStatus),
+			ImageID:      containerStatus.ImageID,
 		}
 		containerStatuses = append(containerStatuses, c)
 	}
@@ -1020,6 +1022,7 @@ type (
 		Ready        bool           `json:"ready" yaml:"ready"`
 		RestartCount int32          `json:"restartCount"`
 		State        ContainerState `json:"state" yaml:"state"`
+		ImageID      string         `json:"imageID" yaml:"imageID"`
 	}
 
 	Event struct {
