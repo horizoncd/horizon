@@ -5,10 +5,10 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
-	ccommon "g.hz.netease.com/horizon/core/controller/common"
 	"g.hz.netease.com/horizon/core/controller/terminal"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -37,7 +37,7 @@ func (a *API) CreateShell(c *gin.Context) {
 	if err != nil {
 		err = perrors.Wrap(err, "failed to parse cluster id")
 		log.WithFiled(c, "op", op).Errorf(err.Error())
-		ccommon.Response(c, ccommon.ParamError.WithErrMsg("invalid cluster id"))
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
 		return
 	}
 	podName := c.Query(_podNameQuery)
@@ -46,7 +46,7 @@ func (a *API) CreateShell(c *gin.Context) {
 	sessionID, sockJS, err := a.terminalCtl.CreateShell(c, uint(clusterID), podName, containerName)
 	if err != nil {
 		log.WithFiled(c, "op", op).Errorf(err.Error())
-		ccommon.Response(c, ccommon.InternalError.WithErrMsg(err.Error()))
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 

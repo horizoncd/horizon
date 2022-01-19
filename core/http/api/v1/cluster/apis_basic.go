@@ -7,10 +7,10 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cluster"
-	ccommon "g.hz.netease.com/horizon/core/controller/common"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -218,7 +218,7 @@ func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
 
 	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
-		ccommon.Response(c, ccommon.ParamError.WithErrMsg(err.Error()))
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 		return
 	}
 
@@ -227,7 +227,7 @@ func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
 		PageSize:   pageSize,
 	})
 	if err != nil {
-		ccommon.Response(c, ccommon.InternalError.WithErrMsg(err.Error()))
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 
