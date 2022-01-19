@@ -69,7 +69,7 @@ func AbortWithInternalError(c *gin.Context, message string) {
 }
 
 func AbortWithRPCError(c *gin.Context, rpcError rpcerror.RPCError) {
-	Abort(c, http.StatusNotFound, string(rpcError.ErrorCode), rpcError.ErrorMessage)
+	Abort(c, rpcError.HttpCode, string(rpcError.ErrorCode), rpcError.ErrorMessage)
 }
 
 // AbortWithError TODO: remove this function after all error changed to rpcerror.RPCError
