@@ -479,7 +479,7 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 		Basic: fmt.Sprintf(grafanaURL.BasicDashboard, envValue.Namespace, cluster.Name),
 	}
 
-	// TODO(tom): special dashboard about same template should be place in the horizon template
+	// TODO(tom): special dashboard about same template should be placed in the horizon template
 	// get serverless dashboard
 	if cluster.Template == ServerlessTemplateName {
 		getDashboardResp.Serverless = fmt.Sprintf(grafanaURL.ServerlessDashboard, cluster.Name)
