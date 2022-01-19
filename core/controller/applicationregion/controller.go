@@ -60,7 +60,7 @@ func (c *controller) Update(ctx context.Context, applicationID uint, regions App
 	for _, r := range regions {
 		_, err := c.environmentMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
 		if err != nil {
-			return perrors.Wrapf(err,
+			return perrors.WithMessagef(err,
 				"environment/region %s/%s is not exists", r.Environment, r.Region)
 		}
 		applicationRegions = append(applicationRegions, &models.ApplicationRegion{
