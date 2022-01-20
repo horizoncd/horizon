@@ -694,16 +694,20 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 	sort.Sort(cs)
 
 	var containers []*Container
+	// containerNameList holds the containerName order
+	containerNameList := make([]string, 0)
 	for i := range cs.containers {
 		c := cs.containers[i]
 		containers = append(containers, &Container{
 			Name:  c.Name,
 			Image: c.Image,
 		})
+		containerNameList = append(containerNameList, c.Name)
 	}
 	clusterPod.Spec.Containers = containers
 
-	var containerStatuses []*ContainerStatus
+	// containerStatusMap, key is containerName, value is *ContainerStatus
+	containerStatusMap := make(map[string]*ContainerStatus)
 	for i := range pod.Status.ContainerStatuses {
 		containerStatus := pod.Status.ContainerStatuses[i]
 		c := &ContainerStatus{
@@ -713,8 +717,22 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 			State:        parseContainerState(containerStatus),
 			ImageID:      containerStatus.ImageID,
 		}
-		containerStatuses = append(containerStatuses, c)
+		containerStatusMap[containerStatus.Name] = c
 	}
+
+	// construct ContainerStatus list, in containerName order
+	var containerStatuses []*ContainerStatus
+	for _, containerName := range containerNameList {
+		if c, ok := containerStatusMap[containerName]; ok {
+			containerStatuses = append(containerStatuses, c)
+			delete(containerStatusMap, containerName)
+		}
+	}
+	// append the rest ContainerStatus in containerStatusMap if it exists
+	for containerName := range containerStatusMap {
+		containerStatuses = append(containerStatuses, containerStatusMap[containerName])
+	}
+
 	clusterPod.Status.ContainerStatuses = containerStatuses
 	clusterPod.Status.LifeCycle = parsePodLifeCycle(*pod)
 
