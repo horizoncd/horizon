@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	perrors "g.hz.netease.com/horizon/pkg/errors"
@@ -394,7 +395,7 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 
 	if resp.StatusCode != http.StatusOK {
 		message := wlog.Response(ctx, resp)
-		if resp.StatusCode == http.StatusNotFound {
+		if strings.Contains(message, "not found") {
 			return perrors.Wrap(ErrResourceNotFound, message)
 		}
 		return perrors.Wrap(ErrResponseNotOK, message)
