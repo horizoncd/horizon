@@ -11,9 +11,9 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
 
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -21,6 +21,12 @@ import (
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/hashicorp/go-retryablehttp"
 	corev1 "k8s.io/api/core/v1"
+)
+
+var (
+	ErrResourceNotFound = stderrors.New("resource not found")
+	ErrResponseNotOK    = stderrors.New("response for argoCD is not 200 OK")
+	ErrUnexpected       = stderrors.New("unexpected error")
 )
 
 type (
@@ -376,7 +382,7 @@ func (h *helper) GetApplicationTree(ctx context.Context, application string) (
 func (h *helper) GetApplicationResource(ctx context.Context, application string,
 	gvk ResourceParams, resource interface{}) (err error) {
 	const op = "argo: get application resource"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v/resource?namespace=%v&resourceName=%v&group=%v&version=%v&kind=%v",
 		h.URL, application, gvk.Namespace, gvk.ResourceName, gvk.Group, gvk.Version, gvk.Kind)
@@ -388,16 +394,15 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 
 	if resp.StatusCode != http.StatusOK {
 		message := wlog.Response(ctx, resp)
-		// TODO(gjq): 资源不存在的错误判断优化，不通过message来判断
-		if strings.Contains(message, "not found") {
-			return errors.E(op, http.StatusNotFound, message)
+		if resp.StatusCode == http.StatusNotFound {
+			return perrors.Wrap(ErrResourceNotFound, message)
 		}
-		return errors.E(op, resp.StatusCode, message)
+		return perrors.Wrap(ErrResponseNotOK, message)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.Wrap(ErrUnexpected, err.Error())
 	}
 
 	type manifest struct {
@@ -406,15 +411,15 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 
 	var m manifest
 	if err = json.Unmarshal(data, &m); err != nil {
-		return errors.E(op, err)
+		return perrors.Wrap(ErrUnexpected, err.Error())
 	}
 
 	if m.Manifest == "" || m.Manifest == "{}" {
-		return errors.E(op, http.StatusNotFound, "manifest is empty")
+		return perrors.Wrap(ErrResourceNotFound, "manifest is empty")
 	}
 
 	if err = json.Unmarshal([]byte(m.Manifest), &resource); err != nil {
-		return errors.E(op, err)
+		return perrors.Wrap(ErrUnexpected, err.Error())
 	}
 
 	return nil

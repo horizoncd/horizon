@@ -15,6 +15,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	argocdconf "g.hz.netease.com/horizon/pkg/config/argocd"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/kube"
@@ -281,9 +282,7 @@ func (c *cd) SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams
 		Namespace:    argoApp.Spec.Destination.Namespace,
 		ResourceName: params.Cluster,
 	}, &rollout); err != nil {
-		if errors.Status(err) != http.StatusNotFound {
-			return errors.E(op, err)
-		}
+		return perrors.WithMessagef(err, "failed to get rollout for cluster %s", params.Cluster)
 	}
 
 	if !(len(rollout.Status.PauseConditions) != 0 || rollout.Spec.Paused) {
@@ -359,7 +358,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		Namespace:    argoApp.Spec.Destination.Namespace,
 		ResourceName: params.Cluster,
 	}, &rollout); err != nil {
-		if errors.Status(err) == http.StatusNotFound {
+		if perrors.Cause(err) == argocd.ErrResourceNotFound {
 			// get pods by resourceTree
 			var (
 				clusterPodMap = map[string]*ClusterPod{}
@@ -401,7 +400,8 @@ func (c *cd) GetClusterState(ctx context.Context,
 				return clusterState, nil
 			}
 		} else {
-			return nil, errors.E(op, err)
+			return nil, perrors.WithMessagef(err,
+				"failed to get rollout for cluster %s", params.Cluster)
 		}
 	}
 	clusterState.Step = getStep(rollout)
@@ -1259,6 +1259,7 @@ func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ ma
 			KubeClientset: kubeClient.Basic,
 			Namespace:     params.Namespace,
 			Pod:           pod,
+			Container:     params.Cluster,
 		})
 	}
 
