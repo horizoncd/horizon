@@ -13,6 +13,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/region"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 
 	"github.com/gin-gonic/gin"
 )
@@ -69,9 +70,9 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 
 		r := getRegion(applicationRegions, config, environment)
 		if len(r) == 0 {
-			response.AbortWithNotFoundError(c, common.NotFound,
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(
 				fmt.Sprintf("cannot find region for environment %v, application %v",
-					environment, applicationID))
+					environment, applicationID)))
 			return
 		}
 
