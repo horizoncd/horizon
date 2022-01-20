@@ -16,7 +16,6 @@ import (
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +28,7 @@ var (
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.ApplicationRegion{}, &regionmodels.Region{},
-		&envmodels.Environment{}); err != nil {
+		&envmodels.Environment{}, &envmodels.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
@@ -42,31 +41,54 @@ func TestMain(m *testing.M) {
 
 func Test(t *testing.T) {
 	regionMgr := regionmanager.Mgr
-	_, err := regionMgr.Create(ctx, &regionmodels.Region{
+	r1, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz-test",
 		DisplayName: "杭州测试",
 	})
 	assert.Nil(t, err)
+	assert.NotNil(t, r1)
 
-	_, err = regionMgr.Create(ctx, &regionmodels.Region{
+	r2, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "杭州",
 	})
 	assert.Nil(t, err)
+	assert.NotNil(t, r2)
 
-	_, err = regionMgr.Create(ctx, &regionmodels.Region{
+	r3, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "singapore",
 		DisplayName: "新加坡",
 	})
 	assert.Nil(t, err)
+	assert.NotNil(t, r3)
 
 	envMgr := envmanager.Mgr
+	envs := make([]*envmodels.Environment, 0)
 	for _, env := range []string{"test", "beta", "perf", "pre", "online"} {
-		_, err = envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+		environment, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
 			Name: env,
 		})
 		assert.Nil(t, err)
+		envs = append(envs, environment)
 	}
+
+	_, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+		EnvironmentName: envs[0].Name,
+		RegionName:      r1.Name,
+	})
+	assert.Nil(t, err)
+
+	_, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+		EnvironmentName: envs[3].Name,
+		RegionName:      r2.Name,
+	})
+	assert.Nil(t, err)
+
+	_, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+		EnvironmentName: envs[3].Name,
+		RegionName:      r3.Name,
+	})
+	assert.Nil(t, err)
 
 	c = &controller{
 		regionConfig: &region.Config{
@@ -106,6 +128,20 @@ func Test(t *testing.T) {
 	}
 	err = c.Update(ctx, applicationID, applicationRegions)
 	assert.Nil(t, err)
+
+	applicationRegions2 := []*Region{
+		{
+			Environment: "pre",
+			Region:      "hz-test",
+		},
+		{
+			Environment: "test",
+			Region:      "hz",
+		},
+	}
+	err = c.Update(ctx, applicationID, applicationRegions2)
+	assert.NotNil(t, err)
+	t.Logf("%v", err)
 
 	regions, err = c.List(ctx, applicationID)
 	assert.Nil(t, err)

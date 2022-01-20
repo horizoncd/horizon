@@ -2,7 +2,6 @@ package applicationregion
 
 import (
 	"context"
-	"errors"
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/applicationregion/manager"
@@ -11,12 +10,6 @@ import (
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
-	"g.hz.netease.com/horizon/pkg/util/sets"
-)
-
-var (
-	ErrEnvironmentNotFound = errors.New("environment not found")
-	ErrRegionNotFound      = errors.New("region not found")
 )
 
 type Controller interface {
@@ -64,32 +57,11 @@ func (c *controller) Update(ctx context.Context, applicationID uint, regions App
 		return perrors.WithMessage(err, "no user in context")
 	}
 
-	// get all environment
-	allEnvironment, err := c.environmentMgr.ListAllEnvironment(ctx)
-	if err != nil {
-		return perrors.WithMessage(err, "failed to list all environment")
-	}
-	environmentSet := sets.NewString()
-	for _, env := range allEnvironment {
-		environmentSet.Insert(env.Name)
-	}
-
-	// get all region
-	allRegions, err := c.regionMgr.ListAll(ctx)
-	if err != nil {
-		return perrors.WithMessage(err, "failed to list all regions")
-	}
-	regionSet := sets.NewString()
-	for _, r := range allRegions {
-		regionSet.Insert(r.Name)
-	}
-
 	for _, r := range regions {
-		if !environmentSet.Has(r.Environment) {
-			return perrors.Wrapf(ErrEnvironmentNotFound, "environment %s is not exists", r.Environment)
-		}
-		if !regionSet.Has(r.Region) {
-			return perrors.Wrapf(ErrRegionNotFound, "region %s is not exists", r.Region)
+		_, err := c.environmentMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
+		if err != nil {
+			return perrors.WithMessagef(err,
+				"environment/region %s/%s is not exists", r.Environment, r.Region)
 		}
 		applicationRegions = append(applicationRegions, &models.ApplicationRegion{
 			ApplicationID:   applicationID,
