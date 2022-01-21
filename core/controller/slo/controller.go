@@ -94,12 +94,12 @@ func (c controller) PipelineSLO(ctx context.Context, environment string,
 	}
 
 	pipelineSLOMap[BuildTask].Count = buildTaskCount
-	pipelineSLOMap[BuildTask].RequestAvailability = buildSuccessCount * 100 / buildTaskCount
-	pipelineSLOMap[BuildTask].RTAvailability = buildRTSuccessCount * 100 / buildTaskCount
+	pipelineSLOMap[BuildTask].RequestAvailability = float64(buildSuccessCount) * 100 / float64(buildTaskCount)
+	pipelineSLOMap[BuildTask].RTAvailability = float64(buildRTSuccessCount) * 100 / float64(buildTaskCount)
 
 	pipelineSLOMap[DeployTask].Count = deployTaskCount
-	pipelineSLOMap[DeployTask].RequestAvailability = deploySuccessCount * 100 / deployTaskCount
-	pipelineSLOMap[DeployTask].RTAvailability = deployRTSuccessCount * 100 / deployTaskCount
+	pipelineSLOMap[DeployTask].RequestAvailability = float64(deploySuccessCount) * 100 / float64(deployTaskCount)
+	pipelineSLOMap[DeployTask].RTAvailability = float64(deployRTSuccessCount) * 100 / float64(deployTaskCount)
 
 	for _, slo := range pipelineSLOMap {
 		pipelineSLOs = append(pipelineSLOs, slo)
