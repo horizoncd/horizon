@@ -3,6 +3,7 @@ package slo
 import (
 	"context"
 	"g.hz.netease.com/horizon/pkg/pipeline/manager"
+	pipelinerunmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 )
 
 const (
@@ -23,11 +24,15 @@ var (
 		"online": {"pre", "online"},
 	}
 
-	// 部署RT临界值，后续放入配置项
-	_deployRT uint = 30
-
-	// 发布RT临界值，后续放入配置项
+	// 构建RT临界值
 	_buildRT uint = 60
+	// 构建可用率SLO
+	_buildRequestSLO = 99.99
+
+	// 发布RT临界值
+	_deployRT uint = 30
+	// 发布可用率SLO
+	_deployRequestSLO = 99.99
 )
 
 type Controller interface {
@@ -51,16 +56,18 @@ func (c controller) PipelineSLO(ctx context.Context, environment string,
 			DisplayName:         BuildTaskDisplayName,
 			Count:               0,
 			RequestAvailability: 0,
+			RequestSlo:          _buildRequestSLO,
 			RTAvailability:      0,
-			RT:                  _deployRT,
+			RT:                  _buildRT,
 		},
 		DeployTask: {
 			Name:                DeployTask,
 			DisplayName:         DeployTaskDisplayName,
 			Count:               0,
 			RequestAvailability: 0,
+			RequestSlo:          _deployRequestSLO,
 			RTAvailability:      0,
-			RT:                  _buildRT,
+			RT:                  _deployRT,
 		},
 	}
 
@@ -69,7 +76,7 @@ func (c controller) PipelineSLO(ctx context.Context, environment string,
 	for _, slo := range slos {
 		if build, ok := slo.Tasks[BuildTask]; ok {
 			buildTaskCount++
-			if build.Result == "ok" {
+			if build.Result == pipelinerunmodels.ResultOK {
 				buildSuccessCount++
 				// 这里注意是用整体Task的耗时减掉compile step的耗时，这样的结果更加准确，包含了Pod启动准备所需的时间
 				if build.Duration-slo.Tasks[BuildTask].Steps[CompileStep].Duration < pipelineSLOMap[BuildTask].RT {
@@ -77,14 +84,14 @@ func (c controller) PipelineSLO(ctx context.Context, environment string,
 				}
 			} else {
 				// 如果是compile失败了，slo维度也认为是成功的
-				if compile, ok := slo.Tasks[BuildTask].Steps[CompileStep]; ok && compile.Result == "failed" {
+				if compile, ok := slo.Tasks[BuildTask].Steps[CompileStep]; ok && compile.Result == pipelinerunmodels.ResultFailed {
 					buildSuccessCount++
 				}
 			}
 		}
 		if deploy, ok := slo.Tasks[DeployTask]; ok {
 			deployTaskCount++
-			if deploy.Result == "ok" {
+			if deploy.Result == pipelinerunmodels.ResultOK {
 				deploySuccessCount++
 				if deploy.Duration < pipelineSLOMap[DeployTask].RT {
 					deployRTSuccessCount++
