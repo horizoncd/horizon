@@ -261,7 +261,7 @@ func TestObserve(t *testing.T) {
 
 	var wpr1 *WrappedPipelineRun
 	_ = json.Unmarshal([]byte(wprBody), &wpr1)
-	Observe(wpr1)
+	Observe(FormatPipelineResults(wpr1.PipelineRun))
 	if err := testutil.CollectAndCompare(_prHistogram, strings.NewReader(prHistogramMetric)); err != nil {
 		t.Fatalf("err: %v", err)
 	}

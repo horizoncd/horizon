@@ -86,14 +86,14 @@ func resolveObjMetadata(pr *v1beta1.PipelineRun) *ObjectMeta {
 			stepMap[stepResult.TaskRun] = make(map[string]StepStatus)
 			stepOrderMap[stepResult.TaskRun] = make([]string, 0)
 		}
-		stepMap[stepResult.TaskRun][stepResult.Name] = StepStatus{
+		stepMap[stepResult.TaskRun][stepResult.Step] = StepStatus{
 			StatusMeta: StatusMeta{
-				Name:            stepResult.Name,
+				Name:            stepResult.Step,
 				Result:          stepResult.Result,
 				DurationSeconds: stepResult.DurationSeconds,
 			},
 		}
-		stepOrderMap[stepResult.TaskRun] = append(stepOrderMap[stepResult.TaskRun], stepResult.Name)
+		stepOrderMap[stepResult.TaskRun] = append(stepOrderMap[stepResult.TaskRun], stepResult.Step)
 	}
 
 	taskRuns, tasksOrder := func() (map[string]TaskRunStatus, []string) {

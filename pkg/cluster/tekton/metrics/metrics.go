@@ -41,14 +41,14 @@ func init() {
 	}, []string{_application, _cluster, _environment, _pipeline, _result, _task, _step})
 }
 
-func Observe(wpr *WrappedPipelineRun) {
-	if wpr == nil || wpr.PipelineRun == nil {
+func Observe(results *PipelineResults) {
+	if results == nil {
 		return
 	}
-	prMetadata := wpr.ResolveMetadata()
-	prBusinessData := wpr.ResolveBusinessData()
-	prResult := wpr.ResolvePrResult()
-	trResults, stepResults := wpr.ResolveTrAndStepResults()
+	prMetadata := results.Metadata
+	prBusinessData := results.BusinessData
+	prResult := results.PrResult
+	trResults, stepResults := results.TrResults, results.StepResults
 
 	_prHistogram.With(prometheus.Labels{
 		_application: prBusinessData.Application,
@@ -74,7 +74,7 @@ func Observe(wpr *WrappedPipelineRun) {
 			_application: prBusinessData.Application,
 			_cluster:     prBusinessData.Cluster,
 			_environment: prBusinessData.Environment,
-			_step:        stepResult.Name,
+			_step:        stepResult.Step,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        stepResult.Task,
 			_result:      stepResult.Result,
