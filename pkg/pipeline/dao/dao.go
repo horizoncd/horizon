@@ -15,6 +15,7 @@ type DAO interface {
 	// Create create a pipeline
 	Create(ctx context.Context, results *metrics.PipelineResults) error
 
+	// ListPipelineSLOsByEnvsAndTimeRange 根据环境数组和时间区间来查询PipelineSLO数据
 	ListPipelineSLOsByEnvsAndTimeRange(ctx context.Context, envs []string, start, end int64) ([]*models.PipelineSLO, error)
 }
 
