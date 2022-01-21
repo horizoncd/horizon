@@ -71,7 +71,8 @@ func (c controller) PipelineSLO(ctx context.Context, environment string,
 			buildTaskCount++
 			if build.Result == "ok" {
 				buildSuccessCount++
-				if build.Steps[GitStep].Duration+build.Steps[ImageStep].Duration < pipelineSLOMap[BuildTask].RT {
+				// 这里注意是用整体Task的耗时减掉compile step的耗时，这样的结果更加准确，包含了Pod启动准备所需的时间
+				if build.Duration-slo.Tasks[BuildTask].Steps[CompileStep].Duration < pipelineSLOMap[BuildTask].RT {
 					buildRTSuccessCount++
 				}
 			} else {
@@ -85,7 +86,7 @@ func (c controller) PipelineSLO(ctx context.Context, environment string,
 			deployTaskCount++
 			if deploy.Result == "ok" {
 				deploySuccessCount++
-				if deploy.Steps[DeployStep].Duration < pipelineSLOMap[DeployTask].RT {
+				if deploy.Duration < pipelineSLOMap[DeployTask].RT {
 					deployRTSuccessCount++
 				}
 			}
