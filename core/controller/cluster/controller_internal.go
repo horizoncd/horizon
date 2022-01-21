@@ -6,6 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
+	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -41,7 +42,15 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 3. update image in git repo, and update newest commit to pr
-	commit, err := c.clusterGitRepo.UpdateImage(ctx, application.Name, cluster.Name, cluster.Template, pr.ImageURL)
+	commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name, cluster.Template,
+		gitrepo.PipelineOutput{
+			Image: &pr.ImageURL,
+			Git: &gitrepo.Git{
+				URL:      &pr.GitURL,
+				Branch:   &pr.GitBranch,
+				CommitID: &pr.GitCommit,
+			},
+		})
 	if err != nil {
 		return nil, errors.E(op, err)
 	}

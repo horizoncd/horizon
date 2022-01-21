@@ -3,6 +3,7 @@ package gitrepo
 import (
 	"context"
 	"encoding/json"
+	goerrors "errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/helmrepo"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
@@ -76,6 +78,8 @@ const (
 	_baseValueNamespace = "horizon"
 )
 
+var ErrPipelineOutputEmpty = goerrors.New("PipelineOutput is empty")
+
 type BaseParams struct {
 	Cluster             string
 	PipelineJSONBlob    map[string]interface{}
@@ -129,7 +133,9 @@ type ClusterGitRepo interface {
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
 	// MergeBranch merge gitops branch to master branch, and return master branch's newest commit
 	MergeBranch(ctx context.Context, application, cluster string) (string, error)
-	UpdateImage(ctx context.Context, application, cluster, template, image string) (string, error)
+	GetPipelineOutput(ctx context.Context, pid interface{}, template string) (*PipelineOutput, error)
+	UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
+		pipelineOutputParam PipelineOutput) (string, error)
 	// UpdateRestartTime update restartTime in git repo for restart
 	// TODO(gjq): some template cannot restart, for example serverless, how to do it ?
 	UpdateRestartTime(ctx context.Context, application, cluster, template string) (string, error)
@@ -573,22 +579,74 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	return mr.MergeCommitSHA, nil
 }
 
-func (g *clusterGitRepo) UpdateImage(ctx context.Context, application, cluster,
-	template, image string) (_ string, err error) {
-	const op = "cluster git repo: update image"
+func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, pid interface{},
+	template string) (*PipelineOutput, error) {
+	ret := make(map[string]*PipelineOutput)
+	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get gitlab file")
+	}
+
+	pipelineOutputBytes, err := kyaml.YAMLToJSON(content)
+	if err != nil {
+		return nil, perrors.Wrapf(err, "failed to transfer pipeline output to json")
+	}
+	if err := json.Unmarshal(pipelineOutputBytes, &ret); err != nil {
+		return nil, perrors.Wrapf(err, "failed to unmarshal pipeline output")
+	}
+
+	pipelineOutput, ok := ret[template]
+	if !ok {
+		return nil, perrors.Wrapf(ErrPipelineOutputEmpty, "no template in pipelineOutput.yaml")
+	}
+
+	if pipelineOutput.Git == nil {
+		pipelineOutput.Git = &Git{}
+	}
+	return pipelineOutput, nil
+}
+
+func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
+	pipelineOutputParam PipelineOutput) (_ string, err error) {
+	const op = "cluster git repo: update pipeline output"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return "", errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return "", perrors.Wrapf(err, "no user key in context")
 	}
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
+	pipelineOutput, err := g.GetPipelineOutput(ctx, pid, template)
+	if err != nil {
+		if perrors.Cause(err) == ErrPipelineOutputEmpty {
+			pipelineOutput = &pipelineOutputParam
+		} else {
+			return "", perrors.WithMessage(err, "failed to get pipeline output")
+		}
+	} else {
+		if pipelineOutputParam.Image != nil {
+			pipelineOutput.Image = pipelineOutputParam.Image
+		}
+		if pipelineOutputParam.Git != nil {
+			if pipelineOutputParam.Git.URL != nil {
+				pipelineOutput.Git.URL = pipelineOutputParam.Git.URL
+			}
+			if pipelineOutputParam.Git.Branch != nil {
+				pipelineOutput.Git.Branch = pipelineOutputParam.Git.Branch
+			}
+			if pipelineOutputParam.Git.CommitID != nil {
+				pipelineOutput.Git.CommitID = pipelineOutputParam.Git.CommitID
+			}
+		}
+	}
+
 	var outputYaml []byte
 	var err1 error
-	marshal(&outputYaml, &err1, assemblePipelineOutput(template, image))
+	var pipelineOutputMap = make(map[string]*PipelineOutput)
+	pipelineOutputMap[template] = pipelineOutput
+	marshal(&outputYaml, &err1, pipelineOutputMap)
 	if err1 != nil {
 		return "", errors.E(op, err1)
 	}
@@ -605,15 +663,11 @@ func (g *clusterGitRepo) UpdateImage(ctx context.Context, application, cluster,
 		Operator: currentUser.GetName(),
 		Action:   "deploy cluster",
 		Cluster:  angular.StringPtr(cluster),
-	}, struct {
-		Image string `json:"image"`
-	}{
-		Image: image,
-	})
+	}, pipelineOutputParam)
 
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
 	if err != nil {
-		return "", errors.E(op, err)
+		return "", perrors.WithMessage(err, "failed to write gitlab files")
 	}
 
 	return commit.ID, nil
@@ -919,6 +973,17 @@ type BaseValue struct {
 	Cluster     string             `yaml:"cluster"`
 	Template    *BaseValueTemplate `yaml:"template"`
 	Priority    string             `yaml:"priority"`
+}
+
+type PipelineOutput struct {
+	Image *string `yaml:"image,omitempty"`
+	Git   *Git    `yaml:"git,omitempty"`
+}
+
+type Git struct {
+	URL      *string `yaml:"url,omitempty"`
+	CommitID *string `yaml:"commitID,omitempty"`
+	Branch   *string `yaml:"branch,omitempty"`
 }
 
 type BaseValueTemplate struct {
