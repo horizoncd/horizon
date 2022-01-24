@@ -29,6 +29,7 @@ const (
 	_start              = "start"
 	_end                = "end"
 	_extraOwner         = "extraOwner"
+	_skipAllSteps       = "skipAllSteps"
 )
 
 type API struct {

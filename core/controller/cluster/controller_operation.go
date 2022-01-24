@@ -360,7 +360,7 @@ func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
 	return nil
 }
 
-func (c *controller) SkipAllSteps(ctx context.Context, clusterID uint) (err error) {
+func (c *controller) Promote(ctx context.Context, clusterID uint, skipAllSteps bool) (err error) {
 	const op = "cluster controller: skip all steps"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -388,13 +388,50 @@ func (c *controller) SkipAllSteps(ctx context.Context, clusterID uint) (err erro
 		return errors.E(op, err)
 	}
 
-	param := cd.ClusterSkipAllStepsParams{
+	param := cd.ClusterPromoteParams{
 		Namespace:    envValue.Namespace,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
 		Environment:  er.EnvironmentName,
 	}
-	return c.cd.SkipAllSteps(ctx, &param)
+	return c.cd.Promote(ctx, &param)
+}
+
+func (c *controller) Pause(ctx context.Context, clusterID uint) (err error) {
+	const op = "cluster controller: pause"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	param := cd.ClusterPauseParams{
+		Namespace:    envValue.Namespace,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+		Environment:  er.EnvironmentName,
+	}
+	return c.cd.Pause(ctx, &param)
 }
 
 func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {

@@ -59,9 +59,10 @@ type Controller interface {
 	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
 	GetClusterPods(ctx context.Context, clusterID uint, start, end int64) (*GetClusterPodsResponse, error)
-	FreeCluster(ctx context.Context, clusterID uint) (err error)
+	FreeCluster(ctx context.Context, clusterID uint) error
 	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
-	SkipAllSteps(ctx context.Context, clusterID uint) (err error)
+	Promote(ctx context.Context, clusterID uint, skipAllSteps bool) error
+	Pause(ctx context.Context, clusterID uint) error
 
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,

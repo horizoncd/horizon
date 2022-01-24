@@ -105,7 +105,14 @@ type ClusterNextParams struct {
 	Cluster     string
 }
 
-type ClusterSkipAllStepsParams struct {
+type ClusterPromoteParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Environment  string
+}
+
+type ClusterPauseParams struct {
 	RegionEntity *regionmodels.RegionEntity
 	Cluster      string
 	Namespace    string
@@ -144,7 +151,8 @@ type CD interface {
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
 	DeleteCluster(ctx context.Context, params *DeleteClusterParams) error
 	Next(ctx context.Context, params *ClusterNextParams) error
-	SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams) error
+	Promote(ctx context.Context, params *ClusterPromoteParams) error
+	Pause(ctx context.Context, params *ClusterPauseParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
@@ -261,11 +269,12 @@ var rolloutResource = schema.GroupVersionResource{
 	Resource: "rollouts",
 }
 
-func (c *cd) SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams) (err error) {
-	const op = "cd: skip all steps"
+// Promote a paused rollout
+func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err error) {
+	const op = "cd: promote"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	// 1. get argo rollout steps count
+	// 1. get argo rollout
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
 		return errors.E(op, err)
@@ -289,12 +298,57 @@ func (c *cd) SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams
 		return errors.E(op, fmt.Errorf("this cluster is not in Suspended state"))
 	}
 
-	// 2. patch rollout currentStepIndex
+	// 2. patch rollout
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
 		return errors.E(op, err)
 	}
-	patchBody := []byte(getCurrentStepIndexPatchStr(len(rollout.Spec.Strategy.Canary.Steps)))
+	patchBody := []byte(getSkipAllStepsPatchStr(len(rollout.Spec.Strategy.Canary.Steps)))
+	_, err = kubeClient.Dynamic.Resource(rolloutResource).
+		Namespace(params.Namespace).
+		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
+}
+
+// Pause a rollout
+func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) {
+	const op = "cd: pause"
+	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+
+	// 1. get argo rollout
+	argo, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	argoApp, err := argo.GetApplication(ctx, params.Cluster)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	var rollout *v1alpha1.Rollout
+	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
+		Group:        "argoproj.io",
+		Version:      "v1alpha1",
+		Kind:         "Rollout",
+		Namespace:    argoApp.Spec.Destination.Namespace,
+		ResourceName: params.Cluster,
+	}, &rollout); err != nil {
+		return perrors.WithMessagef(err, "failed to get rollout for cluster %s", params.Cluster)
+	}
+
+	if !(len(rollout.Status.PauseConditions) != 0 || rollout.Spec.Paused) {
+		return errors.E(op, fmt.Errorf("this cluster is not in Suspended state"))
+	}
+
+	// 2. patch rollout
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	patchBody := []byte(getPausePatchStr())
 	_, err = kubeClient.Dynamic.Resource(rolloutResource).
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
@@ -1321,8 +1375,12 @@ func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
 	return result
 }
 
-func getCurrentStepIndexPatchStr(stepCnt int) string {
+func getSkipAllStepsPatchStr(stepCnt int) string {
 	return fmt.Sprintf(`{"status": {"currentStepIndex": %d}}`, stepCnt)
+}
+
+func getPausePatchStr() string {
+	return `{"spec": {"paused": true}}`
 }
 
 // computeStepHash returns a hash value calculated from the Rollout's steps. The hash will

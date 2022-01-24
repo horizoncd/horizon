@@ -318,7 +318,25 @@ func (a *API) GetClusterPods(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-func (a *API) SkipAllSteps(c *gin.Context) {
+func (a *API) Promote(c *gin.Context) {
+	clusterIDStr := c.Param(_clusterIDParam)
+	skipAllStepsStr := c.Query(_skipAllSteps)
+	skipAllSteps, _ := strconv.ParseBool(skipAllStepsStr)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	err = a.clusterCtl.Promote(c, uint(clusterID), skipAllSteps)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.Success(c)
+}
+
+func (a *API) Pause(c *gin.Context) {
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -326,7 +344,7 @@ func (a *API) SkipAllSteps(c *gin.Context) {
 		return
 	}
 
-	err = a.clusterCtl.SkipAllSteps(c, uint(clusterID))
+	err = a.clusterCtl.Pause(c, uint(clusterID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return

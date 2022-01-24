@@ -322,7 +322,7 @@ paths:
       tags:
         - cluster
       operationId: freeCluster
-      summary: free a cluster
+      summary: Free a cluster
       responses:
         "200":
           description: Success
@@ -507,6 +507,48 @@ paths:
       operationId: nextCluster
       summary: |
         Promote a cluster to next step.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/clusters/{clusterID}/promote:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: promoteCluster
+      summary: |
+        Promote a cluster to skip all steps.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/clusters/{clusterID}/pause:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: pauseCluster
+      summary: |
+        Pause a cluster.
       responses:
         "200":
           description: Success
