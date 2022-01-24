@@ -7,14 +7,14 @@ CREATE TABLE `Pipeline`
     `cluster`        varchar(64)         NOT NULL COMMENT 'cluster name',
     `region`         varchar(16)         NOT NULL COMMENT 'region name',
     `pipeline`       varchar(16)         NOT NULL DEFAULT '' COMMENT 'pipeline name',
-    `result`         varchar(16)         NOT NULL DEFAULT '' COMMENT 'result of the step, ok or failed',
+    `result`         varchar(16)         NOT NULL DEFAULT '' COMMENT 'result of the step, ok、failed or others',
     `duration`       int(16)             NOT NULL COMMENT 'duration',
     `started_at`     datetime            NOT NULL COMMENT 'start time of this pipelinerun',
     `finished_at`    datetime            NOT NULL COMMENT 'finish time of this pipelinerun',
     `created_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    KEY `idx_created_at` (`created_at`)
+    KEY `idx_region_application_created_at` (`region`, `application`, `created_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -36,7 +36,7 @@ CREATE TABLE `Task`
     `created_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    KEY `idx_created_at` (`created_at`)
+    KEY `idx_region_application_created_at` (`region`, `application`, `created_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -59,7 +59,7 @@ CREATE TABLE `Step`
     `created_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    KEY `idx_created_at` (`created_at`)
+    KEY `idx_region_application_created_at` (`region`, `application`, `created_at`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
