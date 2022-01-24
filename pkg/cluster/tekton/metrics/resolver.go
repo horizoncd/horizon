@@ -39,6 +39,7 @@ type PrBusinessData struct {
 	Operator      string
 	PipelinerunID string
 	Region        string
+	RegionID      string
 }
 
 // PrResult pipelineRun结果
@@ -164,6 +165,7 @@ func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
 	clusterIDStr := labels[common.ClusterIDLabelKey]
 	pipelinerunID := labels[common.PipelinerunIDLabelKey]
 	region := labels[common.RegionLabelKey]
+	regionID := labels[common.RegionIDLabelKey]
 
 	annotations := wpr.PipelineRun.Annotations
 	operator := annotations[common.OperatorAnnotationKey]
@@ -176,6 +178,7 @@ func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
 		Operator:      operator,
 		PipelinerunID: pipelinerunID,
 		Region:        region,
+		RegionID:      regionID,
 	}
 }
 

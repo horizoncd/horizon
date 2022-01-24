@@ -2,14 +2,15 @@ package models
 
 import "time"
 
-type Task struct {
+type Step struct {
 	ID            uint
 	PipelinerunID uint
 	Application   string
 	Cluster       string
-	Region        string
+	RegionID      uint
 	Pipeline      string
 	Task          string
+	Step          string
 	Result        string
 	Duration      uint
 	StartedAt     time.Time

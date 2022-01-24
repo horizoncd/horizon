@@ -2,8 +2,9 @@ package manager
 
 import (
 	"context"
+
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	"g.hz.netease.com/horizon/pkg/pipeline/dao"
+	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/dao"
 )
 
 var (

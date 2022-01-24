@@ -9,9 +9,9 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	pipelinemanager "g.hz.netease.com/horizon/pkg/pipeline/manager"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -89,14 +89,14 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		return errors.E(op, err)
 	}
 
-	// 构造 Pipeline results
+	// format Pipeline results
 	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun)
 
 	// 4. observe metrics
 	// 最后指标上报，保证同一条pipelineRun，只上报一条指标
 	metrics.Observe(pipelineResult)
 
-	// 5. pipeline结果存入db
+	// 5. insert pipeline into db
 	err = pipelinemanager.Mgr.Create(ctx, pipelineResult)
 	if err != nil {
 		// err不往上层抛，上层也无法处理这种异常

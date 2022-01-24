@@ -3,13 +3,14 @@ package manager
 import (
 	"context"
 	"fmt"
-	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	"g.hz.netease.com/horizon/pkg/pipeline/models"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"testing"
 	"time"
+
+	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
+	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -51,6 +52,7 @@ func Test_manager_Create(t *testing.T) {
 						Cluster:       "c",
 						Environment:   "dev",
 						PipelinerunID: "1",
+						RegionID:      "1",
 					},
 					PrResult: &metrics.PrResult{
 						DurationSeconds: 0,

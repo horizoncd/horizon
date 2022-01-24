@@ -2,11 +2,17 @@ package dao
 
 import (
 	"context"
+	"strconv"
+
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	"g.hz.netease.com/horizon/pkg/pipeline/models"
+	"g.hz.netease.com/horizon/pkg/errors"
+	models "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
 	"gorm.io/gorm"
-	"strconv"
+)
+
+var (
+	ErrInsertPipeline = errors.New("Insert pipeline error")
 )
 
 type DAO interface {
@@ -33,14 +39,18 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 	if err != nil {
 		return err
 	}
-	application, cluster, region := prBusinessData.Application, prBusinessData.Cluster, prBusinessData.Region
+	application, cluster, regionIDStr := prBusinessData.Application, prBusinessData.Cluster, prBusinessData.RegionID
+	regionID, err := strconv.ParseUint(regionIDStr, 10, 0)
+	if err != nil {
+		return err
+	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		p := &models.Pipeline{
 			PipelinerunID: uint(pipelinerunID),
 			Application:   application,
 			Cluster:       cluster,
-			Region:        region,
+			RegionID:      uint(regionID),
 			Pipeline:      pipeline,
 			Result:        prResult.Result,
 			StartedAt:     prResult.StartTime.Time,
@@ -49,7 +59,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 		}
 		result := tx.Create(p)
 		if result.Error != nil {
-			return result.Error
+			return errors.Wrap(ErrInsertPipeline, err.Error())
 		}
 
 		for _, trResult := range trResults {
@@ -57,7 +67,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				PipelinerunID: uint(pipelinerunID),
 				Application:   application,
 				Cluster:       cluster,
-				Region:        region,
+				RegionID:      uint(regionID),
 				Pipeline:      pipeline,
 				Task:          trResult.Task,
 				Result:        trResult.Result,
@@ -67,7 +77,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 			}
 			result = tx.Create(t)
 			if result.Error != nil {
-				return result.Error
+				return errors.Wrap(ErrInsertPipeline, err.Error())
 			}
 		}
 
@@ -76,7 +86,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				PipelinerunID: uint(pipelinerunID),
 				Application:   application,
 				Cluster:       cluster,
-				Region:        region,
+				RegionID:      uint(regionID),
 				Pipeline:      pipeline,
 				Task:          stepResult.Task,
 				Step:          stepResult.Step,
@@ -87,7 +97,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 			}
 			result = tx.Create(s)
 			if result.Error != nil {
-				return result.Error
+				return errors.Wrap(ErrInsertPipeline, err.Error())
 			}
 		}
 
