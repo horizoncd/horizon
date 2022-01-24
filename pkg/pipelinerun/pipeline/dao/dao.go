@@ -7,7 +7,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"g.hz.netease.com/horizon/pkg/errors"
-	models "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
+	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
 	"gorm.io/gorm"
 )
 
@@ -39,18 +39,14 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 	if err != nil {
 		return err
 	}
-	application, cluster, regionIDStr := prBusinessData.Application, prBusinessData.Cluster, prBusinessData.RegionID
-	regionID, err := strconv.ParseUint(regionIDStr, 10, 0)
-	if err != nil {
-		return err
-	}
+	application, cluster, region := prBusinessData.Application, prBusinessData.Cluster, prBusinessData.Region
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		p := &models.Pipeline{
 			PipelinerunID: uint(pipelinerunID),
 			Application:   application,
 			Cluster:       cluster,
-			RegionID:      uint(regionID),
+			Region:        region,
 			Pipeline:      pipeline,
 			Result:        prResult.Result,
 			StartedAt:     prResult.StartTime.Time,
@@ -67,7 +63,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				PipelinerunID: uint(pipelinerunID),
 				Application:   application,
 				Cluster:       cluster,
-				RegionID:      uint(regionID),
+				Region:        region,
 				Pipeline:      pipeline,
 				Task:          trResult.Task,
 				Result:        trResult.Result,
@@ -86,7 +82,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				PipelinerunID: uint(pipelinerunID),
 				Application:   application,
 				Cluster:       cluster,
-				RegionID:      uint(regionID),
+				Region:        region,
 				Pipeline:      pipeline,
 				Task:          stepResult.Task,
 				Step:          stepResult.Step,

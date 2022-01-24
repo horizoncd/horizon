@@ -7,7 +7,7 @@ type Pipeline struct {
 	PipelinerunID uint
 	Application   string
 	Cluster       string
-	RegionID      uint
+	Region        string
 	Pipeline      string
 	Result        string
 	Duration      uint

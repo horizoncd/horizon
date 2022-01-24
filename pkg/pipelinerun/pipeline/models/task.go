@@ -7,7 +7,7 @@ type Task struct {
 	PipelinerunID uint
 	Application   string
 	Cluster       string
-	RegionID      uint
+	Region        string
 	Pipeline      string
 	Task          string
 	Result        string
