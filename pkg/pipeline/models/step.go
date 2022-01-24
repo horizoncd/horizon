@@ -7,7 +7,7 @@ type Step struct {
 	PipelinerunID uint
 	Application   string
 	Cluster       string
-	Environment   string
+	Region        string
 	Pipeline      string
 	Task          string
 	Step          string

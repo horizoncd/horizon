@@ -4,64 +4,17 @@ import (
 	"context"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/pipeline/models"
 	"gorm.io/gorm"
 	"strconv"
-	"time"
 )
 
 type DAO interface {
 	// Create create a pipeline
 	Create(ctx context.Context, results *metrics.PipelineResults) error
-
-	// ListPipelineSLOsByEnvsAndTimeRange 根据环境数组和时间区间来查询PipelineSLO数据
-	ListPipelineSLOsByEnvsAndTimeRange(ctx context.Context, envs []string, start, end int64) ([]*models.PipelineSLO, error)
 }
 
 type dao struct{}
-
-func (d dao) ListPipelineSLOsByEnvsAndTimeRange(ctx context.Context, envs []string,
-	start, end int64) ([]*models.PipelineSLO, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	startTime := time.Unix(start, 0)
-	endTime := time.Unix(end, 0)
-	// search pipelines in given time range
-	var pipelines []*models.Pipeline
-	result := db.Raw(common.ListPipelinesByEnvsAndTimeRange, envs, startTime, endTime).Scan(&pipelines)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	// 指定时间段内没有相关流水线
-	if len(pipelines) == 0 {
-		return nil, nil
-	}
-
-	var pipelinerunIDs []uint
-	for _, pipeline := range pipelines {
-		pipelinerunIDs = append(pipelinerunIDs, pipeline.PipelinerunID)
-	}
-
-	// search tasks
-	var tasks []*models.Task
-	result = db.Raw(common.ListTasksByPipelinerunIDs, pipelinerunIDs).Scan(&tasks)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	// search steps
-	var steps []*models.Step
-	result = db.Raw(common.ListStepsByPipelinerunIDs, pipelinerunIDs).Scan(&steps)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	return formatPipelineSLO(pipelines, tasks, steps), nil
-}
 
 func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error {
 	db, err := orm.FromContext(ctx)
@@ -80,14 +33,14 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 	if err != nil {
 		return err
 	}
-	application, cluster, environment := prBusinessData.Application, prBusinessData.Cluster, prBusinessData.Environment
+	application, cluster, region := prBusinessData.Application, prBusinessData.Cluster, prBusinessData.Region
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		p := &models.Pipeline{
 			PipelinerunID: uint(pipelinerunID),
 			Application:   application,
 			Cluster:       cluster,
-			Environment:   environment,
+			Region:        region,
 			Pipeline:      pipeline,
 			Result:        prResult.Result,
 			StartedAt:     prResult.StartTime.Time,
@@ -104,7 +57,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				PipelinerunID: uint(pipelinerunID),
 				Application:   application,
 				Cluster:       cluster,
-				Environment:   environment,
+				Region:        region,
 				Pipeline:      pipeline,
 				Task:          trResult.Task,
 				Result:        trResult.Result,
@@ -123,7 +76,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				PipelinerunID: uint(pipelinerunID),
 				Application:   application,
 				Cluster:       cluster,
-				Environment:   environment,
+				Region:        region,
 				Pipeline:      pipeline,
 				Task:          stepResult.Task,
 				Step:          stepResult.Step,
@@ -142,55 +95,6 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 	})
 
 	return err
-}
-
-func formatPipelineSLO(pipelines []*models.Pipeline, tasks []*models.Task, steps []*models.Step) []*models.PipelineSLO {
-	// format PipelineSLO structure
-	stepMap := make(map[uint]map[string]map[string]*models.StepSLO)
-	for _, step := range steps {
-		if task2Step, ok := stepMap[step.PipelinerunID]; ok {
-			task2Step[step.Task][step.Step] = &models.StepSLO{
-				Step:     step.Step,
-				Result:   step.Result,
-				Duration: step.Duration,
-			}
-		} else {
-			stepMap[step.PipelinerunID] = make(map[string]map[string]*models.StepSLO)
-			stepMap[step.PipelinerunID][step.Task] = map[string]*models.StepSLO{
-				step.Step: {
-					Step:     step.Step,
-					Result:   step.Result,
-					Duration: step.Duration,
-				},
-			}
-		}
-	}
-	taskMap := make(map[uint]map[string]*models.TaskSLO)
-	for _, task := range tasks {
-		taskSlo := &models.TaskSLO{
-			Task:     task.Task,
-			Result:   task.Result,
-			Duration: task.Duration,
-			Steps:    stepMap[task.PipelinerunID][task.Task],
-		}
-		if item, ok := taskMap[task.PipelinerunID]; ok {
-			item[task.Task] = taskSlo
-		} else {
-			taskMap[task.PipelinerunID] = make(map[string]*models.TaskSLO)
-			taskMap[task.PipelinerunID][task.Task] = taskSlo
-		}
-	}
-	var slos []*models.PipelineSLO
-	for _, pipeline := range pipelines {
-		slos = append(slos, &models.PipelineSLO{
-			Pipeline: pipeline.Pipeline,
-			Result:   pipeline.Result,
-			Duration: pipeline.Duration,
-			Tasks:    taskMap[pipeline.PipelinerunID],
-		})
-	}
-
-	return slos
 }
 
 func NewDAO() DAO {

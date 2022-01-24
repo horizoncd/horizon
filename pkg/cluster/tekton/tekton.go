@@ -61,6 +61,7 @@ type (
 		Operator         string                 `json:"operator"`
 		PipelinerunID    uint                   `json:"pipelinerunID"`
 		PipelineJSONBlob map[string]interface{} `json:"pipelineJSONBlob"`
+		Region           string                 `json:"region"`
 	}
 	PipelineRunGit struct {
 		URL       string `json:"url"`

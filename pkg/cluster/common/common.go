@@ -7,6 +7,7 @@ const (
 	ClusterIDLabelKey     = "cloudnative.music.netease.com/cluster-id"
 	EnvironmentLabelKey   = "cloudnative.music.netease.com/environment"
 	PipelinerunIDLabelKey = "cloudnative.music.netease.com/pipelinerun-id"
+	RegionLabelKey        = "cloudnative.music.netease.com/region"
 	OperatorAnnotationKey = "cloudnative.music.netease.com/operator"
 )
 

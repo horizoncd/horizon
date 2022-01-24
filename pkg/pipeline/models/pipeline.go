@@ -7,7 +7,7 @@ type Pipeline struct {
 	PipelinerunID uint
 	Application   string
 	Cluster       string
-	Environment   string
+	Region        string
 	Pipeline      string
 	Result        string
 	Duration      uint
@@ -15,24 +15,4 @@ type Pipeline struct {
 	FinishedAt    time.Time
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
-}
-
-type StepSLO struct {
-	Step     string
-	Result   string
-	Duration uint
-}
-
-type TaskSLO struct {
-	Task     string
-	Result   string
-	Duration uint
-	Steps    map[string]*StepSLO
-}
-
-type PipelineSLO struct {
-	Pipeline string
-	Result   string
-	Duration uint
-	Tasks    map[string]*TaskSLO
 }

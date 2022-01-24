@@ -283,11 +283,3 @@ const (
 	ApplicationRegionListByApplicationID      = "select * from application_region where application_id = ?"
 	ApplicationRegionDeleteAllByApplicationID = "delete from application_region where application_id = ?"
 )
-
-/* sql about pipeline */
-const (
-	ListPipelinesByEnvsAndTimeRange = "select * from pipeline where environment in ? " +
-		"and created_at >= ? and created_at <= ?"
-	ListTasksByPipelinerunIDs = "select * from task where pipelinerun_id in ?"
-	ListStepsByPipelinerunIDs = "select * from Step where pipelinerun_id in ?"
-)
