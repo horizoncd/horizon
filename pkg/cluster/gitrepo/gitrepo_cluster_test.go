@@ -362,5 +362,5 @@ java:
 	})
 	assert.Nil(t, err)
 	fmt.Println(output)
-	assert.Equal(t, expectedOutput,output)
+	assert.Equal(t, expectedOutput, output)
 }

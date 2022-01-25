@@ -316,7 +316,7 @@ func (h *helper) GetApplication(ctx context.Context,
 func (h *helper) RefreshApplication(ctx context.Context,
 	application string) (applicationCRD *v1alpha1.Application, err error) {
 	const op = "argo: refresh application "
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v?refresh=normal", h.URL, application)
 	return h.getOrRefreshApplication(ctx, url)
