@@ -44,6 +44,10 @@ const (
 	RolloutPodTemplateHash    = "rollouts-pod-template-hash"
 )
 
+var (
+	ErrKubeDynamicCliResponseNotOK = perrors.New("response for kube dynamic cli is not 200 OK")
+)
+
 const (
 	// PodLifeCycleSchedule specifies whether pod has been scheduled
 	PodLifeCycleSchedule = "PodSchedule"
@@ -271,17 +275,14 @@ var rolloutResource = schema.GroupVersionResource{
 
 // Promote a paused rollout
 func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err error) {
-	const op = "cd: promote"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
-
 	// 1. get argo rollout
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.WithMessage(err, "failed to get argocd factory")
 	}
 	argoApp, err := argo.GetApplication(ctx, params.Cluster)
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.WithMessagef(err, "failed to get argocd application: %s", params.Cluster)
 	}
 	var rollout *v1alpha1.Rollout
 	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
@@ -294,21 +295,18 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 		return perrors.WithMessagef(err, "failed to get rollout for cluster %s", params.Cluster)
 	}
 
-	if !(len(rollout.Status.PauseConditions) != 0 || rollout.Spec.Paused) {
-		return errors.E(op, fmt.Errorf("this cluster is not in Suspended state"))
-	}
-
 	// 2. patch rollout
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+			params.Cluster)
 	}
 	patchBody := []byte(getSkipAllStepsPatchStr(len(rollout.Spec.Strategy.Canary.Steps)))
 	_, err = kubeClient.Dynamic.Resource(rolloutResource).
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.Wrapf(ErrKubeDynamicCliResponseNotOK, err.Error())
 	}
 
 	return nil
@@ -316,17 +314,14 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 
 // Pause a rollout
 func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) {
-	const op = "cd: pause"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
-
 	// 1. get argo rollout
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.WithMessage(err, "failed to get argocd factory")
 	}
 	argoApp, err := argo.GetApplication(ctx, params.Cluster)
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.WithMessagef(err, "failed to get argocd application: %s", params.Cluster)
 	}
 	var rollout *v1alpha1.Rollout
 	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
@@ -336,24 +331,22 @@ func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) 
 		Namespace:    argoApp.Spec.Destination.Namespace,
 		ResourceName: params.Cluster,
 	}, &rollout); err != nil {
-		return perrors.WithMessagef(err, "failed to get rollout for cluster %s", params.Cluster)
-	}
-
-	if !(len(rollout.Status.PauseConditions) != 0 || rollout.Spec.Paused) {
-		return errors.E(op, fmt.Errorf("this cluster is not in Suspended state"))
+		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+			params.Cluster)
 	}
 
 	// 2. patch rollout
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+			params.Cluster)
 	}
 	patchBody := []byte(getPausePatchStr())
 	_, err = kubeClient.Dynamic.Resource(rolloutResource).
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.Wrapf(ErrKubeDynamicCliResponseNotOK, err.Error())
 	}
 
 	return nil

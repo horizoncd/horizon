@@ -10,12 +10,17 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/common"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
+)
+
+var (
+	ErrClusterNotFound = perrors.New("cluster not found")
 )
 
 type DAO interface {
