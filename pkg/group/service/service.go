@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 )

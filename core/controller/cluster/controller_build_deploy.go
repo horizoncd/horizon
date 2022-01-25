@@ -127,6 +127,8 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		Operator:         currentUser.GetEmail(),
 		PipelinerunID:    prCreated.ID,
 		PipelineJSONBlob: clusterFiles.PipelineJSONBlob,
+		Region:           er.RegionName,
+		RegionID:         regionEntity.ID,
 	})
 	if err != nil {
 		return nil, errors.E(op, err)

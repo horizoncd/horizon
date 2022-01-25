@@ -19,36 +19,37 @@ const (
 	_pipeline    = "pipeline"
 	_task        = "task"
 	_result      = "result"
+	_region      = "region"
 )
 
 func init() {
 	_prHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_pipelinerun_duration_seconds",
 		Help:    "PipelineRun duration info",
-		Buckets: append([]float64{0}, prometheus.ExponentialBuckets(1, 2, 12)...),
-	}, []string{_application, _cluster, _environment, _pipeline, _result})
+		Buckets: append([]float64{0}, prometheus.LinearBuckets(30, 30, 10)...),
+	}, []string{_application, _cluster, _environment, _region, _pipeline, _result})
 
 	_trHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_taskrun_duration_seconds",
 		Help:    "Taskrun duration info",
-		Buckets: append([]float64{0}, prometheus.ExponentialBuckets(1, 2, 12)...),
-	}, []string{_application, _cluster, _environment, _pipeline, _result, _task})
+		Buckets: append([]float64{0}, prometheus.LinearBuckets(15, 15, 20)...),
+	}, []string{_application, _cluster, _environment, _region, _pipeline, _result, _task})
 
 	_stepHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_step_duration_seconds",
 		Help:    "Step duration info",
-		Buckets: append([]float64{0}, prometheus.ExponentialBuckets(1, 2, 12)...),
-	}, []string{_application, _cluster, _environment, _pipeline, _result, _task, _step})
+		Buckets: append([]float64{0}, prometheus.LinearBuckets(15, 15, 20)...),
+	}, []string{_application, _cluster, _environment, _region, _pipeline, _result, _task, _step})
 }
 
-func Observe(wpr *WrappedPipelineRun) {
-	if wpr == nil || wpr.PipelineRun == nil {
+func Observe(results *PipelineResults) {
+	if results == nil {
 		return
 	}
-	prMetadata := wpr.ResolveMetadata()
-	prBusinessData := wpr.ResolveBusinessData()
-	prResult := wpr.ResolvePrResult()
-	trResults, stepResults := wpr.ResolveTrAndStepResults()
+	prMetadata := results.Metadata
+	prBusinessData := results.BusinessData
+	prResult := results.PrResult
+	trResults, stepResults := results.TrResults, results.StepResults
 
 	_prHistogram.With(prometheus.Labels{
 		_application: prBusinessData.Application,
@@ -56,6 +57,7 @@ func Observe(wpr *WrappedPipelineRun) {
 		_environment: prBusinessData.Environment,
 		_pipeline:    prMetadata.Pipeline,
 		_result:      prResult.Result,
+		_region:      prBusinessData.Region,
 	}).Observe(prResult.DurationSeconds)
 
 	for _, trResult := range trResults {
@@ -66,6 +68,7 @@ func Observe(wpr *WrappedPipelineRun) {
 			_pipeline:    prMetadata.Pipeline,
 			_task:        trResult.Task,
 			_result:      trResult.Result,
+			_region:      prBusinessData.Region,
 		}).Observe(trResult.DurationSeconds)
 	}
 
@@ -74,10 +77,11 @@ func Observe(wpr *WrappedPipelineRun) {
 			_application: prBusinessData.Application,
 			_cluster:     prBusinessData.Cluster,
 			_environment: prBusinessData.Environment,
-			_step:        stepResult.Name,
+			_step:        stepResult.Step,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        stepResult.Task,
 			_result:      stepResult.Result,
+			_region:      prBusinessData.Region,
 		}).Observe(stepResult.DurationSeconds)
 	}
 }

@@ -3,6 +3,11 @@ package access
 import (
 	"context"
 	"fmt"
+	"os"
+	"regexp"
+	"strings"
+	"testing"
+
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/member"
@@ -10,10 +15,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-	"os"
-	"regexp"
-	"strings"
-	"testing"
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
