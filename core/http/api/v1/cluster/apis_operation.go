@@ -335,7 +335,7 @@ func (a *API) Promote(c *gin.Context) {
 
 	err = a.clusterCtl.Promote(c, uint(clusterID))
 	if err != nil {
-		err = perrors.Wrap(err, "failed to pause cluster")
+		err = perrors.Wrap(err, "failed to promote cluster")
 		if perrors.Cause(err) == dao.ErrClusterNotFound {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg("cluster not found"))
 			return

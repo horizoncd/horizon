@@ -276,23 +276,13 @@ var rolloutResource = schema.GroupVersionResource{
 // Promote a paused rollout
 func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err error) {
 	// 1. get argo rollout
-	argo, err := c.factory.GetArgoCD(params.Environment)
+	rollout, err := c.getRollout(ctx, params.Environment, params.Cluster)
 	if err != nil {
-		return perrors.WithMessage(err, "failed to get argocd factory")
+		return perrors.WithMessagef(err, "failed to get argo rollouts resource for cluster %s",
+			params.Cluster)
 	}
-	argoApp, err := argo.GetApplication(ctx, params.Cluster)
-	if err != nil {
-		return perrors.WithMessagef(err, "failed to get argocd application: %s", params.Cluster)
-	}
-	var rollout *v1alpha1.Rollout
-	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
-		Group:        "argoproj.io",
-		Version:      "v1alpha1",
-		Kind:         "Rollout",
-		Namespace:    argoApp.Spec.Destination.Namespace,
-		ResourceName: params.Cluster,
-	}, &rollout); err != nil {
-		return perrors.WithMessagef(err, "failed to get rollout for cluster %s", params.Cluster)
+	if rollout == nil {
+		return nil
 	}
 
 	// 2. patch rollout
@@ -314,28 +304,6 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 
 // Pause a rollout
 func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) {
-	// 1. get argo rollout
-	argo, err := c.factory.GetArgoCD(params.Environment)
-	if err != nil {
-		return perrors.WithMessage(err, "failed to get argocd factory")
-	}
-	argoApp, err := argo.GetApplication(ctx, params.Cluster)
-	if err != nil {
-		return perrors.WithMessagef(err, "failed to get argocd application: %s", params.Cluster)
-	}
-	var rollout *v1alpha1.Rollout
-	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
-		Group:        "argoproj.io",
-		Version:      "v1alpha1",
-		Kind:         "Rollout",
-		Namespace:    argoApp.Spec.Destination.Namespace,
-		ResourceName: params.Cluster,
-	}, &rollout); err != nil {
-		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
-			params.Cluster)
-	}
-
-	// 2. patch rollout
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
 		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
@@ -350,6 +318,33 @@ func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) 
 	}
 
 	return nil
+}
+
+func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*v1alpha1.Rollout, error) {
+	var rollout *v1alpha1.Rollout
+	argo, err := c.factory.GetArgoCD(environment)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get argocd factory")
+	}
+	argoApp, err := argo.GetApplication(ctx, clusterName)
+	if err != nil {
+		return nil, perrors.WithMessagef(err, "failed to get argocd application: %s", clusterName)
+	}
+	if err := argo.GetApplicationResource(ctx, clusterName, argocd.ResourceParams{
+		Group:        "argoproj.io",
+		Version:      "v1alpha1",
+		Kind:         "Rollout",
+		Namespace:    argoApp.Spec.Destination.Namespace,
+		ResourceName: clusterName,
+	}, &rollout); err != nil {
+		if perrors.Cause(err) == argocd.ErrResourceNotFound {
+			return nil, nil
+		}
+		return nil, perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+			clusterName)
+	}
+
+	return rollout, nil
 }
 
 // GetClusterState TODO(gjq) restructure
@@ -1369,7 +1364,8 @@ func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
 }
 
 func getSkipAllStepsPatchStr(stepCnt int) string {
-	return fmt.Sprintf(`{"status": {"currentStepIndex": %d}}`, stepCnt)
+	return fmt.Sprintf(`{"spec":{"paused":false},"status": {"currentStepIndex": %d, "pauseCondition":null}}`,
+		stepCnt)
 }
 
 func getPausePatchStr() string {
