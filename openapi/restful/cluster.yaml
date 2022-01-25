@@ -558,6 +558,27 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/clusters/{clusterID}/resume:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: resumeCluster
+      summary: |
+        Resume a paused cluster.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
 
   /apis/core/v1/clusters/{clusterID}/diffs?targetBranch={targetBranch}:
     parameters:

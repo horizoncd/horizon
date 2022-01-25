@@ -123,6 +123,13 @@ type ClusterPauseParams struct {
 	Environment  string
 }
 
+type ClusterResumeParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Environment  string
+}
+
 type GetContainerLogParams struct {
 	Namespace   string
 	Cluster     string
@@ -157,6 +164,7 @@ type CD interface {
 	Next(ctx context.Context, params *ClusterNextParams) error
 	Promote(ctx context.Context, params *ClusterPromoteParams) error
 	Pause(ctx context.Context, params *ClusterPauseParams) error
+	Resume(ctx context.Context, params *ClusterResumeParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
@@ -310,6 +318,24 @@ func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) 
 			params.Cluster)
 	}
 	patchBody := []byte(getPausePatchStr())
+	_, err = kubeClient.Dynamic.Resource(rolloutResource).
+		Namespace(params.Namespace).
+		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
+	if err != nil {
+		return perrors.Wrapf(ErrKubeDynamicCliResponseNotOK, err.Error())
+	}
+
+	return nil
+}
+
+// Resume a paused rollout
+func (c *cd) Resume(ctx context.Context, params *ClusterResumeParams) (err error) {
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+			params.Cluster)
+	}
+	patchBody := []byte(getResumePatchStr())
 	_, err = kubeClient.Dynamic.Resource(rolloutResource).
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
@@ -1374,6 +1400,10 @@ func getSkipAllStepsPatchStr(stepCnt int) string {
 
 func getPausePatchStr() string {
 	return `{"spec": {"paused": true}}`
+}
+
+func getResumePatchStr() string {
+	return `{"spec": {"paused": false}}`
 }
 
 // computeStepHash returns a hash value calculated from the Rollout's steps. The hash will

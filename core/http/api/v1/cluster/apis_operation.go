@@ -371,3 +371,28 @@ func (a *API) Pause(c *gin.Context) {
 	}
 	response.Success(c)
 }
+
+func (a *API) Resume(c *gin.Context) {
+	const op = "cluster: resume"
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		err = perrors.Wrap(err, "failed to parse cluster id")
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
+		return
+	}
+
+	err = a.clusterCtl.Resume(c, uint(clusterID))
+	if err != nil {
+		err = perrors.Wrap(err, "failed to resume cluster")
+		if perrors.Cause(err) == dao.ErrClusterNotFound {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg("cluster not found"))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.Success(c)
+}

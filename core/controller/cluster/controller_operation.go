@@ -431,6 +431,41 @@ func (c *controller) Pause(ctx context.Context, clusterID uint) (err error) {
 	return c.cd.Pause(ctx, &param)
 }
 
+func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return perrors.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return perrors.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return perrors.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return perrors.WithMessage(err, "failed to get env value")
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	if err != nil {
+		return perrors.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
+	}
+
+	param := cd.ClusterResumeParams{
+		Namespace:    envValue.Namespace,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+		Environment:  er.EnvironmentName,
+	}
+	return c.cd.Resume(ctx, &param)
+}
+
 func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
 	const op = "cluster controller: online"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })

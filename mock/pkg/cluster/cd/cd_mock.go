@@ -193,3 +193,17 @@ func (mr *MockCDMockRecorder) Promote(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Promote", reflect.TypeOf((*MockCD)(nil).Promote), ctx, params)
 }
+
+// Resume mocks base method.
+func (m *MockCD) Resume(ctx context.Context, params *cd.ClusterResumeParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Resume", ctx, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Resume indicates an expected call of Resume.
+func (mr *MockCDMockRecorder) Resume(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resume", reflect.TypeOf((*MockCD)(nil).Resume), ctx, params)
+}

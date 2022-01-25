@@ -63,7 +63,7 @@ type Controller interface {
 	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
 	Promote(ctx context.Context, clusterID uint) error
 	Pause(ctx context.Context, clusterID uint) error
-
+	Resume(ctx context.Context, clusterID uint) error
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
