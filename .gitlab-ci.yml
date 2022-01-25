@@ -49,7 +49,6 @@ build:
   only:
     - develop
     - tags
-    - feature/gateway-session
   except:
     - schedules
 
@@ -72,6 +71,5 @@ helm_package:
   only:
     - develop
     - tags
-    - feature/gateway-session
   except:
     - schedules
