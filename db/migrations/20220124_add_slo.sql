@@ -1,11 +1,11 @@
 -- tekton pipeline
-CREATE TABLE `Pipeline`
+CREATE TABLE `pipeline`
 (
     `id`             bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `pipelinerun_id` bigint(20) unsigned NOT NULL COMMENT 'pipelinerun id',
     `application`    varchar(64)         NOT NULL COMMENT 'application name',
     `cluster`        varchar(64)         NOT NULL COMMENT 'cluster name',
-    `region`         bigint(20)          NOT NULL COMMENT 'region name',
+    `region`         varchar(16)         NOT NULL COMMENT 'region name',
     `pipeline`       varchar(16)         NOT NULL DEFAULT '' COMMENT 'pipeline name',
     `result`         varchar(16)         NOT NULL DEFAULT '' COMMENT 'result of the step, ok、failed or others',
     `duration`       int(16)             NOT NULL COMMENT 'duration',
@@ -20,13 +20,13 @@ CREATE TABLE `Pipeline`
   DEFAULT CHARSET = utf8mb4;
 
 -- tekton pipeline task
-CREATE TABLE `Task`
+CREATE TABLE `task`
 (
     `id`             bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `pipelinerun_id` bigint(20) unsigned NOT NULL COMMENT 'pipelinerun id',
     `application`    varchar(64)         NOT NULL COMMENT 'application name',
     `cluster`        varchar(64)         NOT NULL COMMENT 'cluster name',
-    `region`         bigint(20)          NOT NULL COMMENT 'region name',
+    `region`         varchar(16)         NOT NULL COMMENT 'region name',
     `pipeline`       varchar(16)         NOT NULL DEFAULT '' COMMENT 'pipeline name',
     `task`           varchar(16)         NOT NULL DEFAULT '' COMMENT 'task name',
     `result`         varchar(16)         NOT NULL DEFAULT '' COMMENT 'result of the step, ok or failed',
@@ -42,13 +42,13 @@ CREATE TABLE `Task`
   DEFAULT CHARSET = utf8mb4;
 
 -- tekton task step
-CREATE TABLE `Step`
+CREATE TABLE `step`
 (
     `id`             bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `pipelinerun_id` bigint(20) unsigned NOT NULL COMMENT 'pipelinerun id',
     `application`    varchar(64)         NOT NULL COMMENT 'application name',
     `cluster`        varchar(64)         NOT NULL COMMENT 'cluster name',
-    `region`         bigint(20)          NOT NULL COMMENT 'region name',
+    `region`         varchar(16)         NOT NULL COMMENT 'region name',
     `pipeline`       varchar(16)         NOT NULL DEFAULT '' COMMENT 'pipeline name',
     `task`           varchar(16)         NOT NULL DEFAULT '' COMMENT 'task name',
     `step`           varchar(16)         NOT NULL DEFAULT '' COMMENT 'step name',
