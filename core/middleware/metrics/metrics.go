@@ -14,15 +14,16 @@ import (
 const (
 	_handlerLabel = "handler"
 	_statusLabel  = "status"
+	_verbLabel    = "verb"
 )
 
 var apiHistogram = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
-		Name:    "horizon_api_request_duration",
-		Help:    "horizon api request duration histogram.",
+		Name:    "horizon_api_request_duration_milliseconds",
+		Help:    "horizon api request duration milliseconds histogram.",
 		Buckets: prometheus.ExponentialBuckets(50, 2, 10),
 	},
-	[]string{_handlerLabel, _statusLabel},
+	[]string{_handlerLabel, _statusLabel, _verbLabel},
 )
 
 // Middleware report metrics of handler
@@ -36,7 +37,6 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 		// end timer
 		latency := time.Since(start)
 
-		statusCode := c.Writer.Status()
 		var handler string
 		if handler = func() string {
 			handlerName := c.HandlerName()
@@ -49,9 +49,13 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 			return
 		}
 
+		statusCode := c.Writer.Status()
+		method := c.Request.Method
+
 		apiHistogram.With(prometheus.Labels{
 			_handlerLabel: handler,
 			_statusLabel:  fmt.Sprintf("%v", statusCode),
+			_verbLabel:    method,
 		}).Observe(float64(latency.Milliseconds()))
 	}, skippers...)
 }
