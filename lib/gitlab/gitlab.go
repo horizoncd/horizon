@@ -393,7 +393,7 @@ func (h *helper) WriteFiles(ctx context.Context, pid interface{}, branch, commit
 
 func (h *helper) GetFile(ctx context.Context, pid interface{}, ref, filepath string) (_ []byte, err error) {
 	const op = "gitlab: get file"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	content, resp, err := h.client.RepositoryFiles.GetRawFile(pid, filepath, &gitlab.GetRawFileOptions{
 		Ref: &ref,
