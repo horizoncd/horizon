@@ -454,6 +454,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		}
 		clusterState.DesiredReplicas = &desiredReplicas
 	}
+	clusterState.ManualPaused = rollout.Spec.Paused
 
 	var latestReplicaSet *appsv1.ReplicaSet
 	rss, err := kube.GetReplicaSets(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
@@ -1028,6 +1029,9 @@ type (
 		// Versions versions detail
 		// key is pod-template-hash, if equal to PodTemplateHash, the version is the desired version
 		Versions map[string]*ClusterVersion `json:"versions,omitempty" yaml:"versions,omitempty"`
+
+		// ManualPaused indicates whether the cluster is in manual pause state
+		ManualPaused bool `json:"manualPaused" yaml:"manualPaused"`
 	}
 
 	Step struct {
