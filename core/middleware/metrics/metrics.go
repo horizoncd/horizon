@@ -66,7 +66,7 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 		apiHistogram.With(prometheus.Labels{
 			_handlerLabel: handler,
 			_verbLabel:    method,
-		}).Observe(float64(latency.Milliseconds()))
+		}).Observe(latency.Seconds())
 		apiCounter.With(prometheus.Labels{
 			_handlerLabel: handler,
 			_verbLabel:    method,
