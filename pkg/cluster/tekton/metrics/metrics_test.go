@@ -20,6 +20,7 @@ func TestObserve(t *testing.T) {
                 "cloudnative.music.netease.com/application":"testapp-1",
                 "cloudnative.music.netease.com/cluster":"testcluster-1",
                 "cloudnative.music.netease.com/environment":"env",
+                "cloudnative.music.netease.com/region":"hz-test",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
@@ -135,133 +136,140 @@ func TestObserve(t *testing.T) {
 	prHistogramMetric := `
         # HELP horizon_pipelinerun_duration_seconds PipelineRun duration info
         # TYPE horizon_pipelinerun_duration_seconds histogram
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="0"} 0
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="1"} 0
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="2"} 0
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="4"} 0
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="8"} 0
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="16"} 0
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="32"} 0
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="64"} 0
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="128"} 1
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="256"} 1
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="512"} 1
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="1024"} 1
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="2048"} 1
-        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",le="+Inf"} 1
-        horizon_pipelinerun_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok"} 127
-        horizon_pipelinerun_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok"} 1
-        `
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="0"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="5"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="10"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="20"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="30"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="40"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="50"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="60"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="90"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="120"} 0
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="150"} 1
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="180"} 1
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="240"} 1
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="300"} 1
+        horizon_pipelinerun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",le="+Inf"} 1
+        horizon_pipelinerun_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok"} 127
+        horizon_pipelinerun_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok"} 1
+		`
 
 	trHistogramMetric := `
         # HELP horizon_taskrun_duration_seconds Taskrun duration info
         # TYPE horizon_taskrun_duration_seconds histogram
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="0"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="1"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="2"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="4"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="8"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="16"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="32"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="64"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="128"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="256"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="512"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="1024"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="2048"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build",le="+Inf"} 1
-        horizon_taskrun_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build"} 32
-        horizon_taskrun_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="build"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="0"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="1"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="2"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="4"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="8"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="16"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="32"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="64"} 0
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="128"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="256"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="512"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="1024"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="2048"} 1
-        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy",le="+Inf"} 1
-        horizon_taskrun_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy"} 95
-        horizon_taskrun_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",task="deploy"} 1
-        `
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="0"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="5"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="10"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="20"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="30"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="40"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="50"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="60"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="90"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="120"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="150"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="180"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="240"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="300"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build",le="+Inf"} 1
+        horizon_taskrun_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build"} 32
+        horizon_taskrun_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="build"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="0"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="5"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="10"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="20"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="30"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="40"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="50"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="60"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="90"} 0
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="120"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="150"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="180"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="240"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="300"} 1
+        horizon_taskrun_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy",le="+Inf"} 1
+        horizon_taskrun_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy"} 95
+        horizon_taskrun_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",task="deploy"} 1
+		`
 
 	stepHistogramMetric := `
         # HELP horizon_step_duration_seconds Step duration info
         # TYPE horizon_step_duration_seconds histogram
-          horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="0"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="1"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="2"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="4"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="8"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="16"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="32"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="64"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="128"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="256"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="512"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="1024"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="2048"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build",le="+Inf"} 1
-        horizon_step_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build"} 8
-        horizon_step_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="compile",task="build"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="0"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="1"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="2"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="4"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="8"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="16"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="32"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="64"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="128"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="256"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="512"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="1024"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="2048"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy",le="+Inf"} 1
-        horizon_step_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy"} 90
-        horizon_step_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="deploy",task="deploy"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="0"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="1"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="2"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="4"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="8"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="16"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="32"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="64"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="128"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="256"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="512"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="1024"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="2048"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build",le="+Inf"} 1
-        horizon_step_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build"} 8
-        horizon_step_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="git",task="build"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="0"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="1"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="2"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="4"} 0
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="8"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="16"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="32"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="64"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="128"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="256"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="512"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="1024"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="2048"} 1
-        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build",le="+Inf"} 1
-        horizon_step_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build"} 8
-        horizon_step_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",result="ok",step="image",task="build"} 1
-      `
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="0"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="5"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="10"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="20"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="30"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="40"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="50"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="60"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="90"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="120"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="150"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="180"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="240"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="300"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build",le="+Inf"} 1
+        horizon_step_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build"} 8
+        horizon_step_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="compile",task="build"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="0"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="5"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="10"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="20"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="30"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="40"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="50"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="60"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="90"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="120"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="150"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="180"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="240"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="300"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy",le="+Inf"} 1
+        horizon_step_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy"} 90
+        horizon_step_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="deploy",task="deploy"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="0"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="5"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="10"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="20"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="30"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="40"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="50"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="60"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="90"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="120"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="150"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="180"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="240"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="300"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build",le="+Inf"} 1
+        horizon_step_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build"} 8
+        horizon_step_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="git",task="build"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="0"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="5"} 0
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="10"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="20"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="30"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="40"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="50"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="60"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="90"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="120"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="150"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="180"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="240"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="300"} 1
+        horizon_step_duration_seconds_bucket{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build",le="+Inf"} 1
+        horizon_step_duration_seconds_sum{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build"} 8
+        horizon_step_duration_seconds_count{application="ndp-gjq",cluster="test-music-docker",environment="test",pipeline="default",region="hz-test",result="ok",step="image",task="build"} 1
+		`
 
 	var wpr1 *WrappedPipelineRun
 	_ = json.Unmarshal([]byte(wprBody), &wpr1)
-	Observe(wpr1)
+	Observe(FormatPipelineResults(wpr1.PipelineRun))
 	if err := testutil.CollectAndCompare(_prHistogram, strings.NewReader(prHistogramMetric)); err != nil {
 		t.Fatalf("err: %v", err)
 	}

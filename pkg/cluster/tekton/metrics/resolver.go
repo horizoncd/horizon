@@ -37,6 +37,9 @@ type PrBusinessData struct {
 	ClusterID     string
 	Environment   string
 	Operator      string
+	PipelinerunID string
+	Region        string
+	RegionID      string
 }
 
 // PrResult pipelineRun结果
@@ -85,7 +88,7 @@ func (t TrResults) Swap(i, j int) {
 
 type StepResult struct {
 	// step名称
-	Name string
+	Step string
 	// 所属Task名称
 	Task string
 	// 所属TaskRun名称
@@ -114,6 +117,33 @@ func (s StepResults) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
+type PipelineResults struct {
+	Metadata     *PrMetadata
+	BusinessData *PrBusinessData
+	PrResult     *PrResult
+	TrResults    TrResults
+	StepResults  StepResults
+}
+
+func FormatPipelineResults(pipelineRun *v1beta1.PipelineRun) *PipelineResults {
+	if pipelineRun == nil {
+		return nil
+	}
+
+	wpr := WrappedPipelineRun{
+		PipelineRun: pipelineRun,
+	}
+
+	trResults, stepResults := wpr.ResolveTrAndStepResults()
+	return &PipelineResults{
+		Metadata:     wpr.ResolveMetadata(),
+		BusinessData: wpr.ResolveBusinessData(),
+		PrResult:     wpr.ResolvePrResult(),
+		TrResults:    trResults,
+		StepResults:  stepResults,
+	}
+}
+
 const LabelKeyPipeline = "tekton.dev/pipeline"
 
 // ResolveMetadata 解析pipelineRun的元数据
@@ -125,7 +155,7 @@ func (wpr *WrappedPipelineRun) ResolveMetadata() *PrMetadata {
 	}
 }
 
-// ResolveBusinessData 解析pipelineRun所包含的业务数据，主要包含application、cluster、environment
+// ResolveBusinessData 解析pipelineRun所包含的业务数据，主要包含application、cluster、environment、PipelinerunID
 func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
 	labels := wpr.PipelineRun.Labels
 	application := labels[common.ApplicationLabelKey]
@@ -133,6 +163,9 @@ func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
 	environment := labels[common.EnvironmentLabelKey]
 	applicationIDStr := labels[common.ApplicationIDLabelKey]
 	clusterIDStr := labels[common.ClusterIDLabelKey]
+	pipelinerunID := labels[common.PipelinerunIDLabelKey]
+	region := labels[common.RegionLabelKey]
+	regionID := labels[common.RegionIDLabelKey]
 
 	annotations := wpr.PipelineRun.Annotations
 	operator := annotations[common.OperatorAnnotationKey]
@@ -143,6 +176,9 @@ func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
 		ClusterID:     clusterIDStr,
 		Environment:   environment,
 		Operator:      operator,
+		PipelinerunID: pipelinerunID,
+		Region:        region,
+		RegionID:      regionID,
 	}
 }
 
@@ -214,7 +250,7 @@ func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults
 				break
 			}
 			stepResults = append(stepResults, &StepResult{
-				Name:           step.Name,
+				Step:           step.Name,
 				Task:           trStatus.PipelineTaskName,
 				TaskRun:        trName,
 				StartTime:      &step.Terminated.StartedAt,

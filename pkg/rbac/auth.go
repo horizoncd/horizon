@@ -79,7 +79,7 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 
 	member, err := a.memberService.GetMemberOfResource(ctx, attr.GetResource(), uint(resourceID))
 	if err != nil {
-		log.Errorf(ctx, "GetMemberOfResource error, resourceType = %s, resourceID = %s, user = %s\n",
+		log.Warningf(ctx, "GetMemberOfResource error, resourceType = %s, resourceID = %s, user = %s\n",
 			attr.GetResource(), attr.GetName(), attr.GetUser().String())
 		return auth.DecisionDeny, InternalError, err
 	}

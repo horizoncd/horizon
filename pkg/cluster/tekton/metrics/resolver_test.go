@@ -567,7 +567,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 			},
 			want1: StepResults{
 				{
-					Name:            "git",
+					Step:            "git",
 					Task:            "build",
 					TaskRun:         "test-music-docker-q58rp-build-g8khd",
 					StartTime:       parseTime("2021-06-24T06:36:18Z"),
@@ -576,7 +576,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					Result:          prmodels.ResultOK,
 				},
 				{
-					Name:            "compile",
+					Step:            "compile",
 					Task:            "build",
 					TaskRun:         "test-music-docker-q58rp-build-g8khd",
 					StartTime:       parseTime("2021-06-24T06:36:26Z"),
@@ -585,7 +585,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					Result:          prmodels.ResultOK,
 				},
 				{
-					Name:            "image",
+					Step:            "image",
 					Task:            "build",
 					TaskRun:         "test-music-docker-q58rp-build-g8khd",
 					StartTime:       parseTime("2021-06-24T06:36:34Z"),
@@ -594,7 +594,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					Result:          prmodels.ResultOK,
 				},
 				{
-					Name:            "deploy",
+					Step:            "deploy",
 					Task:            "deploy",
 					TaskRun:         "test-music-docker-q58rp-deploy-xzjkg",
 					StartTime:       parseTime("2021-06-24T06:36:48Z"),
@@ -622,7 +622,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 			},
 			want1: StepResults{
 				{
-					Name:            "git",
+					Step:            "git",
 					Task:            "build",
 					TaskRun:         "music-datastream-serverless-fetest-task-ld9s6-build-2dg26",
 					StartTime:       parseTime("2021-06-17T06:33:34Z"),
@@ -631,7 +631,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					Result:          prmodels.ResultOK,
 				},
 				{
-					Name:            "compile",
+					Step:            "compile",
 					Task:            "build",
 					TaskRun:         "music-datastream-serverless-fetest-task-ld9s6-build-2dg26",
 					StartTime:       parseTime("2021-06-17T06:33:36Z"),

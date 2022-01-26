@@ -11,6 +11,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -88,11 +89,19 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		return errors.E(op, err)
 	}
 
+	// format Pipeline results
+	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun)
+
 	// 4. observe metrics
 	// 最后指标上报，保证同一条pipelineRun，只上报一条指标
-	metrics.Observe(&metrics.WrappedPipelineRun{
-		PipelineRun: wpr.PipelineRun,
-	})
+	metrics.Observe(pipelineResult)
+
+	// 5. insert pipeline into db
+	err = pipelinemanager.Mgr.Create(ctx, pipelineResult)
+	if err != nil {
+		// err不往上层抛，上层也无法处理这种异常
+		log.Errorf(ctx, "failed to save pipeline to db: %v, err: %v", pipelineResult, err)
+	}
 
 	return nil
 }

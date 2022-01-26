@@ -55,7 +55,7 @@ func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) 
 		var reason string
 		decision, reason, err = authorizer.Authorize(c, authRecord)
 		if err != nil {
-			log.Errorf(c, "auth failed with err = %s", err.Error())
+			log.Warningf(c, "auth failed with err = %s", err.Error())
 			response.AbortWithError(c, err)
 			return
 		}
