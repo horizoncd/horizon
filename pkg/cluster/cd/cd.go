@@ -479,8 +479,8 @@ func (c *cd) GetClusterState(ctx context.Context,
 			desiredReplicas = int(*rollout.Spec.Replicas)
 		}
 		clusterState.DesiredReplicas = &desiredReplicas
+		clusterState.ManualPaused = rollout.Spec.Paused
 	}
-	clusterState.ManualPaused = rollout.Spec.Paused
 
 	var latestReplicaSet *appsv1.ReplicaSet
 	rss, err := kube.GetReplicaSets(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
