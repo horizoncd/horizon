@@ -23,22 +23,25 @@ const (
 )
 
 func init() {
+	buckets := []float64{
+		0, 5, 10, 20, 30, 40, 50, 60, 90, 120, 150, 180, 240, 300,
+	}
 	_prHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_pipelinerun_duration_seconds",
 		Help:    "PipelineRun duration info",
-		Buckets: append([]float64{0}, prometheus.LinearBuckets(30, 30, 10)...),
+		Buckets: buckets,
 	}, []string{_application, _cluster, _environment, _region, _pipeline, _result})
 
 	_trHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_taskrun_duration_seconds",
 		Help:    "Taskrun duration info",
-		Buckets: append([]float64{0}, prometheus.LinearBuckets(15, 15, 20)...),
+		Buckets: buckets,
 	}, []string{_application, _cluster, _environment, _region, _pipeline, _result, _task})
 
 	_stepHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_step_duration_seconds",
 		Help:    "Step duration info",
-		Buckets: append([]float64{0}, prometheus.LinearBuckets(15, 15, 20)...),
+		Buckets: buckets,
 	}, []string{_application, _cluster, _environment, _region, _pipeline, _result, _task, _step})
 }
 
