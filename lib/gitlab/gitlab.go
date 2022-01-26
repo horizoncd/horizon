@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -78,6 +79,11 @@ type Interface interface {
 	// The pid can be the project's ID or relative path such as fist/second.
 	// See https://docs.gitlab.com/ee/api/merge_requests.html#create-mr for more information.
 	CreateMR(ctx context.Context, pid interface{}, source, target, title string) (*gitlab.MergeRequest, error)
+
+	// ListMRs list merge requests for specified project.
+	// The pid should be the project's ID.
+	// See https://docs.gitlab.com/ee/api/merge_requests.html#list-project-merge-requests for more information.
+	ListMRs(ctx context.Context, pid interface{}, source, target, state string) ([]*gitlab.MergeRequest, error)
 
 	// AcceptMR merge a merge request for specified project.
 	// The pid can be the project's ID or relative path such as fist/second.
@@ -342,6 +348,24 @@ func (h *helper) CreateMR(ctx context.Context, pid interface{},
 	}
 
 	return mr, nil
+}
+
+func (h *helper) ListMRs(ctx context.Context, pid interface{},
+	source, target, state string) (_ []*gitlab.MergeRequest, err error) {
+	const op = "gitlab: list mr"
+
+	mrs, resp, err := h.client.MergeRequests.ListProjectMergeRequests(pid, &gitlab.ListProjectMergeRequestsOptions{
+		SourceBranch: &source,
+		TargetBranch: &target,
+		State:        &state,
+	}, gitlab.WithContext(ctx))
+
+	if err != nil {
+		return nil, perrors.Wrapf(parseError(op, resp, err),
+			"failed to list merge requests for project: %v", pid)
+	}
+
+	return mrs, nil
 }
 
 func (h *helper) AcceptMR(ctx context.Context, pid interface{}, mrID int,
