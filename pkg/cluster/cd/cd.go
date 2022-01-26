@@ -44,6 +44,10 @@ const (
 	RolloutPodTemplateHash    = "rollouts-pod-template-hash"
 )
 
+var (
+	ErrKubeDynamicCliResponseNotOK = perrors.New("response for kube dynamic cli is not 200 OK")
+)
+
 const (
 	// PodLifeCycleSchedule specifies whether pod has been scheduled
 	PodLifeCycleSchedule = "PodSchedule"
@@ -105,7 +109,21 @@ type ClusterNextParams struct {
 	Cluster     string
 }
 
-type ClusterSkipAllStepsParams struct {
+type ClusterPromoteParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Environment  string
+}
+
+type ClusterPauseParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Environment  string
+}
+
+type ClusterResumeParams struct {
 	RegionEntity *regionmodels.RegionEntity
 	Cluster      string
 	Namespace    string
@@ -144,7 +162,9 @@ type CD interface {
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
 	DeleteCluster(ctx context.Context, params *DeleteClusterParams) error
 	Next(ctx context.Context, params *ClusterNextParams) error
-	SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams) error
+	Promote(ctx context.Context, params *ClusterPromoteParams) error
+	Pause(ctx context.Context, params *ClusterPauseParams) error
+	Resume(ctx context.Context, params *ClusterResumeParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
@@ -261,48 +281,96 @@ var rolloutResource = schema.GroupVersionResource{
 	Resource: "rollouts",
 }
 
-func (c *cd) SkipAllSteps(ctx context.Context, params *ClusterSkipAllStepsParams) (err error) {
-	const op = "cd: skip all steps"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
-
-	// 1. get argo rollout steps count
-	argo, err := c.factory.GetArgoCD(params.Environment)
+// Promote a paused rollout
+func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err error) {
+	// 1. get argo rollout
+	rollout, err := c.getRollout(ctx, params.Environment, params.Cluster)
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.WithMessagef(err, "failed to get argo rollouts resource for cluster %s",
+			params.Cluster)
 	}
-	argoApp, err := argo.GetApplication(ctx, params.Cluster)
-	if err != nil {
-		return errors.E(op, err)
-	}
-	var rollout *v1alpha1.Rollout
-	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
-		Group:        "argoproj.io",
-		Version:      "v1alpha1",
-		Kind:         "Rollout",
-		Namespace:    argoApp.Spec.Destination.Namespace,
-		ResourceName: params.Cluster,
-	}, &rollout); err != nil {
-		return perrors.WithMessagef(err, "failed to get rollout for cluster %s", params.Cluster)
+	if rollout == nil {
+		return nil
 	}
 
-	if !(len(rollout.Status.PauseConditions) != 0 || rollout.Spec.Paused) {
-		return errors.E(op, fmt.Errorf("this cluster is not in Suspended state"))
-	}
-
-	// 2. patch rollout currentStepIndex
+	// 2. patch rollout
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+			params.Cluster)
 	}
-	patchBody := []byte(getCurrentStepIndexPatchStr(len(rollout.Spec.Strategy.Canary.Steps)))
+	patchBody := []byte(getSkipAllStepsPatchStr(len(rollout.Spec.Strategy.Canary.Steps)))
 	_, err = kubeClient.Dynamic.Resource(rolloutResource).
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
-		return errors.E(op, err)
+		return perrors.Wrapf(ErrKubeDynamicCliResponseNotOK, err.Error())
 	}
 
 	return nil
+}
+
+// Pause a rollout
+func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) {
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+			params.Cluster)
+	}
+	patchBody := []byte(getPausePatchStr())
+	_, err = kubeClient.Dynamic.Resource(rolloutResource).
+		Namespace(params.Namespace).
+		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
+	if err != nil {
+		return perrors.Wrapf(ErrKubeDynamicCliResponseNotOK, err.Error())
+	}
+
+	return nil
+}
+
+// Resume a paused rollout
+func (c *cd) Resume(ctx context.Context, params *ClusterResumeParams) (err error) {
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+			params.Cluster)
+	}
+	patchBody := []byte(getResumePatchStr())
+	_, err = kubeClient.Dynamic.Resource(rolloutResource).
+		Namespace(params.Namespace).
+		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
+	if err != nil {
+		return perrors.Wrapf(ErrKubeDynamicCliResponseNotOK, err.Error())
+	}
+
+	return nil
+}
+
+func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*v1alpha1.Rollout, error) {
+	var rollout *v1alpha1.Rollout
+	argo, err := c.factory.GetArgoCD(environment)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get argocd factory")
+	}
+	argoApp, err := argo.GetApplication(ctx, clusterName)
+	if err != nil {
+		return nil, perrors.WithMessagef(err, "failed to get argocd application: %s", clusterName)
+	}
+	if err := argo.GetApplicationResource(ctx, clusterName, argocd.ResourceParams{
+		Group:        "argoproj.io",
+		Version:      "v1alpha1",
+		Kind:         "Rollout",
+		Namespace:    argoApp.Spec.Destination.Namespace,
+		ResourceName: clusterName,
+	}, &rollout); err != nil {
+		if perrors.Cause(err) == argocd.ErrResourceNotFound {
+			return nil, nil
+		}
+		return nil, perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+			clusterName)
+	}
+
+	return rollout, nil
 }
 
 // GetClusterState TODO(gjq) restructure
@@ -412,6 +480,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		}
 		clusterState.DesiredReplicas = &desiredReplicas
 	}
+	clusterState.ManualPaused = rollout.Spec.Paused
 
 	var latestReplicaSet *appsv1.ReplicaSet
 	rss, err := kube.GetReplicaSets(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
@@ -986,6 +1055,9 @@ type (
 		// Versions versions detail
 		// key is pod-template-hash, if equal to PodTemplateHash, the version is the desired version
 		Versions map[string]*ClusterVersion `json:"versions,omitempty" yaml:"versions,omitempty"`
+
+		// ManualPaused indicates whether the cluster is in manual pause state
+		ManualPaused bool `json:"manualPaused" yaml:"manualPaused"`
 	}
 
 	Step struct {
@@ -1321,8 +1393,17 @@ func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
 	return result
 }
 
-func getCurrentStepIndexPatchStr(stepCnt int) string {
-	return fmt.Sprintf(`{"status": {"currentStepIndex": %d}}`, stepCnt)
+func getSkipAllStepsPatchStr(stepCnt int) string {
+	return fmt.Sprintf(`{"spec":{"paused":false},"status": {"currentStepIndex": %d, "pauseCondition":null}}`,
+		stepCnt)
+}
+
+func getPausePatchStr() string {
+	return `{"spec": {"paused": true}}`
+}
+
+func getResumePatchStr() string {
+	return `{"spec": {"paused": false}}`
 }
 
 // computeStepHash returns a hash value calculated from the Rollout's steps. The hash will

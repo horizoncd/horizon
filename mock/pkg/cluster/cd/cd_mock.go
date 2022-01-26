@@ -166,16 +166,44 @@ func (mr *MockCDMockRecorder) Online(ctx, params interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Online", reflect.TypeOf((*MockCD)(nil).Online), ctx, params)
 }
 
-// SkipAllSteps mocks base method.
-func (m *MockCD) SkipAllSteps(ctx context.Context, params *cd.ClusterSkipAllStepsParams) error {
+// Pause mocks base method.
+func (m *MockCD) Pause(ctx context.Context, params *cd.ClusterPauseParams) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SkipAllSteps", ctx, params)
+	ret := m.ctrl.Call(m, "Pause", ctx, params)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SkipAllSteps indicates an expected call of SkipAllSteps.
-func (mr *MockCDMockRecorder) SkipAllSteps(ctx, params interface{}) *gomock.Call {
+// Pause indicates an expected call of Pause.
+func (mr *MockCDMockRecorder) Pause(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SkipAllSteps", reflect.TypeOf((*MockCD)(nil).SkipAllSteps), ctx, params)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pause", reflect.TypeOf((*MockCD)(nil).Pause), ctx, params)
+}
+
+// Promote mocks base method.
+func (m *MockCD) Promote(ctx context.Context, params *cd.ClusterPromoteParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Promote", ctx, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Promote indicates an expected call of Promote.
+func (mr *MockCDMockRecorder) Promote(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Promote", reflect.TypeOf((*MockCD)(nil).Promote), ctx, params)
+}
+
+// Resume mocks base method.
+func (m *MockCD) Resume(ctx context.Context, params *cd.ClusterResumeParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Resume", ctx, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Resume indicates an expected call of Resume.
+func (mr *MockCDMockRecorder) Resume(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resume", reflect.TypeOf((*MockCD)(nil).Resume), ctx, params)
 }

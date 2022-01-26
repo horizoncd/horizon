@@ -6,7 +6,11 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cluster"
+	"g.hz.netease.com/horizon/pkg/cluster/dao"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -318,17 +322,76 @@ func (a *API) GetClusterPods(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-func (a *API) SkipAllSteps(c *gin.Context) {
+func (a *API) Promote(c *gin.Context) {
+	const op = "cluster: promote"
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		err = perrors.Wrap(err, "failed to parse cluster id")
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
 		return
 	}
 
-	err = a.clusterCtl.SkipAllSteps(c, uint(clusterID))
+	err = a.clusterCtl.Promote(c, uint(clusterID))
 	if err != nil {
-		response.AbortWithError(c, err)
+		err = perrors.Wrap(err, "failed to promote cluster")
+		if perrors.Cause(err) == dao.ErrClusterNotFound {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg("cluster not found"))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.Success(c)
+}
+
+func (a *API) Pause(c *gin.Context) {
+	const op = "cluster: pause"
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		err = perrors.Wrap(err, "failed to parse cluster id")
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
+		return
+	}
+
+	err = a.clusterCtl.Pause(c, uint(clusterID))
+	if err != nil {
+		err = perrors.Wrap(err, "failed to pause cluster")
+		if perrors.Cause(err) == dao.ErrClusterNotFound {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg("cluster not found"))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.Success(c)
+}
+
+func (a *API) Resume(c *gin.Context) {
+	const op = "cluster: resume"
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		err = perrors.Wrap(err, "failed to parse cluster id")
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
+		return
+	}
+
+	err = a.clusterCtl.Resume(c, uint(clusterID))
+	if err != nil {
+		err = perrors.Wrap(err, "failed to resume cluster")
+		if perrors.Cause(err) == dao.ErrClusterNotFound {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg("cluster not found"))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.Success(c)

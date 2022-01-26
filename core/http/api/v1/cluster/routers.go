@@ -95,7 +95,15 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		}, {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/promote", _clusterIDParam),
-			HandlerFunc: api.SkipAllSteps,
+			HandlerFunc: api.Promote,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/clusters/:%v/pause", _clusterIDParam),
+			HandlerFunc: api.Pause,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/clusters/:%v/resume", _clusterIDParam),
+			HandlerFunc: api.Resume,
 		},
 	}
 
