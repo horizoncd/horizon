@@ -76,6 +76,8 @@ const (
 	// value namespace
 	_envValueNamespace  = "env"
 	_baseValueNamespace = "horizon"
+
+	_mergeRequestStateOpen = "opened"
 )
 
 var ErrPipelineOutputEmpty = goerrors.New("PipelineOutput is empty")
@@ -559,22 +561,31 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 }
 
 func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster string) (_ string, err error) {
-	const op = "cluster git repo: merge branch"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
-
+	mergeCommitMsg := "git merge gitops"
+	removeSourceBranch := false
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
 	title := fmt.Sprintf("git merge %v", _branchGitops)
-	mr, err := g.gitlabLib.CreateMR(ctx, pid, _branchGitops, _branchMaster, title)
+
+	var mr *gitlab.MergeRequest
+	mrs, err := g.gitlabLib.ListMRs(ctx, pid, _branchGitops, _branchMaster, _mergeRequestStateOpen)
 	if err != nil {
-		return "", errors.E(op, err)
+		return "", perrors.WithMessage(err, "failed to list merge requests")
+	}
+	if len(mrs) > 0 {
+		// merge old mr when it is existed, because given specified source and target, gitlab only allows 1 mr to exist
+		mr = mrs[0]
+	} else {
+		// create new mr
+		mr, err = g.gitlabLib.CreateMR(ctx, pid, _branchGitops, _branchMaster, title)
+		if err != nil {
+			return "", perrors.WithMessage(err, "failed to create new merge request")
+		}
 	}
 
-	mergeCommitMsg := "git merge gitops"
-	removeSourceBranch := false
 	mr, err = g.gitlabLib.AcceptMR(ctx, pid, mr.IID, &mergeCommitMsg, &removeSourceBranch)
 	if err != nil {
-		return "", errors.E(op, err)
+		return "", perrors.WithMessage(err, "failed to accept merge request")
 	}
 	return mr.MergeCommitSHA, nil
 }
