@@ -8,9 +8,11 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cluster"
 	"g.hz.netease.com/horizon/lib/q"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -264,6 +266,34 @@ func (a *API) GetOutput(c *gin.Context) {
 	outPut, err := a.clusterCtl.GetClusterOutput(c, uint(clusterID))
 	if err != nil {
 		response.AbortWithError(c, err)
+	}
+	response.SuccessWithData(c, outPut)
+}
+
+func (a *API) GetContainers(c *gin.Context) {
+	const op = "cluster: get containers"
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+		return
+	}
+
+	podName := c.Query(_podName)
+	if podName == "" {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("podName should not be empty"))
+		return
+	}
+
+	outPut, err := a.clusterCtl.GetContainers(c, uint(clusterID), podName)
+	if err != nil {
+		if perrors.Cause(err) == kube.ErrPodNotFound {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
 	}
 	response.SuccessWithData(c, outPut)
 }
