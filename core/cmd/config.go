@@ -31,6 +31,7 @@ type Config struct {
 	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
 	GrafanaMapper          grafana.Mapper          `yaml:"grafanaMapper"`
+	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
 }
 
 func loadConfig(configFilePath string) (*Config, error) {

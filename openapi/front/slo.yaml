@@ -1,0 +1,30 @@
+openapi: 3.0.1
+info:
+  title: Horizon-SLO-Front
+  description: Front API About SLO
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v1/slo/dashboards:
+    get:
+      tags:
+        - slo
+      operationId: getSloDashboards
+      summary: get slo's dashboards
+      parameters:
+        - name: internal
+          in: query
+          description: "internal of slo（30d、1d、1h）"
+      responses:
+        '200':
+          description: Succuss
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data": "http://grafana.mockserver.org/d/g40XAtbnk/horizon-slo?orgId=1&refresh=10s&var-datasource=default&var-range=1d&var-git_availability=0.99&var-image_availability=0.99&var-deploy_availability=0.99&var-api_availability=0.99&var-git_rt=10&var-image_rt=60&var-deploy_rt=50"
+                  }
