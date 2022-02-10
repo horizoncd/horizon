@@ -14,12 +14,12 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var frontSlos = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/slo/apidashboards",
+			Pattern:     "/slo/apidashboard",
 			HandlerFunc: api.getAPIDashboard,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/slo/pipelinedashboards",
+			Pattern:     "/slo/pipelinedashboard",
 			HandlerFunc: api.getPipelineDashboard,
 		},
 	}

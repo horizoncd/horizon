@@ -8,8 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const _internal = "internal"
-const _region = "region"
+const (
+	_internal = "internal"
+	_region   = "region"
+)
 
 type API struct {
 	sloController slo.Controller

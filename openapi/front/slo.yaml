@@ -6,12 +6,12 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v1/slo/dashboards:
+  /apis/front/v1/slo/apidashboard:
     get:
       tags:
         - slo
-      operationId: getSloDashboards
-      summary: get slo's dashboards
+      operationId: getApiDashboard
+      summary: get api slo's dashboard
       parameters:
         - name: internal
           in: query
@@ -26,5 +26,30 @@ paths:
               schema:
                 example: |
                   {
-                      "data": "http://grafana.mockserver.org/d/g40XAtbnk/horizon-slo?orgId=1&refresh=10s&var-datasource=default&var-range=1d&var-git_availability=0.99&var-image_availability=0.99&var-deploy_availability=0.99&var-api_availability=0.99&var-git_rt=10&var-image_rt=60&var-deploy_rt=50"
+                      "data": "http://grafana.mockserver.org/d/tKjaD1-nk/horizon-api-slo?orgId=1&refresh=10s&from=now-3h&to=now&var-datasource=default&var-range=1d&var-api_availability=0.99&var-api_read_rt=1&var-api_write_rt=5"
+                  }
+  /apis/front/v1/slo/pipelinedashboard:
+    get:
+      tags:
+        - slo
+      operationId: getPipelineDashboard
+      summary: get api slo's dashboard
+      parameters:
+        - name: internal
+          in: query
+          description: "internal of slo（30d、1d、1h）"
+        - name: region
+          in: query
+          description: "region"
+      responses:
+        '200':
+          description: Succuss
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data": "http://grafana.mockserver.org/d/g40XAtbnk/horizon-pipeline-slo?orgId=1&refresh=10s&var-region=hz&var-range=1d&var-git_availability=0.99&var-git_rt=5&var-image_availability=0.99&var-image_rt=60&var-deploy_availability=0.99&var-deploy_rt=60&var-datasource=default"
                   }
