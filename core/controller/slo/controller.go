@@ -15,7 +15,7 @@ var (
 
 type Controller interface {
 	GetAPIDashboard(ctx context.Context, internal string) (string, error)
-	GetPipelineDashboard(ctx context.Context, internal string, region string) (string, error)
+	GetPipelineDashboard(ctx context.Context, internal string, env string) (string, error)
 }
 
 type controller struct {
@@ -37,13 +37,13 @@ func (c *controller) GetAPIDashboard(_ context.Context, internal string) (string
 	return "", perrors.WithMessage(ErrInternalInValid, "param not valid")
 }
 
-func (c *controller) GetPipelineDashboard(_ context.Context, internal string, region string) (string, error) {
+func (c *controller) GetPipelineDashboard(_ context.Context, internal string, env string) (string, error) {
 	availability, ok := c.GrafanaSLO.Availability[internal]
 	if ok {
-		// http://grafana.mockserver.org/d/g40XAtbnk/horizon-pipeline-slo?orgId=1&refresh=10s&var-region=%s
+		// http://grafana.mockserver.org/d/g40XAtbnk/horizon-pipeline-slo?orgId=1&refresh=10s&var-env=%s
 		// &var-range=%s&var-git_availability=%s&var-git_rt=%s&var-image_availability=%s&var-image_rt=%s
 		// &var-deploy_availability=0.99&var-deploy_rt=60&var-datasource=default
-		return fmt.Sprintf(c.GrafanaSLO.PipelineDashboard, region, internal, availability.GitAvailability, availability.GitRT,
+		return fmt.Sprintf(c.GrafanaSLO.PipelineDashboard, env, internal, availability.GitAvailability, availability.GitRT,
 			availability.ImageAvailability, availability.ImageRT, availability.DeployAvailability, availability.DeployRT), nil
 	}
 	return "", perrors.WithMessage(ErrInternalInValid, "param not valid")

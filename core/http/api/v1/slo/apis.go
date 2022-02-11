@@ -10,7 +10,7 @@ import (
 
 const (
 	_internal = "internal"
-	_region   = "region"
+	_env      = "env"
 )
 
 type API struct {
@@ -38,7 +38,7 @@ func (a *API) getAPIDashboard(c *gin.Context) {
 
 func (a *API) getPipelineDashboard(c *gin.Context) {
 	internal := c.Query(_internal)
-	region := c.Query(_region)
+	region := c.Query(_env)
 	dashboard, err := a.sloController.GetPipelineDashboard(c, internal, region)
 	if err != nil {
 		if perrors.Cause(err) == slo.ErrInternalInValid {
