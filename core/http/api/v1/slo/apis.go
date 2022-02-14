@@ -38,8 +38,8 @@ func (a *API) getAPIDashboard(c *gin.Context) {
 
 func (a *API) getPipelineDashboard(c *gin.Context) {
 	internal := c.Query(_internal)
-	region := c.Query(_env)
-	dashboard, err := a.sloController.GetPipelineDashboard(c, internal, region)
+	env := c.Query(_env)
+	dashboard, err := a.sloController.GetPipelineDashboard(c, internal, env)
 	if err != nil {
 		if perrors.Cause(err) == slo.ErrInternalInValid {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
@@ -48,6 +48,13 @@ func (a *API) getPipelineDashboard(c *gin.Context) {
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
+
+	response.SuccessWithData(c, dashboard)
+}
+
+func (a *API) getOverviewDashboard(c *gin.Context) {
+	env := c.Query(_env)
+	dashboard := a.sloController.GetOverviewDashboard(c, env)
 
 	response.SuccessWithData(c, dashboard)
 }

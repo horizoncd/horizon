@@ -22,6 +22,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     "/slo/pipelinedashboard",
 			HandlerFunc: api.getPipelineDashboard,
 		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     "/slo/overviewdashboard",
+			HandlerFunc: api.getOverviewDashboard,
+		},
 	}
 
 	route.RegisterRoutes(frontGroup, frontSlos)

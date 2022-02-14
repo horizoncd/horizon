@@ -34,23 +34,8 @@ func NewController(grafanaSLO grafana.SLO) Controller {
 }
 
 func (c *controller) GetOverviewDashboard(_ context.Context, env string) string {
-	// http://grafana.mockserver.org/d/Wz3GSBank/slo-gai-lan?orgId=1&kiosk&theme=light
-	// &var-api_availability_1h=%s&var-api_availability_1d=%s&var-api_availability_30d=%s
-	// &var-git_availability_1h=%s&var-git_availability_1d=%s&var-git_availability_30d=%s
-	// &var-image_availability_1h=%s&var-image_availability_1d=%s&var-image_availability_30d=%s
-	// &var-deploy_availability_1h=%s&var-deploy_availability_1d=%s&var-deploy_availability_30d=%s
-	// &var-git_rt=5&var-image_rt=5&var-deploy_rt=5&var-env=test
-	availability1h := c.GrafanaSLO.Availability[Internal1h]
-	availability1d := c.GrafanaSLO.Availability[Internal1d]
-	availability30d := c.GrafanaSLO.Availability[Internal30d]
-	return fmt.Sprintf(c.GrafanaSLO.OverviewDashboard, formatPercentParam(availability1h.APIAvailability),
-		formatPercentParam(availability1d.APIAvailability), formatPercentParam(availability30d.APIAvailability),
-		formatPercentParam(availability1h.GitAvailability), formatPercentParam(availability1d.GitAvailability),
-		formatPercentParam(availability30d.GitAvailability), formatPercentParam(availability1h.ImageAvailability),
-		formatPercentParam(availability1d.ImageAvailability), formatPercentParam(availability30d.ImageAvailability),
-		formatPercentParam(availability1h.DeployAvailability), formatPercentParam(availability1d.DeployAvailability),
-		formatPercentParam(availability30d.DeployAvailability), c.GrafanaSLO.GitRT, c.GrafanaSLO.ImageRT,
-		c.GrafanaSLO.DeployRT, env)
+	// http://grafana.mockserver.org/d/Wz3GSBank/slo-gai-lan?orgId=1&kiosk&theme=light&var-env=test
+	return fmt.Sprintf(c.GrafanaSLO.OverviewDashboard, env)
 }
 
 func (c *controller) GetAPIDashboard(_ context.Context, internal string) (string, error) {
@@ -74,8 +59,4 @@ func (c *controller) GetPipelineDashboard(_ context.Context, internal string, en
 			availability.ImageAvailability, c.GrafanaSLO.ImageRT, availability.DeployAvailability, c.GrafanaSLO.DeployRT), nil
 	}
 	return "", perrors.WithMessage(ErrInternalInValid, "param not valid")
-}
-
-func formatPercentParam(availability float32) string {
-	return fmt.Sprintf("%f%%25", availability*100)
 }
