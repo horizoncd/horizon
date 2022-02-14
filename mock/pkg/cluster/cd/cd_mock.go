@@ -107,6 +107,21 @@ func (mr *MockCDMockRecorder) GetContainerLog(ctx, params interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContainerLog", reflect.TypeOf((*MockCD)(nil).GetContainerLog), ctx, params)
 }
 
+// GetPodContainers mocks base method.
+func (m *MockCD) GetPodContainers(ctx context.Context, params *cd.GetPodContainersParams) ([]cd.ContainerDetail, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPodContainers", ctx, params)
+	ret0, _ := ret[0].([]cd.ContainerDetail)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPodContainers indicates an expected call of GetPodContainers.
+func (mr *MockCDMockRecorder) GetPodContainers(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodContainers", reflect.TypeOf((*MockCD)(nil).GetPodContainers), ctx, params)
+}
+
 // GetPodEvents mocks base method.
 func (m *MockCD) GetPodEvents(ctx context.Context, params *cd.GetPodEventsParams) ([]cd.Event, error) {
 	m.ctrl.T.Helper()

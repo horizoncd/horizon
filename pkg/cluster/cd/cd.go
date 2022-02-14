@@ -1,3 +1,19 @@
+/*
+Copyright The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package cd
 
 import (
@@ -35,6 +51,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubectl/pkg/cmd/exec"
+	"k8s.io/kubectl/pkg/describe"
+	kubectlresource "k8s.io/kubectl/pkg/util/resource"
 )
 
 const (
@@ -93,6 +111,13 @@ type DeployClusterParams struct {
 }
 
 type GetPodEventsParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Pod          string
+}
+
+type GetPodContainersParams struct {
 	RegionEntity *regionmodels.RegionEntity
 	Cluster      string
 	Namespace    string
@@ -168,6 +193,7 @@ type CD interface {
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
+	GetPodContainers(ctx context.Context, params *GetPodContainersParams) ([]ContainerDetail, error)
 	GetPodEvents(ctx context.Context, params *GetPodEventsParams) ([]Event, error)
 	Online(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 	Offline(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
@@ -547,6 +573,21 @@ func (c *cd) GetClusterState(ctx context.Context,
 	return clusterState, nil
 }
 
+func (c *cd) GetPodContainers(ctx context.Context,
+	params *GetPodContainersParams) (containers []ContainerDetail, err error) {
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get kube client")
+	}
+
+	pod, err := kube.GetPod(ctx, kubeClient.Basic, params.Namespace, params.Pod)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get pods")
+	}
+
+	return extractContainerDetail(pod), nil
+}
+
 func (c *cd) GetPodEvents(ctx context.Context,
 	params *GetPodEventsParams) (events []Event, err error) {
 	const op = "cd: get cluster pod events"
@@ -589,6 +630,116 @@ func (c *cd) GetPodEvents(ctx context.Context,
 	}
 
 	return nil, fmt.Errorf("pod does not exist")
+}
+
+// extractContainerInfo extract container detail
+func extractContainerDetail(pod *corev1.Pod) []ContainerDetail {
+	containers := make([]ContainerDetail, 0)
+	for _, container := range pod.Spec.Containers {
+		vars := extractEnv(pod, container)
+		volumeMounts := extractContainerMounts(container, pod)
+
+		containers = append(containers, ContainerDetail{
+			Name:            container.Name,
+			Image:           container.Image,
+			Env:             vars,
+			Commands:        container.Command,
+			Args:            container.Args,
+			VolumeMounts:    volumeMounts,
+			SecurityContext: container.SecurityContext,
+			Status:          extractContainerStatus(pod, &container),
+			LivenessProbe:   container.LivenessProbe,
+			ReadinessProbe:  container.ReadinessProbe,
+			StartupProbe:    container.StartupProbe,
+		})
+	}
+	return containers
+}
+
+// extractContainerMounts extract container status from pod.status.containerStatus
+func extractContainerStatus(pod *corev1.Pod, container *corev1.Container) *corev1.ContainerStatus {
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.Name == container.Name {
+			return &status
+		}
+	}
+	return nil
+}
+
+// extractContainerMounts extract container mounts
+// the same to https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/pod/detail.go#L226
+func extractContainerMounts(container corev1.Container, pod *corev1.Pod) []VolumeMount {
+	volumeMounts := make([]VolumeMount, 0)
+	for _, volumeMount := range container.VolumeMounts {
+		volumeMounts = append(volumeMounts, VolumeMount{
+			Name:      volumeMount.Name,
+			ReadOnly:  volumeMount.ReadOnly,
+			MountPath: volumeMount.MountPath,
+			SubPath:   volumeMount.SubPath,
+			Volume:    getVolume(pod.Spec.Volumes, volumeMount.Name),
+		})
+	}
+	return volumeMounts
+}
+
+// getVolume get volume by name
+// the same to https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/pod/detail.go#L216
+func getVolume(volumes []corev1.Volume, volumeName string) corev1.Volume {
+	for _, volume := range volumes {
+		if volume.Name == volumeName {
+			return volume
+		}
+	}
+	return corev1.Volume{}
+}
+
+// extractEnv extract env by resolving references
+// the same to https://github.com/kubernetes/kubectl/blob/master/pkg/describe/describe.go#L1853
+// todo: maybe we should follow dashboard to resolve config/secret references
+// https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/pod/detail.go#L303
+func extractEnv(pod *corev1.Pod, container corev1.Container) []corev1.EnvVar {
+	var env []corev1.EnvVar
+	for _, e := range container.Env {
+		switch {
+		case e.ValueFrom == nil:
+			env = append(env, e)
+		case e.ValueFrom.FieldRef != nil:
+			var valueFrom string
+			valueFrom = describe.EnvValueRetriever(pod)(e)
+			env = append(env, corev1.EnvVar{
+				Name:  e.Name,
+				Value: valueFrom,
+			})
+		case e.ValueFrom.ResourceFieldRef != nil:
+			valueFrom, err := kubectlresource.ExtractContainerResourceValue(e.ValueFrom.ResourceFieldRef, &container)
+			if err != nil {
+				valueFrom = ""
+			}
+			resource := e.ValueFrom.ResourceFieldRef.Resource
+			if valueFrom == "0" && (resource == "limits.cpu" || resource == "limits.memory") {
+				valueFrom = "node allocatable"
+			}
+			env = append(env, corev1.EnvVar{
+				Name:  e.Name,
+				Value: valueFrom,
+			})
+		case e.ValueFrom.SecretKeyRef != nil:
+			optional := e.ValueFrom.SecretKeyRef.Optional != nil && *e.ValueFrom.SecretKeyRef.Optional
+			env = append(env, corev1.EnvVar{
+				Name: e.Name,
+				Value: fmt.Sprintf("<set to the key '%s' in secret '%s'>\tOptional: %t\n",
+					e.ValueFrom.SecretKeyRef.Key, e.ValueFrom.SecretKeyRef.Name, optional),
+			})
+		case e.ValueFrom.ConfigMapKeyRef != nil:
+			optional := e.ValueFrom.ConfigMapKeyRef.Optional != nil && *e.ValueFrom.ConfigMapKeyRef.Optional
+			env = append(env, corev1.EnvVar{
+				Name: e.Name,
+				Value: fmt.Sprintf("<set to the key '%s' of config map '%s'>\tOptional: %t\n",
+					e.ValueFrom.ConfigMapKeyRef.Key, e.ValueFrom.ConfigMapKeyRef.Name, optional),
+			})
+		}
+	}
+	return env
 }
 
 func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace string,
@@ -1123,6 +1274,55 @@ type (
 		Message        string      `json:"message,omitempty" yaml:"message,omitempty"`
 		Count          int32       `json:"count,omitempty" yaml:"count,omitempty"`
 		EventTimestamp metav1.Time `json:"eventTimestamp,omitempty" yaml:"eventTimestamp,omitempty"`
+	}
+
+	// ContainerDetail represents more information about a container
+	ContainerDetail struct {
+		// Name of the container.
+		Name string `json:"name"`
+
+		// Image URI of the container.
+		Image string `json:"image"`
+
+		// List of environment variables.
+		Env []corev1.EnvVar `json:"env"`
+
+		// Commands of the container
+		Commands []string `json:"commands"`
+
+		// Command arguments
+		Args []string `json:"args"`
+
+		// Information about mounted volumes
+		VolumeMounts []VolumeMount `json:"volumeMounts"`
+
+		// Security configuration that will be applied to a container.
+		SecurityContext *corev1.SecurityContext `json:"securityContext"`
+
+		// Status of a pod container
+		Status *corev1.ContainerStatus `json:"status"`
+
+		// Probes
+		LivenessProbe  *corev1.Probe `json:"livenessProbe"`
+		ReadinessProbe *corev1.Probe `json:"readinessProbe"`
+		StartupProbe   *corev1.Probe `json:"startupProbe"`
+	}
+
+	VolumeMount struct {
+		// Name of the variable.
+		Name string `json:"name"`
+
+		// Is the volume read only ?
+		ReadOnly bool `json:"readOnly"`
+
+		// Path within the container at which the volume should be mounted. Must not contain ':'.
+		MountPath string `json:"mountPath"`
+
+		// Path within the volume from which the container's volume should be mounted. Defaults to "" (volume's root).
+		SubPath string `json:"subPath"`
+
+		// Information about the Volume itself
+		Volume corev1.Volume `json:"volume"`
 	}
 
 	ContainerState struct {
