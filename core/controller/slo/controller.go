@@ -9,12 +9,6 @@ import (
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 )
 
-const (
-	Internal1h  = "1h"
-	Internal1d  = "1d"
-	Internal30d = "30d"
-)
-
 var (
 	ErrInternalInValid = errors.New("internal not valid")
 )
