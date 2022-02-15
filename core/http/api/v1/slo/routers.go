@@ -14,7 +14,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var frontSlos = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/slo/apidashboards",
+			Pattern:     "/slo/dashboards",
 			HandlerFunc: api.getDashboards,
 		},
 	}
