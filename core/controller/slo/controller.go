@@ -8,9 +8,7 @@ import (
 )
 
 type Controller interface {
-	GetOverviewDashboard(ctx context.Context, env string) string
-	GetAPIDashboard(ctx context.Context) string
-	GetPipelineDashboard(ctx context.Context, env string) string
+	GetDashboards(ctx context.Context, env string) *Dashboards
 }
 
 type controller struct {
@@ -21,17 +19,10 @@ func NewController(grafanaSLO grafana.SLO) Controller {
 	return &controller{GrafanaSLO: grafanaSLO}
 }
 
-func (c *controller) GetOverviewDashboard(_ context.Context, env string) string {
-	
-	return fmt.Sprintf(c.GrafanaSLO.OverviewDashboard, env)
-}
-
-func (c *controller) GetAPIDashboard(_ context.Context) string {
-	
-	return c.GrafanaSLO.APIDashboard
-}
-
-func (c *controller) GetPipelineDashboard(_ context.Context, env string) string {
-	
-	return fmt.Sprintf(c.GrafanaSLO.PipelineDashboard, env)
+func (c *controller) GetDashboards(_ context.Context, env string) *Dashboards {
+	return &Dashboards{
+		Overview: fmt.Sprintf(c.GrafanaSLO.OverviewDashboard, env),
+		API:      c.GrafanaSLO.APIDashboard,
+		Pipeline: fmt.Sprintf(c.GrafanaSLO.PipelineDashboard, env),
+	}
 }

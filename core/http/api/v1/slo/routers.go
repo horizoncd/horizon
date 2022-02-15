@@ -14,18 +14,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var frontSlos = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/slo/apidashboard",
-			HandlerFunc: api.getAPIDashboard,
-		},
-		{
-			Method:      http.MethodGet,
-			Pattern:     "/slo/pipelinedashboard",
-			HandlerFunc: api.getPipelineDashboard,
-		},
-		{
-			Method:      http.MethodGet,
-			Pattern:     "/slo/overviewdashboard",
-			HandlerFunc: api.getOverviewDashboard,
+			Pattern:     "/slo/apidashboards",
+			HandlerFunc: api.getDashboards,
 		},
 	}
 
