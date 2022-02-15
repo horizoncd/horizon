@@ -35,7 +35,7 @@ func (c *controller) GetOverviewDashboard(_ context.Context, env string) string 
 func (c *controller) GetAPIDashboard(_ context.Context, internal string) (string, error) {
 	availability, ok := c.GrafanaSLO.Availability[internal]
 	if ok {
-		// http://grafana.mockserver.org/d/tKjaD1-nk/horizon-api-slo?orgId=1&kiosk&theme=light&from=now-5m&to=now
+		// http://grafana.mockserver.org/d/tKjaD1-nk/horizon-api-slo?orgId=1&kiosk&theme=light
 		// &var-datasource=default&var-range=%s&var-api_availability=%s&var-api_read_rt=%s&var-api_write_rt=%s
 		return fmt.Sprintf(c.GrafanaSLO.APIDashboard, internal, availability.APIAvailability,
 			c.GrafanaSLO.APIReadRT, c.GrafanaSLO.APIWriteRT), nil
