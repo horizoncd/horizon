@@ -18,7 +18,7 @@ type SLO struct {
 	GitRT             int                      `yaml:"gitRT"`
 	ImageRT           int                      `yaml:"imageRT"`
 	DeployRT          int                      `yaml:"deployRT"`
-	Availability      map[string]*Availability `yaml:"availability"`
+	Availability      map[string]*Availability `yaml:"availability"` // key is time range: 1h、1d、30d
 }
 
 type Availability struct {
