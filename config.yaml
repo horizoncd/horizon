@@ -64,3 +64,7 @@ grafanaMapper:
     basicDashboard: "http://grafana.mockserver.org/d/R3l8AsF7z/pod-resources?orgId=1&kiosk&theme=light&var-namespace=%s&var-datasource=compute-1&var-cluster=%s"
     serverlessDashboard: "http://grafana.mockserver.org/d/mkwWamKnk/knative-user?orgId=1&kiosk&theme=light&var-datasource=compute-1&var-cluster=%s"
     querySeries: "http://grafana.mockserver.org/api/datasources/proxy/2/api/v1/series"
+grafanaSLO:
+    overviewDashboard: "http://grafana.mockserver.org/d/Wz3GSBank/slo-gai-lan?orgId=1&kiosk&theme=light&var-env=%s"
+    apiDashboard: "http://grafana.mockserver.org/d/tKjaD1-nk/horizon-api-slo?orgId=1&kiosk&theme=light"
+    pipelineDashboard: "http://grafana.mockserver.org/d/g40XAtbnk/horizon-pipeline-slo?orgId=1&kiosk&theme=light&var-env=%s"

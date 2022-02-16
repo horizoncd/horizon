@@ -1,0 +1,34 @@
+openapi: 3.0.1
+info:
+  title: Horizon-SLO-Front
+  description: Front API About SLO
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v1/slo/dashboards:
+    get:
+      tags:
+        - slo
+      operationId: getDashboards
+      summary: get slo's dashboards
+      parameters:
+        - name: env
+          in: query
+          description: "environment"
+      responses:
+        '200':
+          description: Succuss
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "overview": "http://grafana.mockserver.org/d/Wz3GSBank/slo-gai-lan?orgId=1&kiosk&theme=light&var-env=%s"
+                      "api": "http://grafana.mockserver.org/d/tKjaD1-nk/horizon-api-slo?orgId=1&kiosk&theme=light"
+                      "pipeline": "http://grafana.mockserver.org/d/g40XAtbnk/horizon-pipeline-slo?orgId=1&kiosk&theme=light&var-env=%s"
+                    }
+                  }
