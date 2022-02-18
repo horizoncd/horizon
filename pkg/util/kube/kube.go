@@ -7,12 +7,14 @@ import (
 	"os"
 	"strconv"
 
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	kubeerror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +33,10 @@ const DefaultEventsLimit = 100
 const (
 	EnvK8sClientQPS   = "HORIZON_K8S_CLIENT_QPS"
 	EnvK8sClientBurst = "HORIZON_K8S_CLIENT_BURST"
+)
+
+var (
+	ErrPodNotFound = perrors.New("pod not found")
 )
 
 var (
@@ -111,6 +117,17 @@ func GetPods(ctx context.Context, kubeClientset kubernetes.Interface,
 		return nil, errors.E(op, err)
 	}
 	return pods.Items, nil
+}
+
+func GetPod(ctx context.Context, kubeClientset kubernetes.Interface, namespace, podName string) (_ *v1.Pod, err error) {
+	pod, err := kubeClientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		if kubeerror.IsNotFound(err) {
+			return nil, perrors.Wrap(ErrPodNotFound, err.Error())
+		}
+		return nil, perrors.Wrap(err, "failed to get pod")
+	}
+	return pod, nil
 }
 
 // BuildClient 根据传入的kubeconfig地址生成对应的k8sClient

@@ -20,6 +20,7 @@ import (
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
+	sloctl "g.hz.netease.com/horizon/core/controller/slo"
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
 	templateschematagctl "g.hz.netease.com/horizon/core/controller/templateschematag"
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
@@ -35,6 +36,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
+	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	templateshematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateshematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
@@ -239,6 +241,7 @@ func Run(flags *Flags) {
 		templateCtl          = templatectl.NewController(templateSchemaGetter)
 		roleCtl              = roltctl.NewController(roleService)
 		terminalCtl          = terminalctl.NewController(clusterGitRepo)
+		sloCtl               = sloctl.NewController(config.GrafanaSLO)
 		codeGitCtl           = codectl.NewController(gitGetter)
 		clusterTagCtl        = clustertagctl.NewController(clusterGitRepo)
 		templateSchemaTagCtl = templateschematagctl.NewController()
@@ -259,6 +262,7 @@ func Run(flags *Flags) {
 		environmentAPI       = environment.NewAPI()
 		roleAPI              = roleapi.NewAPI(roleCtl)
 		terminalAPI          = terminalapi.NewAPI(terminalCtl)
+		sloAPI               = sloapi.NewAPI(sloCtl)
 		codeGitAPI           = codeapi.NewAPI(codeGitCtl)
 		clusterTagAPI        = clustertag.NewAPI(clusterTagCtl)
 		templateSchemaTagAPI = templateshematagapi.NewAPI(templateSchemaTagCtl)
@@ -314,6 +318,7 @@ func Run(flags *Flags) {
 	member.RegisterRoutes(r, memberAPI)
 	roleapi.RegisterRoutes(r, roleAPI)
 	terminalapi.RegisterRoutes(r, terminalAPI)
+	sloapi.RegisterRoutes(r, sloAPI)
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	clustertag.RegisterRoutes(r, clusterTagAPI)
 	templateshematagapi.RegisterRoutes(r, templateSchemaTagAPI)

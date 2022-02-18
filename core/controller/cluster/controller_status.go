@@ -10,6 +10,7 @@ import (
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -310,4 +311,39 @@ func (c *controller) GetPodEvents(ctx context.Context, clusterID uint, podName s
 		RegionEntity: regionEntity,
 	}
 	return c.cd.GetPodEvents(ctx, &param)
+}
+
+func (c *controller) GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get cluster by id")
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get application by id")
+	}
+
+	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get er by id")
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get env value")
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	if err != nil {
+		return nil, perrors.WithMessage(err, "failed to get region entity")
+	}
+
+	param := cd.GetPodContainersParams{
+		Namespace:    envValue.Namespace,
+		Cluster:      cluster.Name,
+		Pod:          podName,
+		RegionEntity: regionEntity,
+	}
+	return c.cd.GetPodContainers(ctx, &param)
 }
