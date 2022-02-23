@@ -131,7 +131,8 @@ const (
 )
 
 var (
-	ErrInvokeGitlabFail = perrors.New("invoke gitlab fail")
+	ErrGitlabInternal         = perrors.New("gitlab: internal error")
+	ErrGitlabResourceNotFound = perrors.New("gitlab: resource not found")
 )
 
 // CommitAction represents a single file action within a commit.
@@ -175,9 +176,9 @@ func (h *helper) GetGroup(ctx context.Context, gid interface{}) (_ *gitlab.Group
 	const op = "gitlab: get group"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	group, _, err := h.client.Groups.GetGroup(gid, nil, gitlab.WithContext(ctx))
+	group, rsp, err := h.client.Groups.GetGroup(gid, nil, gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return group, nil
@@ -195,14 +196,14 @@ func (h *helper) ListGroupProjects(ctx context.Context, gid interface{},
 		return nil, errors.E(op, "perPage cannot be less 1")
 	}
 
-	projects, _, err := h.client.Groups.ListGroupProjects(gid, &gitlab.ListGroupProjectsOptions{
+	projects, rsp, err := h.client.Groups.ListGroupProjects(gid, &gitlab.ListGroupProjectsOptions{
 		ListOptions: gitlab.ListOptions{
 			Page:    page,
 			PerPage: perPage,
 		},
 	}, gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return projects, nil
@@ -212,14 +213,14 @@ func (h *helper) CreateGroup(ctx context.Context, name, path string, parentID *i
 	const op = "gitlab: create group"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	group, _, err := h.client.Groups.CreateGroup(&gitlab.CreateGroupOptions{
+	group, rsp, err := h.client.Groups.CreateGroup(&gitlab.CreateGroupOptions{
 		Name:     &name,
 		Path:     &path,
 		ParentID: parentID,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return group, nil
@@ -229,18 +230,18 @@ func (h *helper) DeleteGroup(ctx context.Context, gid interface{}) (err error) {
 	const op = "gitlab: delete group"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	_, err = h.client.Groups.DeleteGroup(gid, gitlab.WithContext(ctx))
+	rsp, err := h.client.Groups.DeleteGroup(gid, gitlab.WithContext(ctx))
 
-	return parseError(err)
+	return parseError(rsp, err)
 }
 
 func (h *helper) GetProject(ctx context.Context, pid interface{}) (_ *gitlab.Project, err error) {
 	const op = "gitlab: get project"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	project, _, err := h.client.Projects.GetProject(pid, nil, gitlab.WithContext(ctx))
+	project, rsp, err := h.client.Projects.GetProject(pid, nil, gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 	return project, nil
 }
@@ -249,7 +250,7 @@ func (h *helper) CreateProject(ctx context.Context, name string, groupID int) (_
 	const op = "gitlab: create project"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	project, _, err := h.client.Projects.CreateProject(&gitlab.CreateProjectOptions{
+	project, rsp, err := h.client.Projects.CreateProject(&gitlab.CreateProjectOptions{
 		InitializeWithReadme: func() *bool { b := true; return &b }(),
 		Name:                 &name,
 		Path:                 &name,
@@ -257,7 +258,7 @@ func (h *helper) CreateProject(ctx context.Context, name string, groupID int) (_
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return project, err
@@ -267,18 +268,18 @@ func (h *helper) DeleteProject(ctx context.Context, pid interface{}) (err error)
 	const op = "gitlab: delete project"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	_, err = h.client.Projects.DeleteProject(pid, gitlab.WithContext(ctx))
+	rsp, err := h.client.Projects.DeleteProject(pid, gitlab.WithContext(ctx))
 
-	return parseError(err)
+	return parseError(rsp, err)
 }
 
 func (h *helper) GetBranch(ctx context.Context, pid interface{}, branch string) (_ *gitlab.Branch, err error) {
 	const op = "gitlab: get branch"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	b, _, err := h.client.Branches.GetBranch(pid, branch, gitlab.WithContext(ctx))
+	b, rsp, err := h.client.Branches.GetBranch(pid, branch, gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return b, nil
@@ -289,9 +290,9 @@ func (h *helper) ListBranch(ctx context.Context, pid interface{},
 	const op = "gitlab: list branch"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	branches, _, err := h.client.Branches.ListBranches(pid, listBranchOptions, nil)
+	branches, rsp, err := h.client.Branches.ListBranches(pid, listBranchOptions, nil)
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 	return branches, nil
 }
@@ -300,9 +301,9 @@ func (h *helper) GetCommit(ctx context.Context, pid interface{}, commit string) 
 	const op = "gitlab: get commit"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	c, _, err := h.client.Commits.GetCommit(pid, commit, gitlab.WithContext(ctx))
+	c, rsp, err := h.client.Commits.GetCommit(pid, commit, gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return c, nil
@@ -313,13 +314,13 @@ func (h *helper) CreateBranch(ctx context.Context, pid interface{},
 	const op = "gitlab: create branch"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	b, _, err := h.client.Branches.CreateBranch(pid, &gitlab.CreateBranchOptions{
+	b, rsp, err := h.client.Branches.CreateBranch(pid, &gitlab.CreateBranchOptions{
 		Branch: &branch,
 		Ref:    &fromRef,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return b, nil
@@ -329,9 +330,9 @@ func (h *helper) DeleteBranch(ctx context.Context, pid interface{}, branch strin
 	const op = "gitlab: delete branch"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	_, err = h.client.Branches.DeleteBranch(pid, branch, gitlab.WithContext(ctx))
+	rsp, err := h.client.Branches.DeleteBranch(pid, branch, gitlab.WithContext(ctx))
 
-	return parseError(err)
+	return parseError(rsp, err)
 }
 
 func (h *helper) CreateMR(ctx context.Context, pid interface{},
@@ -339,14 +340,14 @@ func (h *helper) CreateMR(ctx context.Context, pid interface{},
 	const op = "gitlab: create mr"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	mr, _, err := h.client.MergeRequests.CreateMergeRequest(pid, &gitlab.CreateMergeRequestOptions{
+	mr, rsp, err := h.client.MergeRequests.CreateMergeRequest(pid, &gitlab.CreateMergeRequestOptions{
 		Title:        &title,
 		SourceBranch: &source,
 		TargetBranch: &target,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return mr, nil
@@ -354,14 +355,14 @@ func (h *helper) CreateMR(ctx context.Context, pid interface{},
 
 func (h *helper) ListMRs(ctx context.Context, pid interface{},
 	source, target, state string) (_ []*gitlab.MergeRequest, err error) {
-	mrs, _, err := h.client.MergeRequests.ListProjectMergeRequests(pid, &gitlab.ListProjectMergeRequestsOptions{
+	mrs, rsp, err := h.client.MergeRequests.ListProjectMergeRequests(pid, &gitlab.ListProjectMergeRequestsOptions{
 		SourceBranch: &source,
 		TargetBranch: &target,
 		State:        &state,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
-		return nil, perrors.Wrapf(parseError(err),
+		return nil, perrors.Wrapf(parseError(rsp, err),
 			"failed to list merge requests for project: %v", pid)
 	}
 
@@ -373,13 +374,13 @@ func (h *helper) AcceptMR(ctx context.Context, pid interface{}, mrID int,
 	const op = "gitlab: accept mr"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	mr, _, err := h.client.MergeRequests.AcceptMergeRequest(pid, mrID, &gitlab.AcceptMergeRequestOptions{
+	mr, rsp, err := h.client.MergeRequests.AcceptMergeRequest(pid, mrID, &gitlab.AcceptMergeRequestOptions{
 		MergeCommitMessage:       mergeCommitMsg,
 		ShouldRemoveSourceBranch: shouldRemoveSourceBranch,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return mr, nil
@@ -390,7 +391,7 @@ func (h *helper) WriteFiles(ctx context.Context, pid interface{}, branch, commit
 	const op = "gitlab: write files"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	commit, _, err := h.client.Commits.CreateCommit(pid, &gitlab.CreateCommitOptions{
+	commit, rsp, err := h.client.Commits.CreateCommit(pid, &gitlab.CreateCommitOptions{
 		Branch:        &branch,
 		CommitMessage: &commitMsg,
 		StartBranch:   startBranch,
@@ -409,7 +410,7 @@ func (h *helper) WriteFiles(ctx context.Context, pid interface{}, branch, commit
 
 	if err != nil {
 		log.Errorf(ctx, "err: %v", err)
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return commit, nil
@@ -419,12 +420,12 @@ func (h *helper) GetFile(ctx context.Context, pid interface{}, ref, filepath str
 	const op = "gitlab: get file"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	content, _, err := h.client.RepositoryFiles.GetRawFile(pid, filepath, &gitlab.GetRawFileOptions{
+	content, rsp, err := h.client.RepositoryFiles.GetRawFile(pid, filepath, &gitlab.GetRawFileOptions{
 		Ref: &ref,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return content, nil
@@ -434,10 +435,10 @@ func (h *helper) TransferProject(ctx context.Context, pid interface{}, gid inter
 	const op = "gitlab: transfer project"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	if _, _, err := h.client.Projects.TransferProject(pid, &gitlab.TransferProjectOptions{
+	if _, rsp, err := h.client.Projects.TransferProject(pid, &gitlab.TransferProjectOptions{
 		Namespace: gid,
 	}, gitlab.WithContext(ctx)); err != nil {
-		return parseError(err)
+		return parseError(rsp, err)
 	}
 
 	return nil
@@ -447,11 +448,11 @@ func (h *helper) EditNameAndPathForProject(ctx context.Context, pid interface{},
 	const op = "gitlab: edit name and path for project"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	if _, _, err := h.client.Projects.EditProject(pid, &gitlab.EditProjectOptions{
+	if _, rsp, err := h.client.Projects.EditProject(pid, &gitlab.EditProjectOptions{
 		Name: newName,
 		Path: newPath,
 	}, gitlab.WithContext(ctx)); err != nil {
-		return parseError(err)
+		return parseError(rsp, err)
 	}
 
 	return nil
@@ -462,13 +463,13 @@ func (h *helper) Compare(ctx context.Context, pid interface{}, from, to string,
 	const op = "gitlab: compare branchs"
 	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
 
-	compare, _, err := h.client.Repositories.Compare(pid, &gitlab.CompareOptions{
+	compare, rsp, err := h.client.Repositories.Compare(pid, &gitlab.CompareOptions{
 		From:     &from,
 		To:       &to,
 		Straight: straight,
 	}, gitlab.WithContext(ctx))
 	if err != nil {
-		return nil, parseError(err)
+		return nil, parseError(rsp, err)
 	}
 
 	return compare, nil
@@ -478,10 +479,14 @@ func (h *helper) GetSSHURL(ctx context.Context) string {
 	return h.sshURL
 }
 
-func parseError(err error) error {
+func parseError(resp *gitlab.Response, err error) error {
 	if err == nil {
 		return nil
 	}
 
-	return perrors.Wrap(ErrInvokeGitlabFail, err.Error())
+	if resp.StatusCode == http.StatusNotFound {
+		return perrors.Wrap(ErrGitlabResourceNotFound, err.Error())
+	}
+
+	return perrors.Wrap(ErrGitlabInternal, err.Error())
 }
