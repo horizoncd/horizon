@@ -6,6 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cluster"
+	"g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/cluster/dao"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -107,6 +108,11 @@ func (a *API) InternalDeploy(c *gin.Context) {
 	}
 	resp, err := a.clusterCtl.InternalDeploy(c, uint(clusterID), request)
 	if err != nil {
+		if perrors.Cause(err) == gitlab.ErrGitlabInternal || perrors.Cause(err) == gitlab.ErrGitlabResourceNotFound {
+			log.Errorf(c, "InternalDeploy error: %+v", err)
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}
