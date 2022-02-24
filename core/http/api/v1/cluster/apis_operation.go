@@ -108,9 +108,9 @@ func (a *API) InternalDeploy(c *gin.Context) {
 	}
 	resp, err := a.clusterCtl.InternalDeploy(c, uint(clusterID), request)
 	if err != nil {
-		if perrors.Cause(err) == gitlab.ErrGitlabInternal {
+		if perrors.Cause(err) == gitlab.ErrGitlabInternal || perrors.Cause(err) == gitlab.ErrGitlabResourceNotFound {
 			log.Errorf(c, "InternalDeploy error: %+v", err)
-			response.AbortWithInternalError(c, err.Error())
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 			return
 		}
 		response.AbortWithError(c, err)
