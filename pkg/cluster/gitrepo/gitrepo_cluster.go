@@ -265,7 +265,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 
 	for i := 0; i < len(cases); i++ {
 		if cases[i].err != nil {
-			if errors.Status(cases[i].err) != http.StatusNotFound {
+			if perrors.Cause(cases[i].err) != gitlablib.ErrGitlabResourceNotFound {
 				log.Errorf(ctx, "get cluster value file error, err = %s", cases[i].err.Error())
 				return nil, cases[i].err
 			}

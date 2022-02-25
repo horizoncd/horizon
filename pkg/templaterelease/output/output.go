@@ -2,12 +2,10 @@ package output
 
 import (
 	"errors"
-	"net/http"
-
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
-	errors2 "g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"golang.org/x/net/context"
@@ -59,7 +57,7 @@ func (g *getter) GetTemplateOutPut(ctx context.Context,
 
 	bytes, err := g.gitlabLib.GetFile(ctx, tr.GitlabProject, tr.Name, _outputsPath)
 	if err != nil {
-		if errors2.Status(err) != http.StatusNotFound {
+		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
 			log.Errorf(ctx, "Get Output file error, err = %s", err.Error())
 			return "", err
 		}
