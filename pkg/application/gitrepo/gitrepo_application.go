@@ -11,9 +11,11 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/xanzy/go-gitlab"
@@ -113,7 +115,7 @@ func (g *applicationGitlabRepo) UpdateApplicationEnvTemplate(ctx context.Context
 	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
 			return errors.E(op, err)
 		}
 		// if not found, create this repo first
@@ -148,7 +150,7 @@ func (g *applicationGitlabRepo) GetApplicationEnvTemplate(ctx context.Context,
 	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
 			return nil, nil, errors.E(op, err)
 		}
 		// if not found, return the default template

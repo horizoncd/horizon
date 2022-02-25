@@ -237,6 +237,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 	if latestPR != nil {
 		clusterResp.LatestDeployedCommit = latestPR.GitCommit
+		clusterResp.Image = latestPR.ImageURL
 	}
 
 	// 9. get createdBy and updatedBy users

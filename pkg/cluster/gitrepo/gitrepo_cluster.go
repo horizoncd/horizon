@@ -265,7 +265,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 
 	for i := 0; i < len(cases); i++ {
 		if cases[i].err != nil {
-			if errors.Status(cases[i].err) != http.StatusNotFound {
+			if perrors.Cause(cases[i].err) != gitlablib.ErrGitlabResourceNotFound {
 				log.Errorf(ctx, "get cluster value file error, err = %s", cases[i].err.Error())
 				return nil, cases[i].err
 			}
@@ -308,7 +308,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	var appGroup *gitlab.Group
 	appGroup, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name))
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
 			return errors.E(op, err)
 		}
 		appGroup, err = g.gitlabLib.CreateGroup(ctx, params.Application.Name,
@@ -504,7 +504,7 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 	// 1. create application group if necessary
 	_, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
 			return errors.E(op, err)
 		}
 		_, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.clusterRepoConf.RecyclingParent.ID)

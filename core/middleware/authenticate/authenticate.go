@@ -161,7 +161,7 @@ func SignRequest(ctx context.Context, request *http.Request, publicKey string, s
 	stringToSign += request.Header.Get(HTTPHeaderContentMD5) + "\n"
 	stringToSign += request.Header.Get(HTTPHeaderContentType) + "\n"
 	stringToSign += request.Header.Get(HTTPHeaderDate) + "\n"
-	log.Infof(ctx, "stringToSign:\n%v", stringToSign)
+	log.Debugf(ctx, "stringToSign:\n%v", stringToSign)
 
 	key := []byte(secretKey)
 	h := hmac.New(sha256.New, key)
@@ -170,6 +170,7 @@ func SignRequest(ctx context.Context, request *http.Request, publicKey string, s
 		log.Errorf(ctx, "error: %v", err)
 	}
 	signature := base64.StdEncoding.EncodeToString(h.Sum(nil))
+	log.Debugf(ctx, "publicKey:%v, signature:\n%v", publicKey, signature)
 
 	return publicKey + ":" + signature
 }
