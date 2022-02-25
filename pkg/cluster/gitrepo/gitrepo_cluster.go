@@ -308,7 +308,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	var appGroup *gitlab.Group
 	appGroup, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name))
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
 			return errors.E(op, err)
 		}
 		appGroup, err = g.gitlabLib.CreateGroup(ctx, params.Application.Name,
@@ -504,7 +504,7 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 	// 1. create application group if necessary
 	_, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
 			return errors.E(op, err)
 		}
 		_, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.clusterRepoConf.RecyclingParent.ID)
