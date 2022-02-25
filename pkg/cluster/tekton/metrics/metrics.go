@@ -21,7 +21,7 @@ const (
 
 func init() {
 	buckets := []float64{
-		0, 5, 10, 30, 60, 90, 120, 150, 180, 240, 300,
+		0, 5, 10, 20, 30, 40, 50, 60, 90, 120, 150, 180, 240, 300,
 	}
 	_prHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_pipelinerun_duration_seconds",
