@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"testing"
 
@@ -17,11 +16,11 @@ import (
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	herrors "g.hz.netease.com/horizon/pkg/util/errors"
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
@@ -292,8 +291,7 @@ func TestGetClusterValueFile(t *testing.T) {
 	// 3. test gitlab return 404
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
 		[]byte("cluster: xxx"), nil).Times(4)
-	var herr = herrors.E(
-		"Test", http.StatusNotFound)
+	var herr = perrors.WithMessage(gitlablib.ErrGitlabResourceNotFound, "test")
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
 		nil, herr).Times(1)
 
