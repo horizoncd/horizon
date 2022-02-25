@@ -12,14 +12,11 @@ var (
 )
 
 const (
-	_application = "application"
-	_cluster     = "cluster"
 	_environment = "environment"
 	_step        = "step"
 	_pipeline    = "pipeline"
 	_task        = "task"
 	_result      = "result"
-	_region      = "region"
 )
 
 func init() {
@@ -30,19 +27,19 @@ func init() {
 		Name:    "horizon_pipelinerun_duration_seconds",
 		Help:    "PipelineRun duration info",
 		Buckets: buckets,
-	}, []string{_application, _cluster, _environment, _region, _pipeline, _result})
+	}, []string{_environment, _pipeline, _result})
 
 	_trHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_taskrun_duration_seconds",
 		Help:    "Taskrun duration info",
 		Buckets: buckets,
-	}, []string{_application, _cluster, _environment, _region, _pipeline, _result, _task})
+	}, []string{_environment, _pipeline, _result, _task})
 
 	_stepHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_step_duration_seconds",
 		Help:    "Step duration info",
 		Buckets: buckets,
-	}, []string{_application, _cluster, _environment, _region, _pipeline, _result, _task, _step})
+	}, []string{_environment, _pipeline, _result, _task, _step})
 }
 
 func Observe(results *PipelineResults) {
@@ -55,36 +52,27 @@ func Observe(results *PipelineResults) {
 	trResults, stepResults := results.TrResults, results.StepResults
 
 	_prHistogram.With(prometheus.Labels{
-		_application: prBusinessData.Application,
-		_cluster:     prBusinessData.Cluster,
 		_environment: prBusinessData.Environment,
 		_pipeline:    prMetadata.Pipeline,
 		_result:      prResult.Result,
-		_region:      prBusinessData.Region,
 	}).Observe(prResult.DurationSeconds)
 
 	for _, trResult := range trResults {
 		_trHistogram.With(prometheus.Labels{
-			_application: prBusinessData.Application,
-			_cluster:     prBusinessData.Cluster,
 			_environment: prBusinessData.Environment,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        trResult.Task,
 			_result:      trResult.Result,
-			_region:      prBusinessData.Region,
 		}).Observe(trResult.DurationSeconds)
 	}
 
 	for _, stepResult := range stepResults {
 		_stepHistogram.With(prometheus.Labels{
-			_application: prBusinessData.Application,
-			_cluster:     prBusinessData.Cluster,
 			_environment: prBusinessData.Environment,
 			_step:        stepResult.Step,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        stepResult.Task,
 			_result:      stepResult.Result,
-			_region:      prBusinessData.Region,
 		}).Observe(stepResult.DurationSeconds)
 	}
 }
