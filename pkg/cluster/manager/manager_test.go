@@ -139,6 +139,18 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 
+	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, er.EnvironmentName, "clu",
+		&q.Query{Keywords: q.KeyWords{"template": "javaapp", "template_release": "v1.1.0"}, PageNumber: 1, PageSize: 1})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, count)
+	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
+
+	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, er.EnvironmentName, "clu",
+		&q.Query{Keywords: q.KeyWords{"template": "node"}, PageNumber: 1, PageSize: 1})
+	assert.Nil(t, err)
+	assert.Equal(t, 0, count)
+	assert.Equal(t, 0, len(clustersWithEnvAndRegion))
+
 	clusterCountForUser, clustersForUser, err := Mgr.ListUserAuthorizedByNameFuzzily(ctx,
 		er.EnvironmentName, "clu", []uint{applicationID}, user2.ID, nil)
 	assert.Nil(t, err)

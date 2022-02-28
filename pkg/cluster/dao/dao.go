@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	goerrors "errors"
+	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/lib/orm"
@@ -255,30 +256,31 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 	limit := query.PageSize
 
 	like := "%" + filter + "%"
+	where := orm.FormatFilterExp(query)
 	var (
 		clusters []*models.ClusterWithEnvAndRegion
 		count    int
 		result   *gorm.DB
 	)
 	if environment != "" {
-		result = db.Raw(common.ClusterQueryByEnvNameFuzzily,
+		result = db.Raw(fmt.Sprintf(common.ClusterQueryByEnvNameFuzzily, where),
 			environment, like, limit, offset).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 
-		result = db.Raw(common.ClusterCountByEnvNameFuzzily, environment, like).Scan(&count)
+		result = db.Raw(fmt.Sprintf(common.ClusterCountByEnvNameFuzzily, where), environment, like).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 	} else {
-		result = db.Raw(common.ClusterQueryByNameFuzzily,
+		result = db.Raw(fmt.Sprintf(common.ClusterQueryByNameFuzzily, where),
 			like, limit, offset).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 
-		result = db.Raw(common.ClusterCountByNameFuzzily, like).Scan(&count)
+		result = db.Raw(fmt.Sprintf(common.ClusterCountByNameFuzzily, where), like).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}

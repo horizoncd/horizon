@@ -7,10 +7,21 @@ const (
 	PageNumber = "pageNumber"
 	PageSize   = "pageSize"
 	Filter     = "filter"
+	Filters    = "filters"
+
+	FilterGap = ","
+	FilterSep = "::"
 
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20
 	MaxPageSize       = 50
+)
+
+var (
+	FilterKeywords = map[string]struct{}{
+		"template":         {},
+		"template_release": {},
+	}
 )
 
 const (

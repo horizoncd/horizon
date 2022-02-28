@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	"g.hz.netease.com/horizon/lib/q"
@@ -146,4 +147,21 @@ func FormatSortExp(query *q.Query) string {
 	}
 
 	return exp[:len(exp)-2]
+}
+
+// FormatFilterExp returns a where condition string which has prefix "and"
+func FormatFilterExp(query *q.Query) string {
+	exp := strings.Builder{}
+
+	if query == nil || query.Keywords == nil || len(query.Keywords) == 0 {
+		return ""
+	}
+
+	for filterKey, filterValue := range query.Keywords {
+		if filterKey == "" || filterValue == "" {
+			continue
+		}
+		exp.WriteString(fmt.Sprintf(` and %s = "%s"`, filterKey, filterValue))
+	}
+	return exp.String()
 }
