@@ -256,31 +256,35 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 	limit := query.PageSize
 
 	like := "%" + filter + "%"
-	where := orm.FormatFilterExp(query)
+	whereCond, whereValues := orm.FormatFilterExp(query)
 	var (
 		clusters []*models.ClusterWithEnvAndRegion
 		count    int
 		result   *gorm.DB
 	)
 	if environment != "" {
-		result = db.Raw(fmt.Sprintf(common.ClusterQueryByEnvNameFuzzily, where),
-			environment, like, limit, offset).Scan(&clusters)
+		whereValues = append(whereValues, environment, like, limit, offset)
+		result = db.Raw(fmt.Sprintf(common.ClusterQueryByEnvNameFuzzily, whereCond),
+			whereValues...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 
-		result = db.Raw(fmt.Sprintf(common.ClusterCountByEnvNameFuzzily, where), environment, like).Scan(&count)
+		whereValues = whereValues[:len(whereValues)-2]
+		result = db.Raw(fmt.Sprintf(common.ClusterCountByEnvNameFuzzily, whereCond), whereValues...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 	} else {
-		result = db.Raw(fmt.Sprintf(common.ClusterQueryByNameFuzzily, where),
-			like, limit, offset).Scan(&clusters)
+		whereValues = append(whereValues, like, limit, offset)
+		result = db.Raw(fmt.Sprintf(common.ClusterQueryByNameFuzzily, whereCond),
+			whereValues...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 
-		result = db.Raw(fmt.Sprintf(common.ClusterCountByNameFuzzily, where), like).Scan(&count)
+		whereValues = whereValues[:len(whereValues)-2]
+		result = db.Raw(fmt.Sprintf(common.ClusterCountByNameFuzzily, whereCond), whereValues...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}

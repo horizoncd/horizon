@@ -149,19 +149,22 @@ func FormatSortExp(query *q.Query) string {
 	return exp[:len(exp)-2]
 }
 
-// FormatFilterExp returns a where condition string which has prefix "and"
-func FormatFilterExp(query *q.Query) string {
-	exp := strings.Builder{}
-
+// FormatFilterExp returns a where condition string which has prefixed "and"
+func FormatFilterExp(query *q.Query) (string, []interface{}) {
 	if query == nil || query.Keywords == nil || len(query.Keywords) == 0 {
-		return ""
+		return "", []interface{}{}
 	}
+
+	exp := strings.Builder{}
+	values := make([]interface{}, 0, len(query.Keywords))
 
 	for filterKey, filterValue := range query.Keywords {
-		if filterKey == "" || filterValue == "" {
+		value, ok := filterValue.(string)
+		if filterKey == "" || !ok || value == "" {
 			continue
 		}
-		exp.WriteString(fmt.Sprintf(` and %s = "%s"`, filterKey, filterValue))
+		exp.WriteString(fmt.Sprintf(` %s = ? and `, filterKey))
+		values = append(values, value)
 	}
-	return exp.String()
+	return exp.String(), values
 }

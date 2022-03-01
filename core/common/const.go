@@ -18,9 +18,9 @@ const (
 )
 
 var (
-	FilterKeywords = map[string]struct{}{
-		"template":         {},
-		"template_release": {},
+	FilterKeywords = map[string]string{
+		"template":         "`c`.`template`",
+		"template_release": "`c`.`template_release`",
 	}
 )
 
