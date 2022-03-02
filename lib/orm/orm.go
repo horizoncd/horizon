@@ -150,7 +150,7 @@ func FormatSortExp(query *q.Query) string {
 }
 
 // FormatFilterExp returns a where condition string which has prefixed "and"
-func FormatFilterExp(query *q.Query) (string, []interface{}) {
+func FormatFilterExp(query *q.Query, columnInTable map[string]string) (string, []interface{}) {
 	if query == nil || query.Keywords == nil || len(query.Keywords) == 0 {
 		return "", []interface{}{}
 	}
@@ -162,6 +162,11 @@ func FormatFilterExp(query *q.Query) (string, []interface{}) {
 		value, ok := filterValue.(string)
 		if filterKey == "" || !ok || value == "" {
 			continue
+		}
+		if columnInTable != nil {
+			if keyInDB, ok := columnInTable[filterKey]; ok {
+				filterKey = keyInDB
+			}
 		}
 		exp.WriteString(fmt.Sprintf(` %s = ? and `, filterKey))
 		values = append(values, value)

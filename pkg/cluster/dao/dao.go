@@ -22,6 +22,11 @@ import (
 
 var (
 	ErrClusterNotFound = perrors.New("cluster not found")
+
+	columnInTable = map[string]string{
+		"template":         "`c`.`template`",
+		"template_release": "`c`.`template_release`",
+	}
 )
 
 type DAO interface {
@@ -256,7 +261,7 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 	limit := query.PageSize
 
 	like := "%" + filter + "%"
-	whereCond, whereValues := orm.FormatFilterExp(query)
+	whereCond, whereValues := orm.FormatFilterExp(query, columnInTable)
 	var (
 		clusters []*models.ClusterWithEnvAndRegion
 		count    int

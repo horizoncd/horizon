@@ -56,8 +56,8 @@ func GetFilterParam(c *gin.Context) q.KeyWords {
 			continue
 		}
 		filterKey, filterValue := filterArr[0], filterArr[1]
-		if keyInDB, ok := common.FilterKeywords[filterKey]; ok {
-			res[keyInDB] = filterValue
+		if _, ok := common.FilterKeywords[filterKey]; ok {
+			res[filterKey] = filterValue
 		}
 	}
 	return res
