@@ -4,10 +4,11 @@ import "errors"
 
 // const variables
 const (
-	PageNumber = "pageNumber"
-	PageSize   = "pageSize"
-	Filter     = "filter"
-	Filters    = "filters"
+	PageNumber      = "pageNumber"
+	PageSize        = "pageSize"
+	Filter          = "filter"
+	Template        = "template"
+	TemplateRelease = "template_release"
 
 	FilterGap = ","
 	FilterSep = "::"

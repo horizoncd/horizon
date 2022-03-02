@@ -3,7 +3,6 @@ package request
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/q"
@@ -42,23 +41,16 @@ func GetPageParam(c *gin.Context) (int, int, error) {
 func GetFilterParam(c *gin.Context) q.KeyWords {
 	var res = make(q.KeyWords)
 
-	filtersStr := c.Query(common.Filters)
-	if filtersStr == "" {
-		return nil
+	template := c.Query(common.Template)
+	templateRelease := c.Query(common.TemplateRelease)
+
+	set := func(key, value string) {
+		if value == "" {
+			return
+		}
+		res[key] = value
 	}
-	filters := strings.Split(filtersStr, common.FilterGap)
-	for _, filter := range filters {
-		if filter == "" {
-			continue
-		}
-		filterArr := strings.Split(filter, common.FilterSep)
-		if len(filterArr) != 2 || filterArr[0] == "" || filterArr[1] == "" {
-			continue
-		}
-		filterKey, filterValue := filterArr[0], filterArr[1]
-		if _, ok := common.FilterKeywords[filterKey]; ok {
-			res[filterKey] = filterValue
-		}
-	}
+	set(common.Template, template)
+	set(common.TemplateRelease, templateRelease)
 	return res
 }
