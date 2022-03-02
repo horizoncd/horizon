@@ -10,9 +10,6 @@ const (
 	Template        = "template"
 	TemplateRelease = "template_release"
 
-	FilterGap = ","
-	FilterSep = "::"
-
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20
 	MaxPageSize       = 50
