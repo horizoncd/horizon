@@ -59,6 +59,9 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 		}
 
 		for _, trResult := range trResults {
+			if trResult.CompletionTime == nil {
+				continue
+			}
 			t := &models.Task{
 				PipelinerunID: uint(pipelinerunID),
 				Application:   application,
@@ -78,6 +81,9 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 		}
 
 		for _, stepResult := range stepResults {
+			if stepResult.CompletionTime == nil {
+				continue
+			}
 			s := &models.Step{
 				PipelinerunID: uint(pipelinerunID),
 				Application:   application,

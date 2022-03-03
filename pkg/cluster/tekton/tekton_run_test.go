@@ -9,9 +9,12 @@ import (
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/config/tekton"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 
 	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	fakedtekton "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
@@ -27,15 +30,15 @@ var tektonConfig = &tekton.Tekton{
 	Namespace: "tekton",
 }
 
+// nolint
 func TestTekton_StopPipelineRun(t1 *testing.T) {
 	pr1 := &v1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test1-1-1",
 			Namespace: "tekton",
 			Labels: map[string]string{
-				labelKeyApplication:   "test-app",
-				labelKeyCluster:       "test-cluster",
-				"tekton.dev/pipeline": "default",
+				common.ClusterIDLabelKey:     "1",
+				common.PipelinerunIDLabelKey: "1",
 			},
 		},
 		Status: v1beta1.PipelineRunStatus{
@@ -55,9 +58,8 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 			Name:      "test2-2-1",
 			Namespace: "tekton",
 			Labels: map[string]string{
-				labelKeyApplication:   "test-app",
-				labelKeyCluster:       "test-cluster",
-				"tekton.dev/pipeline": "default",
+				common.ClusterIDLabelKey:     "2",
+				common.PipelinerunIDLabelKey: "1",
 			},
 		},
 		Status: v1beta1.PipelineRunStatus{
@@ -233,4 +235,33 @@ func TestTekton_CreatePipelineRun(t1 *testing.T) {
 			}
 		})
 	}
+}
+
+// nolint
+func TestTekton_getPipelineRunByID(t1 *testing.T) {
+	var pr1, pr2, pr3, pr4 v1beta1.PipelineRun
+	pr1.Name = "pr1"
+	pr1.Labels = map[string]string{common.ClusterIDLabelKey: "1", common.PipelinerunIDLabelKey: "111"}
+	pr2.Name = "pr2"
+	pr2.Labels = map[string]string{common.ClusterIDLabelKey: "1", common.PipelinerunIDLabelKey: "222"}
+	pr3.Name = "pr3"
+	pr3.Labels = map[string]string{common.ClusterIDLabelKey: "1", common.PipelinerunIDLabelKey: "222"}
+	pr4.Name = "pr4"
+	pr4.Labels = map[string]string{common.ClusterIDLabelKey: "2", common.PipelinerunIDLabelKey: "111"}
+
+	t := &Tekton{
+		client: &Client{
+			Tekton:  fakedtekton.NewSimpleClientset(&pr1, &pr2, &pr3),
+			Dynamic: fakeddynamic.NewSimpleDynamicClient(runtime.NewScheme()),
+		},
+	}
+	pr, err := t.getPipelineRunByID(context.Background(), 1, 12345)
+	assert.Equal(t1, ErrPipelineRunNotFound, perrors.Cause(err))
+
+	pr, err = t.getPipelineRunByID(context.Background(), 1, 111)
+	assert.Nil(t1, err)
+	assert.Equal(t1, pr1.Name, pr.Name)
+
+	pr, err = t.getPipelineRunByID(context.Background(), 1, 222)
+	assert.Equal(t1, ErrTektonInternal, perrors.Cause(err))
 }
