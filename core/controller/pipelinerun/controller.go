@@ -16,6 +16,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -120,19 +121,16 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 
 func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelinerun, cluster *clustermodels.Cluster,
 	environment string) (_ *Log, err error) {
-	const op = "pipeline controller: get pipelinerun log"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
-
 	// if pr.PrObject is empty, get pipelinerun log in k8s
 	if pr.PrObject == "" {
 		tektonClient, err := c.tektonFty.GetTekton(environment)
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, perrors.WithMessagef(err, "faild to get tekton for %s", environment)
 		}
 
 		logCh, errCh, err := tektonClient.GetPipelineRunLogByID(ctx, cluster.Name, cluster.ID, pr.ID)
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 		return &Log{
 			LogChannel: logCh,
@@ -143,11 +141,11 @@ func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelin
 	// else, get log from s3
 	tektonCollector, err := c.tektonFty.GetTektonCollector(environment)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, perrors.WithMessagef(err, "faild to get tekton collector for %s", environment)
 	}
 	logBytes, err := tektonCollector.GetPipelineRunLog(ctx, pr.LogObject)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, perrors.WithMessagef(err, "faild to get tekton collector for %s", environment)
 	}
 	return &Log{
 		LogBytes: logBytes,
