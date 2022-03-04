@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	querycommon "g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
@@ -24,8 +25,8 @@ var (
 	ErrClusterNotFound = perrors.New("cluster not found")
 
 	columnInTable = map[string]string{
-		"template":         "`c`.`template`",
-		"template_release": "`c`.`template_release`",
+		querycommon.Template:        "`c`.`template`",
+		querycommon.TemplateRelease: "`c`.`template_release`",
 	}
 )
 
@@ -268,28 +269,36 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 		result   *gorm.DB
 	)
 	if environment != "" {
-		whereValues = append(whereValues, environment, like, limit, offset)
+		whereValuesForRecord := append([]interface{}(nil), whereValues...)
+		whereValuesForRecord = append(whereValuesForRecord, environment, like, limit, offset)
+
 		result = db.Raw(fmt.Sprintf(common.ClusterQueryByEnvNameFuzzily, whereCond),
-			whereValues...).Scan(&clusters)
+			whereValuesForRecord...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 
-		whereValues = whereValues[:len(whereValues)-2]
-		result = db.Raw(fmt.Sprintf(common.ClusterCountByEnvNameFuzzily, whereCond), whereValues...).Scan(&count)
+		whereValuesForCount := append([]interface{}(nil), whereValues...)
+		whereValuesForCount = append(whereValuesForCount, environment, like)
+
+		result = db.Raw(fmt.Sprintf(common.ClusterCountByEnvNameFuzzily, whereCond), whereValuesForCount...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 	} else {
-		whereValues = append(whereValues, like, limit, offset)
+		whereValuesForRecord := append([]interface{}(nil), whereValues...)
+		whereValuesForRecord = append(whereValuesForRecord, like, limit, offset)
+
 		result = db.Raw(fmt.Sprintf(common.ClusterQueryByNameFuzzily, whereCond),
-			whereValues...).Scan(&clusters)
+			whereValuesForRecord...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 
-		whereValues = whereValues[:len(whereValues)-2]
-		result = db.Raw(fmt.Sprintf(common.ClusterCountByNameFuzzily, whereCond), whereValues...).Scan(&count)
+		whereValuesForCount := append([]interface{}(nil), whereValues...)
+		whereValuesForCount = append(whereValuesForCount, like)
+
+		result = db.Raw(fmt.Sprintf(common.ClusterCountByNameFuzzily, whereCond), whereValuesForCount...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}

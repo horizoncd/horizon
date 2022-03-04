@@ -8,18 +8,11 @@ const (
 	PageSize        = "pageSize"
 	Filter          = "filter"
 	Template        = "template"
-	TemplateRelease = "template_release"
+	TemplateRelease = "templateRelease"
 
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20
 	MaxPageSize       = 50
-)
-
-var (
-	FilterKeywords = map[string]struct{}{
-		"template":         {},
-		"template_release": {},
-	}
 )
 
 const (

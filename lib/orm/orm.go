@@ -168,7 +168,7 @@ func FormatFilterExp(query *q.Query, columnInTable map[string]string) (string, [
 				filterKey = keyInDB
 			}
 		}
-		exp.WriteString(fmt.Sprintf(` %s = ? and `, filterKey))
+		exp.WriteString(fmt.Sprintf(" %s = ? and ", filterKey))
 		values = append(values, value)
 	}
 	return exp.String(), values
