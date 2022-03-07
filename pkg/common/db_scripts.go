@@ -161,20 +161,21 @@ const (
 		"r.display_name as region_display_name from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
-		"where c.name like ? and c.deleted_at is null order by updated_at desc limit ? offset ?"
+		"where %s c.name like ? and c.deleted_at is null order by updated_at desc limit ? offset ?"
 	ClusterCountByNameFuzzily = "select count(1) from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
-		"where c.name like ? and c.deleted_at is null"
+		"where %s c.name like ? and c.deleted_at is null"
 	ClusterQueryByEnvNameFuzzily = "select c.*, er.environment_name, er.region_name, " +
 		"r.display_name as region_display_name from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
-		"where er.environment_name = ? and c.name like ? and c.deleted_at is null order by updated_at desc limit ? offset ?"
+		"where %s er.environment_name = ? and c.name like ? and c.deleted_at is null " +
+		"order by updated_at desc limit ? offset ?"
 	ClusterCountByEnvNameFuzzily = "select count(1) from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id " +
 		"join region r on r.name = er.region_name " +
-		"where er.environment_name = ? and c.name like ? and c.deleted_at is null"
+		"where %s er.environment_name = ? and c.name like ? and c.deleted_at is null"
 	ClusterQueryByClusterName        = "select * from cluster where name = ? and deleted_at is null"
 	ClusterQueryByUserAndNameFuzzily = "select * from (" +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
