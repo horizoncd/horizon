@@ -29,7 +29,6 @@ func NewInMemHook(channelSize int, handlers ...EventHandler) hook.Hook {
 }
 
 func (h *InMemHook) Stop() {
-	close(h.events)
 	log.Info(context.TODO(), "channel closed")
 }
 
@@ -69,6 +68,7 @@ func (h *InMemHook) Process() {
 		for _, handlerEntry := range h.eventHandlers {
 			err := handlerEntry.Process(event)
 			if err != nil {
+				h.events <- event
 				log.Errorf(event.Ctx, "handler %s, err = %s", reflect.TypeOf(handlerEntry).Name(), err.Error())
 			}
 		}
