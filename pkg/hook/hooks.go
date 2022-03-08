@@ -29,6 +29,7 @@ func NewInMemHook(channelSize int, handlers ...EventHandler) hook.Hook {
 }
 
 func (h *InMemHook) Stop() {
+	close(h.events)
 	log.Info(context.TODO(), "channel closed")
 }
 
