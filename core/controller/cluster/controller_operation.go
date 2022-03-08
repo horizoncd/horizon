@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	QueryPodsMetric = "kube_pod_info{namespace=\"%s\",pod=~\"%s.*\"}"
+	QueryPodsMetric = "kube_pod_container_info{namespace=\"%s\",pod=~\"%s.*\"}"
 )
 
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
