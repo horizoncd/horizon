@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
 	"g.hz.netease.com/horizon/lib/q"
+	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -103,10 +104,17 @@ func (a *API) Transfer(c *gin.Context) {
 
 	err = a.applicationCtl.Transfer(c, uint(appID), c.Param(_groupPathName))
 	if err != nil {
-		if perrors.Cause(err) == application.ErrGroupNotFound {
+		switch perrors.Cause(err) {
+		case application.ErrGroupNotFound:
 			response.AbortWithRequestError(c, "GroupNotExist", err.Error())
+		case applicationdao.ErrGroupNotFound:
+			response.AbortWithRequestError(c, "GroupNotExist", err.Error())
+		case applicationdao.ErrApplicationNotFound:
+			response.AbortWithNotExistError(c, err.Error())
+		default:
+			response.AbortWithInternalError(c, err.Error())
 		}
-		response.AbortWithInternalError(c, err.Error())
+		return
 	}
 	response.Success(c)
 }

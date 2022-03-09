@@ -21,6 +21,11 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	ErrGroupNotFound       = perrors.New("Group Not Found")
+	ErrApplicationNotFound = perrors.New("Application Not Found")
+)
+
 type DAO interface {
 	GetByID(ctx context.Context, id uint) (*models.Application, error)
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
@@ -280,7 +285,7 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 			return result.Error
 		}
 		if result.RowsAffected == 0 {
-			return gorm.ErrRecordNotFound
+			return ErrGroupNotFound
 		}
 
 		result = tx.Exec(common.ApplicationTransferByID, groupID, id)
@@ -288,7 +293,7 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 			return result.Error
 		}
 		if result.RowsAffected == 0 {
-			return gorm.ErrRecordNotFound
+			return ErrApplicationNotFound
 		}
 		return nil
 	})
