@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
 	"g.hz.netease.com/horizon/lib/q"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
@@ -19,6 +20,7 @@ const (
 	_groupIDParam       = "groupID"
 	_applicationIDParam = "applicationID"
 	_extraOwner         = "extraOwner"
+	_groupPathName      = "groupPath"
 )
 
 type API struct {
@@ -89,6 +91,24 @@ func (a *API) Update(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, resp)
+}
+
+func (a *API) Transfer(c *gin.Context) {
+	appIDStr := c.Param(_applicationIDParam)
+	appID, err := strconv.ParseUint(appIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	err = a.applicationCtl.Transfer(c, uint(appID), c.Param(_groupPathName))
+	if err != nil {
+		if perrors.Cause(err) == application.ErrGroupNotFound {
+			response.AbortWithRequestError(c, "GroupNotExist", err.Error())
+		}
+		response.AbortWithInternalError(c, err.Error())
+	}
+	response.Success(c)
 }
 
 func (a *API) Delete(c *gin.Context) {

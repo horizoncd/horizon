@@ -25,7 +25,12 @@ import (
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+)
+
+var (
+	ErrGroupNotFound = perrors.New("applicationController: group not found")
 )
 
 type Controller interface {
@@ -43,6 +48,8 @@ type Controller interface {
 	ListApplication(ctx context.Context, filter string, query q.Query) (int, []*ListApplicationResponse, error)
 	// ListUserApplication list application that authorized to current user by filter
 	ListUserApplication(ctx context.Context, filter string, query *q.Query) (int, []*ListApplicationResponse, error)
+	// Transfer  try transfer application to another group
+	Transfer(ctx context.Context, id uint, groupNameOrID string) error
 }
 
 type controller struct {
@@ -320,6 +327,22 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error)
 	c.postHook(ctx, hook.DeleteApplication, app.Name)
 
 	return nil
+}
+
+func (c *controller) Transfer(ctx context.Context, id uint, groupName string) error {
+	const op = "application controller: transfer application"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	groups, err := c.groupMgr.GetByPaths(ctx, []string{groupName})
+	if err != nil {
+		return err
+	}
+	if len(groups) == 0 {
+		log.WithFiled(ctx, "op", op).WithField("applicationID",
+			id).Warningf(ErrGroupNotFound.Error())
+		return ErrGroupNotFound
+	}
+	return c.applicationMgr.Transfer(ctx, id, groups[0].ID)
 }
 
 func (c *controller) validateCreate(b Base) error {
