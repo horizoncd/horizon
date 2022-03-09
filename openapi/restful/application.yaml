@@ -450,6 +450,17 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
+  /apis/core/v1/applications/{applicationID}/transfer?groupPath={groupPath}:
+    parameters:
+      - name: applicationID
+        in: path
+        description: application id
+        required: true
+      - name: groupPath
+        in: query
+        description: The  path of the namespace to transfer to project to.
+        required: true
+
   /apis/core/v1/applications/{applicationID}/defaultregions:
     parameters:
       - name: applicationID
