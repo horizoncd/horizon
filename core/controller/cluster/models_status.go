@@ -34,6 +34,7 @@ type GetClusterPodsResponse struct {
 type KubePodInfo struct {
 	Pod       string `json:"pod"`
 	Container string `json:"container"`
+	IP        string `json:"pod_ip"`
 }
 
 type QueryPodsSeriesResult struct {
