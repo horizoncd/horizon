@@ -1,7 +1,12 @@
 package common
 
 import (
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+
+	"g.hz.netease.com/horizon/pkg/hook/hook"
 )
 
 const (
@@ -15,4 +20,15 @@ func InternalSSHToHTTPURL(sshURL string) string {
 	middle := strings.TrimSuffix(tmp, ".git")
 	httpURL := InternalGitHTTPPrefix + middle
 	return httpURL
+}
+
+func ElegantExit(h hook.Hook) {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGTERM)
+
+	go func() {
+		<-signals
+		h.WaitStop()
+		os.Exit(0)
+	}()
 }
