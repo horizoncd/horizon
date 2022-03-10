@@ -338,6 +338,7 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 	limit := query.PageSize
 
 	like := "%" + name + "%"
+	whereCond, whereValues := orm.FormatFilterExp(query, columnInTable)
 	var (
 		clusters []*models.ClusterWithEnvAndRegion
 		count    int
@@ -345,25 +346,42 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 	)
 
 	if len(environment) == 0 {
-		result = db.Raw(common.ClusterQueryByUserAndNameFuzzily,
-			userInfo, like, applicationIDs, like, limit, offset).Scan(&clusters)
+		whereValuesForRecord := append([]interface{}(nil), whereValues...)
+		whereValuesForRecord = append(whereValuesForRecord, userInfo, like)
+		whereValuesForRecord = append(whereValuesForRecord, whereValues...)
+		whereValuesForRecord = append(whereValuesForRecord, applicationIDs, like, limit, offset)
+		result = db.Raw(fmt.Sprintf(common.ClusterQueryByUserAndNameFuzzily, whereCond, whereCond),
+			whereValuesForRecord...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 
-		result = db.Raw(common.ClusterCountByUserAndNameFuzzily, userInfo, like, applicationIDs, like).Scan(&count)
+		whereValuesForCount := append([]interface{}(nil), whereValues...)
+		whereValuesForCount = append(whereValuesForCount, userInfo, like)
+		whereValuesForCount = append(whereValuesForCount, whereValues...)
+		whereValuesForCount = append(whereValuesForCount, applicationIDs, like)
+		result = db.Raw(fmt.Sprintf(common.ClusterCountByUserAndNameFuzzily, whereCond, whereCond),
+			whereValuesForCount...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 	} else {
-		result = db.Raw(common.ClusterQueryByUserAndEnvAndNameFuzzily,
-			userInfo, environment, like, applicationIDs, environment, like, limit, offset).Scan(&clusters)
+		whereValuesForRecord := append([]interface{}(nil), whereValues...)
+		whereValuesForRecord = append(whereValuesForRecord, userInfo, environment, like)
+		whereValuesForRecord = append(whereValuesForRecord, whereValues...)
+		whereValuesForRecord = append(whereValuesForRecord, applicationIDs, environment, like, limit, offset)
+		result = db.Raw(fmt.Sprintf(common.ClusterQueryByUserAndEnvAndNameFuzzily, whereCond, whereCond),
+			whereValuesForRecord...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}
 
-		result = db.Raw(common.ClusterCountByUserAndEnvAndNameFuzzily,
-			userInfo, environment, like, applicationIDs, environment, like, limit, offset).Scan(&count)
+		whereValuesForCount := append([]interface{}(nil), whereValues...)
+		whereValuesForCount = append(whereValuesForCount, userInfo, environment, like)
+		whereValuesForCount = append(whereValuesForCount, whereValues...)
+		whereValuesForCount = append(whereValuesForCount, applicationIDs, environment, like)
+		result = db.Raw(fmt.Sprintf(common.ClusterCountByUserAndEnvAndNameFuzzily, whereCond, whereCond),
+			whereValuesForCount...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, result.Error
 		}

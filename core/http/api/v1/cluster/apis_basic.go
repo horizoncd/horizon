@@ -227,9 +227,12 @@ func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
 		return
 	}
 
+	keywords := request.GetFilterParam(c)
+
 	count, respList, err := a.clusterCtl.ListUserClusterByNameFuzzily(c, environment, filter, &q.Query{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
+		Keywords:   keywords,
 	})
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
