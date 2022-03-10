@@ -182,34 +182,34 @@ const (
 		"from cluster c join member m on m.resource_id = c.id " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where m.resource_type = 'clusters' and m.member_type = '0' and m.membername_id = ? and c.name like ? " +
+		"where %s m.resource_type = 'clusters' and m.member_type = '0' and m.membername_id = ? and c.name like ? " +
 		"and c.deleted_at is null and m.deleted_at is null " +
 		"union " +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
 		"from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where c.application_id in ? and c.name like ? and c.deleted_at is null) " +
+		"where %s c.application_id in ? and c.name like ? and c.deleted_at is null) " +
 		"dc order by updated_at desc limit ? offset ?"
 	ClusterCountByUserAndNameFuzzily = "select count(1) from (" +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
 		"from cluster c join member m on m.resource_id = c.id " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where m.resource_type = 'clusters' and m.member_type = '0' and m.membername_id = ? and c.name like ? " +
+		"where %s m.resource_type = 'clusters' and m.member_type = '0' and m.membername_id = ? and c.name like ? " +
 		"and c.deleted_at is null and m.deleted_at is null " +
 		"union " +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
 		"from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where c.application_id in ? and c.name like ? and c.deleted_at is null) dc"
+		"where %s c.application_id in ? and c.name like ? and c.deleted_at is null) dc"
 	ClusterQueryByUserAndEnvAndNameFuzzily = "select * from (" +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
 		"from cluster c join member m on m.resource_id = c.id " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where m.resource_type = 'clusters' and m.member_type = '0' " +
+		"where %s m.resource_type = 'clusters' and m.member_type = '0' " +
 		"and m.membername_id = ? and er.environment_name = ? and c.name like ? " +
 		"and c.deleted_at is null and m.deleted_at is null " +
 		"union " +
@@ -217,14 +217,14 @@ const (
 		"from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where c.application_id in ? and er.environment_name = ? and c.name like ? and c.deleted_at is null) " +
+		"where %s c.application_id in ? and er.environment_name = ? and c.name like ? and c.deleted_at is null) " +
 		"dc order by updated_at desc limit ? offset ?"
 	ClusterCountByUserAndEnvAndNameFuzzily = "select count(1) from (" +
 		"select c.*, er.environment_name, er.region_name, r.display_name as region_display_name " +
 		"from cluster c join member m on m.resource_id = c.id " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where m.resource_type = 'clusters' and m.member_type = '0' " +
+		"where %s m.resource_type = 'clusters' and m.member_type = '0' " +
 		"and m.membername_id = ? and er.environment_name = ? and c.name like ? " +
 		"and c.deleted_at is null and m.deleted_at is null " +
 		"union " +
@@ -232,7 +232,7 @@ const (
 		"from cluster c " +
 		"join environment_region er on c.environment_region_id = er.id  " +
 		"join region r on r.name = er.region_name " +
-		"where c.application_id in ? and er.environment_name = ? and c.name like ? and c.deleted_at is null) dc"
+		"where %s c.application_id in ? and er.environment_name = ? and c.name like ? and c.deleted_at is null) dc"
 )
 
 /* sql about pipelinerun */
