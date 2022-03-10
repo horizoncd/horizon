@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/lib/q"
 	"github.com/gin-gonic/gin"
 )
 
@@ -35,4 +36,21 @@ func GetPageParam(c *gin.Context) (int, int, error) {
 	}
 
 	return pageNumber, pageSize, nil
+}
+
+func GetFilterParam(c *gin.Context) q.KeyWords {
+	var res = make(q.KeyWords)
+
+	template := c.Query(common.Template)
+	templateRelease := c.Query(common.TemplateRelease)
+
+	set := func(key, value string) {
+		if value == "" {
+			return
+		}
+		res[key] = value
+	}
+	set(common.Template, template)
+	set(common.TemplateRelease, templateRelease)
+	return res
 }

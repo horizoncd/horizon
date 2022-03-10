@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -65,6 +66,10 @@ func (a *API) ClusterStatus(c *gin.Context) {
 
 	resp, err := a.clusterCtl.GetClusterStatus(c, uint(clusterID))
 	if err != nil {
+		if errors.Unwrap(err) == gitlab.ErrGitlabResourceNotFound {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}

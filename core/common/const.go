@@ -4,9 +4,11 @@ import "errors"
 
 // const variables
 const (
-	PageNumber = "pageNumber"
-	PageSize   = "pageSize"
-	Filter     = "filter"
+	PageNumber      = "pageNumber"
+	PageSize        = "pageSize"
+	Filter          = "filter"
+	Template        = "template"
+	TemplateRelease = "templateRelease"
 
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20

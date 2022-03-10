@@ -22,6 +22,7 @@ type LatestPipelinerun struct {
 
 type GetDashboardResponse struct {
 	Basic      string `json:"basic" yaml:"basic"`
+	Container  string `json:"container" yaml:"container"`
 	Serverless string `json:"serverless,omitempty" yaml:"serverless,omitempty"`
 	Memcached  string `json:"memcached,omitempty" yaml:"memcached,omitempty"`
 }
@@ -31,7 +32,9 @@ type GetClusterPodsResponse struct {
 }
 
 type KubePodInfo struct {
-	Pod string `json:"pod"`
+	Pod       string `json:"pod"`
+	Container string `json:"container"`
+	IP        string `json:"pod_ip"`
 }
 
 type QueryPodsSeriesResult struct {

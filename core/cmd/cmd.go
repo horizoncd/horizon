@@ -10,6 +10,7 @@ import (
 	"os"
 	"regexp"
 
+	"g.hz.netease.com/horizon/core/common"
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
@@ -220,10 +221,16 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	cmdbController := cmdb.NewController(config.CmdbConfig)
-	handler := handler.NewCMDBEventHandler(cmdbController)
-	memHook := hook.NewInMemHook(2000, handler)
+
+	handlers := make([]hook.EventHandler, 0)
+	if config.CmdbConfig.Enabled {
+		cmdbController := cmdb.NewController(config.CmdbConfig)
+		handler := handler.NewCMDBEventHandler(cmdbController)
+		handlers = append(handlers, handler)
+	}
+	memHook := hook.NewInMemHook(2000, handlers...)
 	go memHook.Process()
+	common.ElegantExit(memHook)
 
 	var (
 		rbacSkippers = middleware.MethodAndPathSkipper("*",
@@ -330,8 +337,4 @@ func Run(flags *Flags) {
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", config.ServerConfig.Port)))
-
-	// hook elegant stop
-	memHook.Stop()
-	memHook.WaitStop()
 }

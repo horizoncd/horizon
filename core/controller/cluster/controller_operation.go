@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	QueryPodsMetric = "kube_pod_info{namespace=\"%s\",pod=~\"%s.*\"}"
+	QueryPodsMetric = "kube_pod_container_info{namespace=\"%s\",pod=~\"%s.*\"}"
 )
 
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
@@ -545,7 +545,8 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 	}
 
 	getDashboardResp := &GetDashboardResponse{
-		Basic: fmt.Sprintf(grafanaURL.BasicDashboard, envValue.Namespace, cluster.Name),
+		Basic:     fmt.Sprintf(grafanaURL.BasicDashboard, envValue.Namespace, cluster.Name),
+		Container: fmt.Sprintf(grafanaURL.ContainerDashboard, envValue.Namespace, cluster.Name),
 	}
 
 	// TODO(tom): special dashboard about same template should be placed in the horizon template

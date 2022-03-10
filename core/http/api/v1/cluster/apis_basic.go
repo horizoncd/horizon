@@ -199,7 +199,10 @@ func (a *API) ListByNameFuzzily(c *gin.Context) {
 		return
 	}
 
+	keywords := request.GetFilterParam(c)
+
 	count, respList, err := a.clusterCtl.ListClusterByNameFuzzily(c, environment, filter, &q.Query{
+		Keywords:   keywords,
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	})
