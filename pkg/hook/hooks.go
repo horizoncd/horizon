@@ -2,12 +2,12 @@ package hook
 
 import (
 	"context"
-	"reflect"
-
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
+	"reflect"
+	"time"
 )
 
 type EventHandler interface {
@@ -58,6 +58,7 @@ func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 		EventType: event.EventType,
 		Event:     event.Event,
 		Ctx:       newCtx,
+		Delay:     hook.DefaultDelay,
 	}
 	h.events <- newEvent
 	log.Infof(ctx, "pushed event, eventType = %s, event = %+v", event.EventType, event.Event)
@@ -69,7 +70,10 @@ func (h *InMemHook) Process() {
 		for _, handlerEntry := range h.eventHandlers {
 			err := handlerEntry.Process(event)
 			if err != nil {
-				h.events <- event
+				go func() {
+					time.Sleep(event.Delay)
+					h.events <- event
+				}()
 				log.Errorf(event.Ctx, "handler %s, err = %s", reflect.TypeOf(handlerEntry).Name(), err.Error())
 			}
 		}
