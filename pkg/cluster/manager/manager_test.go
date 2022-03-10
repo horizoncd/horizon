@@ -29,6 +29,7 @@ var (
 
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
+	db = db.Debug()
 	if err := db.AutoMigrate(&models.Cluster{}, &clustertagmodels.ClusterTag{}, &usermodels.User{},
 		&envmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{}); err != nil {
 		panic(err)
@@ -140,7 +141,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 
 	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, er.EnvironmentName, "clu",
-		&q.Query{Keywords: q.KeyWords{"template": "javaapp", "template_release": "v1.1.0"}, PageNumber: 1, PageSize: 1})
+		&q.Query{Keywords: q.KeyWords{"template": "javaapp", "templateRelease": "v1.1.0"}, PageNumber: 1, PageSize: 1})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
@@ -158,6 +159,21 @@ func Test(t *testing.T) {
 	for _, cluster := range clustersForUser {
 		t.Logf("%v", cluster)
 	}
+
+	clusterCountForUser, clustersForUser, err = Mgr.ListUserAuthorizedByNameFuzzily(ctx,
+		er.EnvironmentName, "clu", []uint{applicationID}, user2.ID,
+		&q.Query{Keywords: q.KeyWords{"template": "javaapp", "templateRelease": "v1.1.0"}})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, clusterCountForUser)
+	for _, cluster := range clustersForUser {
+		t.Logf("%v", cluster)
+	}
+
+	clusterCountForUser, _, err = Mgr.ListUserAuthorizedByNameFuzzily(ctx,
+		er.EnvironmentName, "clu", []uint{applicationID}, user2.ID,
+		&q.Query{Keywords: q.KeyWords{"template": "node"}})
+	assert.Nil(t, err)
+	assert.Equal(t, 0, clusterCountForUser)
 
 	exists, err := Mgr.CheckClusterExists(ctx, name)
 	assert.Nil(t, err)
