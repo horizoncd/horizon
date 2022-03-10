@@ -22,6 +22,7 @@ type LatestPipelinerun struct {
 
 type GetDashboardResponse struct {
 	Basic      string `json:"basic" yaml:"basic"`
+	Container  string `json:"container" yaml:"container"`
 	Serverless string `json:"serverless,omitempty" yaml:"serverless,omitempty"`
 	Memcached  string `json:"memcached,omitempty" yaml:"memcached,omitempty"`
 }
