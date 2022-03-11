@@ -6,6 +6,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
+	"math"
 	"reflect"
 	"time"
 )
@@ -55,10 +56,10 @@ func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 	}
 
 	newEvent := &hook.EventCtx{
-		EventType: event.EventType,
-		Event:     event.Event,
-		Ctx:       newCtx,
-		Delay:     hook.DefaultDelay,
+		EventType:   event.EventType,
+		Event:       event.Event,
+		Ctx:         newCtx,
+		FailedTimes: 0,
 	}
 	h.events <- newEvent
 	log.Infof(ctx, "pushed event, eventType = %s, event = %+v", event.EventType, event.Event)
@@ -70,10 +71,9 @@ func (h *InMemHook) Process() {
 		for _, handlerEntry := range h.eventHandlers {
 			err := handlerEntry.Process(event)
 			if err != nil {
-				go func() {
-					time.Sleep(event.Delay)
+				time.AfterFunc(h.when(event), func() {
 					h.events <- event
-				}()
+				})
 				log.Errorf(event.Ctx, "handler %s, err = %s", reflect.TypeOf(handlerEntry).Name(), err.Error())
 			}
 		}
@@ -81,4 +81,20 @@ func (h *InMemHook) Process() {
 	log.Info(context.TODO(), "process ok")
 	h.quit <- true
 	log.Info(context.TODO(), "channel closed, ProcessExit")
+}
+
+func (h *InMemHook) when(event *hook.EventCtx) time.Duration {
+	event.FailedTimes++
+
+	backoff := float64(hook.DefaultDelay.Nanoseconds()) * math.Pow(2, float64(event.FailedTimes))
+	if backoff > math.MaxInt64 {
+		return hook.MaxDelay
+	}
+
+	calculated := time.Duration(backoff)
+	if calculated > hook.MaxDelay {
+		return hook.MaxDelay
+	}
+
+	return calculated
 }
