@@ -75,6 +75,9 @@ func (h *InMemHook) Process() {
 					h.events <- event
 				})
 				log.Errorf(event.Ctx, "handler %s, err = %s", reflect.TypeOf(handlerEntry).Name(), err.Error())
+			} else {
+				log.Infof(event.Ctx, "processed event, eventType = %s, event = %+v, handler %s,",
+					event.EventType, event.Event, reflect.TypeOf(handlerEntry).Name())
 			}
 		}
 	}
