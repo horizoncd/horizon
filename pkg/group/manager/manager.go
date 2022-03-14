@@ -45,6 +45,8 @@ type Manager interface {
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
 	// GetByIDNameFuzzily get groups that fuzzily matching the given name and id
 	GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error)
+	// GetAllGroups return all the groups
+	GetAll(ctx context.Context) ([]*models.Group, error)
 	// UpdateBasic update basic info of a group
 	UpdateBasic(ctx context.Context, group *models.Group) error
 	// GetSubGroupsUnderParentIDs get subgroups under the given parent groups without paging
@@ -101,6 +103,10 @@ func (m manager) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, err
 
 func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
 	return m.groupDAO.GetByNameFuzzily(ctx, name)
+}
+
+func (m manager) GetAll(ctx context.Context) ([]*models.Group, error) {
+	return m.groupDAO.GetAll(ctx)
 }
 
 func (m manager) Create(ctx context.Context, group *models.Group) (*models.Group, error) {

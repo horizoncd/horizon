@@ -17,6 +17,7 @@ import (
 	clustertagctl "g.hz.netease.com/horizon/core/controller/clustertag"
 	codectl "g.hz.netease.com/horizon/core/controller/code"
 	envtemplatectl "g.hz.netease.com/horizon/core/controller/envtemplate"
+	groupctl "g.hz.netease.com/horizon/core/controller/group"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
@@ -247,11 +248,12 @@ func Run(flags *Flags) {
 		templateSchemaTagCtl = templateschematagctl.NewController()
 		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers)
 		applicationRegionCtl = applicationregionctl.NewController(regionConfig)
+		groupCtl             = groupctl.NewController(mservice)
 	)
 
 	var (
 		// init API
-		groupAPI             = group.NewAPI()
+		groupAPI             = group.NewAPI(groupCtl)
 		templateAPI          = template.NewAPI(templateCtl)
 		userAPI              = user.NewAPI()
 		applicationAPI       = application.NewAPI(applicationCtl)

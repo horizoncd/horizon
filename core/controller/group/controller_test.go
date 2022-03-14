@@ -10,6 +10,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	membermock "g.hz.netease.com/horizon/mock/pkg/member/service"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
@@ -17,7 +18,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-
+	"g.hz.netease.com/horizon/pkg/rbac/role"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -68,6 +70,149 @@ func init() {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
+}
+
+func TestGetAuthedGroups(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	memberMock := membermock.NewMockService(mockCtrl)
+	groupCtl := NewController(memberMock)
+
+	type args struct {
+		ctx      context.Context
+		newGroup *NewGroup
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    uint
+		wantErr bool
+	}{
+		{
+			name: "createRootGroup",
+			args: args{
+				ctx: ctx,
+				newGroup: &NewGroup{
+					Name:            "1",
+					Path:            "a",
+					VisibilityLevel: "private",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "createSubGroup",
+			args: args{
+				ctx: ctx,
+				newGroup: &NewGroup{
+					Name:            "1",
+					Path:            "a",
+					VisibilityLevel: "private",
+					ParentID:        1,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "createSubGroup",
+			args: args{
+				ctx: ctx,
+				newGroup: &NewGroup{
+					Name:            "2",
+					Path:            "b",
+					VisibilityLevel: "private",
+					ParentID:        1,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Ctl.CreateGroup(tt.args.ctx, tt.args.newGroup)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateGroup() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err == nil {
+				group, _ := manager.Mgr.GetByID(ctx, got)
+				var traversalIDs string
+				if group.ParentID == 0 {
+					traversalIDs = strconv.Itoa(int(got))
+				} else {
+					parent, _ := manager.Mgr.GetByID(ctx, tt.args.newGroup.ParentID)
+					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
+				}
+
+				assert.True(t, GroupValueEqual(group, &models.Group{
+					Name:            tt.args.newGroup.Name,
+					Path:            tt.args.newGroup.Path,
+					Description:     tt.args.newGroup.Description,
+					ParentID:        tt.args.newGroup.ParentID,
+					VisibilityLevel: tt.args.newGroup.VisibilityLevel,
+					TraversalIDs:    traversalIDs,
+					CreatedBy:       1,
+					UpdatedBy:       1,
+				}))
+			}
+		})
+	}
+	// case admin get all the groups
+	rootUserContext := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{ // nolint
+		Name:     contextUserName,
+		FullName: contextUserFullName,
+		ID:       contextUserID,
+		Admin:    true,
+	})
+	groups, err := groupCtl.GetAuthedGroup(rootUserContext)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(groups))
+
+	// case normal user get same groups
+	normalUserContext := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{ // nolint
+		Name:     contextUserName,
+		FullName: contextUserFullName,
+		ID:       contextUserID,
+		Admin:    false,
+	})
+	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
+		&membermodels.Member{
+			Model:        gorm.Model{},
+			ResourceType: "",
+			ResourceID:   0,
+			Role:         "",
+			MemberType:   0,
+			MemberNameID: 0,
+			GrantedBy:    0,
+			CreatedBy:    0,
+		}, nil).Times(1)
+	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
+		&membermodels.Member{
+			Model:        gorm.Model{},
+			ResourceType: "",
+			ResourceID:   0,
+			Role:         role.Owner,
+			MemberType:   0,
+			MemberNameID: 0,
+			GrantedBy:    0,
+			CreatedBy:    0,
+		}, nil).Times(1)
+	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
+		&membermodels.Member{
+			Model:        gorm.Model{},
+			ResourceType: "",
+			ResourceID:   0,
+			Role:         role.Maintainer,
+			MemberType:   0,
+			MemberNameID: 0,
+			GrantedBy:    0,
+			CreatedBy:    0,
+		}, nil).Times(1)
+	groups, err = groupCtl.GetAuthedGroup(normalUserContext)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(groups))
+
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
 func TestControllerCreateGroup(t *testing.T) {

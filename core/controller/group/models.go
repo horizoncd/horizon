@@ -1,5 +1,9 @@
 package group
 
+import (
+	"time"
+)
+
 // NewGroup model for creating a group
 type NewGroup struct {
 	Name            string `json:"name" binding:"required"`
@@ -23,4 +27,18 @@ type SearchParams struct {
 	GroupID    uint
 	PageNumber int
 	PageSize   int
+}
+
+// Group basic info of group, including group & application
+type Group struct {
+	ID              uint      `json:"id"`
+	Name            string    `json:"name"`
+	Path            string    `json:"path"`
+	VisibilityLevel string    `json:"visibilityLevel"`
+	Description     string    `json:"description"`
+	ParentID        uint      `json:"parentID"`
+	TraversalIDs    string    `json:"traversalIDs"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+	FullName        string    `json:"fullName"`
+	FullPath        string    `json:"fullPath"`
 }
