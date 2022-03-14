@@ -22,11 +22,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	// Ctl global instance of the group controller
-	Ctl = NewController(nil)
-)
-
 const (
 	// ErrCodeNotFound a kind of error code, returned when there's no group matching the given id
 	ErrCodeNotFound = errors.ErrorCode("RecordNotFound")

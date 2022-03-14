@@ -31,6 +31,7 @@ var (
 	contextUserID       uint = 1
 	contextUserName          = "Tony"
 	contextUserFullName      = "TonyWu"
+	groupCtl                 = NewController(nil)
 )
 
 func GroupValueEqual(g1, g2 *models.Group) bool {
@@ -76,7 +77,7 @@ func TestGetAuthedGroups(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	memberMock := membermock.NewMockService(mockCtrl)
-	groupCtl := NewController(memberMock)
+	myGroupCtl := NewController(memberMock)
 
 	type args struct {
 		ctx      context.Context
@@ -129,7 +130,7 @@ func TestGetAuthedGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Ctl.CreateGroup(tt.args.ctx, tt.args.newGroup)
+			got, err := myGroupCtl.CreateGroup(tt.args.ctx, tt.args.newGroup)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateGroup() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -208,7 +209,7 @@ func TestGetAuthedGroups(t *testing.T) {
 			GrantedBy:    0,
 			CreatedBy:    0,
 		}, nil).Times(1)
-	groups, err = groupCtl.GetAuthedGroup(normalUserContext)
+	groups, err = myGroupCtl.GetAuthedGroup(normalUserContext)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(groups))
 
@@ -278,7 +279,7 @@ func TestControllerCreateGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Ctl.CreateGroup(tt.args.ctx, tt.args.newGroup)
+			got, err := groupCtl.CreateGroup(tt.args.ctx, tt.args.newGroup)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateGroup() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -317,7 +318,7 @@ func TestControllerDelete(t *testing.T) {
 		VisibilityLevel: "private",
 	}
 
-	id, err := Ctl.CreateGroup(ctx, newRootGroup)
+	id, err := groupCtl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
 	assert.Greater(t, id, uint(0))
 
@@ -349,7 +350,7 @@ func TestControllerDelete(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Ctl.Delete(tt.args.ctx, tt.args.id); (err != nil) != tt.wantErr {
+			if err := groupCtl.Delete(tt.args.ctx, tt.args.id); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -365,7 +366,7 @@ func TestControllerGetByID(t *testing.T) {
 		VisibilityLevel: "private",
 	}
 
-	id, err := Ctl.CreateGroup(ctx, newRootGroup)
+	id, err := groupCtl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
 
 	group, err := manager.Mgr.GetByID(ctx, id)
@@ -412,7 +413,7 @@ func TestControllerGetByID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Ctl.GetByID(tt.args.ctx, tt.args.id)
+			got, err := groupCtl.GetByID(tt.args.ctx, tt.args.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetByID() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -433,9 +434,9 @@ func TestControllerGetByPath(t *testing.T) {
 		VisibilityLevel: "private",
 	}
 
-	id, err := Ctl.CreateGroup(ctx, newRootGroup)
+	id, err := groupCtl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
-	child, err := Ctl.GetByID(ctx, id)
+	child, err := groupCtl.GetByID(ctx, id)
 	assert.Nil(t, err)
 	applicationDAO := applicationdao.NewDAO()
 	app, err := applicationDAO.Create(ctx, &appmodels.Application{
@@ -509,7 +510,7 @@ func TestControllerGetByPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Ctl.GetByFullPath(tt.args.ctx, tt.args.path)
+			got, err := groupCtl.GetByFullPath(tt.args.ctx, tt.args.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetByFullPath() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -528,15 +529,15 @@ func TestControllerGetChildren(t *testing.T) {
 		Name: "1",
 		Path: "a",
 	}
-	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+	id, _ := groupCtl.CreateGroup(ctx, newRootGroup)
 
 	newGroup := &NewGroup{
 		Name:     "2",
 		Path:     "b",
 		ParentID: id,
 	}
-	id2, _ := Ctl.CreateGroup(ctx, newGroup)
-	group2, _ := Ctl.GetByID(ctx, id2)
+	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
+	group2, _ := groupCtl.GetByID(ctx, id2)
 
 	applicationDAO := applicationdao.NewDAO()
 	app, err := applicationDAO.Create(ctx, &appmodels.Application{
@@ -603,7 +604,7 @@ func TestControllerGetChildren(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := Ctl.GetChildren(tt.args.ctx, tt.args.id, tt.args.pageNumber, tt.args.pageSize)
+			got, got1, err := groupCtl.GetChildren(tt.args.ctx, tt.args.id, tt.args.pageNumber, tt.args.pageSize)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetChildren() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -630,8 +631,8 @@ func TestControllerGetSubGroups(t *testing.T) {
 		Path:            "a",
 		VisibilityLevel: "private",
 	}
-	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
-	group1, _ := Ctl.GetByID(ctx, id)
+	id, _ := groupCtl.CreateGroup(ctx, newRootGroup)
+	group1, _ := groupCtl.GetByID(ctx, id)
 
 	newGroup := &NewGroup{
 		Name:            "2",
@@ -639,8 +640,8 @@ func TestControllerGetSubGroups(t *testing.T) {
 		VisibilityLevel: "private",
 		ParentID:        id,
 	}
-	id2, _ := Ctl.CreateGroup(ctx, newGroup)
-	group2, _ := Ctl.GetByID(ctx, id2)
+	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
+	group2, _ := groupCtl.GetByID(ctx, id2)
 
 	type args struct {
 		ctx        context.Context
@@ -703,7 +704,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := Ctl.GetSubGroups(tt.args.ctx, tt.args.id, tt.args.pageNumber, tt.args.pageSize)
+			got, got1, err := groupCtl.GetSubGroups(tt.args.ctx, tt.args.id, tt.args.pageNumber, tt.args.pageSize)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetSubGroups() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -725,15 +726,15 @@ func TestControllerSearchChildren(t *testing.T) {
 		Name: "1",
 		Path: "a",
 	}
-	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+	id, _ := groupCtl.CreateGroup(ctx, newRootGroup)
 
 	newGroup := &NewGroup{
 		Name:     "2",
 		Path:     "b",
 		ParentID: id,
 	}
-	id2, _ := Ctl.CreateGroup(ctx, newGroup)
-	_, _ = Ctl.GetByID(ctx, id2)
+	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
+	_, _ = groupCtl.GetByID(ctx, id2)
 
 	applicationDAO := applicationdao.NewDAO()
 	app, err := applicationDAO.Create(ctx, &appmodels.Application{
@@ -805,7 +806,7 @@ func TestControllerSearchChildren(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := Ctl.SearchChildren(tt.args.ctx, &SearchParams{
+			got, got1, err := groupCtl.SearchChildren(tt.args.ctx, &SearchParams{
 				GroupID:    tt.args.id,
 				Filter:     tt.args.filter,
 				PageNumber: 1,
@@ -836,8 +837,8 @@ func TestControllerSearchGroups(t *testing.T) {
 		Path:            "a",
 		VisibilityLevel: "private",
 	}
-	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
-	group1, _ := Ctl.GetByID(ctx, id)
+	id, _ := groupCtl.CreateGroup(ctx, newRootGroup)
+	group1, _ := groupCtl.GetByID(ctx, id)
 
 	newGroup := &NewGroup{
 		Name:            "2",
@@ -845,8 +846,8 @@ func TestControllerSearchGroups(t *testing.T) {
 		VisibilityLevel: "private",
 		ParentID:        id,
 	}
-	id2, _ := Ctl.CreateGroup(ctx, newGroup)
-	group2, _ := Ctl.GetByID(ctx, id2)
+	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
+	group2, _ := groupCtl.GetByID(ctx, id2)
 
 	type args struct {
 		ctx    context.Context
@@ -955,7 +956,7 @@ func TestControllerSearchGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := Ctl.SearchGroups(tt.args.ctx, &SearchParams{
+			got, got1, err := groupCtl.SearchGroups(tt.args.ctx, &SearchParams{
 				GroupID: tt.args.id,
 				Filter:  tt.args.filter,
 			})
@@ -981,21 +982,21 @@ func TestControllerTransfer(t *testing.T) {
 		Path:            "a",
 		VisibilityLevel: "private",
 	}
-	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+	id, _ := groupCtl.CreateGroup(ctx, newRootGroup)
 	newGroup := &NewGroup{
 		Name:            "2",
 		Path:            "b",
 		VisibilityLevel: "private",
 		ParentID:        id,
 	}
-	id2, _ := Ctl.CreateGroup(ctx, newGroup)
+	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
 
 	newRootGroup2 := &NewGroup{
 		Name:            "3",
 		Path:            "c",
 		VisibilityLevel: "private",
 	}
-	id3, _ := Ctl.CreateGroup(ctx, newRootGroup2)
+	id3, _ := groupCtl.CreateGroup(ctx, newRootGroup2)
 
 	type args struct {
 		ctx         context.Context
@@ -1022,7 +1023,7 @@ func TestControllerTransfer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Ctl.Transfer(tt.args.ctx, tt.args.id, tt.args.newParentID); (err != nil) != tt.wantErr {
+			if err := groupCtl.Transfer(tt.args.ctx, tt.args.id, tt.args.newParentID); (err != nil) != tt.wantErr {
 				t.Errorf("Transfer() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -1050,7 +1051,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 		Path:            "a",
 		VisibilityLevel: "private",
 	}
-	id, _ := Ctl.CreateGroup(ctx, newRootGroup)
+	id, _ := groupCtl.CreateGroup(ctx, newRootGroup)
 
 	type args struct {
 		ctx         context.Context
@@ -1095,7 +1096,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Ctl.UpdateBasic(tt.args.ctx, tt.args.id, tt.args.updateGroup); (err != nil) != tt.wantErr {
+			if err := groupCtl.UpdateBasic(tt.args.ctx, tt.args.id, tt.args.updateGroup); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateBasic() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			group, _ := manager.Mgr.GetByID(ctx, tt.args.id)

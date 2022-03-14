@@ -102,7 +102,7 @@ func (a *API) Transfer(c *gin.Context) {
 		return
 	}
 
-	err = a.applicationCtl.Transfer(c, uint(appID), c.Param(_groupPathName))
+	err = a.applicationCtl.Transfer(c, uint(appID), c.Query(_groupPathName))
 	if err != nil {
 		switch perrors.Cause(err) {
 		case application.ErrGroupNotFound:
