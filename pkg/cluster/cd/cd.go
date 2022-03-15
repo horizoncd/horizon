@@ -276,10 +276,7 @@ func (c *cd) DeleteCluster(ctx context.Context, params *DeleteClusterParams) (er
 	}
 
 	// 3. wait for application to delete completely
-	if err := argo.WaitApplication(ctx, params.Cluster, string(applicationCR.UID), http.StatusNotFound); err != nil {
-		return err
-	}
-	return nil
+	return argo.WaitApplication(ctx, params.Cluster, string(applicationCR.UID), http.StatusNotFound)
 }
 
 func (c *cd) Next(ctx context.Context, params *ClusterNextParams) (err error) {
@@ -291,11 +288,7 @@ func (c *cd) Next(ctx context.Context, params *ClusterNextParams) (err error) {
 		return err
 	}
 
-	if err := argo.ResumeRollout(ctx, params.Cluster); err != nil {
-		return err
-	}
-
-	return nil
+	return argo.ResumeRollout(ctx, params.Cluster)
 }
 
 var rolloutResource = schema.GroupVersionResource{

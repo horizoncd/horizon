@@ -524,12 +524,8 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 
 	// 1.2 transfer project to RecyclingParent
 	newPid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, newPath)
-	if err := g.gitlabLib.TransferProject(ctx, newPid,
-		fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application)); err != nil {
-		return err
-	}
-
-	return nil
+	return g.gitlabLib.TransferProject(ctx, newPid,
+		fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
 }
 
 func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,

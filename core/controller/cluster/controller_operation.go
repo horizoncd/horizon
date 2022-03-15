@@ -349,13 +349,10 @@ func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
 		return err
 	}
 
-	if err := c.cd.Next(ctx, &cd.ClusterNextParams{
+	return c.cd.Next(ctx, &cd.ClusterNextParams{
 		Environment: er.EnvironmentName,
 		Cluster:     cluster.Name,
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func (c *controller) Promote(ctx context.Context, clusterID uint) (err error) {

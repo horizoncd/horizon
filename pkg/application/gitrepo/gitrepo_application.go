@@ -205,11 +205,7 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 	}
 
 	// 3. delete old application group
-	if err := g.gitlabLib.DeleteGroup(ctx, gid); err != nil {
-		return err
-	}
-
-	return nil
+	return g.gitlabLib.DeleteGroup(ctx, gid)
 }
 
 func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, application, repo string,
