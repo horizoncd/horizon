@@ -225,8 +225,8 @@ func Run(flags *Flags) {
 	handlers := make([]hook.EventHandler, 0)
 	if config.CmdbConfig.Enabled {
 		cmdbController := cmdb.NewController(config.CmdbConfig)
-		handler := handler.NewCMDBEventHandler(cmdbController)
-		handlers = append(handlers, handler)
+		cmdbHandler := handler.NewCMDBEventHandler(cmdbController)
+		handlers = append(handlers, cmdbHandler)
 	}
 	memHook := hook.NewInMemHook(2000, handlers...)
 	go memHook.Process()
