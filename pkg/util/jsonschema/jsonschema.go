@@ -21,7 +21,8 @@ func Validate(schema, document interface{}) error {
 	case map[string]interface{}:
 		schemaLoader = gojsonschema.NewGoLoader(schema)
 	default:
-		return fmt.Errorf("unsported type: %T for schema", schema)
+		return perrors.Wrap(he.ErrParamInvalid,
+			fmt.Sprintf("unsported type: %T for schema", schema))
 	}
 
 	switch document := document.(type) {
@@ -32,7 +33,8 @@ func Validate(schema, document interface{}) error {
 	case map[string]interface{}:
 		documentLoader = gojsonschema.NewGoLoader(document)
 	default:
-		return fmt.Errorf("unsported type: %T for document", document)
+		return perrors.Wrap(he.ErrParamInvalid,
+			fmt.Sprintf("unsported type: %T for document", document))
 	}
 
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)

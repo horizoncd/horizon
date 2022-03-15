@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"g.hz.netease.com/horizon/core/common"
 	"k8s.io/apimachinery/pkg/fields"
 
 	he "g.hz.netease.com/horizon/core/errors"
@@ -50,7 +51,7 @@ func (t *Tekton) CreatePipelineRun(ctx context.Context, pr *PipelineRun) (eventI
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
-		message := wlog.Response(ctx, resp)
+		message := common.Response(ctx, resp)
 		return "", perrors.Wrapf(he.ErrHTTPRespNotAsExpected, "statusCode = %d, message = %s", resp.StatusCode, message)
 	}
 	respData, err := ioutil.ReadAll(resp.Body)

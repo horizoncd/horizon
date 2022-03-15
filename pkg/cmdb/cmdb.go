@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/config/cmdb"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -92,7 +93,7 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
+		message := common.Response(ctx, resp)
 		return fmt.Errorf("%s, code  = %d, err = %s", op, resp.StatusCode, message)
 	}
 
@@ -137,7 +138,7 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) (err
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
+		message := common.Response(ctx, resp)
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
 	}
 	var cResp CommonResp
@@ -186,7 +187,7 @@ func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
+		message := common.Response(ctx, resp)
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
 	}
 	var cResp CommonResp
@@ -227,7 +228,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterName string) (err
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
+		message := common.Response(ctx, resp)
 		return fmt.Errorf("code  = %d, err = %s", resp.StatusCode, message)
 	}
 	var cResp CommonResp

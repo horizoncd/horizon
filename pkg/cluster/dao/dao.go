@@ -13,7 +13,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/common"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
@@ -21,8 +20,6 @@ import (
 )
 
 var (
-	ErrClusterNotFound = perrors.New("cluster not found")
-
 	columnInTable = map[string]string{
 		querycommon.Template:        "`c`.`template`",
 		querycommon.TemplateRelease: "`c`.`template_release`",
@@ -149,7 +146,7 @@ func (d *dao) GetByName(ctx context.Context, clusterName string) (*models.Cluste
 	}
 
 	if result.RowsAffected == 0 {
-		return nil, nil
+		return nil, he.NewErrNotFound(he.ClusterInDB, fmt.Sprintf("no cluster named %s found", clusterName))
 	}
 
 	return &cluster, nil

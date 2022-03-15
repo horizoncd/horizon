@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"net/http"
 	"regexp"
 	"strconv"
 
@@ -24,7 +23,6 @@ import (
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -178,16 +176,7 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 
 func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: get cluster"
-	l := wlog.Start(ctx, op)
-	defer func() {
-		// errors like ClusterNotFound are logged with info level
-		if err != nil && errors.Status(err) == http.StatusNotFound {
-			log.WithFiled(ctx, "op",
-				op).WithField("duration", l.GetDuration().String()).Info(err.Error())
-		} else {
-			l.Stop(err)
-		}
-	}()
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get cluster from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -257,25 +246,18 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ in
 	// 1. get cluster from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
-			log.Errorf(ctx, "get cluster error, err = %s", err.Error())
-		}
 		return nil, err
 	}
 
 	// 2. get application
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
-			log.Errorf(ctx, "get application error, err = %s", err.Error())
-		}
 		return nil, err
 	}
 
 	// 3. get output in template
 	outputStr, err := c.outputGetter.GetTemplateOutPut(ctx, cluster.Template, cluster.TemplateRelease)
 	if err != nil {
-		log.Errorf(ctx, "get template output error, err = %s", err.Error())
 		return nil, err
 	}
 	if outputStr == "" {
@@ -285,7 +267,6 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ in
 	// 4. get files in  git repo
 	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
 	if err != nil {
-		log.Errorf(ctx, "get clusterValueFile from gitRepo error, err  = %s", err.Error())
 		return nil, err
 	}
 
@@ -294,7 +275,6 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ in
 	// 5. reader output in template and return
 	outputRenderJSONObject, err := RenderOutputObject(outputStr, cluster.Template, clusterFiles...)
 	if err != nil {
-		log.Errorf(ctx, "render outputstr error, err = %s", err.Error())
 		return nil, err
 	}
 
@@ -541,7 +521,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		renderValues[templateschema.ClusterIDKey] = clusterIDStr
 		if err := c.validateTemplateInput(ctx,
 			cluster.Template, templateRelease, r.TemplateInput, renderValues); err != nil {
-			return nil, perrors.Wrapf(he.ErrHTTPRespNotAsExpected,
+			return nil, perrors.Wrapf(he.ErrParamInvalid,
 				"request body validate err: %v", err)
 		}
 		// update cluster in git repo

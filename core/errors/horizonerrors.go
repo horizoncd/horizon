@@ -72,87 +72,87 @@ func (e *HorizonErrNotFound) Error() string {
 }
 
 type HorizonErrGetFailed struct {
-	source sourceType
+	Source sourceType
 }
 
 func NewErrGetFailed(source sourceType, msg string) error {
 	return errors.Wrap(&HorizonErrGetFailed{
-		source: source,
+		Source: source,
 	}, msg)
 }
 
 func (e *HorizonErrGetFailed) Error() string {
-	return fmt.Sprintf("%s get failed", e.source.name)
+	return fmt.Sprintf("%s get failed", e.Source.name)
 }
 
 type HorizonErrDeleteFailed struct {
-	source sourceType
+	Source sourceType
 }
 
 func NewErrDeleteFailed(source sourceType, msg string) error {
 	return errors.Wrap(&HorizonErrDeleteFailed{
-		source: source,
+		Source: source,
 	}, msg)
 }
 
 func (e *HorizonErrDeleteFailed) Error() string {
-	return fmt.Sprintf("%s delete failed", e.source.name)
+	return fmt.Sprintf("%s delete failed", e.Source.name)
 }
 
 type HorizonErrUpdateFailed struct {
-	source sourceType
+	Source sourceType
 }
 
 func NewErrUpdateFailed(source sourceType, msg string) error {
 	return errors.Wrap(&HorizonErrUpdateFailed{
-		source: source,
+		Source: source,
 	}, msg)
 }
 
 func (e *HorizonErrUpdateFailed) Error() string {
-	return fmt.Sprintf("%s update failed", e.source.name)
+	return fmt.Sprintf("%s update failed", e.Source.name)
 }
 
 type HorizonErrInsertFailed struct {
-	source sourceType
+	Source sourceType
 }
 
 func NewErrInsertFailed(source sourceType, msg string) error {
 	return errors.Wrap(&HorizonErrInsertFailed{
-		source: source,
+		Source: source,
 	}, msg)
 }
 
 func (e *HorizonErrInsertFailed) Error() string {
-	return fmt.Sprintf("%s insert failed", e.source.name)
+	return fmt.Sprintf("%s insert failed", e.Source.name)
 }
 
 type HorizonErrCreateFailed struct {
-	source sourceType
+	Source sourceType
 }
 
 func NewErrCreateFailed(source sourceType, msg string) error {
 	return errors.Wrap(&HorizonErrCreateFailed{
-		source: source,
+		Source: source,
 	}, msg)
 }
 
 func (e *HorizonErrCreateFailed) Error() string {
-	return fmt.Sprintf("%s create failed", e.source.name)
+	return fmt.Sprintf("%s create failed", e.Source.name)
 }
 
 type HorizonErrListFailed struct {
-	source sourceType
+	Source sourceType
 }
 
 func NewErrListFailed(source sourceType, msg string) error {
 	return errors.Wrap(&HorizonErrListFailed{
-		source: source,
+		Source: source,
 	}, msg)
 }
 
 func (e *HorizonErrListFailed) Error() string {
-	return fmt.Sprintf("%s list failed", e.source.name)
+	return fmt.Sprintf("%s list failed", e.Source.name)
 }
 
 var (

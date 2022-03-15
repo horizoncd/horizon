@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	he "g.hz.netease.com/horizon/core/errors"
 
 	perrors "g.hz.netease.com/horizon/pkg/errors"
@@ -191,7 +192,7 @@ func (h *helper) CreateApplication(ctx context.Context, manifest []byte) (err er
 
 	if resp.StatusCode != http.StatusOK {
 		return perrors.Wrap(he.ErrHTTPRespNotAsExpected,
-			wlog.Response(ctx, resp))
+			common.Response(ctx, resp))
 	}
 
 	return nil
@@ -219,7 +220,7 @@ func (h *helper) DeployApplication(ctx context.Context, application string, revi
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, wlog.Response(ctx, resp))
+		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	return nil
@@ -238,7 +239,7 @@ func (h *helper) DeleteApplication(ctx context.Context, application string) (err
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
-		message := wlog.Response(ctx, resp)
+		message := common.Response(ctx, resp)
 		return perrors.Wrapf(he.ErrHTTPRespNotAsExpected,
 			"status = %s, statusCode = %d, message = %s", resp.Status, resp.StatusCode, message)
 	}
@@ -355,7 +356,7 @@ func (h *helper) GetApplicationTree(ctx context.Context, application string) (
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, wlog.Response(ctx, resp))
+		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
@@ -384,7 +385,7 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
+		message := common.Response(ctx, resp)
 		if resp.StatusCode == http.StatusNotFound {
 			return he.NewErrNotFound(he.ApplicationResourceInArgo, message)
 		}
@@ -431,7 +432,7 @@ func (h *helper) ListResourceEvents(ctx context.Context, application string, par
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, wlog.Response(ctx, resp))
+		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
@@ -469,7 +470,7 @@ func (h *helper) ResumeRollout(ctx context.Context, application string) (err err
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, wlog.Response(ctx, resp))
+		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 	return nil
 }
@@ -493,7 +494,6 @@ func (h *helper) GetContainerLog(ctx context.Context, application string,
 			return nil, nil, perrors.Wrap(he.ErrReadFailed, err.Error())
 		}
 		_ = resp.Body.Close()
-		wlog.ResponseContent(ctx, data)
 
 		var errorResponse *ErrorResponse
 		err = json.Unmarshal(data, &errorResponse)

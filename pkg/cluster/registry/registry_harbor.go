@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	he "g.hz.netease.com/horizon/core/errors"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"github.com/hashicorp/go-retryablehttp"
@@ -104,7 +105,7 @@ func (h *HarborRegistry) CreateProject(ctx context.Context, project string) (_ i
 		return -1, nil
 	}
 
-	message := wlog.Response(ctx, resp)
+	message := common.Response(ctx, resp)
 	return -1, errors.E(op, resp.StatusCode, message)
 }
 
@@ -133,7 +134,7 @@ func (h *HarborRegistry) AddMembers(ctx context.Context, projectID int) (err err
 		if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusConflict {
 			return nil
 		}
-		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, wlog.Response(ctx, resp))
+		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	for _, member := range h.members {
@@ -159,7 +160,7 @@ func (h *HarborRegistry) DeleteRepository(ctx context.Context, project string, r
 		return nil
 	}
 
-	return perrors.Wrap(he.ErrHTTPRespNotAsExpected, wlog.Response(ctx, resp))
+	return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 }
 
 func (h *HarborRegistry) ListImage(ctx context.Context,
@@ -179,7 +180,7 @@ func (h *HarborRegistry) ListImage(ctx context.Context,
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, wlog.Response(ctx, resp))
+		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	var harborArtifacts []HarborArtifact
@@ -234,7 +235,7 @@ func (h *HarborRegistry) PreheatProject(ctx context.Context, project string,
 	if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusConflict {
 		return nil
 	}
-	return perrors.Wrap(he.ErrHTTPRespNotAsExpected, wlog.Response(ctx, resp))
+	return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 }
 
 func (h *HarborRegistry) GetServer(ctx context.Context) string {

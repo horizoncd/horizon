@@ -153,7 +153,7 @@ func (g *getter) GetTemplateSchema(ctx context.Context,
 	unmarshal := func(b []byte, m *map[string]interface{}, err *error) {
 		defer wgUnmarshal.Done()
 		if e := json.Unmarshal(b, &m); e != nil {
-			*err = e
+			*err = perrors.Wrap(he.ErrParamInvalid, e.Error())
 		}
 	}
 	go unmarshal(pipelineSchemaBytes, &pipelineSchema, &err1)
