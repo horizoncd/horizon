@@ -2,14 +2,13 @@ package manager
 
 import (
 	"context"
-	"net/http"
 
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/environment/dao"
 	"g.hz.netease.com/horizon/pkg/environment/models"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 )
 
 var (
@@ -60,16 +59,14 @@ func (m *manager) ListAllEnvironment(ctx context.Context) ([]*models.Environment
 
 func (m *manager) CreateEnvironmentRegion(ctx context.Context,
 	er *models.EnvironmentRegion) (*models.EnvironmentRegion, error) {
-	const op = "environment manager: create environmentRegion"
-
 	_, err := m.envDAO.GetEnvironmentRegionByEnvAndRegion(ctx,
 		er.EnvironmentName, er.RegionName)
 	if err != nil {
-		if perrors.Cause(err) != dao.ErrEnvironmentRegionNotFound {
+		if e, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok || e.Source != he.EnvironmentRegionInDB {
 			return nil, err
 		}
 	} else {
-		return nil, errors.E(op, http.StatusConflict, errors.ErrorCode("AlreadyExists"))
+		return nil, perrors.Wrap(he.ErrNameConflict, "already exists")
 	}
 
 	return m.envDAO.CreateEnvironmentRegion(ctx, er)

@@ -4,18 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"sync"
 
-	"g.hz.netease.com/horizon/core/common"
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/util/angular"
-	"g.hz.netease.com/horizon/pkg/util/errors"
-
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/xanzy/go-gitlab"
@@ -76,17 +73,17 @@ func NewApplicationGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.R
 func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, application string,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) (err error) {
 	const op = "gitlab repo: create application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. create application group
 	group, err := g.gitlabLib.CreateGroup(ctx, application, application, &g.applicationRepoConf.Parent.ID)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 2. create application default repo
 	if _, err := g.gitlabLib.CreateProject(ctx, _default, group.ID); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 3. write files
@@ -108,25 +105,25 @@ func (g *applicationGitlabRepo) GetApplication(ctx context.Context,
 func (g *applicationGitlabRepo) UpdateApplicationEnvTemplate(ctx context.Context, application, env string,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) (err error) {
 	const op = "gitlab repo: update application env template"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. check env template repo exists
 	var envProjectExists = false
 	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
-		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
-			return errors.E(op, err)
+		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+			return err
 		}
 		// if not found, create this repo first
 		gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
 		parentGroup, err := g.gitlabLib.GetGroup(ctx, gid)
 		if err != nil {
-			return errors.E(op, err)
+			return err
 		}
 		_, err = g.gitlabLib.CreateProject(ctx, env, parentGroup.ID)
 		if err != nil {
-			return errors.E(op, err)
+			return err
 		}
 	} else {
 		envProjectExists = true
@@ -144,14 +141,12 @@ func (g *applicationGitlabRepo) UpdateApplicationEnvTemplate(ctx context.Context
 
 func (g *applicationGitlabRepo) GetApplicationEnvTemplate(ctx context.Context,
 	application, env string) (pipelineJSONBlob, applicationJSONBlob map[string]interface{}, err error) {
-	const op = "gitlab repo: get application env template"
-
 	// 1. check env template repo exists
 	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
-		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
-			return nil, nil, errors.E(op, err)
+		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+			return nil, nil, err
 		}
 		// if not found, return the default template
 		return g.getApplication(ctx, application, _default)
@@ -164,7 +159,7 @@ func (g *applicationGitlabRepo) GetApplicationEnvTemplate(ctx context.Context,
 func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 	application string, applicationID uint) (err error) {
 	const op = "gitlab repo: delete application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// page and perPage used for list projects.
 	// the count of project under the application's group cannot be greater than 8,
@@ -183,13 +178,13 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 	recyclingGroup, err := g.gitlabLib.CreateGroup(ctx, recyclingGroupName,
 		recyclingGroupName, &g.applicationRepoConf.RecyclingParent.ID)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 2. transfer all project to recyclingGroup
 	projects, err := g.gitlabLib.ListGroupProjects(ctx, gid, page, perPage)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	var wg sync.WaitGroup
@@ -206,12 +201,12 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 	wg.Wait()
 
 	if len(errs) > 0 {
-		return errors.E(op, errs[0])
+		return err
 	}
 
 	// 3. delete old application group
 	if err := g.gitlabLib.DeleteGroup(ctx, gid); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	return nil
@@ -219,12 +214,9 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 
 func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, application, repo string,
 	action gitlablib.FileAction, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
-	const op = "gitlab repo: createOrUpdate application"
-
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return err
 	}
 
 	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, repo)
@@ -232,13 +224,11 @@ func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, a
 	// 2. write files to gitlab
 	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
 	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
+		return perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 	pipelineYAML, err := yaml.Marshal(pipelineJSONBlob)
 	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
+		return perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 	actions := []gitlablib.CommitAction{
 		{
@@ -265,7 +255,7 @@ func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, a
 	})
 
 	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	return nil
@@ -274,7 +264,7 @@ func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, a
 func (g *applicationGitlabRepo) getApplication(ctx context.Context,
 	application, repo string) (pipelineJSONBlob, applicationJSONBlob map[string]interface{}, err error) {
 	const op = "gitlab repo: get application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get template and pipeline from gitlab
 	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
@@ -292,6 +282,9 @@ func (g *applicationGitlabRepo) getApplication(ctx context.Context,
 			return
 		}
 		pipelineBytes, err1 = kyaml.YAMLToJSON(pipelineBytes)
+		if err1 != nil {
+			err1 = perrors.Wrap(he.ErrParamInvalid, err1.Error())
+		}
 	}()
 	go func() {
 		defer wg.Done()
@@ -300,20 +293,23 @@ func (g *applicationGitlabRepo) getApplication(ctx context.Context,
 			return
 		}
 		applicationBytes, err2 = kyaml.YAMLToJSON(applicationBytes)
+		if err2 != nil {
+			err2 = perrors.Wrap(he.ErrParamInvalid, err2.Error())
+		}
 	}()
 	wg.Wait()
 
 	for _, err := range []error{err1, err2} {
 		if err != nil {
-			return nil, nil, errors.E(op, err)
+			return nil, nil, err
 		}
 	}
 
 	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
-		return nil, nil, errors.E(op, err)
+		return nil, nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 	if err := json.Unmarshal(applicationBytes, &applicationJSONBlob); err != nil {
-		return nil, nil, errors.E(op, err)
+		return nil, nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 
 	return pipelineJSONBlob, applicationJSONBlob, nil

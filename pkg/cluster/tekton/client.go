@@ -3,8 +3,8 @@ package tekton
 import (
 	"strings"
 
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/util/kube"
-	"github.com/pkg/errors"
 	tektonclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
@@ -59,7 +59,7 @@ func InitClient(kubeconfig string) (*Client, error) {
 func tektonClient(config *rest.Config) (tektonclientset.Interface, error) {
 	cs, err := tektonclientset.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return nil, he.NewErrCreateFailed(he.TektonClient, err.Error())
 	}
 	return cs, nil
 }
@@ -67,7 +67,7 @@ func tektonClient(config *rest.Config) (tektonclientset.Interface, error) {
 func kubeClient(config *rest.Config) (k8s.Interface, error) {
 	k8scs, err := k8s.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create k8s client from config")
+		return nil, he.NewErrCreateFailed(he.K8SClient, err.Error())
 	}
 	return k8scs, nil
 }
@@ -75,7 +75,7 @@ func kubeClient(config *rest.Config) (k8s.Interface, error) {
 func dynamicClient(config *rest.Config) (dynamic.Interface, error) {
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create dynamic client from config")
+		return nil, he.NewErrCreateFailed(he.K8SClient, err.Error())
 	}
 	return dynamicClient, err
 }

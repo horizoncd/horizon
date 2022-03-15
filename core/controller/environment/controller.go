@@ -30,7 +30,7 @@ type controller struct {
 
 func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err error) {
 	const op = "environment controller: list environments"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	envs, err := c.envMgr.ListAllEnvironment(ctx)
 	if err != nil {
@@ -42,7 +42,7 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 
 func (c *controller) ListRegionsByEnvironment(ctx context.Context, environment string) (_ Regions, err error) {
 	const op = "environment controller: list regions by environment"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	regions, err := c.envMgr.ListRegionsByEnvironment(ctx, environment)
 	if err != nil {

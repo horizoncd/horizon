@@ -133,8 +133,9 @@ func TestExec(t *testing.T) {
 	ctx := log.WithContext(context.Background(), "TestExec")
 	stdout, stderr, err := Exec(ctx, containerRef, []string{"ls"}, &fake.RemoteExecutor{Client: restClient.Client})
 	assert.Nil(t, err)
-	assert.Equal(t, stdout,
-		"http://localhost/api/v1/namespaces/test/pods/foo1/exec?command=ls&container=bar&stderr=true&stdout=true")
+	assert.Equal(t,
+		"http://localhost/api/v1/namespaces/test/pods/foo1/exec?command=ls&container=bar&stderr=true&stdout=true",
+		stdout)
 	assert.Equal(t, stderr, "")
 }
 

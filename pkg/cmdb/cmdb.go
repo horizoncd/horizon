@@ -63,7 +63,7 @@ func (c *controller) getSignature() (string, error) {
 
 func (c *controller) CreateApplication(ctx context.Context, req CreateApplicationRequest) (err error) {
 	const op = "cmdb CreateApplication"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. build request
 	signature, err := c.getSignature()
@@ -115,7 +115,7 @@ func (c *controller) CreateApplication(ctx context.Context, req CreateApplicatio
 
 func (c *controller) DeleteApplication(ctx context.Context, appName string) (err error) {
 	const op = "cmdb DeleteApplication"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. build request
 	signature, err := c.getSignature()
@@ -158,7 +158,7 @@ func (c *controller) DeleteApplication(ctx context.Context, appName string) (err
 
 func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest) (err error) {
 	const op = "cmdb CreateCluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. build request
 	signature, err := c.getSignature()
@@ -206,7 +206,7 @@ func (c *controller) CreateCluster(ctx context.Context, req CreateClusterRequest
 }
 func (c *controller) DeleteCluster(ctx context.Context, clusterName string) (err error) {
 	const op = "cmdb DeleteCluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. build request
 	signature, err := c.getSignature()

@@ -1,13 +1,12 @@
 package cluster
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cluster"
-	"g.hz.netease.com/horizon/lib/gitlab"
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/dao"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -66,8 +65,8 @@ func (a *API) ClusterStatus(c *gin.Context) {
 
 	resp, err := a.clusterCtl.GetClusterStatus(c, uint(clusterID))
 	if err != nil {
-		if errors.Unwrap(err) == gitlab.ErrGitlabResourceNotFound {
-			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+		if e, ok := perrors.Cause(err).(*he.HorizonErrNotFound); ok && e.Source == he.GitlabResource {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
 			return
 		}
 		response.AbortWithError(c, err)
@@ -113,7 +112,7 @@ func (a *API) InternalDeploy(c *gin.Context) {
 	}
 	resp, err := a.clusterCtl.InternalDeploy(c, uint(clusterID), request)
 	if err != nil {
-		if perrors.Cause(err) == gitlab.ErrGitlabInternal || perrors.Cause(err) == gitlab.ErrGitlabResourceNotFound {
+		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); ok || perrors.Cause(err) == he.ErrGitlabInternal {
 			log.Errorf(c, "InternalDeploy error: %+v", err)
 			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 			return

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -470,8 +471,8 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 
 	rowsAffected, err := c.groupManager.Delete(ctx, id)
 	if err != nil {
-		if err == manager.ErrHasChildren {
-			return errors.E(op, http.StatusBadRequest, ErrGroupHasChildren, manager.ErrHasChildren)
+		if err == he.ErrGroupHasChildren {
+			return errors.E(op, http.StatusBadRequest, ErrGroupHasChildren, he.ErrGroupHasChildren)
 		}
 		return errors.E(op, fmt.Sprintf("failed to delete the group matching the id: %d", id), err)
 	}

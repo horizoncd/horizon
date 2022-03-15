@@ -3,7 +3,6 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/mozillazg/go-pinyin"
@@ -24,22 +22,21 @@ import (
 func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	r *BuildDeployRequest) (_ *BuildDeployResponse, err error) {
 	const op = "cluster controller: build deploy"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return nil, err
 	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	var branch = cluster.GitBranch
@@ -49,17 +46,17 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 
 	commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, &branch, nil)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 1. create project in harbor
@@ -69,7 +66,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		PreheatPolicyID: regionEntity.Harbor.PreheatPolicyID,
 	})
 	if _, err := harbor.CreateProject(ctx, application.Name); err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 2. update image in git repo
@@ -77,7 +74,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 3. add pipelinerun in db
@@ -97,18 +94,18 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 4. create pipelinerun in k8s
 	tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx,
 		application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	_, err = tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
@@ -131,7 +128,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		RegionID:         regionEntity.ID,
 	})
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	return &BuildDeployResponse{
@@ -164,7 +161,7 @@ func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 
 func (c *controller) GetDiff(ctx context.Context, clusterID uint, codeBranch string) (_ *GetDiffResponse, err error) {
 	const op = "cluster controller: get diff"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get cluster
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)

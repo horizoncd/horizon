@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	goerrors "errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 
-	"g.hz.netease.com/horizon/core/common"
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
@@ -171,7 +170,7 @@ func NewClusterGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoC
 func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	application, cluster, templateName string) (_ *ClusterFiles, err error) {
 	const op = "cluster git repo: get cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get template and pipeline from gitlab
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
@@ -187,6 +186,9 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 			return
 		}
 		pipelineBytes, err1 = kyaml.YAMLToJSON(pipelineBytes)
+		if err1 != nil {
+			err1 = perrors.Wrap(he.ErrParamInvalid, err1.Error())
+		}
 	}()
 	go func() {
 		defer wg.Done()
@@ -195,27 +197,30 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 			return
 		}
 		applicationBytes, err2 = kyaml.YAMLToJSON(applicationBytes)
+		if err2 != nil {
+			err2 = perrors.Wrap(he.ErrParamInvalid, err2.Error())
+		}
 	}()
 	wg.Wait()
 
 	for _, err := range []error{err1, err2} {
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 	}
 
 	var pipelineJSONBlobWithTemplate, applicationJSONBlobWithTemplate map[string]map[string]interface{}
 	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlobWithTemplate); err != nil {
-		return nil, errors.E(op, err)
+		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 	if err := json.Unmarshal(applicationBytes, &applicationJSONBlobWithTemplate); err != nil {
-		return nil, errors.E(op, err)
+		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 
 	pipelineJSONBlob, ok1 := pipelineJSONBlobWithTemplate[templateName]
 	applicationJSONBlob, ok2 := applicationJSONBlobWithTemplate[templateName]
 	if !ok1 || !ok2 {
-		return nil, errors.E(op, "template name: %v is different from git and db", templateName)
+		return nil, perrors.Wrapf(he.ErrParamInvalid, "template name: %v is different from git and db", templateName)
 	}
 
 	return &ClusterFiles{
@@ -265,7 +270,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 
 	for i := 0; i < len(cases); i++ {
 		if cases[i].err != nil {
-			if perrors.Cause(cases[i].err) != gitlablib.ErrGitlabResourceNotFound {
+			if _, ok := perrors.Cause(cases[i].err).(*he.HorizonErrNotFound); !ok {
 				log.Errorf(ctx, "get cluster value file error, err = %s", cases[i].err.Error())
 				return nil, cases[i].err
 			}
@@ -278,7 +283,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 		var out map[interface{}]interface{}
 		err = yaml.Unmarshal(oneCase.retBytes, &out)
 		if err != nil {
-			err = fmt.Errorf("yaml Unmarshal err, file = %s", oneCase.fileName)
+			err = perrors.Wrapf(he.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.fileName)
 			break
 		}
 
@@ -296,20 +301,19 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 
 func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
 	const op = "cluster git repo: create cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return err
 	}
 
 	// 1. create application group if necessary
 	var appGroup *gitlab.Group
 	appGroup, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name))
 	if err != nil {
-		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
-			return errors.E(op, err)
+		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+			return err
 		}
 		appGroup, err = g.gitlabLib.CreateGroup(ctx, params.Application.Name,
 			params.Application.Name, &g.clusterRepoConf.Parent.ID)
@@ -318,15 +322,15 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		}
 	}
 
-	// 2. create cluster repo under appGroup
+	// 3. create cluster repo under appGroup
 	if _, err := g.gitlabLib.CreateProject(ctx, params.Cluster, appGroup.ID); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 3. create gitops branch from master
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
 	if _, err := g.gitlabLib.CreateBranch(ctx, pid, _branchGitops, _branchMaster); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 4. write files to repo, to gitops branch
@@ -340,7 +344,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	marshal(&sreValueYAML, &err5, g.assembleSREValue(params))
 	chart, err := g.assembleChart(params.BaseParams)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 	marshal(&chartYAML, &err6, chart)
 	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.TemplateName))
@@ -348,7 +352,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 
 	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8} {
 		if err != nil {
-			return errors.E(op, err)
+			return err
 		}
 	}
 
@@ -358,7 +362,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		pipelineOutPutMap := assemblePipelineOutput(params.TemplateRelease.TemplateName, params.Image)
 		pipelineOutPutYAML, err := yaml.Marshal(pipelineOutPutMap)
 		if err != nil {
-			return errors.E(op, err)
+			return perrors.Wrap(he.ErrParamInvalid, err.Error())
 		}
 		pipelineOutPut = string(pipelineOutPutYAML)
 	}
@@ -419,7 +423,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	})
 
 	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	return nil
@@ -427,28 +431,24 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 
 func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateClusterParams) (err error) {
 	const op = "cluster git repo: update cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return err
 	}
 
 	// 1. write files to repo
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
 	var applicationYAML, pipelineYAML, baseValueYAML, chartYAML []byte
 	var err1, err2, err3, err4 error
-	marshal := func(b *[]byte, err *error, data interface{}) {
-		*b, *err = yaml.Marshal(data)
-	}
 
 	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
 	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
 	chart, err := g.assembleChart(params.BaseParams)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 	marshal(&chartYAML, &err4, chart)
 
@@ -491,7 +491,7 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 	})
 
 	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	return nil
@@ -499,17 +499,17 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 
 func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) (err error) {
 	const op = "cluster git repo: delete cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. create application group if necessary
 	_, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
 	if err != nil {
-		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
-			return errors.E(op, err)
+		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+			return err
 		}
 		_, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.clusterRepoConf.RecyclingParent.ID)
 		if err != nil {
-			return errors.E(op, err)
+			return err
 		}
 	}
 
@@ -519,14 +519,14 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 	newName := fmt.Sprintf("%v-%d", cluster, clusterID)
 	newPath := newName
 	if err := g.gitlabLib.EditNameAndPathForProject(ctx, pid, &newName, &newPath); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 1.2 transfer project to RecyclingParent
 	newPid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, newPath)
 	if err := g.gitlabLib.TransferProject(ctx, newPid,
 		fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application)); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	return nil
@@ -535,7 +535,7 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 	cluster string, from, to *string) (_ string, err error) {
 	const op = "cluster git repo: compare config"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
@@ -546,7 +546,7 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 		compare, err = g.gitlabLib.Compare(ctx, pid, *from, *to, nil)
 	}
 	if err != nil {
-		return "", errors.E(op, err)
+		return "", err
 	}
 	if compare.Diffs == nil {
 		return "", nil
@@ -600,15 +600,15 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, pid interface{},
 
 	pipelineOutputBytes, err := kyaml.YAMLToJSON(content)
 	if err != nil {
-		return nil, perrors.Wrapf(err, "failed to transfer pipeline output to json")
+		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 	if err := json.Unmarshal(pipelineOutputBytes, &ret); err != nil {
-		return nil, perrors.Wrapf(err, "failed to unmarshal pipeline output")
+		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 
 	pipelineOutput, ok := ret[template]
 	if !ok {
-		return nil, perrors.Wrapf(ErrPipelineOutputEmpty, "no template in pipelineOutput.yaml")
+		return nil, perrors.Wrapf(he.ErrPipelineOutputEmpty, "no template in pipelineOutput.yaml")
 	}
 
 	if pipelineOutput.Git == nil {
@@ -620,18 +620,18 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, pid interface{},
 func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
 	pipelineOutputParam PipelineOutput) (_ string, err error) {
 	const op = "cluster git repo: update pipeline output"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return "", perrors.Wrapf(err, "no user key in context")
+		return "", err
 	}
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
 	pipelineOutput, err := g.GetPipelineOutput(ctx, pid, template)
 	if err != nil {
-		if perrors.Cause(err) == ErrPipelineOutputEmpty {
+		if perrors.Cause(err) == he.ErrPipelineOutputEmpty {
 			pipelineOutput = &pipelineOutputParam
 		} else {
 			return "", perrors.WithMessage(err, "failed to get pipeline output")
@@ -659,7 +659,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	pipelineOutputMap[template] = pipelineOutput
 	marshal(&outputYaml, &err1, pipelineOutputMap)
 	if err1 != nil {
-		return "", errors.E(op, err1)
+		return "", err1
 	}
 
 	actions := []gitlablib.CommitAction{
@@ -687,12 +687,11 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 	application, cluster, template string) (_ string, err error) {
 	const op = "cluster git repo: update restartTime"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return "", errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return "", err
 	}
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
@@ -701,7 +700,7 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 	var err1 error
 	marshal(&restartYAML, &err1, assembleRestart(template))
 	if err1 != nil {
-		return "", errors.E(op, err1)
+		return "", err1
 	}
 
 	actions := []gitlablib.CommitAction{
@@ -721,7 +720,7 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 	// update in _branchMaster directly
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions)
 	if err != nil {
-		return "", errors.E(op, err)
+		return "", err
 	}
 
 	return commit.ID, nil
@@ -730,7 +729,7 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 	application, cluster string) (_ *ClusterCommit, err error) {
 	const op = "cluster git repo: get config commit"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
@@ -750,7 +749,7 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 
 	for _, err := range []error{err1, err2} {
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 	}
 
@@ -772,19 +771,19 @@ func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster s
 func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 	application, cluster, templateName string) (_ *EnvValue, err error) {
 	const op = "cluster git repo: get config commit"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
 	bytes, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathEnv)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	var envMap map[string]map[string]*EnvValue
 
 	if err := yaml.Unmarshal(bytes, &envMap); err != nil {
-		return nil, errors.E(op, err)
+		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 
 	return envMap[templateName][_envValueNamespace], nil
@@ -792,12 +791,11 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 
 func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, commit string) (_ string, err error) {
 	const op = "cluster git repo: rollback"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return "", errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return "", err
 	}
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
@@ -863,7 +861,7 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 
 	newCommit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
 	if err != nil {
-		return "", errors.E(op, err)
+		return "", err
 	}
 
 	return newCommit.ID, nil
@@ -872,12 +870,11 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, templateName string,
 	clusterTags []*clustertagmodels.ClusterTag) (err error) {
 	const op = "cluster git repo: update tags"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return err
 	}
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
@@ -885,7 +882,7 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 	var tagsYAML []byte
 	marshal(&tagsYAML, &err, assembleTags(templateName, clusterTags))
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	actions := []gitlablib.CommitAction{
@@ -921,7 +918,7 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 
 	_, err = g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	return nil
@@ -1035,11 +1032,10 @@ type Dependency struct {
 }
 
 func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
-	const op = "cluster git repo: assemble chart"
 	helmRepo, ok := g.helmRepoMapper[params.Environment]
 	if !ok {
-		return nil, errors.E(op, http.StatusNotFound,
-			fmt.Errorf("helm repo for environment %v not found", params.Environment))
+		return nil, he.NewErrNotFound(he.HelmRepo,
+			fmt.Sprintf("helm repo for environment %v not found", params.Environment))
 	}
 	return &Chart{
 		APIVersion: "v2",
@@ -1096,4 +1092,7 @@ func assembleTags(templateName string,
 
 func marshal(b *[]byte, err *error, data interface{}) {
 	*b, *err = yaml.Marshal(data)
+	if (*err) != nil {
+		*err = perrors.Wrap(he.ErrParamInvalid, (*err).Error())
+	}
 }

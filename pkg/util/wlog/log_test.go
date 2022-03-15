@@ -2,7 +2,6 @@ package wlog
 
 import (
 	"context"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -17,7 +16,7 @@ func TestLogOK(t *testing.T) {
 	var err error
 
 	const op = "app: create application"
-	defer Start(ctx, op).Stop(func() string { return ByErr(err) })
+	defer Start(ctx, op).Stop(err)
 	log.Info(ctx, "hello world")
 
 	Start(ctx, "test: stopPrint").StopPrint()
@@ -28,7 +27,7 @@ func TestPanic(t *testing.T) {
 	ctx := log.WithContext(context.Background(), "traceId")
 
 	const op = "app: create application"
-	defer Start(ctx, op).Stop(func() string { return ByErr(err) })
+	defer Start(ctx, op).Stop(err)
 
 	doPanic()
 }
@@ -53,9 +52,9 @@ func TestLogError(t *testing.T) {
 	var err error
 
 	const op = "app: create application"
-	defer Start(ctx, op).Stop(func() string { return ByErr(err) })
+	defer Start(ctx, op).Stop(err)
 
-	err = errors.New("unknown error")
+	// err = errors.New("unknown error")
 	log.Info(ctx, "hello world")
 }
 

@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
@@ -37,12 +37,12 @@ import (
 func (c *controller) ListCluster(ctx context.Context, applicationID uint, environments []string,
 	filter string, query *q.Query) (_ int, _ []*ListClusterResponse, err error) {
 	const op = "cluster controller: list cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationAndEnvs(ctx,
 		applicationID, environments, filter, query)
 	if err != nil {
-		return 0, nil, errors.E(op, err)
+		return 0, nil, err
 	}
 
 	return count, ofClustersWithEnvAndRegion(clustersWithEnvAndRegion), nil
@@ -51,14 +51,14 @@ func (c *controller) ListCluster(ctx context.Context, applicationID uint, enviro
 func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 	filter string, query *q.Query) (count int, listClusterWithFullResp []*ListClusterWithFullResponse, err error) {
 	const op = "cluster controller: list cluster by name fuzzily"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	listClusterWithFullResp = []*ListClusterWithFullResponse{}
 	// 1. get clusters
 	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByNameFuzzily(ctx,
 		environment, filter, query)
 	if err != nil {
-		return 0, nil, errors.E(op, err)
+		return 0, nil, err
 	}
 
 	// 2. get applications
@@ -68,7 +68,7 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 	}
 	applicationMap, err := c.applicationSvc.GetByIDs(ctx, applicationIDs)
 	if err != nil {
-		return 0, nil, errors.E(op, err)
+		return 0, nil, err
 	}
 
 	// 3. convert and add full path, full name
@@ -183,47 +183,47 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 		// errors like ClusterNotFound are logged with info level
 		if err != nil && errors.Status(err) == http.StatusNotFound {
 			log.WithFiled(ctx, "op",
-				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
+				op).WithField("duration", l.GetDuration().String()).Info(err.Error())
 		} else {
-			l.Stop(func() string { return wlog.ByErr(err) })
+			l.Stop(err)
 		}
 	}()
 
 	// 1. get cluster from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 2. get application
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 3. get environmentRegion
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 4. get files in git repo
 	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 5. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	// 6. get namespace
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 7. transfer model
@@ -233,7 +233,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	// 8. get latest deployed commit
 	latestPR, err := c.pipelinerunMgr.GetLatestSuccessByClusterID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	if latestPR != nil {
 		clusterResp.LatestDeployedCommit = latestPR.GitCommit
@@ -243,7 +243,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	// 9. get createdBy and updatedBy users
 	userMap, err := c.userManager.GetUserMapByIDs(ctx, []uint{cluster.CreatedBy, cluster.UpdatedBy})
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	clusterResp.CreatedBy = toUser(getUserFromMap(cluster.CreatedBy, userMap))
 	clusterResp.UpdatedBy = toUser(getUserFromMap(cluster.UpdatedBy, userMap))
@@ -257,19 +257,19 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ in
 	// 1. get cluster from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
 			log.Errorf(ctx, "get cluster error, err = %s", err.Error())
 		}
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 2. get application
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
+		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
 			log.Errorf(ctx, "get application error, err = %s", err.Error())
 		}
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 3. get output in template
@@ -318,7 +318,7 @@ func RenderOutputObject(outPutStr, templateName string,
 				}
 				binaryContent, err := yaml.Marshal(content)
 				if err != nil {
-					return nil, err
+					return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 				}
 				oneDoc += string(binaryContent) + "\n"
 			}
@@ -327,7 +327,7 @@ func RenderOutputObject(outPutStr, templateName string,
 	var oneDocMap map[interface{}]interface{}
 	err := yaml.Unmarshal([]byte(oneDoc), &oneDocMap)
 	if err != nil {
-		return nil, fmt.Errorf("RenderOutputObject yaml Unmarshal  error, err  = %s", err.Error())
+		return nil, perrors.Wrapf(he.ErrParamInvalid, "RenderOutputObject yaml Unmarshal  error, err  = %s", err.Error())
 	}
 
 	var addValuePrefixDocMap = make(map[interface{}]interface{})
@@ -336,17 +336,17 @@ func RenderOutputObject(outPutStr, templateName string,
 	doTemplate := template.Must(template.New("").Funcs(sprig.HtmlFuncMap()).Parse(outPutStr))
 	err = doTemplate.ExecuteTemplate(&b, "", addValuePrefixDocMap)
 	if err != nil {
-		return nil, fmt.Errorf("RenderOutputObject template error, err  = %s", err.Error())
+		return nil, perrors.Wrapf(he.ErrParamInvalid, "RenderOutputObject template error, err  = %s", err.Error())
 	}
 
 	var retJSONObject interface{}
 	jsonBytes, err := kyaml.YAMLToJSON(b.Bytes())
 	if err != nil {
-		return nil, fmt.Errorf("RenderOutputObject YAMLToJSON error, err  = %s", err.Error())
+		return nil, perrors.Wrapf(he.ErrParamInvalid, "RenderOutputObject YAMLToJSON error, err  = %s", err.Error())
 	}
 	err = json.Unmarshal(jsonBytes, &retJSONObject)
 	if err != nil {
-		return nil, fmt.Errorf("RenderOutputObject json Unmarshal error, err  = %s", err.Error())
+		return nil, perrors.Wrapf(he.ErrParamInvalid, "RenderOutputObject json Unmarshal error, err  = %s", err.Error())
 	}
 	return retJSONObject, nil
 }
@@ -354,36 +354,35 @@ func RenderOutputObject(outPutStr, templateName string,
 func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	environment, region string, extraOwners []string, r *CreateClusterRequest) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: create cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return nil, err
 	}
 
 	// 1. get application
 	application, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 2. validate
 	exists, err := c.clusterMgr.CheckClusterExists(ctx, r.Name)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	if exists {
-		return nil, errors.E(op, http.StatusConflict, errors.ErrorCode("Conflict"), "已存在同名集群，请勿重复创建！")
+		return nil, perrors.Wrap(he.ErrNameConflict,
+			"a cluster with the same name already exists, please do not create it again!")
 	}
 	if err := c.validateCreate(r); err != nil {
-		return nil, errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), err)
+		return nil, err
 	}
 
 	err = c.userSvc.CheckUsersExists(ctx, extraOwners)
 	if err != nil {
-		return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode(common.InvalidRequestParam), err)
+		return nil, err
 	}
 
 	// 3. if template is empty, set it with application's template
@@ -406,7 +405,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.
 			GetApplicationEnvTemplate(ctx, application.Name, environment)
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 		r.TemplateInput = &TemplateInput{}
 		r.TemplateInput.Application = applicationJSONBlob
@@ -414,27 +413,26 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	} else {
 		if err := c.validateTemplateInput(ctx, r.Template.Name,
 			r.Template.Release, r.TemplateInput, nil); err != nil {
-			return nil, errors.E(op, http.StatusBadRequest,
-				errors.ErrorCode(common.InvalidRequestBody), err)
+			return nil, err
 		}
 	}
 
 	// 5. get environmentRegion
 	er, err := c.envMgr.GetByEnvironmentAndRegion(ctx, environment, region)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 6. get regionEntity
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, region)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 7. get templateRelease
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, r.Template.Name, r.Template.Release)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 8. create cluster, after created, params.Cluster is the newest cluster
@@ -443,8 +441,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	cluster.UpdatedBy = currentUser.GetID()
 
 	if err := clustertagmanager.ValidateUpsert(clusterTags); err != nil {
-		return nil, errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), err)
+		return nil, err
 	}
 
 	// 9. create cluster in git repo
@@ -463,26 +460,26 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		Image:        r.Image,
 	})
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 10. create cluster in db
 	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags, extraOwners)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 11. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	// 12. get namespace
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	ret := ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
@@ -496,30 +493,29 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	r *UpdateClusterRequest) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: update cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return nil, err
 	}
 
 	// 1. get cluster from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 2. get application that this cluster belongs to
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 3. get environmentRegion for this cluster
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	var templateRelease string
@@ -537,7 +533,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		// validate template input
 		tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, templateRelease)
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 
 		renderValues := make(map[string]string)
@@ -545,8 +541,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		renderValues[templateschema.ClusterIDKey] = clusterIDStr
 		if err := c.validateTemplateInput(ctx,
 			cluster.Template, templateRelease, r.TemplateInput, renderValues); err != nil {
-			return nil, errors.E(op, http.StatusBadRequest,
-				errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
+			return nil, perrors.Wrapf(he.ErrHTTPRespNotAsExpected,
+				"request body validate err: %v", err)
 		}
 		// update cluster in git repo
 		if err := c.clusterGitRepo.UpdateCluster(ctx, &gitrepo.UpdateClusterParams{
@@ -559,12 +555,12 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 				Environment:         er.EnvironmentName,
 			},
 		}); err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 	} else {
 		files, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 		applicationJSONBlob = files.ApplicationJSONBlob
 		pipelineJSONBlob = files.PipelineJSONBlob
@@ -575,20 +571,20 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	clusterModel.UpdatedBy = currentUser.GetID()
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 6. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	// 7. get namespace
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	return ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
@@ -598,36 +594,27 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 func (c *controller) GetClusterByName(ctx context.Context,
 	clusterName string) (_ *GetClusterByNameResponse, err error) {
 	const op = "cluster controller: get cluster by name"
-	l := wlog.Start(ctx, op)
-	defer func() {
-		// errors like ClusterNotFound are logged with info level
-		if err != nil && errors.Status(err) == http.StatusNotFound {
-			log.WithFiled(ctx, "op",
-				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
-		} else {
-			l.Stop(func() string { return wlog.ByErr(err) })
-		}
-	}()
+	wlog.Start(ctx, op).StopPrint()
 
 	// 1. get cluster
 	cluster, err := c.clusterMgr.GetByName(ctx, clusterName)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	if cluster == nil {
-		return nil, errors.E(op, http.StatusNotFound, errors.ErrorCode("ClusterNotFound"))
+		return nil, err
 	}
 
 	// 2. get application
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 3. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
@@ -654,34 +641,34 @@ func (c *controller) GetClusterByName(ctx context.Context,
 // TODO(gjq): add a deleting tag for cluster
 func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err error) {
 	const op = "cluster controller: delete cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// get some relevant models
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 0. set cluster status
 	cluster.Status = clustercommon.StatusDeleting
 	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// delete cluster asynchronously, if any error occurs, ignore and return
@@ -750,24 +737,24 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 // FreeCluster to set cluster free
 func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error) {
 	const op = "cluster controller: free cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// get some relevant models
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 1. set cluster status
 	cluster.Status = clustercommon.StatusFreeing
 	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// delete cluster asynchronously, if any error occurs, ignore and return
@@ -824,13 +811,13 @@ func (c *controller) validateCreate(r *CreateClusterRequest) error {
 		return err
 	}
 	if r.Git == nil || r.Git.Branch == "" {
-		return fmt.Errorf("git branch cannot be empty")
+		return perrors.Wrap(he.ErrParamInvalid, "git branch cannot be empty")
 	}
 	if r.TemplateInput != nil && r.TemplateInput.Application == nil {
-		return fmt.Errorf("application config for template cannot be empty")
+		return perrors.Wrap(he.ErrParamInvalid, "application config for template cannot be empty")
 	}
 	if r.TemplateInput != nil && r.TemplateInput.Pipeline == nil {
-		return fmt.Errorf("pipeline config for template cannot be empty")
+		return perrors.Wrap(he.ErrParamInvalid, "pipeline config for template cannot be empty")
 	}
 	return nil
 }
@@ -854,22 +841,22 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 // 3. name must start with application name
 func validateClusterName(name string) error {
 	if len(name) == 0 {
-		return fmt.Errorf("name cannot be empty")
+		return perrors.Wrap(he.ErrParamInvalid, "name cannot be empty")
 	}
 
 	if len(name) > 53 {
-		return fmt.Errorf("name must not exceed 53 characters")
+		return perrors.Wrap(he.ErrParamInvalid, "name must not exceed 53 characters")
 	}
 
 	// cannot start with a digit.
 	if name[0] >= '0' && name[0] <= '9' {
-		return fmt.Errorf("name cannot start with a digit")
+		return perrors.Wrap(he.ErrParamInvalid, "name cannot start with a digit")
 	}
 
 	pattern := `^(([a-z][-a-z0-9]*)?[a-z0-9])?$`
 	r := regexp.MustCompile(pattern)
 	if !r.MatchString(name) {
-		return fmt.Errorf("invalid cluster name, regex used for validation is %v", pattern)
+		return perrors.Wrapf(he.ErrParamInvalid, "invalid cluster name, regex used for validation is %v", pattern)
 	}
 
 	return nil

@@ -2,7 +2,9 @@ package orm
 
 import (
 	"context"
-	"errors"
+
+	he "g.hz.netease.com/horizon/core/errors"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 
 	"gorm.io/gorm"
 )
@@ -17,7 +19,7 @@ func Key() string {
 func FromContext(ctx context.Context) (*gorm.DB, error) {
 	o, ok := ctx.Value(ormKey).(*gorm.DB)
 	if !ok {
-		return nil, errors.New("cannot get the ORM from context")
+		return nil, perrors.Wrap(he.ErrFailedToGetORM, "cannot get the ORM from context")
 	}
 	return o, nil
 }

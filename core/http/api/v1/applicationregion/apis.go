@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/controller/applicationregion"
-	envdao "g.hz.netease.com/horizon/pkg/environment/dao"
+	"g.hz.netease.com/horizon/core/errors"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
@@ -58,8 +58,8 @@ func (a *API) Update(c *gin.Context) {
 	}
 
 	if err := a.applicationRegionCtl.Update(c, uint(applicationID), request); err != nil {
-		switch perrors.Cause(err) {
-		case envdao.ErrEnvironmentRegionNotFound:
+		switch perrors.Cause(err).(type) {
+		case *errors.HorizonErrNotFound:
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 		default:
 			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))

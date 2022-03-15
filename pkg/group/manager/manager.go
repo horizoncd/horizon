@@ -2,10 +2,10 @@ package manager
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"strings"
 
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
@@ -15,11 +15,6 @@ import (
 var (
 	// Mgr is the global group manager
 	Mgr = New()
-
-	// ErrHasChildren used when delete a group which still has some children
-	ErrHasChildren = errors.New("children exist, cannot be deleted")
-	// ErrConflictWithApplication conflict with the application
-	ErrConflictWithApplication = errors.New("name or path is in conflict with application")
 )
 
 const (
@@ -128,7 +123,7 @@ func (m manager) Delete(ctx context.Context, id uint) (int64, error) {
 		return 0, err
 	}
 	if count > 0 {
-		return 0, ErrHasChildren
+		return 0, he.ErrGroupHasChildren
 	}
 
 	count, err = m.applicationDAO.CountByGroupID(ctx, id)
@@ -136,7 +131,7 @@ func (m manager) Delete(ctx context.Context, id uint) (int64, error) {
 		return 0, err
 	}
 	if count > 0 {
-		return 0, ErrHasChildren
+		return 0, he.ErrGroupHasChildren
 	}
 
 	return m.groupDAO.Delete(ctx, id)
@@ -186,7 +181,7 @@ func (m manager) checkApplicationExists(ctx context.Context, group *models.Group
 		return err
 	}
 	if len(apps) > 0 {
-		return ErrConflictWithApplication
+		return he.ErrGroupConflictWithApplication
 	}
 	return nil
 }

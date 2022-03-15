@@ -8,7 +8,9 @@ import (
 	"sync"
 	"text/template"
 
+	he "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschemamanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
@@ -72,7 +74,7 @@ func (g *getter) GeneratorRenderParams(ctx context.Context, params map[string]st
 		if ok {
 			clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 			if err != nil {
-				return nil, err
+				return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 			}
 			tags, err := g.templateSchemaTagMGr.ListByClusterID(ctx, uint(clusterID))
 			if err != nil {
@@ -93,7 +95,7 @@ func RenderFiles(params map[string]string, files ...[]byte) (retFiles [][]byte, 
 		doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(string(file)))
 		err := doTemplate.ExecuteTemplate(&b, "", params)
 		if err != nil {
-			return nil, err
+			return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
 		}
 		retFiles = append(retFiles, b.Bytes())
 	}
@@ -103,7 +105,7 @@ func RenderFiles(params map[string]string, files ...[]byte) (retFiles [][]byte, 
 func (g *getter) GetTemplateSchema(ctx context.Context,
 	templateName, releaseName string, params map[string]string) (_ *Schemas, err error) {
 	const op = "template schema getter: getTemplateSchema"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	tr, err := g.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, releaseName)
 	if err != nil {

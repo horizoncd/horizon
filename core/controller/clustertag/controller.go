@@ -37,7 +37,7 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo) Controller {
 
 func (c *controller) List(ctx context.Context, clusterID uint) (_ *ListResponse, err error) {
 	const op = "cluster tag controller: list"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	clusterTags, err := c.clusterTagMgr.ListByClusterID(ctx, clusterID)
 	if err != nil {
@@ -49,7 +49,7 @@ func (c *controller) List(ctx context.Context, clusterID uint) (_ *ListResponse,
 
 func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateRequest) (err error) {
 	const op = "cluster tag controller: update"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {

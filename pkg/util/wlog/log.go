@@ -2,7 +2,6 @@ package wlog
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"runtime/debug"
@@ -16,28 +15,40 @@ const (
 )
 
 type Log struct {
-	ctx   context.Context
-	start time.Time
-	op    string
+	ctx           context.Context
+	start         time.Time
+	op            string
+	ignoredErrors []error
 }
 
 func Start(ctx context.Context, op string) Log {
 	return Log{op: op, ctx: ctx, start: time.Now()}
 }
 
-func (l Log) Stop(end func() string) {
+func (l Log) Exclude(ignoredErrors ...error) Log {
+	l.ignoredErrors = ignoredErrors
+	return l
+}
+
+func (l Log) Stop(err error) {
 	if err := recover(); err != nil {
 		log.Error(l.ctx, string(debug.Stack()))
 	}
 	duration := time.Since(l.start)
 
-	str := end()
-	if str == Success {
+	if err == nil {
 		log.WithFiled(l.ctx, "op",
-			l.op).WithField("duration", fmt.Sprintf("%s", duration)).Info(Success) // nolint
+			l.op).WithField("duration", duration.String()).Info(Success) // nolint
 	} else {
+		for _, ignoredError := range l.ignoredErrors {
+			if err == ignoredError {
+				log.WithFiled(l.ctx, "op", l.op).
+					WithField("duration", duration.String()).Info(err.Error())
+				return
+			}
+		}
 		log.WithFiled(l.ctx, "op",
-			l.op).WithField("duration", fmt.Sprintf("%s", duration)).Errorf(end()) // nolint
+			l.op).WithField("duration", duration.String()).Errorf(err.Error()) // nolint
 	}
 }
 
@@ -53,13 +64,6 @@ func (l Log) StopPrint() {
 
 func (l Log) GetDuration() time.Duration {
 	return time.Since(l.start)
-}
-
-func ByErr(err error) string {
-	if err == nil {
-		return Success
-	}
-	return err.Error()
 }
 
 func Response(ctx context.Context, resp *http.Response) string {

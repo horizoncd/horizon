@@ -35,7 +35,7 @@ func NewController(tektonFty factory.Factory) Controller {
 
 func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (err error) {
 	const op = "cloudEvent controller: cloudEvent"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	environment := wpr.PipelineRun.Labels[common.EnvironmentLabelKey]
 	pipelinerunIDStr := wpr.PipelineRun.Labels[common.PipelinerunIDLabelKey]

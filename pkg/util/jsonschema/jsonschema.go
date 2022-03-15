@@ -1,9 +1,10 @@
 package jsonschema
 
 import (
-	"errors"
 	"fmt"
 
+	he "g.hz.netease.com/horizon/core/errors"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -36,7 +37,7 @@ func Validate(schema, document interface{}) error {
 
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
 	if err != nil {
-		return err
+		return perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 
 	if result.Valid() {
@@ -46,5 +47,5 @@ func Validate(schema, document interface{}) error {
 	for index, err := range result.Errors() {
 		errMsg += fmt.Sprintf("[%d] %v. ", index, err)
 	}
-	return errors.New(errMsg)
+	return perrors.Wrap(he.ErrParamInvalid, errMsg)
 }

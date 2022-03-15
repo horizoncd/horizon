@@ -2,9 +2,9 @@ package cluster
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
@@ -12,8 +12,6 @@ import (
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	"g.hz.netease.com/horizon/pkg/util/errors"
-	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/argoproj/gitops-engine/pkg/health"
@@ -31,23 +29,14 @@ const (
 
 func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error) {
 	const op = "cluster controller: get cluster status"
-	l := wlog.Start(ctx, op)
-	defer func() {
-		// errors like ClusterNotFound are logged with info level
-		if err != nil && errors.Status(err) == http.StatusNotFound {
-			log.WithFiled(ctx, "op",
-				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
-		} else {
-			l.Stop(func() string { return wlog.ByErr(err) })
-		}
-	}()
+	defer wlog.Start(ctx, op).StopPrint()
 
 	resp := &GetClusterStatusResponse{}
 
 	// get latest pipelinerun
 	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	if latestPipelinerun != nil {
 		resp.LatestPipelinerun = &LatestPipelinerun{
@@ -58,12 +47,12 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	if latestPipelinerun == nil || latestPipelinerun.Action != prmodels.ActionBuildDeploy {
@@ -74,7 +63,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	} else {
 		latestPipelineRunObject, err := c.getLatestPipelineRunObject(ctx, cluster, latestPipelinerun, er)
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 
 		resp.RunningTask = c.getRunningTask(ctx, latestPipelineRunObject)
@@ -83,17 +72,17 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	clusterState, err := c.cd.GetClusterState(ctx, &cd.GetClusterStateParams{
@@ -103,7 +92,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		RegionEntity: regionEntity,
 	})
 	if err != nil {
-		if errors.Status(err) == http.StatusNotFound {
+		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); ok {
 			if cluster.Status != "" {
 				resp.ClusterStatus = map[string]string{
 					"status": cluster.Status,
@@ -114,7 +103,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 				}
 			}
 		} else {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 	} else {
 		if cluster.Status != "" {
@@ -245,25 +234,24 @@ func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun
 
 func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string,
 	tailLines int) (<-chan string, error) {
-	const op = "cluster controller: get cluster container log"
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	param := cd.GetContainerLogParams{
@@ -278,30 +266,29 @@ func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podNam
 }
 
 func (c *controller) GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error) {
-	const op = "cluster controller: get pod events"
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	param := cd.GetPodEventsParams{
@@ -316,27 +303,27 @@ func (c *controller) GetPodEvents(ctx context.Context, clusterID uint, podName s
 func (c *controller) GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to get cluster by id")
+		return nil, err
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to get application by id")
+		return nil, err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to get er by id")
+		return nil, err
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to get env value")
+		return nil, err
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to get region entity")
+		return nil, err
 	}
 
 	param := cd.GetPodContainersParams{

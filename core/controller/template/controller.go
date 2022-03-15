@@ -37,7 +37,7 @@ func NewController(getter templateschema.Getter) Controller {
 
 func (c *controller) ListTemplate(ctx context.Context) (_ Templates, err error) {
 	const op = "template controller: listTemplate"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	templateModels, err := c.templateMgr.List(ctx)
 	if err != nil {
@@ -48,7 +48,7 @@ func (c *controller) ListTemplate(ctx context.Context) (_ Templates, err error) 
 
 func (c *controller) ListTemplateRelease(ctx context.Context, templateName string) (_ Releases, err error) {
 	const op = "template controller: listTemplateRelease"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	templateReleaseModels, err := c.templateReleaseMgr.ListByTemplateName(ctx, templateName)
 	if err != nil {
@@ -60,7 +60,7 @@ func (c *controller) ListTemplateRelease(ctx context.Context, templateName strin
 func (c *controller) GetTemplateSchema(ctx context.Context, templateName, releaseName string,
 	param map[string]string) (_ *Schemas, err error) {
 	const op = "template controller: getTemplateSchema"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	schemas, err := c.templateSchemaGetter.GetTemplateSchema(ctx, templateName, releaseName, param)
 	if err != nil {

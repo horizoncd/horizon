@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
+	he "g.hz.netease.com/horizon/core/errors"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
@@ -36,10 +36,6 @@ const (
 )
 
 var (
-	ErrPodNotFound = perrors.New("pod not found")
-)
-
-var (
 	K8sClientConfigQPS   float32 = 50
 	K8sClientConfigBurst         = 100
 )
@@ -61,7 +57,7 @@ func init() {
 func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
 	namespace string) (_ map[string][]*v1.Event, err error) {
 	const op = "kube: get multi pod events from k8s "
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	eventsMapper := make(map[string][]*v1.Event)
 	events, err := kubeClientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
@@ -71,7 +67,7 @@ func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
 		}).String(),
 	})
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, he.NewErrListFailed(he.PodEventInK8S, err.Error())
 	}
 	for i := range events.Items {
 		name := events.Items[i].InvolvedObject.Name
@@ -89,7 +85,7 @@ func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
 func GetPodEvents(ctx context.Context, kubeClientset kubernetes.Interface, namespace, pod string) (_ []v1.Event,
 	err error) {
 	const op = "kube: get single pod events from k8s "
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	events, err := kubeClientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
 		Limit: DefaultEventsLimit,
@@ -99,7 +95,7 @@ func GetPodEvents(ctx context.Context, kubeClientset kubernetes.Interface, names
 		}).String(),
 	})
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, he.NewErrListFailed(he.PodEventInK8S, err.Error())
 	}
 
 	return events.Items, nil
@@ -108,13 +104,16 @@ func GetPodEvents(ctx context.Context, kubeClientset kubernetes.Interface, names
 func GetPods(ctx context.Context, kubeClientset kubernetes.Interface,
 	namespace, labelSelector string) (_ []v1.Pod, err error) {
 	const op = "kube: get pods from k8s "
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	pods, err := kubeClientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
-		return nil, errors.E(op, err)
+		if kubeerror.IsNotFound(err) {
+			return nil, he.NewErrNotFound(he.PodsInK8S, err.Error())
+		}
+		return nil, he.NewErrGetFailed(he.PodsInK8S, err.Error())
 	}
 	return pods.Items, nil
 }
@@ -123,9 +122,9 @@ func GetPod(ctx context.Context, kubeClientset kubernetes.Interface, namespace, 
 	pod, err := kubeClientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		if kubeerror.IsNotFound(err) {
-			return nil, perrors.Wrap(ErrPodNotFound, err.Error())
+			return nil, he.NewErrNotFound(he.PodsInK8S, err.Error())
 		}
-		return nil, perrors.Wrap(err, "failed to get pod")
+		return nil, he.NewErrGetFailed(he.PodsInK8S, err.Error())
 	}
 	return pod, nil
 }
@@ -138,12 +137,12 @@ func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) 
 	if len(kubeconfig) > 0 {
 		restConfig, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
 		}
 	} else {
 		restConfig, err = rest.InClusterConfig()
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
 		}
 	}
 
@@ -159,7 +158,7 @@ func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) 
 
 	k8sClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, he.NewErrCreateFailed(he.KubeConfigInK8S, err.Error())
 	}
 	return restConfig, k8sClient, nil
 }
@@ -176,16 +175,16 @@ func BuildClientFromContent(kubeconfigContent string) (*rest.Config, *Client, er
 	if len(kubeconfigContent) > 0 {
 		clientConfig, err := clientcmd.NewClientConfigFromBytes([]byte(kubeconfigContent))
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
 		}
 		restConfig, err = clientConfig.ClientConfig()
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
 		}
 	} else {
 		restConfig, err = rest.InClusterConfig()
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
 		}
 	}
 
@@ -201,12 +200,12 @@ func BuildClientFromContent(kubeconfigContent string) (*rest.Config, *Client, er
 
 	basicClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, he.NewErrCreateFailed(he.KubeConfigInK8S, err.Error())
 	}
 
 	dynamicClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, he.NewErrCreateFailed(he.KubeConfigInK8S, err.Error())
 	}
 
 	kubeClient := &Client{
@@ -228,7 +227,7 @@ type ContainerRef struct {
 func Exec(ctx context.Context, c ContainerRef,
 	command []string, executor exec.RemoteExecutor) (stdout string, stderr string, err error) {
 	const op = "kube: execute command in pod"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	out := bytes.NewBuffer([]byte{})
 	errOut := bytes.NewBuffer([]byte{})
@@ -255,23 +254,26 @@ func Exec(ctx context.Context, c ContainerRef,
 
 	// use raw error
 	if err := options.Validate(); err != nil {
-		return "", "", err
+		return "", "", perrors.Wrap(he.ErrParamInvalid, err.Error())
 	}
 
 	err = options.Run()
-	return out.String(), errOut.String(), err
+	if err != nil {
+		return out.String(), errOut.String(), perrors.Wrap(he.ErrKubeExecFailed, err.Error())
+	}
+	return out.String(), errOut.String(), nil
 }
 
 func GetReplicaSets(ctx context.Context, kubeClientset kubernetes.Interface,
 	namespace, labelSelector string) (_ []appsv1.ReplicaSet, err error) {
 	const op = "get replicaSet list from k8s "
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	replicaSetList, err := kubeClientset.AppsV1().ReplicaSets(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, he.NewErrListFailed(he.PodsInK8S, err.Error())
 	}
 	return replicaSetList.Items, nil
 }
@@ -279,13 +281,13 @@ func GetReplicaSets(ctx context.Context, kubeClientset kubernetes.Interface,
 func GetDeploymentList(ctx context.Context, kubeClientset kubernetes.Interface,
 	namespace, labelSelector string) (_ []appsv1.Deployment, err error) {
 	const op = "get deployments from k8s "
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	deploymentList, err := kubeClientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, he.NewErrListFailed(he.DeploymentInK8S, err.Error())
 	}
 	return deploymentList.Items, nil
 }

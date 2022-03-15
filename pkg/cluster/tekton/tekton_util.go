@@ -25,7 +25,7 @@ type RunningTask struct {
 // 包括pipelineRun本身的status和正在执行的Task的status
 func GetPipelineRunStatus(ctx context.Context, pr *v1beta1.PipelineRun) *PipelineRunStatus {
 	const op = "tekton util: get pipelineRun status"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(nil) })
+	defer wlog.Start(ctx, op).Stop(nil)
 
 	if pr == nil {
 		return nil
@@ -51,7 +51,7 @@ func GetPipelineRunStatus(ctx context.Context, pr *v1beta1.PipelineRun) *Pipelin
 // GetPipelineRunningTask 获取pipelineRun当前正在执行的task的状态
 func GetPipelineRunningTask(ctx context.Context, pr *v1beta1.PipelineRun) *RunningTask {
 	const op = "tekton util: get pipeline runningTask"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(nil) })
+	defer wlog.Start(ctx, op).Stop(nil)
 
 	var currentTaskName, currentTaskStatus string
 

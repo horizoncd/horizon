@@ -3,11 +3,11 @@ package cluster
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"os"
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
@@ -50,8 +50,6 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	"g.hz.netease.com/horizon/pkg/util/errors"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -722,7 +720,7 @@ func Test(t *testing.T) {
 	}).AnyTimes()
 
 	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
-	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, errors.E("test", http.StatusNotFound))
+	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, he.NewErrNotFound(he.PodsInK8S, "test"))
 
 	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
 		PipelinerunID: buildDeployResp.PipelinerunID,
@@ -895,7 +893,7 @@ func TestRenderOutPutObject(t *testing.T) {
 	jsonBytes, err := json.Marshal(outPutRenderJSONObject)
 	assert.Nil(t, err)
 	t.Logf("outPutRenderStr = \n%+s", string(jsonBytes))
-	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"music-social-zone-pre.mock.org"}}` //nolint
+	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"music-social-zone-pre.mock.org"}}` // nolint
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }
 
@@ -938,6 +936,6 @@ javaapp:
 	jsonBytes, err := json.Marshal(outPutRenderJSONObject)
 	assert.Nil(t, err)
 	t.Logf("outPutRenderStr = \n%+s", string(jsonBytes))
-	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"."}}` //nolint
+	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"."}}` // nolint
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }

@@ -1,6 +1,8 @@
 package errors
 
 import (
+	goerrors "errors"
+
 	"github.com/pkg/errors"
 )
 
@@ -8,7 +10,7 @@ import (
 // New also records the stack trace at the point it was called.
 // just like buildin   errors.New()
 func New(message string) error {
-	return errors.New(message)
+	return goerrors.New(message)
 }
 
 // Errorf formats according to a format specifier and returns the string

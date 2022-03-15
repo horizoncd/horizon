@@ -71,7 +71,7 @@ type Log struct {
 
 func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) (_ *Log, err error) {
 	const op = "pipelinerun controller: get pipelinerun log"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	pr, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
 	if err != nil {
@@ -98,7 +98,7 @@ func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) 
 
 func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_ *Log, err error) {
 	const op = "pipelinerun controller: get cluster latest log"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	pr, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
 	if err != nil {
@@ -121,6 +121,9 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 
 func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelinerun, cluster *clustermodels.Cluster,
 	environment string) (_ *Log, err error) {
+	const op = "pipeline controller: get pipelinerun log"
+	defer wlog.Start(ctx, op).StopPrint()
+
 	// if pr.PrObject is empty, get pipelinerun log in k8s
 	if pr.PrObject == "" {
 		tektonClient, err := c.tektonFty.GetTekton(environment)
@@ -154,7 +157,7 @@ func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelin
 
 func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDiffResponse, err error) {
 	const op = "pipelinerun controller: get pipelinerun diff"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get pipeline
 	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
@@ -216,7 +219,7 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 
 func (c *controller) Get(ctx context.Context, pipelineID uint) (_ *PipelineBasic, err error) {
 	const op = "pipelinerun controller: get pipelinerun basic"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelineID)
 	if err != nil {
@@ -233,7 +236,7 @@ func (c *controller) Get(ctx context.Context, pipelineID uint) (_ *PipelineBasic
 func (c *controller) List(ctx context.Context,
 	clusterID uint, canRollback bool, query q.Query) (_ int, _ []*PipelineBasic, err error) {
 	const op = "pipelinerun controller: list pipelinerun"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	totalCount, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, canRollback, query)
 	if err != nil {
@@ -306,7 +309,7 @@ func (c *controller) ofPipelineBasics(ctx context.Context, prs []*models.Pipelin
 
 func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (err error) {
 	const op = "pipelinerun controller: stop pipelinerun"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
 	if err != nil {
@@ -334,7 +337,7 @@ func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (e
 
 func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID uint) (err error) {
 	const op = "pipelinerun controller: stop pipelinerun"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	if err != nil {
 		return errors.E(op, err)

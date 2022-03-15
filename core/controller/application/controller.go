@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"g.hz.netease.com/horizon/core/common"
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
@@ -87,7 +88,7 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
 
 func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: get application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get application in db
 	app, err := c.applicationMgr.GetByID(ctx, id)
@@ -129,12 +130,11 @@ func (c *controller) postHook(ctx context.Context, eventType hook.EventType, con
 func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraOwners []string,
 	request *CreateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: create application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return nil, err
 	}
 
 	// 1. validate
@@ -179,8 +179,8 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 
 	appExistsInDB, err := c.applicationMgr.GetByName(ctx, request.Name)
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
-			return nil, errors.E(op, err)
+		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+			return nil, err
 		}
 	}
 	if appExistsInDB != nil {
@@ -226,7 +226,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 func (c *controller) UpdateApplication(ctx context.Context, id uint,
 	request *UpdateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: update application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
@@ -294,7 +294,7 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 
 func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error) {
 	const op = "application controller: delete application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get application in db
 	app, err := c.applicationMgr.GetByID(ctx, id)
@@ -427,7 +427,7 @@ func validateApplicationName(name string) error {
 func (c *controller) ListApplication(ctx context.Context, filter string, query q.Query) (count int,
 	listApplicationResp []*ListApplicationResponse, err error) {
 	const op = "application controller: list application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	listApplicationResp = []*ListApplicationResponse{}
 	// 1. get application in db

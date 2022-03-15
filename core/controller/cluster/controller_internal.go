@@ -4,42 +4,43 @@ import (
 	"context"
 	"fmt"
 
+	he "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
 func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	r *InternalDeployRequest) (_ *InternalDeployResponse, err error) {
 	const op = "cluster controller: internal deploy"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get pr, and do some validate
 	pr, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	if pr == nil || pr.ClusterID != clusterID {
-		return nil, errors.E(op, fmt.Errorf("cannot find the pipelinerun with id: %v", r.PipelinerunID))
+		return nil, he.NewErrNotFound(he.Pipelinerun,
+			fmt.Sprintf("cannot find the pipelinerun with id: %v", r.PipelinerunID))
 	}
 
 	// 2. get some relevant models
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 3. update image in git repo, and update newest commit to pr
@@ -56,7 +57,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		return nil, perrors.WithMessage(err, op)
 	}
 	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 4. merge branch from gitops to master
@@ -68,11 +69,11 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	// 5. create cluster in cd system
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
 	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
@@ -83,7 +84,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		RegionEntity:  regionEntity,
 		Namespace:     envValue.Namespace,
 	}); err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 6. reset cluster status
@@ -91,7 +92,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		cluster.Status = common.StatusEmpty
 		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 	}
 
@@ -101,7 +102,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		Cluster:     cluster.Name,
 		Revision:    masterRevision,
 	}); err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	return &InternalDeployResponse{
