@@ -458,7 +458,7 @@ paths:
         required: true
       - name: groupID
         in: query
-        description: The id of the groups  application transfer to.
+        description: The id of the group that the application transfers to.
         required: true
 
   /apis/core/v1/applications/{applicationID}/defaultregions:

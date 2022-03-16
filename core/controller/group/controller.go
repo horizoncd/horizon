@@ -430,6 +430,7 @@ func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
 	} else {
 		authedGroups = make([]*models.Group, 0)
 		for _, item := range groups {
+			// TODO: get all group member in one request
 			member, err := c.memberSvc.GetMemberOfResource(ctx, membermodels.TypeGroupStr, item.ID)
 			if err != nil {
 				return nil, err

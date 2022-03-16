@@ -1101,17 +1101,19 @@ func TestControllerUpdateBasic(t *testing.T) {
 			}
 			group, _ := manager.Mgr.GetByID(ctx, tt.args.id)
 
-			if group.ID > 0 {
-				assert.True(t, GroupValueEqual(group, &models.Group{
-					Name:            tt.args.updateGroup.Name,
-					Path:            tt.args.updateGroup.Path,
-					Description:     tt.args.updateGroup.Description,
-					ParentID:        group.ParentID,
-					VisibilityLevel: tt.args.updateGroup.VisibilityLevel,
-					TraversalIDs:    group.TraversalIDs,
-					CreatedBy:       1,
-					UpdatedBy:       2,
-				}))
+			if group != nil {
+				if group.ID > 0 {
+					assert.True(t, GroupValueEqual(group, &models.Group{
+						Name:            tt.args.updateGroup.Name,
+						Path:            tt.args.updateGroup.Path,
+						Description:     tt.args.updateGroup.Description,
+						ParentID:        group.ParentID,
+						VisibilityLevel: tt.args.updateGroup.VisibilityLevel,
+						TraversalIDs:    group.TraversalIDs,
+						CreatedBy:       1,
+						UpdatedBy:       2,
+					}))
+				}
 			}
 		})
 	}

@@ -112,9 +112,7 @@ func (a *API) Transfer(c *gin.Context) {
 	err = a.applicationCtl.Transfer(c, uint(appID), uint(groupID))
 	if err != nil {
 		switch perrors.Cause(err) {
-		case application.ErrGroupNotFound:
-			response.AbortWithRequestError(c, "GroupNotExist", err.Error())
-		case applicationdao.ErrGroupNotFound:
+		case application.ErrGroupNotFound, applicationdao.ErrGroupNotFound:
 			response.AbortWithRequestError(c, "GroupNotExist", err.Error())
 		case applicationdao.ErrApplicationNotFound:
 			response.AbortWithNotExistError(c, err.Error())
