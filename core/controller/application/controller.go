@@ -49,7 +49,7 @@ type Controller interface {
 	// ListUserApplication list application that authorized to current user by filter
 	ListUserApplication(ctx context.Context, filter string, query *q.Query) (int, []*ListApplicationResponse, error)
 	// Transfer  try transfer application to another group
-	Transfer(ctx context.Context, id uint, groupPath string) error
+	Transfer(ctx context.Context, id uint, groupID uint) error
 }
 
 type controller struct {
@@ -329,20 +329,20 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error)
 	return nil
 }
 
-func (c *controller) Transfer(ctx context.Context, id uint, groupPath string) error {
+func (c *controller) Transfer(ctx context.Context, id uint, groupID uint) error {
 	const op = "application controller: transfer application"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	groups, err := c.groupMgr.GetByPaths(ctx, []string{groupPath})
+	group, err := c.groupMgr.GetByID(ctx, groupID)
 	if err != nil {
 		return err
 	}
-	if len(groups) == 0 {
+	if group == nil {
 		log.WithFiled(ctx, "op", op).WithField("applicationID",
 			id).Warningf(ErrGroupNotFound.Error())
 		return ErrGroupNotFound
 	}
-	return c.applicationMgr.Transfer(ctx, id, groups[0].ID)
+	return c.applicationMgr.Transfer(ctx, id, group.ID)
 }
 
 func (c *controller) validateCreate(b Base) error {

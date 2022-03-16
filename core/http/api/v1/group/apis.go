@@ -117,6 +117,7 @@ func (a *API) ListAuthedGroup(c *gin.Context) {
 	groups, err := a.groupCtl.ListAuthedGroup(c)
 	if err != nil {
 		response.AbortWithError(c, err)
+		return
 	}
 	response.SuccessWithData(c, groups)
 }

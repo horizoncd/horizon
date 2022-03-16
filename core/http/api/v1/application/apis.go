@@ -21,7 +21,7 @@ const (
 	_groupIDParam       = "groupID"
 	_applicationIDParam = "applicationID"
 	_extraOwner         = "extraOwner"
-	_groupPathName      = "groupPath"
+	_groupIDStr         = "groupID"
 )
 
 type API struct {
@@ -102,7 +102,14 @@ func (a *API) Transfer(c *gin.Context) {
 		return
 	}
 
-	err = a.applicationCtl.Transfer(c, uint(appID), c.Query(_groupPathName))
+	groupIDStr := c.Query(_groupIDStr)
+	groupID, err := strconv.ParseUint(groupIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	err = a.applicationCtl.Transfer(c, uint(appID), uint(groupID))
 	if err != nil {
 		switch perrors.Cause(err) {
 		case application.ErrGroupNotFound:

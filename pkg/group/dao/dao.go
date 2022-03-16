@@ -337,6 +337,9 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 	var group models.Group
 	result := db.Raw(common.GroupQueryByID, id).First(&group)
 
+	if result.Error != nil || result.RowsAffected == 0 {
+		return nil, result.Error
+	}
 	return &group, result.Error
 }
 

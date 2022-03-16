@@ -30,26 +30,6 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-    get:
-      tags:
-        - group
-      operationId: listAuthedGroups
-      summary: list all the groups that authed by the current user (group owner\maintainer)
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Group'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
   /apis/core/v1/groups/{groupID}:
     parameters:
       - name: groupID
