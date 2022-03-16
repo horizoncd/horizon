@@ -109,7 +109,8 @@ func TestGetAuthedGroups(t *testing.T) {
 					Name:            "1",
 					Path:            "a",
 					VisibilityLevel: "private",
-					ParentID:        1,
+					// TODO: ParentID id is hardcode
+					ParentID: 1,
 				},
 			},
 			wantErr: false,
@@ -212,7 +213,6 @@ func TestGetAuthedGroups(t *testing.T) {
 	groups, err = myGroupCtl.ListAuthedGroup(normalUserContext)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(groups))
-
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
@@ -263,6 +263,46 @@ func TestControllerCreateGroup(t *testing.T) {
 			},
 			wantErr: true,
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := groupCtl.CreateGroup(tt.args.ctx, tt.args.newGroup)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateGroup() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err == nil {
+				group, _ := manager.Mgr.GetByID(ctx, got)
+				var traversalIDs string
+				if group.ParentID == 0 {
+					traversalIDs = strconv.Itoa(int(got))
+				} else {
+					parent, _ := manager.Mgr.GetByID(ctx, tt.args.newGroup.ParentID)
+					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
+				}
+
+				assert.True(t, GroupValueEqual(group, &models.Group{
+					Name:            tt.args.newGroup.Name,
+					Path:            tt.args.newGroup.Path,
+					Description:     tt.args.newGroup.Description,
+					ParentID:        tt.args.newGroup.ParentID,
+					VisibilityLevel: tt.args.newGroup.VisibilityLevel,
+					TraversalIDs:    traversalIDs,
+					CreatedBy:       1,
+					UpdatedBy:       1,
+				}))
+			}
+		})
+	}
+
+	rootGroup, err := groupCtl.GetByFullPath(ctx, "/a")
+	assert.Nil(t, err)
+	creatSubCase := []struct {
+		name    string
+		args    args
+		want    uint
+		wantErr bool
+	}{
 		{
 			name: "createSubGroup",
 			args: args{
@@ -271,13 +311,13 @@ func TestControllerCreateGroup(t *testing.T) {
 					Name:            "1",
 					Path:            "a",
 					VisibilityLevel: "private",
-					ParentID:        1,
+					ParentID:        rootGroup.ID,
 				},
 			},
 			wantErr: false,
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range creatSubCase {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := groupCtl.CreateGroup(tt.args.ctx, tt.args.newGroup)
 			if (err != nil) != tt.wantErr {
