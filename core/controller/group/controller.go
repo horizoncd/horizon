@@ -50,8 +50,8 @@ type Controller interface {
 	SearchGroups(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error)
 	// SearchChildren search children of a group, including subgroups and applications
 	SearchChildren(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error)
-	// GetAuthedGroup get all the authed groups of current user(if is admin, return all the groups)
-	GetAuthedGroup(ctx context.Context) ([]*Group, error)
+	// ListAuthedGroup get all the authed groups of current user(if is admin, return all the groups)
+	ListAuthedGroup(ctx context.Context) ([]*Group, error)
 }
 
 type controller struct {
@@ -414,7 +414,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.C
 	return nil, errNotMatch
 }
 
-func (c *controller) GetAuthedGroup(ctx context.Context) ([]*Group, error) {
+func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
 	currenUser, err := user.FromContext(ctx)
 	if err != nil {
 		return nil, err

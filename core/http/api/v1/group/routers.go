@@ -53,6 +53,10 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 	var frontRoutes = route.Routes{
 		{
 			Method:      http.MethodGet,
+			HandlerFunc: a.ListAuthedGroup,
+		},
+		{
+			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%s/children", _paramGroupID),
 			HandlerFunc: a.GetChildren,
 		},

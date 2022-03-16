@@ -113,6 +113,14 @@ func (a *API) GetGroup(c *gin.Context) {
 	response.SuccessWithData(c, child)
 }
 
+func (a *API) ListAuthedGroup(c *gin.Context) {
+	groups, err := a.groupCtl.ListAuthedGroup(c)
+	if err != nil {
+		response.AbortWithError(c, err)
+	}
+	response.SuccessWithData(c, groups)
+}
+
 // GetGroupByFullPath get a group child by fullPath
 func (a *API) GetGroupByFullPath(c *gin.Context) {
 	path := c.Query(_paramFullPath)

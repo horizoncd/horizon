@@ -165,7 +165,7 @@ func TestGetAuthedGroups(t *testing.T) {
 		ID:       contextUserID,
 		Admin:    true,
 	})
-	groups, err := groupCtl.GetAuthedGroup(rootUserContext)
+	groups, err := groupCtl.ListAuthedGroup(rootUserContext)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(groups))
 
@@ -209,7 +209,7 @@ func TestGetAuthedGroups(t *testing.T) {
 			GrantedBy:    0,
 			CreatedBy:    0,
 		}, nil).Times(1)
-	groups, err = myGroupCtl.GetAuthedGroup(normalUserContext)
+	groups, err = myGroupCtl.ListAuthedGroup(normalUserContext)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(groups))
 
