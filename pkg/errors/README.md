@@ -1,8 +1,10 @@
-## About Error Best Practice
+# Error Practice in Horizon
 
+## Do Not Throw Third Party Error Directly
 
+Before throwing error to its caller, it should be wrapped with more information,
+such as stack info, error msg and operation. That will help developers localize bugs.
 
-### 1. do not throw thirdparty  error direct（Wrap with horizon error）
 ```go
 package "g.hz.netease.com/horizon/pkg/gitrepo" 
 import (
@@ -27,80 +29,98 @@ func (h *HorizonGitInterfaceImp) funca(ctx context.Context, file string)( interf
 }
 ```
 
+## Use Errors in Horizon
 
-### 2. use horizon error in horizon project
+Horizon defines all errors in a file which you could find it in [horizonerrors.go](../../core/errors/horizonerrors.go).
+There are two ways to define a kind of error. First, define an error type, such as 
+
 ```go
-import (
-	"g.hz.netease.com/horizon/pkg/gitrepo"
-    "g.hz.netease.com/horizon/pkg/errors"
-)
-
-type HorizonModuleA interface {
+type HorizonErrNotFound struct {
+	Source sourceType
 }
 
-type HorizonGitInterfaceImp struct {
-    gitRepo *HorizonGitInterface
+func NewErrNotFound(source sourceType, msg string) error {
+    return errors.Wrap(&HorizonErrNotFound{
+        Source: source,
+    }, msg)
 }
 
-func (h *HorizonGitInterfaceImp) funcb(ctx context.Context, file string) ( interface{}, error) {
-	file, err := gitRepo.funca()
-	
-	// case 1 (you care about the sepcial error),
-	// you can break the error stack(as case 1)
-	// or you can attach some message and return
-	if errors.Case(err) == gitrepo.GitNotFoundErr {
-	    // do some thing
-    }  else {
-    	return "", errors.WithMessagef(err, "gitrepo funca return error, err = %s",err.Error())
-    }   
-    
-    
-    // case 2 (all error process logical is same, just return error)
-    if err != nil {
-    	return "", err
-    }
+func (e *HorizonErrNotFound) Error() string {
+	return fmt.Sprintf("%s not found", e.Source.name)
 }
 ```
-### 3. Print error
-you can print simple, and print a stack
+
+`HorizonErrNotFound` has a field called `Source`, it shows which resource leads the error. 
+Horizon decouples error type and resource, for there's many errors in project are associated with resource,
+if defining an error for every error type and every source, there'll be too much redundancy.
+Second, for errors not related to resource, Horizon defines errors directly, for example
+
 ```go
-import (
-   "database/sql"
-   "fmt"
+ErrParamInvalid = errors.New("parameter is invalid")
+```
 
-   "github.com/pkg/errors"
-)
+This is quite simple. Note that, it should be wrapped manually, likes `HorizonErrNotFound` does in `NewErrNotFound`
 
-func foo() error {
-   return errors.Wrap(sql.ErrNoRows, "foo failed")
+```go
+return perrors.Wrap(he.ErrParamInvalid, "application config for template cannot be empty")
+```
+
+On the above, Horizon uses `perrors.Wrap(err)` getting the underlying error.
+Correspondingly, there's two ways to handle errors.
+For error types like `HorizonErrNotFound`, handling it with
+
+```go
+if _, ok := perrors.Cause(err).(*he.NewErrNotFound); ok {
+	...
+}
+```
+
+For errors defined directly, handling it like this
+
+```go
+if perrors.Wrap(err) == he.ErrParamInvalid {
+	...
+}
+```
+
+### 3. Print Errors
+
+For Horizon wrapped error with stack info and message, in same cases, you don't want to see stack info,
+ and print it like this
+
+```go
+func foo() error { 
+	return errors.Wrap(sql.ErrNoRows, "foo failed")
 }
 
-func bar() error {
-   return errors.WithMessage(foo(), "bar failed")
+func bar() error { 
+	return errors.WithMessage(foo(), "bar failed")
 }
 
 func main() {
-   err := bar()
-   if errors.Cause(err) == sql.ErrNoRows {
-      fmt.Printf("data not found, %v\n", err)
-      fmt.Printf("%+v\n", err)
-      return
-   }
-   if err != nil {
-      // unknown error
-   }
+	err := bar()
+    fmt.Printf("data not found, %v\n", err)
+    // Output: 
+    // bar failed: foo failed: sql: no rows in result set 
 }
-/*Output:
-data not found, bar failed: foo failed: sql: no rows in result set
-sql: no rows in result set
-foo failed
-main.foo
-    /usr/three/main.go:11
-main.bar
-    /usr/three/main.go:15
-main.main
-    /usr/three/main.go:19
-runtime.main
-    ...
-*/
+```
+
+Print with stack info
+
+```go
+func main() {
+    err := bar()
+    fmt.Printf("%+v\n", err)
+	// Output:
+	// sql: no rows in result set
+    // foo failed
+    // main.foo
+    // /usr/three/main.go:11
+    // main.bar
+    // /usr/three/main.go:15
+    // main.main
+    // /usr/three/main.go:19
+    // runtime.main
+    // ... 
+}
 ```

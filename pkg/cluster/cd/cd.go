@@ -222,7 +222,7 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 	if err == nil {
 		return nil
 	}
-	if _, ok := err.(*he.HorizonErrNotFound); !ok {
+	if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
 		return err
 	}
 	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,

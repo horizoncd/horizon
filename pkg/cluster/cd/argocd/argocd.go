@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -386,7 +387,7 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 
 	if resp.StatusCode != http.StatusOK {
 		message := common.Response(ctx, resp)
-		if resp.StatusCode == http.StatusNotFound {
+		if strings.Contains(message, "not found") {
 			return he.NewErrNotFound(he.ApplicationResourceInArgo, message)
 		}
 
