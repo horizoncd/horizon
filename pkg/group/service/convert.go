@@ -11,6 +11,9 @@ import (
 
 // GenerateFullFromGroups generate fullPath which looks like /a/b/c, and fullName which looks like 1 / 2
 func GenerateFullFromGroups(groups []*models.Group) *Full {
+	// sort groups by the size of the traversalIDs array after split by ','
+	sort.Sort(models.Groups(groups))
+
 	var fullPath, fullName string
 	paths := make([]string, len(groups))
 	names := make([]string, len(groups))

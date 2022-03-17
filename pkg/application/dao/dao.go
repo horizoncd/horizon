@@ -338,10 +338,8 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context,
