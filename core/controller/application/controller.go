@@ -26,12 +26,7 @@ import (
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
-	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-)
-
-var (
-	ErrGroupNotFound = perrors.New("applicationController: group not found")
 )
 
 type Controller interface {
@@ -337,11 +332,7 @@ func (c *controller) Transfer(ctx context.Context, id uint, groupID uint) error 
 	if err != nil {
 		return err
 	}
-	if group == nil {
-		log.WithFiled(ctx, "op", op).WithField("applicationID",
-			id).Warningf(ErrGroupNotFound.Error())
-		return ErrGroupNotFound
-	}
+
 	return c.applicationMgr.Transfer(ctx, id, group.ID)
 }
 

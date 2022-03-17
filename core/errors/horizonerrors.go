@@ -12,19 +12,14 @@ type sourceType struct {
 
 var (
 	GitlabResource            = sourceType{name: "GitlabResource"}
-	Cluster                   = sourceType{name: "Cluster"}
 	ClusterInDB               = sourceType{name: "ClusterInDB"}
 	ClusterStateInArgo        = sourceType{name: "ClusterStateInArgo"}
 	ClusterTagInDB            = sourceType{name: "ClusterTagInDB"}
-	Application               = sourceType{name: "Application"}
 	ApplicationInArgo         = sourceType{name: "ApplicationInArgo"}
 	ApplicationResourceInArgo = sourceType{name: "ApplicationResourceInArgo"}
 	ApplicationInDB           = sourceType{name: "ApplicationInDB"}
-	EnvironmentRegion         = sourceType{name: "EnvironmentRegion"}
 	EnvironmentRegionInDB     = sourceType{name: "EnvironmentRegionInDB"}
-	Region                    = sourceType{name: "Region"}
 	RegionInDB                = sourceType{name: "RegionInDB"}
-	Group                     = sourceType{name: "Group"}
 	GroupInDB                 = sourceType{name: "GroupInDB"}
 	K8SCluster                = sourceType{name: "K8SCluster"}
 	K8SClusterInDB            = sourceType{name: "K8SClusterInDB"}
