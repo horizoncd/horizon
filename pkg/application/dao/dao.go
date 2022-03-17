@@ -309,7 +309,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return herrors.NewErrDeleteFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 	if result.RowsAffected == 0 {
-		return herrors.NewErrNotFound(herrors.ApplicationInDB, "could not")
+		return herrors.NewErrNotFound(herrors.ApplicationInDB, "application not found")
 	}
 	return nil
 }

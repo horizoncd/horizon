@@ -209,12 +209,6 @@ func (a *API) Deploy(c *gin.Context) {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 				return
 			}
-		case *herrors.HorizonErrInsertFailed:
-			if e.Source == herrors.PipelinerunInDB {
-				log.WithFiled(c, "op", op).Errorf("%+v", err)
-				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
-				return
-			}
 		default:
 			log.WithFiled(c, "op", op).Errorf("%+v", err)
 			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
@@ -428,11 +422,6 @@ func (a *API) GetClusterPods(c *gin.Context) {
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-			return
-		}
-		if perror.Cause(err) == herrors.ErrHTTPRequestFailed || perror.Cause(err) == herrors.ErrHTTPRespNotAsExpected {
-			log.WithFiled(c, "op", op).Errorf("%+v", err)
-			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 			return
 		}
 

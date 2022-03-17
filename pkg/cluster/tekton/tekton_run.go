@@ -25,11 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var (
-	ErrPipelineRunNotFound = perror.New("tekton: pipeline run not found")
-	ErrTektonInternal      = perror.New("tekton: internal error")
-)
-
 func (t *Tekton) GetPipelineRunByID(ctx context.Context, cluster string,
 	clusterID, pipelinerunID uint) (_ *v1beta1.PipelineRun, err error) {
 	return t.getPipelineRunByID(ctx, clusterID, pipelinerunID)
