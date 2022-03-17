@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/gomodule/redigo/redis"
 )
 
 var (
-	ErrNotFound = perrors.New("key not found")
+	ErrNotFound = perror.New("key not found")
 )
 
 type Interface interface {
@@ -32,7 +32,7 @@ func NewHelper(redisURL, poolName string, param *PoolParam, opts *Options) (*Hel
 		return nil, err
 	}
 	if opts == nil {
-		return nil, perrors.New("opts cannot be nil")
+		return nil, perror.New("opts cannot be nil")
 	}
 	return &Helper{
 		pool: pool,
@@ -42,10 +42,10 @@ func NewHelper(redisURL, poolName string, param *PoolParam, opts *Options) (*Hel
 
 func NewHelperWithPool(pool *redis.Pool, opts *Options) (*Helper, error) {
 	if pool == nil {
-		return nil, perrors.New("pool cannot be nil")
+		return nil, perror.New("pool cannot be nil")
 	}
 	if opts == nil {
-		return nil, perrors.New("opts cannot be nil")
+		return nil, perror.New("opts cannot be nil")
 	}
 	return &Helper{
 		pool: pool,

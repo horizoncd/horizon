@@ -4,9 +4,9 @@ import (
 	"context"
 	"regexp"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"github.com/xanzy/go-gitlab"
 )
@@ -72,7 +72,7 @@ func (g *gitGetter) GetCommit(ctx context.Context, gitURL string, branch *string
 		return nil, err
 	}
 	if branch == nil && commit == nil {
-		return nil, perrors.Wrap(he.ErrBranchAndCommitEmpty, "branch and commit are empty")
+		return nil, perror.Wrap(herrors.ErrBranchAndCommitEmpty, "branch and commit are empty")
 	}
 	if branch != nil {
 		gitlabBranch, err := g.gitlabLib.GetBranch(ctx, pid, *branch)
@@ -100,7 +100,7 @@ func extractProjectPathFromSSHURL(gitURL string) (string, error) {
 	pattern := regexp.MustCompile(`ssh://.+?/(.+).git`)
 	matches := pattern.FindStringSubmatch(gitURL)
 	if len(matches) != 2 {
-		return "", perrors.Wrapf(he.ErrParamInvalid, "error to extract project path from git ssh url: %v", gitURL)
+		return "", perror.Wrapf(herrors.ErrParamInvalid, "error to extract project path from git ssh url: %v", gitURL)
 	}
 	return matches[1], nil
 }

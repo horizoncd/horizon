@@ -27,13 +27,13 @@ import (
 	"strconv"
 	"sync"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	argocdconf "g.hz.netease.com/horizon/pkg/config/argocd"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -222,7 +222,7 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 	if err == nil {
 		return nil
 	}
-	if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+	if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 		return err
 	}
 	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
@@ -230,11 +230,11 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 
 	manifest, err := json.Marshal(argoApplication)
 	if err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	if err := argo.CreateApplication(ctx, manifest); err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return nil
@@ -246,7 +246,7 @@ func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (er
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return argo.DeployApplication(ctx, params.Cluster, params.Revision)
@@ -264,7 +264,7 @@ func (c *cd) DeleteCluster(ctx context.Context, params *DeleteClusterParams) (er
 	// 1. get application first
 	applicationCR, err := argo.GetApplication(ctx, params.Cluster)
 	if err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); ok {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			return nil
 		}
 		return
@@ -318,7 +318,7 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
-		return perrors.Wrap(he.ErrKubeDynamicCliResponseNotOK, err.Error())
+		return perror.Wrap(herrors.ErrKubeDynamicCliResponseNotOK, err.Error())
 	}
 
 	return nil
@@ -328,7 +328,7 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) {
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+		return perror.WithMessagef(err, "failed to get argocd application resource for cluster %s",
 			params.Cluster)
 	}
 	patchBody := []byte(getPausePatchStr())
@@ -336,7 +336,7 @@ func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) 
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
-		return perrors.Wrap(he.ErrKubeDynamicCliResponseNotOK, err.Error())
+		return perror.Wrap(herrors.ErrKubeDynamicCliResponseNotOK, err.Error())
 	}
 
 	return nil
@@ -346,7 +346,7 @@ func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) 
 func (c *cd) Resume(ctx context.Context, params *ClusterResumeParams) (err error) {
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+		return perror.WithMessagef(err, "failed to get argocd application resource for cluster %s",
 			params.Cluster)
 	}
 	patchBody := []byte(getResumePatchStr())
@@ -354,7 +354,7 @@ func (c *cd) Resume(ctx context.Context, params *ClusterResumeParams) (err error
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
-		return perrors.Wrap(he.ErrKubeDynamicCliResponseNotOK, err.Error())
+		return perror.Wrap(herrors.ErrKubeDynamicCliResponseNotOK, err.Error())
 	}
 
 	return nil
@@ -368,7 +368,7 @@ func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*
 	}
 	argoApp, err := argo.GetApplication(ctx, clusterName)
 	if err != nil {
-		return nil, perrors.WithMessagef(err, "failed to get argocd application: %s", clusterName)
+		return nil, perror.WithMessagef(err, "failed to get argocd application: %s", clusterName)
 	}
 	if err := argo.GetApplicationResource(ctx, clusterName, argocd.ResourceParams{
 		Group:        "argoproj.io",
@@ -377,10 +377,10 @@ func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*
 		Namespace:    argoApp.Spec.Destination.Namespace,
 		ResourceName: clusterName,
 	}, &rollout); err != nil {
-		if perrors.Cause(err) == argocd.ErrResourceNotFound {
+		if perror.Cause(err) == argocd.ErrResourceNotFound {
 			return nil, nil
 		}
-		return nil, perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+		return nil, perror.WithMessagef(err, "failed to get argocd application resource for cluster %s",
 			clusterName)
 	}
 
@@ -413,7 +413,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	// namespace = argoApp.Spec.Destination.Namespace
 	clusterState.Status = argoApp.Status.Health.Status
 	if clusterState.Status == "" {
-		return nil, he.NewErrNotFound(he.ClusterStateInArgo, "clusterState.State == \"\"")
+		return nil, herrors.NewErrNotFound(herrors.ClusterStateInArgo, "clusterState.State == \"\"")
 	}
 	if clusterState.Status == health.HealthStatusUnknown {
 		clusterState.Status = health.HealthStatusDegraded
@@ -431,7 +431,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		Namespace:    argoApp.Spec.Destination.Namespace,
 		ResourceName: params.Cluster,
 	}, &rollout); err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); ok {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			// get pods by resourceTree
 			var (
 				clusterPodMap = map[string]*ClusterPod{}
@@ -453,7 +453,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 				for _, node := range resourceTree.Nodes {
 					if node.Kind == kube2.PodKind {
 						if _, ok := podMap[node.Name]; !ok {
-							return nil, he.NewErrNotFound(he.PodsInK8S, fmt.Sprintf("pod %s does not exist", node.Name))
+							return nil, herrors.NewErrNotFound(herrors.PodsInK8S, fmt.Sprintf("pod %s does not exist", node.Name))
 						}
 						clusterPodMap[node.Name] = podToClusterPod(podMap[node.Name])
 					}
@@ -473,7 +473,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 				return clusterState, nil
 			}
 		} else {
-			return nil, perrors.WithMessagef(err,
+			return nil, perror.WithMessagef(err,
 				"failed to get rollout for cluster %s", params.Cluster)
 		}
 	}
@@ -492,7 +492,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	if err != nil {
 		return nil, err
 	} else if len(rss) == 0 {
-		return nil, he.NewErrNotFound(he.ReplicasSetInK8S, "ReplicaSet instance not found")
+		return nil, herrors.NewErrNotFound(herrors.ReplicasSetInK8S, "ReplicaSet instance not found")
 	}
 
 	for i := range rss {
@@ -513,7 +513,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	clusterState.Revision = getRevision(latestReplicaSet)
 
 	if clusterState.PodTemplateHash == "" {
-		return nil, he.NewErrNotFound(he.ClusterStateInArgo, "clusterState.PodTemplateHash == ''")
+		return nil, herrors.NewErrNotFound(herrors.ClusterStateInArgo, "clusterState.PodTemplateHash == ''")
 	}
 
 	// TODO(gjq): 通用化，POD的展示是直接按照resourceVersion 来获取Pod
@@ -608,7 +608,7 @@ func (c *cd) GetPodEvents(ctx context.Context,
 		}
 	}
 
-	return nil, he.NewErrNotFound(he.PodsInK8S, "pod does not exist")
+	return nil, herrors.NewErrNotFound(herrors.PodsInK8S, "pod does not exist")
 }
 
 // extractContainerInfo extract container detail

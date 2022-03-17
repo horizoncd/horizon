@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/config/argocd"
 )
 
@@ -31,7 +31,7 @@ func (f *factory) GetArgoCD(environment string) (ArgoCD, error) {
 	var ret interface{}
 	var ok bool
 	if ret, ok = f.cache.Load(environment); !ok {
-		return nil, he.NewErrNotFound(he.ArgoCD, fmt.Sprintf("argo cd not found for environment %s", environment))
+		return nil, herrors.NewErrNotFound(herrors.ArgoCD, fmt.Sprintf("argo cd not found for environment %s", environment))
 	}
 	return ret.(ArgoCD), nil
 }

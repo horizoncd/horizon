@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
@@ -55,9 +55,9 @@ func (d *dao) CountByGroupID(ctx context.Context, groupID uint) (int64, error) {
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return 0, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return 0, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return 0, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return 0, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	return count, result.Error
@@ -74,9 +74,9 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Appl
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return nil, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return nil, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return nil, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	return applications, result.Error
@@ -101,9 +101,9 @@ func (d *dao) GetByNameFuzzilyByPagination(ctx context.Context, name string, que
 		Scan(&applications)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return total, applications, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return total, applications, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return total, applications, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return total, applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	result = db.Raw(common.ApplicationQueryByFuzzilyCount, fmt.Sprintf("%%%s%%", name)).Scan(&total)
@@ -122,9 +122,9 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return nil, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return nil, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return nil, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	return &application, result.Error
@@ -141,9 +141,9 @@ func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, 
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return applications, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return applications, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return applications, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	return applications, nil
@@ -160,9 +160,9 @@ func (d *dao) GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.App
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return applications, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return applications, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return applications, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	return applications, result.Error
@@ -179,9 +179,9 @@ func (d *dao) GetByName(ctx context.Context, name string) (*models.Application, 
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return &application, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return &application, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return &application, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return &application, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	return &application, result.Error
@@ -198,9 +198,9 @@ func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []st
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return applications, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return applications, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return applications, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	return applications, result.Error
@@ -217,7 +217,7 @@ func (d *dao) Create(ctx context.Context, application *models.Application,
 		// TODO: check the group exist
 
 		if err := tx.Create(application).Error; err != nil {
-			return he.NewErrInsertFailed(he.ApplicationInDB, err.Error())
+			return herrors.NewErrInsertFailed(herrors.ApplicationInDB, err.Error())
 		}
 		// insert records to member table
 		members := make([]*membermodels.Member, 0)
@@ -246,10 +246,10 @@ func (d *dao) Create(ctx context.Context, application *models.Application,
 
 		result := tx.Create(members)
 		if result.Error != nil {
-			return he.NewErrInsertFailed(he.ApplicationInDB, err.Error())
+			return herrors.NewErrInsertFailed(herrors.ApplicationInDB, err.Error())
 		}
 		if result.RowsAffected == 0 {
-			return he.NewErrInsertFailed(he.ApplicationInDB, "create member error")
+			return herrors.NewErrInsertFailed(herrors.ApplicationInDB, "create member error")
 		}
 		return nil
 	})
@@ -269,12 +269,12 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, application *models.Appli
 
 		if result.Error != nil {
 			if result.Error == gorm.ErrRecordNotFound {
-				return he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+				return herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 			}
-			return he.NewErrUpdateFailed(he.ApplicationInDB, result.Error.Error())
+			return herrors.NewErrUpdateFailed(herrors.ApplicationInDB, result.Error.Error())
 		}
 		if result.RowsAffected == 0 {
-			return he.NewErrNotFound(he.ApplicationInDB, "rows affected = 0")
+			return herrors.NewErrNotFound(herrors.ApplicationInDB, "rows affected = 0")
 		}
 		// 2. update value
 		applicationInDB.Description = application.Description
@@ -304,12 +304,12 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	result := db.Exec(common.ApplicationDeleteByID, id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return he.NewErrDeleteFailed(he.ApplicationInDB, result.Error.Error())
+		return herrors.NewErrDeleteFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 	if result.RowsAffected == 0 {
-		return he.NewErrNotFound(he.ApplicationInDB, "could not")
+		return herrors.NewErrNotFound(herrors.ApplicationInDB, "could not")
 	}
 	return nil
 }
@@ -326,7 +326,7 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 			return result.Error
 		}
 		if result.RowsAffected == 0 {
-			return he.NewErrNotFound(he.GroupInDB, "group not found")
+			return herrors.NewErrNotFound(herrors.GroupInDB, "group not found")
 		}
 
 		result = tx.Exec(common.ApplicationTransferByID, groupID, id)
@@ -334,7 +334,7 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 			return result.Error
 		}
 		if result.RowsAffected == 0 {
-			return he.NewErrNotFound(he.ApplicationInDB, "application not found")
+			return herrors.NewErrNotFound(herrors.ApplicationInDB, "application not found")
 		}
 		return nil
 	})
@@ -364,17 +364,17 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context,
 		Scan(&applications)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return 0, nil, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return 0, nil, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return 0, nil, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	result = db.Raw(common.ApplicationCountByUserAndNameFuzzily, userInfo, like, groupIDs, like).Scan(&total)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return 0, nil, he.NewErrNotFound(he.ApplicationInDB, result.Error.Error())
+			return 0, nil, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
 		}
-		return 0, nil, he.NewErrGetFailed(he.ApplicationInDB, result.Error.Error())
+		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
 	return total, applications, nil

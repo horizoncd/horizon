@@ -4,15 +4,15 @@ import (
 	"context"
 	"sync"
 
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	k8sclustermanager "g.hz.netease.com/horizon/pkg/k8scluster/manager"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"k8s.io/client-go/rest"
 )
 
 var (
-	ErrGetClusterFailed      = perrors.New("get cluster failed")
-	ErrBuildKubeClientFailed = perrors.New("build kubeclient failed")
+	ErrGetClusterFailed      = perror.New("get cluster failed")
+	ErrBuildKubeClientFailed = perror.New("build kubeclient failed")
 )
 
 var (
@@ -49,12 +49,12 @@ func (f *factory) GetByK8SServer(ctx context.Context, server string) (*rest.Conf
 
 	k8sCluster, err := f.k8sClusterMgr.GetByServer(ctx, server)
 	if err != nil {
-		return nil, nil, perrors.Wrap(ErrGetClusterFailed, err.Error())
+		return nil, nil, perror.Wrap(ErrGetClusterFailed, err.Error())
 	}
 
 	config, client, err := kube.BuildClientFromContent(k8sCluster.Certificate)
 	if err != nil {
-		return nil, nil, perrors.Wrap(ErrBuildKubeClientFailed, err.Error())
+		return nil, nil, perror.Wrap(ErrBuildKubeClientFailed, err.Error())
 	}
 
 	f.cache.Store(server, &k8sClientCache{

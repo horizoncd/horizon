@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
@@ -720,7 +720,7 @@ func Test(t *testing.T) {
 	}).AnyTimes()
 
 	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
-	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, he.NewErrNotFound(he.PodsInK8S, "test"))
+	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, herrors.NewErrNotFound(herrors.PodsInK8S, "test"))
 
 	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
 		PipelinerunID: buildDeployResp.PipelinerunID,

@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/templaterelease/models"
@@ -32,7 +32,7 @@ func (d dao) Create(ctx context.Context, templateRelease *models.TemplateRelease
 	result := db.Create(templateRelease)
 
 	if result.Error != nil {
-		return nil, he.NewErrCreateFailed(he.GroupInDB, result.Error.Error())
+		return nil, herrors.NewErrCreateFailed(herrors.GroupInDB, result.Error.Error())
 	}
 	return templateRelease, result.Error
 }
@@ -46,7 +46,7 @@ func (d dao) ListByTemplateName(ctx context.Context, templateName string) ([]*mo
 	var trs []*models.TemplateRelease
 	result := db.Raw(common.TemplateReleaseQueryByTemplateName, templateName).Scan(&trs)
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.TemplateReleaseInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.TemplateReleaseInDB, result.Error.Error())
 	}
 	return trs, nil
 }
@@ -64,9 +64,9 @@ func (d dao) GetByTemplateNameAndRelease(ctx context.Context,
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return &tr, he.NewErrNotFound(he.TemplateReleaseInDB, result.Error.Error())
+			return &tr, herrors.NewErrNotFound(herrors.TemplateReleaseInDB, result.Error.Error())
 		}
-		return &tr, he.NewErrGetFailed(he.TemplateReleaseInDB, result.Error.Error())
+		return &tr, herrors.NewErrGetFailed(herrors.TemplateReleaseInDB, result.Error.Error())
 	}
 
 	return &tr, result.Error

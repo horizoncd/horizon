@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
@@ -108,14 +108,14 @@ func (m *manager) GetRegionEntity(ctx context.Context,
 
 	k8sCluster, ok := k8sClusterMap[region.K8SClusterID]
 	if !ok {
-		return nil, he.NewErrNotFound(he.K8SCluster,
+		return nil, herrors.NewErrNotFound(herrors.K8SCluster,
 			fmt.Sprintf("k8sCluster with ID: %v of region: %v is not found",
 				region.K8SClusterID, region.Name))
 	}
 
 	harbor, ok := harborMap[region.HarborID]
 	if !ok {
-		return nil, he.NewErrNotFound(he.Harbor,
+		return nil, herrors.NewErrNotFound(herrors.Harbor,
 			fmt.Sprintf("harbor with ID: %v of region: %v is not found",
 				region.HarborID, region.Name))
 	}

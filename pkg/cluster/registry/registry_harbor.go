@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
-	he "g.hz.netease.com/horizon/core/errors"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"github.com/hashicorp/go-retryablehttp"
 
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -77,7 +77,7 @@ func (h *HarborRegistry) CreateProject(ctx context.Context, project string) (_ i
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return -1, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return -1, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), false, CreateProject)
 	if err != nil {
@@ -91,7 +91,7 @@ func (h *HarborRegistry) CreateProject(ctx context.Context, project string) (_ i
 		projectIDStr := location[strings.LastIndex(location, "/")+1:]
 		projectID, err := strconv.Atoi(projectIDStr)
 		if err != nil {
-			return -1, perrors.Wrap(he.ErrParamInvalid, err.Error())
+			return -1, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 		if err := h.AddMembers(ctx, projectID); err != nil {
 			return -1, errors.E(op, err)
@@ -123,7 +123,7 @@ func (h *HarborRegistry) AddMembers(ctx context.Context, projectID int) (err err
 		}
 		bodyBytes, err := json.Marshal(body)
 		if err != nil {
-			return perrors.Wrap(he.ErrParamInvalid, err.Error())
+			return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 		resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), true, AddMembers)
 		if err != nil {
@@ -134,7 +134,7 @@ func (h *HarborRegistry) AddMembers(ctx context.Context, projectID int) (err err
 		if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusConflict {
 			return nil
 		}
-		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
+		return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	for _, member := range h.members {
@@ -160,7 +160,7 @@ func (h *HarborRegistry) DeleteRepository(ctx context.Context, project string, r
 		return nil
 	}
 
-	return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
+	return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 }
 
 func (h *HarborRegistry) ListImage(ctx context.Context,
@@ -180,16 +180,16 @@ func (h *HarborRegistry) ListImage(ctx context.Context,
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
+		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	var harborArtifacts []HarborArtifact
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrReadFailed, err.Error())
+		return nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 	if err = json.Unmarshal(body, &harborArtifacts); err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	for _, artifact := range harborArtifacts {
@@ -224,7 +224,7 @@ func (h *HarborRegistry) PreheatProject(ctx context.Context, project string,
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, preheatURL, bytes.NewReader(bodyBytes), false, PreHeatProject)
 	if err != nil {
@@ -235,7 +235,7 @@ func (h *HarborRegistry) PreheatProject(ctx context.Context, project string,
 	if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusConflict {
 		return nil
 	}
-	return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
+	return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 }
 
 func (h *HarborRegistry) GetServer(ctx context.Context) string {
@@ -261,24 +261,24 @@ func (h *HarborRegistry) sendHTTPRequest(ctx context.Context, method string,
 	}()
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrHTTPRequestFailed, err.Error())
+		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed, err.Error())
 	}
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Authorization", fmt.Sprintf("Basic %s", h.token))
 	if !retry {
 		rsp, err = h.client.Do(req)
 		if err != nil {
-			return nil, perrors.Wrap(he.ErrHTTPRequestFailed, err.Error())
+			return nil, perror.Wrap(herrors.ErrHTTPRequestFailed, err.Error())
 		}
 		return rsp, nil
 	}
 	r, err := retryablehttp.FromRequest(req)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrHTTPRequestFailed, err.Error())
+		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed, err.Error())
 	}
 	rsp, err = h.retryableClient.Do(r)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrHTTPRequestFailed, err.Error())
+		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed, err.Error())
 	}
 	return rsp, nil
 }

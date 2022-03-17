@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -192,7 +192,7 @@ func (h *helper) CreateApplication(ctx context.Context, manifest []byte) (err er
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return perrors.Wrap(he.ErrHTTPRespNotAsExpected,
+		return perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
 			common.Response(ctx, resp))
 	}
 
@@ -212,7 +212,7 @@ func (h *helper) DeployApplication(ctx context.Context, application string, revi
 	}
 	reqBody, err := json.Marshal(req)
 	if err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(reqBody))
 	if err != nil {
@@ -221,7 +221,7 @@ func (h *helper) DeployApplication(ctx context.Context, application string, revi
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
+		return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	return nil
@@ -241,7 +241,7 @@ func (h *helper) DeleteApplication(ctx context.Context, application string) (err
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
 		message := common.Response(ctx, resp)
-		return perrors.Wrapf(he.ErrHTTPRespNotAsExpected,
+		return perror.Wrapf(herrors.ErrHTTPRespNotAsExpected,
 			"status = %s, statusCode = %d, message = %s", resp.Status, resp.StatusCode, message)
 	}
 
@@ -267,18 +267,18 @@ func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string
 		// 如果使用switch，则需要两层break
 		if err == nil {
 			if uid != "" && uid != string(applicationCR.UID) {
-				return perrors.Wrap(he.ErrNameConflict,
+				return perror.Wrap(herrors.ErrNameConflict,
 					"the cluster has been recreated with the same name")
 			}
 			if status == http.StatusOK && applicationCR.Status.Sync.Status == v1alpha1.SyncStatusCodeSynced {
 				return nil
 			}
-		} else if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); ok {
+		} else if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if status == http.StatusNotFound {
 				return nil
 			}
 		} else {
-			return perrors.Wrap(he.ErrHTTPRespNotAsExpected, err.Error())
+			return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, err.Error())
 		}
 
 		return waitError
@@ -295,7 +295,7 @@ func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string
 		time.Sleep(time.Second)
 	}
 
-	return perrors.Wrap(he.ErrDeadlineExceeded, "time out")
+	return perror.Wrap(herrors.ErrDeadlineExceeded, "time out")
 }
 
 func (h *helper) GetApplication(ctx context.Context,
@@ -327,19 +327,19 @@ func (h *helper) getOrRefreshApplication(ctx context.Context,
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
-			return nil, he.NewErrNotFound(he.ApplicationInArgo,
+			return nil, herrors.NewErrNotFound(herrors.ApplicationInArgo,
 				fmt.Sprintf("application not found for url %s", url))
 		}
-		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, resp.Status)
+		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected, resp.Status)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrReadFailed, err.Error())
+		return nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 
 	if err := json.Unmarshal(data, &applicationCRD); err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	return applicationCRD, nil
 }
@@ -357,16 +357,16 @@ func (h *helper) GetApplicationTree(ctx context.Context, application string) (
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
+		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrReadFailed, err.Error())
+		return nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 
 	if err = json.Unmarshal(data, &tree); err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return tree, nil
@@ -388,15 +388,15 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 	if resp.StatusCode != http.StatusOK {
 		message := common.Response(ctx, resp)
 		if strings.Contains(message, "not found") {
-			return he.NewErrNotFound(he.ApplicationResourceInArgo, message)
+			return herrors.NewErrNotFound(herrors.ApplicationResourceInArgo, message)
 		}
 
-		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, message)
+		return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, message)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return perrors.Wrap(he.ErrReadFailed, err.Error())
+		return perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 
 	type manifest struct {
@@ -405,15 +405,15 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 
 	var m manifest
 	if err = json.Unmarshal(data, &m); err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	if m.Manifest == "" || m.Manifest == "{}" {
-		return he.NewErrNotFound(he.ApplicationManifestInArgo, "manifest is empty")
+		return herrors.NewErrNotFound(herrors.ApplicationManifestInArgo, "manifest is empty")
 	}
 
 	if err = json.Unmarshal([]byte(m.Manifest), &resource); err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return nil
@@ -433,16 +433,16 @@ func (h *helper) ListResourceEvents(ctx context.Context, application string, par
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
+		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrReadFailed, err.Error())
+		return nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 
 	if err := json.Unmarshal(data, &eventList); err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return eventList, nil
@@ -471,7 +471,7 @@ func (h *helper) ResumeRollout(ctx context.Context, application string) (err err
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return perrors.Wrap(he.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
+		return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 	return nil
 }
@@ -492,16 +492,16 @@ func (h *helper) GetContainerLog(ctx context.Context, application string,
 	if resp.StatusCode != http.StatusOK {
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, nil, perrors.Wrap(he.ErrReadFailed, err.Error())
+			return nil, nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 		}
 		_ = resp.Body.Close()
 
 		var errorResponse *ErrorResponse
 		err = json.Unmarshal(data, &errorResponse)
 		if err != nil {
-			return nil, nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+			return nil, nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
-		return nil, nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected,
+		return nil, nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
 			fmt.Sprintf("status code = %d, message = %s", resp.StatusCode, errorResponse.StreamError.Message))
 	}
 
@@ -517,13 +517,13 @@ func (h *helper) GetContainerLog(ctx context.Context, application string,
 		for scanner.Scan() {
 			var containerLog ContainerLog
 			if err := json.Unmarshal(scanner.Bytes(), &containerLog); err != nil {
-				errC <- perrors.Wrap(he.ErrParamInvalid, err.Error())
+				errC <- perror.Wrap(herrors.ErrParamInvalid, err.Error())
 				return
 			}
 			logC <- containerLog
 		}
 		if err := scanner.Err(); err != nil {
-			errC <- perrors.Wrap(he.ErrReadFailed, err.Error())
+			errC <- perror.Wrap(herrors.ErrReadFailed, err.Error())
 			return
 		}
 	}()
@@ -536,7 +536,7 @@ func (h *helper) sendHTTPRequest(ctx context.Context, method string, url string,
 	log.Infof(ctx, "method: %v, url: %v", method, url)
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", h.Token))
@@ -544,7 +544,7 @@ func (h *helper) sendHTTPRequest(ctx context.Context, method string, url string,
 
 	r, err := retryablehttp.FromRequest(req)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, "")
+		return nil, perror.Wrap(herrors.ErrParamInvalid, "")
 	}
 	return _client.Do(r)
 }

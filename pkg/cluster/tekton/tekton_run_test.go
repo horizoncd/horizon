@@ -9,10 +9,10 @@ import (
 	"os"
 	"testing"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/config/tekton"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -257,14 +257,14 @@ func TestTekton_getPipelineRunByID(t1 *testing.T) {
 		},
 	}
 	pr, err := t.getPipelineRunByID(context.Background(), 1, 12345)
-	e, ok := perrors.Cause(err).(*he.HorizonErrNotFound)
+	e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
 	assert.True(t1, ok)
-	assert.Equal(t1, e.Source, he.PipelinerunInTekton)
+	assert.Equal(t1, e.Source, herrors.PipelinerunInTekton)
 
 	pr, err = t.getPipelineRunByID(context.Background(), 1, 111)
 	assert.Nil(t1, err)
 	assert.Equal(t1, pr1.Name, pr.Name)
 
 	pr, err = t.getPipelineRunByID(context.Background(), 1, 222)
-	assert.Equal(t1, he.ErrTektonInternal, perrors.Cause(err))
+	assert.Equal(t1, herrors.ErrTektonInternal, perror.Cause(err))
 }

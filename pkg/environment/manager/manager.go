@@ -3,10 +3,10 @@ package manager
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/environment/dao"
 	"g.hz.netease.com/horizon/pkg/environment/models"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 )
@@ -62,11 +62,11 @@ func (m *manager) CreateEnvironmentRegion(ctx context.Context,
 	_, err := m.envDAO.GetEnvironmentRegionByEnvAndRegion(ctx,
 		er.EnvironmentName, er.RegionName)
 	if err != nil {
-		if e, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok || e.Source != he.EnvironmentRegionInDB {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok || e.Source != herrors.EnvironmentRegionInDB {
 			return nil, err
 		}
 	} else {
-		return nil, perrors.Wrap(he.ErrNameConflict, "already exists")
+		return nil, perror.Wrap(herrors.ErrNameConflict, "already exists")
 	}
 
 	return m.envDAO.CreateEnvironmentRegion(ctx, er)

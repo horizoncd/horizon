@@ -5,8 +5,8 @@ import (
 	"crypto/tls"
 	"net/http"
 
-	he "g.hz.netease.com/horizon/core/errors"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
@@ -158,7 +158,7 @@ func New(token, httpURL, sshURL string) (Interface, error) {
 			},
 		}))
 	if err != nil {
-		return nil, he.NewErrCreateFailed(he.GitlabResource, err.Error())
+		return nil, herrors.NewErrCreateFailed(herrors.GitlabResource, err.Error())
 	}
 	return &helper{
 		client:  client,
@@ -185,10 +185,10 @@ func (h *helper) ListGroupProjects(ctx context.Context, gid interface{},
 	defer wlog.Start(ctx, op).StopPrint()
 
 	if page < 1 {
-		return nil, perrors.Wrap(he.ErrParamInvalid, "page cannot be less 1")
+		return nil, perror.Wrap(herrors.ErrParamInvalid, "page cannot be less 1")
 	}
 	if perPage < 1 {
-		return nil, perrors.Wrap(he.ErrParamInvalid, "perPage cannot be less 1")
+		return nil, perror.Wrap(herrors.ErrParamInvalid, "perPage cannot be less 1")
 	}
 
 	projects, rsp, err := h.client.Groups.ListGroupProjects(gid, &gitlab.ListGroupProjectsOptions{
@@ -357,7 +357,7 @@ func (h *helper) ListMRs(ctx context.Context, pid interface{},
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
-		return nil, perrors.WithMessagef(parseError(rsp, err),
+		return nil, perror.WithMessagef(parseError(rsp, err),
 			"failed to list merge requests for project: %v", pid)
 	}
 
@@ -480,8 +480,8 @@ func parseError(resp *gitlab.Response, err error) error {
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return he.NewErrNotFound(he.GitlabResource, err.Error())
+		return herrors.NewErrNotFound(herrors.GitlabResource, err.Error())
 	}
 
-	return perrors.Wrap(he.ErrGitlabInternal, err.Error())
+	return perror.Wrap(herrors.ErrGitlabInternal, err.Error())
 }

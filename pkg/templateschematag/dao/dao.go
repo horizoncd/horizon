@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/templateschematag/models"
@@ -34,7 +34,7 @@ func (d dao) ListByClusterID(ctx context.Context, clusterID uint) ([]*models.Clu
 	result := db.Raw(common.ClusterTemplateSchemaTagListByClusterID, clusterID).Scan(&clusterTags)
 
 	if result.Error != nil {
-		return nil, he.NewErrListFailed(he.TemplateSchemaTagInDB, result.Error.Error())
+		return nil, herrors.NewErrListFailed(herrors.TemplateSchemaTagInDB, result.Error.Error())
 	}
 
 	return clusterTags, nil
@@ -51,7 +51,7 @@ func (d dao) UpsertByClusterID(ctx context.Context, clusterID uint, tags []*mode
 		result := db.Exec(common.ClusterTemplateSchemaTagDeleteAllByClusterID, clusterID)
 
 		if result.Error != nil {
-			return he.NewErrDeleteFailed(he.TemplateSchemaTagInDB, result.Error.Error())
+			return herrors.NewErrDeleteFailed(herrors.TemplateSchemaTagInDB, result.Error.Error())
 		}
 		return nil
 	}
@@ -62,7 +62,7 @@ func (d dao) UpsertByClusterID(ctx context.Context, clusterID uint, tags []*mode
 		tagKeys = append(tagKeys, tag.Key)
 	}
 	if err := db.Exec(common.ClusterTemplateSchemaTagDeleteByClusterIDAndKeys, clusterID, tagKeys).Error; err != nil {
-		return he.NewErrDeleteFailed(he.TemplateSchemaTagInDB, err.Error())
+		return herrors.NewErrDeleteFailed(herrors.TemplateSchemaTagInDB, err.Error())
 	}
 
 	// 3. add new tags
@@ -78,7 +78,7 @@ func (d dao) UpsertByClusterID(ctx context.Context, clusterID uint, tags []*mode
 	}).Create(tags)
 
 	if result.Error != nil {
-		return he.NewErrCreateFailed(he.TemplateSchemaTagInDB, result.Error.Error())
+		return herrors.NewErrCreateFailed(herrors.TemplateSchemaTagInDB, result.Error.Error())
 	}
 	return nil
 }

@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -38,7 +38,7 @@ func (d *dao) Create(ctx context.Context, region *models.Region) (*models.Region
 	result := db.Create(region)
 
 	if result.Error != nil {
-		return nil, he.NewErrInsertFailed(he.RegionInDB, result.Error.Error())
+		return nil, herrors.NewErrInsertFailed(herrors.RegionInDB, result.Error.Error())
 	}
 
 	return region, result.Error
@@ -54,7 +54,7 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.Region, error) {
 	result := db.Raw(common.RegionListAll).Scan(&regions)
 
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.RegionInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, result.Error.Error())
 	}
 
 	return regions, result.Error
@@ -70,7 +70,7 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 	result := db.Raw(common.RegionGetByName, regionName).First(&region)
 
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.EnvironmentRegionInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 	}
 
 	return &region, result.Error
@@ -86,7 +86,7 @@ func (d *dao) ListByNames(ctx context.Context, regionNames []string) ([]*models.
 	result := db.Raw(common.RegionListByNames, regionNames).Scan(&regions)
 
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.EnvironmentRegionInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 	}
 
 	return regions, result.Error

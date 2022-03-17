@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -34,7 +34,7 @@ func (d *dao) Create(ctx context.Context, k8sCluster *models.K8SCluster) (*model
 	result := db.Create(k8sCluster)
 
 	if result.Error != nil {
-		return nil, he.NewErrInsertFailed(he.K8SClusterInDB, result.Error.Error())
+		return nil, herrors.NewErrInsertFailed(herrors.K8SClusterInDB, result.Error.Error())
 	}
 
 	return k8sCluster, result.Error
@@ -50,7 +50,7 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.K8SCluster, error) {
 	result := db.Raw(common.K8SClusterListAll).Scan(&k8sClusters)
 
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.K8SClusterInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.K8SClusterInDB, result.Error.Error())
 	}
 
 	return k8sClusters, result.Error
@@ -65,7 +65,7 @@ func (d *dao) GetByServer(ctx context.Context, server string) (*models.K8SCluste
 	var k8sCluster models.K8SCluster
 	result := db.Raw(common.K8SClusterGetByServer, server).Scan(&k8sCluster)
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.K8SClusterInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.K8SClusterInDB, result.Error.Error())
 	}
 
 	if result.RowsAffected == 0 {

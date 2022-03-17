@@ -4,10 +4,10 @@ import (
 	"context"
 	"regexp"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/clustertag/dao"
 	"g.hz.netease.com/horizon/pkg/clustertag/models"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 )
 
 var (
@@ -43,22 +43,22 @@ func (m *manager) UpsertByClusterID(ctx context.Context, clusterID uint, tags []
 // ValidateUpsert tags upsert
 func ValidateUpsert(tags []*models.ClusterTag) error {
 	if len(tags) > 20 {
-		return perrors.Wrap(he.ErrParamInvalid, "the count of tags must be less than 20")
+		return perror.Wrap(herrors.ErrParamInvalid, "the count of tags must be less than 20")
 	}
 	keyPattern := regexp.MustCompile(`^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$`)
 	for _, tag := range tags {
 		if len(tag.Key) == 0 {
-			return perrors.Wrap(he.ErrParamInvalid, "tag key cannot be empty")
+			return perror.Wrap(herrors.ErrParamInvalid, "tag key cannot be empty")
 		}
 		if len(tag.Key) > 63 {
-			return perrors.Wrapf(he.ErrParamInvalid, "tag key: %v is invalid, length must be 63 or less", tag.Key)
+			return perror.Wrapf(herrors.ErrParamInvalid, "tag key: %v is invalid, length must be 63 or less", tag.Key)
 		}
 		if len(tag.Value) > 1280 {
-			return perrors.Wrapf(he.ErrParamInvalid, "tag value: %v is invalid, length must be 1280 or less", tag.Value)
+			return perror.Wrapf(herrors.ErrParamInvalid, "tag value: %v is invalid, length must be 1280 or less", tag.Value)
 		}
 
 		if !keyPattern.MatchString(tag.Key) {
-			return perrors.Wrapf(he.ErrParamInvalid, "tag key: %v is invalid, "+
+			return perror.Wrapf(herrors.ErrParamInvalid, "tag key: %v is invalid, "+
 				"should beginning and ending with an alphanumeric character ([a-z0-9A-Z]) "+
 				"with dashes (-), underscores (_), dots (.), and alphanumerics between", tag.Key)
 		}

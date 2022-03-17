@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -34,7 +34,7 @@ func (d dao) ListByClusterID(ctx context.Context, clusterID uint) ([]*models.Clu
 	result := db.Raw(common.ClusterTagListByClusterID, clusterID).Scan(&clusterTags)
 
 	if result.Error != nil {
-		return nil, he.NewErrListFailed(he.ClusterTagInDB, result.Error.Error())
+		return nil, herrors.NewErrListFailed(herrors.ClusterTagInDB, result.Error.Error())
 	}
 
 	return clusterTags, nil
@@ -50,7 +50,7 @@ func (d dao) UpsertByClusterID(ctx context.Context, clusterID uint, tags []*mode
 	if len(tags) == 0 {
 		result := db.Exec(common.ClusterTagDeleteAllByClusterID, clusterID)
 		if result.Error != nil {
-			return he.NewErrDeleteFailed(he.ClusterTagInDB, result.Error.Error())
+			return herrors.NewErrDeleteFailed(herrors.ClusterTagInDB, result.Error.Error())
 		}
 		return nil
 	}
@@ -61,7 +61,7 @@ func (d dao) UpsertByClusterID(ctx context.Context, clusterID uint, tags []*mode
 		tagKeys = append(tagKeys, tag.Key)
 	}
 	if err := db.Exec(common.ClusterTagDeleteByClusterIDAndKeys, clusterID, tagKeys).Error; err != nil {
-		return he.NewErrDeleteFailed(he.ClusterTagInDB, err.Error())
+		return herrors.NewErrDeleteFailed(herrors.ClusterTagInDB, err.Error())
 	}
 
 	// 3. add new tags
@@ -77,7 +77,7 @@ func (d dao) UpsertByClusterID(ctx context.Context, clusterID uint, tags []*mode
 	}).Create(tags)
 
 	if result.Error != nil {
-		return he.NewErrInsertFailed(he.ClusterTagInDB, result.Error.Error())
+		return herrors.NewErrInsertFailed(herrors.ClusterTagInDB, result.Error.Error())
 	}
 	return nil
 }

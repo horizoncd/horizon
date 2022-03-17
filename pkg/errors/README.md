@@ -62,15 +62,15 @@ ErrParamInvalid = errors.New("parameter is invalid")
 This is quite simple. Note that, it should be wrapped manually, likes `HorizonErrNotFound` does in `NewErrNotFound`
 
 ```go
-return perrors.Wrap(he.ErrParamInvalid, "application config for template cannot be empty")
+return perror.Wrap(herrors.ErrParamInvalid, "application config for template cannot be empty")
 ```
 
-On the above, Horizon uses `perrors.Wrap(err)` getting the underlying error.
+On the above, Horizon uses `perror.Wrap(err)` getting the underlying error.
 Correspondingly, there's two ways to handle errors.
 For error types like `HorizonErrNotFound`, handling it with
 
 ```go
-if _, ok := perrors.Cause(err).(*he.NewErrNotFound); ok {
+if _, ok := perror.Cause(err).(*herrors.NewErrNotFound); ok {
 	...
 }
 ```
@@ -78,7 +78,7 @@ if _, ok := perrors.Cause(err).(*he.NewErrNotFound); ok {
 For errors defined directly, handling it like this
 
 ```go
-if perrors.Wrap(err) == he.ErrParamInvalid {
+if perror.Wrap(err) == herrors.ErrParamInvalid {
 	...
 }
 ```

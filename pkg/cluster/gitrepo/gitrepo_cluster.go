@@ -8,14 +8,14 @@ import (
 	"strings"
 	"sync"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/helmrepo"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
@@ -187,7 +187,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 		}
 		pipelineBytes, err1 = kyaml.YAMLToJSON(pipelineBytes)
 		if err1 != nil {
-			err1 = perrors.Wrap(he.ErrParamInvalid, err1.Error())
+			err1 = perror.Wrap(herrors.ErrParamInvalid, err1.Error())
 		}
 	}()
 	go func() {
@@ -198,7 +198,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 		}
 		applicationBytes, err2 = kyaml.YAMLToJSON(applicationBytes)
 		if err2 != nil {
-			err2 = perrors.Wrap(he.ErrParamInvalid, err2.Error())
+			err2 = perror.Wrap(herrors.ErrParamInvalid, err2.Error())
 		}
 	}()
 	wg.Wait()
@@ -211,16 +211,16 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 
 	var pipelineJSONBlobWithTemplate, applicationJSONBlobWithTemplate map[string]map[string]interface{}
 	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlobWithTemplate); err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	if err := json.Unmarshal(applicationBytes, &applicationJSONBlobWithTemplate); err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	pipelineJSONBlob, ok1 := pipelineJSONBlobWithTemplate[templateName]
 	applicationJSONBlob, ok2 := applicationJSONBlobWithTemplate[templateName]
 	if !ok1 || !ok2 {
-		return nil, perrors.Wrapf(he.ErrParamInvalid, "template name: %v is different from git and db", templateName)
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "template name: %v is different from git and db", templateName)
 	}
 
 	return &ClusterFiles{
@@ -270,7 +270,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 
 	for i := 0; i < len(cases); i++ {
 		if cases[i].err != nil {
-			if _, ok := perrors.Cause(cases[i].err).(*he.HorizonErrNotFound); !ok {
+			if _, ok := perror.Cause(cases[i].err).(*herrors.HorizonErrNotFound); !ok {
 				log.Errorf(ctx, "get cluster value file error, err = %s", cases[i].err.Error())
 				return nil, cases[i].err
 			}
@@ -283,7 +283,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 		var out map[interface{}]interface{}
 		err = yaml.Unmarshal(oneCase.retBytes, &out)
 		if err != nil {
-			err = perrors.Wrapf(he.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.fileName)
+			err = perror.Wrapf(herrors.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.fileName)
 			break
 		}
 
@@ -312,7 +312,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	var appGroup *gitlab.Group
 	appGroup, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name))
 	if err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
 		appGroup, err = g.gitlabLib.CreateGroup(ctx, params.Application.Name,
@@ -362,7 +362,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		pipelineOutPutMap := assemblePipelineOutput(params.TemplateRelease.TemplateName, params.Image)
 		pipelineOutPutYAML, err := yaml.Marshal(pipelineOutPutMap)
 		if err != nil {
-			return perrors.Wrap(he.ErrParamInvalid, err.Error())
+			return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 		pipelineOutPut = string(pipelineOutPutYAML)
 	}
@@ -504,7 +504,7 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 	// 1. create application group if necessary
 	_, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
 	if err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
 		_, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.clusterRepoConf.RecyclingParent.ID)
@@ -566,7 +566,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	var mr *gitlab.MergeRequest
 	mrs, err := g.gitlabLib.ListMRs(ctx, pid, _branchGitops, _branchMaster, _mergeRequestStateOpen)
 	if err != nil {
-		return "", perrors.WithMessage(err, "failed to list merge requests")
+		return "", perror.WithMessage(err, "failed to list merge requests")
 	}
 	if len(mrs) > 0 {
 		// merge old mr when it is existed, because given specified source and target, gitlab only allows 1 mr to exist
@@ -575,13 +575,13 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 		// create new mr
 		mr, err = g.gitlabLib.CreateMR(ctx, pid, _branchGitops, _branchMaster, title)
 		if err != nil {
-			return "", perrors.WithMessage(err, "failed to create new merge request")
+			return "", perror.WithMessage(err, "failed to create new merge request")
 		}
 	}
 
 	mr, err = g.gitlabLib.AcceptMR(ctx, pid, mr.IID, &mergeCommitMsg, &removeSourceBranch)
 	if err != nil {
-		return "", perrors.WithMessage(err, "failed to accept merge request")
+		return "", perror.WithMessage(err, "failed to accept merge request")
 	}
 	return mr.MergeCommitSHA, nil
 }
@@ -591,20 +591,20 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, pid interface{},
 	ret := make(map[string]*PipelineOutput)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to get gitlab file")
+		return nil, perror.WithMessage(err, "failed to get gitlab file")
 	}
 
 	pipelineOutputBytes, err := kyaml.YAMLToJSON(content)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	if err := json.Unmarshal(pipelineOutputBytes, &ret); err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	pipelineOutput, ok := ret[template]
 	if !ok {
-		return nil, perrors.Wrapf(he.ErrPipelineOutputEmpty, "no template in pipelineOutput.yaml")
+		return nil, perror.Wrapf(herrors.ErrPipelineOutputEmpty, "no template in pipelineOutput.yaml")
 	}
 
 	if pipelineOutput.Git == nil {
@@ -627,10 +627,10 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 
 	pipelineOutput, err := g.GetPipelineOutput(ctx, pid, template)
 	if err != nil {
-		if perrors.Cause(err) == he.ErrPipelineOutputEmpty {
+		if perror.Cause(err) == herrors.ErrPipelineOutputEmpty {
 			pipelineOutput = &pipelineOutputParam
 		} else {
-			return "", perrors.WithMessage(err, "failed to get pipeline output")
+			return "", perror.WithMessage(err, "failed to get pipeline output")
 		}
 	} else {
 		if pipelineOutputParam.Image != nil {
@@ -674,7 +674,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
 	if err != nil {
-		return "", perrors.WithMessage(err, "failed to write gitlab files")
+		return "", perror.WithMessage(err, "failed to write gitlab files")
 	}
 
 	return commit.ID, nil
@@ -779,7 +779,7 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 	var envMap map[string]map[string]*EnvValue
 
 	if err := yaml.Unmarshal(bytes, &envMap); err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return envMap[templateName][_envValueNamespace], nil
@@ -1030,7 +1030,7 @@ type Dependency struct {
 func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
 	helmRepo, ok := g.helmRepoMapper[params.Environment]
 	if !ok {
-		return nil, he.NewErrNotFound(he.HelmRepo,
+		return nil, herrors.NewErrNotFound(herrors.HelmRepo,
 			fmt.Sprintf("helm repo for environment %v not found", params.Environment))
 	}
 	return &Chart{
@@ -1089,6 +1089,6 @@ func assembleTags(templateName string,
 func marshal(b *[]byte, err *error, data interface{}) {
 	*b, *err = yaml.Marshal(data)
 	if (*err) != nil {
-		*err = perrors.Wrap(he.ErrParamInvalid, (*err).Error())
+		*err = perror.Wrap(herrors.ErrParamInvalid, (*err).Error())
 	}
 }

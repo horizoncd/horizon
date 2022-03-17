@@ -3,8 +3,8 @@ package jsonschema
 import (
 	"fmt"
 
-	he "g.hz.netease.com/horizon/core/errors"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -21,7 +21,7 @@ func Validate(schema, document interface{}) error {
 	case map[string]interface{}:
 		schemaLoader = gojsonschema.NewGoLoader(schema)
 	default:
-		return perrors.Wrap(he.ErrParamInvalid,
+		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("unsported type: %T for schema", schema))
 	}
 
@@ -33,13 +33,13 @@ func Validate(schema, document interface{}) error {
 	case map[string]interface{}:
 		documentLoader = gojsonschema.NewGoLoader(document)
 	default:
-		return perrors.Wrap(he.ErrParamInvalid,
+		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("unsported type: %T for document", document))
 	}
 
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
 	if err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	if result.Valid() {
@@ -49,5 +49,5 @@ func Validate(schema, document interface{}) error {
 	for index, err := range result.Errors() {
 		errMsg += fmt.Sprintf("[%d] %v. ", index, err)
 	}
-	return perrors.Wrap(he.ErrParamInvalid, errMsg)
+	return perror.Wrap(herrors.ErrParamInvalid, errMsg)
 }

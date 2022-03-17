@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -46,7 +46,7 @@ func (d *dao) Create(ctx context.Context, user *models.User) (*models.User, erro
 	result := db.Create(user)
 
 	if result.Error != nil {
-		return nil, he.NewErrInsertFailed(he.UserInDB, result.Error.Error())
+		return nil, herrors.NewErrInsertFailed(herrors.UserInDB, result.Error.Error())
 	}
 
 	return user, result.Error
@@ -60,7 +60,7 @@ func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]models.User, error
 	var users []models.User
 	result := db.Raw(common.UserGetByID, userID).Scan(&users)
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.UserInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}
 	if result.RowsAffected == 0 {
 		return nil, nil
@@ -77,7 +77,7 @@ func (d *dao) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*model
 	var user models.User
 	result := db.Raw(common.UserQueryByOIDC, oidcType, email).Scan(&user)
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.UserInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}
 	if result.RowsAffected == 0 {
 		return nil, nil
@@ -94,7 +94,7 @@ func (d *dao) GetByEmail(ctx context.Context, email string) (*models.User, error
 	var user models.User
 	result := db.Raw(common.UserQueryByEmail, email).Scan(&user)
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.UserInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}
 	if result.RowsAffected == 0 {
 		return nil, nil
@@ -115,7 +115,7 @@ func (d *dao) ListByEmail(ctx context.Context, emails []string) ([]*models.User,
 	var users []*models.User
 	result := db.Raw(common.UserListByEmail, emails).Scan(&users)
 	if result.Error != nil {
-		return nil, he.NewErrListFailed(he.UserInDB, result.Error.Error())
+		return nil, herrors.NewErrListFailed(herrors.UserInDB, result.Error.Error())
 	}
 	if result.RowsAffected == 0 {
 		return nil, nil
@@ -148,13 +148,13 @@ func (d *dao) SearchUser(ctx context.Context, filter string, query *q.Query) (in
 	var users []models.User
 	result := db.Raw(common.UserSearch, like, like, like, limit, offset).Scan(&users)
 	if result.Error != nil {
-		return 0, nil, he.NewErrGetFailed(he.UserInDB, result.Error.Error())
+		return 0, nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}
 
 	var count int
 	result = db.Raw(common.UserSearchCount, like, like, like).Scan(&count)
 	if result.Error != nil {
-		return 0, nil, he.NewErrGetFailed(he.UserInDB, result.Error.Error())
+		return 0, nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}
 
 	return count, users, nil

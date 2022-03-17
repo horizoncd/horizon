@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	he "g.hz.netease.com/horizon/core/errors"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
@@ -67,7 +67,7 @@ func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
 		}).String(),
 	})
 	if err != nil {
-		return nil, he.NewErrListFailed(he.PodEventInK8S, err.Error())
+		return nil, herrors.NewErrListFailed(herrors.PodEventInK8S, err.Error())
 	}
 	for i := range events.Items {
 		name := events.Items[i].InvolvedObject.Name
@@ -95,7 +95,7 @@ func GetPodEvents(ctx context.Context, kubeClientset kubernetes.Interface, names
 		}).String(),
 	})
 	if err != nil {
-		return nil, he.NewErrListFailed(he.PodEventInK8S, err.Error())
+		return nil, herrors.NewErrListFailed(herrors.PodEventInK8S, err.Error())
 	}
 
 	return events.Items, nil
@@ -111,9 +111,9 @@ func GetPods(ctx context.Context, kubeClientset kubernetes.Interface,
 	})
 	if err != nil {
 		if kubeerror.IsNotFound(err) {
-			return nil, he.NewErrNotFound(he.PodsInK8S, err.Error())
+			return nil, herrors.NewErrNotFound(herrors.PodsInK8S, err.Error())
 		}
-		return nil, he.NewErrGetFailed(he.PodsInK8S, err.Error())
+		return nil, herrors.NewErrGetFailed(herrors.PodsInK8S, err.Error())
 	}
 	return pods.Items, nil
 }
@@ -122,9 +122,9 @@ func GetPod(ctx context.Context, kubeClientset kubernetes.Interface, namespace, 
 	pod, err := kubeClientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		if kubeerror.IsNotFound(err) {
-			return nil, he.NewErrNotFound(he.PodsInK8S, err.Error())
+			return nil, herrors.NewErrNotFound(herrors.PodsInK8S, err.Error())
 		}
-		return nil, he.NewErrGetFailed(he.PodsInK8S, err.Error())
+		return nil, herrors.NewErrGetFailed(herrors.PodsInK8S, err.Error())
 	}
 	return pod, nil
 }
@@ -137,12 +137,12 @@ func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) 
 	if len(kubeconfig) > 0 {
 		restConfig, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
-			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
+			return nil, nil, herrors.NewErrGetFailed(herrors.KubeConfigInK8S, err.Error())
 		}
 	} else {
 		restConfig, err = rest.InClusterConfig()
 		if err != nil {
-			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
+			return nil, nil, herrors.NewErrGetFailed(herrors.KubeConfigInK8S, err.Error())
 		}
 	}
 
@@ -158,7 +158,7 @@ func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) 
 
 	k8sClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, he.NewErrCreateFailed(he.KubeConfigInK8S, err.Error())
+		return nil, nil, herrors.NewErrCreateFailed(herrors.KubeConfigInK8S, err.Error())
 	}
 	return restConfig, k8sClient, nil
 }
@@ -175,16 +175,16 @@ func BuildClientFromContent(kubeconfigContent string) (*rest.Config, *Client, er
 	if len(kubeconfigContent) > 0 {
 		clientConfig, err := clientcmd.NewClientConfigFromBytes([]byte(kubeconfigContent))
 		if err != nil {
-			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
+			return nil, nil, herrors.NewErrGetFailed(herrors.KubeConfigInK8S, err.Error())
 		}
 		restConfig, err = clientConfig.ClientConfig()
 		if err != nil {
-			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
+			return nil, nil, herrors.NewErrGetFailed(herrors.KubeConfigInK8S, err.Error())
 		}
 	} else {
 		restConfig, err = rest.InClusterConfig()
 		if err != nil {
-			return nil, nil, he.NewErrGetFailed(he.KubeConfigInK8S, err.Error())
+			return nil, nil, herrors.NewErrGetFailed(herrors.KubeConfigInK8S, err.Error())
 		}
 	}
 
@@ -200,12 +200,12 @@ func BuildClientFromContent(kubeconfigContent string) (*rest.Config, *Client, er
 
 	basicClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, he.NewErrCreateFailed(he.KubeConfigInK8S, err.Error())
+		return nil, nil, herrors.NewErrCreateFailed(herrors.KubeConfigInK8S, err.Error())
 	}
 
 	dynamicClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, he.NewErrCreateFailed(he.KubeConfigInK8S, err.Error())
+		return nil, nil, herrors.NewErrCreateFailed(herrors.KubeConfigInK8S, err.Error())
 	}
 
 	kubeClient := &Client{
@@ -254,12 +254,12 @@ func Exec(ctx context.Context, c ContainerRef,
 
 	// use raw error
 	if err := options.Validate(); err != nil {
-		return "", "", perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return "", "", perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	err = options.Run()
 	if err != nil {
-		return out.String(), errOut.String(), perrors.Wrap(he.ErrKubeExecFailed, err.Error())
+		return out.String(), errOut.String(), perror.Wrap(herrors.ErrKubeExecFailed, err.Error())
 	}
 	return out.String(), errOut.String(), nil
 }
@@ -273,7 +273,7 @@ func GetReplicaSets(ctx context.Context, kubeClientset kubernetes.Interface,
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
-		return nil, he.NewErrListFailed(he.PodsInK8S, err.Error())
+		return nil, herrors.NewErrListFailed(herrors.PodsInK8S, err.Error())
 	}
 	return replicaSetList.Items, nil
 }
@@ -287,7 +287,7 @@ func GetDeploymentList(ctx context.Context, kubeClientset kubernetes.Interface,
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
-		return nil, he.NewErrListFailed(he.DeploymentInK8S, err.Error())
+		return nil, herrors.NewErrListFailed(herrors.DeploymentInK8S, err.Error())
 	}
 	return deploymentList.Items, nil
 }

@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
@@ -291,7 +291,7 @@ func TestGetClusterValueFile(t *testing.T) {
 	// 3. test gitlab return 404
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
 		[]byte("cluster: xxx"), nil).Times(4)
-	var herr = he.NewErrNotFound(he.GitlabResource, "test")
+	var herr = herrors.NewErrNotFound(herrors.GitlabResource, "test")
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
 		nil, herr).Times(1)
 

@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"time"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -129,7 +129,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	var commit string
 	if diff == "" {
 		if cluster.Status != clustercommon.StatusFreed {
-			return nil, perrors.Wrap(he.ErrClusterNoChange, "there is no change to deploy")
+			return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
 		}
 		// freed cluster is allowed to deploy without diff
 		commitInfo, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
@@ -226,7 +226,7 @@ func (c *controller) Rollback(ctx context.Context,
 
 	if pipelinerun.Action == prmodels.ActionRestart || pipelinerun.Status != prmodels.ResultOK ||
 		pipelinerun.ConfigCommit == "" {
-		return nil, perrors.Wrapf(he.ErrFailedToRollback,
+		return nil, perror.Wrapf(herrors.ErrFailedToRollback,
 			"the pipelinerun with id: %v can not be rollbacked", r.PipelinerunID)
 	}
 
@@ -236,7 +236,7 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 
 	if pipelinerun.ClusterID != cluster.ID {
-		return nil, perrors.Wrapf(he.ErrParamInvalid,
+		return nil, perror.Wrapf(herrors.ErrParamInvalid,
 			"the pipelinerun with id: %v is not belongs to cluster: %v", r.PipelinerunID, clusterID)
 	}
 
@@ -358,27 +358,27 @@ func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
 func (c *controller) Promote(ctx context.Context, clusterID uint) (err error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
+		return perror.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
+		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
+		return perror.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return perrors.WithMessage(err, "failed to get env value")
+		return perror.WithMessage(err, "failed to get env value")
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
+		return perror.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
 	}
 
 	param := cd.ClusterPromoteParams{
@@ -393,27 +393,27 @@ func (c *controller) Promote(ctx context.Context, clusterID uint) (err error) {
 func (c *controller) Pause(ctx context.Context, clusterID uint) (err error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
+		return perror.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
+		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
+		return perror.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return perrors.WithMessage(err, "failed to get env value")
+		return perror.WithMessage(err, "failed to get env value")
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
+		return perror.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
 	}
 
 	param := cd.ClusterPauseParams{
@@ -428,27 +428,27 @@ func (c *controller) Pause(ctx context.Context, clusterID uint) (err error) {
 func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
+		return perror.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
+		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
+		return perror.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return perrors.WithMessage(err, "failed to get env value")
+		return perror.WithMessage(err, "failed to get env value")
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
+		return perror.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
 	}
 
 	param := cd.ClusterResumeParams{
@@ -532,7 +532,7 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 
 	grafanaURL, ok := c.grafanaMapper[envValue.Region]
 	if !ok {
-		return nil, perrors.Wrap(he.ErrGrafanaNotSupport,
+		return nil, perror.Wrap(herrors.ErrGrafanaNotSupport,
 			"grafana does not support this region")
 	}
 
@@ -555,7 +555,7 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 	if memcached, ok := clusterFiles.ApplicationJSONBlob["memcached"]; ok {
 		blob, err := json.Marshal(memcached)
 		if err != nil {
-			return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 
 		type MemcachedSchema struct {
@@ -564,7 +564,7 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 		var memcachedVal MemcachedSchema
 		err = json.Unmarshal(blob, &memcachedVal)
 		if err != nil {
-			return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 
 		if memcachedVal.Enabled {
@@ -593,7 +593,7 @@ func (c *controller) GetClusterPods(ctx context.Context, clusterID uint, start, 
 
 	grafanaURL, ok := c.grafanaMapper[envValue.Region]
 	if !ok {
-		return nil, perrors.Wrap(he.ErrClusterNoChange,
+		return nil, perror.Wrap(herrors.ErrClusterNoChange,
 			"grafana does not support this region")
 	}
 
@@ -607,27 +607,27 @@ func (c *controller) GetClusterPods(ctx context.Context, clusterID uint, start, 
 
 	resp, err := http.Get(queryURL)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrHTTPRequestFailed, err.Error())
+		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed, err.Error())
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected,
+		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
 			"grafana query series interface return fail")
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrReadFailed,
+		return nil, perror.Wrap(herrors.ErrReadFailed,
 			"failed to read http response body")
 	}
 
 	var result *QueryPodsSeriesResult
 	err = json.Unmarshal(data, &result)
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	if result.Status != "success" {
-		return nil, perrors.Wrap(he.ErrHTTPRespNotAsExpected,
+		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
 			"grafana query series interface return fail")
 	}
 

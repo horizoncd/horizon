@@ -12,10 +12,10 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"k8s.io/apimachinery/pkg/fields"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/tektoncd/cli/pkg/options"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	ErrPipelineRunNotFound = perrors.New("tekton: pipeline run not found")
-	ErrTektonInternal      = perrors.New("tekton: internal error")
+	ErrPipelineRunNotFound = perror.New("tekton: pipeline run not found")
+	ErrTektonInternal      = perror.New("tekton: internal error")
 )
 
 func (t *Tekton) GetPipelineRunByID(ctx context.Context, cluster string,
@@ -41,29 +41,29 @@ func (t *Tekton) CreatePipelineRun(ctx context.Context, pr *PipelineRun) (eventI
 
 	bodyBytes, err := json.Marshal(pr)
 	if err != nil {
-		return "", perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return "", perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	resp, err := t.sendHTTPRequest(ctx, http.MethodPost, t.server, bytes.NewReader(bodyBytes))
 	if err != nil {
-		return "", perrors.Wrap(he.ErrHTTPRequestFailed, err.Error())
+		return "", perror.Wrap(herrors.ErrHTTPRequestFailed, err.Error())
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		message := common.Response(ctx, resp)
-		return "", perrors.Wrapf(he.ErrHTTPRespNotAsExpected, "statusCode = %d, message = %s", resp.StatusCode, message)
+		return "", perror.Wrapf(herrors.ErrHTTPRespNotAsExpected, "statusCode = %d, message = %s", resp.StatusCode, message)
 	}
 	respData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", perrors.Wrap(he.ErrReadFailed, err.Error())
+		return "", perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 	var pipelineRunResp struct {
 		EventID string `json:"eventID"`
 	}
 	err = json.Unmarshal(respData, &pipelineRunResp)
 	if err != nil {
-		return "", perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return "", perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return pipelineRunResp.EventID, nil
@@ -104,11 +104,11 @@ func (t *Tekton) StopPipelineRun(ctx context.Context, cluster string, clusterID,
 
 	data, err := json.Marshal(payload)
 	if err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	if _, err := t.client.Tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Patch(ctx, pr.Name,
 		types.JSONPatchType, data, metav1.PatchOptions{}); err != nil {
-		return he.NewErrUpdateFailed(he.Pipelinerun, err.Error())
+		return herrors.NewErrUpdateFailed(herrors.Pipelinerun, err.Error())
 	}
 	return nil
 }
@@ -118,7 +118,7 @@ func (t *Tekton) GetPipelineRunLogByID(ctx context.Context,
 	pr, err := t.getPipelineRunByID(ctx, clusterID, pipelinerunID)
 
 	if err != nil {
-		return nil, nil, perrors.WithMessage(err, "failed to get pipeline run with labels")
+		return nil, nil, perror.WithMessage(err, "failed to get pipeline run with labels")
 	}
 
 	return t.GetPipelineRunLog(ctx, pr)
@@ -145,9 +145,9 @@ func (t *Tekton) DeletePipelineRun(ctx context.Context, pr *v1beta1.PipelineRun)
 		Delete(ctx, pr.Name, metav1.DeleteOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			return he.NewErrNotFound(he.Pipelinerun, err.Error())
+			return herrors.NewErrNotFound(herrors.Pipelinerun, err.Error())
 		}
-		return he.NewErrDeleteFailed(he.Pipelinerun, err.Error())
+		return herrors.NewErrDeleteFailed(herrors.Pipelinerun, err.Error())
 	}
 
 	return nil
@@ -161,13 +161,13 @@ func (t *Tekton) getPipelineRunByID(ctx context.Context, clusterID, pipelinerunI
 		LabelSelector: selector.String(),
 	})
 	if err != nil {
-		return nil, perrors.Wrap(he.ErrTektonInternal, err.Error())
+		return nil, perror.Wrap(herrors.ErrTektonInternal, err.Error())
 	}
 	if prs == nil || len(prs.Items) == 0 {
-		return nil, he.NewErrNotFound(he.PipelinerunInTekton,
+		return nil, herrors.NewErrNotFound(herrors.PipelinerunInTekton,
 			fmt.Sprintf("failed to list pipeline with selector %s", selector.String()))
 	} else if len(prs.Items) > 1 {
-		return nil, perrors.Wrap(he.ErrTektonInternal,
+		return nil, perror.Wrap(herrors.ErrTektonInternal,
 			fmt.Sprintf("unexpected: selector %s match multi pipeline runs", selector.String()))
 	}
 	return &(prs.Items[0]), nil

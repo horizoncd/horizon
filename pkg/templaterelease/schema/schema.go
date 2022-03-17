@@ -8,9 +8,9 @@ import (
 	"sync"
 	"text/template"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschemamanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
@@ -74,7 +74,7 @@ func (g *getter) GeneratorRenderParams(ctx context.Context, params map[string]st
 		if ok {
 			clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 			if err != nil {
-				return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+				return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 			}
 			tags, err := g.templateSchemaTagMGr.ListByClusterID(ctx, uint(clusterID))
 			if err != nil {
@@ -95,7 +95,7 @@ func RenderFiles(params map[string]string, files ...[]byte) (retFiles [][]byte, 
 		doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(string(file)))
 		err := doTemplate.ExecuteTemplate(&b, "", params)
 		if err != nil {
-			return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 		retFiles = append(retFiles, b.Bytes())
 	}
@@ -153,7 +153,7 @@ func (g *getter) GetTemplateSchema(ctx context.Context,
 	unmarshal := func(b []byte, m *map[string]interface{}, err *error) {
 		defer wgUnmarshal.Done()
 		if e := json.Unmarshal(b, &m); e != nil {
-			*err = perrors.Wrap(he.ErrParamInvalid, e.Error())
+			*err = perror.Wrap(herrors.ErrParamInvalid, e.Error())
 		}
 	}
 	go unmarshal(pipelineSchemaBytes, &pipelineSchema, &err1)

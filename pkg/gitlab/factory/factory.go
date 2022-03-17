@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -47,7 +47,7 @@ func (f *factory) GetByName(ctx context.Context, name string) (_ gitlablib.Inter
 	// not exists in cache
 	gitlabModel, ok := f.gitlabMapper[name]
 	if !ok {
-		return nil, he.NewErrNotFound(he.GitlabResource,
+		return nil, herrors.NewErrNotFound(herrors.GitlabResource,
 			fmt.Sprintf("the gitlab instance for name: %s is not found.", name))
 	}
 

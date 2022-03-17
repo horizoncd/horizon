@@ -7,7 +7,7 @@ import (
 	"regexp"
 
 	"g.hz.netease.com/horizon/core/common"
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
@@ -15,7 +15,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -174,7 +174,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 
 	appExistsInDB, err := c.applicationMgr.GetByName(ctx, request.Name)
 	if err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return nil, err
 		}
 	}
@@ -467,20 +467,20 @@ func (c *controller) ListUserApplication(ctx context.Context,
 	// get current user
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return 0, nil, perrors.WithMessage(err, "no user in context")
+		return 0, nil, perror.WithMessage(err, "no user in context")
 	}
 
 	// get groups authorized to current user
 	groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, currentUser.GetID())
 	if err != nil {
 		return 0, nil,
-			perrors.WithMessage(err, "failed to list group resource of current user")
+			perror.WithMessage(err, "failed to list group resource of current user")
 	}
 
 	// get these groups' subGroups
 	subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
 	if err != nil {
-		return 0, nil, perrors.WithMessage(err, "failed to get groups")
+		return 0, nil, perror.WithMessage(err, "failed to get groups")
 	}
 
 	subGroupIDs := make([]uint, 0)
@@ -491,7 +491,7 @@ func (c *controller) ListUserApplication(ctx context.Context,
 	count, applications, err := c.applicationMgr.ListUserAuthorizedByNameFuzzily(ctx,
 		filter, subGroupIDs, currentUser.GetID(), query)
 	if err != nil {
-		return 0, nil, perrors.WithMessage(err, "failed to list user applications")
+		return 0, nil, perror.WithMessage(err, "failed to list user applications")
 	}
 
 	// get groups for full path, full name

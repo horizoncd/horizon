@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -23,7 +23,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 	if pr == nil || pr.ClusterID != clusterID {
-		return nil, he.NewErrNotFound(he.Pipelinerun,
+		return nil, herrors.NewErrNotFound(herrors.Pipelinerun,
 			fmt.Sprintf("cannot find the pipelinerun with id: %v", r.PipelinerunID))
 	}
 
@@ -54,7 +54,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 			},
 		})
 	if err != nil {
-		return nil, perrors.WithMessage(err, op)
+		return nil, perror.WithMessage(err, op)
 	}
 	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	// 4. merge branch from gitops to master
 	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
 	if err != nil {
-		return nil, perrors.WithMessage(err, op)
+		return nil, perror.WithMessage(err, op)
 	}
 
 	// 5. create cluster in cd system

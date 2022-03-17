@@ -6,9 +6,9 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
@@ -111,11 +111,11 @@ func (a *API) Transfer(c *gin.Context) {
 
 	err = a.applicationCtl.Transfer(c, uint(appID), uint(groupID))
 	if err != nil {
-		if e, ok := perrors.Cause(err).(*he.HorizonErrNotFound); ok {
-			if e.Source == he.GroupInDB {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.GroupInDB {
 				response.AbortWithRequestError(c, "GroupNotExist", err.Error())
 				return
-			} else if e.Source == he.ApplicationInDB {
+			} else if e.Source == herrors.ApplicationInDB {
 				response.AbortWithNotExistError(c, err.Error())
 				return
 			}

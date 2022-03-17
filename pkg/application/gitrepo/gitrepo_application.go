@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"sync"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -112,7 +112,7 @@ func (g *applicationGitlabRepo) UpdateApplicationEnvTemplate(ctx context.Context
 	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
 		// if not found, create this repo first
@@ -145,7 +145,7 @@ func (g *applicationGitlabRepo) GetApplicationEnvTemplate(ctx context.Context,
 	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); !ok {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return nil, nil, err
 		}
 		// if not found, return the default template
@@ -220,11 +220,11 @@ func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, a
 	// 2. write files to gitlab
 	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
 	if err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	pipelineYAML, err := yaml.Marshal(pipelineJSONBlob)
 	if err != nil {
-		return perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	actions := []gitlablib.CommitAction{
 		{
@@ -279,7 +279,7 @@ func (g *applicationGitlabRepo) getApplication(ctx context.Context,
 		}
 		pipelineBytes, err1 = kyaml.YAMLToJSON(pipelineBytes)
 		if err1 != nil {
-			err1 = perrors.Wrap(he.ErrParamInvalid, err1.Error())
+			err1 = perror.Wrap(herrors.ErrParamInvalid, err1.Error())
 		}
 	}()
 	go func() {
@@ -290,7 +290,7 @@ func (g *applicationGitlabRepo) getApplication(ctx context.Context,
 		}
 		applicationBytes, err2 = kyaml.YAMLToJSON(applicationBytes)
 		if err2 != nil {
-			err2 = perrors.Wrap(he.ErrParamInvalid, err2.Error())
+			err2 = perror.Wrap(herrors.ErrParamInvalid, err2.Error())
 		}
 	}()
 	wg.Wait()
@@ -302,10 +302,10 @@ func (g *applicationGitlabRepo) getApplication(ctx context.Context,
 	}
 
 	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlob); err != nil {
-		return nil, nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	if err := json.Unmarshal(applicationBytes, &applicationJSONBlob); err != nil {
-		return nil, nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+		return nil, nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return pipelineJSONBlob, applicationJSONBlob, nil

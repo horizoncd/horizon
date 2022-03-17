@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -35,7 +35,7 @@ func (d *dao) Create(ctx context.Context, harbor *models.Harbor) (*models.Harbor
 	result := db.Create(harbor)
 
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.HarborInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.HarborInDB, result.Error.Error())
 	}
 
 	return harbor, result.Error
@@ -51,7 +51,7 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Harbor, error) {
 	result := db.Raw(common.HarborGetByID, id).First(&harbor)
 
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.HarborInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.HarborInDB, result.Error.Error())
 	}
 
 	return &harbor, result.Error
@@ -67,7 +67,7 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.Harbor, error) {
 	result := db.Raw(common.HarborListAll).Scan(&harbors)
 
 	if result.Error != nil {
-		return nil, he.NewErrGetFailed(he.HarborInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.HarborInDB, result.Error.Error())
 	}
 
 	return harbors, result.Error

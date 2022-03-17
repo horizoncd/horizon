@@ -4,13 +4,13 @@ import (
 	"context"
 	"strings"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
@@ -92,7 +92,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		RegionEntity: regionEntity,
 	})
 	if err != nil {
-		if _, ok := perrors.Cause(err).(*he.HorizonErrNotFound); ok {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if cluster.Status != "" {
 				resp.ClusterStatus = map[string]string{
 					"status": cluster.Status,

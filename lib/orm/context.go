@@ -3,8 +3,8 @@ package orm
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 
 	"gorm.io/gorm"
 )
@@ -19,7 +19,7 @@ func Key() string {
 func FromContext(ctx context.Context) (*gorm.DB, error) {
 	o, ok := ctx.Value(ormKey).(*gorm.DB)
 	if !ok {
-		return nil, perrors.Wrap(he.ErrFailedToGetORM, "cannot get the ORM from context")
+		return nil, perror.Wrap(herrors.ErrFailedToGetORM, "cannot get the ORM from context")
 	}
 	return o, nil
 }

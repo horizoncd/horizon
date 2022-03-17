@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strconv"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
@@ -18,7 +18,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
@@ -92,20 +92,20 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 	// get current user
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return 0, nil, perrors.WithMessage(err, "no user in context")
+		return 0, nil, perror.WithMessage(err, "no user in context")
 	}
 
 	// get groups authorized to current user
 	groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, currentUser.GetID())
 	if err != nil {
 		return 0, nil,
-			perrors.WithMessage(err, "failed to list group resource of current user")
+			perror.WithMessage(err, "failed to list group resource of current user")
 	}
 
 	// get these groups' subGroups
 	subGroups, err := c.groupManager.GetSubGroupsByGroupIDs(ctx, groupIDs)
 	if err != nil {
-		return 0, nil, perrors.WithMessage(err, "failed to get groups")
+		return 0, nil, perror.WithMessage(err, "failed to get groups")
 	}
 
 	subGroupIDs := make([]uint, 0)
@@ -116,7 +116,7 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 	// list applications of these subGroups
 	applications, err := c.applicationMgr.GetByGroupIDs(ctx, subGroupIDs)
 	if err != nil {
-		return 0, nil, perrors.WithMessage(err, "failed to get applications")
+		return 0, nil, perror.WithMessage(err, "failed to get applications")
 	}
 
 	applicationIDs := make([]uint, 0)
@@ -129,7 +129,7 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 		membermodels.TypeApplication, currentUser.GetID())
 	if err != nil {
 		return 0, nil,
-			perrors.WithMessage(err, "failed to list application resource of current user")
+			perror.WithMessage(err, "failed to list application resource of current user")
 	}
 
 	// all applicationIDs, including:
@@ -141,7 +141,7 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 		filter, applicationIDs, currentUser.GetID(), query)
 	if err != nil {
 		return 0, nil,
-			perrors.WithMessage(err, "failed to list user clusters")
+			perror.WithMessage(err, "failed to list user clusters")
 	}
 
 	// 2. get applications
@@ -152,7 +152,7 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 	applicationMap, err := c.applicationSvc.GetByIDs(ctx, clusterApplicationIDs)
 	if err != nil {
 		return 0, nil,
-			perrors.WithMessage(err, "failed to list application for clusters")
+			perror.WithMessage(err, "failed to list application for clusters")
 	}
 
 	resp = make([]*ListClusterWithFullResponse, 0)
@@ -298,7 +298,7 @@ func RenderOutputObject(outPutStr, templateName string,
 				}
 				binaryContent, err := yaml.Marshal(content)
 				if err != nil {
-					return nil, perrors.Wrap(he.ErrParamInvalid, err.Error())
+					return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 				}
 				oneDoc += string(binaryContent) + "\n"
 			}
@@ -307,7 +307,7 @@ func RenderOutputObject(outPutStr, templateName string,
 	var oneDocMap map[interface{}]interface{}
 	err := yaml.Unmarshal([]byte(oneDoc), &oneDocMap)
 	if err != nil {
-		return nil, perrors.Wrapf(he.ErrParamInvalid, "RenderOutputObject yaml Unmarshal  error, err  = %s", err.Error())
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "RenderOutputObject yaml Unmarshal  error, err  = %s", err.Error())
 	}
 
 	var addValuePrefixDocMap = make(map[interface{}]interface{})
@@ -316,17 +316,17 @@ func RenderOutputObject(outPutStr, templateName string,
 	doTemplate := template.Must(template.New("").Funcs(sprig.HtmlFuncMap()).Parse(outPutStr))
 	err = doTemplate.ExecuteTemplate(&b, "", addValuePrefixDocMap)
 	if err != nil {
-		return nil, perrors.Wrapf(he.ErrParamInvalid, "RenderOutputObject template error, err  = %s", err.Error())
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "RenderOutputObject template error, err  = %s", err.Error())
 	}
 
 	var retJSONObject interface{}
 	jsonBytes, err := kyaml.YAMLToJSON(b.Bytes())
 	if err != nil {
-		return nil, perrors.Wrapf(he.ErrParamInvalid, "RenderOutputObject YAMLToJSON error, err  = %s", err.Error())
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "RenderOutputObject YAMLToJSON error, err  = %s", err.Error())
 	}
 	err = json.Unmarshal(jsonBytes, &retJSONObject)
 	if err != nil {
-		return nil, perrors.Wrapf(he.ErrParamInvalid, "RenderOutputObject json Unmarshal error, err  = %s", err.Error())
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "RenderOutputObject json Unmarshal error, err  = %s", err.Error())
 	}
 	return retJSONObject, nil
 }
@@ -353,7 +353,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, err
 	}
 	if exists {
-		return nil, perrors.Wrap(he.ErrNameConflict,
+		return nil, perror.Wrap(herrors.ErrNameConflict,
 			"a cluster with the same name already exists, please do not create it again!")
 	}
 	if err := c.validateCreate(r); err != nil {
@@ -521,7 +521,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		renderValues[templateschema.ClusterIDKey] = clusterIDStr
 		if err := c.validateTemplateInput(ctx,
 			cluster.Template, templateRelease, r.TemplateInput, renderValues); err != nil {
-			return nil, perrors.Wrapf(he.ErrParamInvalid,
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
 				"request body validate err: %v", err)
 		}
 		// update cluster in git repo
@@ -791,13 +791,13 @@ func (c *controller) validateCreate(r *CreateClusterRequest) error {
 		return err
 	}
 	if r.Git == nil || r.Git.Branch == "" {
-		return perrors.Wrap(he.ErrParamInvalid, "git branch cannot be empty")
+		return perror.Wrap(herrors.ErrParamInvalid, "git branch cannot be empty")
 	}
 	if r.TemplateInput != nil && r.TemplateInput.Application == nil {
-		return perrors.Wrap(he.ErrParamInvalid, "application config for template cannot be empty")
+		return perror.Wrap(herrors.ErrParamInvalid, "application config for template cannot be empty")
 	}
 	if r.TemplateInput != nil && r.TemplateInput.Pipeline == nil {
-		return perrors.Wrap(he.ErrParamInvalid, "pipeline config for template cannot be empty")
+		return perror.Wrap(herrors.ErrParamInvalid, "pipeline config for template cannot be empty")
 	}
 	return nil
 }
@@ -821,22 +821,22 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 // 3. name must start with application name
 func validateClusterName(name string) error {
 	if len(name) == 0 {
-		return perrors.Wrap(he.ErrParamInvalid, "name cannot be empty")
+		return perror.Wrap(herrors.ErrParamInvalid, "name cannot be empty")
 	}
 
 	if len(name) > 53 {
-		return perrors.Wrap(he.ErrParamInvalid, "name must not exceed 53 characters")
+		return perror.Wrap(herrors.ErrParamInvalid, "name must not exceed 53 characters")
 	}
 
 	// cannot start with a digit.
 	if name[0] >= '0' && name[0] <= '9' {
-		return perrors.Wrap(he.ErrParamInvalid, "name cannot start with a digit")
+		return perror.Wrap(herrors.ErrParamInvalid, "name cannot start with a digit")
 	}
 
 	pattern := `^(([a-z][-a-z0-9]*)?[a-z0-9])?$`
 	r := regexp.MustCompile(pattern)
 	if !r.MatchString(name) {
-		return perrors.Wrapf(he.ErrParamInvalid, "invalid cluster name, regex used for validation is %v", pattern)
+		return perror.Wrapf(herrors.ErrParamInvalid, "invalid cluster name, regex used for validation is %v", pattern)
 	}
 
 	return nil

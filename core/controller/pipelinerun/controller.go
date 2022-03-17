@@ -16,7 +16,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -128,7 +128,7 @@ func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelin
 	if pr.PrObject == "" {
 		tektonClient, err := c.tektonFty.GetTekton(environment)
 		if err != nil {
-			return nil, perrors.WithMessagef(err, "faild to get tekton for %s", environment)
+			return nil, perror.WithMessagef(err, "faild to get tekton for %s", environment)
 		}
 
 		logCh, errCh, err := tektonClient.GetPipelineRunLogByID(ctx, cluster.Name, cluster.ID, pr.ID)
@@ -144,11 +144,11 @@ func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelin
 	// else, get log from s3
 	tektonCollector, err := c.tektonFty.GetTektonCollector(environment)
 	if err != nil {
-		return nil, perrors.WithMessagef(err, "faild to get tekton collector for %s", environment)
+		return nil, perror.WithMessagef(err, "faild to get tekton collector for %s", environment)
 	}
 	logBytes, err := tektonCollector.GetPipelineRunLog(ctx, pr.LogObject)
 	if err != nil {
-		return nil, perrors.WithMessagef(err, "faild to get tekton collector for %s", environment)
+		return nil, perror.WithMessagef(err, "faild to get tekton collector for %s", environment)
 	}
 	return &Log{
 		LogBytes: logBytes,

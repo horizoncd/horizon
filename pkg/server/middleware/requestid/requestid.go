@@ -3,7 +3,7 @@ package requestid
 import (
 	"context"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +29,7 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 func FromContext(ctx context.Context) (string, error) {
 	rid, ok := ctx.Value(HeaderXRequestID).(string)
 	if !ok {
-		return "", he.ErrFailedToGetRequestID
+		return "", herrors.ErrFailedToGetRequestID
 	}
 	return rid, nil
 }

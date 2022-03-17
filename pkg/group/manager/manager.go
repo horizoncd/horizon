@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
@@ -123,7 +123,7 @@ func (m manager) Delete(ctx context.Context, id uint) (int64, error) {
 		return 0, err
 	}
 	if count > 0 {
-		return 0, he.ErrGroupHasChildren
+		return 0, herrors.ErrGroupHasChildren
 	}
 
 	count, err = m.applicationDAO.CountByGroupID(ctx, id)
@@ -131,7 +131,7 @@ func (m manager) Delete(ctx context.Context, id uint) (int64, error) {
 		return 0, err
 	}
 	if count > 0 {
-		return 0, he.ErrGroupHasChildren
+		return 0, herrors.ErrGroupHasChildren
 	}
 
 	return m.groupDAO.Delete(ctx, id)
@@ -181,7 +181,7 @@ func (m manager) checkApplicationExists(ctx context.Context, group *models.Group
 		return err
 	}
 	if len(apps) > 0 {
-		return he.ErrGroupConflictWithApplication
+		return herrors.ErrGroupConflictWithApplication
 	}
 	return nil
 }

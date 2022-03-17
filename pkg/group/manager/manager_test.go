@@ -10,11 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	he "g.hz.netease.com/horizon/core/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 
@@ -78,11 +78,11 @@ func TestCreate(t *testing.T) {
 
 	// name conflict, parentID is nil
 	_, err = Mgr.Create(ctx, getGroup(0, "1", "b"))
-	assert.Equal(t, he.ErrNameConflict, perrors.Cause(err))
+	assert.Equal(t, herrors.ErrNameConflict, perror.Cause(err))
 
 	// path conflict, with parentID is nil
 	_, err = Mgr.Create(ctx, getGroup(0, "2", "a"))
-	assert.Equal(t, he.ErrPathConflict, perrors.Cause(err))
+	assert.Equal(t, herrors.ErrPathConflict, perror.Cause(err))
 
 	// name conflict with application
 	name := "app"
@@ -91,7 +91,7 @@ func TestCreate(t *testing.T) {
 	}, nil)
 	assert.Nil(t, err)
 	_, err = Mgr.Create(ctx, getGroup(0, name, "a"))
-	assert.Equal(t, perrors.Cause(err), he.ErrGroupConflictWithApplication)
+	assert.Equal(t, perror.Cause(err), herrors.ErrGroupConflictWithApplication)
 
 	// normal create, parentID: not nil
 	group2 := getGroup(g1.ID, "2", "b")
@@ -114,7 +114,7 @@ func TestDelete(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = Mgr.GetByID(ctx, g1.ID)
-	_, ok := perrors.Cause(err).(*he.HorizonErrNotFound)
+	_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
 	assert.True(t, ok)
 
 	// delete not exist record
@@ -139,7 +139,7 @@ func TestGetByID(t *testing.T) {
 
 	// query not exist record
 	_, err = Mgr.GetByID(ctx, notExistID)
-	_, ok := perrors.Cause(err).(*he.HorizonErrNotFound)
+	_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
 	assert.True(t, ok)
 
 	// drop table
@@ -229,7 +229,7 @@ func TestUpdateBasic(t *testing.T) {
 	group2.ID = g2.ID
 	group2.Name = "update1"
 	err = Mgr.UpdateBasic(ctx, group2)
-	assert.Equal(t, he.ErrNameConflict, perrors.Cause(err))
+	assert.Equal(t, herrors.ErrNameConflict, perror.Cause(err))
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
