@@ -45,6 +45,7 @@ const (
 	GroupQueryByNameFuzzily   = "select * from `group` where name like ? and deleted_at is null"
 	GroupQueryByIDNameFuzzily = "select * from `group` " +
 		"where traversal_ids like ? and name like ? and deleted_at is null"
+	GroupAll                      = "select * from `group` where deleted_at is null"
 	GroupUpdateTraversalIDs       = "update `group` set traversal_ids = ? where id = ? and deleted_at is null"
 	GroupCountByParentID          = "select count(1) from `group` where parent_id = ? and deleted_at is null"
 	GroupUpdateTraversalIDsPrefix = "update `group` set traversal_ids = replace(traversal_ids, ?, ?), updated_by = ? " +
@@ -79,6 +80,7 @@ const (
 	ApplicationQueryByNamesUnderGroup = "select * from application where group_id = ? and name in ? " +
 		"and deleted_at is null"
 	ApplicationDeleteByID                = "update application set deleted_at = CURRENT_TIMESTAMP where id = ?"
+	ApplicationTransferByID              = "update application set group_id = ? where id = ?"
 	ApplicationCountByGroupID            = "select count(1) from application where group_id = ? and deleted_at is null"
 	ApplicationQueryByUserAndNameFuzzily = "select * from ( " +
 		"select a.* from application a join member m on m.resource_id = a.id " +

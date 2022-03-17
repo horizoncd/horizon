@@ -22,7 +22,9 @@ const (
 )
 
 const (
-	Owner string = "owner"
+	Owner      string = "owner"
+	Maintainer string = "maintainer"
+	PE         string = "pe"
 )
 
 var (

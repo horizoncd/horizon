@@ -22,9 +22,9 @@ type API struct {
 }
 
 // NewAPI initializes a new group api
-func NewAPI() *API {
+func NewAPI(controller group.Controller) *API {
 	return &API{
-		groupCtl: group.Ctl,
+		groupCtl: controller,
 	}
 }
 
@@ -111,6 +111,15 @@ func (a *API) GetGroup(c *gin.Context) {
 	}
 
 	response.SuccessWithData(c, child)
+}
+
+func (a *API) ListAuthedGroup(c *gin.Context) {
+	groups, err := a.groupCtl.ListAuthedGroup(c)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, groups)
 }
 
 // GetGroupByFullPath get a group child by fullPath

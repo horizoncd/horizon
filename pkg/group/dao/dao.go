@@ -40,6 +40,8 @@ type DAO interface {
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 	// GetByPaths get groups by paths
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
+	// GetAll return all the groups
+	GetAll(ctx context.Context) ([]*models.Group, error)
 	// CountByParentID get the count of the records matching the given parentID
 	CountByParentID(ctx context.Context, parentID uint) (int64, error)
 	// UpdateBasic update basic info of a group
@@ -170,6 +172,16 @@ func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 	var groups []*models.Group
 	result := db.Raw(common.GroupQueryByIDs, ids).Scan(&groups)
 
+	return groups, result.Error
+}
+
+func (d *dao) GetAll(ctx context.Context) ([]*models.Group, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var groups []*models.Group
+	result := db.Raw(common.GroupAll).Scan(&groups)
 	return groups, result.Error
 }
 
@@ -325,6 +337,9 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 	var group models.Group
 	result := db.Raw(common.GroupQueryByID, id).First(&group)
 
+	if result.Error != nil || result.RowsAffected == 0 {
+		return nil, result.Error
+	}
 	return &group, result.Error
 }
 

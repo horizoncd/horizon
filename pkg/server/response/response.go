@@ -68,6 +68,10 @@ func AbortWithInternalError(c *gin.Context, message string) {
 	Abort(c, http.StatusInternalServerError, common.InternalError, message)
 }
 
+func AbortWithNotExistError(c *gin.Context, message string) {
+	Abort(c, http.StatusNotFound, common.NotFound, message)
+}
+
 func AbortWithRPCError(c *gin.Context, rpcError rpcerror.RPCError) {
 	Abort(c, rpcError.HTTPCode, string(rpcError.ErrorCode), rpcError.ErrorMessage)
 }

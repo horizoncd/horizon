@@ -7,6 +7,8 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
 	"g.hz.netease.com/horizon/lib/q"
+	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
+	perrors "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
@@ -19,6 +21,7 @@ const (
 	_groupIDParam       = "groupID"
 	_applicationIDParam = "applicationID"
 	_extraOwner         = "extraOwner"
+	_groupIDStr         = "groupID"
 )
 
 type API struct {
@@ -89,6 +92,36 @@ func (a *API) Update(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, resp)
+}
+
+func (a *API) Transfer(c *gin.Context) {
+	appIDStr := c.Param(_applicationIDParam)
+	appID, err := strconv.ParseUint(appIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	groupIDStr := c.Query(_groupIDStr)
+	groupID, err := strconv.ParseUint(groupIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	err = a.applicationCtl.Transfer(c, uint(appID), uint(groupID))
+	if err != nil {
+		switch perrors.Cause(err) {
+		case application.ErrGroupNotFound, applicationdao.ErrGroupNotFound:
+			response.AbortWithRequestError(c, "GroupNotExist", err.Error())
+		case applicationdao.ErrApplicationNotFound:
+			response.AbortWithNotExistError(c, err.Error())
+		default:
+			response.AbortWithInternalError(c, err.Error())
+		}
+		return
+	}
+	response.Success(c)
 }
 
 func (a *API) Delete(c *gin.Context) {

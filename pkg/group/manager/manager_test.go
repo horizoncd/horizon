@@ -160,6 +160,22 @@ func TestGetByIDs(t *testing.T) {
 	assert.Nil(t, res.Error)
 }
 
+func TestGetAll(t *testing.T) {
+	g1, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
+	assert.Nil(t, err)
+	g2, err := Mgr.Create(ctx, getGroup(0, "2", "b"))
+	assert.Nil(t, err)
+
+	groups, err := Mgr.GetAll(ctx)
+	assert.Nil(t, err)
+	assert.Equal(t, g1.ID, groups[0].ID)
+	assert.Equal(t, g2.ID, groups[1].ID)
+
+	// drop table
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	assert.Nil(t, res.Error)
+}
+
 func TestGetByPaths(t *testing.T) {
 	id, err := Mgr.Create(ctx, getGroup(0, "1", "a"))
 	assert.Nil(t, err)

@@ -15,14 +15,11 @@ import (
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/group/service"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/util/errors"
-
 	"gorm.io/gorm"
-)
-
-var (
-	// Ctl global instance of the group controller
-	Ctl = NewController()
 )
 
 const (
@@ -53,20 +50,24 @@ type Controller interface {
 	SearchGroups(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error)
 	// SearchChildren search children of a group, including subgroups and applications
 	SearchChildren(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error)
+	// ListAuthedGroup get all the authed groups of current user(if is admin, return all the groups)
+	ListAuthedGroup(ctx context.Context) ([]*Group, error)
 }
 
 type controller struct {
 	groupManager       manager.Manager
 	applicationManager appmanager.Manager
 	clusterManager     clustermanager.Manager
+	memberSvc          memberservice.Service
 }
 
 // NewController initializes a new group controller
-func NewController() Controller {
+func NewController(service memberservice.Service) Controller {
 	return &controller{
 		groupManager:       manager.Mgr,
 		applicationManager: appmanager.Mgr,
 		clusterManager:     clustermanager.Mgr,
+		memberSvc:          service,
 	}
 }
 
@@ -413,6 +414,36 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.C
 	return nil, errNotMatch
 }
 
+func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
+	currenUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	groups, err := c.groupManager.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var authedGroups []*models.Group
+	if currenUser.IsAdmin() {
+		authedGroups = groups
+	} else {
+		authedGroups = make([]*models.Group, 0)
+		for _, item := range groups {
+			// TODO: get all group member in one request
+			member, err := c.memberSvc.GetMemberOfResource(ctx, membermodels.TypeGroupStr, item.ID)
+			if err != nil {
+				return nil, err
+			}
+			if member != nil && (member.Role == role.Owner ||
+				member.Role == role.Maintainer || member.Role == role.PE) {
+				authedGroups = append(authedGroups, item)
+			}
+		}
+	}
+	return c.ofGroupModel(ctx, authedGroups)
+}
+
 // GetByID get a group by the id
 func (c *controller) GetByID(ctx context.Context, id uint) (*service.Child, error) {
 	const op = "group *controller: get group by id"
@@ -526,4 +557,27 @@ func (c *controller) formatFullFromGroup(ctx context.Context, group *models.Grou
 	}
 
 	return service.GenerateFullFromGroups(groups), nil
+}
+
+func (c *controller) ofGroupModel(ctx context.Context, groups []*models.Group) ([]*Group, error) {
+	var ofGroups = make([]*Group, 0)
+	for _, item := range groups {
+		fullEntity, err := c.formatFullFromGroup(ctx, item)
+		if err != nil {
+			return nil, err
+		}
+		ofGroups = append(ofGroups, &Group{
+			ID:              item.ID,
+			Name:            item.Name,
+			Path:            item.Path,
+			VisibilityLevel: item.VisibilityLevel,
+			Description:     item.Description,
+			ParentID:        item.ParentID,
+			TraversalIDs:    item.TraversalIDs,
+			UpdatedAt:       item.UpdatedAt,
+			FullName:        fullEntity.FullName,
+			FullPath:        fullEntity.FullPath,
+		})
+	}
+	return ofGroups, nil
 }

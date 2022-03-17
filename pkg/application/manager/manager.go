@@ -32,6 +32,7 @@ type Manager interface {
 	Create(ctx context.Context, application *models.Application, extraOwners []string) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
+	Transfer(ctx context.Context, id uint, groupID uint) error
 	// ListUserAuthorizedByNameFuzzily list application which is authorized to the specified user.
 	// 1. name is the application's fuzzily name.
 	// 2. groupIDs is the groups' id which are authorized to the specified user.
@@ -118,6 +119,10 @@ func (m *manager) UpdateByID(ctx context.Context,
 
 func (m *manager) DeleteByID(ctx context.Context, id uint) error {
 	return m.applicationDAO.DeleteByID(ctx, id)
+}
+
+func (m *manager) Transfer(ctx context.Context, id uint, groupID uint) error {
+	return m.applicationDAO.TransferByID(ctx, id, groupID)
 }
 
 func (m *manager) ListUserAuthorizedByNameFuzzily(ctx context.Context,

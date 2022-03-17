@@ -11,12 +11,19 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	perrors "g.hz.netease.com/horizon/pkg/errors"
+	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"gorm.io/gorm"
+)
+
+var (
+	ErrGroupNotFound       = perrors.New("Group Not Found")
+	ErrApplicationNotFound = perrors.New("Application Not Found")
 )
 
 type DAO interface {
@@ -35,6 +42,7 @@ type DAO interface {
 		extraOwners []*usermodels.User) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
+	TransferByID(ctx context.Context, id uint, groupID uint) error
 	ListUserAuthorizedByNameFuzzily(ctx context.Context,
 		name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error)
 }
@@ -168,6 +176,8 @@ func (d *dao) Create(ctx context.Context, application *models.Application,
 	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
+		// TODO: check the group exist
+
 		if err := tx.Create(application).Error; err != nil {
 			return err
 		}
@@ -259,6 +269,36 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	}
 	if result.RowsAffected == 0 {
 		return errors.E(op, http.StatusNotFound)
+	}
+	return nil
+}
+
+func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+	err = db.Transaction(func(tx *gorm.DB) error {
+		var group groupmodels.Group
+		result := tx.Raw(common.GroupQueryByID, groupID).Scan(&group)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return ErrGroupNotFound
+		}
+
+		result = tx.Exec(common.ApplicationTransferByID, groupID, id)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return ErrApplicationNotFound
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }
