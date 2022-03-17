@@ -65,10 +65,6 @@ func (a *API) GetDiff(c *gin.Context) {
 			if e.Source == herrors.ClusterInDB {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 				return
-			} else if e.Source == herrors.PodsInK8S {
-				log.WithFiled(c, "op", op).Errorf("%+v", err)
-				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
-				return
 			}
 		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
