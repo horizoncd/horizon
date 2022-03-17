@@ -30,6 +30,7 @@ var (
 	contextUserID       uint = 1
 	contextUserName          = "Tony"
 	contextUserFullName      = "TonyWu"
+	groupCtl                 = group.NewController(nil)
 )
 
 var (
@@ -129,7 +130,7 @@ func TestCreateGroupWithOwner(t *testing.T) {
 		ParentID:        0,
 	}
 
-	groupID, err := group.Ctl.CreateGroup(ctx, newGroup)
+	groupID, err := groupCtl.CreateGroup(ctx, newGroup)
 	assert.Nil(t, err)
 
 	retMembers, err := Ctl.ListMember(ctx, membermodels.TypeGroupStr, groupID)
@@ -180,7 +181,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 		ParentID:        0,
 	}
 
-	groupID, err := group.Ctl.CreateGroup(ctx, newGroup)
+	groupID, err := groupCtl.CreateGroup(ctx, newGroup)
 	assert.Nil(t, err)
 
 	// create member

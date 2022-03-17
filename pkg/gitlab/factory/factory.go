@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -35,7 +35,7 @@ func NewFactory(gitlabMapper gitlab.Mapper) Factory {
 
 func (f *factory) GetByName(ctx context.Context, name string) (_ gitlablib.Interface, err error) {
 	const op = "gitlab controller: get gitlab instance by name"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	var ret interface{}
 	var ok bool
@@ -47,8 +47,8 @@ func (f *factory) GetByName(ctx context.Context, name string) (_ gitlablib.Inter
 	// not exists in cache
 	gitlabModel, ok := f.gitlabMapper[name]
 	if !ok {
-		errMsg := fmt.Sprintf("the gitlab instance for name: %s is not found. ", name)
-		return nil, errors.E(op, errMsg)
+		return nil, herrors.NewErrNotFound(herrors.GitlabResource,
+			fmt.Sprintf("the gitlab instance for name: %s is not found.", name))
 	}
 
 	gitlabLib, err := gitlablib.New(gitlabModel.Token, gitlabModel.HTTPURL, gitlabModel.SSHURL)

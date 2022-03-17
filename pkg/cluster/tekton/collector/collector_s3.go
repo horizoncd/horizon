@@ -8,11 +8,13 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"path"
 	"strconv"
 	"time"
+
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
@@ -148,36 +150,36 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*Co
 
 func (c *S3Collector) GetPipelineRunLog(ctx context.Context, logObject string) (_ []byte, err error) {
 	const op = "s3Collector: getPipelineRunLog"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	b, err := c.s3.GetObject(ctx, logObject)
 	if err != nil {
 		if e, ok := err.(awserr.Error); ok {
 			if e.Code() == awss3.ErrCodeNoSuchKey {
-				return nil, errors.E(op, http.StatusNotFound, err)
+				return nil, herrors.NewErrNotFound(herrors.PipelinerunLog, err.Error())
 			}
 		}
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrS3GetObjFailed, err.Error())
 	}
 	return b, nil
 }
 
 func (c *S3Collector) GetPipelineRunObject(ctx context.Context, object string) (_ *Object, err error) {
 	const op = "s3Collector: getPipelineRunObject"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	b, err := c.s3.GetObject(ctx, object)
 	if err != nil {
 		if e, ok := err.(awserr.Error); ok {
 			if e.Code() == awss3.ErrCodeNoSuchKey {
-				return nil, errors.E(op, http.StatusNotFound, err)
+				return nil, herrors.NewErrNotFound(herrors.PipelinerunObj, err.Error())
 			}
 		}
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrS3GetObjFailed, err.Error())
 	}
 	var obj *Object
 	if err := json.Unmarshal(b, &obj); err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	return obj, nil
 }
@@ -190,23 +192,23 @@ type CollectObjectResult struct {
 func (c *S3Collector) collectObject(ctx context.Context, metadata *ObjectMeta,
 	pr *v1beta1.PipelineRun) (_ *CollectObjectResult, err error) {
 	const op = "s3Collector: collectObject"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 	object := &Object{
 		Metadata:    metadata,
 		PipelineRun: pr,
 	}
 	b, err := json.Marshal(object)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	prPath := c.getPathForPr(metadata)
 
 	prURL, err := c.s3.GetSignedObjectURL(prPath, _expireTimeDuration)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrS3SignFailed, err.Error())
 	}
 	if err := c.s3.PutObject(ctx, prPath, bytes.NewReader(b), c.resolveMetadata(metadata)); err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrS3PutObjFailed, err.Error())
 	}
 	return &CollectObjectResult{
 		PrObject: prPath,
@@ -223,15 +225,15 @@ type CollectLogResult struct {
 func (c *S3Collector) collectLog(ctx context.Context,
 	pr *v1beta1.PipelineRun, metadata *ObjectMeta) (_ *CollectLogResult, err error) {
 	const op = "s3Collector: collectLog"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	logC, errC, err := c.tekton.GetPipelineRunLog(ctx, pr)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			// 如果pipelineRun没有找到，则error code返回http.StatusNotFound
-			return nil, errors.E(op, http.StatusNotFound, err)
+			return nil, herrors.NewErrNotFound(herrors.Pipelinerun, "")
 		}
-		return nil, errors.E(op, err)
+		return nil, herrors.NewErrGetFailed(herrors.Pipelinerun, "")
 	}
 	r, w := io.Pipe()
 	go func() {
@@ -262,16 +264,16 @@ func (c *S3Collector) collectLog(ctx context.Context,
 
 	logURL, err := c.s3.GetSignedObjectURL(logPath, _expireTimeDuration)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrS3SignFailed, err.Error())
 	}
 
 	// TODO(demo) 日志先缓存到内存，再上传。如后续遇到内存占用很高的情况，可以考虑先存储到磁盘，再上传
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 	if err := c.s3.PutObject(ctx, logPath, bytes.NewReader(b), nil); err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrS3PutObjFailed, err.Error())
 	}
 	return &CollectLogResult{
 		LogObject:  logPath,

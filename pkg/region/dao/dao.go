@@ -3,6 +3,8 @@ package dao
 import (
 	"context"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
+
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/region/models"
@@ -35,6 +37,10 @@ func (d *dao) Create(ctx context.Context, region *models.Region) (*models.Region
 
 	result := db.Create(region)
 
+	if result.Error != nil {
+		return nil, herrors.NewErrInsertFailed(herrors.RegionInDB, result.Error.Error())
+	}
+
 	return region, result.Error
 }
 
@@ -46,6 +52,10 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.Region, error) {
 
 	var regions []*models.Region
 	result := db.Raw(common.RegionListAll).Scan(&regions)
+
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, result.Error.Error())
+	}
 
 	return regions, result.Error
 }
@@ -59,6 +69,10 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 	var region models.Region
 	result := db.Raw(common.RegionGetByName, regionName).First(&region)
 
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+	}
+
 	return &region, result.Error
 }
 
@@ -70,6 +84,10 @@ func (d *dao) ListByNames(ctx context.Context, regionNames []string) ([]*models.
 
 	var regions []*models.Region
 	result := db.Raw(common.RegionListByNames, regionNames).Scan(&regions)
+
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+	}
 
 	return regions, result.Error
 }

@@ -2,16 +2,15 @@ package dao
 
 import (
 	"context"
-	"errors"
 	"sort"
+
+	herrors "g.hz.netease.com/horizon/core/errors"
+	"gorm.io/gorm"
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/environment/models"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
 )
-
-var ErrEnvironmentRegionNotFound = errors.New("EnvironmentRegion not found")
 
 type DAO interface {
 	EnvironmentDAO
@@ -51,6 +50,10 @@ func (d *dao) CreateEnvironment(ctx context.Context, environment *models.Environ
 
 	result := db.Create(environment)
 
+	if result.Error != nil {
+		return nil, herrors.NewErrInsertFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+	}
+
 	return environment, result.Error
 }
 
@@ -65,7 +68,7 @@ func (d *dao) ListAllEnvironment(ctx context.Context) ([]*models.Environment, er
 	result := db.Raw(common.EnvironmentListAll).Scan(&environments)
 
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 	}
 
 	sort.Sort(models.EnvironmentList(environments))
@@ -80,6 +83,9 @@ func (d *dao) CreateEnvironmentRegion(ctx context.Context,
 	}
 
 	result := db.Create(er)
+	if result.Error != nil {
+		return nil, herrors.NewErrInsertFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+	}
 	return er, result.Error
 }
 
@@ -92,6 +98,10 @@ func (d *dao) ListRegionsByEnvironment(ctx context.Context, env string) ([]strin
 	var regions []string
 	result := db.Raw(common.EnvironmentListRegion, env).Scan(&regions)
 
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+	}
+
 	return regions, result.Error
 }
 
@@ -103,6 +113,13 @@ func (d *dao) GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.En
 
 	var environmentRegion models.EnvironmentRegion
 	result := db.Raw(common.EnvironmentRegionGetByID, id).First(&environmentRegion)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.EnvironmentRegionInDB, result.Error.Error())
+		}
+		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+	}
 
 	return &environmentRegion, result.Error
 }
@@ -118,7 +135,10 @@ func (d *dao) GetEnvironmentRegionByEnvAndRegion(ctx context.Context,
 	result := db.Raw(common.EnvironmentRegionGet, env, region).First(&environmentRegion)
 
 	if result.Error != nil {
-		return nil, perrors.Wrap(ErrEnvironmentRegionNotFound, result.Error.Error())
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.EnvironmentRegionInDB, result.Error.Error())
+		}
+		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 	}
 	return &environmentRegion, nil
 }

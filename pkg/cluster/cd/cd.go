@@ -27,13 +27,14 @@ import (
 	"strconv"
 	"sync"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
+
 	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	argocdconf "g.hz.netease.com/horizon/pkg/config/argocd"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -60,10 +61,6 @@ const (
 	DeploymentPodTemplateHash = "pod-template-hash"
 	_rolloutRevision          = "rollout.argoproj.io/revision"
 	RolloutPodTemplateHash    = "rollouts-pod-template-hash"
-)
-
-var (
-	ErrKubeDynamicCliResponseNotOK = perrors.New("response for kube dynamic cli is not 200 OK")
 )
 
 const (
@@ -213,11 +210,11 @@ func NewCD(argoCDMapper argocdconf.Mapper) CD {
 
 func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
 	const op = "cd: create cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// if argo application exists, return, else create it
@@ -225,19 +222,19 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 	if err == nil {
 		return nil
 	}
-	if errors.Status(err) != http.StatusNotFound {
-		return errors.E(op, err)
+	if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+		return err
 	}
 	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
 		params.GitRepoSSHURL, params.RegionEntity.K8SCluster.Server, params.ValueFiles)
 
 	manifest, err := json.Marshal(argoApplication)
 	if err != nil {
-		return errors.E(op, err)
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	if err := argo.CreateApplication(ctx, manifest); err != nil {
-		return errors.E(op, err)
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return nil
@@ -245,11 +242,11 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 
 func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (err error) {
 	const op = "cd: deploy cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return errors.E(op, err)
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return argo.DeployApplication(ctx, params.Cluster, params.Revision)
@@ -257,48 +254,41 @@ func (c *cd) DeployCluster(ctx context.Context, params *DeployClusterParams) (er
 
 func (c *cd) DeleteCluster(ctx context.Context, params *DeleteClusterParams) (err error) {
 	const op = "cd: delete cluster"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 1. get application first
 	applicationCR, err := argo.GetApplication(ctx, params.Cluster)
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
-			return errors.E(op, err)
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			return nil
 		}
-		return nil
+		return
 	}
 
 	// 2. delete application
 	if err := argo.DeleteApplication(ctx, params.Cluster); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 3. wait for application to delete completely
-	if err := argo.WaitApplication(ctx, params.Cluster, string(applicationCR.UID), http.StatusNotFound); err != nil {
-		return errors.E(op, err)
-	}
-	return nil
+	return argo.WaitApplication(ctx, params.Cluster, string(applicationCR.UID), http.StatusNotFound)
 }
 
 func (c *cd) Next(ctx context.Context, params *ClusterNextParams) (err error) {
 	const op = "cd: get cluster status"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
-	if err := argo.ResumeRollout(ctx, params.Cluster); err != nil {
-		return errors.E(op, err)
-	}
-
-	return nil
+	return argo.ResumeRollout(ctx, params.Cluster)
 }
 
 var rolloutResource = schema.GroupVersionResource{
@@ -312,8 +302,7 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 	// 1. get argo rollout
 	rollout, err := c.getRollout(ctx, params.Environment, params.Cluster)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get argo rollouts resource for cluster %s",
-			params.Cluster)
+		return err
 	}
 	if rollout == nil {
 		return nil
@@ -322,15 +311,14 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 	// 2. patch rollout
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
-			params.Cluster)
+		return err
 	}
 	patchBody := []byte(getSkipAllStepsPatchStr(len(rollout.Spec.Strategy.Canary.Steps)))
 	_, err = kubeClient.Dynamic.Resource(rolloutResource).
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
-		return perrors.Wrapf(ErrKubeDynamicCliResponseNotOK, err.Error())
+		return perror.Wrap(herrors.ErrKubeDynamicCliResponseNotOK, err.Error())
 	}
 
 	return nil
@@ -340,7 +328,7 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) {
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+		return perror.WithMessagef(err, "failed to get argocd application resource for cluster %s",
 			params.Cluster)
 	}
 	patchBody := []byte(getPausePatchStr())
@@ -348,7 +336,7 @@ func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) 
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
-		return perrors.Wrapf(ErrKubeDynamicCliResponseNotOK, err.Error())
+		return perror.Wrap(herrors.ErrKubeDynamicCliResponseNotOK, err.Error())
 	}
 
 	return nil
@@ -358,7 +346,7 @@ func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) 
 func (c *cd) Resume(ctx context.Context, params *ClusterResumeParams) (err error) {
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+		return perror.WithMessagef(err, "failed to get argocd application resource for cluster %s",
 			params.Cluster)
 	}
 	patchBody := []byte(getResumePatchStr())
@@ -366,7 +354,7 @@ func (c *cd) Resume(ctx context.Context, params *ClusterResumeParams) (err error
 		Namespace(params.Namespace).
 		Patch(ctx, params.Cluster, types.MergePatchType, patchBody, metav1.PatchOptions{})
 	if err != nil {
-		return perrors.Wrapf(ErrKubeDynamicCliResponseNotOK, err.Error())
+		return perror.Wrap(herrors.ErrKubeDynamicCliResponseNotOK, err.Error())
 	}
 
 	return nil
@@ -376,11 +364,11 @@ func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*
 	var rollout *v1alpha1.Rollout
 	argo, err := c.factory.GetArgoCD(environment)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to get argocd factory")
+		return nil, err
 	}
 	argoApp, err := argo.GetApplication(ctx, clusterName)
 	if err != nil {
-		return nil, perrors.WithMessagef(err, "failed to get argocd application: %s", clusterName)
+		return nil, perror.WithMessagef(err, "failed to get argocd application: %s", clusterName)
 	}
 	if err := argo.GetApplicationResource(ctx, clusterName, argocd.ResourceParams{
 		Group:        "argoproj.io",
@@ -389,10 +377,10 @@ func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*
 		Namespace:    argoApp.Spec.Destination.Namespace,
 		ResourceName: clusterName,
 	}, &rollout); err != nil {
-		if perrors.Cause(err) == argocd.ErrResourceNotFound {
+		if perror.Cause(err) == argocd.ErrResourceNotFound {
 			return nil, nil
 		}
-		return nil, perrors.WithMessagef(err, "failed to get argocd application resource for cluster %s",
+		return nil, perror.WithMessagef(err, "failed to get argocd application resource for cluster %s",
 			clusterName)
 	}
 
@@ -403,25 +391,16 @@ func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*
 func (c *cd) GetClusterState(ctx context.Context,
 	params *GetClusterStateParams) (clusterState *ClusterState, err error) {
 	const op = "cd: get cluster status"
-	l := wlog.Start(ctx, op)
-	defer func() {
-		// errors like ClusterNotFound are logged with info level
-		if err != nil && errors.Status(err) == http.StatusNotFound {
-			log.WithFiled(ctx, "op",
-				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
-		} else {
-			l.Stop(func() string { return wlog.ByErr(err) })
-		}
-	}()
+	defer wlog.Start(ctx, op).StopPrint()
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	clusterState = &ClusterState{Versions: map[string]*ClusterVersion{}}
@@ -429,12 +408,12 @@ func (c *cd) GetClusterState(ctx context.Context,
 	// get application status
 	argoApp, err := argo.GetApplication(ctx, params.Cluster)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	// namespace = argoApp.Spec.Destination.Namespace
 	clusterState.Status = argoApp.Status.Health.Status
 	if clusterState.Status == "" {
-		return nil, errors.E(op, http.StatusNotFound, "clusterState.Status == ''")
+		return nil, herrors.NewErrNotFound(herrors.ClusterStateInArgo, "clusterState.State == \"\"")
 	}
 	if clusterState.Status == health.HealthStatusUnknown {
 		clusterState.Status = health.HealthStatusDegraded
@@ -452,7 +431,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		Namespace:    argoApp.Spec.Destination.Namespace,
 		ResourceName: params.Cluster,
 	}, &rollout); err != nil {
-		if perrors.Cause(err) == argocd.ErrResourceNotFound {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			// get pods by resourceTree
 			var (
 				clusterPodMap = map[string]*ClusterPod{}
@@ -460,13 +439,13 @@ func (c *cd) GetClusterState(ctx context.Context,
 			)
 			resourceTree, err := argo.GetApplicationTree(ctx, params.Cluster)
 			if err != nil {
-				return nil, errors.E(op, err)
+				return nil, err
 			}
 			// application with deployment may be serverless
 			if !resourceTreeContains(resourceTree, kube2.DeploymentKind) {
 				allPods, err := kube.GetPods(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 				if err != nil {
-					return nil, errors.E(op, err)
+					return nil, err
 				}
 				for _, pod := range allPods {
 					podMap[pod.Name] = pod
@@ -474,7 +453,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 				for _, node := range resourceTree.Nodes {
 					if node.Kind == kube2.PodKind {
 						if _, ok := podMap[node.Name]; !ok {
-							return nil, errors.E(op, fmt.Errorf("pod %s does not exist", node.Name))
+							return nil, herrors.NewErrNotFound(herrors.PodsInK8S, fmt.Sprintf("pod %s does not exist", node.Name))
 						}
 						clusterPodMap[node.Name] = podToClusterPod(podMap[node.Name])
 					}
@@ -494,7 +473,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 				return clusterState, nil
 			}
 		} else {
-			return nil, perrors.WithMessagef(err,
+			return nil, perror.WithMessagef(err,
 				"failed to get rollout for cluster %s", params.Cluster)
 		}
 	}
@@ -513,7 +492,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	if err != nil {
 		return nil, err
 	} else if len(rss) == 0 {
-		return nil, errors.E(op, http.StatusNotFound, "ReplicaSet instance not found")
+		return nil, herrors.NewErrNotFound(herrors.ReplicasSetInK8S, "ReplicaSet instance not found")
 	}
 
 	for i := range rss {
@@ -534,7 +513,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	clusterState.Revision = getRevision(latestReplicaSet)
 
 	if clusterState.PodTemplateHash == "" {
-		return nil, errors.E(op, http.StatusNotFound, "clusterState.PodTemplateHash == ''")
+		return nil, herrors.NewErrNotFound(herrors.ClusterStateInArgo, "clusterState.PodTemplateHash == ''")
 	}
 
 	// TODO(gjq): 通用化，POD的展示是直接按照resourceVersion 来获取Pod
@@ -545,7 +524,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		// serverless 应用会有多个 Deployment 对象
 		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 		if err != nil {
-			return nil, errors.E(op, err)
+			return nil, err
 		}
 		for i := range deploymentList {
 			deployment := &deploymentList[i]
@@ -567,7 +546,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 
 	if err := c.paddingPodAndEventInfo(ctx, params.Cluster, params.Namespace,
 		kubeClient.Basic, clusterState); err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	return clusterState, nil
@@ -577,12 +556,12 @@ func (c *cd) GetPodContainers(ctx context.Context,
 	params *GetPodContainersParams) (containers []ContainerDetail, err error) {
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to get kube client")
+		return nil, err
 	}
 
 	pod, err := kube.GetPod(ctx, kubeClient.Basic, params.Namespace, params.Pod)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to get pods")
+		return nil, err
 	}
 
 	return extractContainerDetail(pod), nil
@@ -591,25 +570,25 @@ func (c *cd) GetPodContainers(ctx context.Context,
 func (c *cd) GetPodEvents(ctx context.Context,
 	params *GetPodEventsParams) (events []Event, err error) {
 	const op = "cd: get cluster pod events"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
 		common.ClusterLabelKey, params.Cluster))
 	pods, err := kube.GetPods(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	for _, pod := range pods {
 		if pod.Name == params.Pod {
 			k8sEvents, err := kube.GetPodEvents(ctx, kubeClient.Basic, params.Namespace, params.Pod)
 			if err != nil {
-				return nil, errors.E(op, err)
+				return nil, err
 			}
 
 			for _, event := range k8sEvents {
@@ -629,7 +608,7 @@ func (c *cd) GetPodEvents(ctx context.Context,
 		}
 	}
 
-	return nil, fmt.Errorf("pod does not exist")
+	return nil, herrors.NewErrNotFound(herrors.PodsInK8S, "pod does not exist")
 }
 
 // extractContainerInfo extract container detail
@@ -744,7 +723,6 @@ func extractEnv(pod *corev1.Pod, container corev1.Container) []corev1.EnvVar {
 
 func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace string,
 	kubeClientSet kubernetes.Interface, clusterState *ClusterState) error {
-	const op = "deployer: padding pod and event"
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
 		common.ClusterLabelKey, cluster))
 
@@ -766,7 +744,7 @@ func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace stri
 
 	for _, e := range []error{err1, err2} {
 		if e != nil {
-			return errors.E(op, e)
+			return e
 		}
 	}
 
@@ -1536,11 +1514,11 @@ func (c *cd) Offline(ctx context.Context, params *ExecParams) (_ map[string]Exec
 
 func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ map[string]ExecResp, err error) {
 	const op = "cd: exec"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	config, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	containers := make([]kube.ContainerRef, 0)
 	for _, pod := range params.PodList {

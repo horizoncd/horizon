@@ -1,7 +1,5 @@
 package common
 
-import "errors"
-
 // const variables
 const (
 	PageNumber      = "pageNumber"
@@ -36,9 +34,4 @@ const (
 
 	// NotFound 404 NotFound error code
 	NotFound = "NotFound"
-)
-
-var (
-	ErrNameConflict      = errors.New("name conflict")
-	ErrParameterNotValid = errors.New("parameter not valid")
 )

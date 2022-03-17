@@ -6,10 +6,13 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	"g.hz.netease.com/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,6 +22,7 @@ const (
 	_groupIDParam       = "groupID"
 	_applicationIDParam = "applicationID"
 	_extraOwner         = "extraOwner"
+	_groupIDStr         = "groupID"
 )
 
 type API struct {
@@ -32,6 +36,7 @@ func NewAPI(applicationCtl application.Controller) *API {
 }
 
 func (a *API) Get(c *gin.Context) {
+	op := "application: get"
 	appIDStr := c.Param(_applicationIDParam)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
@@ -40,7 +45,15 @@ func (a *API) Get(c *gin.Context) {
 	}
 	var res *application.GetApplicationResponse
 	if res, err = a.applicationCtl.GetApplication(c, uint(appID)); err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.ApplicationInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+		}
+
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.SuccessWithData(c, res)
@@ -89,6 +102,39 @@ func (a *API) Update(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, resp)
+}
+
+func (a *API) Transfer(c *gin.Context) {
+	appIDStr := c.Param(_applicationIDParam)
+	appID, err := strconv.ParseUint(appIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	groupIDStr := c.Query(_groupIDStr)
+	groupID, err := strconv.ParseUint(groupIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	err = a.applicationCtl.Transfer(c, uint(appID), uint(groupID))
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.GroupInDB {
+				response.AbortWithRequestError(c, "GroupNotExist", err.Error())
+				return
+			} else if e.Source == herrors.ApplicationInDB {
+				response.AbortWithNotExistError(c, err.Error())
+				return
+			}
+		} else {
+			response.AbortWithInternalError(c, err.Error())
+			return
+		}
+	}
+	response.Success(c)
 }
 
 func (a *API) Delete(c *gin.Context) {

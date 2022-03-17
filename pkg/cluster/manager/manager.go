@@ -2,7 +2,6 @@ package manager
 
 import (
 	"context"
-	"net/http"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/q"
@@ -10,16 +9,12 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
-	"g.hz.netease.com/horizon/pkg/util/errors"
-	"gorm.io/gorm"
 )
 
 var (
 	// Mgr is the global cluster manager
 	Mgr = New()
 )
-
-const _errCodeClusterNotFound = errors.ErrorCode("ClusterNotFound")
 
 type Manager interface {
 	Create(ctx context.Context, cluster *models.Cluster,
@@ -65,13 +60,9 @@ func (m *manager) Create(ctx context.Context, cluster *models.Cluster,
 }
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
-	const op = "cluster manager: get by id"
 	cluster, err := m.dao.GetByID(ctx, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.E(op, http.StatusNotFound, _errCodeClusterNotFound)
-		}
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	return cluster, nil
 }

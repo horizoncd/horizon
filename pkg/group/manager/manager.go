@@ -2,10 +2,10 @@ package manager
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"strings"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
@@ -15,11 +15,6 @@ import (
 var (
 	// Mgr is the global group manager
 	Mgr = New()
-
-	// ErrHasChildren used when delete a group which still has some children
-	ErrHasChildren = errors.New("children exist, cannot be deleted")
-	// ErrConflictWithApplication conflict with the application
-	ErrConflictWithApplication = errors.New("name or path is in conflict with application")
 )
 
 const (
@@ -45,6 +40,8 @@ type Manager interface {
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
 	// GetByIDNameFuzzily get groups that fuzzily matching the given name and id
 	GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error)
+	// GetAllGroups return all the groups
+	GetAll(ctx context.Context) ([]*models.Group, error)
 	// UpdateBasic update basic info of a group
 	UpdateBasic(ctx context.Context, group *models.Group) error
 	// GetSubGroupsUnderParentIDs get subgroups under the given parent groups without paging
@@ -103,6 +100,10 @@ func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.G
 	return m.groupDAO.GetByNameFuzzily(ctx, name)
 }
 
+func (m manager) GetAll(ctx context.Context) ([]*models.Group, error) {
+	return m.groupDAO.GetAll(ctx)
+}
+
 func (m manager) Create(ctx context.Context, group *models.Group) (*models.Group, error) {
 	if err := m.checkApplicationExists(ctx, group); err != nil {
 		return nil, err
@@ -122,7 +123,7 @@ func (m manager) Delete(ctx context.Context, id uint) (int64, error) {
 		return 0, err
 	}
 	if count > 0 {
-		return 0, ErrHasChildren
+		return 0, herrors.ErrGroupHasChildren
 	}
 
 	count, err = m.applicationDAO.CountByGroupID(ctx, id)
@@ -130,7 +131,7 @@ func (m manager) Delete(ctx context.Context, id uint) (int64, error) {
 		return 0, err
 	}
 	if count > 0 {
-		return 0, ErrHasChildren
+		return 0, herrors.ErrGroupHasChildren
 	}
 
 	return m.groupDAO.Delete(ctx, id)
@@ -180,7 +181,7 @@ func (m manager) checkApplicationExists(ctx context.Context, group *models.Group
 		return err
 	}
 	if len(apps) > 0 {
-		return ErrConflictWithApplication
+		return herrors.ErrGroupConflictWithApplication
 	}
 	return nil
 }

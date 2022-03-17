@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"g.hz.netease.com/horizon/core/common"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
@@ -14,7 +15,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -43,6 +44,8 @@ type Controller interface {
 	ListApplication(ctx context.Context, filter string, query q.Query) (int, []*ListApplicationResponse, error)
 	// ListUserApplication list application that authorized to current user by filter
 	ListUserApplication(ctx context.Context, filter string, query *q.Query) (int, []*ListApplicationResponse, error)
+	// Transfer  try transfer application to another group
+	Transfer(ctx context.Context, id uint, groupID uint) error
 }
 
 type controller struct {
@@ -80,30 +83,30 @@ func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
 
 func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: get application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get application in db
 	app, err := c.applicationMgr.GetByID(ctx, id)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 2. get application jsonBlob in git repo
 	pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.GetApplication(ctx, app.Name)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 3. list template releases
 	trs, err := c.templateReleaseMgr.ListByTemplateName(ctx, app.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 4. get group full path
 	group, err := c.groupSvc.GetChildByID(ctx, app.GroupID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, app.Name)
 	return ofApplicationModel(app, fullPath, trs, pipelineJSONBlob, applicationJSONBlob), nil
@@ -122,12 +125,11 @@ func (c *controller) postHook(ctx context.Context, eventType hook.EventType, con
 func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraOwners []string,
 	request *CreateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: create application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return nil, err
 	}
 
 	// 1. validate
@@ -172,8 +174,8 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 
 	appExistsInDB, err := c.applicationMgr.GetByName(ctx, request.Name)
 	if err != nil {
-		if errors.Status(err) != http.StatusNotFound {
-			return nil, errors.E(op, err)
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return nil, err
 		}
 	}
 	if appExistsInDB != nil {
@@ -219,7 +221,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 func (c *controller) UpdateApplication(ctx context.Context, id uint,
 	request *UpdateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: update application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
@@ -287,7 +289,7 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 
 func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error) {
 	const op = "application controller: delete application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get application in db
 	app, err := c.applicationMgr.GetByID(ctx, id)
@@ -320,6 +322,18 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error)
 	c.postHook(ctx, hook.DeleteApplication, app.Name)
 
 	return nil
+}
+
+func (c *controller) Transfer(ctx context.Context, id uint, groupID uint) error {
+	const op = "application controller: transfer application"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	group, err := c.groupMgr.GetByID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	return c.applicationMgr.Transfer(ctx, id, group.ID)
 }
 
 func (c *controller) validateCreate(b Base) error {
@@ -404,7 +418,7 @@ func validateApplicationName(name string) error {
 func (c *controller) ListApplication(ctx context.Context, filter string, query q.Query) (count int,
 	listApplicationResp []*ListApplicationResponse, err error) {
 	const op = "application controller: list application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	listApplicationResp = []*ListApplicationResponse{}
 	// 1. get application in db
@@ -453,20 +467,20 @@ func (c *controller) ListUserApplication(ctx context.Context,
 	// get current user
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return 0, nil, perrors.WithMessage(err, "no user in context")
+		return 0, nil, perror.WithMessage(err, "no user in context")
 	}
 
 	// get groups authorized to current user
 	groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, currentUser.GetID())
 	if err != nil {
 		return 0, nil,
-			perrors.WithMessage(err, "failed to list group resource of current user")
+			perror.WithMessage(err, "failed to list group resource of current user")
 	}
 
 	// get these groups' subGroups
 	subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
 	if err != nil {
-		return 0, nil, perrors.WithMessage(err, "failed to get groups")
+		return 0, nil, perror.WithMessage(err, "failed to get groups")
 	}
 
 	subGroupIDs := make([]uint, 0)
@@ -477,7 +491,7 @@ func (c *controller) ListUserApplication(ctx context.Context,
 	count, applications, err := c.applicationMgr.ListUserAuthorizedByNameFuzzily(ctx,
 		filter, subGroupIDs, currentUser.GetID(), query)
 	if err != nil {
-		return 0, nil, perrors.WithMessage(err, "failed to list user applications")
+		return 0, nil, perror.WithMessage(err, "failed to list user applications")
 	}
 
 	// get groups for full path, full name

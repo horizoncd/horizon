@@ -2,8 +2,10 @@ package output
 
 import (
 	"errors"
+
+	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -57,7 +59,7 @@ func (g *getter) GetTemplateOutPut(ctx context.Context,
 
 	bytes, err := g.gitlabLib.GetFile(ctx, tr.GitlabProject, tr.Name, _outputsPath)
 	if err != nil {
-		if perrors.Cause(err) != gitlablib.ErrGitlabResourceNotFound {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			log.Errorf(ctx, "Get Output file error, err = %s", err.Error())
 			return "", err
 		}

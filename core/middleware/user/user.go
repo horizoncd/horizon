@@ -2,10 +2,10 @@ package user
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
@@ -104,7 +104,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 func FromContext(ctx context.Context) (userauth.User, error) {
 	u, ok := ctx.Value(contextUserKey).(userauth.User)
 	if !ok {
-		return nil, errors.New("cannot get the authenticated user from context")
+		return nil, herrors.ErrFailedToGetUser
 	}
 	return u, nil
 }

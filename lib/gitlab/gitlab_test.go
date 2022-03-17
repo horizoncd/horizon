@@ -7,7 +7,8 @@ import (
 	"os"
 	"testing"
 
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xanzy/go-gitlab"
@@ -107,7 +108,7 @@ func Test(t *testing.T) {
 	// 1. get group first. will return 404 error
 	_, err = g.GetGroup(ctx, groupPath)
 	assert.NotNil(t, err)
-	assert.Equal(t, ErrGitlabResourceNotFound, perrors.Cause(err))
+	assert.Equal(t, &herrors.HorizonErrNotFound{Source: herrors.GitlabResource}, perror.Cause(err))
 
 	// 2. create this group
 	group, err = g.CreateGroup(ctx, groupName, groupName, intToPtr(rootGroupID))
@@ -177,7 +178,7 @@ func Test(t *testing.T) {
 	// 10. get this branch again, will return 404 error
 	_, err = g.GetBranch(ctx, pid, newBranch)
 	assert.NotNil(t, err)
-	assert.Equal(t, ErrGitlabResourceNotFound, perrors.Cause(err))
+	assert.Equal(t, &herrors.HorizonErrNotFound{Source: herrors.GitlabResource}, perror.Cause(err))
 
 	// 11. write files to new branch
 	projectBytes, err := json.MarshalIndent(project, "", "    ")

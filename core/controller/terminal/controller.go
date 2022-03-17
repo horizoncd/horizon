@@ -14,7 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"k8s.io/client-go/tools/remotecommand"
@@ -128,38 +128,38 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 	// 1. 获取各类关联资源
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return "", nil, perrors.WithMessage(err, "failed to get cluster by id when creating shell")
+		return "", nil, perror.WithMessage(err, "failed to get cluster by id when creating shell")
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return "", nil, perrors.WithMessage(err, "failed to get application by id when creating shell")
+		return "", nil, perror.WithMessage(err, "failed to get application by id when creating shell")
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return "", nil, perrors.WithMessage(err, "failed to get environment-region by id when creating shell")
+		return "", nil, perror.WithMessage(err, "failed to get environment-region by id when creating shell")
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return "", nil, perrors.WithMessage(err, "failed to get region by name when creating shell")
+		return "", nil, perror.WithMessage(err, "failed to get region by name when creating shell")
 	}
 
 	kubeConfig, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, regionEntity.K8SCluster.Server)
 	if err != nil {
-		return "", nil, perrors.WithMessage(err, "failed to get k8s info by server addr when creating shell")
+		return "", nil, perror.WithMessage(err, "failed to get k8s info by server addr when creating shell")
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return "", nil, perrors.WithMessage(err, "failed to get envValue by cluster when creating shell")
+		return "", nil, perror.WithMessage(err, "failed to get envValue by cluster when creating shell")
 	}
 
 	// 2. 生成随机数，作为session id
 	randomID, err := genRandomID()
 	if err != nil {
-		return "", nil, perrors.WithMessage(err, "failed to generate session id when creating shell")
+		return "", nil, perror.WithMessage(err, "failed to generate session id when creating shell")
 	}
 
 	ref := ContainerRef{

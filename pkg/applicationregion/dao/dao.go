@@ -6,7 +6,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/common"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -34,7 +34,7 @@ func (d *dao) ListByApplicationID(ctx context.Context, applicationID uint) ([]*m
 	result := db.Raw(common.ApplicationRegionListByApplicationID, applicationID).Scan(&applicationRegions)
 
 	if result.Error != nil {
-		return nil, perrors.Wrapf(result.Error,
+		return nil, perror.Wrapf(result.Error,
 			"failed to list applicationRegions for applicationID: %d", applicationID)
 	}
 
@@ -52,7 +52,7 @@ func (d *dao) UpsertByApplicationID(ctx context.Context, applicationID uint,
 	if len(applicationRegions) == 0 {
 		result = db.Exec(common.ApplicationRegionDeleteAllByApplicationID, applicationID)
 		if result.Error != nil {
-			return perrors.Wrapf(result.Error,
+			return perror.Wrapf(result.Error,
 				"failed to delete applicationRegions of applicationID: %d", applicationID)
 		}
 		return nil
@@ -70,7 +70,7 @@ func (d *dao) UpsertByApplicationID(ctx context.Context, applicationID uint,
 	}).Create(applicationRegions)
 
 	if result.Error != nil {
-		return perrors.Wrapf(result.Error,
+		return perror.Wrapf(result.Error,
 			"failed to upsert applicationRegions of applicationID: %d", applicationID)
 	}
 	return nil

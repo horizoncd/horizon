@@ -1,12 +1,16 @@
 package common
 
 import (
+	"context"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
 	"g.hz.netease.com/horizon/pkg/hook/hook"
+	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
 const (
@@ -31,4 +35,16 @@ func ElegantExit(h hook.Hook) {
 		h.WaitStop()
 		os.Exit(0)
 	}()
+}
+
+func Response(ctx context.Context, resp *http.Response) string {
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(ctx, err)
+		return err.Error()
+	}
+
+	str := string(data)
+	log.Info(ctx, str)
+	return str
 }

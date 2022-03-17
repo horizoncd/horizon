@@ -14,7 +14,10 @@ import (
 	"strings"
 	"time"
 
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	"g.hz.netease.com/horizon/core/common"
+	herrors "g.hz.netease.com/horizon/core/errors"
+
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -179,18 +182,18 @@ var (
 
 func (h *helper) CreateApplication(ctx context.Context, manifest []byte) (err error) {
 	const op = "argo: create application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	url := h.URL + "/api/v1/applications?validate=false&upsert=false"
 	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(manifest))
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
-		return errors.E(op, resp.StatusCode, message)
+		return perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
+			common.Response(ctx, resp))
 	}
 
 	return nil
@@ -198,7 +201,7 @@ func (h *helper) CreateApplication(ctx context.Context, manifest []byte) (err er
 
 func (h *helper) DeployApplication(ctx context.Context, application string, revision string) (err error) {
 	const op = "argo: deploy application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v/sync", h.URL, application)
 	req := DeployApplicationRequest{
@@ -209,17 +212,16 @@ func (h *helper) DeployApplication(ctx context.Context, application string, revi
 	}
 	reqBody, err := json.Marshal(req)
 	if err != nil {
-		return errors.E(op, err)
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(reqBody))
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
-		return errors.E(op, resp.StatusCode, message)
+		return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	return nil
@@ -227,19 +229,20 @@ func (h *helper) DeployApplication(ctx context.Context, application string, revi
 
 func (h *helper) DeleteApplication(ctx context.Context, application string) (err error) {
 	const op = "argo: delete application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v?cascade=true", h.URL, application)
 	resp, err := h.sendHTTPRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
-		message := wlog.Response(ctx, resp)
-		return errors.E(op, resp.StatusCode, message)
+		message := common.Response(ctx, resp)
+		return perror.Wrapf(herrors.ErrHTTPRespNotAsExpected,
+			"status = %s, statusCode = %d, message = %s", resp.Status, resp.StatusCode, message)
 	}
 
 	return nil
@@ -247,10 +250,9 @@ func (h *helper) DeleteApplication(ctx context.Context, application string) (err
 
 func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string, status int) (err error) {
 	const op = "argo: wait application"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
-	const WaitErrCode = 1000
-	waitError := errors.E(op, WaitErrCode, "continue to wait")
+	waitError := fmt.Errorf("continue to wait")
 
 	waitFunc := func(i int) error {
 		ctx, cancel := context.WithTimeout(ctx, time.Second*2)
@@ -265,17 +267,18 @@ func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string
 		// 如果使用switch，则需要两层break
 		if err == nil {
 			if uid != "" && uid != string(applicationCR.UID) {
-				return errors.E(op, "the cluster has been recreated with the same name")
+				return perror.Wrap(herrors.ErrNameConflict,
+					"the cluster has been recreated with the same name")
 			}
 			if status == http.StatusOK && applicationCR.Status.Sync.Status == v1alpha1.SyncStatusCodeSynced {
 				return nil
 			}
-		} else if errors.Status(err) == http.StatusNotFound {
+		} else if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if status == http.StatusNotFound {
 				return nil
 			}
 		} else {
-			return errors.E(op, err)
+			return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, err.Error())
 		}
 
 		return waitError
@@ -286,28 +289,19 @@ func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string
 		if err == nil {
 			return nil
 		}
-		if errors.Status(err) != WaitErrCode {
+		if err != waitError {
 			return err
 		}
 		time.Sleep(time.Second)
 	}
 
-	return errors.E(op, "time out")
+	return perror.Wrap(herrors.ErrDeadlineExceeded, "time out")
 }
 
 func (h *helper) GetApplication(ctx context.Context,
 	application string) (applicationCRD *v1alpha1.Application, err error) {
 	const op = "argo: get application"
-	l := wlog.Start(ctx, op)
-	defer func() {
-		// errors like ClusterNotFound are logged with info level
-		if err != nil && errors.Status(err) == http.StatusNotFound {
-			log.WithFiled(ctx, "op",
-				op).WithField("duration", l.GetDuration().String()).Info(wlog.ByErr(err))
-		} else {
-			l.Stop(func() string { return wlog.ByErr(err) })
-		}
-	}()
+	defer wlog.Start(ctx, op).StopPrint()
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v", h.URL, application)
 	return h.getOrRefreshApplication(ctx, url)
@@ -325,28 +319,27 @@ func (h *helper) RefreshApplication(ctx context.Context,
 // getOrRefreshApplication 具体是 get 还是 refresh 操作，由调用者的 url 中的 parameter 决定
 func (h *helper) getOrRefreshApplication(ctx context.Context,
 	url string) (applicationCRD *v1alpha1.Application, err error) {
-	const op = "argo: getApplication"
 	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		var message string
-		if resp.StatusCode != http.StatusNotFound {
-			message = wlog.Response(ctx, resp)
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, herrors.NewErrNotFound(herrors.ApplicationInArgo,
+				fmt.Sprintf("application not found for url %s", url))
 		}
-		return nil, errors.E(op, resp.StatusCode, message)
+		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected, resp.Status)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 
 	if err := json.Unmarshal(data, &applicationCRD); err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	return applicationCRD, nil
 }
@@ -354,27 +347,26 @@ func (h *helper) getOrRefreshApplication(ctx context.Context,
 func (h *helper) GetApplicationTree(ctx context.Context, application string) (
 	tree *v1alpha1.ApplicationTree, err error) {
 	const op = "argo: get application tree"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v/resource-tree", h.URL, application)
 	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
-		return nil, errors.E(op, resp.StatusCode, message)
+		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 
 	if err = json.Unmarshal(data, &tree); err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return tree, nil
@@ -389,21 +381,22 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 		h.URL, application, gvk.Namespace, gvk.ResourceName, gvk.Group, gvk.Version, gvk.Kind)
 	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
+		message := common.Response(ctx, resp)
 		if strings.Contains(message, "not found") {
-			return perrors.Wrap(ErrResourceNotFound, message)
+			return herrors.NewErrNotFound(herrors.ApplicationResourceInArgo, message)
 		}
-		return perrors.Wrap(ErrResponseNotOK, message)
+
+		return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, message)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return perrors.Wrap(ErrUnexpected, err.Error())
+		return perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 
 	type manifest struct {
@@ -412,15 +405,15 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 
 	var m manifest
 	if err = json.Unmarshal(data, &m); err != nil {
-		return perrors.Wrap(ErrUnexpected, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	if m.Manifest == "" || m.Manifest == "{}" {
-		return perrors.Wrap(ErrResourceNotFound, "manifest is empty")
+		return herrors.NewErrNotFound(herrors.ApplicationManifestInArgo, "manifest is empty")
 	}
 
 	if err = json.Unmarshal([]byte(m.Manifest), &resource); err != nil {
-		return perrors.Wrap(ErrUnexpected, err.Error())
+		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return nil
@@ -429,28 +422,27 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 func (h *helper) ListResourceEvents(ctx context.Context, application string, param EventParam) (
 	eventList *corev1.EventList, err error) {
 	const op = "argo: list resource events"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	url := fmt.Sprintf("%v/api/v1/applications/%v/events?resourceUID=%v&resourceNamespace=%v&resourceName=%v",
 		h.URL, application, param.ResourceUID, param.ResourceNamespace, param.ResourceName)
 	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
-		return nil, errors.E(op, resp.StatusCode, message)
+		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 	}
 
 	if err := json.Unmarshal(data, &eventList); err != nil {
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	return eventList, nil
@@ -458,7 +450,7 @@ func (h *helper) ListResourceEvents(ctx context.Context, application string, par
 
 func (h *helper) ResumeRollout(ctx context.Context, application string) (err error) {
 	const op = "argo: resume rollout"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	app, err := h.GetApplication(ctx, application)
 	if err != nil {
@@ -473,14 +465,13 @@ func (h *helper) ResumeRollout(ctx context.Context, application string) (err err
 	requestBodyStr := `"resume"`
 	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader([]byte(requestBodyStr)))
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		message := wlog.Response(ctx, resp)
-		return errors.E(op, resp.StatusCode, message)
+		return perror.Wrap(herrors.ErrHTTPRespNotAsExpected, common.Response(ctx, resp))
 	}
 	return nil
 }
@@ -488,30 +479,30 @@ func (h *helper) ResumeRollout(ctx context.Context, application string) (err err
 func (h *helper) GetContainerLog(ctx context.Context, application string,
 	param ContainerLogParams) (lc <-chan ContainerLog, ec <-chan error, err error) {
 	const op = "argo: get container log"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	format := "%v/api/v1/applications/%v/pods/%v/logs?container=%v&follow=false&namespace=%v&tailLines=%v"
 	url := fmt.Sprintf(format, h.URL, application, param.PodName, param.ContainerName, param.Namespace, param.TailLines)
 	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil) // nolint:bodyclose
 	if err != nil {
-		return nil, nil, errors.E(op, err)
+		return nil, nil, err
 	}
 	// NOTE: 不需要在此进行close操作，否则会引起 read on closed response body 错误
 
 	if resp.StatusCode != http.StatusOK {
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, perror.Wrap(herrors.ErrReadFailed, err.Error())
 		}
 		_ = resp.Body.Close()
-		wlog.ResponseContent(ctx, data)
 
 		var errorResponse *ErrorResponse
 		err = json.Unmarshal(data, &errorResponse)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
-		return nil, nil, errors.E(op, resp.StatusCode, errorResponse.StreamError.Message)
+		return nil, nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
+			fmt.Sprintf("status code = %d, message = %s", resp.StatusCode, errorResponse.StreamError.Message))
 	}
 
 	logC := make(chan ContainerLog)
@@ -526,13 +517,13 @@ func (h *helper) GetContainerLog(ctx context.Context, application string,
 		for scanner.Scan() {
 			var containerLog ContainerLog
 			if err := json.Unmarshal(scanner.Bytes(), &containerLog); err != nil {
-				errC <- err
+				errC <- perror.Wrap(herrors.ErrParamInvalid, err.Error())
 				return
 			}
 			logC <- containerLog
 		}
 		if err := scanner.Err(); err != nil {
-			errC <- err
+			errC <- perror.Wrap(herrors.ErrReadFailed, err.Error())
 			return
 		}
 	}()
@@ -545,7 +536,7 @@ func (h *helper) sendHTTPRequest(ctx context.Context, method string, url string,
 	log.Infof(ctx, "method: %v, url: %v", method, url)
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
-		return nil, err
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", h.Token))
@@ -553,7 +544,7 @@ func (h *helper) sendHTTPRequest(ctx context.Context, method string, url string,
 
 	r, err := retryablehttp.FromRequest(req)
 	if err != nil {
-		return nil, err
+		return nil, perror.Wrap(herrors.ErrParamInvalid, "")
 	}
 	return _client.Do(r)
 }
