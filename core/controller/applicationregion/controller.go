@@ -8,7 +8,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/config/region"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 )
 
@@ -39,12 +39,12 @@ func NewController(regionConfig *region.Config) Controller {
 func (c *controller) List(ctx context.Context, applicationID uint) (ApplicationRegion, error) {
 	applicationRegions, err := c.mgr.ListByApplicationID(ctx, applicationID)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to list application regions")
+		return nil, perror.WithMessage(err, "failed to list application regions")
 	}
 
 	environments, err := c.environmentMgr.ListAllEnvironment(ctx)
 	if err != nil {
-		return nil, perrors.WithMessage(err, "failed to list environment")
+		return nil, perror.WithMessage(err, "failed to list environment")
 	}
 
 	return ofApplicationRegion(applicationRegions, environments, c.regionConfig), nil
@@ -54,13 +54,13 @@ func (c *controller) Update(ctx context.Context, applicationID uint, regions App
 	applicationRegions := make([]*models.ApplicationRegion, 0)
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return perrors.WithMessage(err, "no user in context")
+		return perror.WithMessage(err, "no user in context")
 	}
 
 	for _, r := range regions {
 		_, err := c.environmentMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
 		if err != nil {
-			return perrors.WithMessagef(err,
+			return perror.WithMessagef(err,
 				"environment/region %s/%s is not exists", r.Environment, r.Region)
 		}
 		applicationRegions = append(applicationRegions, &models.ApplicationRegion{

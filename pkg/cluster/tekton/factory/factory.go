@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/s3"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
@@ -62,7 +63,7 @@ func (f factory) GetTekton(environment string) (tekton.Interface, error) {
 	var ret interface{}
 	var ok bool
 	if ret, ok = f.cache.Load(environment); !ok {
-		return nil, fmt.Errorf("the tekton for environment: %v is not found", environment)
+		return nil, herrors.NewErrNotFound(herrors.Tekton, fmt.Sprintf("environment = %s", environment))
 	}
 	return ret.(*tektonCache).tekton, nil
 }
@@ -71,7 +72,7 @@ func (f factory) GetTektonCollector(environment string) (collector.Interface, er
 	var ret interface{}
 	var ok bool
 	if ret, ok = f.cache.Load(environment); !ok {
-		return nil, fmt.Errorf("the tektonCollector for environment: %v is not found", environment)
+		return nil, herrors.NewErrNotFound(herrors.TektonCollector, fmt.Sprintf("environment = %s", environment))
 	}
 	return ret.(*tektonCache).tektonCollector, nil
 }

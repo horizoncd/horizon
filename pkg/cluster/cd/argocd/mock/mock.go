@@ -84,7 +84,7 @@ func (argoServer *ArgoServer) GetRepository(w http.ResponseWriter, r *http.Reque
 
 	var err error
 	ctx := log.WithContext(context.Background(), "GetRepository")
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	vars := mux.Vars(r)
 	repository := vars["repository"]
@@ -132,7 +132,7 @@ func (argoServer *ArgoServer) CreateApplication(w http.ResponseWriter, r *http.R
 
 	var err error
 	ctx := log.WithContext(context.Background(), "CreateApplication")
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -160,9 +160,8 @@ func (argoServer *ArgoServer) CreateApplication(w http.ResponseWriter, r *http.R
 func (argoServer *ArgoServer) DeployApplication(w http.ResponseWriter, r *http.Request) {
 	const op = "argo mock server: deploy application"
 
-	var err error
 	ctx := log.WithContext(context.Background(), "DeployApplication")
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	vars := mux.Vars(r)
 	application := vars["application"]
@@ -181,7 +180,7 @@ func (argoServer *ArgoServer) GetApplication(w http.ResponseWriter, r *http.Requ
 
 	var err error
 	ctx := log.WithContext(context.Background(), "GetApplication")
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	vars := mux.Vars(r)
 	application := vars["application"]
@@ -211,9 +210,8 @@ func (argoServer *ArgoServer) GetApplication(w http.ResponseWriter, r *http.Requ
 func (argoServer *ArgoServer) DeleteApplication(w http.ResponseWriter, r *http.Request) {
 	const op = "argo mock server: delete application"
 
-	var err error
 	ctx := log.WithContext(context.Background(), "DeleteApplication")
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	vars := mux.Vars(r)
 	application := vars["application"]
@@ -416,9 +414,8 @@ func (argoServer *ArgoServer) ListResourceEvents(w http.ResponseWriter, r *http.
 func (argoServer *ArgoServer) ResumeRollout(w http.ResponseWriter, r *http.Request) {
 	const op = "argo mock server: resume rollout"
 
-	var err error
 	ctx := log.WithContext(context.Background(), "ResumeRollout")
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	vars := mux.Vars(r)
 	application := vars["application"]
@@ -435,9 +432,8 @@ func (argoServer *ArgoServer) ResumeRollout(w http.ResponseWriter, r *http.Reque
 func (argoServer *ArgoServer) GetContainerLog(w http.ResponseWriter, r *http.Request) {
 	const op = "argo mock server: get container log"
 
-	var err error
 	ctx := log.WithContext(context.Background(), "GetContainerLog")
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	vars := mux.Vars(r)
 	application := vars["application"]

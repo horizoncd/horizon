@@ -2,10 +2,11 @@ package code
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"github.com/xanzy/go-gitlab"
 )
@@ -14,7 +15,7 @@ const (
 	_gitlabName = "control"
 )
 
-// TODO: git  connector (support all kinds of git code repo)
+// TODO: git connector (support all kinds of git code repo)
 
 // GitGetter interface to get commit for user code
 type GitGetter interface {
@@ -71,7 +72,7 @@ func (g *gitGetter) GetCommit(ctx context.Context, gitURL string, branch *string
 		return nil, err
 	}
 	if branch == nil && commit == nil {
-		return nil, fmt.Errorf("branch and commit cannot be empty at the same time")
+		return nil, perror.Wrap(herrors.ErrBranchAndCommitEmpty, "branch and commit are empty")
 	}
 	if branch != nil {
 		gitlabBranch, err := g.gitlabLib.GetBranch(ctx, pid, *branch)
@@ -99,7 +100,7 @@ func extractProjectPathFromSSHURL(gitURL string) (string, error) {
 	pattern := regexp.MustCompile(`ssh://.+?/(.+).git`)
 	matches := pattern.FindStringSubmatch(gitURL)
 	if len(matches) != 2 {
-		return "", fmt.Errorf("error to extract project path from git ssh url: %v", gitURL)
+		return "", perror.Wrapf(herrors.ErrParamInvalid, "error to extract project path from git ssh url: %v", gitURL)
 	}
 	return matches[1], nil
 }

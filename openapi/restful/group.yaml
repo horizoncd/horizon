@@ -20,13 +20,16 @@ paths:
       responses:
         "200":
           description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupID"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-
   /apis/core/v1/groups/{groupID}:
     parameters:
       - name: groupID
@@ -150,7 +153,6 @@ components:
           $ref: '#/components/schemas/GroupDescription'
         parantID:
           $ref: '#/components/schemas/GroupID'
-
     Group:
       type: object
       properties:
@@ -162,10 +164,14 @@ components:
           $ref: '#/components/schemas/GroupPath'
         description:
           $ref: '#/components/schemas/GroupDescription'
-        createdAt:
-          $ref: "common.yaml#/components/schemas/Date"
+        parentID:
+          $ref: '#/components/schemas/GroupID'
         updatedAt:
           $ref: "common.yaml#/components/schemas/Date"
+        fullName:
+          $ref: '#/components/schemas/GroupFullName'
+        fullPath:
+          $ref: '#/components/schemas/GroupFullPath'
 
     GroupID:
       type: integer
@@ -177,10 +183,21 @@ components:
       maxLength: 64
       description: the group Name
 
+    GroupFullName:
+      type: string
+      maxLenth: 2048
+      description: the group FullName
+
+    GroupFullPath:
+      type: string
+      maxLenth: 2048
+      description: the group FullName
+
     GroupPath:
       type: string
-      maxLength: 1024
+      maxLength: 128
       description: the group path
+
 
     GroupDescription:
       type: string

@@ -33,7 +33,7 @@ var _ Controller = (*controller)(nil)
 func (c *controller) SearchUser(ctx context.Context,
 	filter string, query *q.Query) (_ int, _ []*SearchUserResponse, err error) {
 	const op = "user controller: search user"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	count, users, err := c.userMgr.SearchUser(ctx, filter, query)
 	if err != nil {

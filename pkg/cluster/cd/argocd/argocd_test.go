@@ -10,13 +10,14 @@ import (
 	"strings"
 	"testing"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	rolloutv1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/kubernetes/pkg/apis/apps"
 
 	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd/mock"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
@@ -340,6 +341,6 @@ func TestGetContainerLog_PodInitializing(t *testing.T) {
 		ContainerName: "containerName",
 	})
 	assert.NotNil(t, err)
-	assert.Equal(t, errors.Status(err), 400)
-	assert.True(t, strings.Contains(errors.Message(err), "is waiting to start: PodInitializing"))
+	assert.Equal(t, perror.Cause(err), herrors.ErrHTTPRespNotAsExpected)
+	assert.True(t, strings.Contains(err.Error(), "is waiting to start: PodInitializing"))
 }

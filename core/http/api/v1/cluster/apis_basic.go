@@ -7,12 +7,12 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cluster"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	"g.hz.netease.com/horizon/pkg/util/kube"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -44,6 +44,7 @@ func NewAPI(clusterCtl cluster.Controller) *API {
 }
 
 func (a *API) List(c *gin.Context) {
+	const op = "cluster: list"
 	applicationIDStr := c.Param(_applicationIDParam)
 	applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
 	if err != nil {
@@ -84,7 +85,8 @@ func (a *API) List(c *gin.Context) {
 		PageSize:   pageSize,
 	})
 	if err != nil {
-		response.AbortWithError(c, err)
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 
@@ -95,6 +97,7 @@ func (a *API) List(c *gin.Context) {
 }
 
 func (a *API) Create(c *gin.Context) {
+	op := "cluster: create"
 	applicationIDStr := c.Param(_applicationIDParam)
 	applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
 	if err != nil {
@@ -122,13 +125,24 @@ func (a *API) Create(c *gin.Context) {
 	}
 	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment, region, extraOwners, request)
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Errorf("err = %+v, request = %+v", err, request)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.SuccessWithData(c, resp)
 }
 
 func (a *API) Update(c *gin.Context) {
+	op := "cluster: update"
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -144,13 +158,26 @@ func (a *API) Update(c *gin.Context) {
 	}
 	resp, err := a.clusterCtl.UpdateCluster(c, uint(clusterID), request)
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Errorf("err = %+v, request = %+v", err, request)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.SuccessWithData(c, resp)
 }
 
 func (a *API) Get(c *gin.Context) {
+	op := "cluster: get"
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -159,23 +186,35 @@ func (a *API) Get(c *gin.Context) {
 	}
 	resp, err := a.clusterCtl.GetCluster(c, uint(clusterID))
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.SuccessWithData(c, resp)
 }
 
 func (a *API) GetByName(c *gin.Context) {
+	op := "cluster: get by name"
 	clusterName := c.Param(_clusterParam)
 	resp, err := a.clusterCtl.GetClusterByName(c, clusterName)
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.SuccessWithData(c, resp)
 }
 
 func (a *API) Delete(c *gin.Context) {
+	op := "cluster: delete"
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -183,13 +222,20 @@ func (a *API) Delete(c *gin.Context) {
 		return
 	}
 	if err := a.clusterCtl.DeleteCluster(c, uint(clusterID)); err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.Success(c)
 }
 
 func (a *API) ListByNameFuzzily(c *gin.Context) {
+	op := "cluster: list by name fuzzily"
 	filter := c.Query(common.Filter)
 	environment := c.Query(_environment)
 
@@ -207,7 +253,8 @@ func (a *API) ListByNameFuzzily(c *gin.Context) {
 		PageSize:   pageSize,
 	})
 	if err != nil {
-		response.AbortWithError(c, err)
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 
@@ -218,6 +265,7 @@ func (a *API) ListByNameFuzzily(c *gin.Context) {
 }
 
 func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
+	op := "cluster: list user cluster by name fizzily"
 	filter := c.Query(common.Filter)
 	environment := c.Query(_environment)
 
@@ -235,6 +283,7 @@ func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
 		Keywords:   keywords,
 	})
 	if err != nil {
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
@@ -246,6 +295,7 @@ func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
 }
 
 func (a *API) Free(c *gin.Context) {
+	op := "cluster: free"
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -255,13 +305,19 @@ func (a *API) Free(c *gin.Context) {
 
 	err = a.clusterCtl.FreeCluster(c, uint(clusterID))
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.Success(c)
 }
 
 func (a *API) GetOutput(c *gin.Context) {
+	op := "cluster: get output"
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -271,7 +327,13 @@ func (a *API) GetOutput(c *gin.Context) {
 
 	outPut, err := a.clusterCtl.GetClusterOutput(c, uint(clusterID))
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
 	}
 	response.SuccessWithData(c, outPut)
 }
@@ -293,9 +355,11 @@ func (a *API) GetContainers(c *gin.Context) {
 
 	outPut, err := a.clusterCtl.GetContainers(c, uint(clusterID), podName)
 	if err != nil {
-		if perrors.Cause(err) == kube.ErrPodNotFound {
-			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-			return
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.ClusterInDB || e.Source == herrors.ApplicationInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
 		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))

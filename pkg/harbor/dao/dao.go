@@ -3,6 +3,8 @@ package dao
 import (
 	"context"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
+
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/harbor/models"
@@ -32,6 +34,10 @@ func (d *dao) Create(ctx context.Context, harbor *models.Harbor) (*models.Harbor
 
 	result := db.Create(harbor)
 
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.HarborInDB, result.Error.Error())
+	}
+
 	return harbor, result.Error
 }
 
@@ -44,6 +50,10 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Harbor, error) {
 	var harbor models.Harbor
 	result := db.Raw(common.HarborGetByID, id).First(&harbor)
 
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.HarborInDB, result.Error.Error())
+	}
+
 	return &harbor, result.Error
 }
 
@@ -55,6 +65,10 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.Harbor, error) {
 
 	var harbors []*models.Harbor
 	result := db.Raw(common.HarborListAll).Scan(&harbors)
+
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.HarborInDB, result.Error.Error())
+	}
 
 	return harbors, result.Error
 }

@@ -4,9 +4,15 @@ import (
 	"context"
 	"sync"
 
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	k8sclustermanager "g.hz.netease.com/horizon/pkg/k8scluster/manager"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	"k8s.io/client-go/rest"
+)
+
+var (
+	ErrGetClusterFailed      = perror.New("get cluster failed")
+	ErrBuildKubeClientFailed = perror.New("build kubeclient failed")
 )
 
 var (
@@ -43,12 +49,12 @@ func (f *factory) GetByK8SServer(ctx context.Context, server string) (*rest.Conf
 
 	k8sCluster, err := f.k8sClusterMgr.GetByServer(ctx, server)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, perror.Wrap(ErrGetClusterFailed, err.Error())
 	}
 
 	config, client, err := kube.BuildClientFromContent(k8sCluster.Certificate)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, perror.Wrap(ErrBuildKubeClientFailed, err.Error())
 	}
 
 	f.cache.Store(server, &k8sClientCache{

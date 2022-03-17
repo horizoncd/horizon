@@ -15,7 +15,8 @@ const (
 )
 
 var (
-	DefaultDelay = 10 * time.Second
+	DefaultDelay = 1 * time.Second
+	MaxDelay     = 1000 * time.Second
 )
 
 type Event struct {
@@ -24,8 +25,8 @@ type Event struct {
 }
 
 type EventCtx struct {
-	EventType EventType
-	Event     interface{}
-	Ctx       context.Context
-	Delay     time.Duration
+	EventType   EventType
+	Event       interface{}
+	Ctx         context.Context
+	FailedTimes uint
 }

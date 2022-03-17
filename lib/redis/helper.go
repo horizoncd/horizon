@@ -2,16 +2,16 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/gomodule/redigo/redis"
 )
 
 var (
-	ErrNotFound = errors.New("key not found")
+	ErrNotFound = perror.New("key not found")
 )
 
 type Interface interface {
@@ -32,7 +32,7 @@ func NewHelper(redisURL, poolName string, param *PoolParam, opts *Options) (*Hel
 		return nil, err
 	}
 	if opts == nil {
-		return nil, errors.New("opts cannot be nil")
+		return nil, perror.New("opts cannot be nil")
 	}
 	return &Helper{
 		pool: pool,
@@ -42,10 +42,10 @@ func NewHelper(redisURL, poolName string, param *PoolParam, opts *Options) (*Hel
 
 func NewHelperWithPool(pool *redis.Pool, opts *Options) (*Helper, error) {
 	if pool == nil {
-		return nil, errors.New("pool cannot be nil")
+		return nil, perror.New("pool cannot be nil")
 	}
 	if opts == nil {
-		return nil, errors.New("opts cannot be nil")
+		return nil, perror.New("opts cannot be nil")
 	}
 	return &Helper{
 		pool: pool,
@@ -55,7 +55,7 @@ func NewHelperWithPool(pool *redis.Pool, opts *Options) (*Helper, error) {
 
 func (h *Helper) Ping(ctx context.Context) (err error) {
 	const op = "redis helper: ping"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	_, err = h.do(ctx, "PING")
 	return err
@@ -63,7 +63,7 @@ func (h *Helper) Ping(ctx context.Context) (err error) {
 
 func (h *Helper) Get(ctx context.Context, key string, value interface{}) (err error) {
 	const op = "redis helper: get"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	data, err := redis.Bytes(h.do(ctx, "GET", h.opts.Key(key)))
 	if err != nil {
@@ -81,7 +81,7 @@ func (h *Helper) Get(ctx context.Context, key string, value interface{}) (err er
 
 func (h *Helper) Save(ctx context.Context, key string, value interface{}, expiration ...time.Duration) (err error) {
 	const op = "redis helper: save"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	data, err := h.opts.Codec.Encode(value)
 	if err != nil {
@@ -107,7 +107,7 @@ func (h *Helper) Save(ctx context.Context, key string, value interface{}, expira
 
 func (h *Helper) Delete(ctx context.Context, key string) (err error) {
 	const op = "redis helper: delete"
-	defer wlog.Start(ctx, op).Stop(func() string { return wlog.ByErr(err) })
+	defer wlog.Start(ctx, op).StopPrint()
 
 	_, err = h.do(ctx, "DEL", h.opts.Key(key))
 	return err

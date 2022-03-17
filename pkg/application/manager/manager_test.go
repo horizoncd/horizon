@@ -10,6 +10,8 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
+	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
@@ -40,6 +42,25 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, user2)
+
+	groupDAO := groupdao.NewDAO()
+	group, err := groupDAO.Create(ctx, &groupmodels.Group{
+		Model:    gorm.Model{},
+		Name:     "group1",
+		Path:     "/group1",
+		ParentID: 0,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, group)
+
+	group1, err := groupDAO.Create(ctx, &groupmodels.Group{
+		Model:    gorm.Model{},
+		Name:     "group2",
+		Path:     "/group2",
+		ParentID: 0,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, group1)
 
 	var (
 		groupID         = 1
@@ -125,6 +146,21 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, name, apps[0].Name)
 
+	// test transfer application
+	var transferGroupID uint = 2
+	err = Mgr.Transfer(ctx, application.ID, transferGroupID)
+	assert.Nil(t, err)
+
+	var transferNotExistGroupID uint = 100
+	err = Mgr.Transfer(ctx, application.ID, transferNotExistGroupID)
+	assert.NotNil(t, err)
+
+	// case 2 create the group and retry ok
+	apps, err = Mgr.GetByIDs(ctx, []uint{application.ID})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(apps))
+	assert.Equal(t, transferGroupID, apps[0].GroupID)
+
 	assert.Equal(t, appGetByName.Name, apps[0].Name)
 	err = Mgr.DeleteByID(ctx, appGetByName.ID)
 	assert.Nil(t, err)
@@ -136,6 +172,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&membermodels.Member{}, &usermodels.User{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)

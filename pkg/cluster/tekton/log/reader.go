@@ -5,6 +5,8 @@ package log
 import (
 	"fmt"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"github.com/tektoncd/cli/pkg/cli"
 	"github.com/tektoncd/cli/pkg/options"
 	"github.com/tektoncd/cli/pkg/pods"
@@ -32,7 +34,7 @@ func NewReader(logType string, opts *options.LogOptions) (*Reader, error) {
 
 	cs, err := opts.Params.Clients()
 	if err != nil {
-		return nil, err
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	var run string

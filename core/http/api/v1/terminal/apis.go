@@ -6,7 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/terminal"
-	perrors "g.hz.netease.com/horizon/pkg/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -35,7 +35,7 @@ func (a *API) CreateShell(c *gin.Context) {
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
-		err = perrors.Wrap(err, "failed to parse cluster id")
+		err = perror.Wrap(err, "failed to parse cluster id")
 		log.WithFiled(c, "op", op).Errorf(err.Error())
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
 		return
