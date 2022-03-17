@@ -632,6 +632,23 @@ func (c *controller) GetClusterPods(ctx context.Context, clusterID uint, start, 
 	}
 
 	return &GetClusterPodsResponse{
-		Pods: result.Data,
+		Pods: removeDuplicatePods(result.Data),
 	}, nil
+}
+
+func removeDuplicatePods(pods []KubePodInfo) []KubePodInfo {
+	set := make(map[string]struct{}, len(pods))
+	j := 0
+	for _, v := range pods {
+		key := v.Pod + v.Container
+		_, ok := set[key]
+		if ok {
+			continue
+		}
+		set[key] = struct{}{}
+		pods[j] = v
+		j++
+	}
+
+	return pods[:j]
 }
