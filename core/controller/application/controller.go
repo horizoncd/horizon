@@ -88,25 +88,25 @@ func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplica
 	// 1. get application in db
 	app, err := c.applicationMgr.GetByID(ctx, id)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 2. get application jsonBlob in git repo
 	pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.GetApplication(ctx, app.Name)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 3. list template releases
 	trs, err := c.templateReleaseMgr.ListByTemplateName(ctx, app.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 4. get group full path
 	group, err := c.groupSvc.GetChildByID(ctx, app.GroupID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, app.Name)
 	return ofApplicationModel(app, fullPath, trs, pipelineJSONBlob, applicationJSONBlob), nil

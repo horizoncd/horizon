@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	"g.hz.netease.com/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -35,6 +36,7 @@ func NewAPI(applicationCtl application.Controller) *API {
 }
 
 func (a *API) Get(c *gin.Context) {
+	op := "application: get"
 	appIDStr := c.Param(_applicationIDParam)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
@@ -43,7 +45,15 @@ func (a *API) Get(c *gin.Context) {
 	}
 	var res *application.GetApplicationResponse
 	if res, err = a.applicationCtl.GetApplication(c, uint(appID)); err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.ApplicationInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+		}
+
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.SuccessWithData(c, res)
