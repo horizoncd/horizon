@@ -1030,6 +1030,10 @@ func TestControllerTransfer(t *testing.T) {
 		ParentID:        id,
 	}
 	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
+	id2Group, _ := manager.Mgr.GetByID(ctx, id2)
+	id2Full, err := groupCtl.formatFullFromGroup(ctx, id2Group)
+	assert.Nil(t, err)
+	assert.Equal(t, "/a/b", id2Full.FullPath)
 
 	newRootGroup2 := &NewGroup{
 		Name:            "3",
@@ -1077,10 +1081,13 @@ func TestControllerTransfer(t *testing.T) {
 	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id)), g.TraversalIDs)
 	assert.True(t, g.UpdatedBy == 2)
 
-	g, err = manager.Mgr.GetByID(ctx, id2)
+	id2Group, err = manager.Mgr.GetByID(ctx, id2)
 	assert.Nil(t, err)
-	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id))+","+strconv.Itoa(int(id2)), g.TraversalIDs)
-	assert.True(t, g.UpdatedBy == 2)
+	id2Full, err = groupCtl.formatFullFromGroup(ctx, id2Group)
+	assert.Nil(t, err)
+	assert.Equal(t, "/c/a/b", id2Full.FullPath)
+	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id))+","+strconv.Itoa(int(id2)), id2Group.TraversalIDs)
+	assert.True(t, id2Group.UpdatedBy == 2)
 
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
