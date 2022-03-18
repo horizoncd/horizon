@@ -53,8 +53,6 @@ type Controller interface {
 	SearchChildren(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error)
 	// ListAuthedGroup get all the authed groups of current user(if is admin, return all the groups)
 	ListAuthedGroup(ctx context.Context) ([]*Group, error)
-	// formatFullFromGroup format full struct from a list of groups
-	formatFullFromGroup(ctx context.Context, group *models.Group) (*service.Full, error)
 }
 
 type controller struct {
