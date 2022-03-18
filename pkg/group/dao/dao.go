@@ -120,18 +120,18 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userID uint) e
 		return err
 	}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
-		// check name whether conflict
-		queryResult := models.Group{}
-		result := db.Raw(common.GroupQueryByParentIDAndName, newParentID, group.Name).First(&queryResult)
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return perror.Wrap(result.Error, "error when trying to transfer to a new group")
-		}
-		if result.RowsAffected > 0 {
-			return perror.Wrap(herrors.ErrNameConflict,
-				"group name conflict when trying to transfer to a new group")
-		}
+	// check name whether conflict
+	queryResult := models.Group{}
+	result := db.Raw(common.GroupQueryByParentIDAndName, newParentID, group.Name).First(&queryResult)
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return perror.Wrap(result.Error, "error when trying to transfer to a new group")
+	}
+	if result.RowsAffected > 0 {
+		return perror.Wrap(herrors.ErrNameConflict,
+			"group name conflict when trying to transfer to a new group")
+	}
 
+	err = db.Transaction(func(tx *gorm.DB) error {
 		// change parentID
 		if err := tx.Exec(common.GroupUpdateParentID, newParentID, userID, id).Error; err != nil {
 			return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
