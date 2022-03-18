@@ -1082,7 +1082,7 @@ func TestControllerTransfer(t *testing.T) {
 
 	group2, err := groupCtl.GetByID(ctx, id2)
 	assert.Nil(t, err)
-	assert.Equal(t, "/c/a/b", id2Full.FullPath)
+	assert.Equal(t, "/c/a/b", group2.FullPath)
 	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id))+","+strconv.Itoa(int(id2)), group2.TraversalIDs)
 
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
