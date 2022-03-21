@@ -2,13 +2,14 @@ package hook
 
 import (
 	"context"
+	"math"
+	"reflect"
+	"time"
+
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
-	"math"
-	"reflect"
-	"time"
 )
 
 type EventHandler interface {

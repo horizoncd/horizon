@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -117,6 +118,17 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userID uint) e
 	pGroup, err := d.GetByID(ctx, newParentID)
 	if err != nil {
 		return err
+	}
+
+	// check name whether conflict
+	queryResult := models.Group{}
+	result := db.Raw(common.GroupQueryByParentIDAndName, newParentID, group.Name).First(&queryResult)
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
+	}
+	if result.RowsAffected > 0 {
+		return perror.Wrap(herrors.ErrNameConflict,
+			"group name conflict when trying to transfer to a new group")
 	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {

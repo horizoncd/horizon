@@ -21,11 +21,13 @@ type HorizonGitRepoInterfaceImp struct {
 }
 
 
-func (h *HorizonGitInterfaceImp) funca(ctx context.Context, file string)( interface{},error) {
+func (h *HorizonGitInterfaceImp) funca(ctx context.Context, file string)(interface{}, error) {
 	_, resp, err:= h.GitLabClient.Call(file)
 	if resp.StatusCode == http.StatusNotFound {
-	  return nil errors.Wrap(GitNotFoundErr, err.Error())	
+	  return nil, errors.Wrap(GitNotFoundErr, err.Error())	
     }
+	
+	return nil, nil
 }
 ```
 
