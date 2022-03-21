@@ -123,8 +123,8 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userID uint) e
 	// check name whether conflict
 	queryResult := models.Group{}
 	result := db.Raw(common.GroupQueryByParentIDAndName, newParentID, group.Name).First(&queryResult)
-	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return perror.Wrap(result.Error, "error when trying to transfer to a new group")
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
 	}
 	if result.RowsAffected > 0 {
 		return perror.Wrap(herrors.ErrNameConflict,
