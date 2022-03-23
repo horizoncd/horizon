@@ -71,5 +71,6 @@ helm_package:
   only:
     - develop
     - tags
+    - feat/more-into-slo
   except:
     - schedules
