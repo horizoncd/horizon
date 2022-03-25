@@ -209,11 +209,18 @@ func (a *API) Deploy(c *gin.Context) {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 				return
 			}
-		default:
+		}
+
+		if perror.Cause(err) == herrors.ErrClusterNoChange {
 			log.WithFiled(c, "op", op).Errorf("%+v", err)
-			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+			// TODO(kiloson)
+			// response.AbortWithRPCError(c,rpcerror.)
 			return
 		}
+
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
 	}
 
 	response.SuccessWithData(c, resp)

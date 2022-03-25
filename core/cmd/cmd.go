@@ -40,7 +40,7 @@ import (
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
-	templateshematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateshematag"
+	templateshematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
