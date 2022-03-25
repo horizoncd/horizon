@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"html/template"
 	"regexp"
-	"strconv"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
@@ -22,7 +22,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
-	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -365,57 +364,33 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, err
 	}
 
-	// 3. if template is empty, set it with application's template
-	if r.Template == nil {
-		r.Template = &Template{
-			Name:    application.Template,
-			Release: application.TemplateRelease,
-		}
-	} else {
-		if r.Template.Name == "" {
-			r.Template.Name = application.Template
-		}
-		if r.Template.Release == "" {
-			r.Template.Release = application.TemplateRelease
-		}
+	if err := c.customizeTemplateInfo(ctx, r, application, environment); err != nil {
+		return nil, err
+	}
+	if err := c.validateTemplateInput(ctx, r.Template.Name,
+		r.Template.Release, r.TemplateInput, nil); err != nil {
+		return nil, err
 	}
 
-	// 4. if templateInput is empty, set it with application's env template
-	if r.TemplateInput == nil {
-		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.
-			GetApplicationEnvTemplate(ctx, application.Name, environment)
-		if err != nil {
-			return nil, err
-		}
-		r.TemplateInput = &TemplateInput{}
-		r.TemplateInput.Application = applicationJSONBlob
-		r.TemplateInput.Pipeline = pipelineJSONBlob
-	} else {
-		if err := c.validateTemplateInput(ctx, r.Template.Name,
-			r.Template.Release, r.TemplateInput, nil); err != nil {
-			return nil, err
-		}
-	}
-
-	// 5. get environmentRegion
+	// 3. get environmentRegion
 	er, err := c.envMgr.GetByEnvironmentAndRegion(ctx, environment, region)
 	if err != nil {
 		return nil, err
 	}
 
-	// 6. get regionEntity
+	// 4. get regionEntity
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, region)
 	if err != nil {
 		return nil, err
 	}
 
-	// 7. get templateRelease
+	// 5. get templateRelease
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, r.Template.Name, r.Template.Release)
 	if err != nil {
 		return nil, err
 	}
 
-	// 8. create cluster, after created, params.Cluster is the newest cluster
+	// 6. create cluster, after created, params.Cluster is the newest cluster
 	cluster, clusterTags := r.toClusterModel(application, er)
 	cluster.CreatedBy = currentUser.GetID()
 	cluster.UpdatedBy = currentUser.GetID()
@@ -424,7 +399,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, err
 	}
 
-	// 9. create cluster in git repo
+	// 7. create cluster in git repo
 	err = c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
 		BaseParams: &gitrepo.BaseParams{
 			Cluster:             cluster.Name,
@@ -443,20 +418,20 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, err
 	}
 
-	// 10. create cluster in db
+	// 8. create cluster in db
 	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags, extraOwners)
 	if err != nil {
 		return nil, err
 	}
 
-	// 11. get full path
+	// 9. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
 		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	// 12. get namespace
+	// 10. get namespace
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return nil, err
@@ -465,7 +440,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	ret := ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
-	// 13. post hook
+	// 11. post hook
 	c.postHook(ctx, hook.CreateCluster, ret)
 	return ret, nil
 }
@@ -516,9 +491,10 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 			return nil, err
 		}
 
-		renderValues := make(map[string]string)
-		clusterIDStr := strconv.FormatUint(uint64(clusterID), 10)
-		renderValues[templateschema.ClusterIDKey] = clusterIDStr
+		renderValues, err := c.getRenderValueFromTag(ctx, clusterID)
+		if err != nil {
+			return nil, err
+		}
 		if err := c.validateTemplateInput(ctx,
 			cluster.Template, templateRelease, r.TemplateInput, renderValues); err != nil {
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
@@ -785,6 +761,49 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	return nil
 }
 
+func (c *controller) customizeTemplateInfo(ctx context.Context,
+	r *CreateClusterRequest, application *models.Application, environment string) error {
+	// 1. if template is empty, set it with application's template
+	if r.Template == nil {
+		r.Template = &Template{
+			Name:    application.Template,
+			Release: application.TemplateRelease,
+		}
+	} else {
+		if r.Template.Name == "" {
+			r.Template.Name = application.Template
+		}
+		if r.Template.Release == "" {
+			r.Template.Release = application.TemplateRelease
+		}
+	}
+
+	// 2. if templateInput is empty, set it with application's env template
+	if r.TemplateInput == nil {
+		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.
+			GetApplicationEnvTemplate(ctx, application.Name, environment)
+		if err != nil {
+			return err
+		}
+		r.TemplateInput = &TemplateInput{}
+		r.TemplateInput.Application = applicationJSONBlob
+		r.TemplateInput.Pipeline = pipelineJSONBlob
+	}
+	return nil
+}
+
+func (c *controller) getRenderValueFromTag(ctx context.Context, clusterID uint) (map[string]string, error) {
+	tags, err := c.tagManager.ListByClusterID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	renderValues := make(map[string]string)
+	for _, tag := range tags {
+		renderValues[tag.Key] = tag.Value
+	}
+	return renderValues, nil
+}
+
 // validateCreate validate for create cluster
 func (c *controller) validateCreate(r *CreateClusterRequest) error {
 	if err := validateClusterName(r.Name); err != nil {
@@ -805,6 +824,14 @@ func (c *controller) validateCreate(r *CreateClusterRequest) error {
 // validateTemplateInput validate templateInput is valid for template schema
 func (c *controller) validateTemplateInput(ctx context.Context,
 	template, release string, templateInput *TemplateInput, templateSchemaRenderVal map[string]string) error {
+
+	// TODO (remove it, currently some template need it)
+	const (
+		ResourceTypeKey  = "resourceType"
+		ClusterTypeValue = "cluster"
+	)
+	templateSchemaRenderVal[ResourceTypeKey] = ClusterTypeValue
+
 	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release, templateSchemaRenderVal)
 	if err != nil {
 		return err
