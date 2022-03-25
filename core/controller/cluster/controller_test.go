@@ -548,6 +548,10 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
+	// for coverage
+	c := NewController(
+		clusterGitRepo, nil, commitGetter, cd, tektonFty, templateSchemaGetter,
+		nil, nil, nil, templateschemamanager.Mgr)
 
 	c = &controller{
 		clusterMgr:           clustermanager.Mgr,
