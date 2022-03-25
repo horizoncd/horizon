@@ -47,7 +47,8 @@ const (
 
 // params
 const (
-	ClusterIDKey string = "clusterID"
+	ClusterIDKey    string = "clusterID"
+	ResourceTypeKey string = "resourceType"
 )
 
 type getter struct {
