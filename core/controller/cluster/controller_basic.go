@@ -490,7 +490,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, err
 		}
-
 		renderValues, err := c.getRenderValueFromTag(ctx, clusterID)
 		if err != nil {
 			return nil, err
@@ -824,16 +823,11 @@ func (c *controller) validateCreate(r *CreateClusterRequest) error {
 // validateTemplateInput validate templateInput is valid for template schema
 func (c *controller) validateTemplateInput(ctx context.Context,
 	template, release string, templateInput *TemplateInput, templateSchemaRenderVal map[string]string) error {
-	// TODO (remove it, currently some template need it)
-	const (
-		ResourceTypeKey  = "resourceType"
-		ClusterTypeValue = "cluster"
-	)
 	if templateSchemaRenderVal == nil {
 		templateSchemaRenderVal = make(map[string]string)
 	}
-	templateSchemaRenderVal[ResourceTypeKey] = ClusterTypeValue
-
+	// TODO (remove it, currently some template need it)
+	templateSchemaRenderVal["resourceType"] = "cluster"
 	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release, templateSchemaRenderVal)
 	if err != nil {
 		return err
