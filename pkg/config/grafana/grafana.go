@@ -12,6 +12,5 @@ type Grafana struct {
 
 type SLO struct {
 	OverviewDashboard string `yaml:"overviewDashboard"`
-	APIDashboard      string `yaml:"apiDashboard"`
-	PipelineDashboard string `yaml:"pipelineDashboard"`
+	HistoryDashboard  string `yaml:"historyDashboard"`
 }

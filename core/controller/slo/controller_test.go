@@ -28,9 +28,8 @@ func Test_controller_GetDashboards(t *testing.T) {
 				GrafanaSLO: grafana.SLO{
 					OverviewDashboard: "http://grafana.mockserver.org/d/Wz3GSBank/slo-gai-lan?orgId=1" +
 						"&kiosk&theme=light&var-env=%s",
-					APIDashboard: "http://grafana.mockserver.org/d/tKjaD1-nk/horizon-api-slo?orgId=1&kiosk&theme=light",
-					PipelineDashboard: "http://grafana.mockserver.org/d/g40XAtbnk/horizon-pipeline-slo?orgId=1" +
-						"&kiosk&theme=light&var-env=%s",
+					HistoryDashboard: "http://grafana.mockserver.org/d/tKjaD2-nk/horizon-slo-history?orgId=1&kiosk" +
+						"&theme=light&var-env=%s",
 				},
 			},
 			args: args{
@@ -38,8 +37,7 @@ func Test_controller_GetDashboards(t *testing.T) {
 			},
 			want: &Dashboards{
 				Overview: "http://grafana.mockserver.org/d/Wz3GSBank/slo-gai-lan?orgId=1&kiosk&theme=light&var-env=test",
-				API:      "http://grafana.mockserver.org/d/tKjaD1-nk/horizon-api-slo?orgId=1&kiosk&theme=light",
-				Pipeline: "http://grafana.mockserver.org/d/g40XAtbnk/horizon-pipeline-slo?orgId=1" +
+				History: "http://grafana.mockserver.org/d/tKjaD2-nk/horizon-slo-history?orgId=1" +
 					"&kiosk&theme=light&var-env=test",
 			},
 		},
