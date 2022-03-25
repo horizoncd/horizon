@@ -829,6 +829,9 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 		ResourceTypeKey  = "resourceType"
 		ClusterTypeValue = "cluster"
 	)
+	if templateSchemaRenderVal == nil {
+		templateSchemaRenderVal = make(map[string]string)
+	}
 	templateSchemaRenderVal[ResourceTypeKey] = ClusterTypeValue
 
 	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release, templateSchemaRenderVal)

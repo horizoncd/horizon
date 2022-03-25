@@ -18,6 +18,8 @@ import (
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	"g.hz.netease.com/horizon/pkg/cluster/models"
+	templateschemamanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
@@ -30,7 +32,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
@@ -50,6 +51,7 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	tagmodel "g.hz.netease.com/horizon/pkg/templateschematag/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -412,7 +414,7 @@ func TestMain(m *testing.M) {
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&harbormodels.Harbor{}, &k8sclustermodels.K8SCluster{},
 		&regionmodels.Region{}, &envmodels.EnvironmentRegion{},
-		&prmodels.Pipelinerun{}); err != nil {
+		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
@@ -563,6 +565,7 @@ func Test(t *testing.T) {
 		registryFty:          registryFty,
 		userManager:          usermanager.Mgr,
 		userSvc:              usersvc.Svc,
+		tagManager:           templateschemamanager.Mgr,
 	}
 
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
