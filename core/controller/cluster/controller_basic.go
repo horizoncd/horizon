@@ -824,7 +824,6 @@ func (c *controller) validateCreate(r *CreateClusterRequest) error {
 // validateTemplateInput validate templateInput is valid for template schema
 func (c *controller) validateTemplateInput(ctx context.Context,
 	template, release string, templateInput *TemplateInput, templateSchemaRenderVal map[string]string) error {
-
 	// TODO (remove it, currently some template need it)
 	const (
 		ResourceTypeKey  = "resourceType"
