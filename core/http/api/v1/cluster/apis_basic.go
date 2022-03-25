@@ -135,8 +135,7 @@ func (a *API) Create(c *gin.Context) {
 			return
 		} else if perror.Cause(err) == herrors.ErrNameConflict {
 			log.WithFiled(c, "op", op).Errorf("err = %+v, request = %+v", err, request)
-			// TODO(kiloson)
-			//response.AbortWithRPCError(c,rpcerror.)
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
 			return
 		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)

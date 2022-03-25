@@ -31,8 +31,16 @@ var (
 		HTTPCode:  http.StatusBadRequest,
 		ErrorCode: "InvalidParam",
 	}
+	BadRequestError = RPCError{
+		HTTPCode:  http.StatusBadRequest,
+		ErrorCode: "Bad Request",
+	}
 	NotFoundError = RPCError{
 		HTTPCode:  http.StatusNotFound,
 		ErrorCode: "NotFound",
+	}
+	ConflictError = RPCError{
+		HTTPCode:  http.StatusConflict,
+		ErrorCode: "Conflict",
 	}
 )

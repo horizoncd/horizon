@@ -213,8 +213,7 @@ func (a *API) Deploy(c *gin.Context) {
 
 		if perror.Cause(err) == herrors.ErrClusterNoChange {
 			log.WithFiled(c, "op", op).Errorf("%+v", err)
-			// TODO(kiloson)
-			// response.AbortWithRPCError(c,rpcerror.)
+			response.AbortWithRPCError(c, rpcerror.ConflictError.WithErrMsg(err.Error()))
 			return
 		}
 
