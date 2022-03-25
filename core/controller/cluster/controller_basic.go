@@ -519,6 +519,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		renderValues := make(map[string]string)
 		clusterIDStr := strconv.FormatUint(uint64(clusterID), 10)
 		renderValues[templateschema.ClusterIDKey] = clusterIDStr
+		renderValues[templateschema.ResourceTypeKey] = "cluster"
 		if err := c.validateTemplateInput(ctx,
 			cluster.Template, templateRelease, r.TemplateInput, renderValues); err != nil {
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
