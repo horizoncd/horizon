@@ -593,7 +593,7 @@ func (c *controller) GetClusterPods(ctx context.Context, clusterID uint, start, 
 
 	grafanaURL, ok := c.grafanaMapper[envValue.Region]
 	if !ok {
-		return nil, perror.Wrap(herrors.ErrClusterNoChange,
+		return nil, perror.Wrap(herrors.ErrGrafanaNotSupport,
 			"grafana does not support this region")
 	}
 
