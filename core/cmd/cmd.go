@@ -40,7 +40,7 @@ import (
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
-	templateshematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateshematag"
+	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
@@ -275,7 +275,7 @@ func Run(flags *Flags) {
 		sloAPI               = sloapi.NewAPI(sloCtl)
 		codeGitAPI           = codeapi.NewAPI(codeGitCtl)
 		clusterTagAPI        = clustertag.NewAPI(clusterTagCtl)
-		templateSchemaTagAPI = templateshematagapi.NewAPI(templateSchemaTagCtl)
+		templateSchemaTagAPI = templateschematagapi.NewAPI(templateSchemaTagCtl)
 		templateAPI          = template.NewAPI(templateCtl, templateSchemaTagCtl)
 		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
@@ -332,7 +332,7 @@ func Run(flags *Flags) {
 	sloapi.RegisterRoutes(r, sloAPI)
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	clustertag.RegisterRoutes(r, clusterTagAPI)
-	templateshematagapi.RegisterRoutes(r, templateSchemaTagAPI)
+	templateschematagapi.RegisterRoutes(r, templateSchemaTagAPI)
 	accessapi.RegisterRoutes(r, accessAPI)
 	applicationregion.RegisterRoutes(r, applicationRegionAPI)
 
