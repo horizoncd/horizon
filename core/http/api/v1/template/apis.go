@@ -67,19 +67,21 @@ func (a *API) GetTemplateSchema(c *gin.Context) {
 	// if cluster id exist, get tags from cluster as param
 	if c.Query(_resourceTypeQuery) == "cluster" {
 		clusterIDStr := c.Query(_clusterIDQuery)
-		clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-		if err != nil {
-			log.Info(c, "clusterID not found or invalid")
-			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-			return
-		}
-		tags, err := a.tagCtl.List(c, uint(clusterID))
-		if err != nil {
-			log.Error(c, err.Error())
-			response.AbortWithInternalError(c, err.Error())
-		}
-		for _, tag := range tags.Tags {
-			params[tag.Key] = tag.Value
+		if clusterIDStr != "" {
+			clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+			if err != nil {
+				log.Info(c, "clusterID not found or invalid")
+				response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+				return
+			}
+			tags, err := a.tagCtl.List(c, uint(clusterID))
+			if err != nil {
+				log.Error(c, err.Error())
+				response.AbortWithInternalError(c, err.Error())
+			}
+			for _, tag := range tags.Tags {
+				params[tag.Key] = tag.Value
+			}
 		}
 	}
 
