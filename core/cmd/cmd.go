@@ -40,12 +40,13 @@ import (
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
-	templateshematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateshematag"
+	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	"g.hz.netease.com/horizon/core/middleware/authenticate"
+	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
@@ -71,6 +72,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -243,7 +245,8 @@ func Run(flags *Flags) {
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
 		envTemplateCtl = envtemplatectl.NewController(applicationGitRepo, templateSchemaGetter)
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, gitGetter,
-			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, outputGetter, memHook, config.GrafanaMapper)
+			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, outputGetter, memHook,
+			config.GrafanaMapper, tagmanager.Mgr)
 		prCtl = prctl.NewController(tektonFty, gitGetter, clusterGitRepo)
 
 		templateCtl          = templatectl.NewController(templateSchemaGetter)
@@ -261,7 +264,6 @@ func Run(flags *Flags) {
 	var (
 		// init API
 		groupAPI             = group.NewAPI(groupCtl)
-		templateAPI          = template.NewAPI(templateCtl)
 		userAPI              = user.NewAPI()
 		applicationAPI       = application.NewAPI(applicationCtl)
 		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
@@ -274,7 +276,8 @@ func Run(flags *Flags) {
 		sloAPI               = sloapi.NewAPI(sloCtl)
 		codeGitAPI           = codeapi.NewAPI(codeGitCtl)
 		clusterTagAPI        = clustertag.NewAPI(clusterTagCtl)
-		templateSchemaTagAPI = templateshematagapi.NewAPI(templateSchemaTagCtl)
+		templateSchemaTagAPI = templateschematagapi.NewAPI(templateSchemaTagCtl)
+		templateAPI          = template.NewAPI(templateCtl, templateSchemaTagCtl)
 		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 	)
@@ -284,7 +287,7 @@ func Run(flags *Flags) {
 	// use middleware
 	ormMiddleware := ormmiddle.Middleware(mysqlDB)
 	middlewares := []gin.HandlerFunc{
-		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
+		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
 		requestid.Middleware(), // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
@@ -330,7 +333,7 @@ func Run(flags *Flags) {
 	sloapi.RegisterRoutes(r, sloAPI)
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	clustertag.RegisterRoutes(r, clusterTagAPI)
-	templateshematagapi.RegisterRoutes(r, templateSchemaTagAPI)
+	templateschematagapi.RegisterRoutes(r, templateSchemaTagAPI)
 	accessapi.RegisterRoutes(r, accessAPI)
 	applicationregion.RegisterRoutes(r, applicationRegionAPI)
 
