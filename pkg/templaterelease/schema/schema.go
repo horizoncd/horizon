@@ -134,12 +134,6 @@ func (g *getter) GetTemplateSchema(ctx context.Context,
 			return nil, err
 		}
 	}
-
-	// 2. get template schema tags and do template
-	params, err = g.GeneratorRenderParams(ctx, params)
-	if err != nil {
-		return nil, err
-	}
 	readerSchemas, err := RenderFiles(params, pipelineSchemaBytes, applicationSchemaBytes)
 	if err != nil {
 		return nil, err

@@ -24,6 +24,7 @@ import (
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 )
@@ -93,6 +94,7 @@ type controller struct {
 	userSvc              usersvc.Service
 	memberManager        member.Manager
 	groupManager         groupmanager.Manager
+	tagManager           tagmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -100,7 +102,7 @@ var _ Controller = (*controller)(nil)
 func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo appgitrepo.ApplicationGitRepo,
 	commitGetter code.GitGetter, cd cd.CD, tektonFty factory.Factory,
 	templateSchemaGetter templateschema.Getter, outputGetter output.Getter,
-	hook hook.Hook, grafanaMapper grafana.Mapper) Controller {
+	hook hook.Hook, grafanaMapper grafana.Mapper, tagManager tagmanager.Manager) Controller {
 	return &controller{
 		clusterMgr:           clustermanager.Mgr,
 		clusterGitRepo:       clusterGitRepo,
@@ -124,6 +126,7 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		userSvc:              usersvc.Svc,
 		memberManager:        member.Mgr,
 		groupManager:         groupmanager.Mgr,
+		tagManager:           tagManager,
 	}
 }
 

@@ -71,6 +71,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -243,7 +244,8 @@ func Run(flags *Flags) {
 		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
 		envTemplateCtl = envtemplatectl.NewController(applicationGitRepo, templateSchemaGetter)
 		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, gitGetter,
-			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, outputGetter, memHook, config.GrafanaMapper)
+			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, outputGetter, memHook,
+			config.GrafanaMapper, tagmanager.Mgr)
 		prCtl = prctl.NewController(tektonFty, gitGetter, clusterGitRepo)
 
 		templateCtl          = templatectl.NewController(templateSchemaGetter)
@@ -261,7 +263,6 @@ func Run(flags *Flags) {
 	var (
 		// init API
 		groupAPI             = group.NewAPI(groupCtl)
-		templateAPI          = template.NewAPI(templateCtl)
 		userAPI              = user.NewAPI()
 		applicationAPI       = application.NewAPI(applicationCtl)
 		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
@@ -275,6 +276,7 @@ func Run(flags *Flags) {
 		codeGitAPI           = codeapi.NewAPI(codeGitCtl)
 		clusterTagAPI        = clustertag.NewAPI(clusterTagCtl)
 		templateSchemaTagAPI = templateschematagapi.NewAPI(templateSchemaTagCtl)
+		templateAPI          = template.NewAPI(templateCtl, templateSchemaTagCtl)
 		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 	)
