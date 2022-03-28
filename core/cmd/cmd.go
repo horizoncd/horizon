@@ -46,6 +46,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	"g.hz.netease.com/horizon/core/middleware/authenticate"
+	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
@@ -286,7 +287,7 @@ func Run(flags *Flags) {
 	// use middleware
 	ormMiddleware := ormmiddle.Middleware(mysqlDB)
 	middlewares := []gin.HandlerFunc{
-		gin.LoggerWithWriter(gin.DefaultWriter, "/health", "/metrics"),
+		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
 		requestid.Middleware(), // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
