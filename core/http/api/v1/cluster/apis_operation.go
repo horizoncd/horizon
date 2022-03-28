@@ -213,7 +213,7 @@ func (a *API) Deploy(c *gin.Context) {
 
 		if perror.Cause(err) == herrors.ErrClusterNoChange {
 			log.WithFiled(c, "op", op).Errorf("%+v", err)
-			response.AbortWithRPCError(c, rpcerror.ConflictError.WithErrMsg(err.Error()))
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
 			return
 		}
 
@@ -364,7 +364,6 @@ func (a *API) Rollback(c *gin.Context) {
 	}
 
 	resp, err := a.clusterCtl.Rollback(c, uint(clusterID), request)
-	response.SuccessWithData(c, resp)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -374,6 +373,7 @@ func (a *API) Rollback(c *gin.Context) {
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
+	response.SuccessWithData(c, resp)
 }
 
 func (a *API) GetDashBoard(c *gin.Context) {
