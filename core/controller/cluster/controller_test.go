@@ -10,13 +10,16 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	applicationmanangermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
 	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
 	commitmock "g.hz.netease.com/horizon/mock/pkg/cluster/code"
 	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
+	clustermanagermock "g.hz.netease.com/horizon/mock/pkg/cluster/manager"
 	registrymock "g.hz.netease.com/horizon/mock/pkg/cluster/registry"
 	registryftymock "g.hz.netease.com/horizon/mock/pkg/cluster/registry/factory"
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
+	outputmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/output"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	templateschemamanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
@@ -24,6 +27,7 @@ import (
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 	"github.com/go-yaml/yaml"
+	"gorm.io/gorm"
 
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -548,10 +552,6 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
-	// for coverage
-	c := NewController(
-		clusterGitRepo, nil, commitGetter, cd, tektonFty, templateSchemaGetter,
-		nil, nil, nil, templateschemamanager.Mgr)
 
 	c = &controller{
 		clusterMgr:           clustermanager.Mgr,
@@ -836,6 +836,76 @@ func Test(t *testing.T) {
 	assert.NotNil(t, rollbackResp)
 	b, _ = json.Marshal(rollbackResp)
 	t.Logf("%s", string(b))
+}
+
+func TestGetClusterOutPut(t *testing.T) {
+	mockCtl := gomock.NewController(t)
+	appManagerMock := applicationmanangermock.NewMockManager(mockCtl)
+	clusterManagerMock := clustermanagermock.NewMockManager(mockCtl)
+	outputMock := outputmock.NewMockGetter(mockCtl)
+	clusterGitRepoMock := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+	c := controller{
+		clusterMgr:     clusterManagerMock,
+		applicationMgr: appManagerMock,
+		outputGetter:   outputMock,
+		clusterGitRepo: clusterGitRepoMock,
+	}
+
+	var applicationID uint = 102
+	template := "javaapp"
+	templateRelease := "v1.0.0"
+	clusterName := "app-cluster-demo"
+	clusterManagerMock.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(&models.Cluster{
+		Model:           gorm.Model{},
+		ApplicationID:   applicationID,
+		Template:        template,
+		TemplateRelease: templateRelease,
+		Name:            clusterName,
+	}, nil).Times(1)
+
+	applicationName := "app-demo"
+	appManagerMock.EXPECT().GetByID(gomock.Any(), applicationID).Return(&appmodels.Application{
+		Model:   gorm.Model{},
+		GroupID: 0,
+		Name:    applicationName,
+	}, nil).Times(1)
+
+	envValueFile := gitrepo.ClusterValueFile{
+		FileName: "env.yaml",
+	}
+	var envValue = `
+javaapp:
+  env:
+    environment: pre
+    region: hz
+    namespace: pre-54
+    baseRegistry: harbor.mock.org
+    ingressDomain: mock.org
+  horizon:
+    cluster: app-cluster-demo
+`
+	err := yaml.Unmarshal([]byte(envValue), &(envValueFile.Content))
+	assert.Nil(t, err)
+	var clusterValueFiles = make([]gitrepo.ClusterValueFile, 0)
+	clusterValueFiles = append(clusterValueFiles, envValueFile)
+	clusterGitRepoMock.EXPECT().GetClusterValueFiles(gomock.Any(), applicationName, clusterName).Return(
+		clusterValueFiles, nil).Times(1)
+
+	var outPutStr = `
+syncDomainName:
+  Description: sync domain name
+  Value: {{ .Values.horizon.cluster}}.{{ .Values.env.ingressDomain}}`
+	outputMock.EXPECT().GetTemplateOutPut(gomock.Any(), template, templateRelease).Return(outPutStr, nil).Times(1)
+
+	renderObect, err := c.GetClusterOutput(context.TODO(), 123)
+	assert.Nil(t, err)
+	out, err := yaml.Marshal(renderObect)
+	assert.Nil(t, err)
+	var ExpectOutPutStr = `syncDomainName:
+  Description: sync domain name
+  Value: app-cluster-demo.mock.org
+`
+	assert.Equal(t, string(out), ExpectOutPutStr)
 }
 
 var envValue = `
