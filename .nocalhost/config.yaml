@@ -1,0 +1,38 @@
+name: horizon-backend-core
+serviceType: deployment
+containers:
+  - name: core
+    dev:
+      gitUrl: ""
+      image: nocalhost-docker.pkg.coding.net/nocalhost/dev-images/golang:latest
+      shell: ""
+      workDir: ""
+      storageClass: ""
+      resources:
+        limits:
+          memory: 2048Mi
+          cpu: "2"
+        requests:
+          memory: 2048Mi
+          cpu: "2"
+      persistentVolumeDirs: []
+      command:
+        run:
+          - .nocalhost/run.sh
+        debug:
+          - .nocalhost/debug.sh
+      debug:
+        remoteDebugPort: 9009
+      hotReload: false
+      sync:
+        type: "send"
+        mode: "pattern"
+        filePattern: []
+        ignoreFilePattern:
+          - "./build"
+          - "./chart"
+          - "./db"
+          - "./mock"
+          - "./openapi"
+      env: []
+      portForward: []
