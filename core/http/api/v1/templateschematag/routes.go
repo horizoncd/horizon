@@ -1,4 +1,4 @@
-package templateshematag
+package templateschematag
 
 import (
 	"fmt"

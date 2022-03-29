@@ -5,11 +5,14 @@ import (
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/auth"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/sets"
 	"github.com/gin-gonic/gin"
@@ -56,7 +59,11 @@ func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) 
 		decision, reason, err = authorizer.Authorize(c, authRecord)
 		if err != nil {
 			log.Warningf(c, "auth failed with err = %s", err.Error())
-			response.AbortWithError(c, err)
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 			return
 		}
 		if decision == auth.DecisionDeny {

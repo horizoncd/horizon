@@ -22,7 +22,6 @@ func NewController(grafanaSLO grafana.SLO) Controller {
 func (c *controller) GetDashboards(_ context.Context, env string) *Dashboards {
 	return &Dashboards{
 		Overview: fmt.Sprintf(c.GrafanaSLO.OverviewDashboard, env),
-		API:      c.GrafanaSLO.APIDashboard,
-		Pipeline: fmt.Sprintf(c.GrafanaSLO.PipelineDashboard, env),
+		History:  fmt.Sprintf(c.GrafanaSLO.HistoryDashboard, env),
 	}
 }
