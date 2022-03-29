@@ -13,5 +13,5 @@ type K8SCluster struct {
 }
 
 func (K8SCluster) TableName() string {
-	return "k8s_cluster"
+	return "tb_k8s_cluster"
 }
