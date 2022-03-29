@@ -470,9 +470,8 @@ func (d *dao) ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*mo
 	traversalIDLike := strings.Join(idsStr, ` or traversal_ids like `)
 	traversalIDLike = "traversal_ids like " + traversalIDLike
 
-	const sql = "select * from `tb_group` where %s and deleted_at is null"
 	var groups []*models.Group
-	result := db.Raw(fmt.Sprintf(sql, traversalIDLike)).Scan(&groups)
+	result := db.Raw(fmt.Sprintf(common.GroupQueryByTraversalID, traversalIDLike)).Scan(&groups)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())

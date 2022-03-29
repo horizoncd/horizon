@@ -65,6 +65,7 @@ const (
 		"union " +
 		"select a.id, a.name, a.name as path, description, updated_at, 'application' as type from tb_application a " +
 		"where a.group_id=? and a.deleted_at is null) ga"
+	GroupQueryByTraversalID = "select * from tb_group where %s and deleted_at is null"
 )
 
 /* sql about application */
