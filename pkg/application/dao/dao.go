@@ -29,7 +29,7 @@ type DAO interface {
 	// CountByGroupID get the count of the records matching the given groupID
 	CountByGroupID(ctx context.Context, groupID uint) (int64, error)
 	Create(ctx context.Context, application *models.Application,
-		extraOwners []*usermodels.User) (*models.Application, error)
+		extraMembers map[*usermodels.User]string) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
 	TransferByID(ctx context.Context, id uint, groupID uint) error
@@ -207,7 +207,7 @@ func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []st
 }
 
 func (d *dao) Create(ctx context.Context, application *models.Application,
-	extraOwners []*usermodels.User) (*models.Application, error) {
+	extraMembers map[*usermodels.User]string) (*models.Application, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -233,11 +233,11 @@ func (d *dao) Create(ctx context.Context, application *models.Application,
 		})
 
 		// the extra owners
-		for _, extraOwner := range extraOwners {
+		for extraOwner, roleOfMember := range extraMembers {
 			members = append(members, &membermodels.Member{
 				ResourceType: membermodels.TypeApplication,
 				ResourceID:   application.ID,
-				Role:         role.Owner,
+				Role:         roleOfMember,
 				MemberType:   membermodels.MemberUser,
 				MemberNameID: extraOwner.ID,
 				GrantedBy:    application.CreatedBy,

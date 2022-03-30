@@ -10,6 +10,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
@@ -123,7 +124,18 @@ func (a *API) Create(c *gin.Context) {
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment, region, extraOwners, request)
+
+	for _, roleOfMember := range request.ExtraMembers {
+		if !role.CheckRoleIfValid(roleOfMember) {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("extra member is invalid"))
+			return
+		}
+	}
+
+	for _, extraOwner := range extraOwners {
+		request.ExtraMembers[extraOwner] = role.Owner
+	}
+	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment, region, request)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))

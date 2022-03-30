@@ -9,6 +9,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
@@ -75,7 +76,18 @@ func (a *API) Create(c *gin.Context) {
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	resp, err := a.applicationCtl.CreateApplication(c, uint(groupID), extraOwners, request)
+
+	for _, roleOfMember := range request.ExtraMembers {
+		if !role.CheckRoleIfValid(roleOfMember) {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("extra member is invalid"))
+			return
+		}
+	}
+
+	for _, owner := range extraOwners {
+		request.ExtraMembers[owner] = role.Owner
+	}
+	resp, err := a.applicationCtl.CreateApplication(c, uint(groupID), request)
 	if err != nil {
 		response.AbortWithError(c, err)
 		return

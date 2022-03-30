@@ -9,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
 
 var (
@@ -16,9 +17,11 @@ var (
 	Mgr = New()
 )
 
+// nolint
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/manager/manager.go -package=mock_manager
 type Manager interface {
 	Create(ctx context.Context, cluster *models.Cluster,
-		clusterTags []*clustertagmodels.ClusterTag, extraOwners []string) (*models.Cluster, error)
+		clusterTags []*clustertagmodels.ClusterTag, extraMembers map[string]string) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
@@ -50,13 +53,21 @@ type manager struct {
 }
 
 func (m *manager) Create(ctx context.Context, cluster *models.Cluster,
-	clusterTags []*clustertagmodels.ClusterTag, extraOwners []string) (*models.Cluster, error) {
-	users, err := m.userDAO.ListByEmail(ctx, extraOwners)
+	clusterTags []*clustertagmodels.ClusterTag, extraMembers map[string]string) (*models.Cluster, error) {
+	emails := make([]string, 0, len(extraMembers))
+	for email := range extraMembers {
+		emails = append(emails, email)
+	}
+	users, err := m.userDAO.ListByEmail(ctx, emails)
 	if err != nil {
 		return nil, err
 	}
+	extraMembersWithUser := make(map[*usermodels.User]string)
+	for _, user := range users {
+		extraMembersWithUser[user] = extraMembers[user.Email]
+	}
 
-	return m.dao.Create(ctx, cluster, clusterTags, users)
+	return m.dao.Create(ctx, cluster, clusterTags, extraMembersWithUser)
 }
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {

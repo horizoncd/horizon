@@ -152,3 +152,7 @@ func (fRole *fileRoleService) RoleCompare(ctx context.Context, role1, role2 stri
 		return RoleEqual, nil
 	}
 }
+
+func CheckRoleIfValid(role string) bool {
+	return role != Owner && role != Maintainer && role != PE
+}
