@@ -130,11 +130,6 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 	} else {
 		gitURL = r.Git.URL
 	}
-	if r.Git == nil || r.Git.Subfolder == "" {
-		gitSubfolder = cluster.GitSubfolder
-	} else {
-		gitSubfolder = r.Git.Subfolder
-	}
 	if r.Git == nil || r.Git.Branch == "" {
 		gitBranch = cluster.GitBranch
 	} else {
