@@ -232,14 +232,14 @@ func (d *dao) Create(ctx context.Context, application *models.Application,
 			GrantedBy:    application.UpdatedBy,
 		})
 
-		// the extra owners
-		for extraOwner, roleOfMember := range extraMembers {
+		// the extra members
+		for extraMember, roleOfMember := range extraMembers {
 			members = append(members, &membermodels.Member{
 				ResourceType: membermodels.TypeApplication,
 				ResourceID:   application.ID,
 				Role:         roleOfMember,
 				MemberType:   membermodels.MemberUser,
-				MemberNameID: extraOwner.ID,
+				MemberNameID: extraMember.ID,
 				GrantedBy:    application.CreatedBy,
 			})
 		}
