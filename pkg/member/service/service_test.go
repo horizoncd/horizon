@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"g.hz.netease.com/horizon/core/middleware/user"
@@ -29,8 +28,7 @@ import (
 )
 
 var (
-	ctx context.Context
-	s   Service
+	s Service
 )
 
 func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
@@ -43,6 +41,14 @@ func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
 
 // nolint
 func TestCreateAndUpdateGroupMember(t *testing.T) {
+
+	db, _ := orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&models.Member{}); err != nil {
+		panic(err)
+	}
+
+	ctx := orm.NewContext(context.TODO(), db)
+
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -69,7 +75,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		FullName: "tom",
 		ID:       tomID,
 	}
-	var ctx = context.WithValue(ctx, user.Key(), grandUser)
+	ctx = context.WithValue(ctx, user.Key(), grandUser)
 	// insert service to group2
 	postMemberTom2 := PostMember{
 		ResourceType: models.TypeGroupStr,
@@ -244,6 +250,14 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 
 // nolint
 func TestListGroupMember(t *testing.T) {
+
+	db, _ := orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&models.Member{}); err != nil {
+		panic(err)
+	}
+
+	ctx := orm.NewContext(context.TODO(), db)
+
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -355,6 +369,13 @@ func TestListApplicationMember(t *testing.T) {
 }
 
 func TestListApplicationInstanceMember(t *testing.T) {
+	db, _ := orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&models.Member{}, &usermodels.User{}); err != nil {
+		panic(err)
+	}
+
+	ctx := orm.NewContext(context.TODO(), db)
+
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -504,6 +525,14 @@ func TestListApplicationInstanceMember(t *testing.T) {
 //		ret: sph(3), jerry(2), cat(4)
 // nolint
 func TestGetPipelinerunMember(t *testing.T) {
+
+	db, _ := orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&models.Member{}); err != nil {
+		panic(err)
+	}
+
+	ctx := orm.NewContext(context.TODO(), db)
+
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -636,14 +665,4 @@ func TestGetPipelinerunMember(t *testing.T) {
 	members, err := s.GetMemberOfResource(ctx, models.TypePipelinerunStr, pipelineRunID)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMembers[3], members))
-}
-
-func TestMain(m *testing.M) {
-	db, _ := orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&models.Member{}, &usermodels.User{}); err != nil {
-		panic(err)
-	}
-
-	ctx = orm.NewContext(context.TODO(), db)
-	os.Exit(m.Run())
 }

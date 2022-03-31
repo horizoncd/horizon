@@ -140,7 +140,7 @@ func (s *service) GetMemberOfResource(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	if nil == memberInfo {
+	if memberInfo == nil {
 		defaultRole := s.roleService.GetDefaultRole(ctx)
 		if nil != defaultRole {
 			memberInfo = &models.Member{
