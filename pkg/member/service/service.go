@@ -11,6 +11,7 @@ import (
 	applicationclustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/member"
+	memberctx "g.hz.netease.com/horizon/pkg/member/context"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	pipelinerunmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
@@ -342,24 +343,37 @@ func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) (
 }
 
 func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
-	var retMembers []models.Member
-	// 1. query the application cluster's members
-	clusterInfo, err := s.applicationClusterManager.GetByID(ctx, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	members, err := s.memberManager.ListDirectMember(ctx, models.TypeApplicationCluster, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	retMembers = append(retMembers, members...)
-	// 2. query the application's members (contains the group's members)
-	members, err = s.listApplicationMembers(ctx, clusterInfo.ApplicationID)
-	if err != nil {
-		return nil, err
+	var (
+		retMembers []models.Member
+		err        error
+	)
+
+	var members []models.Member
+	if onCondition, ok := ctx.Value(memberctx.ContextQueryOnCondition).(bool); ok && onCondition {
+		members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeApplicationCluster, resourceID)
+	} else {
+		members, err = s.memberManager.ListDirectMember(ctx, models.TypeApplicationCluster, resourceID)
 	}
 
+	if err != nil {
+		return nil, err
+	}
 	retMembers = append(retMembers, members...)
+
+	if directMemberOnly, ok := ctx.Value(memberctx.ContextDirectMemberOnly).(bool); !ok || !directMemberOnly {
+		// 1. query the application cluster's members
+		clusterInfo, err := s.applicationClusterManager.GetByID(ctx, resourceID)
+		if err != nil {
+			return nil, err
+		}
+		// 2. query the application's members (contains the group's members)
+		members, err = s.listApplicationMembers(ctx, clusterInfo.ApplicationID)
+		if err != nil {
+			return nil, err
+		}
+
+		retMembers = append(retMembers, members...)
+	}
 
 	return DeduplicateMember(retMembers), nil
 }
