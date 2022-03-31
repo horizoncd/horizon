@@ -77,6 +77,7 @@ func NewMySQLDB(db *MySQL) (*gorm.DB, error) {
 		Conn: sqlDB,
 	}), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   "tb_",
 			SingularTable: true,
 		},
 	})
@@ -124,6 +125,7 @@ func NewMySQLDBForUnitTests(db *MySQL) (*gorm.DB, error) {
 func NewSqliteDB(file string) (*gorm.DB, error) {
 	orm, err := gorm.Open(sqlite.Open(file), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   "tb_",
 			SingularTable: true,
 		},
 	})
