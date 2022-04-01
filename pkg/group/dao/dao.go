@@ -392,6 +392,8 @@ func (d *dao) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Gr
 	var groups []*models.Group
 
 	sort := orm.FormatSortExp(query)
+	// set "deleted_ts = 0" condition
+	query.Keywords["deleted_ts"] = 0
 	result := db.Order(sort).Where(query.Keywords).Find(&groups)
 
 	if result.Error != nil {
