@@ -6,6 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/terminal"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
@@ -31,13 +32,12 @@ func NewAPI(t terminal.Controller) *API {
 }
 
 func (a *API) CreateShell(c *gin.Context) {
-	const op = "terminal: sockjs"
+	const op = "terminal: create shell"
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
-		err = perror.Wrap(err, "failed to parse cluster id")
-		log.WithFiled(c, "op", op).Errorf(err.Error())
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid cluster id: %s, "+
+			"err: %s", clusterIDStr, err.Error())))
 		return
 	}
 	podName := c.Query(_podNameQuery)
@@ -45,7 +45,13 @@ func (a *API) CreateShell(c *gin.Context) {
 
 	sessionID, sockJS, err := a.terminalCtl.CreateShell(c, uint(clusterID), podName, containerName)
 	if err != nil {
-		log.WithFiled(c, "op", op).Errorf(err.Error())
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.ClusterInDB || e.Source == herrors.PodsInK8S {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
@@ -58,6 +64,7 @@ func (a *API) CreateShell(c *gin.Context) {
 }
 
 func (a *API) CreateTerminal(c *gin.Context) {
+	const op = "terminal: create terminal"
 	clusterIDStr := c.Param(_clusterIDParam)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -69,6 +76,7 @@ func (a *API) CreateTerminal(c *gin.Context) {
 
 	terminalIDResp, err := a.terminalCtl.GetTerminalID(c, uint(clusterID), podName, containerName)
 	if err != nil {
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithError(c, err)
 		return
 	}
@@ -76,10 +84,17 @@ func (a *API) CreateTerminal(c *gin.Context) {
 }
 
 func (a *API) ConnectTerminal(c *gin.Context) {
-	// todo(sph): add authorization and move session to db
+	const op = "terminal: connect terminal"
 	sessionID := c.Param(_terminalIDParam)
 	sockJS, err := a.terminalCtl.GetSockJSHandler(c, sessionID)
 	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.ClusterInDB || e.Source == herrors.PodsInK8S {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithError(c, err)
 		return
 	}

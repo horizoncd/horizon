@@ -353,7 +353,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 	if exists {
 		return nil, perror.Wrap(herrors.ErrNameConflict,
-			"a cluster with the same name already exists, please do not create it again!")
+			"a cluster with the same name already exists, please do not create it again")
 	}
 	if err := c.validateCreate(r); err != nil {
 		return nil, err
