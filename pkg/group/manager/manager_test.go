@@ -101,7 +101,7 @@ func TestCreate(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%d,%d", g1.ID, g2.ID), get.TraversalIDs)
 
 	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
@@ -124,7 +124,7 @@ func TestDelete(t *testing.T) {
 	assert.Nil(t, err)
 
 	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
@@ -143,7 +143,7 @@ func TestGetByID(t *testing.T) {
 	assert.True(t, ok)
 
 	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
@@ -158,7 +158,7 @@ func TestGetByIDs(t *testing.T) {
 	assert.Equal(t, g2.ID, groups[1].ID)
 
 	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
@@ -174,7 +174,7 @@ func TestGetAll(t *testing.T) {
 	assert.Equal(t, g2.ID, groups[1].ID)
 
 	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
@@ -189,7 +189,7 @@ func TestGetByPaths(t *testing.T) {
 	assert.Equal(t, id2.ID, groups[1].ID)
 
 	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
@@ -204,7 +204,7 @@ func TestGetByNameFuzzily(t *testing.T) {
 	assert.Equal(t, id2.ID, groups[1].ID)
 
 	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 
@@ -232,7 +232,7 @@ func TestUpdateBasic(t *testing.T) {
 	assert.Equal(t, herrors.ErrNameConflict, perror.Cause(err))
 
 	// drop table
-	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 	assert.Nil(t, res.Error)
 }
 

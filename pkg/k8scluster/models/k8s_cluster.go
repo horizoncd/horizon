@@ -10,6 +10,7 @@ type K8SCluster struct {
 	IngressDomain string
 	CreatedBy     uint
 	UpdatedBy     uint
+	DeletedTs     int64
 }
 
 func (K8SCluster) TableName() string {

@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -202,7 +203,7 @@ func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []st
 		}
 		return applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
-
+	time.Now().Unix()
 	return applications, result.Error
 }
 
@@ -301,7 +302,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return err
 	}
 
-	result := db.Exec(common.ApplicationDeleteByID, id)
+	result := db.Exec(common.ApplicationDeleteByID, time.Now().Unix(), id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())

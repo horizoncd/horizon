@@ -16,6 +16,7 @@ type Group struct {
 	TraversalIDs    string
 	CreatedBy       uint
 	UpdatedBy       uint
+	DeletedTs       int64
 }
 
 type GroupOrApplication struct {

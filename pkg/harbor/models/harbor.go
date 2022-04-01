@@ -8,4 +8,5 @@ type Harbor struct {
 	Server          string
 	Token           string
 	PreheatPolicyID int
+	DeletedTs       int64
 }

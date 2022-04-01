@@ -9,6 +9,7 @@ type Environment struct {
 	DisplayName string
 	CreatedBy   uint
 	UpdatedBy   uint
+	DeletedTs   int64
 }
 
 type EnvironmentList []*Environment

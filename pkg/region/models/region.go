@@ -16,6 +16,7 @@ type Region struct {
 	HarborID     uint `gorm:"column:harbor_id"`
 	CreatedBy    uint
 	UpdatedBy    uint
+	DeletedTs    int64
 }
 
 // RegionEntity region entity, region with its k8sCluster and Harbor

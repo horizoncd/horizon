@@ -19,6 +19,7 @@ type Cluster struct {
 	EnvironmentRegionID uint
 	CreatedBy           uint
 	UpdatedBy           uint
+	DeletedTs           int64
 }
 
 type ClusterWithEnvAndRegion struct {

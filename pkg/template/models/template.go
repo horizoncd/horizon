@@ -8,4 +8,5 @@ type Template struct {
 	Description string
 	CreatedBy   uint
 	UpdatedBy   uint
+	DeletedTs   int64
 }

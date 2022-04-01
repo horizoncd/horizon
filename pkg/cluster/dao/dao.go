@@ -4,6 +4,7 @@ import (
 	"context"
 	goerrors "errors"
 	"fmt"
+	"time"
 
 	querycommon "g.hz.netease.com/horizon/core/common"
 
@@ -195,7 +196,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return err
 	}
 
-	result := db.Exec(common.ClusterDeleteByID, id)
+	result := db.Exec(common.ClusterDeleteByID, time.Now().Unix(), id)
 
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.ClusterInDB, result.Error.Error())

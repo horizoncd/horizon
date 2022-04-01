@@ -24,4 +24,5 @@ type Application struct {
 	TemplateRelease string
 	CreatedBy       uint
 	UpdatedBy       uint
+	DeletedTs       int64
 }

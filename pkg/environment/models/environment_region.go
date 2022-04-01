@@ -12,4 +12,5 @@ type EnvironmentRegion struct {
 	Disabled        bool
 	CreatedBy       uint
 	UpdatedBy       uint
+	DeletedTs       int64
 }

@@ -11,4 +11,5 @@ type TemplateRelease struct {
 	Recommended   bool
 	CreatedBy     uint
 	UpdatedBy     uint
+	DeletedTs     int64
 }

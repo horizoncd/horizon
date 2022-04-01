@@ -55,6 +55,7 @@ type Member struct {
 	// TODO(tom): change go user
 	GrantedBy uint `gorm:"column:granted_by"`
 	CreatedBy uint `gorm:"column:created_by"`
+	DeletedTs int64
 }
 
 func (m *Member) BaseInfo() string {

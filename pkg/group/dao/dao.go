@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -356,7 +357,7 @@ func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 		return 0, err
 	}
 
-	result := db.Exec(common.GroupDelete, id)
+	result := db.Exec(common.GroupDelete, time.Now().Unix(), id)
 	if result.Error != nil {
 		return 0, herrors.NewErrDeleteFailed(herrors.GroupInDB, result.Error.Error())
 	}
@@ -411,6 +412,8 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 	sort := orm.FormatSortExp(query)
 	offset := (query.PageNumber - 1) * query.PageSize
 	var count int64
+	// set "deleted_ts = 0" condition
+	query.Keywords["deleted_ts"] = 0
 	result := db.Order(sort).Where(query.Keywords).Offset(offset).Limit(query.PageSize).Find(&groups).
 		Offset(-1).Count(&count)
 	if result.Error != nil {

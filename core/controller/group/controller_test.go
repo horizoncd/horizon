@@ -213,7 +213,7 @@ func TestGetAuthedGroups(t *testing.T) {
 	groups, err = myGroupCtl.ListAuthedGroup(normalUserContext)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(groups))
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 }
 
 func TestControllerCreateGroup(t *testing.T) {
@@ -348,7 +348,7 @@ func TestControllerCreateGroup(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 }
 
 func TestControllerDelete(t *testing.T) {
@@ -396,7 +396,7 @@ func TestControllerDelete(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 }
 
 func TestControllerGetByID(t *testing.T) {
@@ -464,7 +464,7 @@ func TestControllerGetByID(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 }
 
 func TestControllerGetByPath(t *testing.T) {
@@ -561,7 +561,8 @@ func TestControllerGetByPath(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&appmodels.Application{})
 }
 
 func TestControllerGetChildren(t *testing.T) {
@@ -661,8 +662,8 @@ func TestControllerGetChildren(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.Application{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&appmodels.Application{})
 }
 
 func TestControllerGetSubGroups(t *testing.T) {
@@ -758,7 +759,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 }
 
 func TestControllerSearchChildren(t *testing.T) {
@@ -868,7 +869,7 @@ func TestControllerSearchChildren(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 }
 
 func TestControllerSearchGroups(t *testing.T) {
@@ -1013,7 +1014,7 @@ func TestControllerSearchGroups(t *testing.T) {
 		})
 	}
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 }
 
 func TestControllerTransfer(t *testing.T) {
@@ -1085,7 +1086,7 @@ func TestControllerTransfer(t *testing.T) {
 	assert.Equal(t, "/c/a/b", group2.FullPath)
 	assert.Equal(t, strconv.Itoa(int(id3))+","+strconv.Itoa(int(id))+","+strconv.Itoa(int(id2)), group2.TraversalIDs)
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
 }
 
 func TestControllerUpdateBasic(t *testing.T) {
