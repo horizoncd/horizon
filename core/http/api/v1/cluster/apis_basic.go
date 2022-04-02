@@ -132,6 +132,9 @@ func (a *API) Create(c *gin.Context) {
 		}
 	}
 
+	if request.ExtraMembers == nil {
+		request.ExtraMembers = make(map[string]string)
+	}
 	for _, extraOwner := range extraOwners {
 		request.ExtraMembers[extraOwner] = role.Owner
 	}

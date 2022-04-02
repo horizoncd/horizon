@@ -77,6 +77,9 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 
+	if request.ExtraMembers == nil {
+		request.ExtraMembers = make(map[string]string)
+	}
 	for _, roleOfMember := range request.ExtraMembers {
 		if !role.CheckRoleIfValid(roleOfMember) {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("extra member is invalid"))
