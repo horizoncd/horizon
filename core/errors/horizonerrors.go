@@ -159,6 +159,7 @@ var (
 	ErrParamInvalid     = errors.New("parameter is invalid")
 	ErrDeadlineExceeded = errors.New("time limit exceeded")
 	ErrFailedToRollback = errors.New("failed to rollback")
+	ErrGenerateRandomID = errors.New("failed to generate random id")
 	// ErrInternal = errors.New("internal error")
 
 	// http

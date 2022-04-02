@@ -40,7 +40,8 @@ func (a *API) Get(c *gin.Context) {
 	appIDStr := c.Param(_applicationIDParam)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid appID: %s, err: %s",
+			appIDStr, err.Error())))
 		return
 	}
 	var res *application.GetApplicationResponse
@@ -60,10 +61,12 @@ func (a *API) Get(c *gin.Context) {
 }
 
 func (a *API) Create(c *gin.Context) {
+	const op = "application: create"
 	groupIDStr := c.Param(_groupIDParam)
 	groupID, err := strconv.ParseUint(groupIDStr, 10, 0)
 	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid groupID: %s, err: %s",
+			groupIDStr, err.Error())))
 		return
 	}
 
@@ -71,44 +74,65 @@ func (a *API) Create(c *gin.Context) {
 
 	var request *application.CreateApplicationRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestBody,
-			fmt.Sprintf("request body is invalid, err: %v", err))
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid request body, err: %s",
+			err.Error())))
 		return
 	}
 	resp, err := a.applicationCtl.CreateApplication(c, uint(groupID), extraOwners, request)
 	if err != nil {
-		response.AbortWithError(c, err)
+		if perror.Cause(err) == herrors.ErrNameConflict {
+			response.AbortWithRPCError(c, rpcerror.ConflictError.WithErrMsg(err.Error()))
+			return
+		} else if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.SuccessWithData(c, resp)
 }
 
 func (a *API) Update(c *gin.Context) {
+	const op = "application: update"
 	var request *application.UpdateApplicationRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestBody,
-			fmt.Sprintf("request body is invalid, err: %v", err))
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid request body, err: %s",
+			err.Error())))
 		return
 	}
 	appIDStr := c.Param(_applicationIDParam)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 		return
 	}
 	resp, err := a.applicationCtl.UpdateApplication(c, uint(appID), request)
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.ApplicationInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+		} else if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.SuccessWithData(c, resp)
 }
 
 func (a *API) Transfer(c *gin.Context) {
+	const op = "application: transfer"
 	appIDStr := c.Param(_applicationIDParam)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid appID: %s, err: %s",
+			appIDStr, err.Error())))
 		return
 	}
 
@@ -122,30 +146,42 @@ func (a *API) Transfer(c *gin.Context) {
 	err = a.applicationCtl.Transfer(c, uint(appID), uint(groupID))
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			if e.Source == herrors.GroupInDB {
-				response.AbortWithRequestError(c, "GroupNotExist", err.Error())
-				return
-			} else if e.Source == herrors.ApplicationInDB {
-				response.AbortWithNotExistError(c, err.Error())
+			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 				return
 			}
-		} else {
-			response.AbortWithInternalError(c, err.Error())
+		} else if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 			return
 		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithInternalError(c, err.Error())
+		return
 	}
 	response.Success(c)
 }
 
 func (a *API) Delete(c *gin.Context) {
+	const op = "application: delete"
 	appIDStr := c.Param(_applicationIDParam)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid appID: %s, err: %s",
+			appIDStr, err.Error())))
 		return
 	}
 	if err := a.applicationCtl.DeleteApplication(c, uint(appID)); err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+		} else if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 	response.Success(c)
@@ -153,9 +189,11 @@ func (a *API) Delete(c *gin.Context) {
 
 // SearchApplication search all applications
 func (a *API) SearchApplication(c *gin.Context) {
+	const op = "application: search application"
 	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid pageNumber or "+
+			"pageSize, err: %s", err.Error())))
 		return
 	}
 
@@ -166,7 +204,17 @@ func (a *API) SearchApplication(c *gin.Context) {
 		PageNumber: pageNumber,
 	})
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+		} else if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 
@@ -178,9 +226,11 @@ func (a *API) SearchApplication(c *gin.Context) {
 
 // SearchMyApplication search all applications that authorized to current user
 func (a *API) SearchMyApplication(c *gin.Context) {
+	const op = "application: search my application"
 	pageNumber, pageSize, err := request.GetPageParam(c)
 	if err != nil {
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid pageNumber or "+
+			"pageSize, err: %s", err.Error())))
 		return
 	}
 
@@ -191,6 +241,16 @@ func (a *API) SearchMyApplication(c *gin.Context) {
 		PageNumber: pageNumber,
 	})
 	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+		} else if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}

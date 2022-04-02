@@ -360,7 +360,7 @@ func (a *API) GetContainers(c *gin.Context) {
 	outPut, err := a.clusterCtl.GetContainers(c, uint(clusterID), podName)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			if e.Source == herrors.ClusterInDB || e.Source == herrors.ApplicationInDB {
+			if e.Source == herrors.ClusterInDB || e.Source == herrors.ApplicationInDB || e.Source == herrors.PodsInK8S {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 				return
 			}

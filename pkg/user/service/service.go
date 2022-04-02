@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/sets"
 )
@@ -41,7 +42,8 @@ func (s *service) CheckUsersExists(ctx context.Context, emails []string) error {
 	}
 	for _, email := range emails {
 		if !userEmailSet.Has(email) {
-			return fmt.Errorf("user with email %s not exists, please login in horizon first", email)
+			return herrors.NewErrNotFound(herrors.UserInDB,
+				fmt.Sprintf("user with email %s not exists, please login in horizon first", email))
 		}
 	}
 	return nil
