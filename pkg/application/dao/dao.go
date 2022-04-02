@@ -234,6 +234,9 @@ func (d *dao) Create(ctx context.Context, application *models.Application,
 
 		// the extra members
 		for extraMember, roleOfMember := range extraMembers {
+			if extraMember.ID == application.CreatedBy {
+				continue
+			}
 			members = append(members, &membermodels.Member{
 				ResourceType: membermodels.TypeApplication,
 				ResourceID:   application.ID,

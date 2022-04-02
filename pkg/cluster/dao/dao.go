@@ -75,6 +75,9 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 
 		// the extra owners
 		for extraMember, roleOfMember := range extraMembers {
+			if extraMember.ID == cluster.CreatedBy {
+				continue
+			}
 			members = append(members, &membermodels.Member{
 				ResourceType: membermodels.TypeApplicationCluster,
 				ResourceID:   cluster.ID,
