@@ -26,7 +26,7 @@ type CreateApplicationRequest struct {
 	Base
 
 	Name         string            `json:"name"`
-	ExtraMembers map[string]string `json:"extra_members"`
+	ExtraMembers map[string]string `json:"extraMembers"`
 }
 
 // UpdateApplicationRequest holds the parameters required to update an application
