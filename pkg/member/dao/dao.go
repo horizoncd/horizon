@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
+	memberctx "g.hz.netease.com/horizon/pkg/member/context"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"gorm.io/gorm"
@@ -20,6 +21,8 @@ type DAO interface {
 	Delete(ctx context.Context, memberID uint) error
 	UpdateByID(ctx context.Context, memberID uint, role string) (*models.Member, error)
 	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
+		resourceID uint) ([]models.Member, error)
+	ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
 	ListResourceOfMemberInfo(ctx context.Context, resourceType models.ResourceType, memberInfo uint) ([]uint, error)
 }
@@ -133,6 +136,23 @@ func (d *dao) ListDirectMember(ctx context.Context, resourceType models.Resource
 	result := db.Raw(common.MemberSelectAll, resourceType, resourceID).Scan(&members)
 	if result.Error != nil {
 		return nil, result.Error
+	}
+	return members, nil
+}
+
+func (d *dao) ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
+	resourceID uint) ([]models.Member, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var members []models.Member
+	if emails, ok := ctx.Value(memberctx.ContextEmails).([]string); ok {
+		result := db.Raw(common.MemberSelectByUserEmails, resourceType, resourceID, emails).Scan(&members)
+		if result.Error != nil {
+			return nil, result.Error
+		}
 	}
 	return members, nil
 }

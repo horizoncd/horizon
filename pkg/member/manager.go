@@ -33,6 +33,10 @@ type Manager interface {
 	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
 
+	// ListDirectMemberOnCondition List the direct member of the resource on condition
+	ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
+		resourceID uint) ([]models.Member, error)
+
 	// ListResourceOfMemberInfo list the resource id of the specified resourceType and memberInfo
 	ListResourceOfMemberInfo(ctx context.Context,
 		resourceType models.ResourceType, memberInfo uint) ([]uint, error)
@@ -70,6 +74,11 @@ func (m *manager) DeleteMember(ctx context.Context, memberID uint) error {
 func (m *manager) ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 	resourceID uint) ([]models.Member, error) {
 	return m.dao.ListDirectMember(ctx, resourceType, resourceID)
+}
+
+func (m *manager) ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
+	resourceID uint) ([]models.Member, error) {
+	return m.dao.ListDirectMemberOnCondition(ctx, resourceType, resourceID)
 }
 
 func (m *manager) ListResourceOfMemberInfo(ctx context.Context,

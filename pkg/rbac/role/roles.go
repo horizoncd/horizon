@@ -22,9 +22,10 @@ const (
 )
 
 const (
+	PE         string = "pe"
 	Owner      string = "owner"
 	Maintainer string = "maintainer"
-	PE         string = "pe"
+	Guest      string = "guest"
 )
 
 var (
@@ -151,4 +152,8 @@ func (fRole *fileRoleService) RoleCompare(ctx context.Context, role1, role2 stri
 	} else {
 		return RoleEqual, nil
 	}
+}
+
+func CheckRoleIfValid(role string) bool {
+	return role == Owner || role == Maintainer || role == PE || role == Guest
 }

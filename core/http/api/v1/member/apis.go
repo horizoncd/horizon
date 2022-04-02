@@ -7,9 +7,11 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/member"
+	memberctx "g.hz.netease.com/horizon/pkg/member/context"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/response"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,6 +21,8 @@ const (
 	_paramApplicationClusterID = "clusterID"
 	_paramMemberID             = "memberID"
 	_querySelf                 = "self"
+	_queryEmail                = "email"
+	_queryDirectMemberOnly     = "directMemberOnly"
 )
 
 type API struct {
@@ -285,15 +289,19 @@ func (a *API) ListApplicationClusterMember(c *gin.Context) {
 		return
 	}
 
-	querySelfStr, ok := c.GetQuery(_querySelf)
-	querySelf := false
-	if ok {
-		querySelf, err = strconv.ParseBool(querySelfStr)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam,
-				fmt.Sprintf("%v", err))
-			return
-		}
+	querySelf, err := strconv.ParseBool(c.DefaultQuery(_querySelf, "false"))
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("%v", err))
+		return
+	}
+
+	emails, emailOK := c.GetQueryArray(_queryEmail)
+	directMemberOnly, err := strconv.ParseBool(c.DefaultQuery(_queryDirectMemberOnly, "false"))
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("%v", err))
+		return
 	}
 
 	membersResp := response.DataWithTotal{}
@@ -303,12 +311,18 @@ func (a *API) ListApplicationClusterMember(c *gin.Context) {
 			response.AbortWithError(c, err)
 			return
 		}
-		if nil != memberInfo {
+		if memberInfo != nil {
 			membersResp.Items = []member.Member{*memberInfo}
 			membersResp.Total = 1
 		}
 	} else {
-		members, err := a.memberCtrl.ListMember(c, membermodels.TypeApplicationClusterStr, uint(uintID))
+		var ctx context.Context
+		ctx = context.WithValue(c, memberctx.ContextDirectMemberOnly, directMemberOnly)
+		if emailOK {
+			ctx = context.WithValue(ctx, memberctx.ContextQueryOnCondition, true)
+			ctx = context.WithValue(ctx, memberctx.ContextEmails, emails)
+		}
+		members, err := a.memberCtrl.ListMember(ctx, membermodels.TypeApplicationClusterStr, uint(uintID))
 		if err != nil {
 			response.AbortWithError(c, err)
 			return

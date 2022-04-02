@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
@@ -17,6 +18,7 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"k8s.io/client-go/tools/remotecommand"
 
 	"gopkg.in/igm/sockjs-go.v3/sockjs"
@@ -54,6 +56,8 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo) Controller {
 
 func (c *controller) GetTerminalID(ctx context.Context, clusterID uint, podName,
 	containerName string) (*SessionIDResp, error) {
+	const op = "terminal: get terminal id"
+	defer wlog.Start(ctx, op).StopPrint()
 	sessionID := &SessionIDResp{}
 	randomID, err := genRandomID()
 	if err != nil {
@@ -65,7 +69,9 @@ func (c *controller) GetTerminalID(ctx context.Context, clusterID uint, podName,
 }
 
 func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (http.Handler, error) {
-	const op = "terminal: sockjs"
+	const op = "terminal: get sockjs handler"
+	defer wlog.Start(ctx, op).StopPrint()
+
 	clusterID, podName, containerName, randomID, err := parseSessionID(sessionID)
 	if err != nil {
 		return nil, errors.E(op, err)
@@ -73,32 +79,32 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	kubeConfig, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, regionEntity.K8SCluster.Server)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	ref := ContainerRef{
@@ -125,41 +131,44 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 
 func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 	containerName string) (string, http.Handler, error) {
+	const op = "terminal controller: create shell"
+	defer wlog.Start(ctx, op).StopPrint()
+
 	// 1. 获取各类关联资源
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return "", nil, perror.WithMessage(err, "failed to get cluster by id when creating shell")
+		return "", nil, err
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return "", nil, perror.WithMessage(err, "failed to get application by id when creating shell")
+		return "", nil, err
 	}
 
 	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
-		return "", nil, perror.WithMessage(err, "failed to get environment-region by id when creating shell")
+		return "", nil, err
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
-		return "", nil, perror.WithMessage(err, "failed to get region by name when creating shell")
+		return "", nil, err
 	}
 
 	kubeConfig, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, regionEntity.K8SCluster.Server)
 	if err != nil {
-		return "", nil, perror.WithMessage(err, "failed to get k8s info by server addr when creating shell")
+		return "", nil, err
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return "", nil, perror.WithMessage(err, "failed to get envValue by cluster when creating shell")
+		return "", nil, err
 	}
 
 	// 2. 生成随机数，作为session id
 	randomID, err := genRandomID()
 	if err != nil {
-		return "", nil, perror.WithMessage(err, "failed to generate session id when creating shell")
+		return "", nil, err
 	}
 
 	ref := ContainerRef{
@@ -189,7 +198,7 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 func genRandomID() (string, error) {
 	bytes := make([]byte, 5)
 	if _, err := rand.Read(bytes); err != nil {
-		return "", err
+		return "", perror.Wrap(herrors.ErrGenerateRandomID, err.Error())
 	}
 	id := make([]byte, hex.EncodedLen(len(bytes)))
 	hex.Encode(id, bytes)
