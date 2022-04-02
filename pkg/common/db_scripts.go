@@ -29,7 +29,7 @@ const (
 	MemberSelectAll          = "select * from tb_member where resource_type = ? and resource_id = ? and deleted_at is null"
 	MemberSelectByUserEmails = "select tb_member.* from tb_member join tb_user on tb_member.membername_id = tb_user.id" +
 		" where tb_member.resource_type = ? and tb_member.resource_id = ? and tb_user.email in ?" +
-		" and tb_member.deleted_at is null and tb_user.deleted_at is null"
+		" and tb_member.member_type = 0 and tb_member.deleted_at is null and tb_user.deleted_at is null"
 	MemberListResource = "select resource_id from tb_member where resource_type = ? and" +
 		" membername_id = ? and deleted_at is null"
 )
