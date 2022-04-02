@@ -289,19 +289,21 @@ func (a *API) ListApplicationClusterMember(c *gin.Context) {
 		return
 	}
 
-	querySelfStr, ok := c.GetQuery(_querySelf)
-	querySelf := false
-	if ok {
-		querySelf, err = strconv.ParseBool(querySelfStr)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam,
-				fmt.Sprintf("%v", err))
-			return
-		}
+	querySelf, err := strconv.ParseBool(c.DefaultQuery(_querySelf, "false"))
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("%v", err))
+		return
 	}
 
 	emails, emailOK := c.GetQueryArray(_queryEmail)
-	directMemberOnly := c.GetBool(_queryDirectMemberOnly)
+	directMemberOnly, err := strconv.ParseBool(c.DefaultQuery(_queryDirectMemberOnly, "false"))
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("%v", err))
+		return
+	}
+
 	membersResp := response.DataWithTotal{}
 	if querySelf {
 		memberInfo, err := a.memberCtrl.GetMemberOfResource(c, membermodels.TypeApplicationClusterStr, uint(uintID))
