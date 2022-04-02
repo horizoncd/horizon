@@ -203,7 +203,6 @@ func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []st
 		}
 		return applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
-	time.Now().Unix()
 	return applications, result.Error
 }
 
