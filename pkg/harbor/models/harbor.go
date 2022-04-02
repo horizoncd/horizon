@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
+)
 
 type Harbor struct {
 	gorm.Model
@@ -8,5 +11,5 @@ type Harbor struct {
 	Server          string
 	Token           string
 	PreheatPolicyID int
-	DeletedTs       int64
+	DeletedTs       soft_delete.DeletedAt
 }

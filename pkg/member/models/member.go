@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
 )
 
 type ResourceType string
@@ -55,7 +56,7 @@ type Member struct {
 	// TODO(tom): change go user
 	GrantedBy uint `gorm:"column:granted_by"`
 	CreatedBy uint `gorm:"column:created_by"`
-	DeletedTs int64
+	DeletedTs soft_delete.DeletedAt
 }
 
 func (m *Member) BaseInfo() string {

@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
+)
 
 type Priority string
 
@@ -24,5 +27,5 @@ type Application struct {
 	TemplateRelease string
 	CreatedBy       uint
 	UpdatedBy       uint
-	DeletedTs       int64
+	DeletedTs       soft_delete.DeletedAt
 }

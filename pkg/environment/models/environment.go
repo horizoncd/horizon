@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
+)
 
 type Environment struct {
 	gorm.Model
@@ -9,7 +12,7 @@ type Environment struct {
 	DisplayName string
 	CreatedBy   uint
 	UpdatedBy   uint
-	DeletedTs   int64
+	DeletedTs   soft_delete.DeletedAt
 }
 
 type EnvironmentList []*Environment

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
 )
 
 type Group struct {
@@ -16,7 +17,7 @@ type Group struct {
 	TraversalIDs    string
 	CreatedBy       uint
 	UpdatedBy       uint
-	DeletedTs       int64
+	DeletedTs       soft_delete.DeletedAt
 }
 
 type GroupOrApplication struct {

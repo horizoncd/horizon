@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
+)
 
 type K8SCluster struct {
 	gorm.Model
@@ -10,7 +13,7 @@ type K8SCluster struct {
 	IngressDomain string
 	CreatedBy     uint
 	UpdatedBy     uint
-	DeletedTs     int64
+	DeletedTs     soft_delete.DeletedAt
 }
 
 func (K8SCluster) TableName() string {

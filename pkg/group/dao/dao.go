@@ -392,8 +392,6 @@ func (d *dao) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Gr
 	var groups []*models.Group
 
 	sort := orm.FormatSortExp(query)
-	// set "deleted_ts = 0" condition
-	query.Keywords["deleted_ts"] = 0
 	result := db.Order(sort).Where(query.Keywords).Find(&groups)
 
 	if result.Error != nil {
@@ -414,8 +412,6 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 	sort := orm.FormatSortExp(query)
 	offset := (query.PageNumber - 1) * query.PageSize
 	var count int64
-	// set "deleted_ts = 0" condition
-	query.Keywords["deleted_ts"] = 0
 	result := db.Order(sort).Where(query.Keywords).Offset(offset).Limit(query.PageSize).Find(&groups).
 		Offset(-1).Count(&count)
 	if result.Error != nil {

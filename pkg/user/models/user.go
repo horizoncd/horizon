@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
+)
 
 type User struct {
 	gorm.Model
@@ -11,5 +14,5 @@ type User struct {
 	OIDCId    string `gorm:"column:oidc_id"`
 	OIDCType  string `gorm:"column:oidc_type"`
 	Admin     bool
-	DeletedTs int64
+	DeletedTs soft_delete.DeletedAt
 }

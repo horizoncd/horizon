@@ -2,6 +2,7 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
 )
 
 type EnvironmentRegion struct {
@@ -12,5 +13,5 @@ type EnvironmentRegion struct {
 	Disabled        bool
 	CreatedBy       uint
 	UpdatedBy       uint
-	DeletedTs       int64
+	DeletedTs       soft_delete.DeletedAt
 }
