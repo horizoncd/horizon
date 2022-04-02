@@ -31,7 +31,7 @@ type Controller interface {
 	// GetApplication get an application
 	GetApplication(ctx context.Context, id uint) (*GetApplicationResponse, error)
 	// CreateApplication create an application
-	CreateApplication(ctx context.Context, groupID uint, extraOwners []string,
+	CreateApplication(ctx context.Context, groupID uint,
 		request *CreateApplicationRequest) (*GetApplicationResponse, error)
 	// UpdateApplication update an application
 	UpdateApplication(ctx context.Context, id uint,
@@ -120,7 +120,7 @@ func (c *controller) postHook(ctx context.Context, eventType hook.EventType, con
 	}
 }
 
-func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraOwners []string,
+func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	request *CreateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: create application"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -130,8 +130,15 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 		return nil, err
 	}
 
+	extraMembers := request.ExtraMembers
+
+	users := make([]string, 0, len(extraMembers))
+	for member := range extraMembers {
+		users = append(users, member)
+	}
+
 	// 1. validate
-	err = c.userSvc.CheckUsersExists(ctx, extraOwners)
+	err = c.userSvc.CheckUsersExists(ctx, users)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +192,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 	applicationModel := request.toApplicationModel(groupID)
 	applicationModel.CreatedBy = currentUser.GetID()
 	applicationModel.UpdatedBy = currentUser.GetID()
-	applicationModel, err = c.applicationMgr.Create(ctx, applicationModel, extraOwners)
+	applicationModel, err = c.applicationMgr.Create(ctx, applicationModel, extraMembers)
 	if err != nil {
 		return nil, err
 	}

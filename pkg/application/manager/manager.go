@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
 
 var (
@@ -15,6 +16,8 @@ var (
 	Mgr = New()
 )
 
+// nolint
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/application/manager/manager.go -package=mock_manager
 type Manager interface {
 	GetByID(ctx context.Context, id uint) (*models.Application, error)
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
@@ -24,7 +27,8 @@ type Manager interface {
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
 	// GetByNameFuzzilyByPagination get applications that fuzzily matching the given name
 	GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int, []*models.Application, error)
-	Create(ctx context.Context, application *models.Application, extraOwners []string) (*models.Application, error)
+	Create(ctx context.Context, application *models.Application,
+		extraMembers map[string]string) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
 	Transfer(ctx context.Context, id uint, groupID uint) error
@@ -88,13 +92,23 @@ func (m *manager) GetByName(ctx context.Context, name string) (*models.Applicati
 }
 
 func (m *manager) Create(ctx context.Context, application *models.Application,
-	extraOwners []string) (*models.Application, error) {
-	users, err := m.userDAO.ListByEmail(ctx, extraOwners)
+	extraMembers map[string]string) (*models.Application, error) {
+	emails := make([]string, 0, len(extraMembers))
+	for k := range extraMembers {
+		emails = append(emails, k)
+	}
+
+	users, err := m.userDAO.ListByEmail(ctx, emails)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.applicationDAO.Create(ctx, application, users)
+	extraMembersWithUser := make(map[*usermodels.User]string)
+	for _, user := range users {
+		extraMembersWithUser[user] = extraMembers[user.Email]
+	}
+
+	return m.applicationDAO.Create(ctx, application, extraMembersWithUser)
 }
 
 func (m *manager) UpdateByID(ctx context.Context,

@@ -331,7 +331,7 @@ func RenderOutputObject(outPutStr, templateName string,
 }
 
 func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
-	environment, region string, extraOwners []string, r *CreateClusterRequest) (_ *GetClusterResponse, err error) {
+	environment, region string, r *CreateClusterRequest) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -359,7 +359,12 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, err
 	}
 
-	err = c.userSvc.CheckUsersExists(ctx, extraOwners)
+	users := make([]string, 0, len(r.ExtraMembers))
+	for member := range r.ExtraMembers {
+		users = append(users, member)
+	}
+
+	err = c.userSvc.CheckUsersExists(ctx, users)
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +424,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 8. create cluster in db
-	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags, extraOwners)
+	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags, r.ExtraMembers)
 	if err != nil {
 		return nil, err
 	}
