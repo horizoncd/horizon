@@ -268,6 +268,9 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ in
 	if err != nil {
 		return nil, err
 	}
+	if len(clusterFiles) == 0 {
+		return nil, nil
+	}
 
 	log.Debugf(ctx, "clusterFiles = %+v, outputStr = %+v", clusterFiles, outputStr)
 
