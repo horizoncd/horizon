@@ -280,6 +280,11 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 	// 2. check yaml format ok
 	var clusterValueFiles []ClusterValueFile
 	for _, oneCase := range cases {
+		if oneCase.err != nil {
+			if _, ok := perror.Cause(oneCase.err).(*herrors.HorizonErrNotFound); ok {
+				continue
+			}
+		}
 		var out map[interface{}]interface{}
 		err = yaml.Unmarshal(oneCase.retBytes, &out)
 		if err != nil {
