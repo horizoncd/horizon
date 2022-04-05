@@ -1,17 +1,15 @@
 package models
 
 import (
-	"gorm.io/gorm"
-	"gorm.io/plugin/soft_delete"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type EnvironmentRegion struct {
-	gorm.Model
+	global.Model
 
 	EnvironmentName string
 	RegionName      string
 	Disabled        bool
 	CreatedBy       uint
 	UpdatedBy       uint
-	DeletedTs       soft_delete.DeletedAt
 }

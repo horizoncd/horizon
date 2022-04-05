@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	usermock "g.hz.netease.com/horizon/mock/pkg/user/manager"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
@@ -26,14 +26,14 @@ func Test(t *testing.T) {
 
 	users := []models.User{
 		{
-			Model: gorm.Model{
+			Model: global.Model{
 				ID: 1,
 			},
 			Name:     "name1",
 			FullName: "Name1",
 			Email:    "name1@example.com",
 		}, {
-			Model: gorm.Model{
+			Model: global.Model{
 				ID: 2,
 			},
 			Name:     "name2",

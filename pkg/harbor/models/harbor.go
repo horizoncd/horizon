@@ -1,15 +1,13 @@
 package models
 
 import (
-	"gorm.io/gorm"
-	"gorm.io/plugin/soft_delete"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type Harbor struct {
-	gorm.Model
+	global.Model
 
 	Server          string
 	Token           string
 	PreheatPolicyID int
-	DeletedTs       soft_delete.DeletedAt
 }

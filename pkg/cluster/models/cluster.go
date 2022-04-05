@@ -1,12 +1,11 @@
 package models
 
 import (
-	"gorm.io/gorm"
-	"gorm.io/plugin/soft_delete"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type Cluster struct {
-	gorm.Model
+	global.Model
 
 	ApplicationID       uint
 	Name                string
@@ -20,7 +19,6 @@ type Cluster struct {
 	EnvironmentRegionID uint
 	CreatedBy           uint
 	UpdatedBy           uint
-	DeletedTs           soft_delete.DeletedAt
 }
 
 type ClusterWithEnvAndRegion struct {

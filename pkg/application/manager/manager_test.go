@@ -15,6 +15,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 
@@ -45,7 +46,7 @@ func Test(t *testing.T) {
 
 	groupDAO := groupdao.NewDAO()
 	group, err := groupDAO.Create(ctx, &groupmodels.Group{
-		Model:    gorm.Model{},
+		Model:    global.Model{},
 		Name:     "group1",
 		Path:     "/group1",
 		ParentID: 0,
@@ -54,7 +55,7 @@ func Test(t *testing.T) {
 	assert.NotNil(t, group)
 
 	group1, err := groupDAO.Create(ctx, &groupmodels.Group{
-		Model:    gorm.Model{},
+		Model:    global.Model{},
 		Name:     "group2",
 		Path:     "/group2",
 		ParentID: 0,

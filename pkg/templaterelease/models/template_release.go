@@ -1,12 +1,12 @@
 package models
 
 import (
-	"gorm.io/gorm"
-	"gorm.io/plugin/soft_delete"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type TemplateRelease struct {
-	gorm.Model
+	global.Model
+
 	TemplateName  string
 	Name          string
 	Description   string
@@ -14,5 +14,4 @@ type TemplateRelease struct {
 	Recommended   bool
 	CreatedBy     uint
 	UpdatedBy     uint
-	DeletedTs     soft_delete.DeletedAt
 }

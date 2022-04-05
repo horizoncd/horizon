@@ -3,12 +3,11 @@ package models
 import (
 	"strings"
 
-	"gorm.io/gorm"
-	"gorm.io/plugin/soft_delete"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type Group struct {
-	gorm.Model
+	global.Model
 	Name            string
 	Path            string
 	VisibilityLevel string
@@ -17,11 +16,10 @@ type Group struct {
 	TraversalIDs    string
 	CreatedBy       uint
 	UpdatedBy       uint
-	DeletedTs       soft_delete.DeletedAt
 }
 
 type GroupOrApplication struct {
-	gorm.Model
+	global.Model
 	Name        string
 	Path        string
 	Description string

@@ -3,13 +3,11 @@ package models
 import (
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	"g.hz.netease.com/horizon/pkg/k8scluster/models"
-	"gorm.io/plugin/soft_delete"
-
-	"gorm.io/gorm"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type Region struct {
-	gorm.Model
+	global.Model
 
 	Name         string
 	DisplayName  string
@@ -17,7 +15,6 @@ type Region struct {
 	HarborID     uint `gorm:"column:harbor_id"`
 	CreatedBy    uint
 	UpdatedBy    uint
-	DeletedTs    soft_delete.DeletedAt
 }
 
 // RegionEntity region entity, region with its k8sCluster and Harbor

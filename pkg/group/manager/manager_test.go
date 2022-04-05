@@ -17,6 +17,7 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/server/global"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -299,7 +300,7 @@ func TestManagerGetChildren(t *testing.T) {
 			},
 			want: []*models.GroupOrApplication{
 				{
-					Model: gorm.Model{
+					Model: global.Model{
 						ID:        g2.ID,
 						UpdatedAt: g2.UpdatedAt,
 					},
@@ -309,7 +310,7 @@ func TestManagerGetChildren(t *testing.T) {
 					Description: "",
 				},
 				{
-					Model: gorm.Model{
+					Model: global.Model{
 						ID:        g1.ID,
 						UpdatedAt: g1.UpdatedAt,
 					},
@@ -330,7 +331,7 @@ func TestManagerGetChildren(t *testing.T) {
 			},
 			want: []*models.GroupOrApplication{
 				{
-					Model: gorm.Model{
+					Model: global.Model{
 						ID:        a1.ID,
 						UpdatedAt: a1.UpdatedAt,
 					},

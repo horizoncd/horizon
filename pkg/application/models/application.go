@@ -1,8 +1,7 @@
 package models
 
 import (
-	"gorm.io/gorm"
-	"gorm.io/plugin/soft_delete"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type Priority string
@@ -15,7 +14,7 @@ const (
 )
 
 type Application struct {
-	gorm.Model
+	global.Model
 	GroupID         uint
 	Name            string
 	Description     string
@@ -27,5 +26,4 @@ type Application struct {
 	TemplateRelease string
 	CreatedBy       uint
 	UpdatedBy       uint
-	DeletedTs       soft_delete.DeletedAt
 }

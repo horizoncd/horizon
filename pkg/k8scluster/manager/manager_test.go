@@ -7,6 +7,7 @@ import (
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/k8scluster/models"
+	"g.hz.netease.com/horizon/pkg/server/global"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -23,7 +24,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, len(k8sClusters), 0)
 
 	k8sCluster, err := Mgr.Create(ctx, &models.K8SCluster{
-		Model:         gorm.Model{},
+		Model:         global.Model{},
 		Name:          "hz",
 		Server:        "server",
 		Certificate:   "i am a Certificate",

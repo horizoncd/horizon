@@ -19,6 +19,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -179,7 +180,7 @@ func TestGetAuthedGroups(t *testing.T) {
 	})
 	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
 		&membermodels.Member{
-			Model:        gorm.Model{},
+			Model:        global.Model{},
 			ResourceType: "",
 			ResourceID:   0,
 			Role:         "",
@@ -190,7 +191,7 @@ func TestGetAuthedGroups(t *testing.T) {
 		}, nil).Times(1)
 	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
 		&membermodels.Member{
-			Model:        gorm.Model{},
+			Model:        global.Model{},
 			ResourceType: "",
 			ResourceID:   0,
 			Role:         role.Owner,
@@ -201,7 +202,7 @@ func TestGetAuthedGroups(t *testing.T) {
 		}, nil).Times(1)
 	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
 		&membermodels.Member{
-			Model:        gorm.Model{},
+			Model:        global.Model{},
 			ResourceType: "",
 			ResourceID:   0,
 			Role:         role.Maintainer,
@@ -1180,7 +1181,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 				groupID: 10,
 				groups: []*models.Group{
 					{
-						Model: gorm.Model{
+						Model: global.Model{
 							ID: 1,
 						},
 						Name:         "1",
@@ -1199,7 +1200,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 				groupID: 1,
 				groups: []*models.Group{
 					{
-						Model: gorm.Model{
+						Model: global.Model{
 							ID: 1,
 						},
 						Name:         "1",
@@ -1208,7 +1209,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     0,
 					},
 					{
-						Model: gorm.Model{
+						Model: global.Model{
 							ID: 2,
 						},
 						Name:         "2",
@@ -1217,7 +1218,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     1,
 					},
 					{
-						Model: gorm.Model{
+						Model: global.Model{
 							ID: 3,
 						},
 						Name:         "3",
@@ -1226,7 +1227,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     2,
 					},
 					{
-						Model: gorm.Model{
+						Model: global.Model{
 							ID: 4,
 						},
 						Name:         "4",
@@ -1235,7 +1236,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     1,
 					},
 					{
-						Model: gorm.Model{
+						Model: global.Model{
 							ID: 5,
 						},
 						Name:         "5",
@@ -1246,7 +1247,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 				},
 				applications: []*appmodels.Application{
 					{
-						Model: gorm.Model{
+						Model: global.Model{
 							ID: 6,
 						},
 						Name:    "f",
