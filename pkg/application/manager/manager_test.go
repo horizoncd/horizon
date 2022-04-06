@@ -89,7 +89,7 @@ func Test(t *testing.T) {
 		CreatedBy:       createdBy,
 		UpdatedBy:       updatedBy,
 	}
-	application, err = Mgr.Create(ctx, application, []string{user2.Email})
+	application, err = Mgr.Create(ctx, application, map[string]string{user2.Email: role.Owner})
 	assert.Nil(t, err)
 
 	assert.Equal(t, name, application.Name)

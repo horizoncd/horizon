@@ -29,7 +29,7 @@ var (
 
 type DAO interface {
 	Create(ctx context.Context, cluster *models.Cluster,
-		clusterTags []*clustertagmodels.ClusterTag, extraOwners []*usermodels.User) (*models.Cluster, error)
+		clusterTags []*clustertagmodels.ClusterTag, extraMembers map[*usermodels.User]string) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
@@ -51,7 +51,7 @@ func NewDAO() DAO {
 }
 
 func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
-	clusterTags []*clustertagmodels.ClusterTag, extraOwners []*usermodels.User) (*models.Cluster, error) {
+	clusterTags []*clustertagmodels.ClusterTag, extraMembers map[*usermodels.User]string) (*models.Cluster, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -75,13 +75,16 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 		})
 
 		// the extra owners
-		for _, extraOwner := range extraOwners {
+		for extraMember, roleOfMember := range extraMembers {
+			if extraMember.ID == cluster.CreatedBy {
+				continue
+			}
 			members = append(members, &membermodels.Member{
 				ResourceType: membermodels.TypeApplicationCluster,
 				ResourceID:   cluster.ID,
-				Role:         role.Owner,
+				Role:         roleOfMember,
 				MemberType:   membermodels.MemberUser,
-				MemberNameID: extraOwner.ID,
+				MemberNameID: extraMember.ID,
 				GrantedBy:    cluster.CreatedBy,
 			})
 		}

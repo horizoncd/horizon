@@ -343,7 +343,7 @@ func Test(t *testing.T) {
 	}
 
 	// create application
-	resp, err := c.CreateApplication(ctx, group.ID, nil, createRequest)
+	resp, err := c.CreateApplication(ctx, group.ID, createRequest)
 	if err != nil {
 		t.Logf("%v", err)
 		t.Fatal(err)
@@ -351,7 +351,7 @@ func Test(t *testing.T) {
 	t.Logf("%v", resp)
 
 	// create application again, end with error
-	_, err = c.CreateApplication(ctx, group.ID, nil, createRequest)
+	_, err = c.CreateApplication(ctx, group.ID, createRequest)
 	assert.NotNil(t, err)
 
 	updatedDescription := "updated description"

@@ -25,7 +25,8 @@ type TemplateInput struct {
 type CreateApplicationRequest struct {
 	Base
 
-	Name string `json:"name"`
+	Name         string            `json:"name"`
+	ExtraMembers map[string]string `json:"extraMembers"`
 }
 
 // UpdateApplicationRequest holds the parameters required to update an application

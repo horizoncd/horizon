@@ -3,10 +3,8 @@ package application
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"regexp"
 
-	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
@@ -33,7 +31,7 @@ type Controller interface {
 	// GetApplication get an application
 	GetApplication(ctx context.Context, id uint) (*GetApplicationResponse, error)
 	// CreateApplication create an application
-	CreateApplication(ctx context.Context, groupID uint, extraOwners []string,
+	CreateApplication(ctx context.Context, groupID uint,
 		request *CreateApplicationRequest) (*GetApplicationResponse, error)
 	// UpdateApplication update an application
 	UpdateApplication(ctx context.Context, id uint,
@@ -122,7 +120,7 @@ func (c *controller) postHook(ctx context.Context, eventType hook.EventType, con
 	}
 }
 
-func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraOwners []string,
+func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	request *CreateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: create application"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -132,44 +130,45 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 		return nil, err
 	}
 
+	extraMembers := request.ExtraMembers
+
+	users := make([]string, 0, len(extraMembers))
+	for member := range extraMembers {
+		users = append(users, member)
+	}
+
 	// 1. validate
-	err = c.userSvc.CheckUsersExists(ctx, extraOwners)
+	err = c.userSvc.CheckUsersExists(ctx, users)
 	if err != nil {
-		return nil, errors.E(op, http.StatusBadRequest, errors.ErrorCode(common.InvalidRequestParam), err)
+		return nil, err
 	}
 
 	if err := validateApplicationName(request.Name); err != nil {
-		return nil, errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), err)
+		return nil, err
 	}
 	if err := c.validateCreate(request.Base); err != nil {
-		return nil, errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
+		return nil, err
 	}
 	if request.TemplateInput == nil {
-		return nil, errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), "templateInput cannot be empty")
+		return nil, err
 	}
 
 	if err := c.validateTemplateInput(ctx, request.Template.Name,
 		request.Template.Release, request.TemplateInput); err != nil {
-		return nil, errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("invalid templateInput, err: %v", err))
+		return nil, err
 	}
 	group, err := c.groupSvc.GetChildByID(ctx, groupID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 2. check groups or applications with the same name exists
 	groups, err := c.groupMgr.GetByNameOrPathUnderParent(ctx, request.Name, request.Name, groupID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	if len(groups) > 0 {
-		return nil, errors.E(op, http.StatusConflict,
-			errors.ErrorCode(common.InvalidRequestBody),
-			fmt.Sprintf("appliction name is in conflict with group under the same groupID: %v", groupID))
+		return nil, perror.Wrap(herrors.ErrNameConflict, "an group with the same name already exists")
 	}
 
 	appExistsInDB, err := c.applicationMgr.GetByName(ctx, request.Name)
@@ -179,25 +178,23 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 		}
 	}
 	if appExistsInDB != nil {
-		return nil, errors.E(op, http.StatusConflict,
-			errors.ErrorCode(common.InvalidRequestBody),
-			fmt.Sprintf("application name: %v is already be taken", request.Name))
+		return nil, perror.Wrap(herrors.ErrNameConflict, "an application with the same name already exists, "+
+			"please do not create it again")
 	}
 
 	// 3. create application in git repo
 	if err := c.applicationGitRepo.CreateApplication(ctx, request.Name,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 4. create application in db
 	applicationModel := request.toApplicationModel(groupID)
 	applicationModel.CreatedBy = currentUser.GetID()
 	applicationModel.UpdatedBy = currentUser.GetID()
-	applicationModel, err = c.applicationMgr.Create(ctx, applicationModel, extraOwners)
+	applicationModel, err = c.applicationMgr.Create(ctx, applicationModel, extraMembers)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
+		return nil, err
 	}
 
 	// 5. get fullPath
@@ -206,7 +203,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint, extraO
 	// 6. list template release
 	trs, err := c.templateReleaseMgr.ListByTemplateName(ctx, applicationModel.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	ret := ofApplicationModel(applicationModel, fullPath, trs,
@@ -225,20 +222,18 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return nil, err
 	}
 
 	// 1. get application in db
 	appExistsInDB, err := c.applicationMgr.GetByID(ctx, id)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	// 2. validate
 	if err := c.validateUpdate(request.Base); err != nil {
-		return nil, errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("request body validate err: %v", err))
+		return nil, err
 	}
 
 	// 3. if templateInput is not empty, validate and update in git repo
@@ -252,8 +247,7 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 			templateRelease = appExistsInDB.TemplateRelease
 		}
 		if err := c.validateTemplateInput(ctx, template, templateRelease, request.TemplateInput); err != nil {
-			return nil, errors.E(op, http.StatusBadRequest,
-				errors.ErrorCode(common.InvalidRequestBody), fmt.Sprintf("invalid templateInput, err: %v", err))
+			return nil, err
 		}
 		if err := c.applicationGitRepo.UpdateApplication(ctx, appExistsInDB.Name,
 			request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
@@ -266,21 +260,20 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 	applicationModel.UpdatedBy = currentUser.GetID()
 	applicationModel, err = c.applicationMgr.UpdateByID(ctx, id, applicationModel)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
+		return nil, err
 	}
 
 	// 5. get fullPath
 	group, err := c.groupSvc.GetChildByID(ctx, appExistsInDB.GroupID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, appExistsInDB.Name)
 
 	// 6. list template release
 	trs, err := c.templateReleaseMgr.ListByTemplateName(ctx, appExistsInDB.Template)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	return ofApplicationModel(applicationModel, fullPath, trs,
@@ -294,28 +287,27 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error)
 	// 1. get application in db
 	app, err := c.applicationMgr.GetByID(ctx, id)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	clusters, err := c.clusterMgr.ListByApplicationID(ctx, id)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	if len(clusters) > 0 {
-		return errors.E(op, http.StatusBadRequest,
-			"this application cannot be deleted because there are clusters under this application.")
+		return perror.Wrap(herrors.ErrParamInvalid, "this application cannot be deleted "+
+			"because there are clusters under this application.")
 	}
 
 	// 2. delete application in git repo
 	if err := c.applicationGitRepo.DeleteApplication(ctx, app.Name, app.ID); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 3. delete application in db
 	if err := c.applicationMgr.DeleteByID(ctx, id); err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), err)
+		return err
 	}
 
 	// 4. post hook
@@ -341,7 +333,7 @@ func (c *controller) validateCreate(b Base) error {
 		return err
 	}
 	if b.Template == nil {
-		return fmt.Errorf("template cannot be empty")
+		return perror.Wrap(herrors.ErrParamInvalid, "template cannot be empty")
 	}
 	return validateGit(b)
 }
@@ -360,7 +352,8 @@ func validateGit(b Base) error {
 		re := `^ssh://.+[.]git$`
 		pattern := regexp.MustCompile(re)
 		if !pattern.MatchString(b.Git.URL) {
-			return fmt.Errorf("invalid git url, should satisfies the pattern %v", re)
+			return perror.Wrap(herrors.ErrParamInvalid,
+				fmt.Sprintf("invalid git url, should satisfies the pattern %v", re))
 		}
 	}
 	return nil
@@ -384,7 +377,7 @@ func validatePriority(priority string) error {
 	switch models.Priority(priority) {
 	case models.P0, models.P1, models.P2, models.P3:
 	default:
-		return fmt.Errorf("invalid priority")
+		return perror.Wrap(herrors.ErrParamInvalid, "invalid priority")
 	}
 	return nil
 }
@@ -394,22 +387,23 @@ func validatePriority(priority string) error {
 // 2. name must match pattern ^(([a-z][-a-z0-9]*)?[a-z0-9])?$
 func validateApplicationName(name string) error {
 	if len(name) == 0 {
-		return fmt.Errorf("name cannot be empty")
+		return perror.Wrap(herrors.ErrParamInvalid, "name cannot be empty")
 	}
 
 	if len(name) > 40 {
-		return fmt.Errorf("name must not exceed 40 characters")
+		return perror.Wrap(herrors.ErrParamInvalid, "name must not exceed 40 characters")
 	}
 
 	// cannot start with a digit.
 	if name[0] >= '0' && name[0] <= '9' {
-		return fmt.Errorf("name cannot start with a digit")
+		return perror.Wrap(herrors.ErrParamInvalid, "name cannot start with a digit")
 	}
 
 	pattern := `^(([a-z][-a-z0-9]*)?[a-z0-9])?$`
 	r := regexp.MustCompile(pattern)
 	if !r.MatchString(name) {
-		return fmt.Errorf("invalid application name, regex used for validation is %v", pattern)
+		return perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("invalid application name, regex used for validation is %v", pattern))
 	}
 
 	return nil

@@ -99,7 +99,7 @@ func Test(t *testing.T) {
 			Key:   "k1",
 			Value: "v1",
 		},
-	}, []string{user2.Email})
+	}, map[string]string{user2.Email: role.Owner})
 	assert.Nil(t, err)
 	t.Logf("%v", cluster)
 
