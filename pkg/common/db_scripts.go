@@ -25,7 +25,7 @@ const (
 	MemberQueryByID   = "select * from tb_member where id = ? and deleted_ts = 0"
 	MemberSingleQuery = "select * from tb_member where resource_type = ? and  resource_id = ? and member_type= ?" +
 		" and membername_id = ? and deleted_ts = 0"
-	MemberSingleDelete       = "update tb_member set deleted_at = CURRENT_TIMESTAMP where ID = ?"
+	MemberSingleDelete       = "update tb_member set deleted_ts = ? where ID = ?"
 	MemberSelectAll          = "select * from tb_member where resource_type = ? and resource_id = ? and deleted_ts = 0"
 	MemberSelectByUserEmails = "select tb_member.* from tb_member join tb_user on tb_member.membername_id = tb_user.id" +
 		" where tb_member.resource_type = ? and tb_member.resource_id = ? and tb_user.email in ?" +
