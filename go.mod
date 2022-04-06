@@ -35,6 +35,7 @@ require (
 	gorm.io/driver/sqlite v1.1.5
 	gorm.io/gorm v1.21.15
 	gorm.io/plugin/prometheus v0.0.0-20210820101226-2a49866f83ee
+	gorm.io/plugin/soft_delete v1.0.3
 	k8s.io/api v0.18.9
 	k8s.io/apimachinery v0.19.0
 	k8s.io/cli-runtime v0.18.8

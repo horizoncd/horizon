@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -121,7 +122,7 @@ func (d *dao) Delete(ctx context.Context, memberID uint) error {
 		return err
 	}
 
-	result := db.Exec(common.MemberSingleDelete, memberID)
+	result := db.Exec(common.MemberSingleDelete, time.Now().Unix(), memberID)
 	return result.Error
 }
 

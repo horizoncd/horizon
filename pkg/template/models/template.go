@@ -1,9 +1,12 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"g.hz.netease.com/horizon/pkg/server/global"
+)
 
 type Template struct {
-	gorm.Model
+	global.Model
+
 	Name        string
 	Description string
 	CreatedBy   uint

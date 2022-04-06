@@ -1,9 +1,12 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"g.hz.netease.com/horizon/pkg/server/global"
+)
 
 type User struct {
-	gorm.Model
+	global.Model
+
 	Name     string
 	FullName string
 	Email    string
