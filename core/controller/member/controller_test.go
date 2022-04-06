@@ -148,9 +148,9 @@ func TestCreateGroupWithOwner(t *testing.T) {
 	assert.NotNil(t, retMembers)
 	assert.True(t, MemberSame(retMembers[0], expectMember))
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&membermodels.Member{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&usermodel.User{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
 }
 
 func PostMemberAndMemberEqual(postMember PostMember, member2 Member) bool {
@@ -226,7 +226,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	assert.True(t, PostMemberAndMemberEqual(postMemberOwner, members[0]))
 	assert.True(t, PostMemberAndMemberEqual(postMember2, members[1]))
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&membermodels.Member{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&usermodel.User{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
 }
