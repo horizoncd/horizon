@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	"gorm.io/gorm"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type ResourceType string
@@ -36,7 +36,7 @@ const (
 )
 
 type Member struct {
-	gorm.Model
+	global.Model
 
 	// member entry basic info
 	// ResourceType group/application/cluster

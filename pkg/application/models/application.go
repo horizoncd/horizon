@@ -1,6 +1,8 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"g.hz.netease.com/horizon/pkg/server/global"
+)
 
 type Priority string
 
@@ -12,7 +14,7 @@ const (
 )
 
 type Application struct {
-	gorm.Model
+	global.Model
 	GroupID         uint
 	Name            string
 	Description     string

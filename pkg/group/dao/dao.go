@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -356,7 +357,7 @@ func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 		return 0, err
 	}
 
-	result := db.Exec(common.GroupDelete, id)
+	result := db.Exec(common.GroupDelete, time.Now().Unix(), id)
 	if result.Error != nil {
 		return 0, herrors.NewErrDeleteFailed(herrors.GroupInDB, result.Error.Error())
 	}

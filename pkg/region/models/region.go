@@ -3,12 +3,11 @@ package models
 import (
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	"g.hz.netease.com/horizon/pkg/k8scluster/models"
-
-	"gorm.io/gorm"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type Region struct {
-	gorm.Model
+	global.Model
 
 	Name         string
 	DisplayName  string

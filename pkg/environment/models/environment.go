@@ -1,9 +1,11 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"g.hz.netease.com/horizon/pkg/server/global"
+)
 
 type Environment struct {
-	gorm.Model
+	global.Model
 
 	Name        string
 	DisplayName string

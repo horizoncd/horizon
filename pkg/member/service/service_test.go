@@ -20,11 +20,11 @@ import (
 	"g.hz.netease.com/horizon/pkg/member/models"
 	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
@@ -141,7 +141,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
-			Model:           gorm.Model{},
+			Model:           global.Model{},
 			Name:            "",
 			Path:            "",
 			VisibilityLevel: "",
@@ -167,7 +167,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
-			Model:           gorm.Model{},
+			Model:           global.Model{},
 			Name:            "",
 			Path:            "",
 			VisibilityLevel: "",
@@ -190,7 +190,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
-			Model:           gorm.Model{},
+			Model:           global.Model{},
 			Name:            "",
 			Path:            "",
 			VisibilityLevel: "",
@@ -213,7 +213,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
-			Model:           gorm.Model{},
+			Model:           global.Model{},
 			Name:            "",
 			Path:            "",
 			VisibilityLevel: "",
@@ -235,7 +235,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
-			Model:           gorm.Model{},
+			Model:           global.Model{},
 			Name:            "",
 			Path:            "",
 			VisibilityLevel: "",
@@ -347,7 +347,7 @@ func TestListGroupMember(t *testing.T) {
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
-			Model:           gorm.Model{},
+			Model:           global.Model{},
 			Name:            "",
 			Path:            "",
 			VisibilityLevel: "",
@@ -403,7 +403,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
-			Model:           gorm.Model{},
+			Model:           global.Model{},
 			Name:            "",
 			Path:            "",
 			VisibilityLevel: "",
@@ -418,7 +418,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	applicationManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*applicationModels.Application, error) {
 		return &applicationModels.Application{
-			Model:       gorm.Model{},
+			Model:       global.Model{},
 			Name:        "",
 			Description: "",
 			GroupID:     group2ID,
@@ -430,7 +430,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	clusterManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*clustermodels.Cluster, error) {
 		return &clustermodels.Cluster{
-			Model:         gorm.Model{},
+			Model:         global.Model{},
 			Name:          "",
 			Description:   "",
 			ApplicationID: application3ID,
@@ -506,7 +506,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMembers[2], &members[2]))
 
 	userMgr := usermanager.New()
-	_, err = userMgr.Create(ctx, &usermodels.User{Model: gorm.Model{ID: catID}, Email: catEmail})
+	_, err = userMgr.Create(ctx, &usermodels.User{Model: global.Model{ID: catID}, Email: catEmail})
 	assert.Nil(t, err)
 
 	ctx = context.WithValue(ctx, memberctx.ContextQueryOnCondition, true)
@@ -560,7 +560,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 	groupManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*groupModels.Group, error) {
 		return &groupModels.Group{
-			Model:           gorm.Model{},
+			Model:           global.Model{},
 			Name:            "",
 			Path:            "",
 			VisibilityLevel: "",
@@ -575,7 +575,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 	applicationManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*applicationModels.Application, error) {
 		return &applicationModels.Application{
-			Model:       gorm.Model{},
+			Model:       global.Model{},
 			Name:        "",
 			Description: "",
 			GroupID:     group2ID,
@@ -587,7 +587,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 	clusterManager.EXPECT().GetByID(gomock.Any(),
 		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*clustermodels.Cluster, error) {
 		return &clustermodels.Cluster{
-			Model:         gorm.Model{},
+			Model:         global.Model{},
 			Name:          "",
 			Description:   "",
 			ApplicationID: application3ID,

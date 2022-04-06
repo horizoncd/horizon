@@ -3,11 +3,11 @@ package models
 import (
 	"strings"
 
-	"gorm.io/gorm"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type Group struct {
-	gorm.Model
+	global.Model
 	Name            string
 	Path            string
 	VisibilityLevel string
@@ -19,7 +19,7 @@ type Group struct {
 }
 
 type GroupOrApplication struct {
-	gorm.Model
+	global.Model
 	Name        string
 	Path        string
 	Description string

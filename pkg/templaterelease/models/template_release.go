@@ -1,9 +1,12 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"g.hz.netease.com/horizon/pkg/server/global"
+)
 
 type TemplateRelease struct {
-	gorm.Model
+	global.Model
+
 	TemplateName  string
 	Name          string
 	Description   string

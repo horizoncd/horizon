@@ -8,13 +8,13 @@ import (
 	tmock "g.hz.netease.com/horizon/mock/pkg/template/manager"
 	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/template/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	tsvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
@@ -30,12 +30,12 @@ func TestList(t *testing.T) {
 
 	templateMgr.EXPECT().List(ctx).Return([]models.Template{
 		{
-			Model: gorm.Model{
+			Model: global.Model{
 				ID: 1,
 			},
 			Name: "javaapp",
 		}, {
-			Model: gorm.Model{
+			Model: global.Model{
 				ID: 2,
 			},
 			Name: "tomcat",
@@ -45,21 +45,21 @@ func TestList(t *testing.T) {
 	templateReleaseMgr.EXPECT().ListByTemplateName(ctx, "javaapp").
 		Return([]*trmodels.TemplateRelease{
 			{
-				Model: gorm.Model{
+				Model: global.Model{
 					ID: 1,
 				},
 				TemplateName: "javaapp",
 				Name:         "v1.0.0",
 				Recommended:  false,
 			}, {
-				Model: gorm.Model{
+				Model: global.Model{
 					ID: 1,
 				},
 				TemplateName: "javaapp",
 				Name:         "v1.0.1",
 				Recommended:  true,
 			}, {
-				Model: gorm.Model{
+				Model: global.Model{
 					ID: 1,
 				},
 				TemplateName: "javaapp",

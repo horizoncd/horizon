@@ -8,11 +8,11 @@ import (
 
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
@@ -215,7 +215,7 @@ func TestNoTag(t *testing.T) {
 
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
 		releaseName).Return(&trmodels.TemplateRelease{
-		Model: gorm.Model{
+		Model: global.Model{
 			ID: 1,
 		},
 		TemplateName:  templateName,

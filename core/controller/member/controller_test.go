@@ -16,6 +16,7 @@ import (
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodel "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/golang/mock/gomock"
@@ -93,7 +94,7 @@ func MemberSame(m1, m2 Member) bool {
 func CreateUsers(t *testing.T) {
 	// create user
 	user1 := usermodel.User{
-		Model: gorm.Model{},
+		Model: global.Model{},
 		Name:  user1Name,
 	}
 
