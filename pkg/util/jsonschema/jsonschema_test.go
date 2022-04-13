@@ -160,7 +160,6 @@ func TestValidate(t *testing.T) {
                 "mainClassName":"com.netease.horizon.WebApplication",
                 "jvmExtra":"-Dserver.port=8080"
             },
-            "resource":"x-small",
             "health":{
                 "lifecycle":{
                     "online":{
@@ -210,7 +209,6 @@ func TestValidate(t *testing.T) {
                 "maxPerm":"128",
                 "jvmExtra":"-Dserver.port=8080"
             },
-            "resource":"x-small",
             "health":{
                 "lifecycle":{
                     "online":{
@@ -261,7 +259,6 @@ func TestValidate(t *testing.T) {
 			    "mainClassName":"com.netease.horizon.WebApplication",
                 "jvmExtra":"-Dserver.port=8080"
             },
-            "resource":"x-small",
             "health":{
                 "lifecycle":{
                     "online":{
@@ -311,7 +308,6 @@ func TestValidate(t *testing.T) {
 			    "mainClassName":"com.netease.horizon.WebApplication",
                 "jvmExtra":"-Dserver.port=8080"
             },
-            "resource":"x-small",
             "health":{
                 "lifecycle":{
                     "online":{
