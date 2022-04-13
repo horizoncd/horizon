@@ -179,6 +179,11 @@ var (
                             "default":"512",
                             "pattern":"^\\d*$"
                         },
+                        "maxPerm":{
+                            "type":"string",
+                            "default":"512",
+                            "pattern":"^\\d*$"
+                        },
                         "xdebugAddress":{
                             "type":"string",
                             "pattern":"^\\d*$"
