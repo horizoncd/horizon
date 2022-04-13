@@ -24,14 +24,12 @@ func Validate(schema, document interface{}) error {
 	case string:
 		err := json.Unmarshal([]byte(schema), &schemaMap)
 		if err != nil {
-			return perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("unsported type: %T for schema", schema))
+			return perror.Wrap(err, fmt.Sprintf("json unmarshal error, schema: %s", schema))
 		}
 	case []byte:
 		err := json.Unmarshal(schema, &schemaMap)
 		if err != nil {
-			return perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("unsported type: %T for schema", schema))
+			return perror.Wrap(err, fmt.Sprintf("json unmarshal error, schema: %s", schema))
 		}
 	case map[string]interface{}:
 		schemaMap = schema
