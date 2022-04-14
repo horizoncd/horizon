@@ -71,11 +71,13 @@ func Validate(schema, document interface{}) error {
 	return perror.Wrap(herrors.ErrParamInvalid, errMsg)
 }
 
-// addAdditionalPropertiesField add "additionalProperties": false to the jsonschema.
-// no additional properties will be allowed.
+// addAdditionalPropertiesField add "additionalProperties": false to the jsonschema
+// which means no additional properties will be allowed.
 func addAdditionalPropertiesField(m map[string]interface{}) map[string]interface{} {
-	_, ok := m[properties]
-	if ok {
+	_, propertiesExist := m[properties]
+	_, additionalPropertiesExist := m[additionalProperties]
+	// ignore when schema has already set additionalProperties field
+	if propertiesExist && !additionalPropertiesExist {
 		m[additionalProperties] = false
 	}
 
