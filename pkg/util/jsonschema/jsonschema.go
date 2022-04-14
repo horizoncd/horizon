@@ -1,7 +1,6 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"fmt"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -9,40 +8,22 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-var (
-	additionalProperties = "additionalProperties"
-	properties           = "properties"
-)
-
 // Validate json by jsonschema.
 // schema and document support 3 types: string, []byte, map[string]interface{}
 func Validate(schema, document interface{}) error {
-	// add "additionalProperties": false
-	// change schema type to Golang map
-	var schemaMap map[string]interface{}
+	var schemaLoader, documentLoader gojsonschema.JSONLoader
+
 	switch schema := schema.(type) {
 	case string:
-		err := json.Unmarshal([]byte(schema), &schemaMap)
-		if err != nil {
-			return perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("json unmarshal error, schema: %s, error: %s", schema, err.Error()))
-		}
+		schemaLoader = gojsonschema.NewStringLoader(schema)
 	case []byte:
-		err := json.Unmarshal(schema, &schemaMap)
-		if err != nil {
-			return perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("json unmarshal error, schema: %s, error: %s", schema, err.Error()))
-		}
+		schemaLoader = gojsonschema.NewBytesLoader(schema)
 	case map[string]interface{}:
-		schemaMap = schema
+		schemaLoader = gojsonschema.NewGoLoader(schema)
 	default:
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("unsported type: %T for schema", schema))
 	}
-	addAdditionalPropertiesField(schemaMap)
-
-	var schemaLoader, documentLoader gojsonschema.JSONLoader
-	schemaLoader = gojsonschema.NewGoLoader(schemaMap)
 
 	switch document := document.(type) {
 	case string:
@@ -69,24 +50,4 @@ func Validate(schema, document interface{}) error {
 		errMsg += fmt.Sprintf("[%d] %v. ", index, err)
 	}
 	return perror.Wrap(herrors.ErrParamInvalid, errMsg)
-}
-
-// addAdditionalPropertiesField add "additionalProperties": false to the jsonschema
-// which means no additional properties will be allowed.
-func addAdditionalPropertiesField(m map[string]interface{}) map[string]interface{} {
-	_, propertiesExist := m[properties]
-	_, additionalPropertiesExist := m[additionalProperties]
-	// ignore when schema has already set additionalProperties field
-	if propertiesExist && !additionalPropertiesExist {
-		m[additionalProperties] = false
-	}
-
-	for _, v := range m {
-		v1, ok := v.(map[string]interface{})
-		if ok {
-			addAdditionalPropertiesField(v1)
-		}
-	}
-
-	return m
 }
