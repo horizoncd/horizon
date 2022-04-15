@@ -18,4 +18,5 @@ const (
 	StatusFreeing  = "Freeing"
 	StatusFreed    = "Freed"
 	StatusDeleting = "Deleting"
+	StatusCreating = "Creating"
 )
