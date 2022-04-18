@@ -1,53 +1,95 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"fmt"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	"github.com/xeipuuv/gojsonschema"
+	v5jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
+)
+
+var (
+	unevaluatedProperties = "unevaluatedProperties"
+	properties            = "properties"
 )
 
 // Validate json by jsonschema.
-// schema and document support 3 types: string, []byte, map[string]interface{}
+// schema and document support 2 types: string, map[string]interface{}
 func Validate(schema, document interface{}) error {
-	var schemaLoader, documentLoader gojsonschema.JSONLoader
-
+	// add "unevaluatedProperties": false
+	// change schema type to Golang map
+	var schemaMap map[string]interface{}
 	switch schema := schema.(type) {
 	case string:
-		schemaLoader = gojsonschema.NewStringLoader(schema)
-	case []byte:
-		schemaLoader = gojsonschema.NewBytesLoader(schema)
+		err := json.Unmarshal([]byte(schema), &schemaMap)
+		if err != nil {
+			return perror.Wrap(herrors.ErrParamInvalid,
+				fmt.Sprintf("json unmarshal error, schema: %s, error: %s", schema, err.Error()))
+		}
 	case map[string]interface{}:
-		schemaLoader = gojsonschema.NewGoLoader(schema)
+		schemaMap = schema
 	default:
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("unsported type: %T for schema", schema))
 	}
+	addUnevaluatedPropertiesField(schemaMap)
 
+	var v interface{}
 	switch document := document.(type) {
 	case string:
-		documentLoader = gojsonschema.NewStringLoader(document)
-	case []byte:
-		documentLoader = gojsonschema.NewBytesLoader(document)
+		if err := json.Unmarshal([]byte(document), &v); err != nil {
+			return perror.Wrap(herrors.ErrParamInvalid,
+				fmt.Sprintf("json unmarshal error, document: %s, error: %s", document, err.Error()))
+		}
 	case map[string]interface{}:
-		documentLoader = gojsonschema.NewGoLoader(document)
+		doc, err := json.Marshal(document)
+		if err != nil {
+			return perror.Wrap(herrors.ErrParamInvalid,
+				fmt.Sprintf("json marshal error, document: %s, error: %s", document, err.Error()))
+		}
+		if err := json.Unmarshal(doc, &v); err != nil {
+			return perror.Wrap(herrors.ErrParamInvalid,
+				fmt.Sprintf("json unmarshal error, document: %s, error: %s", document, err.Error()))
+		}
 	default:
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("unsported type: %T for document", document))
 	}
 
-	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	schemaStr, err := json.Marshal(schemaMap)
 	if err != nil {
+		return perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("json marshal error, document: %s, error: %s", document, err.Error()))
+	}
+	sch, err := v5jsonschema.CompileString("schema.json", string(schemaStr))
+	if err != nil {
+		return perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("jsonschema compilestring error, schema: %s, error: %s", schemaStr, err.Error()))
+	}
+	if err = sch.Validate(v); err != nil {
 		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
-	if result.Valid() {
-		return nil
+	return nil
+}
+
+// addUnevaluatedPropertiesField add "unevaluatedProperties": false to the jsonschema
+// which means no additional properties will be allowed.
+func addUnevaluatedPropertiesField(m map[string]interface{}) map[string]interface{} {
+	_, propertiesExist := m[properties]
+	_, unevaluatedPropertiesExist := m[unevaluatedProperties]
+	// ignore when schema has already set unevaluatedProperties field
+	if propertiesExist && !unevaluatedPropertiesExist {
+		m[unevaluatedProperties] = false
 	}
-	errMsg := ""
-	for index, err := range result.Errors() {
-		errMsg += fmt.Sprintf("[%d] %v. ", index, err)
+
+	for _, v := range m {
+		v1, ok := v.(map[string]interface{})
+		if ok {
+			addUnevaluatedPropertiesField(v1)
+		}
 	}
-	return perror.Wrap(herrors.ErrParamInvalid, errMsg)
+
+	return m
 }

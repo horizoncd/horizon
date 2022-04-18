@@ -19,6 +19,7 @@ require (
 	github.com/mozillazg/go-pinyin v0.18.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
+	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.6.1
@@ -26,7 +27,6 @@ require (
 	github.com/tektoncd/pipeline v0.17.1-0.20201027063619-b7badedd0f65
 	github.com/vmihailenco/msgpack/v5 v5.3.4
 	github.com/xanzy/go-gitlab v0.50.4
-	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	gopkg.in/igm/sockjs-go.v3 v3.0.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
