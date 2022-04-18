@@ -211,7 +211,13 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	// 6. get namespace
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return nil, err
+		// when cluster is been deleting, gitlab resource is common to be not found, it will only last for a few seconds
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.GitlabResource &&
+			cluster.Status == clustercommon.StatusDeleting {
+			envValue = &gitrepo.EnvValue{}
+		} else {
+			return nil, err
+		}
 	}
 
 	// 7. transfer model
