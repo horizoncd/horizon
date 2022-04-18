@@ -6,7 +6,7 @@ import (
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	v5jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
 )
 
 var (
@@ -62,7 +62,7 @@ func Validate(schema, document interface{}) error {
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("json marshal error, document: %s, error: %s", document, err.Error()))
 	}
-	sch, err := jsonschema.CompileString("schema.json", string(schemaStr))
+	sch, err := v5jsonschema.CompileString("schema.json", string(schemaStr))
 	if err != nil {
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("jsonschema compilestring error, schema: %s, error: %s", schemaStr, err.Error()))
