@@ -1,7 +1,6 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"fmt"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -28,7 +27,7 @@ func Validate(schema, document interface{}) error {
 				fmt.Sprintf("json unmarshal error, schema: %s, error: %s", schema, err.Error()))
 		}
 	case map[string]interface{}:
-		schemaMap = schema
+		schemaLoader = gojsonschema.NewGoLoader(schema)
 	default:
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("unsported type: %T for schema", schema))

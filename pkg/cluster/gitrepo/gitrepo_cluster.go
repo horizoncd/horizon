@@ -82,6 +82,7 @@ const (
 var ErrPipelineOutputEmpty = goerrors.New("PipelineOutput is empty")
 
 type BaseParams struct {
+	ClusterID           uint
 	Cluster             string
 	PipelineJSONBlob    map[string]interface{}
 	ApplicationJSONBlob map[string]interface{}
@@ -979,6 +980,7 @@ func (g *clusterGitRepo) assembleEnvValue(params *CreateClusterParams) map[strin
 
 type BaseValue struct {
 	Application string             `yaml:"application"`
+	ClusterID   uint               `yaml:"clusterID"`
 	Cluster     string             `yaml:"cluster"`
 	Template    *BaseValueTemplate `yaml:"template"`
 	Priority    string             `yaml:"priority"`
@@ -1006,6 +1008,7 @@ func (g *clusterGitRepo) assembleBaseValue(params *BaseParams) map[string]map[st
 	baseMap := make(map[string]*BaseValue)
 	baseMap[_baseValueNamespace] = &BaseValue{
 		Application: params.Application.Name,
+		ClusterID:   params.ClusterID,
 		Cluster:     params.Cluster,
 		Template: &BaseValueTemplate{
 			Name:    params.TemplateRelease.TemplateName,
