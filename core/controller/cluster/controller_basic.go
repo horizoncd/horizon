@@ -402,14 +402,23 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	cluster, clusterTags := r.toClusterModel(application, er)
 	cluster.CreatedBy = currentUser.GetID()
 	cluster.UpdatedBy = currentUser.GetID()
+	cluster.Status = clustercommon.StatusCreating
 
 	if err := clustertagmanager.ValidateUpsert(clusterTags); err != nil {
 		return nil, err
 	}
 
-	// 7. create cluster in git repo
+	// 7. create cluster in db
+	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags, r.ExtraMembers)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: refactor by asynchronous task, and notify overmind/faas to adapt
+	// 8. create cluster in git repo
 	err = c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
 		BaseParams: &gitrepo.BaseParams{
+			ClusterID:           cluster.ID,
 			Cluster:             cluster.Name,
 			PipelineJSONBlob:    r.TemplateInput.Pipeline,
 			ApplicationJSONBlob: r.TemplateInput.Application,
@@ -423,11 +432,13 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		Image:        r.Image,
 	})
 	if err != nil {
+		if deleteErr := c.clusterMgr.DeleteByID(ctx, cluster.ID); deleteErr != nil {
+			err = perror.WithMessage(err, deleteErr.Error())
+		}
 		return nil, err
 	}
-
-	// 8. create cluster in db
-	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags, r.ExtraMembers)
+	cluster.Status = clustercommon.StatusEmpty
+	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -510,6 +521,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		// update cluster in git repo
 		if err := c.clusterGitRepo.UpdateCluster(ctx, &gitrepo.UpdateClusterParams{
 			BaseParams: &gitrepo.BaseParams{
+				ClusterID:           cluster.ID,
 				Cluster:             cluster.Name,
 				PipelineJSONBlob:    r.TemplateInput.Pipeline,
 				ApplicationJSONBlob: r.TemplateInput.Application,

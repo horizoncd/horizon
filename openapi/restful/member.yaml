@@ -187,5 +187,5 @@ components:
       description: name of user who grant this member
     Role:
       type: string
-      enum: [ "Owner", "Maintainer", "Developer", "Reporter", "Guest" ]
+      enum: [ "owner", "maintainer", "developer", "reporter", "guest" ]
       description: the member role
