@@ -67,7 +67,7 @@ var (
           },
           "required": ["mainClassName"]
         },
-		"resource": {
+        "resource": {
           "type": "string",
           "title": "规格",
           "description": "应用上建议选择tiny或者small规格（测试环境集群自动继承，节省资源使用），线上集群可选大规格"
