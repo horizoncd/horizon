@@ -202,8 +202,12 @@ func TestValidate(t *testing.T) {
         }
     }`
 
+	// 0. setUnevaluatedPropertiesToFalse: false
+	err := Validate(schema, document, false)
+	assert.Nil(t, err)
+
 	// 1. normal
-	err := Validate(schema, document, true)
+	err = Validate(schema, document, true)
 	assert.Nil(t, err)
 
 	// 2. error
