@@ -7,7 +7,6 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
-	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
@@ -82,13 +81,10 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
-	if err != nil {
-		// when cluster is been deleting, gitlab resource is common to be not found, it will only last for a few seconds
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.GitlabResource &&
-			cluster.Status == clustercommon.StatusDeleting {
-			envValue = &gitrepo.EnvValue{}
-		} else {
+	envValue := &gitrepo.EnvValue{}
+	if !isClusterStatusUnstable(cluster.Status) {
+		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
 			return nil, err
 		}
 	}

@@ -196,9 +196,12 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 
 	// 4. get files in git repo
-	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
-	if err != nil {
-		return nil, err
+	clusterFiles := &gitrepo.ClusterFiles{}
+	if !isClusterStatusUnstable(cluster.Status) {
+		clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// 5. get full path
@@ -209,13 +212,10 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	// 6. get namespace
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
-	if err != nil {
-		// when cluster is been deleting, gitlab resource is common to be not found, it will only last for a few seconds
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.GitlabResource &&
-			cluster.Status == clustercommon.StatusDeleting {
-			envValue = &gitrepo.EnvValue{}
-		} else {
+	envValue := &gitrepo.EnvValue{}
+	if !isClusterStatusUnstable(cluster.Status) {
+		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -895,4 +895,9 @@ func validateClusterName(name string) error {
 	}
 
 	return nil
+}
+
+// isUnstableStatus judge if status is Creating or Deleting
+func isClusterStatusUnstable(status string) bool {
+	return status == clustercommon.StatusCreating || status == clustercommon.StatusDeleting
 }
