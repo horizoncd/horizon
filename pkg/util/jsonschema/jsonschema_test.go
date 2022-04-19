@@ -202,8 +202,12 @@ func TestValidate(t *testing.T) {
         }
     }`
 
+	// 0. setUnevaluatedPropertiesToFalse: false
+	err := Validate(schema, document, false)
+	assert.Nil(t, err)
+
 	// 1. normal
-	err := Validate(schema, document)
+	err = Validate(schema, document, true)
 	assert.Nil(t, err)
 
 	// 2. error
@@ -252,7 +256,7 @@ func TestValidate(t *testing.T) {
         }
     }`
 
-	err = Validate(schema, document)
+	err = Validate(schema, document, true)
 	assert.NotNil(t, err)
 	t.Logf("%v", err)
 
@@ -302,7 +306,7 @@ func TestValidate(t *testing.T) {
         }
     }`
 
-	err = Validate(schema, document)
+	err = Validate(schema, document, true)
 	assert.NotNil(t, err)
 	t.Logf("%v", err)
 
@@ -355,14 +359,14 @@ func TestValidate(t *testing.T) {
 	var documentMap map[string]interface{}
 	err = json.Unmarshal([]byte(document), &documentMap)
 	assert.Nil(t, err)
-	err = Validate(schema, documentMap)
+	err = Validate(schema, documentMap, true)
 	assert.Nil(t, err)
 
 	// unsupported type
 	var documentMapMap map[string]map[string]interface{}
 	err = json.Unmarshal([]byte(document), &documentMapMap)
 	assert.Nil(t, err)
-	err = Validate(schema, documentMapMap)
+	err = Validate(schema, documentMapMap, true)
 	assert.NotNil(t, err)
 }
 
@@ -767,7 +771,7 @@ func TestDependency(t *testing.T) {
 }`
 
 	// 1. cpu allowed when resource is flexible
-	err := Validate(schema, document)
+	err := Validate(schema, document, true)
 	assert.Nil(t, err)
 
 	// 2. cpu not allowed when resource is not flexible
@@ -797,7 +801,7 @@ func TestDependency(t *testing.T) {
         "enabled": false
     }
 }`
-	err = Validate(schema, document)
+	err = Validate(schema, document, true)
 	assert.NotNil(t, err)
 
 	// 3. additional field not allowed
@@ -828,6 +832,6 @@ func TestDependency(t *testing.T) {
         "enabled": false
     }
 }`
-	err = Validate(schema, document)
+	err = Validate(schema, document, true)
 	assert.NotNil(t, err)
 }

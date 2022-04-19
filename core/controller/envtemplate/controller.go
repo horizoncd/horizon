@@ -51,10 +51,10 @@ func (c *controller) UpdateEnvTemplate(ctx context.Context,
 	if err != nil {
 		return errors.E(op, http.StatusBadRequest, err)
 	}
-	if err := jsonschema.Validate(schema.Application.JSONSchema, r.Application); err != nil {
+	if err := jsonschema.Validate(schema.Application.JSONSchema, r.Application, false); err != nil {
 		return errors.E(op, http.StatusBadRequest, err)
 	}
-	if err := jsonschema.Validate(schema.Pipeline.JSONSchema, r.Pipeline); err != nil {
+	if err := jsonschema.Validate(schema.Pipeline.JSONSchema, r.Pipeline, true); err != nil {
 		return errors.E(op, http.StatusBadRequest, err)
 	}
 

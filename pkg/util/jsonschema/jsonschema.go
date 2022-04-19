@@ -16,8 +16,7 @@ var (
 
 // Validate json by jsonschema.
 // schema and document support 2 types: string, map[string]interface{}
-func Validate(schema, document interface{}) error {
-	// add "unevaluatedProperties": false
+func Validate(schema, document interface{}, setUnevaluatedPropertiesToFalse bool) error {
 	// change schema type to Golang map
 	var schemaMap map[string]interface{}
 	switch schema := schema.(type) {
@@ -33,7 +32,11 @@ func Validate(schema, document interface{}) error {
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("unsported type: %T for schema", schema))
 	}
-	addUnevaluatedPropertiesField(schemaMap)
+
+	// add "unevaluatedProperties": false
+	if setUnevaluatedPropertiesToFalse {
+		addUnevaluatedPropertiesField(schemaMap)
+	}
 
 	var v interface{}
 	switch document := document.(type) {
