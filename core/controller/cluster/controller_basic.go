@@ -852,10 +852,10 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if err := jsonschema.Validate(schema.Application.JSONSchema, templateInput.Application); err != nil {
+	if err := jsonschema.Validate(schema.Application.JSONSchema, templateInput.Application, false); err != nil {
 		return err
 	}
-	return jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline)
+	return jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline, true)
 }
 
 // validateClusterName validate cluster name
