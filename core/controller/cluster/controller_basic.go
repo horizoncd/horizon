@@ -438,6 +438,12 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		Image:        r.Image,
 	})
 	if err != nil {
+		// Prevent errors like "project has already been taken" caused by automatic retries due to api timeouts
+		if deleteErr := c.clusterGitRepo.DeleteCluster(ctx, application.Name, cluster.Name, cluster.ID); deleteErr != nil {
+			if _, ok := perror.Cause(deleteErr).(*herrors.HorizonErrNotFound); !ok {
+				err = perror.WithMessage(err, deleteErr.Error())
+			}
+		}
 		if deleteErr := c.clusterMgr.DeleteByID(ctx, cluster.ID); deleteErr != nil {
 			err = perror.WithMessage(err, deleteErr.Error())
 		}
