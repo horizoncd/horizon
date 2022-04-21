@@ -265,28 +265,6 @@ func (s *service) ListMember(ctx context.Context, resourceType string, resourceI
 	return allMembers, nil
 }
 
-func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
-	// 1. list all the groups of the group
-	groupInfo, err := s.groupManager.GetByID(ctx, uint(resourceID))
-	if err != nil {
-		return nil, err
-	}
-	groupIDs := groupmanager.FormatIDsFromTraversalIDs(groupInfo.TraversalIDs)
-
-	// 2. get all the direct service of group
-	var retMembers []models.Member
-
-	for i := len(groupIDs) - 1; i >= 0; i-- {
-		members, err := s.memberManager.ListDirectMember(ctx, models.TypeGroup, groupIDs[i])
-		if err != nil {
-			return nil, err
-		}
-		retMembers = append(retMembers, members...)
-	}
-
-	return DeduplicateMember(retMembers), nil
-}
-
 func DeduplicateMember(members []models.Member) []models.Member {
 	// deduplicate by memberType, memberInfo
 	memberMap := make(map[string]models.Member)
@@ -319,25 +297,76 @@ func (s *service) getMember(ctx context.Context, resourceType string, resourceID
 	return nil, nil
 }
 
-func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
-	var retMembers []models.Member
-	// 1. query the application's service
-	applicationInfo, err := s.applicationManager.GetByID(ctx, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	members, err := s.memberManager.ListDirectMember(ctx, models.TypeApplication, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	retMembers = append(retMembers, members...)
-	// 2. query the group's service
-	members, err = s.listGroupMembers(ctx, applicationInfo.GroupID)
-	if err != nil {
-		return nil, err
+func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
+	var (
+		retMembers []models.Member
+		members    []models.Member
+		err        error
+	)
+
+	onCondition, ok := ctx.Value(memberctx.ContextQueryOnCondition).(bool)
+	if directMemberOnly, ok := ctx.Value(memberctx.ContextDirectMemberOnly).(bool); ok && directMemberOnly {
+		if ok && onCondition {
+			members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeGroup, resourceID)
+		} else {
+			members, err = s.memberManager.ListDirectMember(ctx, models.TypeGroup, resourceID)
+		}
+		return DeduplicateMember(members), nil
 	}
 
+	// 1. list all the groups of the group
+	groupInfo, err := s.groupManager.GetByID(ctx, uint(resourceID))
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := groupmanager.FormatIDsFromTraversalIDs(groupInfo.TraversalIDs)
+
+	// 2. get all the direct service of group
+	for i := len(groupIDs) - 1; i >= 0; i-- {
+		if ok && onCondition {
+			members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeGroup, groupIDs[i])
+		} else {
+			members, err = s.memberManager.ListDirectMember(ctx, models.TypeGroup, groupIDs[i])
+		}
+		if err != nil {
+			return nil, err
+		}
+		retMembers = append(retMembers, members...)
+	}
+
+	return DeduplicateMember(retMembers), nil
+}
+
+func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
+	var (
+		retMembers []models.Member
+		members    []models.Member
+		err        error
+	)
+	if onCondition, ok := ctx.Value(memberctx.ContextQueryOnCondition).(bool); ok && onCondition {
+		members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeApplication, resourceID)
+	} else {
+		members, err = s.memberManager.ListDirectMember(ctx, models.TypeApplication, resourceID)
+	}
+	if err != nil {
+		return nil, err
+	}
 	retMembers = append(retMembers, members...)
+
+	if directMemberOnly, ok := ctx.Value(memberctx.ContextDirectMemberOnly).(bool); !ok || !directMemberOnly {
+		// 1. query the application's service
+		applicationInfo, err := s.applicationManager.GetByID(ctx, resourceID)
+		if err != nil {
+			return nil, err
+		}
+
+		// 2. query the group's service
+		members, err = s.listGroupMembers(ctx, applicationInfo.GroupID)
+		if err != nil {
+			return nil, err
+		}
+		retMembers = append(retMembers, members...)
+	}
 
 	return DeduplicateMember(retMembers), nil
 }
