@@ -304,9 +304,9 @@ func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]mode
 		err        error
 	)
 
-	onCondition, ok := ctx.Value(memberctx.ContextQueryOnCondition).(bool)
+	onCondition, onConditionOK := ctx.Value(memberctx.ContextQueryOnCondition).(bool)
 	if directMemberOnly, ok := ctx.Value(memberctx.ContextDirectMemberOnly).(bool); ok && directMemberOnly {
-		if ok && onCondition {
+		if onConditionOK && onCondition {
 			members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeGroup, resourceID)
 		} else {
 			members, err = s.memberManager.ListDirectMember(ctx, models.TypeGroup, resourceID)
@@ -326,7 +326,7 @@ func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]mode
 
 	// 2. get all the direct service of group
 	for i := len(groupIDs) - 1; i >= 0; i-- {
-		if ok && onCondition {
+		if onConditionOK && onCondition {
 			members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeGroup, groupIDs[i])
 		} else {
 			members, err = s.memberManager.ListDirectMember(ctx, models.TypeGroup, groupIDs[i])
