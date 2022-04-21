@@ -542,7 +542,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 		application3ID uint = 3
 		cluster4ID     uint = 4
 
-		traversalIDs string        = "1,2"
+		traversalIDs               = "1,2"
 		sphID        uint          = 1
 		jerryID      uint          = 2
 		catID        uint          = 3

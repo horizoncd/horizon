@@ -311,6 +311,9 @@ func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]mode
 		} else {
 			members, err = s.memberManager.ListDirectMember(ctx, models.TypeGroup, resourceID)
 		}
+		if err != nil {
+			return nil, err
+		}
 		return DeduplicateMember(members), nil
 	}
 
