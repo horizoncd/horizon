@@ -46,15 +46,7 @@ func Validate(schema, document interface{}, setUnevaluatedPropertiesToFalse bool
 				fmt.Sprintf("json unmarshal error, document: %s, error: %s", document, err.Error()))
 		}
 	case map[string]interface{}:
-		doc, err := json.Marshal(document)
-		if err != nil {
-			return perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("json marshal error, document: %s, error: %s", document, err.Error()))
-		}
-		if err := json.Unmarshal(doc, &v); err != nil {
-			return perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("json unmarshal error, document: %s, error: %s", document, err.Error()))
-		}
+		v = document
 	default:
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("unsported type: %T for document", document))
