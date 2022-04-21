@@ -193,102 +193,41 @@ func (a *API) DeleteMember(c *gin.Context) {
 
 func (a *API) ListGroupMember(c *gin.Context) {
 	resourceIDStr := c.Param(_paramGroupID)
-	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+
+	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			fmt.Sprintf("%v", err))
 		return
 	}
-
-	querySelfStr, ok := c.GetQuery(_querySelf)
-	querySelf := false
-	if ok {
-		querySelf, err = strconv.ParseBool(querySelfStr)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam,
-				fmt.Sprintf("%v", err))
-			return
-		}
-	}
-
-	membersResp := response.DataWithTotal{}
-
-	if querySelf {
-		memberInfo, err := a.memberCtrl.GetMemberOfResource(c, membermodels.TypeGroupStr, uint(uintID))
-		if err != nil {
-			response.AbortWithError(c, err)
-			return
-		}
-		if nil != memberInfo {
-			membersResp.Items = []member.Member{*memberInfo}
-			membersResp.Total = 1
-		}
-	} else {
-		members, err := a.memberCtrl.ListMember(c, membermodels.TypeGroupStr, uint(uintID))
-		if err != nil {
-			response.AbortWithError(c, err)
-			return
-		}
-		membersResp.Items = members
-		membersResp.Total = int64(len(members))
-	}
-
-	response.SuccessWithData(c, membersResp)
+	a.listMember(c, resourceID, membermodels.TypeGroup)
 }
 
 func (a *API) ListApplicationMember(c *gin.Context) {
 	resourceIDStr := c.Param(_paramApplicationID)
-	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+
+	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			fmt.Sprintf("%v", err))
 		return
 	}
-
-	querySelfStr, ok := c.GetQuery(_querySelf)
-	querySelf := false
-	if ok {
-		querySelf, err = strconv.ParseBool(querySelfStr)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam,
-				fmt.Sprintf("%v", err))
-			return
-		}
-	}
-
-	membersResp := response.DataWithTotal{}
-
-	if querySelf {
-		memberInfo, err := a.memberCtrl.GetMemberOfResource(c, membermodels.TypeApplicationStr, uint(uintID))
-		if err != nil {
-			response.AbortWithError(c, err)
-			return
-		}
-		if nil != memberInfo {
-			membersResp.Items = []member.Member{*memberInfo}
-			membersResp.Total = 1
-		}
-	} else {
-		members, err := a.memberCtrl.ListMember(c, membermodels.TypeApplicationStr, uint(uintID))
-		if err != nil {
-			response.AbortWithError(c, err)
-			return
-		}
-		membersResp.Items = members
-		membersResp.Total = int64(len(members))
-	}
-	response.SuccessWithData(c, membersResp)
+	a.listMember(c, resourceID, membermodels.TypeApplication)
 }
 
 func (a *API) ListApplicationClusterMember(c *gin.Context) {
 	resourceIDStr := c.Param(_paramApplicationClusterID)
-	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+
+	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
 			fmt.Sprintf("%v", err))
 		return
 	}
+	a.listMember(c, resourceID, membermodels.TypeApplicationCluster)
+}
 
+func (a *API) listMember(c *gin.Context, resourceID uint64, resourceType membermodels.ResourceType) {
 	querySelf, err := strconv.ParseBool(c.DefaultQuery(_querySelf, "false"))
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam,
@@ -306,7 +245,7 @@ func (a *API) ListApplicationClusterMember(c *gin.Context) {
 
 	membersResp := response.DataWithTotal{}
 	if querySelf {
-		memberInfo, err := a.memberCtrl.GetMemberOfResource(c, membermodels.TypeApplicationClusterStr, uint(uintID))
+		memberInfo, err := a.memberCtrl.GetMemberOfResource(c, string(resourceType), uint(resourceID))
 		if err != nil {
 			response.AbortWithError(c, err)
 			return
@@ -322,7 +261,7 @@ func (a *API) ListApplicationClusterMember(c *gin.Context) {
 			ctx = context.WithValue(ctx, memberctx.ContextQueryOnCondition, true)
 			ctx = context.WithValue(ctx, memberctx.ContextEmails, emails)
 		}
-		members, err := a.memberCtrl.ListMember(ctx, membermodels.TypeApplicationClusterStr, uint(uintID))
+		members, err := a.memberCtrl.ListMember(ctx, string(resourceType), uint(resourceID))
 		if err != nil {
 			response.AbortWithError(c, err)
 			return
