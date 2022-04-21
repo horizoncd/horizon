@@ -196,9 +196,12 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 
 	// 4. get files in git repo
-	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
-	if err != nil {
-		return nil, err
+	clusterFiles := &gitrepo.ClusterFiles{}
+	if !isClusterStatusUnstable(cluster.Status) {
+		clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// 5. get full path
@@ -209,9 +212,12 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	// 6. get namespace
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
-	if err != nil {
-		return nil, err
+	envValue := &gitrepo.EnvValue{}
+	if !isClusterStatusUnstable(cluster.Status) {
+		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// 7. transfer model
@@ -432,6 +438,12 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		Image:        r.Image,
 	})
 	if err != nil {
+		// Prevent errors like "project has already been taken" caused by automatic retries due to api timeouts
+		if deleteErr := c.clusterGitRepo.DeleteCluster(ctx, application.Name, cluster.Name, cluster.ID); deleteErr != nil {
+			if _, ok := perror.Cause(deleteErr).(*herrors.HorizonErrNotFound); !ok {
+				err = perror.WithMessage(err, deleteErr.Error())
+			}
+		}
 		if deleteErr := c.clusterMgr.DeleteByID(ctx, cluster.ID); deleteErr != nil {
 			err = perror.WithMessage(err, deleteErr.Error())
 		}
@@ -852,10 +864,10 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if err := jsonschema.Validate(schema.Application.JSONSchema, templateInput.Application); err != nil {
+	if err := jsonschema.Validate(schema.Application.JSONSchema, templateInput.Application, false); err != nil {
 		return err
 	}
-	return jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline)
+	return jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline, true)
 }
 
 // validateClusterName validate cluster name
@@ -883,4 +895,9 @@ func validateClusterName(name string) error {
 	}
 
 	return nil
+}
+
+// isUnstableStatus judge if status is Creating or Deleting
+func isClusterStatusUnstable(status string) bool {
+	return status == clustercommon.StatusCreating || status == clustercommon.StatusDeleting
 }

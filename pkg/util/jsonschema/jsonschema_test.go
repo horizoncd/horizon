@@ -43,6 +43,11 @@ func TestValidate(t *testing.T) {
           },
           "required": ["mainClassName"]
         },
+		"resource": {
+          "type": "string",
+          "title": "规格",
+          "description": "应用上建议选择tiny或者small规格（测试环境集群自动继承，节省资源使用），线上集群可选大规格"
+		},
         "health": {
           "title": "健康检查",
           "type": "object",
@@ -197,8 +202,12 @@ func TestValidate(t *testing.T) {
         }
     }`
 
+	// 0. setUnevaluatedPropertiesToFalse: false
+	err := Validate(schema, document, false)
+	assert.Nil(t, err)
+
 	// 1. normal
-	err := Validate(schema, document)
+	err = Validate(schema, document, true)
 	assert.Nil(t, err)
 
 	// 2. error
@@ -247,7 +256,7 @@ func TestValidate(t *testing.T) {
         }
     }`
 
-	err = Validate(schema, document)
+	err = Validate(schema, document, true)
 	assert.NotNil(t, err)
 	t.Logf("%v", err)
 
@@ -297,7 +306,7 @@ func TestValidate(t *testing.T) {
         }
     }`
 
-	err = Validate(schema, document)
+	err = Validate(schema, document, true)
 	assert.NotNil(t, err)
 	t.Logf("%v", err)
 
@@ -350,13 +359,479 @@ func TestValidate(t *testing.T) {
 	var documentMap map[string]interface{}
 	err = json.Unmarshal([]byte(document), &documentMap)
 	assert.Nil(t, err)
-	err = Validate(schema, documentMap)
+	err = Validate(schema, documentMap, true)
 	assert.Nil(t, err)
 
 	// unsupported type
 	var documentMapMap map[string]map[string]interface{}
 	err = json.Unmarshal([]byte(document), &documentMapMap)
 	assert.Nil(t, err)
-	err = Validate(schema, documentMapMap)
+	err = Validate(schema, documentMapMap, true)
+	assert.NotNil(t, err)
+}
+
+func TestDependency(t *testing.T) {
+	schema := `{
+    "properties": {
+        "app": {
+            "properties": {
+                "health": {
+                    "dependencies": {
+                        "check": [
+                            "port"
+                        ],
+                        "offline": [
+                            "port"
+                        ],
+                        "online": [
+                            "port"
+                        ],
+                        "status": [
+                            "port"
+                        ]
+                    },
+                    "properties": {
+                        "check": {
+                            "description": "存活状态会在应用运行期间检测应用健康情况，检测失败时会对应用进行重启。接口如: /api/test",
+                            "pattern": "^/.*$",
+                            "title": "存活状态",
+                            "type": "string"
+                        },
+                        "expectedStartTime": {
+                            "default": 200,
+                            "description": "该时间必须为10的整数倍。会根据该期望启动时间调整健康检查的重试次数，在该时间内健康检查不通过，应用会启动失败",
+                            "minimum": 30,
+                            "multipleOf": 10,
+                            "title": "期望启动时间（单位秒）",
+                            "type": "number"
+                        },
+                        "offline": {
+                            "description": "下线接口会在应用停止之前进行调用，如果调用失败，则忽略。接口如: /health/offline",
+                            "pattern": "^/.*$",
+                            "title": "下线",
+                            "type": "string"
+                        },
+                        "online": {
+                            "description": "上线接口会在应用启动之后进行调用，如果调用失败，则应用启动失败。接口如: /health/online",
+                            "pattern": "^/.*$",
+                            "title": "上线",
+                            "type": "string"
+                        },
+                        "port": {
+                            "maximum": 65535,
+                            "minimum": 1024,
+                            "type": "integer"
+                        },
+                        "status": {
+                            "description": "就绪状态会在应用运行期间检测应用是否处于上线状态，检测失败时显示下线状态。接口如: /health/status",
+                            "pattern": "^/.*$",
+                            "title": "就绪状态",
+                            "type": "string"
+                        }
+                    },
+                    "title": "健康检查",
+                    "type": "object"
+                },
+                "params": {
+                    "properties": {
+                        "jvmExtra": {
+                            "description": "如果集群标签中也有jvmExtra，此处的jvmExtra会和标签中的jvmExtra合并生效，如有重复，集群标签中的jvmExtra优先级更高。` +
+		`（通过Overmind创建的集群会在标签中传入jvmExtra）",
+                            "type": "string"
+                        },
+                        "mainClassName": {
+                            "type": "string"
+                        },
+                        "xdebugAddress": {
+                            "pattern": "^\\d*$",
+                            "type": "string"
+                        },
+                        "xms": {
+                            "default": "512",
+                            "pattern": "^\\d*$",
+                            "type": "string"
+                        },
+                        "xmx": {
+                            "default": "1024",
+                            "pattern": "^\\d*$",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "mainClassName"
+                    ],
+                    "title": "参数",
+                    "type": "object"
+                },
+                "spec": {
+                    "dependencies": {
+                        "resource": {
+                            "oneOf": [
+                                {
+                                    "properties": {
+                                        "cpu": {
+                                            "default": 500,
+                                            "description": "单位：m，应用上建议选择500或者1000规格（测试环境集群自动继承，节省资源使用），线上集群可选大规格",
+                                            "enum": [
+                                                500,
+                                                1000,
+                                                2000,
+                                                4000,
+                                                6000,
+                                                8000
+                                            ],
+                                            "title": "cpu",
+                                            "type": "integer"
+                                        },
+                                        "memory": {
+                                            "default": 1024,
+                                            "description": "单位：MB，应用上建议选择1024或者2048规格（测试环境集群自动继承，节省资源使用），线上集群可选大规格",
+                                            "enum": [
+                                                1024,
+                                                2048,
+                                                4096,
+                                                6144,
+                                                8192,
+                                                10240,
+                                                12288,
+                                                14336,
+                                                16384
+                                            ],
+                                            "title": "memory",
+                                            "type": "integer"
+                                        },
+                                        "resource": {
+                                            "enum": [
+                                                "flexible"
+                                            ],
+                                            "title": "flexible"
+                                        }
+                                    }
+                                },
+                                {
+                                    "properties": {
+                                        "resource": {
+                                            "enum": [
+                                                "tiny"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "properties": {
+                                        "resource": {
+                                            "enum": [
+                                                "x-small"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "properties": {
+                                        "resource": {
+                                            "enum": [
+                                                "small"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "properties": {
+                                        "resource": {
+                                            "enum": [
+                                                "middle"
+                                            ]
+                                        }
+                                    }
+                                },
+                                {
+                                    "properties": {
+                                        "resource": {
+                                            "enum": [
+                                                "large"
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "properties": {
+                        "replicas": {
+                            "default": 1,
+                            "maximum": 30,
+                            "minimum": 0,
+                            "title": "副本数",
+                            "type": "integer"
+                        },
+                        "resource": {
+                            "default": "x-small",
+                            "description": "应用上建议选择tiny或者small规格（测试环境集群自动继承，节省资源使用），线上集群可选大规格",
+                            "oneOf": [
+                                {
+                                    "enum": [
+                                        "tiny"
+                                    ],
+                                    "title": "tiny(0.5C1G)"
+                                },
+                                {
+                                    "enum": [
+                                        "x-small"
+                                    ],
+                                    "title": "x-small(1C2G)"
+                                },
+                                {
+                                    "enum": [
+                                        "small"
+                                    ],
+                                    "title": "small(2C4G)"
+                                },
+                                {
+                                    "enum": [
+                                        "middle"
+                                    ],
+                                    "title": "middle(4C8G)"
+                                },
+                                {
+                                    "enum": [
+                                        "flexible"
+                                    ],
+                                    "title": "flexible"
+                                }
+                            ],
+                            "title": "规格",
+                            "type": "string"
+                        }
+                    },
+                    "title": "规格",
+                    "type": "object"
+                },
+                "strategy": {
+                    "properties": {
+                        "pauseType": {
+                            "default": "all",
+                            "oneOf": [
+                                {
+                                    "enum": [
+                                        "first"
+                                    ],
+                                    "title": "第一批暂停"
+                                },
+                                {
+                                    "enum": [
+                                        "all"
+                                    ],
+                                    "title": "全部暂停"
+                                },
+                                {
+                                    "enum": [
+                                        "none"
+                                    ],
+                                    "title": "全不暂停"
+                                }
+                            ],
+                            "title": "暂停策略",
+                            "type": "string"
+                        },
+                        "stepsTotal": {
+                            "default": 1,
+                            "enum": [
+                                1,
+                                2,
+                                3,
+                                4,
+                                5
+                            ],
+                            "title": "发布批次（多批次情况下，第一批默认为1个实例）",
+                            "type": "integer"
+                        }
+                    },
+                    "title": "发布策略",
+                    "type": "object"
+                }
+            },
+            "title": "应用",
+            "type": "object"
+        },
+        "memcached": {
+            "dependencies": {
+                "enabled": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "enabled": {
+                                    "enum": [
+                                        true
+                                    ]
+                                },
+                                "size": {
+                                    "default": "64M",
+                                    "description": "选择合适的memcache规格，memcache可用内存为规格的3/4, 测试环境选择最小规格",
+                                    "oneOf": [
+                                        {
+                                            "enum": [
+                                                "64M"
+                                            ],
+                                            "title": "64M(memory 64M,cpu 50m)"
+                                        },
+                                        {
+                                            "enum": [
+                                                "1G"
+                                            ],
+                                            "title": "1G(memory 1024M, cpu 1000m)"
+                                        },
+                                        {
+                                            "enum": [
+                                                "2G"
+                                            ],
+                                            "title": "2G(memory 2048M, cpu 1000m)"
+                                        },
+                                        {
+                                            "enum": [
+                                                "4G"
+                                            ],
+                                            "title": "4G(memory 4096M, cpu 1000m)"
+                                        },
+                                        {
+                                            "enum": [
+                                                "8G"
+                                            ],
+                                            "title": "8G(memory 8192M, cpu 1000m)"
+                                        },
+                                        {
+                                            "enum": [
+                                                "16G"
+                                            ],
+                                            "title": "16G(memory 16384M, cpu 2000m)"
+                                        }
+                                    ],
+                                    "title": "选择规格",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "enabled": {
+                                    "enum": [
+                                        false
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "properties": {
+                "enabled": {
+                    "default": false,
+                    "description": "是否使用本地memcached缓存组件(曲库相关应用), memcached访问端口11215, memcached metric端口9150",
+                    "enum": [
+                        true,
+                        false
+                    ],
+                    "title": "enabled",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "enabled"
+            ],
+            "title": "本地memcached",
+            "type": "object"
+        }
+    },
+    "type": "object"
+}`
+	document := `{
+    "app": {
+        "health": {
+            "expectedStartTime": 210
+        },
+        "params": {
+            "jvmExtra": "-D server.port=8888",
+            "mainClassName": "org.springframework.boot.loader.JarLauncher",
+            "xms": "512",
+            "xmx": "1024"
+        },
+        "spec": {
+            "cpu": 2000,
+            "memory": 4096,
+            "replicas": 3,
+            "resource": "flexible"
+        },
+        "strategy": {
+            "pauseType": "all",
+            "stepsTotal": 3
+        }
+    },
+    "memcached": {
+        "enabled": false
+    }
+}`
+
+	// 1. cpu allowed when resource is flexible
+	err := Validate(schema, document, true)
+	assert.Nil(t, err)
+
+	// 2. cpu not allowed when resource is not flexible
+	document = `{
+    "app": {
+        "health": {
+            "expectedStartTime": 210
+        },
+        "params": {
+            "jvmExtra": "-D server.port=8888",
+            "mainClassName": "org.springframework.boot.loader.JarLauncher",
+            "xms": "512",
+            "xmx": "1024"
+        },
+        "spec": {
+            "cpu": 2000,
+            "memory": 4096,
+            "replicas": 3,
+            "resource": "x-small"
+        },
+        "strategy": {
+            "pauseType": "all",
+            "stepsTotal": 3
+        }
+    },
+    "memcached": {
+        "enabled": false
+    }
+}`
+	err = Validate(schema, document, true)
+	assert.NotNil(t, err)
+
+	// 3. additional field not allowed
+	document = `{
+    "app": {
+		"kkk": 123,
+        "health": {
+            "expectedStartTime": 210
+        },
+        "params": {
+            "jvmExtra": "-D server.port=8888",
+            "mainClassName": "org.springframework.boot.loader.JarLauncher",
+            "xms": "512",
+            "xmx": "1024"
+        },
+        "spec": {
+            "cpu": 2000,
+            "memory": 4096,
+            "replicas": 3,
+            "resource": "flexible"
+        },
+        "strategy": {
+            "pauseType": "all",
+            "stepsTotal": 3
+        }
+    },
+    "memcached": {
+        "enabled": false
+    }
+}`
+	err = Validate(schema, document, true)
 	assert.NotNil(t, err)
 }
