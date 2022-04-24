@@ -89,15 +89,14 @@ type BaseParams struct {
 	TemplateRelease     *trmodels.TemplateRelease
 	Application         *models.Application
 	Environment         string
+	RegionEntity        *regionmodels.RegionEntity
+	Namespace           string
 }
 
 type CreateClusterParams struct {
 	*BaseParams
-
-	RegionEntity *regionmodels.RegionEntity
-	ClusterTags  []*clustertagmodels.ClusterTag
-	Namespace    string
-	Image        string
+	ClusterTags []*clustertagmodels.ClusterTag
+	Image       string
 }
 
 type UpdateClusterParams struct {
@@ -346,7 +345,6 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
 	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
-	marshal(&envValueYAML, &err4, g.assembleEnvValue(params))
 	marshal(&sreValueYAML, &err5, g.assembleSREValue(params))
 	chart, err := g.assembleChart(params.BaseParams)
 	if err != nil {
@@ -446,12 +444,13 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 
 	// 1. write files to repo
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
-	var applicationYAML, pipelineYAML, baseValueYAML, chartYAML []byte
+	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, chartYAML []byte
 	var err1, err2, err3, err4 error
 
 	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
 	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
+	marshal(&envValueYAML, &err4, g.assembleEnvValue(params.BaseParams))
 	chart, err := g.assembleChart(params.BaseParams)
 	if err != nil {
 		return err
@@ -481,6 +480,10 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathChart,
 			Content:  string(chartYAML),
+		}, {
+			Action:   gitlablib.FileCreate,
+			FilePath: _filePathEnv,
+			Content:  string(envValueYAML),
 		},
 	}
 
@@ -955,14 +958,14 @@ type EnvValue struct {
 	IngressDomain string `yaml:"ingressDomain"`
 }
 
-func getNamespace(params *CreateClusterParams) string {
+func getNamespace(params *BaseParams) string {
 	if params.Namespace != "" {
 		return params.Namespace
 	}
 	return fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
 }
 
-func (g *clusterGitRepo) assembleEnvValue(params *CreateClusterParams) map[string]map[string]*EnvValue {
+func (g *clusterGitRepo) assembleEnvValue(params *BaseParams) map[string]map[string]*EnvValue {
 	envMap := make(map[string]*EnvValue)
 	envMap[_envValueNamespace] = &EnvValue{
 		Environment: params.Environment,

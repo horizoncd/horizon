@@ -18,6 +18,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
+	emvmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
@@ -431,11 +432,11 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 			TemplateRelease:     tr,
 			Application:         application,
 			Environment:         environment,
+			RegionEntity:        regionEntity,
+			Namespace:           r.Namespace,
 		},
-		RegionEntity: regionEntity,
-		ClusterTags:  clusterTags,
-		Namespace:    r.Namespace,
-		Image:        r.Image,
+		ClusterTags: clusterTags,
+		Image:       r.Image,
 	})
 	if err != nil {
 		// Prevent errors like "project has already been taken" caused by automatic retries due to api timeouts
@@ -499,7 +500,21 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 3. get environmentRegion for this cluster
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	var er *emvmodels.EnvironmentRegion
+	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
+		er, err = c.envMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		er, err = c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 4. get regionEntity
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -531,6 +546,10 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 				"request body validate err: %v", err)
 		}
 		// update cluster in git repo
+		envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, r.Template.Name)
+		if err != nil {
+			return nil, err
+		}
 		if err := c.clusterGitRepo.UpdateCluster(ctx, &gitrepo.UpdateClusterParams{
 			BaseParams: &gitrepo.BaseParams{
 				ClusterID:           cluster.ID,
@@ -540,6 +559,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 				TemplateRelease:     tr,
 				Application:         application,
 				Environment:         er.EnvironmentName,
+				RegionEntity:        regionEntity,
+				Namespace:           envValue.Namespace,
 			},
 		}); err != nil {
 			return nil, err
@@ -554,7 +575,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 5. update cluster in db
-	clusterModel := r.toClusterModel(cluster, templateRelease)
+	clusterModel := r.toClusterModel(cluster, templateRelease, er.ID)
 	clusterModel.UpdatedBy = currentUser.GetID()
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {

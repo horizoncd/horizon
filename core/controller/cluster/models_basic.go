@@ -47,6 +47,8 @@ type CreateClusterRequest struct {
 
 type UpdateClusterRequest struct {
 	*Base
+	Environment string `json:"environment"`
+	Region      string `json:"region"`
 }
 
 type GetClusterResponse struct {
@@ -124,7 +126,7 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 }
 
 func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
-	templateRelease string) *models.Cluster {
+	templateRelease string, environmentRegionID uint) *models.Cluster {
 	var gitURL, gitSubfolder, gitBranch string
 	if r.Git == nil || r.Git.URL == "" {
 		gitURL = cluster.GitURL
@@ -138,12 +140,13 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		gitBranch = r.Git.Branch
 	}
 	return &models.Cluster{
-		Description:     r.Description,
-		GitURL:          gitURL,
-		GitSubfolder:    gitSubfolder,
-		GitBranch:       gitBranch,
-		TemplateRelease: templateRelease,
-		Status:          cluster.Status,
+		Description:         r.Description,
+		GitURL:              gitURL,
+		GitSubfolder:        gitSubfolder,
+		GitBranch:           gitBranch,
+		TemplateRelease:     templateRelease,
+		EnvironmentRegionID: environmentRegionID,
+		Status:              cluster.Status,
 	}
 }
 

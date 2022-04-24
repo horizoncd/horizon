@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
+	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"os"
 	"testing"
 
@@ -17,9 +20,6 @@ import (
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
-	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"github.com/golang/mock/gomock"
 
@@ -151,9 +151,6 @@ func Test(t *testing.T) {
 			Priority: "P0",
 		},
 		Environment: "test",
-	}
-	createParams := &CreateClusterParams{
-		BaseParams: baseParams,
 		RegionEntity: &regionmodels.RegionEntity{
 			Region: &regionmodels.Region{
 				Name:        "hz",
@@ -166,6 +163,9 @@ func Test(t *testing.T) {
 				Server: "https://harbor.com",
 			},
 		},
+	}
+	createParams := &CreateClusterParams{
+		BaseParams: baseParams,
 	}
 
 	updateParams := &UpdateClusterParams{
