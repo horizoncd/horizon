@@ -22,6 +22,7 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -499,10 +500,15 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 3. get environmentRegion for this cluster
+	// 3. get environmentRegion/namespace for this cluster
 	var er *emvmodels.EnvironmentRegion
+	var regionEntity *regionmodels.RegionEntity
 	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
 		er, err = c.envMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
+		if err != nil {
+			return nil, err
+		}
+		regionEntity, err = c.regionMgr.GetRegionEntity(ctx, er.RegionName)
 		if err != nil {
 			return nil, err
 		}
@@ -511,12 +517,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	// 4. get regionEntity
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
-	if err != nil {
-		return nil, err
 	}
 
 	var templateRelease string
@@ -546,10 +546,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 				"request body validate err: %v", err)
 		}
 		// update cluster in git repo
-		envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
-		if err != nil {
-			return nil, err
-		}
 		if err := c.clusterGitRepo.UpdateCluster(ctx, &gitrepo.UpdateClusterParams{
 			BaseParams: &gitrepo.BaseParams{
 				ClusterID:           cluster.ID,
@@ -560,7 +556,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 				Application:         application,
 				Environment:         er.EnvironmentName,
 				RegionEntity:        regionEntity,
-				Namespace:           envValue.Namespace,
 			},
 		}); err != nil {
 			return nil, err
@@ -577,6 +572,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	// 5. update cluster in db
 	clusterModel := r.toClusterModel(cluster, templateRelease, er.ID)
 	clusterModel.UpdatedBy = currentUser.GetID()
+	// todo: atomicity
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {
 		return nil, err
