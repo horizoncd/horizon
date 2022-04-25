@@ -345,6 +345,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
 	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
+	marshal(&envValueYAML, &err4, g.assembleEnvValue(params.BaseParams))
 	marshal(&sreValueYAML, &err5, g.assembleSREValue(params))
 	chart, err := g.assembleChart(params.BaseParams)
 	if err != nil {
@@ -481,7 +482,7 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 			FilePath: _filePathChart,
 			Content:  string(chartYAML),
 		}, {
-			Action:   gitlablib.FileCreate,
+			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathEnv,
 			Content:  string(envValueYAML),
 		},

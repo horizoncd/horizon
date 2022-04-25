@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
-	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"os"
 	"testing"
 
@@ -20,6 +17,9 @@ import (
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
+	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
+	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"github.com/golang/mock/gomock"
 

@@ -546,7 +546,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 				"request body validate err: %v", err)
 		}
 		// update cluster in git repo
-		envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, r.Template.Name)
+		envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
 			return nil, err
 		}
