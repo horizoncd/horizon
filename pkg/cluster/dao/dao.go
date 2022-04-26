@@ -180,6 +180,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 		clusterInDB.TemplateRelease = cluster.TemplateRelease
 		clusterInDB.UpdatedBy = cluster.UpdatedBy
 		clusterInDB.Status = cluster.Status
+		clusterInDB.EnvironmentRegionID = cluster.EnvironmentRegionID
 
 		// 3. save application after updated
 		if err := tx.Save(&clusterInDB).Error; err != nil {
