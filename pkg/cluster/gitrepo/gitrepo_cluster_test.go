@@ -151,9 +151,6 @@ func Test(t *testing.T) {
 			Priority: "P0",
 		},
 		Environment: "test",
-	}
-	createParams := &CreateClusterParams{
-		BaseParams: baseParams,
 		RegionEntity: &regionmodels.RegionEntity{
 			Region: &regionmodels.Region{
 				Name:        "hz",
@@ -166,6 +163,9 @@ func Test(t *testing.T) {
 				Server: "https://harbor.com",
 			},
 		},
+	}
+	createParams := &CreateClusterParams{
+		BaseParams: baseParams,
 	}
 
 	updateParams := &UpdateClusterParams{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
+	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -365,20 +366,31 @@ func (h *helper) ListMRs(ctx context.Context, pid interface{},
 }
 
 func (h *helper) AcceptMR(ctx context.Context, pid interface{}, mrID int,
-	mergeCommitMsg *string, shouldRemoveSourceBranch *bool) (_ *gitlab.MergeRequest, err error) {
+	mergeCommitMsg *string, shouldRemoveSourceBranch *bool) (mr *gitlab.MergeRequest, err error) {
 	const op = "gitlab: accept mr"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	mr, rsp, err := h.client.MergeRequests.AcceptMergeRequest(pid, mrID, &gitlab.AcceptMergeRequestOptions{
-		MergeCommitMessage:       mergeCommitMsg,
-		ShouldRemoveSourceBranch: shouldRemoveSourceBranch,
-	}, gitlab.WithContext(ctx))
+	retryFunc := func(i int) (*gitlab.MergeRequest, error) {
+		mr, rsp, err := h.client.MergeRequests.AcceptMergeRequest(pid, mrID, &gitlab.AcceptMergeRequestOptions{
+			MergeCommitMessage:       mergeCommitMsg,
+			ShouldRemoveSourceBranch: shouldRemoveSourceBranch,
+		}, gitlab.WithContext(ctx))
 
-	if err != nil {
-		return nil, parseError(rsp, err)
+		if err != nil {
+			return nil, parseError(rsp, err)
+		}
+		return mr, nil
 	}
-
-	return mr, nil
+	for i := 0; i < 20; i++ {
+		mr, err = retryFunc(i)
+		if err == nil {
+			return mr, nil
+		} else if perror.Cause(err) != herrors.ErrGitlabMRNotReady {
+			return nil, err
+		}
+		time.Sleep(time.Millisecond * 500)
+	}
+	return nil, err
 }
 
 func (h *helper) WriteFiles(ctx context.Context, pid interface{}, branch, commitMsg string,
@@ -481,6 +493,9 @@ func parseError(resp *gitlab.Response, err error) error {
 
 	if resp.StatusCode == http.StatusNotFound {
 		return herrors.NewErrNotFound(herrors.GitlabResource, err.Error())
+	} else if resp.StatusCode == http.StatusNotAcceptable {
+		// https://docs.gitlab.com/ee/api/merge_requests.html#single-merge-request-response-notes
+		return perror.Wrap(herrors.ErrGitlabMRNotReady, err.Error())
 	}
 
 	return perror.Wrap(herrors.ErrGitlabInternal, err.Error())
