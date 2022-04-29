@@ -9,6 +9,7 @@ import (
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -356,8 +357,12 @@ func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
 
-	result := db.Exec(common.GroupDelete, time.Now().Unix(), id)
+	result := db.Exec(common.GroupDelete, time.Now().Unix(), currentUser.GetID(), id)
 	if result.Error != nil {
 		return 0, herrors.NewErrDeleteFailed(herrors.GroupInDB, result.Error.Error())
 	}

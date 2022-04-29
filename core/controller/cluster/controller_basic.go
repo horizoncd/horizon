@@ -346,11 +346,6 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	const op = "cluster controller: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// 1. get application
 	application, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {
@@ -408,8 +403,6 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 
 	// 6. create cluster, after created, params.Cluster is the newest cluster
 	cluster, clusterTags := r.toClusterModel(application, er)
-	cluster.CreatedBy = currentUser.GetID()
-	cluster.UpdatedBy = currentUser.GetID()
 	cluster.Status = clustercommon.StatusCreating
 
 	if err := clustertagmanager.ValidateUpsert(clusterTags); err != nil {
@@ -482,11 +475,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	r *UpdateClusterRequest) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: update cluster"
 	defer wlog.Start(ctx, op).StopPrint()
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	// 1. get cluster from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -571,7 +559,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 
 	// 5. update cluster in db
 	clusterModel := r.toClusterModel(cluster, templateRelease, er.ID)
-	clusterModel.UpdatedBy = currentUser.GetID()
 	// todo: atomicity
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {

@@ -38,7 +38,7 @@ const (
 const (
 	GroupQueryByParentIDAndName = "select * from tb_group where parent_id = ? and name = ? and deleted_ts = 0"
 	GroupQueryByParentIDAndPath = "select * from tb_group where parent_id = ? and path = ? and deleted_ts = 0"
-	GroupDelete                 = "update tb_group set deleted_ts = ? where id = ?"
+	GroupDelete                 = "update tb_group set deleted_ts = ?, updated_by = ? where id = ?"
 	GroupUpdateBasic            = "update tb_group set name = ?, path = ?, description = ?, visibility_level = ?, " +
 		"updated_by = ? where id = ?"
 	GroupUpdateParentID       = "update tb_group set parent_id = ?, updated_by = ? where id = ?"
@@ -83,7 +83,7 @@ const (
 		"order by updated_at desc limit ? offset ?"
 	ApplicationQueryByNamesUnderGroup = "select * from tb_application where group_id = ? and name in ? " +
 		"and deleted_ts = 0"
-	ApplicationDeleteByID                = "update tb_application set deleted_ts = ? where id = ?"
+	ApplicationDeleteByID                = "update tb_application set deleted_ts = ?, updated_by = ? where id = ?"
 	ApplicationTransferByID              = "update tb_application set group_id = ? where id = ?"
 	ApplicationCountByGroupID            = "select count(1) from tb_application where group_id = ? and deleted_ts = 0"
 	ApplicationQueryByUserAndNameFuzzily = "select * from ( " +
@@ -138,7 +138,7 @@ const (
 /* sql about cluster */
 const (
 	ClusterQueryByID           = "select * from tb_cluster where id = ? and deleted_ts = 0"
-	ClusterDeleteByID          = "update tb_cluster set deleted_ts = ? where id = ?"
+	ClusterDeleteByID          = "update tb_cluster set deleted_ts = ?, updated_by = ? where id = ?"
 	ClusterQueryByName         = "select * from tb_cluster where name = ? and deleted_ts = 0"
 	ClusterListByApplicationID = "select * from tb_cluster where application_id = ? and deleted_ts = 0"
 	ClusterQueryByApplication  = "select c.*, er.environment_name, er.region_name, " +

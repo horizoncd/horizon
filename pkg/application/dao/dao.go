@@ -6,6 +6,7 @@ import (
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
@@ -304,8 +305,12 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	result := db.Exec(common.ApplicationDeleteByID, time.Now().Unix(), id)
+	result := db.Exec(common.ApplicationDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())

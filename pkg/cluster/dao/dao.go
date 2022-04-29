@@ -7,6 +7,7 @@ import (
 	"time"
 
 	querycommon "g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/user"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -199,8 +200,12 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	result := db.Exec(common.ClusterDeleteByID, time.Now().Unix(), id)
+	result := db.Exec(common.ClusterDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
 
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.ClusterInDB, result.Error.Error())

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/dao"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
@@ -67,6 +68,12 @@ func (m *manager) Create(ctx context.Context, cluster *models.Cluster,
 		extraMembersWithUser[user] = extraMembers[user.Email]
 	}
 
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cluster.CreatedBy = currentUser.GetID()
+	cluster.UpdatedBy = currentUser.GetID()
 	return m.dao.Create(ctx, cluster, clusterTags, extraMembersWithUser)
 }
 
@@ -83,6 +90,11 @@ func (m *manager) GetByName(ctx context.Context, clusterName string) (*models.Cl
 }
 
 func (m *manager) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error) {
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cluster.UpdatedBy = currentUser.GetID()
 	return m.dao.UpdateByID(ctx, id, cluster)
 }
 
