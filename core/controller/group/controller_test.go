@@ -20,6 +20,7 @@ import (
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -72,6 +73,12 @@ func init() {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
+	// nolint
+	ctx = context.WithValue(ctx, user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
+	})
+	callbacks.RegisterCustomCallbacks(ctx, db)
 }
 
 func TestGetAuthedGroups(t *testing.T) {
@@ -154,8 +161,8 @@ func TestGetAuthedGroups(t *testing.T) {
 					ParentID:        tt.args.newGroup.ParentID,
 					VisibilityLevel: tt.args.newGroup.VisibilityLevel,
 					TraversalIDs:    traversalIDs,
-					CreatedBy:       1,
-					UpdatedBy:       1,
+					CreatedBy:       110,
+					UpdatedBy:       110,
 				}))
 			}
 		})
@@ -289,8 +296,8 @@ func TestControllerCreateGroup(t *testing.T) {
 					ParentID:        tt.args.newGroup.ParentID,
 					VisibilityLevel: tt.args.newGroup.VisibilityLevel,
 					TraversalIDs:    traversalIDs,
-					CreatedBy:       1,
-					UpdatedBy:       1,
+					CreatedBy:       110,
+					UpdatedBy:       110,
 				}))
 			}
 		})
@@ -342,8 +349,8 @@ func TestControllerCreateGroup(t *testing.T) {
 					ParentID:        tt.args.newGroup.ParentID,
 					VisibilityLevel: tt.args.newGroup.VisibilityLevel,
 					TraversalIDs:    traversalIDs,
-					CreatedBy:       1,
-					UpdatedBy:       1,
+					CreatedBy:       110,
+					UpdatedBy:       110,
 				}))
 			}
 		})
@@ -1155,7 +1162,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 						ParentID:        group.ParentID,
 						VisibilityLevel: tt.args.updateGroup.VisibilityLevel,
 						TraversalIDs:    group.TraversalIDs,
-						CreatedBy:       1,
+						CreatedBy:       110,
 						UpdatedBy:       2,
 					}))
 				}

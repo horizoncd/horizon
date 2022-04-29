@@ -431,9 +431,13 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 	if err != nil {
 		return err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return err
+	}
 
 	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description,
-		group.VisibilityLevel, group.UpdatedBy, group.ID)
+		group.VisibilityLevel, currentUser.GetID(), group.ID)
 
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
