@@ -11,13 +11,16 @@ import (
 	"testing"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -68,6 +71,13 @@ func init() {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
+
+	// nolint
+	ctx = context.WithValue(ctx, user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
+	})
+	callbacks.RegisterCustomCallbacks(ctx, db)
 }
 
 func TestCreate(t *testing.T) {

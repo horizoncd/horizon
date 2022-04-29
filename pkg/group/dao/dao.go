@@ -280,6 +280,10 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 	if err != nil {
 		return nil, err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var pGroup *models.Group
 	// check if parent exists
@@ -329,8 +333,8 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 			ResourceID:   id,
 			Role:         role.Owner,
 			MemberType:   membermodels.MemberUser,
-			MemberNameID: group.CreatedBy,
-			GrantedBy:    group.UpdatedBy,
+			MemberNameID: currentUser.GetID(),
+			GrantedBy:    currentUser.GetID(),
 		}
 		result := tx.Create(member)
 		if result.Error != nil {
