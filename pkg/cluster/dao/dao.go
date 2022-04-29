@@ -103,8 +103,6 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 		}
 		for i := 0; i < len(clusterTags); i++ {
 			clusterTags[i].ClusterID = cluster.ID
-			clusterTags[i].CreatedBy = cluster.CreatedBy
-			clusterTags[i].UpdatedBy = cluster.CreatedBy
 		}
 
 		result = tx.Create(clusterTags)
@@ -179,11 +177,10 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 		clusterInDB.GitSubfolder = cluster.GitSubfolder
 		clusterInDB.GitBranch = cluster.GitBranch
 		clusterInDB.TemplateRelease = cluster.TemplateRelease
-		clusterInDB.UpdatedBy = cluster.UpdatedBy
 		clusterInDB.Status = cluster.Status
 		clusterInDB.EnvironmentRegionID = cluster.EnvironmentRegionID
 
-		// 3. save application after updated
+		// 3. save cluster after updated
 		if err := tx.Save(&clusterInDB).Error; err != nil {
 			return herrors.NewErrInsertFailed(herrors.ClusterInDB, result.Error.Error())
 		}

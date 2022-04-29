@@ -284,19 +284,10 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 
 // UpdateBasic update basic info of a group, including name, path, description and visibilityLevel
 func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *UpdateGroup) error {
-	const op = "group controller: update group basic"
-
 	group := convertUpdateGroupToGroup(updateGroup)
 	group.ID = id
 
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
-	}
-	group.UpdatedBy = currentUser.GetID()
-
-	err = c.groupManager.UpdateBasic(ctx, group)
+	err := c.groupManager.UpdateBasic(ctx, group)
 	if err != nil {
 		return err
 	}
@@ -324,16 +315,7 @@ func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 
 // CreateGroup add a group
 func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint, error) {
-	const op = "group controller: create group"
 	groupEntity := convertNewGroupToGroup(newGroup)
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return 0, errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
-	}
-	groupEntity.CreatedBy = currentUser.GetID()
-	groupEntity.UpdatedBy = currentUser.GetID()
 
 	group, err := c.groupManager.Create(ctx, groupEntity)
 	if err != nil {

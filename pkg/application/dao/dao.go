@@ -289,7 +289,6 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, application *models.Appli
 		applicationInDB.GitBranch = application.GitBranch
 		applicationInDB.Template = application.Template
 		applicationInDB.TemplateRelease = application.TemplateRelease
-		applicationInDB.UpdatedBy = application.UpdatedBy
 		// 3. save application after updated
 		tx.Save(&applicationInDB)
 

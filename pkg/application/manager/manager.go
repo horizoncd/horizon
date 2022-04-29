@@ -3,7 +3,6 @@ package manager
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	"g.hz.netease.com/horizon/pkg/application/models"
@@ -109,22 +108,11 @@ func (m *manager) Create(ctx context.Context, application *models.Application,
 		extraMembersWithUser[user] = extraMembers[user.Email]
 	}
 
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	application.CreatedBy = currentUser.GetID()
-	application.UpdatedBy = currentUser.GetID()
 	return m.applicationDAO.Create(ctx, application, extraMembersWithUser)
 }
 
 func (m *manager) UpdateByID(ctx context.Context,
 	id uint, application *models.Application) (*models.Application, error) {
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	application.UpdatedBy = currentUser.GetID()
 	return m.applicationDAO.UpdateByID(ctx, id, application)
 }
 
