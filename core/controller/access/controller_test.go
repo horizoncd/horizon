@@ -8,24 +8,23 @@ import (
 	"strings"
 	"testing"
 
-	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/member"
-	"g.hz.netease.com/horizon/pkg/rbac"
-	"g.hz.netease.com/horizon/pkg/server/middleware"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
+	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/rbac"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
+	"g.hz.netease.com/horizon/pkg/server/middleware"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -65,6 +64,10 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	ctx = orm.NewContext(ctx, db)
+	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+		Name: "Tony",
+		ID:   uint(110),
+	})
 
 	rbacAuthorizer := rbac.NewAuthorizer(roleService, memberService)
 	skippers := middleware.MethodAndPathSkipper("*",
@@ -72,12 +75,14 @@ func TestMain(m *testing.M) {
 			"(^/apis/core/v1/roles)|(^/apis/internal/.*)"))
 	c = NewController(rbacAuthorizer, skippers)
 
-	group, _ = groupmanager.Mgr.Create(ctx, &groupmodels.Group{
+	group, err = groupmanager.Mgr.Create(ctx, &groupmodels.Group{
 		Name:            "group",
 		Path:            "/group",
 		VisibilityLevel: "private",
 	})
-
+	if err != nil {
+		panic(err)
+	}
 	application, _ = applicationmanager.Mgr.Create(ctx, &applicationmodels.Application{
 		Name:    "application",
 		GroupID: group.ID,
@@ -99,7 +104,7 @@ func TestController_GetAccesses_Guest(t *testing.T) {
 	})
 
 	nonMemberCtx := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
-		ID: cluster.CreatedBy + 1,
+		ID: 2,
 	})
 	guestCtx := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
 		ID: guest.ID,
