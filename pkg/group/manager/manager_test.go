@@ -28,9 +28,8 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(context.TODO(), db)
-
+	db, _      = orm.NewSqliteDB("")
+	ctx        context.Context
 	notExistID = uint(100)
 )
 
@@ -55,6 +54,14 @@ func getGroup(parentID uint, name, path string) *models.Group {
 }
 
 func init() {
+	// nolint
+	userCtx := context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
+	})
+	callbacks.RegisterCustomCallbacks(db)
+
+	db = db.WithContext(userCtx)
 	// create table
 	err := db.AutoMigrate(&models.Group{})
 	if err != nil {
@@ -72,12 +79,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	// nolint
-	ctx = context.WithValue(ctx, user.ContextUserKey, &userauth.DefaultInfo{
-		Name: "tony",
-		ID:   110,
-	})
-	callbacks.RegisterCustomCallbacks(ctx, db)
+	ctx = orm.NewContext(userCtx, db)
 }
 
 func TestCreate(t *testing.T) {

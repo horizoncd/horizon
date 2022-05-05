@@ -33,6 +33,11 @@ var (
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	db = db.Debug()
+	// nolint
+	db = db.WithContext(context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
+	}))
 	if err := db.AutoMigrate(&models.Cluster{}, &clustertagmodels.ClusterTag{}, &usermodels.User{},
 		&envmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{}); err != nil {
 		panic(err)
@@ -43,7 +48,7 @@ func TestMain(m *testing.M) {
 		Name: "tony",
 		ID:   110,
 	})
-	callbacks.RegisterCustomCallbacks(ctx, db)
+	callbacks.RegisterCustomCallbacks(db)
 	os.Exit(m.Run())
 }
 
