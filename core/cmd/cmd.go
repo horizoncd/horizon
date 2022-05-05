@@ -73,6 +73,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -196,6 +197,7 @@ func Run(flags *Flags) {
 
 	// init service
 	ctx := orm.NewContext(context.Background(), mysqlDB)
+	callbacks.RegisterCustomCallbacks(ctx, mysqlDB)
 	gitlabFactory := gitlabfty.NewFactory(config.GitlabMapper)
 	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, config.GitlabRepoConfig, gitlabFactory)
 	if err != nil {

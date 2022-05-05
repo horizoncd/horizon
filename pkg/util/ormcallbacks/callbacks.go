@@ -12,8 +12,8 @@ const (
 	_updatedBy = "updated_by"
 )
 
-// AddCreatedByUpdatedByForCreateCallback will set `created_by` and `updated_by` when creating records if fields exist
-func AddCreatedByUpdatedByForCreateCallback(ctx context.Context, db *gorm.DB) {
+// addCreatedByUpdatedByForCreateCallback will set `created_by` and `updated_by` when creating records if fields exist
+func addCreatedByUpdatedByForCreateCallback(ctx context.Context, db *gorm.DB) {
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
 		db.Error = err
@@ -30,8 +30,8 @@ func AddCreatedByUpdatedByForCreateCallback(ctx context.Context, db *gorm.DB) {
 	}
 }
 
-// AddUpdatedByForUpdateDeleteCallback will set `updated_by` when updating or deleting records if fields exist
-func AddUpdatedByForUpdateDeleteCallback(ctx context.Context, db *gorm.DB) {
+// addUpdatedByForUpdateDeleteCallback will set `updated_by` when updating or deleting records if fields exist
+func addUpdatedByForUpdateDeleteCallback(ctx context.Context, db *gorm.DB) {
 	currentUser, err := user.FromContext(ctx)
 	if err != nil {
 		db.Error = err
@@ -47,16 +47,16 @@ func AddUpdatedByForUpdateDeleteCallback(ctx context.Context, db *gorm.DB) {
 func RegisterCustomCallbacks(ctx context.Context, db *gorm.DB) {
 	_ = db.Callback().Create().Before("gorm:create").After("gorm:before_create").
 		Register("add_created", func(d *gorm.DB) {
-			AddCreatedByUpdatedByForCreateCallback(ctx, d)
+			addCreatedByUpdatedByForCreateCallback(ctx, d)
 		})
 
 	_ = db.Callback().Update().Before("gorm:update").After("gorm:before_update").
 		Register("add_updated_by", func(d *gorm.DB) {
-			AddUpdatedByForUpdateDeleteCallback(ctx, d)
+			addUpdatedByForUpdateDeleteCallback(ctx, d)
 		})
 
 	_ = db.Callback().Delete().Before("gorm:delete").After("gorm:before_delete").
 		Register("add_updated_by", func(d *gorm.DB) {
-			AddUpdatedByForUpdateDeleteCallback(ctx, d)
+			addUpdatedByForUpdateDeleteCallback(ctx, d)
 		})
 }

@@ -57,6 +57,10 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 	if err != nil {
 		return nil, err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(cluster).Error; err != nil {
@@ -71,13 +75,13 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 			ResourceID:   cluster.ID,
 			Role:         role.Owner,
 			MemberType:   membermodels.MemberUser,
-			MemberNameID: cluster.CreatedBy,
-			GrantedBy:    cluster.UpdatedBy,
+			MemberNameID: currentUser.GetID(),
+			GrantedBy:    currentUser.GetID(),
 		})
 
 		// the extra owners
 		for extraMember, roleOfMember := range extraMembers {
-			if extraMember.ID == cluster.CreatedBy {
+			if extraMember.ID == currentUser.GetID() {
 				continue
 			}
 			members = append(members, &membermodels.Member{
@@ -86,7 +90,7 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 				Role:         roleOfMember,
 				MemberType:   membermodels.MemberUser,
 				MemberNameID: extraMember.ID,
-				GrantedBy:    cluster.CreatedBy,
+				GrantedBy:    currentUser.GetID(),
 			})
 		}
 
