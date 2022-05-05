@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
@@ -297,15 +296,7 @@ func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *Upda
 
 // Transfer put a group under another parent group
 func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
-	const op = "group controller: transfer group"
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
-	}
-
-	err = c.groupManager.Transfer(ctx, id, newParentID, currentUser.GetID())
+	err := c.groupManager.Transfer(ctx, id, newParentID)
 	if err != nil {
 		return err
 	}

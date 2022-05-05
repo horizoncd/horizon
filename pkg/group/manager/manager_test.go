@@ -258,11 +258,11 @@ func TestTransferGroup(t *testing.T) {
 	assert.Nil(t, err)
 
 	// not valid transfer: name conflict
-	err = Mgr.Transfer(ctx, g2.ID, g3.ID, 1)
+	err = Mgr.Transfer(ctx, g2.ID, g3.ID)
 	assert.True(t, perror.Cause(err) == herrors.ErrNameConflict)
 
 	// valid transfer
-	err = Mgr.Transfer(ctx, g1.ID, g3.ID, 1)
+	err = Mgr.Transfer(ctx, g1.ID, g3.ID)
 	assert.Nil(t, err)
 
 	group, err := Mgr.GetByID(ctx, g2.ID)

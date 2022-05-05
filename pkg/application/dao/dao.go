@@ -327,6 +327,10 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 	if err != nil {
 		return err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return err
+	}
 	err = db.Transaction(func(tx *gorm.DB) error {
 		var group groupmodels.Group
 		result := tx.Raw(common.GroupQueryByID, groupID).Scan(&group)
@@ -337,7 +341,7 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 			return herrors.NewErrNotFound(herrors.GroupInDB, "group not found")
 		}
 
-		result = tx.Exec(common.ApplicationTransferByID, groupID, id)
+		result = tx.Exec(common.ApplicationTransferByID, groupID, currentUser.GetID(), id)
 		if result.Error != nil {
 			return result.Error
 		}
