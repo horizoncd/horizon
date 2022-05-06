@@ -73,7 +73,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
-
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -193,6 +193,7 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+	callbacks.RegisterCustomCallbacks(mysqlDB)
 
 	// init service
 	ctx := orm.NewContext(context.Background(), mysqlDB)
@@ -296,21 +297,15 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		regionmiddle.Middleware(regionConfig),
-	}
-	// enable usermiddle and auth when current env is not dev
-	if !flags.Dev {
 		// TODO(gjq): remove this authentication, add OIDC provider
-		middlewares = append(middlewares, authenticate.Middleware(config.AccessSecretKeys,
+		authenticate.Middleware(config.AccessSecretKeys, // authenticate middleware, check authentication
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))))
-		middlewares = append(middlewares,
-			usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
-				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
-				middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
-			),
-		)
-		middlewares = append(middlewares, auth.Middleware(rbacAuthorizer, rbacSkippers))
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+		usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal"))),
+		auth.Middleware(rbacAuthorizer, rbacSkippers),
 	}
 	r.Use(middlewares...)
 

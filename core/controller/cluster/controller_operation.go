@@ -11,7 +11,6 @@ import (
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -26,11 +25,6 @@ const (
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
 	const op = "cluster controller: restart "
 	defer wlog.Start(ctx, op).StopPrint()
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
@@ -79,7 +73,6 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		ConfigCommit:     commit,
 		StartedAt:        &timeNow,
 		FinishedAt:       &timeNow,
-		CreatedBy:        currentUser.GetID(),
 	}
 	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
 	if err != nil {
@@ -95,11 +88,6 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	r *DeployRequest) (_ *PipelinerunIDResponse, err error) {
 	const op = "cluster controller: deploy "
 	defer wlog.Start(ctx, op).StopPrint()
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
@@ -196,7 +184,6 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		ConfigCommit:     configCommit.Gitops,
 		StartedAt:        &timeNow,
 		FinishedAt:       &timeNow,
-		CreatedBy:        currentUser.GetID(),
 	}
 	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
 	if err != nil {
@@ -212,11 +199,6 @@ func (c *controller) Rollback(ctx context.Context,
 	clusterID uint, r *RollbackRequest) (_ *PipelinerunIDResponse, err error) {
 	const op = "cluster controller: rollback "
 	defer wlog.Start(ctx, op).StopPrint()
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	// 1. get pipelinerun to rollback, and do some validation
 	pipelinerun, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
@@ -323,7 +305,6 @@ func (c *controller) Rollback(ctx context.Context,
 		StartedAt:        &timeNow,
 		FinishedAt:       &timeNow,
 		RollbackFrom:     &r.PipelinerunID,
-		CreatedBy:        currentUser.GetID(),
 	}
 	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
 	if err != nil {

@@ -90,7 +90,6 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		ImageURL:         imageURL,
 		LastConfigCommit: configCommit.Master,
 		ConfigCommit:     configCommit.Gitops,
-		CreatedBy:        currentUser.GetID(),
 	}
 	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
 	if err != nil {

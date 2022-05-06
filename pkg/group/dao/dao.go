@@ -9,6 +9,7 @@ import (
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -51,7 +52,7 @@ type DAO interface {
 	// ListChildren children of a group
 	ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error)
 	// Transfer move a group under another parent group
-	Transfer(ctx context.Context, id, newParentID uint, userID uint) error
+	Transfer(ctx context.Context, id, newParentID uint) error
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 	ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*models.Group, error)
@@ -105,10 +106,14 @@ func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageS
 	return gas, count, result.Error
 }
 
-func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userID uint) error {
+func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
+	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil
 	}
 
 	// check records exist
@@ -134,14 +139,15 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint, userID uint) e
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		// change parentID
-		if err := tx.Exec(common.GroupUpdateParentID, newParentID, userID, id).Error; err != nil {
+		if err := tx.Exec(common.GroupUpdateParentID, newParentID, currentUser.GetID(), id).Error; err != nil {
 			return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
 		}
 
 		// update traversalIDs
 		oldTIDs := group.TraversalIDs
 		newTIDs := fmt.Sprintf("%s,%d", pGroup.TraversalIDs, group.ID)
-		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs, userID, oldTIDs+"%").Error; err != nil {
+		if err := tx.Exec(common.GroupUpdateTraversalIDsPrefix, oldTIDs, newTIDs,
+			currentUser.GetID(), oldTIDs+"%").Error; err != nil {
 			return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
 		}
 
@@ -279,6 +285,10 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 	if err != nil {
 		return nil, err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	var pGroup *models.Group
 	// check if parent exists
@@ -316,7 +326,7 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 			traversalIDs = fmt.Sprintf("%s,%d", pGroup.TraversalIDs, id)
 		}
 
-		if err := tx.Exec(common.GroupUpdateTraversalIDs, traversalIDs, id).Error; err != nil {
+		if err := tx.Exec(common.GroupUpdateTraversalIDs, traversalIDs, currentUser.GetID(), id).Error; err != nil {
 			// rollback when error
 
 			return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
@@ -328,8 +338,8 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 			ResourceID:   id,
 			Role:         role.Owner,
 			MemberType:   membermodels.MemberUser,
-			MemberNameID: group.CreatedBy,
-			GrantedBy:    group.UpdatedBy,
+			MemberNameID: currentUser.GetID(),
+			GrantedBy:    currentUser.GetID(),
 		}
 		result := tx.Create(member)
 		if result.Error != nil {
@@ -356,8 +366,12 @@ func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
 
-	result := db.Exec(common.GroupDelete, time.Now().Unix(), id)
+	result := db.Exec(common.GroupDelete, time.Now().Unix(), currentUser.GetID(), id)
 	if result.Error != nil {
 		return 0, herrors.NewErrDeleteFailed(herrors.GroupInDB, result.Error.Error())
 	}
@@ -426,9 +440,13 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 	if err != nil {
 		return err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return err
+	}
 
 	result := db.Exec(common.GroupUpdateBasic, group.Name, group.Path, group.Description,
-		group.VisibilityLevel, group.UpdatedBy, group.ID)
+		group.VisibilityLevel, currentUser.GetID(), group.ID)
 
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())

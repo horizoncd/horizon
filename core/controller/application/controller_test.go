@@ -492,12 +492,18 @@ func TestListUserApplication(t *testing.T) {
 		memberManager:  memberMgr,
 	}
 
+	// nolint
+	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+		Name: "Matt",
+		ID:   uint(2),
+	})
+
 	_, err := memberMgr.Create(ctx, &membermodels.Member{
 		ResourceType: membermodels.TypeGroup,
 		ResourceID:   groups[0].ID,
 		Role:         "owner",
 		MemberType:   membermodels.MemberUser,
-		MemberNameID: 1,
+		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
 
@@ -506,7 +512,7 @@ func TestListUserApplication(t *testing.T) {
 		ResourceID:   applications[1].ID,
 		Role:         "owner",
 		MemberType:   membermodels.MemberUser,
-		MemberNameID: 1,
+		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
 
@@ -527,7 +533,7 @@ func TestListUserApplication(t *testing.T) {
 		ResourceID:   groups[2].ID,
 		Role:         "owner",
 		MemberType:   membermodels.MemberUser,
-		MemberNameID: 1,
+		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
 	count, resps, err = c.ListUserApplication(ctx, "appFu", &q.Query{

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
@@ -288,7 +289,6 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, application *models.Appli
 		applicationInDB.GitBranch = application.GitBranch
 		applicationInDB.Template = application.Template
 		applicationInDB.TemplateRelease = application.TemplateRelease
-		applicationInDB.UpdatedBy = application.UpdatedBy
 		// 3. save application after updated
 		tx.Save(&applicationInDB)
 
@@ -304,8 +304,12 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	result := db.Exec(common.ApplicationDeleteByID, time.Now().Unix(), id)
+	result := db.Exec(common.ApplicationDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
@@ -323,6 +327,10 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 	if err != nil {
 		return err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return err
+	}
 	err = db.Transaction(func(tx *gorm.DB) error {
 		var group groupmodels.Group
 		result := tx.Raw(common.GroupQueryByID, groupID).Scan(&group)
@@ -333,7 +341,7 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 			return herrors.NewErrNotFound(herrors.GroupInDB, "group not found")
 		}
 
-		result = tx.Exec(common.ApplicationTransferByID, groupID, id)
+		result = tx.Exec(common.ApplicationTransferByID, groupID, currentUser.GetID(), id)
 		if result.Error != nil {
 			return result.Error
 		}
