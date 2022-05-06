@@ -798,7 +798,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 
 		// 3. set cluster status
 		cluster.Status = clustercommon.StatusFreed
-		cluster, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
+		_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
 		if err != nil {
 			log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
 			return
