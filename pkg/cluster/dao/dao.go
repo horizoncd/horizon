@@ -186,7 +186,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 
 		// 3. save cluster after updated
 		if err := tx.Save(&clusterInDB).Error; err != nil {
-			return herrors.NewErrInsertFailed(herrors.ClusterInDB, err.Error())
+			return herrors.NewErrUpdateFailed(herrors.ClusterInDB, err.Error())
 		}
 
 		return nil

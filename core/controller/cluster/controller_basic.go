@@ -668,7 +668,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		defer func() {
 			if err != nil {
 				cluster.Status = ""
-				cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+				_, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 				if err != nil {
 					log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
 				}
@@ -762,7 +762,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 			if err != nil {
 				cluster.Status = ""
 			}
-			cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+			_, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 			if err != nil {
 				log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
 				return

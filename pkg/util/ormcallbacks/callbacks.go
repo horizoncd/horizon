@@ -2,6 +2,7 @@ package callbacks
 
 import (
 	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"gorm.io/gorm"
 )
 
@@ -39,6 +40,7 @@ func addUpdatedByForUpdateDeleteCallback(db *gorm.DB) {
 	if field != nil {
 		currentUser, err := user.FromContext(db.Statement.Context)
 		if err != nil {
+			log.Errorf(db.Statement.Context, "context in gorm is: %+v", db.Statement.Context)
 			db.Error = err
 			return
 		}
