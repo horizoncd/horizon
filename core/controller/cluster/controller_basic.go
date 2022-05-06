@@ -778,23 +778,29 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 			log.Errorf(ctx, "failed to get db from context")
 			return
 		}
-		ctx := log.WithContext(context.Background(), rid)
-		ctx = orm.NewContext(ctx, db)
+		currentUser, err := user.FromContext(ctx)
+		if err != nil {
+			return
+		}
+
+		newctx := log.WithContext(context.Background(), rid)
+		newctx = orm.NewContext(newctx, db)
+		newctx = user.WithContext(newctx, currentUser)
 
 		// 2. delete cluster in cd system
-		if err = c.cd.DeleteCluster(ctx, &cd.DeleteClusterParams{
+		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
 			Environment: er.EnvironmentName,
 			Cluster:     cluster.Name,
 		}); err != nil {
-			log.Errorf(ctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
+			log.Errorf(newctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
 			return
 		}
 
 		// 3. set cluster status
 		cluster.Status = clustercommon.StatusFreed
-		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+		cluster, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
 		if err != nil {
-			log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+			log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
 			return
 		}
 	}()
