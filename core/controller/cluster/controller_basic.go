@@ -668,9 +668,9 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		defer func() {
 			if err != nil {
 				cluster.Status = ""
-				_, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+				_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
 				if err != nil {
-					log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+					log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
 				}
 			}
 		}()
