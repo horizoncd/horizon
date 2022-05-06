@@ -7,6 +7,7 @@ import (
 	"time"
 
 	querycommon "g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/user"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -56,6 +57,10 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 	if err != nil {
 		return nil, err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(cluster).Error; err != nil {
@@ -70,13 +75,13 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 			ResourceID:   cluster.ID,
 			Role:         role.Owner,
 			MemberType:   membermodels.MemberUser,
-			MemberNameID: cluster.CreatedBy,
-			GrantedBy:    cluster.UpdatedBy,
+			MemberNameID: currentUser.GetID(),
+			GrantedBy:    currentUser.GetID(),
 		})
 
 		// the extra owners
 		for extraMember, roleOfMember := range extraMembers {
-			if extraMember.ID == cluster.CreatedBy {
+			if extraMember.ID == currentUser.GetID() {
 				continue
 			}
 			members = append(members, &membermodels.Member{
@@ -85,7 +90,7 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 				Role:         roleOfMember,
 				MemberType:   membermodels.MemberUser,
 				MemberNameID: extraMember.ID,
-				GrantedBy:    cluster.CreatedBy,
+				GrantedBy:    currentUser.GetID(),
 			})
 		}
 
@@ -102,8 +107,6 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 		}
 		for i := 0; i < len(clusterTags); i++ {
 			clusterTags[i].ClusterID = cluster.ID
-			clusterTags[i].CreatedBy = cluster.CreatedBy
-			clusterTags[i].UpdatedBy = cluster.CreatedBy
 		}
 
 		result = tx.Create(clusterTags)
@@ -178,11 +181,10 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 		clusterInDB.GitSubfolder = cluster.GitSubfolder
 		clusterInDB.GitBranch = cluster.GitBranch
 		clusterInDB.TemplateRelease = cluster.TemplateRelease
-		clusterInDB.UpdatedBy = cluster.UpdatedBy
 		clusterInDB.Status = cluster.Status
 		clusterInDB.EnvironmentRegionID = cluster.EnvironmentRegionID
 
-		// 3. save application after updated
+		// 3. save cluster after updated
 		if err := tx.Save(&clusterInDB).Error; err != nil {
 			return herrors.NewErrInsertFailed(herrors.ClusterInDB, result.Error.Error())
 		}
@@ -199,8 +201,12 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return err
+	}
 
-	result := db.Exec(common.ClusterDeleteByID, time.Now().Unix(), id)
+	result := db.Exec(common.ClusterDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
 
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.ClusterInDB, result.Error.Error())

@@ -125,11 +125,6 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	const op = "application controller: create application"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	extraMembers := request.ExtraMembers
 
 	users := make([]string, 0, len(extraMembers))
@@ -190,8 +185,6 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 
 	// 4. create application in db
 	applicationModel := request.toApplicationModel(groupID)
-	applicationModel.CreatedBy = currentUser.GetID()
-	applicationModel.UpdatedBy = currentUser.GetID()
 	applicationModel, err = c.applicationMgr.Create(ctx, applicationModel, extraMembers)
 	if err != nil {
 		return nil, err
@@ -219,11 +212,6 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 	request *UpdateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: update application"
 	defer wlog.Start(ctx, op).StopPrint()
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	// 1. get application in db
 	appExistsInDB, err := c.applicationMgr.GetByID(ctx, id)
@@ -257,7 +245,6 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 
 	// 4. update application in db
 	applicationModel := request.toApplicationModel(appExistsInDB)
-	applicationModel.UpdatedBy = currentUser.GetID()
 	applicationModel, err = c.applicationMgr.UpdateByID(ctx, id, applicationModel)
 	if err != nil {
 		return nil, err

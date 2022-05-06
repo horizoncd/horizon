@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	contextUserKey     = "contextUser"
+	ContextUserKey     = "contextUser"
 	HTTPHeaderOperator = "Operator"
 )
 
@@ -44,7 +44,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 				return
 			}
 
-			c.Set(contextUserKey, &userauth.DefaultInfo{
+			c.Set(ContextUserKey, &userauth.DefaultInfo{
 				Name:     u.Name,
 				FullName: u.FullName,
 				ID:       u.ID,
@@ -90,7 +90,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 			}
 		}
 		// attach user to context
-		c.Set(contextUserKey, &userauth.DefaultInfo{
+		c.Set(ContextUserKey, &userauth.DefaultInfo{
 			Name:     u.Name,
 			FullName: u.FullName,
 			ID:       u.ID,
@@ -102,7 +102,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 }
 
 func FromContext(ctx context.Context) (userauth.User, error) {
-	u, ok := ctx.Value(contextUserKey).(userauth.User)
+	u, ok := ctx.Value(ContextUserKey).(userauth.User)
 	if !ok {
 		return nil, herrors.ErrFailedToGetUser
 	}
@@ -110,7 +110,7 @@ func FromContext(ctx context.Context) (userauth.User, error) {
 }
 
 func Key() string {
-	return contextUserKey
+	return ContextUserKey
 }
 
 func WithContext(parent context.Context, user userauth.User) context.Context {

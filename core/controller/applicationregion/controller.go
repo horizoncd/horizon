@@ -3,7 +3,6 @@ package applicationregion
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/applicationregion/manager"
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/config/region"
@@ -52,10 +51,6 @@ func (c *controller) List(ctx context.Context, applicationID uint) (ApplicationR
 
 func (c *controller) Update(ctx context.Context, applicationID uint, regions ApplicationRegion) error {
 	applicationRegions := make([]*models.ApplicationRegion, 0)
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return perror.WithMessage(err, "no user in context")
-	}
 
 	for _, r := range regions {
 		_, err := c.environmentMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
@@ -67,8 +62,6 @@ func (c *controller) Update(ctx context.Context, applicationID uint, regions App
 			ApplicationID:   applicationID,
 			EnvironmentName: r.Environment,
 			RegionName:      r.Region,
-			CreatedBy:       currentUser.GetID(),
-			UpdatedBy:       currentUser.GetID(),
 		})
 	}
 

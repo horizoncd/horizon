@@ -11,13 +11,16 @@ import (
 	"testing"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -25,9 +28,8 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(context.TODO(), db)
-
+	db, _      = orm.NewSqliteDB("")
+	ctx        context.Context
 	notExistID = uint(100)
 )
 
@@ -52,6 +54,14 @@ func getGroup(parentID uint, name, path string) *models.Group {
 }
 
 func init() {
+	// nolint
+	userCtx := context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
+	})
+	callbacks.RegisterCustomCallbacks(db)
+
+	db = db.WithContext(userCtx)
 	// create table
 	err := db.AutoMigrate(&models.Group{})
 	if err != nil {
@@ -68,6 +78,8 @@ func init() {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
+
+	ctx = orm.NewContext(userCtx, db)
 }
 
 func TestCreate(t *testing.T) {
@@ -248,11 +260,11 @@ func TestTransferGroup(t *testing.T) {
 	assert.Nil(t, err)
 
 	// not valid transfer: name conflict
-	err = Mgr.Transfer(ctx, g2.ID, g3.ID, 1)
+	err = Mgr.Transfer(ctx, g2.ID, g3.ID)
 	assert.True(t, perror.Cause(err) == herrors.ErrNameConflict)
 
 	// valid transfer
-	err = Mgr.Transfer(ctx, g1.ID, g3.ID, 1)
+	err = Mgr.Transfer(ctx, g1.ID, g3.ID)
 	assert.Nil(t, err)
 
 	group, err := Mgr.GetByID(ctx, g2.ID)

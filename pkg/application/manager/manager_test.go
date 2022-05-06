@@ -7,9 +7,11 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/member"
@@ -18,7 +20,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/global"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -27,6 +29,34 @@ var (
 	db  *gorm.DB
 	ctx context.Context
 )
+
+func TestMain(m *testing.M) {
+	db, _ = orm.NewSqliteDB("")
+	// nolint
+	db = db.WithContext(context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
+	}))
+	callbacks.RegisterCustomCallbacks(db)
+	ctx = orm.NewContext(context.TODO(), db)
+	// nolint
+	ctx = context.WithValue(ctx, user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
+	})
+
+	if err := db.AutoMigrate(&models.Application{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&membermodels.Member{}, &usermodels.User{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
+		panic(err)
+	}
+
+	os.Exit(m.Run())
+}
 
 func Test(t *testing.T) {
 	userDAO := userdao.NewDAO()
@@ -165,19 +195,4 @@ func Test(t *testing.T) {
 	assert.Equal(t, appGetByName.Name, apps[0].Name)
 	err = Mgr.DeleteByID(ctx, appGetByName.ID)
 	assert.Nil(t, err)
-}
-
-func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&models.Application{}); err != nil {
-		panic(err)
-	}
-	if err := db.AutoMigrate(&membermodels.Member{}, &usermodels.User{}); err != nil {
-		panic(err)
-	}
-	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
-		panic(err)
-	}
-	ctx = orm.NewContext(context.TODO(), db)
-	os.Exit(m.Run())
 }

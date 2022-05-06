@@ -5,8 +5,10 @@ import (
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
@@ -18,6 +20,7 @@ import (
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -30,11 +33,22 @@ var (
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	db = db.Debug()
+	// nolint
+	db = db.WithContext(context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
+	}))
 	if err := db.AutoMigrate(&models.Cluster{}, &clustertagmodels.ClusterTag{}, &usermodels.User{},
 		&envmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
+	// nolint
+	ctx = context.WithValue(ctx, user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
+	})
+	callbacks.RegisterCustomCallbacks(db)
 	os.Exit(m.Run())
 }
 
@@ -98,6 +112,10 @@ func Test(t *testing.T) {
 		{
 			Key:   "k1",
 			Value: "v1",
+		},
+		{
+			Key:   "k2",
+			Value: "v2",
 		},
 	}, map[string]string{user2.Email: role.Owner})
 	assert.Nil(t, err)

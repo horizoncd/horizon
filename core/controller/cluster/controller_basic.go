@@ -346,11 +346,6 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	const op = "cluster controller: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// 1. get application
 	application, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {
@@ -408,8 +403,6 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 
 	// 6. create cluster, after created, params.Cluster is the newest cluster
 	cluster, clusterTags := r.toClusterModel(application, er)
-	cluster.CreatedBy = currentUser.GetID()
-	cluster.UpdatedBy = currentUser.GetID()
 	cluster.Status = clustercommon.StatusCreating
 
 	if err := clustertagmanager.ValidateUpsert(clusterTags); err != nil {
@@ -482,11 +475,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	r *UpdateClusterRequest) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: update cluster"
 	defer wlog.Start(ctx, op).StopPrint()
-
-	currentUser, err := user.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	// 1. get cluster from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -571,7 +559,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 
 	// 5. update cluster in db
 	clusterModel := r.toClusterModel(cluster, templateRelease, er.ID)
-	clusterModel.UpdatedBy = currentUser.GetID()
 	// todo: atomicity
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {
@@ -697,42 +684,48 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 			log.Errorf(ctx, "failed to get db from context")
 			return
 		}
-		ctx := log.WithContext(context.Background(), rid)
-		ctx = orm.NewContext(ctx, db)
+		currentUser, err := user.FromContext(ctx)
+		if err != nil {
+			return
+		}
+
+		newctx := log.WithContext(context.Background(), rid)
+		newctx = orm.NewContext(newctx, db)
+		newctx = user.WithContext(newctx, currentUser)
 
 		// 1. delete cluster in cd system
-		if err = c.cd.DeleteCluster(ctx, &cd.DeleteClusterParams{
+		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
 			Environment: er.EnvironmentName,
 			Cluster:     cluster.Name,
 		}); err != nil {
-			log.Errorf(ctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
+			log.Errorf(newctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
 			return
 		}
 
 		// 2. delete harbor repository
-		harbor := c.registryFty.GetByHarborConfig(ctx, &registry.HarborConfig{
+		harbor := c.registryFty.GetByHarborConfig(newctx, &registry.HarborConfig{
 			Server:          regionEntity.Harbor.Server,
 			Token:           regionEntity.Harbor.Token,
 			PreheatPolicyID: regionEntity.Harbor.PreheatPolicyID,
 		})
 
-		if err = harbor.DeleteRepository(ctx, application.Name, cluster.Name); err != nil {
+		if err = harbor.DeleteRepository(newctx, application.Name, cluster.Name); err != nil {
 			// log error, not return here, delete harbor repository failed has no effect
-			log.Errorf(ctx, "failed to delete harbor repository: %v, err: %v", cluster.Name, err)
+			log.Errorf(newctx, "failed to delete harbor repository: %v, err: %v", cluster.Name, err)
 		}
 
 		// 3. delete cluster in git repo
-		if err = c.clusterGitRepo.DeleteCluster(ctx, application.Name, cluster.Name, cluster.ID); err != nil {
-			log.Errorf(ctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
+		if err = c.clusterGitRepo.DeleteCluster(newctx, application.Name, cluster.Name, cluster.ID); err != nil {
+			log.Errorf(newctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
 		}
 
 		// 4. delete cluster in db
-		if err = c.clusterMgr.DeleteByID(ctx, clusterID); err != nil {
-			log.Errorf(ctx, "failed to delete cluster: %v in db, err: %v", cluster.Name, err)
+		if err = c.clusterMgr.DeleteByID(newctx, clusterID); err != nil {
+			log.Errorf(newctx, "failed to delete cluster: %v in db, err: %v", cluster.Name, err)
 		}
 
 		// 5. post hook
-		c.postHook(ctx, hook.DeleteCluster, cluster.Name)
+		c.postHook(newctx, hook.DeleteCluster, cluster.Name)
 	}()
 
 	return nil

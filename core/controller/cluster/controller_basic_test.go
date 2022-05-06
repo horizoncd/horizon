@@ -1,17 +1,20 @@
 package cluster
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"strconv"
 	"testing"
 	"time"
 
+	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	mockcd "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	applicationsvc "g.hz.netease.com/horizon/pkg/application/service"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
@@ -185,12 +188,17 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 		clusters = append(clusters, cluster)
 	}
 
+	// nolint
+	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+		Name: "Matt",
+		ID:   uint(2),
+	})
 	_, err = memberMgr.Create(ctx, &membermodels.Member{
 		ResourceType: membermodels.TypeGroup,
 		ResourceID:   groups[0].ID,
 		Role:         "owner",
 		MemberType:   membermodels.MemberUser,
-		MemberNameID: 1,
+		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
 
@@ -199,7 +207,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 		ResourceID:   applications[1].ID,
 		Role:         "owner",
 		MemberType:   membermodels.MemberUser,
-		MemberNameID: 1,
+		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
 
@@ -208,7 +216,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 		ResourceID:   clusters[3].ID,
 		Role:         "owner",
 		MemberType:   membermodels.MemberUser,
-		MemberNameID: 1,
+		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
 

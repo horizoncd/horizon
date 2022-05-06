@@ -20,6 +20,7 @@ import (
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -27,12 +28,9 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _                    = orm.NewSqliteDB("")
-	ctx                      = orm.NewContext(context.TODO(), db)
-	contextUserID       uint = 1
-	contextUserName          = "Tony"
-	contextUserFullName      = "TonyWu"
-	groupCtl                 = NewController(nil)
+	db, _    = orm.NewSqliteDB("")
+	ctx      = orm.NewContext(context.TODO(), db)
+	groupCtl = NewController(nil)
 )
 
 func GroupValueEqual(g1, g2 *models.Group) bool {
@@ -51,11 +49,13 @@ func GroupValueEqual(g1, g2 *models.Group) bool {
 
 // nolint
 func init() {
-	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
-		Name:     contextUserName,
-		FullName: contextUserFullName,
-		ID:       contextUserID,
+	userCtx := context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+		Name: "tony",
+		ID:   110,
 	})
+	db = db.WithContext(userCtx)
+	ctx = orm.NewContext(userCtx, db)
+
 	// create table
 	err := db.AutoMigrate(&models.Group{})
 	if err != nil {
@@ -72,6 +72,8 @@ func init() {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
+
+	callbacks.RegisterCustomCallbacks(db)
 }
 
 func TestGetAuthedGroups(t *testing.T) {
@@ -154,18 +156,16 @@ func TestGetAuthedGroups(t *testing.T) {
 					ParentID:        tt.args.newGroup.ParentID,
 					VisibilityLevel: tt.args.newGroup.VisibilityLevel,
 					TraversalIDs:    traversalIDs,
-					CreatedBy:       1,
-					UpdatedBy:       1,
+					CreatedBy:       110,
+					UpdatedBy:       110,
 				}))
 			}
 		})
 	}
 	// case admin get all the groups
 	rootUserContext := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{ // nolint
-		Name:     contextUserName,
-		FullName: contextUserFullName,
-		ID:       contextUserID,
-		Admin:    true,
+		ID:    110,
+		Admin: true,
 	})
 	groups, err := groupCtl.ListAuthedGroup(rootUserContext)
 	assert.Nil(t, err)
@@ -173,10 +173,8 @@ func TestGetAuthedGroups(t *testing.T) {
 
 	// case normal user get same groups
 	normalUserContext := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{ // nolint
-		Name:     contextUserName,
-		FullName: contextUserFullName,
-		ID:       contextUserID,
-		Admin:    false,
+		ID:    110,
+		Admin: false,
 	})
 	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
 		&membermodels.Member{
@@ -289,8 +287,8 @@ func TestControllerCreateGroup(t *testing.T) {
 					ParentID:        tt.args.newGroup.ParentID,
 					VisibilityLevel: tt.args.newGroup.VisibilityLevel,
 					TraversalIDs:    traversalIDs,
-					CreatedBy:       1,
-					UpdatedBy:       1,
+					CreatedBy:       110,
+					UpdatedBy:       110,
 				}))
 			}
 		})
@@ -342,8 +340,8 @@ func TestControllerCreateGroup(t *testing.T) {
 					ParentID:        tt.args.newGroup.ParentID,
 					VisibilityLevel: tt.args.newGroup.VisibilityLevel,
 					TraversalIDs:    traversalIDs,
-					CreatedBy:       1,
-					UpdatedBy:       1,
+					CreatedBy:       110,
+					UpdatedBy:       110,
 				}))
 			}
 		})
@@ -1155,7 +1153,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 						ParentID:        group.ParentID,
 						VisibilityLevel: tt.args.updateGroup.VisibilityLevel,
 						TraversalIDs:    group.TraversalIDs,
-						CreatedBy:       1,
+						CreatedBy:       110,
 						UpdatedBy:       2,
 					}))
 				}
