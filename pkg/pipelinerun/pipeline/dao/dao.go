@@ -55,7 +55,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 		}
 		result := tx.Create(p)
 		if result.Error != nil {
-			return errors.Wrap(ErrInsertPipeline, err.Error())
+			return errors.Wrap(ErrInsertPipeline, result.Error.Error())
 		}
 
 		for _, trResult := range trResults {
@@ -76,7 +76,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 			}
 			result = tx.Create(t)
 			if result.Error != nil {
-				return errors.Wrap(ErrInsertPipeline, err.Error())
+				return errors.Wrap(ErrInsertPipeline, result.Error.Error())
 			}
 		}
 
@@ -99,7 +99,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 			}
 			result = tx.Create(s)
 			if result.Error != nil {
-				return errors.Wrap(ErrInsertPipeline, err.Error())
+				return errors.Wrap(ErrInsertPipeline, result.Error.Error())
 			}
 		}
 
