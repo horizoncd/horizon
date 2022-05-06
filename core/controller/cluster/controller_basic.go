@@ -10,7 +10,6 @@ import (
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
@@ -23,10 +22,10 @@ import (
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/gin-gonic/gin"
 
 	"github.com/Masterminds/sprig"
 	"github.com/go-yaml/yaml"
@@ -632,6 +631,7 @@ func (c *controller) GetClusterByName(ctx context.Context,
 // TODO(gjq): add a deleting tag for cluster
 func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err error) {
 	const op = "cluster controller: delete cluster"
+	var newctx = ctx.(*gin.Context).Copy()
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// get some relevant models
@@ -674,24 +674,6 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 				}
 			}
 		}()
-		// should use a new context
-		rid, err := requestid.FromContext(ctx)
-		if err != nil {
-			log.Errorf(ctx, "failed to get request id from context")
-		}
-		db, err := orm.FromContext(ctx)
-		if err != nil {
-			log.Errorf(ctx, "failed to get db from context")
-			return
-		}
-		currentUser, err := user.FromContext(ctx)
-		if err != nil {
-			return
-		}
-
-		newctx := log.WithContext(context.Background(), rid)
-		newctx = orm.NewContext(newctx, db)
-		newctx = user.WithContext(newctx, currentUser)
 
 		// 1. delete cluster in cd system
 		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
@@ -734,6 +716,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 // FreeCluster to set cluster free
 func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error) {
 	const op = "cluster controller: free cluster"
+	var newctx = ctx.(*gin.Context).Copy()
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// get some relevant models
@@ -757,35 +740,18 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
 		var err error
+
 		defer func() {
 			cluster.Status = clustercommon.StatusFreed
 			if err != nil {
 				cluster.Status = ""
 			}
-			_, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+			_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
 			if err != nil {
-				log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+				log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
 				return
 			}
 		}()
-		// should use a new context
-		rid, err := requestid.FromContext(ctx)
-		if err != nil {
-			log.Errorf(ctx, "failed to get request id from context")
-		}
-		db, err := orm.FromContext(ctx)
-		if err != nil {
-			log.Errorf(ctx, "failed to get db from context")
-			return
-		}
-		currentUser, err := user.FromContext(ctx)
-		if err != nil {
-			return
-		}
-
-		newctx := log.WithContext(context.Background(), rid)
-		newctx = orm.NewContext(newctx, db)
-		newctx = user.WithContext(newctx, currentUser)
 
 		// 2. delete cluster in cd system
 		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
