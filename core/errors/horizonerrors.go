@@ -21,8 +21,6 @@ var (
 	EnvironmentRegionInDB     = sourceType{name: "EnvironmentRegionInDB"}
 	RegionInDB                = sourceType{name: "RegionInDB"}
 	GroupInDB                 = sourceType{name: "GroupInDB"}
-	K8SCluster                = sourceType{name: "K8SCluster"}
-	K8SClusterInDB            = sourceType{name: "K8SClusterInDB"}
 	K8SClient                 = sourceType{name: "K8SClient"}
 	Harbor                    = sourceType{name: "Harbor"}
 	HarborInDB                = sourceType{name: "HarborInDB"}
@@ -176,8 +174,7 @@ var (
 	ErrFailedToGetUser      = errors.New("cannot get user from context")
 	ErrFailedToGetRequestID = errors.New("cannot get the requestID from context")
 
-	ErrK8SClusterNotList = errors.New("k8s cluster could not list")
-	ErrHarborNotList     = errors.New("harbor could not list")
+	ErrHarborNotList = errors.New("harbor could not list")
 
 	ErrKubeDynamicCliResponseNotOK = errors.New("response for kube dynamic cli is not 200 OK")
 	ErrKubeExecFailed              = errors.New("kube exec failed")

@@ -36,8 +36,6 @@ import (
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
-	k8sclustermanager "g.hz.netease.com/horizon/pkg/k8scluster/manager"
-	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -420,7 +418,7 @@ func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
-		&harbormodels.Harbor{}, &k8sclustermodels.K8SCluster{},
+		&harbormodels.Harbor{},
 		&regionmodels.Region{}, &envmodels.EnvironmentRegion{},
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}); err != nil {
 		panic(err)
@@ -491,7 +489,6 @@ func Test(t *testing.T) {
 	envMgr := envmanager.Mgr
 	regionMgr := regionmanager.Mgr
 	groupMgr := groupmanager.Mgr
-	k8sMgr := k8sclustermanager.Mgr
 	harborDAO := harbordao.NewDAO()
 
 	// init data
@@ -530,18 +527,10 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, harbor)
 
-	k8sCluster, err := k8sMgr.Create(ctx, &k8sclustermodels.K8SCluster{
-		Name:   "hz",
-		Server: "https://k8s.com",
-	})
-	assert.Nil(t, err)
-	assert.NotNil(t, k8sCluster)
-
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
-		Name:         "hz",
-		DisplayName:  "HZ",
-		K8SClusterID: k8sCluster.ID,
-		HarborID:     harbor.ID,
+		Name:        "hz",
+		DisplayName: "HZ",
+		HarborID:    harbor.ID,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
