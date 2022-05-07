@@ -77,7 +77,8 @@ func (m *manager) GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint
 	}
 	userMap := make(map[uint]*models.User)
 	for _, user := range users {
-		userMap[user.ID] = &user
+		tmp := user
+		userMap[user.ID] = &tmp
 	}
 	return userMap, nil
 }
