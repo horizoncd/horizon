@@ -306,6 +306,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal"))),
 		auth.Middleware(rbacAuthorizer, rbacSkippers),
+		ormmiddle.MiddlewareSetUserContext(mysqlDB),
 	}
 	r.Use(middlewares...)
 

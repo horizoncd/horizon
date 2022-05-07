@@ -662,36 +662,36 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		return err
 	}
 
+	// should use a new context
+	rid, err := requestid.FromContext(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get request id from context")
+	}
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get db from context")
+		return
+	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return
+	}
+
+	newctx := log.WithContext(context.Background(), rid)
+	newctx = orm.NewContext(newctx, db)
+	newctx = user.WithContext(newctx, currentUser)
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
 		var err error
 		defer func() {
 			if err != nil {
 				cluster.Status = ""
-				_, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+				_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
 				if err != nil {
-					log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+					log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
 				}
 			}
 		}()
-		// should use a new context
-		rid, err := requestid.FromContext(ctx)
-		if err != nil {
-			log.Errorf(ctx, "failed to get request id from context")
-		}
-		db, err := orm.FromContext(ctx)
-		if err != nil {
-			log.Errorf(ctx, "failed to get db from context")
-			return
-		}
-		currentUser, err := user.FromContext(ctx)
-		if err != nil {
-			return
-		}
-
-		newctx := log.WithContext(context.Background(), rid)
-		newctx = orm.NewContext(newctx, db)
-		newctx = user.WithContext(newctx, currentUser)
 
 		// 1. delete cluster in cd system
 		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
@@ -754,6 +754,23 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		return err
 	}
 
+	// should use a new context
+	rid, err := requestid.FromContext(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get request id from context")
+	}
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		log.Errorf(ctx, "failed to get db from context")
+		return
+	}
+	currentUser, err := user.FromContext(ctx)
+	if err != nil {
+		return
+	}
+	newctx := log.WithContext(context.Background(), rid)
+	newctx = orm.NewContext(newctx, db)
+	newctx = user.WithContext(newctx, currentUser)
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
 		var err error
@@ -762,30 +779,12 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 			if err != nil {
 				cluster.Status = ""
 			}
-			_, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+			_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
 			if err != nil {
-				log.Errorf(ctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+				log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
 				return
 			}
 		}()
-		// should use a new context
-		rid, err := requestid.FromContext(ctx)
-		if err != nil {
-			log.Errorf(ctx, "failed to get request id from context")
-		}
-		db, err := orm.FromContext(ctx)
-		if err != nil {
-			log.Errorf(ctx, "failed to get db from context")
-			return
-		}
-		currentUser, err := user.FromContext(ctx)
-		if err != nil {
-			return
-		}
-
-		newctx := log.WithContext(context.Background(), rid)
-		newctx = orm.NewContext(newctx, db)
-		newctx = user.WithContext(newctx, currentUser)
 
 		// 2. delete cluster in cd system
 		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
