@@ -248,6 +248,8 @@ const (
 	PipelinerunUpdateConfigCommitByID        = "update tb_pipelinerun set config_commit = ? where id = ?"
 	PipelinerunGetLatestByClusterIDAndAction = "select * from tb_pipelinerun where cluster_id = ? " +
 		"and action = ? order by id desc limit 1"
+	PipelinerunGetLatestByClusterIDAndActionAndStatus = "select * from tb_pipelinerun where cluster_id = ? " +
+		"and action = ? and status = ? order by id desc limit 1"
 	PipelinerunGetLatestSuccessByClusterID = "select * from tb_pipelinerun where cluster_id = ? and status = 'ok' and " +
 		"git_commit != '' order by updated_at desc limit 1"
 	PipelinerunUpdateResultByID = "update tb_pipelinerun set status = ?, s3_bucket = ?, log_object = ?, " +

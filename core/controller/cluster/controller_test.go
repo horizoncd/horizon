@@ -31,6 +31,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
@@ -786,8 +787,23 @@ func Test(t *testing.T) {
 		Title:       "deploy-title",
 		Description: "deploy-description",
 	})
+	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
+	assert.Nil(t, deployResp)
+
+	_, err = prmanager.Mgr.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID: resp.ID,
+		Action:    prmodels.ActionBuildDeploy,
+		Status:    prmodels.ResultOK,
+	})
+	assert.Nil(t, err)
+
+	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
+		Title:       "deploy-title",
+		Description: "deploy-description",
+	})
 	assert.Nil(t, err)
 	assert.NotNil(t, deployResp)
+
 	b, _ = json.Marshal(deployResp)
 	t.Logf("%s", string(b))
 
