@@ -19,6 +19,7 @@ var (
 	ApplicationResourceInArgo = sourceType{name: "ApplicationResourceInArgo"}
 	ApplicationInDB           = sourceType{name: "ApplicationInDB"}
 	EnvironmentRegionInDB     = sourceType{name: "EnvironmentRegionInDB"}
+	EnvironmentInDB           = sourceType{name: "EnvironmentInDB"}
 	RegionInDB                = sourceType{name: "RegionInDB"}
 	GroupInDB                 = sourceType{name: "GroupInDB"}
 	K8SClient                 = sourceType{name: "K8SClient"}
