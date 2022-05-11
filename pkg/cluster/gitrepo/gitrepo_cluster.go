@@ -978,7 +978,7 @@ func (g *clusterGitRepo) assembleEnvValue(params *BaseParams) map[string]map[str
 		Namespace:   getNamespace(params),
 		BaseRegistry: strings.TrimPrefix(strings.TrimPrefix(
 			params.RegionEntity.Harbor.Server, "https://"), "http://"),
-		IngressDomain: params.RegionEntity.K8SCluster.IngressDomain,
+		IngressDomain: params.RegionEntity.IngressDomain,
 	}
 
 	ret := make(map[string]map[string]*EnvValue)

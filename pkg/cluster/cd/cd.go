@@ -226,7 +226,7 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 		return err
 	}
 	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
-		params.GitRepoSSHURL, params.RegionEntity.K8SCluster.Server, params.ValueFiles)
+		params.GitRepoSSHURL, params.RegionEntity.Server, params.ValueFiles)
 
 	manifest, err := json.Marshal(argoApplication)
 	if err != nil {
@@ -309,7 +309,7 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 	}
 
 	// 2. patch rollout
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func (c *cd) Promote(ctx context.Context, params *ClusterPromoteParams) (err err
 
 // Pause a rollout
 func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) {
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return perror.WithMessagef(err, "failed to get argocd application resource for cluster %s",
 			params.Cluster)
@@ -344,7 +344,7 @@ func (c *cd) Pause(ctx context.Context, params *ClusterPauseParams) (err error) 
 
 // Resume a paused rollout
 func (c *cd) Resume(ctx context.Context, params *ClusterResumeParams) (err error) {
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return perror.WithMessagef(err, "failed to get argocd application resource for cluster %s",
 			params.Cluster)
@@ -398,7 +398,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		return nil, err
 	}
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +554,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 
 func (c *cd) GetPodContainers(ctx context.Context,
 	params *GetPodContainersParams) (containers []ContainerDetail, err error) {
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -572,7 +572,7 @@ func (c *cd) GetPodEvents(ctx context.Context,
 	const op = "cd: get cluster pod events"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -1516,7 +1516,7 @@ func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ ma
 	const op = "cd: exec"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	config, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, params.RegionEntity.K8SCluster.Server)
+	config, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}

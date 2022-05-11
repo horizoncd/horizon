@@ -56,9 +56,8 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
-		Name:         "hz",
-		DisplayName:  "HZ",
-		K8SClusterID: 0,
+		Name:        "hz",
+		DisplayName: "HZ",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)

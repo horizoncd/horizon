@@ -97,7 +97,7 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 		return nil, err
 	}
 
-	kubeConfig, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, regionEntity.K8SCluster.Server)
+	kubeConfig, kubeClient, err := c.kubeClientFty.GetByK8SServer(regionEntity.Server, regionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 		return "", nil, err
 	}
 
-	kubeConfig, kubeClient, err := c.kubeClientFty.GetByK8SServer(ctx, regionEntity.K8SCluster.Server)
+	kubeConfig, kubeClient, err := c.kubeClientFty.GetByK8SServer(regionEntity.Server, regionEntity.Certificate)
 	if err != nil {
 		return "", nil, err
 	}
