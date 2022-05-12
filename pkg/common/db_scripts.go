@@ -103,13 +103,6 @@ const (
 		"and a.name like ? and a.deleted_ts = 0) da"
 )
 
-/* sql about k8sCluster */
-const (
-	// K8SClusterListAll ...
-	K8SClusterListAll     = "select * from tb_k8s_cluster where deleted_ts = 0"
-	K8SClusterGetByServer = "select * from tb_k8s_cluster where server = ? and deleted_ts = 0"
-)
-
 /* sql about harbor */
 const (
 	HarborListAll = "select * from tb_harbor where deleted_ts = 0"

@@ -76,9 +76,8 @@ func Test(t *testing.T) {
 	t.Logf("%v", err)
 
 	_, err = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
-		Name:         "hz",
-		DisplayName:  "HZ",
-		K8SClusterID: 1,
+		Name:        "hz",
+		DisplayName: "HZ",
 	})
 	assert.Nil(t, err)
 

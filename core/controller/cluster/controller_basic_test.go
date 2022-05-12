@@ -23,8 +23,6 @@ import (
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
-	k8sclustermanager "g.hz.netease.com/horizon/pkg/k8scluster/manager"
-	k8sclustermodels "g.hz.netease.com/horizon/pkg/k8scluster/models"
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
@@ -273,20 +271,14 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 		regionMgr:      regionmanager.Mgr,
 	}
 
-	// init data
-	k8sCluster, err := k8sclustermanager.Mgr.Create(ctx, &k8sclustermodels.K8SCluster{
-		Name: "TestController_FreeOrDeleteClusterFailed",
-	})
-	assert.Nil(t, err)
 	harbor, err := harbordao.NewDAO().Create(ctx, &harbormodels.Harbor{
 		Server: "http://127.0.0.1",
 	})
 	assert.Nil(t, err)
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
-		Name:         "TestController_FreeOrDeleteClusterFailed",
-		DisplayName:  "TestController_FreeOrDeleteClusterFailed",
-		K8SClusterID: k8sCluster.ID,
-		HarborID:     harbor.ID,
+		Name:        "TestController_FreeOrDeleteClusterFailed",
+		DisplayName: "TestController_FreeOrDeleteClusterFailed",
+		HarborID:    harbor.ID,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
