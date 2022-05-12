@@ -10,7 +10,7 @@ import (
 )
 
 type Controller interface {
-	ListRegions(ctx context.Context) ([]types.Role, error)
+	ListRole(ctx context.Context) ([]types.Role, error)
 }
 
 func NewController(service role.Service) Controller {
@@ -21,9 +21,9 @@ type controller struct {
 	roleService role.Service
 }
 
-func (c controller) ListRegions(ctx context.Context) ([]types.Role, error) {
+func (c controller) ListRole(ctx context.Context) ([]types.Role, error) {
 	const op = "role *controller: list role"
-	roles, err := c.roleService.ListRegions(ctx)
+	roles, err := c.roleService.ListRole(ctx)
 	if err != nil {
 		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
 	}
