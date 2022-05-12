@@ -35,7 +35,7 @@ var (
 
 type Service interface {
 	// ListRole List all the role
-	ListRole(ctx context.Context) ([]types.Role, error)
+	ListRegions(ctx context.Context) ([]types.Role, error)
 	// GetRole get role by the role name
 	GetRole(ctx context.Context, roleName string) (*types.Role, error)
 	// RoleCompare compare if the role1's permission is higher than role2
@@ -111,7 +111,7 @@ func NewFileRole(ctx context.Context, reader io.Reader) (Service, error) {
 	return NewFileRoleFrom2(ctx, config)
 }
 
-func (fRole *fileRoleService) ListRole(ctx context.Context) ([]types.Role, error) {
+func (fRole *fileRoleService) ListRegions(ctx context.Context) ([]types.Role, error) {
 	var roles []types.Role
 	for _, roleName := range fRole.RolePriorityRankDesc {
 		roleRank, ok := fRole.roleRankMap[roleName]

@@ -15,7 +15,7 @@ func NewAPI(controller role.Controller) *API {
 }
 
 func (a *API) ListRole(c *gin.Context) {
-	roles, err := a.roleCtrl.ListRole(c)
+	roles, err := a.roleCtrl.ListRegions(c)
 	if err != nil {
 		response.AbortWithInternalError(c, err.Error())
 		return

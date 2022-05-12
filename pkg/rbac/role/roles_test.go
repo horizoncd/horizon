@@ -209,7 +209,7 @@ func TestRole(t *testing.T) {
 		PolicyRules: []types.PolicyRule{policy},
 	}
 
-	roles, err := service.ListRole(ctx)
+	roles, err := service.ListRegions(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, len(roles), 2)
 	assert.Equal(t, roles[0], expectRole)

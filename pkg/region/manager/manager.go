@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
@@ -26,6 +24,8 @@ type Manager interface {
 	ListRegionEntities(ctx context.Context) ([]*models.RegionEntity, error)
 	// GetRegionEntity get region entity, todo(gjq) add cache
 	GetRegionEntity(ctx context.Context, regionName string) (*models.RegionEntity, error)
+	// UpdateByID update region by id
+	UpdateByID(ctx context.Context, id uint, region *models.Region) error
 }
 
 type manager struct {
@@ -81,22 +81,23 @@ func (m *manager) GetRegionEntity(ctx context.Context,
 		return nil, err
 	}
 
-	harborMap, err := m.getHarborMap(ctx)
+	harbor, err := m.getHarborByRegion(ctx, region)
 	if err != nil {
 		return nil, err
-	}
-
-	harbor, ok := harborMap[region.HarborID]
-	if !ok {
-		return nil, herrors.NewErrNotFound(herrors.Harbor,
-			fmt.Sprintf("harbor with ID: %v of region: %v is not found",
-				region.HarborID, region.Name))
 	}
 
 	return &models.RegionEntity{
 		Region: region,
 		Harbor: harbor,
 	}, nil
+}
+
+func (m *manager) UpdateByID(ctx context.Context, id uint, region *models.Region) error {
+	_, err := m.getHarborByRegion(ctx, region)
+	if err != nil {
+		return err
+	}
+	return m.regionDAO.UpdateByID(ctx, id, region)
 }
 
 func (m *manager) getHarborMap(ctx context.Context) (map[uint]*harbormodels.Harbor, error) {
@@ -110,4 +111,12 @@ func (m *manager) getHarborMap(ctx context.Context) (map[uint]*harbormodels.Harb
 		harborMap[harbor.ID] = harbor
 	}
 	return harborMap, nil
+}
+
+func (m *manager) getHarborByRegion(ctx context.Context, region *models.Region) (*harbormodels.Harbor, error) {
+	harbor, err := m.harborDAO.GetByID(ctx, region.HarborID)
+	if err != nil {
+		return nil, err
+	}
+	return harbor, nil
 }
