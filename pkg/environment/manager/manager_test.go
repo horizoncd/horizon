@@ -25,11 +25,18 @@ func Test(t *testing.T) {
 	assert.Equal(t, len(envs), 0)
 
 	onlineEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
-		Name:        "online",
-		DisplayName: "线上",
+		Name:          "online",
+		DisplayName:   "线上",
+		DefaultRegion: "hz",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", onlineEnv)
+	err = Mgr.UpdateByID(ctx, onlineEnv.ID, &models.Environment{
+		Name:          "online-update",
+		DisplayName:   "线上-update",
+		DefaultRegion: "hz-update",
+	})
+	assert.Nil(t, err)
 
 	preEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "pre",
@@ -59,6 +66,9 @@ func Test(t *testing.T) {
 	t.Logf("%v", envs[1])
 	t.Logf("%v", envs[2])
 	t.Logf("%v", envs[3])
+	assert.Equal(t, envs[3].Name, "online")
+	assert.Equal(t, envs[3].DisplayName, "线上-update")
+	assert.Equal(t, envs[3].DefaultRegion, "hz-update")
 
 	devHzEr, err := Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,

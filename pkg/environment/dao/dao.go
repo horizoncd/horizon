@@ -23,7 +23,7 @@ type EnvironmentDAO interface {
 	// ListAllEnvironment list all environments
 	ListAllEnvironment(ctx context.Context) ([]*models.Environment, error)
 	// UpdateByID update environment by id
-	UpdateByID(ctx context.Context, id uint, environment *models.Environment) (*models.Environment, error)
+	UpdateByID(ctx context.Context, id uint, environment *models.Environment) error
 }
 
 type EnvironmentRegionDAO interface {
@@ -39,10 +39,10 @@ type EnvironmentRegionDAO interface {
 
 type dao struct{}
 
-func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Environment) (*models.Environment, error) {
+func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Environment) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// can only update displayName && defaultRegion
@@ -50,21 +50,21 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 	var environmentInDB models.Environment
 	res := db.Find(&environmentInDB, id)
 	if res.RowsAffected == 0 {
-		return nil, herrors.NewErrNotFound(herrors.EnvironmentInDB, "rows affected = 0")
+		return herrors.NewErrNotFound(herrors.EnvironmentInDB, "rows affected = 0")
 	}
 	if res.Error != nil {
-		return nil, herrors.NewErrGetFailed(herrors.EnvironmentInDB, res.Error.Error())
+		return herrors.NewErrGetFailed(herrors.EnvironmentInDB, res.Error.Error())
 	}
 
-	// set disPlayName && defaultRegion
+	// set displayName && defaultRegion
 	environmentInDB.DisplayName = environment.DisplayName
 	environmentInDB.DefaultRegion = environment.DefaultRegion
 	res = db.Save(environmentInDB)
 	if res.Error != nil {
-		return nil, herrors.NewErrUpdateFailed(herrors.EnvironmentInDB, res.Error.Error())
+		return herrors.NewErrUpdateFailed(herrors.EnvironmentInDB, res.Error.Error())
 	}
 
-	return &environmentInDB, nil
+	return nil
 }
 
 // NewDAO returns an instance of the default DAO

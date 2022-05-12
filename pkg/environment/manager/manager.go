@@ -34,7 +34,7 @@ type EnvironmentManager interface {
 	// ListAllEnvironment list all environments
 	ListAllEnvironment(ctx context.Context) ([]*models.Environment, error)
 	// UpdateByID update environment by id
-	UpdateByID(ctx context.Context, id uint, environment *models.Environment) (*models.Environment, error)
+	UpdateByID(ctx context.Context, id uint, environment *models.Environment) error
 }
 
 type EnvironmentRegionManager interface {
@@ -51,8 +51,7 @@ type manager struct {
 	regionDAO regiondao.DAO
 }
 
-func (m *manager) UpdateByID(ctx context.Context, id uint, environment *models.Environment) (
-	*models.Environment, error) {
+func (m *manager) UpdateByID(ctx context.Context, id uint, environment *models.Environment) error {
 	return m.envDAO.UpdateByID(ctx, id, environment)
 }
 

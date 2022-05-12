@@ -6,8 +6,10 @@ import (
 )
 
 type Environment struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"displayName"`
+	Name                     string `json:"name"`
+	DisplayName              string `json:"displayName"`
+	DefaultRegion            string `json:"defaultRegion"`
+	DefaultRegionDisplayName string `json:"defaultRegionDisplayName"`
 }
 
 type Environments []*Environment
@@ -17,8 +19,9 @@ func ofEnvironmentModels(envs []*models.Environment) Environments {
 	environments := make(Environments, 0)
 	for _, env := range envs {
 		environments = append(environments, &Environment{
-			Name:        env.Name,
-			DisplayName: env.DisplayName,
+			Name:          env.Name,
+			DisplayName:   env.DisplayName,
+			DefaultRegion: env.DefaultRegion,
 		})
 	}
 	return environments
@@ -41,4 +44,9 @@ func ofRegionModels(regions []*regionmodels.Region) Regions {
 		})
 	}
 	return rs
+}
+
+type UpdateEnvironmentRequest struct {
+	DisplayName   string `json:"displayName"`
+	DefaultRegion string `json:"defaultRegion"`
 }

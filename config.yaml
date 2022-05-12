@@ -50,7 +50,7 @@ tektonMapper:
   dev,test,reg,perf,beta,pre,online:
     server: http://el-horizon-listener.tekton-resources:8080
     namespace: tekton-resources
-    kubeconfig: ""
+    kubeconfig: "/Users/wurongjun/.kube/config"
     s3:
       accessKey: 
       secretKey: 

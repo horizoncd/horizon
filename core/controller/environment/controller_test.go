@@ -50,8 +50,9 @@ func Test(t *testing.T) {
 	assert.Equal(t, 0, len(envs))
 
 	devEnv, err := envMgr.CreateEnvironment(ctx, &models.Environment{
-		Name:        "dev",
-		DisplayName: "DEV",
+		Name:          "dev",
+		DisplayName:   "DEV",
+		DefaultRegion: "hz",
 	})
 	assert.Nil(t, err)
 
@@ -74,6 +75,19 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(envs))
 	assert.Equal(t, "dev", envs[0].Name)
 	assert.Equal(t, "DEV", envs[0].DisplayName)
+	assert.Equal(t, "hz", envs[0].DefaultRegion)
+
+	err = c.UpdateByID(ctx, er.ID, &UpdateEnvironmentRequest{
+		DisplayName:   "DEV-update",
+		DefaultRegion: "hz-update",
+	})
+	assert.Nil(t, err)
+	envs, err = c.ListEnvironments(ctx)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(envs))
+	assert.Equal(t, "dev", envs[0].Name)
+	assert.Equal(t, "DEV-update", envs[0].DisplayName)
+	assert.Equal(t, "hz-update", envs[0].DefaultRegion)
 
 	regions, err := c.ListRegionsByEnvironment(ctx, devEnv.Name)
 	assert.Nil(t, err)
