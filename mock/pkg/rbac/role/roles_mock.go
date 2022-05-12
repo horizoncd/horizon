@@ -68,7 +68,7 @@ func (mr *MockServiceMockRecorder) GetRole(ctx, roleName interface{}) *gomock.Ca
 // ListRole mocks base method.
 func (m *MockService) ListRole(ctx context.Context) ([]types.Role, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "listRegions", ctx)
+	ret := m.ctrl.Call(m, "ListRole", ctx)
 	ret0, _ := ret[0].([]types.Role)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -77,7 +77,7 @@ func (m *MockService) ListRole(ctx context.Context) ([]types.Role, error) {
 // ListRole indicates an expected call of ListRole.
 func (mr *MockServiceMockRecorder) ListRole(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "listRegions", reflect.TypeOf((*MockService)(nil).ListRole), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRole", reflect.TypeOf((*MockService)(nil).ListRole), ctx)
 }
 
 // RoleCompare mocks base method.
