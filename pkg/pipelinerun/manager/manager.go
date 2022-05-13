@@ -22,6 +22,8 @@ type Manager interface {
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
 	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
+	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint, action,
+		status string) (*models.Pipelinerun, error)
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 }
@@ -72,4 +74,9 @@ func (m *manager) GetByClusterID(ctx context.Context,
 
 func (m *manager) GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
 	return m.dao.GetFirstCanRollbackPipelinerun(ctx, clusterID)
+}
+
+func (m *manager) GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint, action,
+	status string) (*models.Pipelinerun, error) {
+	return m.dao.GetLatestByClusterIDAndActionAndStatus(ctx, clusterID, action, status)
 }

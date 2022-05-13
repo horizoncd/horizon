@@ -2,21 +2,18 @@ package rbac
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/auth"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
 	"g.hz.netease.com/horizon/pkg/util/log"
-)
-
-var (
-	ErrMemberNotExist = errors.New("Member Not Exist")
 )
 
 // Authorizer use the basic rbac rules to check if the user
@@ -74,7 +71,7 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		log.Errorf(ctx, "resourceType = %s, resourceID = %s, format error\n", attr.GetResource(), attr.GetName())
-		return auth.DecisionDeny, ResourceFormatErr, err
+		return auth.DecisionDeny, ResourceFormatErr, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
 	member, err := a.memberService.GetMemberOfResource(ctx, attr.GetResource(), uint(resourceID))
