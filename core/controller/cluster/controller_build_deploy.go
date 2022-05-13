@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -49,7 +50,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}

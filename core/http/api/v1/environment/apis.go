@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/controller/environment"
+	"g.hz.netease.com/horizon/core/controller/environmentregion"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -20,12 +21,14 @@ const (
 )
 
 type API struct {
-	envCtl environment.Controller
+	envCtl       environment.Controller
+	envRegionCtl environmentregion.Controller
 }
 
 func NewAPI() *API {
 	return &API{
-		envCtl: environment.Ctl,
+		envCtl:       environment.Ctl,
+		envRegionCtl: environmentregion.Ctl,
 	}
 }
 
@@ -36,6 +39,16 @@ func (a *API) ListEnvironments(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, envs)
+}
+
+func (a *API) ListEnvironmentRegions(c *gin.Context) {
+	env := c.Param(_environmentParam)
+	regions, err := a.envRegionCtl.ListRegionsByEnvironment(c, env)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, regions)
 }
 
 func (a *API) Update(c *gin.Context) {
@@ -59,9 +72,6 @@ func (a *API) Update(c *gin.Context) {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
-		} else if perror.Cause(err) == herrors.ErrParamInvalid {
-			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
-			return
 		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
@@ -69,14 +79,4 @@ func (a *API) Update(c *gin.Context) {
 	}
 
 	response.Success(c)
-}
-
-func (a *API) ListEnvironmentRegions(c *gin.Context) {
-	env := c.Param(_environmentParam)
-	regions, err := a.envCtl.ListRegionsByEnvironment(c, env)
-	if err != nil {
-		response.AbortWithError(c, err)
-		return
-	}
-	response.SuccessWithData(c, regions)
 }

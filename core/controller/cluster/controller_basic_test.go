@@ -18,7 +18,8 @@ import (
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
@@ -36,7 +37,7 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 	groupMgr := groupmanager.Mgr
 	clusterMgr := clustermanager.Mgr
 	memberMgr := member.Mgr
-	envMgr := envmanager.Mgr
+	envRegionMgr := envregionmanager.Mgr
 	regionMgr := regionmanager.Mgr
 
 	// init data
@@ -79,7 +80,7 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: "testFuzzily",
 		RegionName:      "hzFuzzily",
 	})
@@ -122,7 +123,6 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	groupMgr := groupmanager.Mgr
 	clusterMgr := clustermanager.Mgr
 	memberMgr := member.Mgr
-	envMgr := envmanager.Mgr
 	regionMgr := regionmanager.Mgr
 
 	// init data
@@ -133,7 +133,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: "testUserClustersFuzzily",
 		RegionName:      "hzUserClustersFuzzily",
 	})
@@ -254,7 +254,6 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	appMgr := appmanager.Mgr
 	groupMgr := groupmanager.Mgr
 	clusterMgr := clustermanager.Mgr
-	envMgr := envmanager.Mgr
 	regionMgr := regionmanager.Mgr
 
 	mockCtl := gomock.NewController(t)
@@ -283,7 +282,7 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: "TestController_FreeOrDeleteClusterFailed",
 		RegionName:      region.Name,
 	})

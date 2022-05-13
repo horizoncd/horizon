@@ -7,7 +7,7 @@ import (
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
 

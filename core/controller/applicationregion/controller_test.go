@@ -14,6 +14,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/region"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envreigonmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +30,7 @@ var (
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.ApplicationRegion{}, &regionmodels.Region{},
-		&envmodels.Environment{}, &envmodels.EnvironmentRegion{}); err != nil {
+		&envmodels.Environment{}, &envregionmodels.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
@@ -72,19 +74,19 @@ func Test(t *testing.T) {
 		envs = append(envs, environment)
 	}
 
-	_, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	_, err = envreigonmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: envs[0].Name,
 		RegionName:      r1.Name,
 	})
 	assert.Nil(t, err)
 
-	_, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	_, err = envreigonmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: envs[3].Name,
 		RegionName:      r2.Name,
 	})
 	assert.Nil(t, err)
 
-	_, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	_, err = envreigonmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: envs[3].Name,
 		RegionName:      r3.Name,
 	})

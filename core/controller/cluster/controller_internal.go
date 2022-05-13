@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -33,7 +34,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}

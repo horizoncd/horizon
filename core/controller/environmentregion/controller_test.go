@@ -1,15 +1,17 @@
-package environment
+package environmentregion
 
 import (
 	"context"
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/controller/environment"
 	"g.hz.netease.com/horizon/core/controller/region"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/environment/models"
+	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	"g.hz.netease.com/horizon/pkg/environmentregion/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,7 +23,10 @@ var (
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&models.Environment{}); err != nil {
+	if err := db.AutoMigrate(&envmodels.Environment{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&models.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&regionmodels.Region{}); err != nil {
@@ -41,39 +46,27 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	_, err = region.Ctl.Create(ctx, &region.CreateRegionRequest{
-		Name:        "hz-update",
-		DisplayName: "HZ",
-	})
-	assert.Nil(t, err)
-	envs, err := Ctl.ListEnvironments(ctx)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(envs))
-
-	devID, err := Ctl.Create(ctx, &CreateEnvironmentRequest{
+	_, err = environment.Ctl.Create(ctx, &environment.CreateEnvironmentRequest{
 		Name:          "dev",
 		DisplayName:   "DEV",
 		DefaultRegion: "hz",
 	})
 	assert.Nil(t, err)
 
-	envs, err = Ctl.ListEnvironments(ctx)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(envs))
-	assert.Equal(t, "dev", envs[0].Name)
-	assert.Equal(t, "DEV", envs[0].DisplayName)
-	assert.Equal(t, "hz", envs[0].DefaultRegion)
-
-	err = Ctl.UpdateByID(ctx, devID, &UpdateEnvironmentRequest{
-		DisplayName:   "DEV-update",
-		DefaultRegion: "hz-update",
+	er, err := Ctl.CreateEnvironmentRegion(ctx, &CreateEnvironmentRegionRequest{
+		EnvironmentName: "dev",
+		RegionName:      "hz",
 	})
 	assert.Nil(t, err)
+	assert.NotNil(t, er)
 
-	envs, err = Ctl.ListEnvironments(ctx)
+	regions, err := Ctl.ListRegionsByEnvironment(ctx, "dev")
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(envs))
-	assert.Equal(t, "dev", envs[0].Name)
-	assert.Equal(t, "DEV-update", envs[0].DisplayName)
-	assert.Equal(t, "hz-update", envs[0].DefaultRegion)
+	assert.Equal(t, 1, len(regions))
+	assert.Equal(t, "hz", regions[0].Name)
+	assert.Equal(t, "HZ", regions[0].DisplayName)
+
+	regions, err = Ctl.ListRegionsByEnvironment(ctx, "no-exists")
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(regions))
 }

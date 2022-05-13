@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/config/region"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 )
@@ -19,19 +20,21 @@ type Controller interface {
 type controller struct {
 	regionConfig *region.Config
 
-	mgr            manager.Manager
-	regionMgr      regionmanager.Manager
-	environmentMgr envmanager.Manager
+	mgr                  manager.Manager
+	regionMgr            regionmanager.Manager
+	environmentMgr       envmanager.Manager
+	environmentRegionMgr envregionmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(regionConfig *region.Config) Controller {
 	return &controller{
-		regionConfig:   regionConfig,
-		mgr:            manager.Mgr,
-		regionMgr:      regionmanager.Mgr,
-		environmentMgr: envmanager.Mgr,
+		regionConfig:         regionConfig,
+		mgr:                  manager.Mgr,
+		regionMgr:            regionmanager.Mgr,
+		environmentMgr:       envmanager.Mgr,
+		environmentRegionMgr: envregionmanager.Mgr,
 	}
 }
 
@@ -53,7 +56,7 @@ func (c *controller) Update(ctx context.Context, applicationID uint, regions App
 	applicationRegions := make([]*models.ApplicationRegion, 0)
 
 	for _, r := range regions {
-		_, err := c.environmentMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
+		_, err := c.environmentRegionMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
 		if err != nil {
 			return perror.WithMessagef(err,
 				"environment/region %s/%s is not exists", r.Environment, r.Region)

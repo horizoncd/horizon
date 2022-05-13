@@ -7,6 +7,7 @@ import (
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/environment/models"
+	models2 "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 
@@ -20,9 +21,17 @@ var (
 )
 
 func Test(t *testing.T) {
-	envs, err := Mgr.ListAllEnvironment(ctx)
+	_, err := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz",
+		DisplayName: "HZ",
+	})
 	assert.Nil(t, err)
-	assert.Equal(t, len(envs), 0)
+
+	_, err = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz-update",
+		DisplayName: "HZ",
+	})
+	assert.Nil(t, err)
 
 	onlineEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:          "online",
@@ -59,7 +68,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("%v", devEnv)
 
-	envs, err = Mgr.ListAllEnvironment(ctx)
+	envs, err := Mgr.ListAllEnvironment(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, len(envs), 4)
 	t.Logf("%v", envs[0])
@@ -69,33 +78,6 @@ func Test(t *testing.T) {
 	assert.Equal(t, envs[3].Name, "online")
 	assert.Equal(t, envs[3].DisplayName, "线上-update")
 	assert.Equal(t, envs[3].DefaultRegion, "hz-update")
-
-	devHzEr, err := Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
-		EnvironmentName: devEnv.Name,
-		RegionName:      "hz",
-	})
-	assert.Nil(t, err)
-	assert.NotNil(t, devHzEr)
-	t.Logf("%v", devHzEr)
-
-	_, err = Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
-		EnvironmentName: devEnv.Name,
-		RegionName:      "hz",
-	})
-	assert.NotNil(t, err)
-	t.Logf("%v", err)
-
-	_, err = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
-		Name:        "hz",
-		DisplayName: "HZ",
-	})
-	assert.Nil(t, err)
-
-	regions, err := Mgr.ListRegionsByEnvironment(ctx, devEnv.Name)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(regions))
-	assert.Equal(t, "hz", regions[0].Name)
-	t.Logf("%v", regions[0])
 }
 
 func TestMain(m *testing.M) {
@@ -104,7 +86,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	if err := db.AutoMigrate(&models.EnvironmentRegion{}); err != nil {
+	if err := db.AutoMigrate(&models2.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&regionmodels.Region{}); err != nil {

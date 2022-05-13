@@ -27,7 +27,8 @@ import (
 	clustermodel "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
@@ -229,7 +230,7 @@ func Test(t *testing.T) {
 	tektonFty.EXPECT().GetTektonCollector(gomock.Any()).Return(tektonCollector, nil).AnyTimes()
 
 	envMgr := envmanager.Mgr
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: "test",
 		RegionName:      "hz",
 	})

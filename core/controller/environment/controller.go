@@ -13,9 +13,9 @@ var (
 )
 
 type Controller interface {
+	Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error)
 	UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error
 	ListEnvironments(ctx context.Context) (Environments, error)
-	ListRegionsByEnvironment(ctx context.Context, environment string) (Regions, error)
 }
 
 var _ Controller = (*controller)(nil)
@@ -28,6 +28,18 @@ func NewController() Controller {
 
 type controller struct {
 	envMgr manager.Manager
+}
+
+func (c *controller) Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error) {
+	environment, err := c.envMgr.CreateEnvironment(ctx, &models.Environment{
+		Name:          request.Name,
+		DisplayName:   request.DisplayName,
+		DefaultRegion: request.DefaultRegion,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return environment.ID, nil
 }
 
 func (c *controller) UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error {
@@ -44,13 +56,4 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 	}
 
 	return ofEnvironmentModels(envs), nil
-}
-
-func (c *controller) ListRegionsByEnvironment(ctx context.Context, environment string) (_ Regions, err error) {
-	regions, err := c.envMgr.ListRegionsByEnvironment(ctx, environment)
-	if err != nil {
-		return nil, err
-	}
-
-	return ofRegionModels(regions), nil
 }

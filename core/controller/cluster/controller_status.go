@@ -10,7 +10,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -51,7 +51,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podNam
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +280,7 @@ func (c *controller) GetPodEvents(ctx context.Context, clusterID uint, podName s
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func (c *controller) GetContainers(ctx context.Context, clusterID uint, podName 
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}

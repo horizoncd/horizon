@@ -97,6 +97,7 @@ func (m *manager) UpdateByID(ctx context.Context, id uint, region *models.Region
 	if err != nil {
 		return err
 	}
+	// todo do more filed validation, for example ingressDomain must be format of the domain name
 	return m.regionDAO.UpdateByID(ctx, id, region)
 }
 

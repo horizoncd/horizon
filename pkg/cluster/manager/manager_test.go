@@ -11,8 +11,8 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
-	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
@@ -81,7 +81,7 @@ func Test(t *testing.T) {
 		updatedBy       = user1.ID
 	)
 
-	er, err := envmanager.Mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: "test",
 		RegionName:      "hz",
 	})

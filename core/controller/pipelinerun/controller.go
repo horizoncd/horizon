@@ -16,6 +16,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -83,7 +84,7 @@ func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) 
 		return nil, errors.E(op, err)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -112,7 +113,7 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
@@ -323,7 +324,7 @@ func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (e
 		return errors.E(op, err)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -354,7 +355,7 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 		return errors.E(op, err)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return errors.E(op, err)
 	}

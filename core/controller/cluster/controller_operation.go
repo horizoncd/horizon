@@ -13,6 +13,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -36,7 +37,7 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +223,7 @@ func (c *controller) Rollback(ctx context.Context,
 			"the pipelinerun with id: %v is not belongs to cluster: %v", r.PipelinerunID, clusterID)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +326,7 @@ func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
 		return err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return err
 	}
@@ -347,7 +348,7 @@ func (c *controller) Promote(ctx context.Context, clusterID uint) (err error) {
 		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return perror.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
 	}
@@ -382,7 +383,7 @@ func (c *controller) Pause(ctx context.Context, clusterID uint) (err error) {
 		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return perror.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
 	}
@@ -417,7 +418,7 @@ func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
 		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return perror.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
 	}
@@ -462,7 +463,7 @@ func (c *controller) exec(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := envregionmanager.Mgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}

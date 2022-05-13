@@ -155,6 +155,7 @@ var (
 	ErrReadFailed       = errors.New("read failed")
 	ErrNameConflict     = errors.New("name conflict")
 	ErrPathConflict     = errors.New("path conflict")
+	ErrPairConflict     = errors.New("entity pair conflict")
 	ErrParamInvalid     = errors.New("parameter is invalid")
 	ErrDeadlineExceeded = errors.New("time limit exceeded")
 	ErrFailedToRollback = errors.New("failed to rollback")

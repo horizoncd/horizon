@@ -18,7 +18,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
-	emvmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	emvmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
@@ -192,7 +192,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 
 	// 3. get environmentRegion
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +384,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 3. get environmentRegion
-	er, err := c.envMgr.GetByEnvironmentAndRegion(ctx, environment, region)
+	er, err := c.envRegionMgr.GetByEnvironmentAndRegion(ctx, environment, region)
 	if err != nil {
 		return nil, err
 	}
@@ -492,7 +492,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	var er *emvmodels.EnvironmentRegion
 	var regionEntity *regionmodels.RegionEntity
 	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
-		er, err = c.envMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
+		er, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
 		if err != nil {
 			return nil, err
 		}
@@ -501,7 +501,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 			return nil, err
 		}
 	} else {
-		er, err = c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+		er, err = c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 		if err != nil {
 			return nil, err
 		}
@@ -645,7 +645,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		return err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return err
 	}
@@ -742,7 +742,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		return err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
+	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return err
 	}

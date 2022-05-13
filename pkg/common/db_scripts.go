@@ -112,12 +112,20 @@ const (
 /* sql about environment */
 const (
 	// EnvironmentListAll ...
-	EnvironmentListAll    = "select * from tb_environment where deleted_ts = 0"
+	EnvironmentListAll = "select * from tb_environment where deleted_ts = 0"
+)
+
+/* sql about environmentRegion */
+const (
 	EnvironmentListRegion = "select region_name from tb_environment_region " +
 		"where environment_name = ? and disabled = 0 and deleted_ts = 0"
 	EnvironmentRegionGet = "select * from tb_environment_region where" +
 		" environment_name = ? and region_name = ? and deleted_ts = 0"
-	EnvironmentRegionGetByID = "select * from tb_environment_region where id = ? and deleted_ts = 0"
+	EnvironmentRegionGetByID           = "select * from tb_environment_region where id = ? and deleted_ts = 0"
+	EnvironmentRegionListAll           = "select * from tb_environment_region where deleted_ts = 0"
+	EnvironmentRegionGetByEnvAndRegion = "select * from tb_environment_region where environment_name = ? and " +
+		"region_name = ?"
+	EnvironmentRegionUpdateByID = "update tb_environment_region set environment_name = ?, region_name = ? where id = ?"
 )
 
 /* sql about region */

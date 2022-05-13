@@ -30,7 +30,7 @@ import (
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"

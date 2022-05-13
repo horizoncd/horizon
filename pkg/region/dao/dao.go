@@ -102,7 +102,7 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 	result := db.Raw(common.RegionGetByName, regionName).First(&region)
 
 	if result.Error != nil {
-		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, result.Error.Error())
 	}
 
 	return &region, result.Error
