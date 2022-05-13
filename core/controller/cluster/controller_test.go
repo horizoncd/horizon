@@ -557,6 +557,7 @@ func Test(t *testing.T) {
 		templateReleaseMgr:   trMgr,
 		templateSchemaGetter: templateSchemaGetter,
 		envMgr:               envMgr,
+		envRegionMgr:         envRegionMgr,
 		regionMgr:            regionMgr,
 		groupSvc:             groupsvc.Svc,
 		pipelinerunMgr:       prmanager.Mgr,

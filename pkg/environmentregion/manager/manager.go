@@ -26,10 +26,6 @@ func New() Manager {
 }
 
 type Manager interface {
-	EnvironmentRegionManager
-}
-
-type EnvironmentRegionManager interface {
 	// CreateEnvironmentRegion create a environmentRegion
 	CreateEnvironmentRegion(ctx context.Context, er *envregionmodels.EnvironmentRegion) (
 		*envregionmodels.EnvironmentRegion, error)

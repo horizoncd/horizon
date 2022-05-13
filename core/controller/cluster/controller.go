@@ -84,7 +84,7 @@ type controller struct {
 	templateSchemaGetter templateschema.Getter
 	outputGetter         output.Getter
 	envMgr               envmanager.Manager
-	envRegionMgr         environmentregionmapper.EnvironmentRegionManager
+	envRegionMgr         environmentregionmapper.Manager
 	regionMgr            regionmanager.Manager
 	groupSvc             groupsvc.Service
 	hook                 hook.Hook

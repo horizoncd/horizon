@@ -13,6 +13,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	envreigonmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
@@ -93,9 +94,10 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 
 	c = &controller{
-		mgr:            manager.Mgr,
-		regionMgr:      regionMgr,
-		environmentMgr: envMgr,
+		mgr:                  manager.Mgr,
+		regionMgr:            regionMgr,
+		environmentMgr:       envMgr,
+		environmentRegionMgr: envregionmanager.Mgr,
 	}
 
 	applicationID := uint(1)

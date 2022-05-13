@@ -74,8 +74,8 @@ func NewSqliteDB(file string) (*gorm.DB, error) {
 			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 			logger.Config{
 				SlowThreshold:             0, // print all logs
-				LogLevel:                  logger.Info,
-				IgnoreRecordNotFoundError: false,
+				LogLevel:                  logger.Error,
+				IgnoreRecordNotFoundError: true,
 				Colorful:                  true,
 			},
 		),
