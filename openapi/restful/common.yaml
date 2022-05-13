@@ -40,3 +40,8 @@ components:
       type: string
       format: date
       pattern: full-date
+
+
+    URL:
+      type: string
+      format: uri

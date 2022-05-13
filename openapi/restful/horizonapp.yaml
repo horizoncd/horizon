@@ -1,0 +1,299 @@
+openapi: 3.0.3
+info:
+  title: Horion-APP
+  description: the horizon-app restful api
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080'
+paths:
+  /apis/core/v1/groups/{groupID}/apps:
+    parameters:
+      - name: groupID
+        in: path
+        description: groupid
+        $ref: "#/components/schemas/GroupID"
+        required: true
+    post:
+      tags:
+        - app
+      operationId: createapp
+      summary: create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAppRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - app
+      operationId: listapp
+      summary: list the horizon app under the group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/apps/{appID}:
+    get:
+      tags:
+        - app
+      summary: get a horizon app
+      operationId: getapp
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description:  Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - app
+      summary: delete the horizon app
+      operationId: deleteapp
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description:  Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - app
+      summary: update the horizon app
+      operationId: updateapp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppBasicInfo"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description:  Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/apps/{appID}/permissions:
+    get:
+      tags:
+        - app
+      summary: get the app permissions
+      operationId: getAppPermission
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                 $ref: "#/components/schemas/Permission"
+        default:
+          description:  Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - app
+      operationId: updateAppPermission
+      summary: update the app permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Permission"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Permission"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/apps/{appID}/clientsecret:
+    get:
+      tags:
+        - app
+      operationId: listClientSecret
+      summary: list the client secrets of an horizon app
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientSecret"
+        default:
+          description:  Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - app
+      operationId: generateClientSecret
+      summary: generate the horizon client secret
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientSecret"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/apps/{appID}/clientsecret/{clientID}:
+    delete:
+      tags:
+        - app
+      operationId: deleteClientSecret
+      summary: delete the app's client secret
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientSecret"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    CreateAppRequest:
+      type: object
+      properties:
+        Name:
+          $ref: '#/components/schemas/appName'
+        Desc:
+          $ref:  "common.yaml#/components/schemas/Description"
+        HomeURL:
+          $ref: "common.yaml#/components/schemas/URL"
+        AuthorizationCallbackURL:
+          $ref: "common.yaml#/components/schemas/URL"
+        Permisssions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Permission"
+        WebHook:
+          $ref: "common.yaml#/components/schemas/URL"
+
+    AppBasicInfo:
+      type: object
+      properties:
+        AppID:
+          $ref: "common.yaml#/components/schemas/ID"
+        Name:
+          $ref: '#/components/schemas/appName'
+        Desc:
+          $ref: "common.yaml#/components/schemas/Description"
+        ClientID:
+          type: string
+          format: uuid
+        HomeURL:
+          $ref: "common.yaml#/components/schemas/URL"
+        AuthorizationCallbackURL:
+          $ref: "common.yaml#/components/schemas/URL"
+        WebHook:
+          $ref: "common.yaml#/components/schemas/URL"
+
+    Permission:
+      type: object
+      properties:
+        ResouceName:
+          type: string
+        Scope:
+          type: array
+          items:
+            type: string
+
+    appName:
+      type: string
+      maxLength: 2048
+      description: the group FullName
+
+    ClientSecret:
+      type: object
+      properties:
+        ClientID:
+          type: string
+          format: uuid
+        Secret:
+          type: string
+        CreateTime:
+          type: string
+          format: DateTime
+        CreateBy:
+          type: string
+
+    GroupID:
+      type: integer
+      format: int64
+      description: the parent id of the subgroup, if not provided, a root group
