@@ -27,7 +27,7 @@ const (
 )
 
 // Middleware to set region for create cluster API
-func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
+func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// not create cluster api, skip
 		if !_urlPattern.MatchString(c.Request.URL.Path) || c.Request.Method != _method {
@@ -68,6 +68,11 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 			return
 		}
 
+		config, err := region.FormatEnvironmentDefaultRegions(c)
+		if err != nil {
+			response.AbortWithInternalError(c, err.Error())
+			return
+		}
 		r := getRegion(applicationRegions, config, environment)
 		if len(r) == 0 {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(

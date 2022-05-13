@@ -11,7 +11,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/applicationregion/manager"
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/config/region"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	envreigonmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
@@ -68,7 +67,8 @@ func Test(t *testing.T) {
 	envs := make([]*envmodels.Environment, 0)
 	for _, env := range []string{"test", "beta", "perf", "pre", "online"} {
 		environment, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
-			Name: env,
+			Name:          env,
+			DefaultRegion: "hz",
 		})
 		assert.Nil(t, err)
 		envs = append(envs, environment)
@@ -93,17 +93,6 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 
 	c = &controller{
-		regionConfig: &region.Config{
-			DefaultRegions: map[string]string{
-				"dev":    "hz-test",
-				"test":   "hz-test",
-				"reg":    "hz-test",
-				"perf":   "hz-test",
-				"beta":   "hz-test",
-				"pre":    "hz",
-				"online": "hz",
-			},
-		},
 		mgr:            manager.Mgr,
 		regionMgr:      regionMgr,
 		environmentMgr: envMgr,

@@ -1,11 +1,9 @@
 package region
 
 import (
-	"io"
-	"io/ioutil"
-	"strings"
+	"context"
 
-	"gopkg.in/yaml.v2"
+	environmentmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 )
 
 type Config struct {
@@ -15,29 +13,20 @@ type Config struct {
 // DefaultRegions key is environment, value is default region of this environment
 type DefaultRegions map[string]string
 
-func LoadRegionConfig(reader io.Reader) (*Config, error) {
-	var config Config
-	data, err := ioutil.ReadAll(reader)
+func FormatEnvironmentDefaultRegions(ctx context.Context) (*Config, error) {
+	envs, err := environmentmanager.Mgr.ListAllEnvironment(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, err
-	}
-
-	return constructConfig(&config), nil
-}
-
-func constructConfig(config *Config) *Config {
 	newDefaultRegions := DefaultRegions{}
-	for key, v := range config.DefaultRegions {
-		ks := strings.Split(key, ",")
-		for i := 0; i < len(ks); i++ {
-			newDefaultRegions[ks[i]] = v
+	for _, v := range envs {
+		if v.DefaultRegion != "" {
+			newDefaultRegions[v.Name] = v.DefaultRegion
 		}
 	}
-	config.DefaultRegions = newDefaultRegions
 
-	return config
+	return &Config{
+		DefaultRegions: newDefaultRegions,
+	}, nil
 }

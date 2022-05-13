@@ -15,15 +15,12 @@ var (
 
 func New() Manager {
 	return &manager{
-		envDAO: dao.NewDAO(),
+		envDAO:    dao.NewDAO(),
+		regionDAO: regiondao.NewDAO(),
 	}
 }
 
 type Manager interface {
-	EnvironmentManager
-}
-
-type EnvironmentManager interface {
 	// CreateEnvironment create a environment
 	CreateEnvironment(ctx context.Context, environment *models.Environment) (*models.Environment, error)
 	// ListAllEnvironment list all environments

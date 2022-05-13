@@ -57,7 +57,6 @@ import (
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cmdb"
-	"g.hz.netease.com/horizon/pkg/config/region"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/hook"
@@ -168,19 +167,6 @@ func Run(flags *Flags) {
 	mservice := memberservice.NewService(roleService)
 	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
 
-	// load region config
-	regionFile, err := os.OpenFile(flags.RegionConfigFile, os.O_RDONLY, 0644)
-	if err != nil {
-		panic(err)
-	}
-
-	regionConfig, err := region.LoadRegionConfig(regionFile)
-	if err != nil {
-		panic(err)
-	}
-	regionConfigBytes, _ := json.Marshal(regionConfig)
-	log.Printf("regions: %v\n", string(regionConfigBytes))
-
 	// init db
 	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
 		Host:              config.DBConfig.Host,
@@ -258,7 +244,7 @@ func Run(flags *Flags) {
 		clusterTagCtl        = clustertagctl.NewController(clusterGitRepo)
 		templateSchemaTagCtl = templateschematagctl.NewController()
 		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers)
-		applicationRegionCtl = applicationregionctl.NewController(regionConfig)
+		applicationRegionCtl = applicationregionctl.NewController()
 		groupCtl             = groupctl.NewController(mservice)
 	)
 
@@ -296,7 +282,7 @@ func Run(flags *Flags) {
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-		regionmiddle.Middleware(regionConfig),
+		regionmiddle.Middleware(),
 		// TODO(gjq): remove this authentication, add OIDC provider
 		authenticate.Middleware(config.AccessSecretKeys, // authenticate middleware, check authentication
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),

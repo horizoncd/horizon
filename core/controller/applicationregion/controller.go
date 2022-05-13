@@ -5,7 +5,6 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/applicationregion/manager"
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
-	"g.hz.netease.com/horizon/pkg/config/region"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -18,8 +17,6 @@ type Controller interface {
 }
 
 type controller struct {
-	regionConfig *region.Config
-
 	mgr                  manager.Manager
 	regionMgr            regionmanager.Manager
 	environmentMgr       envmanager.Manager
@@ -28,9 +25,8 @@ type controller struct {
 
 var _ Controller = (*controller)(nil)
 
-func NewController(regionConfig *region.Config) Controller {
+func NewController() Controller {
 	return &controller{
-		regionConfig:         regionConfig,
 		mgr:                  manager.Mgr,
 		regionMgr:            regionmanager.Mgr,
 		environmentMgr:       envmanager.Mgr,
@@ -49,7 +45,7 @@ func (c *controller) List(ctx context.Context, applicationID uint) (ApplicationR
 		return nil, perror.WithMessage(err, "failed to list environment")
 	}
 
-	return ofApplicationRegion(applicationRegions, environments, c.regionConfig), nil
+	return ofApplicationRegion(applicationRegions, environments), nil
 }
 
 func (c *controller) Update(ctx context.Context, applicationID uint, regions ApplicationRegion) error {

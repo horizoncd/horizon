@@ -30,6 +30,7 @@ import (
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
@@ -490,6 +491,7 @@ func Test(t *testing.T) {
 	regionMgr := regionmanager.Mgr
 	groupMgr := groupmanager.Mgr
 	harborDAO := harbordao.NewDAO()
+	envRegionMgr := envregionmanager.Mgr
 
 	// init data
 	group, err := groupMgr.Create(ctx, &groupmodels.Group{
@@ -535,11 +537,11 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: "test",
 		RegionName:      "hz",
 	})
-	er, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: "dev",
 		RegionName:      "hz",
 	})
