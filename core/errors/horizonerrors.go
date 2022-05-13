@@ -166,7 +166,8 @@ var (
 	ErrHTTPRequestFailed     = errors.New("http request failed")
 
 	// cluster
-	ErrClusterNoChange = errors.New("no change to cluster")
+	ErrClusterNoChange        = errors.New("no change to cluster")
+	ErrShouldBuildDeployFirst = errors.New("clusters with build config should build and deploy first")
 
 	// pipelinerun
 

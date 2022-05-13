@@ -104,6 +104,22 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
+	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, err
+	}
+	// if pipeline config exists, should build&deploy first
+	if len(clusterFiles.PipelineJSONBlob) > 0 {
+		pr, err := c.pipelinerunMgr.GetLatestByClusterIDAndActionAndStatus(ctx, clusterID,
+			prmodels.ActionBuildDeploy, prmodels.ResultOK)
+		if err != nil {
+			return nil, err
+		}
+		if pr == nil {
+			return nil, herrors.ErrShouldBuildDeployFirst
+		}
+	}
+
 	// 1. get config commit
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
@@ -120,11 +136,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 			return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
 		}
 		// freed cluster is allowed to deploy without diff
-		commitInfo, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
-		if err != nil {
-			return nil, err
-		}
-		commit = commitInfo.Master
+		commit = configCommit.Master
 	} else {
 		// 2. merge branch
 		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)

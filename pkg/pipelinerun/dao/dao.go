@@ -20,6 +20,8 @@ type DAO interface {
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
 	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
+	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint,
+		action, status string) (*models.Pipelinerun, error)
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 	GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
@@ -101,6 +103,25 @@ func (d *dao) GetLatestByClusterIDAndAction(ctx context.Context,
 
 	var pipelinerun models.Pipelinerun
 	result := db.Raw(common.PipelinerunGetLatestByClusterIDAndAction, clusterID, action).Scan(&pipelinerun)
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+	return &pipelinerun, nil
+}
+
+func (d *dao) GetLatestByClusterIDAndActionAndStatus(ctx context.Context,
+	clusterID uint, action string, status string) (*models.Pipelinerun, error) {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var pipelinerun models.Pipelinerun
+	result := db.Raw(common.PipelinerunGetLatestByClusterIDAndActionAndStatus, clusterID,
+		action, status).Scan(&pipelinerun)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
 	}

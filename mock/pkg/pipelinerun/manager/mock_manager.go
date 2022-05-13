@@ -6,36 +6,37 @@ package mock_manager
 
 import (
 	context "context"
+	reflect "reflect"
+
 	q "g.hz.netease.com/horizon/lib/q"
 	models "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
-// MockManager is a mock of Manager interface
+// MockManager is a mock of Manager interface.
 type MockManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockManagerMockRecorder
 }
 
-// MockManagerMockRecorder is the mock recorder for MockManager
+// MockManagerMockRecorder is the mock recorder for MockManager.
 type MockManagerMockRecorder struct {
 	mock *MockManager
 }
 
-// NewMockManager creates a new mock instance
+// NewMockManager creates a new mock instance.
 func NewMockManager(ctrl *gomock.Controller) *MockManager {
 	mock := &MockManager{ctrl: ctrl}
 	mock.recorder = &MockManagerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
 }
 
-// Create mocks base method
+// Create mocks base method.
 func (m *MockManager) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, pipelinerun)
@@ -44,28 +45,27 @@ func (m *MockManager) Create(ctx context.Context, pipelinerun *models.Pipelineru
 	return ret0, ret1
 }
 
-// Create indicates an expected call of Create
+// Create indicates an expected call of Create.
 func (mr *MockManagerMockRecorder) Create(ctx, pipelinerun interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockManager)(nil).Create), ctx, pipelinerun)
 }
 
-// GetByID mocks base method
-func (m *MockManager) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error) {
+// DeleteByID mocks base method.
+func (m *MockManager) DeleteByID(ctx context.Context, pipelinerunID uint) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByID", ctx, pipelinerunID)
-	ret0, _ := ret[0].(*models.Pipelinerun)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "DeleteByID", ctx, pipelinerunID)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// GetByID indicates an expected call of GetByID
-func (mr *MockManagerMockRecorder) GetByID(ctx, pipelinerunID interface{}) *gomock.Call {
+// DeleteByID indicates an expected call of DeleteByID.
+func (mr *MockManagerMockRecorder) DeleteByID(ctx, pipelinerunID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockManager)(nil).GetByID), ctx, pipelinerunID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockManager)(nil).DeleteByID), ctx, pipelinerunID)
 }
 
-// GetByClusterID mocks base method
+// GetByClusterID mocks base method.
 func (m *MockManager) GetByClusterID(ctx context.Context, clusterID uint, canRollback bool, query q.Query) (int, []*models.Pipelinerun, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByClusterID", ctx, clusterID, canRollback, query)
@@ -75,13 +75,28 @@ func (m *MockManager) GetByClusterID(ctx context.Context, clusterID uint, canRol
 	return ret0, ret1, ret2
 }
 
-// GetByClusterID indicates an expected call of GetByClusterID
+// GetByClusterID indicates an expected call of GetByClusterID.
 func (mr *MockManagerMockRecorder) GetByClusterID(ctx, clusterID, canRollback, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByClusterID", reflect.TypeOf((*MockManager)(nil).GetByClusterID), ctx, clusterID, canRollback, query)
 }
 
-// GetFirstCanRollbackPipelinerun mocks base method
+// GetByID mocks base method.
+func (m *MockManager) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, pipelinerunID)
+	ret0, _ := ret[0].(*models.Pipelinerun)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockManagerMockRecorder) GetByID(ctx, pipelinerunID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockManager)(nil).GetByID), ctx, pipelinerunID)
+}
+
+// GetFirstCanRollbackPipelinerun mocks base method.
 func (m *MockManager) GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFirstCanRollbackPipelinerun", ctx, clusterID)
@@ -90,41 +105,13 @@ func (m *MockManager) GetFirstCanRollbackPipelinerun(ctx context.Context, cluste
 	return ret0, ret1
 }
 
-// GetFirstCanRollbackPipelinerun indicates an expected call of GetFirstCanRollbackPipelinerun
+// GetFirstCanRollbackPipelinerun indicates an expected call of GetFirstCanRollbackPipelinerun.
 func (mr *MockManagerMockRecorder) GetFirstCanRollbackPipelinerun(ctx, clusterID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFirstCanRollbackPipelinerun", reflect.TypeOf((*MockManager)(nil).GetFirstCanRollbackPipelinerun), ctx, clusterID)
 }
 
-// DeleteByID mocks base method
-func (m *MockManager) DeleteByID(ctx context.Context, pipelinerunID uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteByID", ctx, pipelinerunID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteByID indicates an expected call of DeleteByID
-func (mr *MockManagerMockRecorder) DeleteByID(ctx, pipelinerunID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockManager)(nil).DeleteByID), ctx, pipelinerunID)
-}
-
-// UpdateConfigCommitByID mocks base method
-func (m *MockManager) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateConfigCommitByID", ctx, pipelinerunID, commit)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateConfigCommitByID indicates an expected call of UpdateConfigCommitByID
-func (mr *MockManagerMockRecorder) UpdateConfigCommitByID(ctx, pipelinerunID, commit interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfigCommitByID", reflect.TypeOf((*MockManager)(nil).UpdateConfigCommitByID), ctx, pipelinerunID, commit)
-}
-
-// GetLatestByClusterIDAndAction mocks base method
+// GetLatestByClusterIDAndAction mocks base method.
 func (m *MockManager) GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestByClusterIDAndAction", ctx, clusterID, action)
@@ -133,13 +120,28 @@ func (m *MockManager) GetLatestByClusterIDAndAction(ctx context.Context, cluster
 	return ret0, ret1
 }
 
-// GetLatestByClusterIDAndAction indicates an expected call of GetLatestByClusterIDAndAction
+// GetLatestByClusterIDAndAction indicates an expected call of GetLatestByClusterIDAndAction.
 func (mr *MockManagerMockRecorder) GetLatestByClusterIDAndAction(ctx, clusterID, action interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestByClusterIDAndAction", reflect.TypeOf((*MockManager)(nil).GetLatestByClusterIDAndAction), ctx, clusterID, action)
 }
 
-// GetLatestSuccessByClusterID mocks base method
+// GetLatestByClusterIDAndActionAndStatus mocks base method.
+func (m *MockManager) GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint, action, status string) (*models.Pipelinerun, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestByClusterIDAndActionAndStatus", ctx, clusterID, action, status)
+	ret0, _ := ret[0].(*models.Pipelinerun)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestByClusterIDAndActionAndStatus indicates an expected call of GetLatestByClusterIDAndActionAndStatus.
+func (mr *MockManagerMockRecorder) GetLatestByClusterIDAndActionAndStatus(ctx, clusterID, action, status interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestByClusterIDAndActionAndStatus", reflect.TypeOf((*MockManager)(nil).GetLatestByClusterIDAndActionAndStatus), ctx, clusterID, action, status)
+}
+
+// GetLatestSuccessByClusterID mocks base method.
 func (m *MockManager) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLatestSuccessByClusterID", ctx, clusterID)
@@ -148,13 +150,27 @@ func (m *MockManager) GetLatestSuccessByClusterID(ctx context.Context, clusterID
 	return ret0, ret1
 }
 
-// GetLatestSuccessByClusterID indicates an expected call of GetLatestSuccessByClusterID
+// GetLatestSuccessByClusterID indicates an expected call of GetLatestSuccessByClusterID.
 func (mr *MockManagerMockRecorder) GetLatestSuccessByClusterID(ctx, clusterID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestSuccessByClusterID", reflect.TypeOf((*MockManager)(nil).GetLatestSuccessByClusterID), ctx, clusterID)
 }
 
-// UpdateResultByID mocks base method
+// UpdateConfigCommitByID mocks base method.
+func (m *MockManager) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateConfigCommitByID", ctx, pipelinerunID, commit)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateConfigCommitByID indicates an expected call of UpdateConfigCommitByID.
+func (mr *MockManagerMockRecorder) UpdateConfigCommitByID(ctx, pipelinerunID, commit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfigCommitByID", reflect.TypeOf((*MockManager)(nil).UpdateConfigCommitByID), ctx, pipelinerunID, commit)
+}
+
+// UpdateResultByID mocks base method.
 func (m *MockManager) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateResultByID", ctx, pipelinerunID, result)
@@ -162,7 +178,7 @@ func (m *MockManager) UpdateResultByID(ctx context.Context, pipelinerunID uint, 
 	return ret0
 }
 
-// UpdateResultByID indicates an expected call of UpdateResultByID
+// UpdateResultByID indicates an expected call of UpdateResultByID.
 func (mr *MockManagerMockRecorder) UpdateResultByID(ctx, pipelinerunID, result interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateResultByID", reflect.TypeOf((*MockManager)(nil).UpdateResultByID), ctx, pipelinerunID, result)

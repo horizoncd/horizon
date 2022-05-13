@@ -63,6 +63,10 @@ func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) 
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 				return
 			}
+			if perror.Cause(err) == herrors.ErrParamInvalid {
+				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+				return
+			}
 			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 			return
 		}
