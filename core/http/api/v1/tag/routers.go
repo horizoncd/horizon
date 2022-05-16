@@ -1,4 +1,4 @@
-package clustertag
+package tag
 
 import (
 	"fmt"
@@ -14,11 +14,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/tags", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/:%v/:%v/tags", _resourceTypeParam, _resourceIDParam),
 			HandlerFunc: api.List,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/tags", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/:%v/:%v/tags", _resourceTypeParam, _resourceIDParam),
 			HandlerFunc: api.Update,
 		},
 	}

@@ -156,6 +156,20 @@ const (
 		"join tb_region r on r.name = er.region_name " +
 		"where c.application_id = ? and er.environment_name in ? " +
 		"and c.name like ? and c.deleted_ts = 0"
+	ClusterQueryByApplicationAndTags = "select c.*, er.environment_name, er.region_name, " +
+		"r.display_name as region_display_name from tb_cluster c " +
+		"join tb_environment_region er on c.environment_region_id = er.id " +
+		"join tb_tag tg on c.id = tg.resource_id " +
+		"join tb_region r on r.name = er.region_name " +
+		"where c.application_id = ? and tg.resource_type = ? " +
+		"and c.name like ? and c.deleted_ts = 0 and %s group by c.id having count(c.id) = ? " +
+		"limit ? offset ?"
+	ClusterCountByApplicationAndTags = "select count(1) from (select c.id from tb_cluster c " +
+		"join tb_environment_region er on c.environment_region_id = er.id " +
+		"join tb_tag tg on c.id = tg.resource_id " +
+		"join tb_region r on r.name = er.region_name " +
+		"where c.application_id = ? and tg.resource_type = ? " +
+		"and c.name like ? and c.deleted_ts = 0 and %s group by c.id having count(c.id) = ?) as cid"
 	ClusterQueryByNameFuzzily = "select c.*, er.environment_name, er.region_name, " +
 		"r.display_name as region_display_name from tb_cluster c " +
 		"join tb_environment_region er on c.environment_region_id = er.id " +
@@ -265,10 +279,13 @@ const (
 
 /* sql about cluster tag */
 const (
-	// ClusterTagListByClusterID ...
-	ClusterTagListByClusterID          = "select * from tb_cluster_tag where cluster_id = ? order by id"
-	ClusterTagDeleteAllByClusterID     = "delete from tb_cluster_tag where cluster_id = ?"
-	ClusterTagDeleteByClusterIDAndKeys = "delete from tb_cluster_tag where cluster_id = ? and `tag_key` not in ?"
+	// TagListByResourceTypeID ...
+	TagListByResourceTypeID = "select * from tb_tag where resource_type = ?" +
+		" and resource_id = ? order by id"
+	TagDeleteAllByResourceTypeID = "delete from tb_tag where resource_type = ?" +
+		" and resource_id = ?"
+	TagDeleteByResourceTypeIDAndKeys = "delete from tb_tag where resource_type = ?" +
+		" and resource_id = ? and `tag_key` not in ?"
 )
 
 /* sql about cluster template tag */

@@ -1,4 +1,4 @@
-package clustertag
+package tag
 
 import (
 	"context"
@@ -14,10 +14,10 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
-	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
-	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +31,7 @@ var (
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
-		&clustertagmodels.ClusterTag{}, &membermodels.Member{}); err != nil {
+		&tagmodels.Tag{}, &membermodels.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
@@ -74,13 +74,13 @@ func Test(t *testing.T) {
 
 	c = &controller{
 		clusterMgr:     clusterMgr,
-		clusterTagMgr:  clustertagmanager.Mgr,
+		tagMgr:         tagmanager.Mgr,
 		clusterGitRepo: clusterGitRepo,
 		applicationMgr: appMgr,
 	}
 
 	clusterID := cluster.ID
-	err = c.Update(ctx, clusterID, &UpdateRequest{
+	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "a",
@@ -93,7 +93,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	resp, err := c.List(ctx, clusterID)
+	resp, err := c.List(ctx, tagmodels.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(resp.Tags))
 	assert.Equal(t, "a", resp.Tags[0].Key)
@@ -101,7 +101,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "b", resp.Tags[1].Key)
 	assert.Equal(t, "2", resp.Tags[1].Value)
 
-	err = c.Update(ctx, clusterID, &UpdateRequest{
+	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "a",
@@ -114,7 +114,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	resp, err = c.List(ctx, clusterID)
+	resp, err = c.List(ctx, tagmodels.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(resp.Tags))
 	assert.Equal(t, "a", resp.Tags[0].Key)
@@ -122,7 +122,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "c", resp.Tags[1].Key)
 	assert.Equal(t, "3", resp.Tags[1].Value)
 
-	err = c.Update(ctx, clusterID, &UpdateRequest{
+	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "a",
@@ -138,7 +138,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	resp, err = c.List(ctx, clusterID)
+	resp, err = c.List(ctx, tagmodels.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(resp.Tags))
 	assert.Equal(t, "a", resp.Tags[0].Key)
@@ -148,7 +148,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "d", resp.Tags[2].Key)
 	assert.Equal(t, "4", resp.Tags[2].Value)
 
-	err = c.Update(ctx, clusterID, &UpdateRequest{
+	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "d",
@@ -158,18 +158,18 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	resp, err = c.List(ctx, clusterID)
+	resp, err = c.List(ctx, tagmodels.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(resp.Tags))
 	assert.Equal(t, "d", resp.Tags[0].Key)
 	assert.Equal(t, "4", resp.Tags[0].Value)
 
-	err = c.Update(ctx, clusterID, &UpdateRequest{
+	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{},
 	})
 	assert.Nil(t, err)
 
-	resp, err = c.List(ctx, clusterID)
+	resp, err = c.List(ctx, tagmodels.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(resp.Tags))
 
@@ -184,7 +184,7 @@ func Test(t *testing.T) {
 	var request = &UpdateRequest{
 		Tags: tags,
 	}
-	err = c.Update(ctx, clusterID, request)
+	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, request)
 	assert.NotNil(t, err)
 	t.Logf("%v", err.Error())
 }
