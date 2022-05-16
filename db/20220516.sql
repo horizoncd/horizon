@@ -19,8 +19,8 @@ CREATE TABLE `tb_token`
     KEY `idx_user_or_robot_identity` (`user_or_robot_identity`)
 )
 
--- Oauth Client Table
-CREATE table `tb_oauth_client` (
+-- Oauth app Table
+CREATE table `tb_oauth_app` (
     `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `client_id`  varchar(256)  COMMENT 'oauth app client',
     `redirect_uri` varchar(256) COMMNET 'the authorization callback url',
@@ -41,4 +41,27 @@ CREATE table `tb_oauth_client_secret` (
     `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     PRIMARY KEY (`id`)
     UNIQUE KEY `idx_client_id_secret` (`client_id`, `client_secret`)
+)
+
+-- Horizon app table
+CREATE table `tb_horizon_app` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(128) NOT NULL COMMENT 'name of horizon app',
+    `desc` varchar(128) 'desc of horizon app',
+    `home_url`   varchar(256) COMMNET 'the oauth app home url',
+    `oauth_app_id` bigint(20) unsigned NOT NULL COMMENT 'the oauth app of horizon app',
+    `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
+)
+
+-- Horizon permission table
+CREATE table `tb_horizon_app_permission` (
+    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `horizon_app_id` bigint(20) NOT NULL,
+    `permissions` JSON  COMMENT 'Horizon app permission list',
+    `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
 )

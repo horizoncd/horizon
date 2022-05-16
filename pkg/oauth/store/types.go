@@ -12,15 +12,10 @@ type TokenStore interface {
 	Get(ctx context.Context, code string) (*models.Token, error)
 }
 
-type ClientInfo interface {
-	GetID() string
-	GetSecrets() []string
-	GetAuthorizationCallbackURL() string
-}
-
 type ClientAndSecretStore interface {
-	CreateClient(ctx context.Context, info ClientInfo) error
-	GetClient(ctx context.Context, clientID string) (ClientInfo, error)
-	CreateSecret(ctx context.Context, info *models.ClientSecret) error
-	DeleteSecret(ctx context.Context, ClientID string, clientSecretID uint) error
+	CreateClient(ctx context.Context, client models.OauthServerInfo) error
+	GetClient(ctx context.Context, clientID string) (models.OauthServerInfo, error)
+	CreateSecret(ctx context.Context, secret *models.ClientSecret) error
+	DeleteSecret(ctx context.Context, clientID string, clientSecretID uint) error
+	ListSecret(ctx context.Context, clientID string) ([]models.ClientSecret, error)
 }

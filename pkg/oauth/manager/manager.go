@@ -27,9 +27,9 @@ type AccessTokenGenerateRequest struct {
 }
 
 type Manager interface {
-	CreateClient(ctx context.Context, info models.Client) error
-	GetClient(ctx context.Context, clientID string) (models.Client, error)
-	DeleteClient(ctx context.Context, clientID string) error
+	CreateOauthApp(ctx context.Context, info models.OauthServerInfo) error
+	GetOAuthApp(ctx context.Context, clientID string) (models.OauthServerInfo, error)
+	DeleteOauthApp(ctx context.Context, clientID string) error
 
 	CreateSecret(ctx context.Context, info models.ClientSecret) error
 	DeleteSecret(ctx context.Context, ClientID string, clientSecretID uint) error

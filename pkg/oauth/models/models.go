@@ -27,7 +27,7 @@ type Token struct {
 	UsrOrRobotIdentity string
 }
 
-type Client struct {
+type OauthServerInfo struct {
 	ID          uint
 	ClientID    string
 	RedirectURI string
