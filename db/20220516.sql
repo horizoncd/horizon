@@ -5,7 +5,6 @@ CREATE TABLE `tb_token`
     `client_id`  varchar(256)  COMMENT 'oauth app client',
     `redirect_uri` varchar(256),
     `state`    varchar(256) COMMENT ' authorize_code state info',
-
     `code` varchar(256) NOT NULL COMMENT 'private-token-code/authorize_code/access_token/refresh-token',
     `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `expire_in`  bigint(20),
@@ -50,6 +49,10 @@ CREATE table `tb_horizon_app` (
     `desc` varchar(128) 'desc of horizon app',
     `home_url`   varchar(256) COMMNET 'the oauth app home url',
     `oauth_app_id` bigint(20) unsigned NOT NULL COMMENT 'the oauth app of horizon app',
+
+    `owner_type` tinyint(1) NOT NULL COMMENT '1 for group, 2 for user',
+    `owner_id`   bigint(20) NOT NULL
+
     `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     `updated_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
