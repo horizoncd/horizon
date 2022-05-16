@@ -45,3 +45,12 @@ components:
     URL:
       type: string
       format: uri
+
+    Description:
+      type: string
+      maxLength: 1024
+      description: the  description
+
+    ID:
+      type: integer
+      format: uint64

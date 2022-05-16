@@ -205,7 +205,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/apps/{appID}/clientsecret/{clientID}:
+  /apis/core/v1/apps/{appID}/clientsecret/{secretID}:
     delete:
       tags:
         - app
@@ -233,7 +233,7 @@ components:
         Name:
           $ref: '#/components/schemas/appName'
         Desc:
-          $ref:  "common.yaml#/components/schemas/Description"
+          $ref: "common.yaml#/components/schemas/Description"
         HomeURL:
           $ref: "common.yaml#/components/schemas/URL"
         AuthorizationCallbackURL:
@@ -250,15 +250,15 @@ components:
       properties:
         AppID:
           $ref: "common.yaml#/components/schemas/ID"
-        Name:
+        AppName:
           $ref: '#/components/schemas/appName'
         Desc:
           $ref: "common.yaml#/components/schemas/Description"
+        HomeURL:
+          $ref: "common.yaml#/components/schemas/URL"
         ClientID:
           type: string
           format: uuid
-        HomeURL:
-          $ref: "common.yaml#/components/schemas/URL"
         AuthorizationCallbackURL:
           $ref: "common.yaml#/components/schemas/URL"
         WebHook:
@@ -267,7 +267,7 @@ components:
     Permission:
       type: object
       properties:
-        ResouceName:
+        ResourceName:
           type: string
         Scope:
           type: array
