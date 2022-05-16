@@ -20,13 +20,11 @@ type Token struct {
 	// token basic info
 	// Code authorize_code/access_token/refresh-token
 	Code      string
-	CreateAt  time.Time
+	CreatedAt time.Time
 	ExpiresIn time.Duration
 	Scope     string
 
-	// token claim user info
-	UserType       userType
-	UsrIdOrRobotID uint
+	UsrOrRobotIdentity string
 }
 
 type Client struct {
@@ -37,10 +35,10 @@ type Client struct {
 }
 
 type ClientSecret struct {
-	ClientSecretID uint
-	ClientID       string
-	RedirectURL    string
-	ClientSecret   string
-	CreateTime     time.Time
-	CreateBy       uint
+	ID           uint
+	ClientID     string
+	RedirectURL  string
+	ClientSecret string
+	CreateTime   time.Time
+	CreateBy     uint
 }
