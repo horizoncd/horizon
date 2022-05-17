@@ -32,7 +32,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 		return err
 	}
 
-	// can only update displayName && defaultRegion
+	// can only update displayName
 	// check en exist
 	var environmentInDB models.Environment
 	res := db.Find(&environmentInDB, id)
@@ -43,9 +43,8 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 		return herrors.NewErrGetFailed(herrors.EnvironmentInDB, res.Error.Error())
 	}
 
-	// set displayName && defaultRegion
+	// set displayName
 	environmentInDB.DisplayName = environment.DisplayName
-	environmentInDB.DefaultRegion = environment.DefaultRegion
 	res = db.Save(environmentInDB)
 	if res.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.EnvironmentInDB, res.Error.Error())

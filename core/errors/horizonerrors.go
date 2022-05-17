@@ -206,5 +206,7 @@ var (
 	// ErrHasChildren used when delete a group which still has some children
 	ErrGroupHasChildren = errors.New("children exist, cannot be deleted")
 	// ErrConflictWithApplication conflict with the application
-	ErrGroupConflictWithApplication = errors.New("name or path is in conflict with application")
+	ErrGroupConflictWithApplication     = errors.New("name or path is in conflict with application")
+	ErrRegionCannotSetDefaultIfDisabled = errors.New("cannot set a region to default if it is disabled")
+	ErrRegionCannotDisabledIfDefault    = errors.New("cannot disable a region if it is a default region")
 )

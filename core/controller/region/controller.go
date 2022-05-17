@@ -13,8 +13,9 @@ var (
 )
 
 type Controller interface {
-	ListRegions(ctx context.Context) ([]*models.RegionEntity, error)
-	Create(ctx context.Context, region *CreateRegionRequest) (uint, error)
+	ListRegions(ctx context.Context) ([]*Region, error)
+	Create(ctx context.Context, request *CreateRegionRequest) (uint, error)
+	UpdateByID(ctx context.Context, id uint, request *UpdateRegionRequest) error
 }
 
 func NewController() Controller {
@@ -25,14 +26,29 @@ type controller struct {
 	regionMgr regionmanager.Manager
 }
 
-func (c controller) Create(ctx context.Context, region *CreateRegionRequest) (uint, error) {
+func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegionRequest) error {
+	err := c.regionMgr.UpdateByID(ctx, id, &models.Region{
+		DisplayName:   request.DisplayName,
+		Server:        request.Server,
+		Certificate:   request.Certificate,
+		IngressDomain: request.IngressDomain,
+		HarborID:      request.HarborID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c controller) Create(ctx context.Context, request *CreateRegionRequest) (uint, error) {
 	create, err := c.regionMgr.Create(ctx, &models.Region{
-		Name:          region.Name,
-		DisplayName:   region.DisplayName,
-		Server:        region.Server,
-		Certificate:   region.Certificate,
-		IngressDomain: region.IngressDomain,
-		HarborID:      region.HarborID,
+		Name:          request.Name,
+		DisplayName:   request.DisplayName,
+		Server:        request.Server,
+		Certificate:   request.Certificate,
+		IngressDomain: request.IngressDomain,
+		HarborID:      request.HarborID,
 	})
 	if err != nil {
 		return 0, err
@@ -41,6 +57,10 @@ func (c controller) Create(ctx context.Context, region *CreateRegionRequest) (ui
 	return create.ID, nil
 }
 
-func (c controller) ListRegions(ctx context.Context) ([]*models.RegionEntity, error) {
-	return c.regionMgr.ListRegionEntities(ctx)
+func (c controller) ListRegions(ctx context.Context) ([]*Region, error) {
+	entities, err := c.regionMgr.ListRegionEntities(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return ofRegionEntities(entities), nil
 }

@@ -45,7 +45,12 @@ func (c *controller) List(ctx context.Context, applicationID uint) (ApplicationR
 		return nil, perror.WithMessage(err, "failed to list environment")
 	}
 
-	return ofApplicationRegion(applicationRegions, environments), nil
+	environmentRegions, err := c.environmentRegionMgr.GetDefaultRegions(ctx)
+	if err != nil {
+		return nil, perror.WithMessage(err, "failed to list environmentRegions")
+	}
+
+	return ofApplicationRegion(applicationRegions, environments, environmentRegions), nil
 }
 
 func (c *controller) Update(ctx context.Context, applicationID uint, regions ApplicationRegion) error {

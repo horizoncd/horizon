@@ -1,23 +1,38 @@
 package environmentregion
 
 import (
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 )
 
-type Region struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"displayName"`
+type EnvironmentRegion struct {
+	ID                uint   `json:"id"`
+	Environment       string `json:"environment"`
+	Region            string `json:"region"`
+	RegionDisplayName string `json:"regionDisplayName"`
+	IsDefault         bool   `json:"isDefault"`
+	Disabled          bool   `json:"disabled"`
 }
 
-type Regions []*Region
+type EnvironmentRegions []*EnvironmentRegion
 
-// ofEnvironmentModels []*models.Region to []*Region
-func ofRegionModels(regions []*regionmodels.Region) Regions {
-	rs := make(Regions, 0)
+// ofEnvironmentModels []*models.Region to []*EnvironmentRegion
+func ofRegionModels(regions []*regionmodels.Region,
+	environmentRegions []*envregionmodels.EnvironmentRegion) EnvironmentRegions {
+	displayNameMap := make(map[string]string)
 	for _, region := range regions {
-		rs = append(rs, &Region{
-			Name:        region.Name,
-			DisplayName: region.DisplayName,
+		displayNameMap[region.Name] = region.DisplayName
+	}
+
+	rs := make(EnvironmentRegions, 0)
+	for _, region := range environmentRegions {
+		rs = append(rs, &EnvironmentRegion{
+			ID:                region.ID,
+			Region:            region.RegionName,
+			RegionDisplayName: displayNameMap[region.RegionName],
+			Environment:       region.EnvironmentName,
+			IsDefault:         region.IsDefault,
+			Disabled:          region.Disabled,
 		})
 	}
 	return rs
@@ -29,6 +44,6 @@ type CreateEnvironmentRegionRequest struct {
 }
 
 type UpdateEnvironmentRegionRequest struct {
-	EnvironmentName string `json:"environmentName"`
-	RegionName      string `json:"regionName"`
+	IsDefault bool `json:"isDefault"`
+	Disabled  bool `json:"disabled"`
 }

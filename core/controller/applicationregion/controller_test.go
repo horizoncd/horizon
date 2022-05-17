@@ -68,8 +68,7 @@ func Test(t *testing.T) {
 	envs := make([]*envmodels.Environment, 0)
 	for _, env := range []string{"test", "beta", "perf", "pre", "online"} {
 		environment, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
-			Name:          env,
-			DefaultRegion: "hz",
+			Name: env,
 		})
 		assert.Nil(t, err)
 		envs = append(envs, environment)

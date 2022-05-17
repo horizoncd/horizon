@@ -5,12 +5,18 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 )
 
 type ApplicationRegion []*Region
 
 func ofApplicationRegion(applicationRegions []*models.ApplicationRegion,
-	environments []*envmodels.Environment) ApplicationRegion {
+	environments []*envmodels.Environment, environmentRegions []*envregionmodels.EnvironmentRegion) ApplicationRegion {
+	defaultRegionMap := make(map[string]string)
+	for _, environmentRegion := range environmentRegions {
+		defaultRegionMap[environmentRegion.EnvironmentName] = environmentRegion.RegionName
+	}
+
 	retApplicationRegions := make([]*Region, 0)
 	envMap := make(map[string]bool)
 	for _, applicationRegion := range applicationRegions {
@@ -24,10 +30,9 @@ func ofApplicationRegion(applicationRegions []*models.ApplicationRegion,
 	// append default region
 	for _, environment := range environments {
 		if _, ok := envMap[environment.Name]; !ok {
-			defaultRegion := environment.DefaultRegion
 			retApplicationRegions = append(retApplicationRegions, &Region{
 				Environment: environment.Name,
-				Region:      defaultRegion,
+				Region:      defaultRegionMap[environment.Name],
 			})
 		}
 	}

@@ -51,9 +51,8 @@ func Test(t *testing.T) {
 	assert.Equal(t, 0, len(envs))
 
 	devID, err := Ctl.Create(ctx, &CreateEnvironmentRequest{
-		Name:          "dev",
-		DisplayName:   "DEV",
-		DefaultRegion: "hz",
+		Name:        "dev",
+		DisplayName: "DEV",
 	})
 	assert.Nil(t, err)
 
@@ -62,11 +61,9 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(envs))
 	assert.Equal(t, "dev", envs[0].Name)
 	assert.Equal(t, "DEV", envs[0].DisplayName)
-	assert.Equal(t, "hz", envs[0].DefaultRegion)
 
 	err = Ctl.UpdateByID(ctx, devID, &UpdateEnvironmentRequest{
-		DisplayName:   "DEV-update",
-		DefaultRegion: "hz-update",
+		DisplayName: "DEV-update",
 	})
 	assert.Nil(t, err)
 
@@ -75,5 +72,4 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(envs))
 	assert.Equal(t, "dev", envs[0].Name)
 	assert.Equal(t, "DEV-update", envs[0].DisplayName)
-	assert.Equal(t, "hz-update", envs[0].DefaultRegion)
 }

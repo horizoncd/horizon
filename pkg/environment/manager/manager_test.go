@@ -34,16 +34,14 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 
 	onlineEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
-		Name:          "online",
-		DisplayName:   "线上",
-		DefaultRegion: "hz",
+		Name:        "online",
+		DisplayName: "线上",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", onlineEnv)
 	err = Mgr.UpdateByID(ctx, onlineEnv.ID, &models.Environment{
-		Name:          "online-update",
-		DisplayName:   "线上-update",
-		DefaultRegion: "hz-update",
+		Name:        "online-update",
+		DisplayName: "线上-update",
 	})
 	assert.Nil(t, err)
 
@@ -77,7 +75,6 @@ func Test(t *testing.T) {
 	t.Logf("%v", envs[3])
 	assert.Equal(t, envs[3].Name, "online")
 	assert.Equal(t, envs[3].DisplayName, "线上-update")
-	assert.Equal(t, envs[3].DefaultRegion, "hz-update")
 }
 
 func TestMain(m *testing.M) {

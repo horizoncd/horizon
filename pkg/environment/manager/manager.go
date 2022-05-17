@@ -35,24 +35,10 @@ type manager struct {
 }
 
 func (m *manager) UpdateByID(ctx context.Context, id uint, environment *models.Environment) error {
-	// check region exist
-	_, err := m.regionDAO.GetRegion(ctx, environment.DefaultRegion)
-	if err != nil {
-		return err
-	}
-
 	return m.envDAO.UpdateByID(ctx, id, environment)
 }
 
 func (m *manager) CreateEnvironment(ctx context.Context, environment *models.Environment) (*models.Environment, error) {
-	// check region exist
-	if environment.DefaultRegion != "" {
-		_, err := m.regionDAO.GetRegion(ctx, environment.DefaultRegion)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return m.envDAO.CreateEnvironment(ctx, environment)
 }
 

@@ -117,15 +117,25 @@ const (
 
 /* sql about environmentRegion */
 const (
-	EnvironmentListRegion = "select region_name from tb_environment_region " +
+	EnvironmentListRegion = "select * from tb_environment_region " +
 		"where environment_name = ? and disabled = 0 and deleted_ts = 0"
+	EnvironmentListEnabledRegion = "select * from tb_environment_region " +
+		"where environment_name = ? and deleted_ts = 0"
 	EnvironmentRegionGet = "select * from tb_environment_region where" +
 		" environment_name = ? and region_name = ? and deleted_ts = 0"
 	EnvironmentRegionGetByID           = "select * from tb_environment_region where id = ? and deleted_ts = 0"
 	EnvironmentRegionListAll           = "select * from tb_environment_region where deleted_ts = 0"
 	EnvironmentRegionGetByEnvAndRegion = "select * from tb_environment_region where environment_name = ? and " +
-		"region_name = ?"
-	EnvironmentRegionUpdateByID = "update tb_environment_region set environment_name = ?, region_name = ? where id = ?"
+		"region_name = ? and deleted_ts = 0"
+	EnvironmentRegionGetDefaultByEnv = "select * from tb_environment_region where environment_name = ? and " +
+		"is_default = 1 and disabled = 0 and deleted_ts = 0"
+	EnvironmentRegionsGetDefault = "select * from tb_environment_region where " +
+		"is_default = 1 and disabled = 0 and deleted_ts = 0"
+	EnvironmentRegionUpdateByID       = "update tb_environment_region set is_default = ?, disabled = ? where id = ?"
+	EnvironmentRegionEnableByID       = "update tb_environment_region set disabled = 0 where id = ?"
+	EnvironmentRegionDisableByID      = "update tb_environment_region set disabled = 1 where id = ?"
+	EnvironmentRegionSetDefaultByID   = "update tb_environment_region set is_default = 1 where id = ?"
+	EnvironmentRegionUnsetDefaultByID = "update tb_environment_region set is_default = 0 where id = ?"
 )
 
 /* sql about region */

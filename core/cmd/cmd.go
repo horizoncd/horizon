@@ -33,10 +33,13 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/clustertag"
 	codeapi "g.hz.netease.com/horizon/core/http/api/v1/code"
 	"g.hz.netease.com/horizon/core/http/api/v1/environment"
+	"g.hz.netease.com/horizon/core/http/api/v1/environmentregion"
 	"g.hz.netease.com/horizon/core/http/api/v1/envtemplate"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
+	"g.hz.netease.com/horizon/core/http/api/v1/harbor"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
+	"g.hz.netease.com/horizon/core/http/api/v1/region"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
@@ -258,6 +261,9 @@ func Run(flags *Flags) {
 		clusterAPI           = cluster.NewAPI(clusterCtl)
 		prAPI                = pipelinerun.NewAPI(prCtl)
 		environmentAPI       = environment.NewAPI()
+		regionAPI            = region.NewAPI()
+		environmentRegionAPI = environmentregion.NewAPI()
+		harborAPI            = harbor.NewAPI()
 		roleAPI              = roleapi.NewAPI(roleCtl)
 		terminalAPI          = terminalapi.NewAPI(terminalCtl)
 		sloAPI               = sloapi.NewAPI(sloCtl)
@@ -309,6 +315,9 @@ func Run(flags *Flags) {
 	cluster.RegisterRoutes(r, clusterAPI)
 	pipelinerun.RegisterRoutes(r, prAPI)
 	environment.RegisterRoutes(r, environmentAPI)
+	region.RegisterRoutes(r, regionAPI)
+	environmentregion.RegisterRoutes(r, environmentRegionAPI)
+	harbor.RegisterRoutes(r, harborAPI)
 	member.RegisterRoutes(r, memberAPI)
 	roleapi.RegisterRoutes(r, roleAPI)
 	terminalapi.RegisterRoutes(r, terminalAPI)

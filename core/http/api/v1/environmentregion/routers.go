@@ -1,4 +1,4 @@
-package environment
+package environmentregion
 
 import (
 	"fmt"
@@ -10,13 +10,27 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, api *API) {
-	apiGroup := engine.Group("/apis/core/v1/environments")
+	apiGroup := engine.Group("/apis/core/v1/environmentregions")
 	var routes = route.Routes{
 		{
-			Method:  http.MethodGet,
-			Pattern: fmt.Sprintf("/:%v/regions", _environmentParam),
+			Method:      http.MethodGet,
+			HandlerFunc: api.ListAll,
+		}, {
+			Method:      http.MethodPost,
+			HandlerFunc: api.Create,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/:%v/enable", _environmentRegionIDParam),
+			HandlerFunc: api.Enable,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/:%v/disable", _environmentRegionIDParam),
+			HandlerFunc: api.Disable,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/:%v/setdefault", _environmentRegionIDParam),
+			HandlerFunc: api.SetDefault,
 		},
 	}
-
 	route.RegisterRoutes(apiGroup, routes)
 }

@@ -5,6 +5,8 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/environment/manager"
 	"g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 )
 
 var (
@@ -16,25 +18,31 @@ type Controller interface {
 	Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error)
 	UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error
 	ListEnvironments(ctx context.Context) (Environments, error)
+
+	// ListEnabledRegionsByEnvironment list regions by the environment that are enabled
+	ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (Regions, error)
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController() Controller {
 	return &controller{
-		envMgr: manager.Mgr,
+		envMgr:       manager.Mgr,
+		envRegionMgr: envregionmanager.Mgr,
+		regionMgr:    regionmanager.Mgr,
 	}
 }
 
 type controller struct {
-	envMgr manager.Manager
+	envMgr       manager.Manager
+	envRegionMgr envregionmanager.Manager
+	regionMgr    regionmanager.Manager
 }
 
 func (c *controller) Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error) {
 	environment, err := c.envMgr.CreateEnvironment(ctx, &models.Environment{
-		Name:          request.Name,
-		DisplayName:   request.DisplayName,
-		DefaultRegion: request.DefaultRegion,
+		Name:        request.Name,
+		DisplayName: request.DisplayName,
 	})
 	if err != nil {
 		return 0, err
@@ -44,8 +52,7 @@ func (c *controller) Create(ctx context.Context, request *CreateEnvironmentReque
 
 func (c *controller) UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error {
 	return c.envMgr.UpdateByID(ctx, id, &models.Environment{
-		DisplayName:   request.DisplayName,
-		DefaultRegion: request.DefaultRegion,
+		DisplayName: request.DisplayName,
 	})
 }
 
@@ -56,4 +63,22 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 	}
 
 	return ofEnvironmentModels(envs), nil
+}
+
+func (c *controller) ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (Regions, error) {
+	environmentRegions, err := c.envRegionMgr.ListEnabledRegionsByEnvironment(ctx, environment)
+	if err != nil {
+		return nil, err
+	}
+
+	regionNames := make([]string, 0)
+	for _, region := range environmentRegions {
+		regionNames = append(regionNames, region.RegionName)
+	}
+	regions, err := c.regionMgr.ListRegionsByNames(ctx, regionNames)
+	if err != nil {
+		return nil, err
+	}
+
+	return ofRegionModels(regions, environmentRegions), nil
 }

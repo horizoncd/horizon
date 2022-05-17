@@ -47,9 +47,8 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = environment.Ctl.Create(ctx, &environment.CreateEnvironmentRequest{
-		Name:          "dev",
-		DisplayName:   "DEV",
-		DefaultRegion: "hz",
+		Name:        "dev",
+		DisplayName: "DEV",
 	})
 	assert.Nil(t, err)
 
@@ -59,14 +58,4 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
-
-	regions, err := Ctl.ListRegionsByEnvironment(ctx, "dev")
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(regions))
-	assert.Equal(t, "hz", regions[0].Name)
-	assert.Equal(t, "HZ", regions[0].DisplayName)
-
-	regions, err = Ctl.ListRegionsByEnvironment(ctx, "no-exists")
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(regions))
 }

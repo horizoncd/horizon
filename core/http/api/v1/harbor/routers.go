@@ -1,7 +1,6 @@
-package region
+package harbor
 
 import (
-	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/pkg/server/route"
@@ -10,19 +9,15 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, api *API) {
-	apiGroup := engine.Group("/apis/core/v1/regions")
+	apiGroup := engine.Group("/apis/core/v1/harbors")
 
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			HandlerFunc: api.listRegions,
+			HandlerFunc: api.listAll,
 		}, {
 			Method:      http.MethodPost,
 			HandlerFunc: api.Create,
-		}, {
-			Method:      http.MethodPut,
-			Pattern:     fmt.Sprintf("/:%v", _regionIDParam),
-			HandlerFunc: api.UpdateByID,
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)

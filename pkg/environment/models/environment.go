@@ -7,11 +7,10 @@ import (
 type Environment struct {
 	global.Model
 
-	Name          string
-	DisplayName   string
-	DefaultRegion string
-	CreatedBy     uint
-	UpdatedBy     uint
+	Name        string
+	DisplayName string
+	CreatedBy   uint
+	UpdatedBy   uint
 }
 
 type EnvironmentList []*Environment

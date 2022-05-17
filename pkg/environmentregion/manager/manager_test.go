@@ -74,7 +74,7 @@ func Test(t *testing.T) {
 	regions, err := Mgr.ListRegionsByEnvironment(ctx, devEnv.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(regions))
-	assert.Equal(t, "hz", regions[0].Name)
+	assert.Equal(t, "hz", regions[0].RegionName)
 	t.Logf("%v", regions[0])
 }
 
