@@ -6,16 +6,18 @@ import (
 )
 
 type TokenStore interface {
-	Create(ctx context.Context, token *models.Token) (*models.Token, error)
-	DeleteByCode(ctx context.Context, code string) (*models.Token, error)
+	Create(ctx context.Context, token *models.Token) error
+	DeleteByCode(ctx context.Context, code string) error
 	DeleteByClientID(ctx context.Context, code string) error
 	Get(ctx context.Context, code string) (*models.Token, error)
 }
 
-type ClientAndSecretStore interface {
-	CreateClient(ctx context.Context, client models.OauthServerInfo) error
-	GetClient(ctx context.Context, clientID string) (models.OauthServerInfo, error)
-	CreateSecret(ctx context.Context, secret *models.ClientSecret) error
+type OauthAppStore interface {
+	CreateApp(ctx context.Context, client models.OauthApp) error
+	GetApp(ctx context.Context, clientID string) (*models.OauthApp, error)
+	DeleteApp(ctx context.Context, clientID string) error
+	CreateSecret(ctx context.Context, secret *models.ClientSecret) (*models.ClientSecret, error)
 	DeleteSecret(ctx context.Context, clientID string, clientSecretID uint) error
+	DeleteSecretByClientID(ctx context.Context, clientID string) error
 	ListSecret(ctx context.Context, clientID string) ([]models.ClientSecret, error)
 }

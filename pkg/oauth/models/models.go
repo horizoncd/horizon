@@ -1,44 +1,55 @@
 package models
 
-import "time"
-
-type userType uint8
-
-const (
-	user  userType = 1
-	robot userType = 2
+import (
+	"time"
 )
+
+// type userType uint8
+
+// const (
+// 	user  userType = 1
+// 	robot userType = 2
+// )
+
+type OwnerType uint8
+
+// const (
+// 	GroupOwnerType OwnerType = 1
+// )
 
 type Token struct {
 	ID uint `gorm:"primarykey"`
 
 	// grant client info
-	ClientID    string
-	RedirectURI string
-	State       string
+	ClientID    string `gorm:"column:client_id"`
+	RedirectURI string `gorm:"column:redirect_url"`
+	State       string `gorm:"column:state"`
 
 	// token basic info
 	// Code authorize_code/access_token/refresh-token
-	Code      string
-	CreatedAt time.Time
-	ExpiresIn time.Duration
-	Scope     string
+	Code      string        `gorm:"column:code"`
+	CreatedAt time.Time     `gorm:"column:created_at"`
+	ExpiresIn time.Duration `gorm:"column:expire_in"`
+	Scope     string        `gorm:"column:scope"`
 
-	UsrOrRobotIdentity string
+	UserOrRobotIdentity string `gorm:"column:scope"`
 }
 
-type OauthServerInfo struct {
-	ID          uint
-	ClientID    string
-	RedirectURI string
-	HomeURL     string
+type OauthApp struct {
+	ID          uint      `gorm:"column:id"`
+	Name        string    `gorm:"column:name"`
+	ClientID    string    `gorm:"column:client_id"`
+	RedirectURI string    `gorm:"column:redirect_url"`
+	HomeURL     string    `gorm:"column:home_url"`
+	Desc        string    `gorm:"column:desc"`
+	OwnerType   OwnerType `gorm:"column:owner_type"`
+	OwnerID     uint
 }
 
 type ClientSecret struct {
-	ID           uint
-	ClientID     string
-	RedirectURL  string
-	ClientSecret string
-	CreateTime   time.Time
-	CreateBy     uint
+	ID           uint      `gorm:"column:id"`
+	ClientID     string    `gorm:"column:client_id"`
+	ClientSecret string    `gorm:"column:client_secret"`
+	CreatedAt    time.Time `gorm:"column:created_at"`
+	CreateBy     uint      `gorm:"column:create_by"`
 }

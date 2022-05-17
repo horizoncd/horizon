@@ -10,8 +10,6 @@ CREATE TABLE `tb_token`
     `expire_in`  bigint(20),
     `scope` varchar(256),
     `user_or_robot_identity` varchar(256),
-    `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
-    `updated_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`)
     UNIQUE KEY `idx_code` (`code`)
     KEY `idx_client_id` (`client_id`)
@@ -21,9 +19,13 @@ CREATE TABLE `tb_token`
 -- Oauth app Table
 CREATE table `tb_oauth_app` (
     `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-    `client_id`  varchar(256)  COMMENT 'oauth app client',
+    `name`       varchar(128) COMMENT 'short name of app client',
+    `client_id`  varchar(128)  COMMENT 'oauth app client',
     `redirect_uri` varchar(256) COMMNET 'the authorization callback url',
     `home_url`   varchar(256) COMMNET 'the oauth app home url',
+    `desc`      varchar(256),
+    `owner_type` tinyint(1) NOT NULL COMMENT '1 for group, 2 for user',
+    `owner_id`   bigint(20) NOT NULL,
     `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     `updated_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
@@ -51,7 +53,7 @@ CREATE table `tb_horizon_app` (
     `oauth_app_id` bigint(20) unsigned NOT NULL COMMENT 'the oauth app of horizon app',
 
     `owner_type` tinyint(1) NOT NULL COMMENT '1 for group, 2 for user',
-    `owner_id`   bigint(20) NOT NULL
+    `owner_id`   bigint(20) NOT NULL,
 
     `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',

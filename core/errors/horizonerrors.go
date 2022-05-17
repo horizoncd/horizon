@@ -49,6 +49,8 @@ var (
 	TektonCollector = sourceType{name: "TektonCollector"}
 
 	HelmRepo = sourceType{name: "HelmRepo"}
+
+	TokenInDB = sourceType{name: "TokenInDB"}
 )
 
 type HorizonErrNotFound struct {
@@ -207,4 +209,14 @@ var (
 	ErrGroupHasChildren = errors.New("children exist, cannot be deleted")
 	// ErrConflictWithApplication conflict with the application
 	ErrGroupConflictWithApplication = errors.New("name or path is in conflict with application")
+
+	// ErrOAuthSecretNotFound oauth clientid secret was not valid
+	ErrOAuthSecretNotValid = errors.New("secret not valid")
+
+	// ErroOAuth
+
+	// ErrOAuthCodeExpired oauth authorization code  or access token expire
+	ErrOAuthCodeExpired = errors.New("code expired")
+
+	ErrOAuthReqNotValid = errors.New("access token request  not valid")
 )
