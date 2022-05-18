@@ -29,7 +29,7 @@ type Token struct {
 	// Code authorize_code/access_token/refresh-token
 	Code      string        `gorm:"column:code"`
 	CreatedAt time.Time     `gorm:"column:created_at"`
-	ExpiresIn time.Duration `gorm:"column:expire_in"`
+	ExpiresIn time.Duration `gorm:"column:expires_in"`
 	Scope     string        `gorm:"column:scope"`
 
 	UserOrRobotIdentity string `gorm:"column:user_or_robot_identity"`

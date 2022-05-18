@@ -273,6 +273,21 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, accessToken)
 	assert.True(t, checkAccessToken(authorizaGenerateReq2, &case6Request, accessToken))
+
+	returnToken, err := oauthManager.LoadAccessToken(ctx, accessToken.Code)
+	assert.Nil(t, err)
+	// assert.NotNil(t, returnToken)
+	// assert.Equal(t, returnToken, accessToken)
+	assert.True(t, returnToken.CreatedAt.Equal(accessToken.CreatedAt))
+	returnToken.CreatedAt = accessToken.CreatedAt
+	assert.True(t, reflect.DeepEqual(returnToken, accessToken))
+
+	assert.Nil(t, oauthManager.RevokeAllAccessToken(ctx, accessToken.ClientID))
+	_, err = oauthManager.LoadAccessToken(ctx, accessToken.Code)
+	assert.NotNil(t, err)
+	if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+		assert.Fail(t, "error is not found")
+	}
 }
 
 func TestMain(m *testing.M) {
