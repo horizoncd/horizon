@@ -177,7 +177,7 @@ func (mr *MockManagerMockRecorder) ListUserAuthorizedByNameFuzzily(ctx, environm
 // UpdateByID mocks base method.
 func (m *MockManager) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateByID", ctx, id, cluster)
+	ret := m.ctrl.Call(m, "Update", ctx, id, cluster)
 	ret0, _ := ret[0].(*models.Cluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -186,5 +186,5 @@ func (m *MockManager) UpdateByID(ctx context.Context, id uint, cluster *models.C
 // UpdateByID indicates an expected call of UpdateByID.
 func (mr *MockManagerMockRecorder) UpdateByID(ctx, id, cluster interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByID", reflect.TypeOf((*MockManager)(nil).UpdateByID), ctx, id, cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockManager)(nil).UpdateByID), ctx, id, cluster)
 }

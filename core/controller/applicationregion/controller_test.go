@@ -83,6 +83,7 @@ func Test(t *testing.T) {
 	_, err = envreigonmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: envs[3].Name,
 		RegionName:      r2.Name,
+		IsDefault:       true,
 	})
 	assert.Nil(t, err)
 

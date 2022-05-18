@@ -1,6 +1,7 @@
 package harbor
 
 import (
+	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/pkg/server/route"
@@ -18,6 +19,14 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		}, {
 			Method:      http.MethodPost,
 			HandlerFunc: api.Create,
+		}, {
+			Method:      http.MethodPut,
+			Pattern:     fmt.Sprintf("/:%v", _harborIDParam),
+			HandlerFunc: api.Update,
+		}, {
+			Method:      http.MethodDelete,
+			Pattern:     fmt.Sprintf("/:%v", _harborIDParam),
+			HandlerFunc: api.DeleteByID,
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)

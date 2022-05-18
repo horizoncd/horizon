@@ -15,6 +15,10 @@ var (
 type Manager interface {
 	// Create a harbor
 	Create(ctx context.Context, harbor *models.Harbor) (*models.Harbor, error)
+	// Update update a harbor
+	Update(ctx context.Context, harbor *models.Harbor) error
+	// DeleteByID delete a harbor by id
+	DeleteByID(ctx context.Context, id uint) error
 	// GetByID get by id
 	GetByID(ctx context.Context, id uint) (*models.Harbor, error)
 	// ListAll list all harbors
@@ -41,4 +45,12 @@ func (m manager) GetByID(ctx context.Context, id uint) (*models.Harbor, error) {
 
 func (m manager) ListAll(ctx context.Context) ([]*models.Harbor, error) {
 	return m.harborDAO.ListAll(ctx)
+}
+
+func (m manager) Update(ctx context.Context, harbor *models.Harbor) error {
+	return m.harborDAO.Update(ctx, harbor)
+}
+
+func (m manager) DeleteByID(ctx context.Context, id uint) error {
+	return m.harborDAO.DeleteByID(ctx, id)
 }

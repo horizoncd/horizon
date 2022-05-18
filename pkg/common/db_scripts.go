@@ -141,9 +141,10 @@ const (
 /* sql about region */
 const (
 	// RegionListAll ...
-	RegionListAll     = "select * from tb_region where deleted_ts = 0"
-	RegionGetByName   = "select * from tb_region where name = ? and deleted_ts = 0"
-	RegionListByNames = "select * from tb_region where name in ? and deleted_ts = 0"
+	RegionListAll       = "select * from tb_region where deleted_ts = 0"
+	RegionGetByName     = "select * from tb_region where name = ? and deleted_ts = 0"
+	RegionListByNames   = "select * from tb_region where name in ? and deleted_ts = 0"
+	RegionGetByHarborID = "select * from tb_region where harbor_id = ? and deleted_ts = 0"
 )
 
 /* sql about cluster */

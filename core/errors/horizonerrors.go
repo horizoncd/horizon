@@ -209,4 +209,5 @@ var (
 	ErrGroupConflictWithApplication     = errors.New("name or path is in conflict with application")
 	ErrRegionCannotSetDefaultIfDisabled = errors.New("cannot set a region to default if it is disabled")
 	ErrRegionCannotDisabledIfDefault    = errors.New("cannot disable a region if it is a default region")
+	ErrHarborCannotDelete               = errors.New("cannot delete a harbor when used by regions")
 )
