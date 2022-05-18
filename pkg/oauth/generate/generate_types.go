@@ -16,5 +16,5 @@ type AuthorizationCodeGenerate interface {
 }
 
 type AccessTokenCodeGenerate interface {
-	GetCode(info *CodeGenerateInfo) (accessCode string)
+	GenCode(info *CodeGenerateInfo) (accessCode string)
 }

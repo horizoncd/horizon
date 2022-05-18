@@ -40,7 +40,7 @@ type Controller interface {
 	CreateOrUpdatePermission(ctx context.Context, appID uint, permissions []Permission) ([]Permission, error)
 	GetPermission(ctx context.Context, appID uint) ([]Permission, error)
 
-	CreateClientSecret(ctx context.Context, appID uint) (secret *models.ClientSecret, err error)
-	ListClientSecret(ctx context.Context, appID uint) ([]models.ClientSecret, error)
-	DeleteClientSecret(ctx context.Context, appID uint, secretID uint) (*models.ClientSecret, error)
+	CreateClientSecret(ctx context.Context, appID uint) (secret *models.OauthClientSecret, err error)
+	ListClientSecret(ctx context.Context, appID uint) ([]models.OauthClientSecret, error)
+	DeleteClientSecret(ctx context.Context, appID uint, secretID uint) (*models.OauthClientSecret, error)
 }

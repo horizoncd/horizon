@@ -16,8 +16,8 @@ type OauthAppStore interface {
 	CreateApp(ctx context.Context, client models.OauthApp) error
 	GetApp(ctx context.Context, clientID string) (*models.OauthApp, error)
 	DeleteApp(ctx context.Context, clientID string) error
-	CreateSecret(ctx context.Context, secret *models.ClientSecret) (*models.ClientSecret, error)
+	CreateSecret(ctx context.Context, secret *models.OauthClientSecret) (*models.OauthClientSecret, error)
 	DeleteSecret(ctx context.Context, clientID string, clientSecretID uint) error
 	DeleteSecretByClientID(ctx context.Context, clientID string) error
-	ListSecret(ctx context.Context, clientID string) ([]models.ClientSecret, error)
+	ListSecret(ctx context.Context, clientID string) ([]models.OauthClientSecret, error)
 }

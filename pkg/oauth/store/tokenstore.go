@@ -15,6 +15,10 @@ type DbTokenStore struct {
 	db *gorm.DB
 }
 
+func NewTokenStore(db *gorm.DB) TokenStore {
+	return &DbTokenStore{db: db}
+}
+
 var _ TokenStore = &DbTokenStore{}
 
 func (d *DbTokenStore) Create(ctx context.Context, token *models.Token) error {

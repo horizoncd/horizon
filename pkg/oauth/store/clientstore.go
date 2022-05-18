@@ -14,10 +14,14 @@ type DBOauthAppStore struct {
 	db *gorm.DB
 }
 
+func NewOauthAppStore(db *gorm.DB) OauthAppStore {
+	return &DBOauthAppStore{db: db}
+}
+
 var _ OauthAppStore = &DBOauthAppStore{}
 
 func (d *DBOauthAppStore) CreateApp(ctx context.Context, client models.OauthApp) error {
-	result := d.db.Save(client)
+	result := d.db.Save(&client)
 	return result.Error
 }
 func (d *DBOauthAppStore) GetApp(ctx context.Context, clientID string) (*models.OauthApp, error) {
@@ -36,22 +40,23 @@ func (d *DBOauthAppStore) DeleteApp(ctx context.Context, clientID string) error 
 	return result.Error
 }
 
-func (d *DBOauthAppStore) CreateSecret(ctx context.Context, secret *models.ClientSecret) (*models.ClientSecret, error) {
+func (d *DBOauthAppStore) CreateSecret(ctx context.Context,
+	secret *models.OauthClientSecret) (*models.OauthClientSecret, error) {
 	if result := d.db.Save(secret); result.Error != nil {
 		return nil, result.Error
 	}
 	return secret, nil
 }
 func (d *DBOauthAppStore) DeleteSecretByClientID(ctx context.Context, clientID string) error {
-	result := d.db.Exec(common.DeleteClientSecret, clientID)
+	result := d.db.Exec(common.DeleteClientSecretByClientID, clientID)
 	return result.Error
 }
 func (d *DBOauthAppStore) DeleteSecret(ctx context.Context, clientID string, clientSecretID uint) error {
 	result := d.db.Exec(common.DeleteClientSecret, clientID, clientSecretID)
 	return result.Error
 }
-func (d *DBOauthAppStore) ListSecret(ctx context.Context, clientID string) ([]models.ClientSecret, error) {
-	var secrets []models.ClientSecret
+func (d *DBOauthAppStore) ListSecret(ctx context.Context, clientID string) ([]models.OauthClientSecret, error) {
+	var secrets []models.OauthClientSecret
 	result := d.db.Raw(common.ClientSecretSelectAll, clientID).Scan(&secrets)
 	if result.Error != nil {
 		return nil, result.Error

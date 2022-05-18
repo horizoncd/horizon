@@ -2,6 +2,7 @@ package manager
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -40,9 +41,9 @@ type Manager interface {
 	DeleteOAuthApp(ctx context.Context, clientID string) error
 	// TODO: ListOauthApp by owner
 
-	CreateSecret(ctx context.Context, clientID string) (*models.ClientSecret, error)
+	CreateSecret(ctx context.Context, clientID string) (*models.OauthClientSecret, error)
 	DeleteSecret(ctx context.Context, ClientID string, clientSecretID uint) error
-	ListSecret(ctx context.Context, ClientID string) ([]models.ClientSecret, error)
+	ListSecret(ctx context.Context, ClientID string) ([]models.OauthClientSecret, error)
 
 	GenAuthorizeCode(ctx context.Context, req *AuthorizeGenerateRequest) (*models.Token, error)
 	GenAccessToken(ctx context.Context, req *AccessTokenGenerateRequest,
@@ -53,6 +54,19 @@ type Manager interface {
 
 var _ Manager = &manager{}
 
+func NewManager(oauthAppStore store.OauthAppStore, tokenStore store.TokenStore,
+	gen generate.AuthorizationCodeGenerate,
+	authorizeCodeExpireTime time.Duration,
+	accessTokenExpireTime time.Duration) Manager {
+	return &manager{
+		oauthStore:              oauthAppStore,
+		tokenStore:              tokenStore,
+		authorizationGenerate:   gen,
+		AuthorizeCodeExpireTime: authorizeCodeExpireTime,
+		AccessTokenExpireTime:   accessTokenExpireTime,
+	}
+}
+
 type manager struct {
 	oauthStore              store.OauthAppStore
 	tokenStore              store.TokenStore
@@ -61,26 +75,19 @@ type manager struct {
 	AccessTokenExpireTime   time.Duration
 }
 
-const HorizonAPPClientIDPrefix = "ho"
+const HorizonAPPClientIDPrefix = "ho_"
 const BasicOauthClientLength = 20
 const OauthClientSecretLength = 40
 
-func GenClientID(appType AppType) string {
-	if appType == HorizonOAuthAPP {
+func GenClientID(appType models.AppType) string {
+	if appType == models.HorizonOAuthAPP {
 		return HorizonAPPClientIDPrefix + rand.String(BasicOauthClientLength)
-	} else if appType == DirectOAuthAPP {
+	} else if appType == models.DirectOAuthAPP {
 		return rand.String(BasicOauthClientLength)
 	} else {
 		return rand.String(BasicOauthClientLength)
 	}
 }
-
-type AppType uint8
-
-const (
-	HorizonOAuthAPP AppType = 1
-	DirectOAuthAPP  AppType = 2
-)
 
 type CreateOAuthAppReq struct {
 	Name        string
@@ -89,7 +96,7 @@ type CreateOAuthAppReq struct {
 	Desc        string
 	OwnerType   models.OwnerType
 	OwnerID     uint
-	APPType     AppType
+	APPType     models.AppType
 }
 
 func (m *manager) CreateOauthApp(ctx context.Context, info *CreateOAuthAppReq) (*models.OauthApp, error) {
@@ -102,6 +109,7 @@ func (m *manager) CreateOauthApp(ctx context.Context, info *CreateOAuthAppReq) (
 		Desc:        info.Desc,
 		OwnerType:   info.OwnerType,
 		OwnerID:     info.OwnerID,
+		AppType:     info.APPType,
 	}
 	if err := m.oauthStore.CreateApp(ctx, oauthApp); err != nil {
 		return nil, err
@@ -127,13 +135,13 @@ func (m *manager) DeleteOAuthApp(ctx context.Context, clientID string) error {
 	return m.oauthStore.DeleteApp(ctx, clientID)
 }
 
-func (m *manager) CreateSecret(ctx context.Context, clientID string) (*models.ClientSecret, error) {
-	newSecret := &models.ClientSecret{
+func (m *manager) CreateSecret(ctx context.Context, clientID string) (*models.OauthClientSecret, error) {
+	newSecret := &models.OauthClientSecret{
 		// ID:           0, // filled by return
 		ClientID:     clientID,
 		ClientSecret: rand.String(OauthClientSecretLength),
 		CreatedAt:    time.Now(),
-		// CreateBy:     0, // filled by middleware
+		// CreatedBy:     0, // filled by middleware
 	}
 	return m.oauthStore.CreateSecret(ctx, newSecret)
 }
@@ -142,18 +150,28 @@ func (m *manager) DeleteSecret(ctx context.Context, ClientID string, clientSecre
 	return m.oauthStore.DeleteSecret(ctx, ClientID, clientSecretID)
 }
 
-func MuskClientSecrets(clientSecrets []models.ClientSecret) {
-	// musk the secrets
-	const CutPostNum = 8
-	const MustPrefix = "*****"
+// musk the secrets
+const (
+	CutPostNum = 8
+	MustPrefix = "*****"
+)
+
+func MuskClientSecrets(clientSecrets []models.OauthClientSecret) {
 	for i := 0; i < len(clientSecrets); i++ {
 		originSecret := clientSecrets[i].ClientSecret
-		muskedSecret := MustPrefix + originSecret[len(originSecret)-CutPostNum-1:len(originSecret)-1]
+		muskedSecret := MustPrefix + originSecret[len(originSecret)-CutPostNum:]
 		clientSecrets[i].ClientSecret = muskedSecret
 	}
 }
+func checkMusicSecret(muskedSecret, realSecret string) bool {
+	if strings.HasPrefix(muskedSecret, MustPrefix) &&
+		strings.HasSuffix(realSecret, strings.TrimPrefix(muskedSecret, MustPrefix)) {
+		return true
+	}
+	return false
+}
 
-func (m *manager) ListSecret(ctx context.Context, ClientID string) ([]models.ClientSecret, error) {
+func (m *manager) ListSecret(ctx context.Context, ClientID string) ([]models.OauthClientSecret, error) {
 	clientSecrets, err := m.oauthStore.ListSecret(ctx, ClientID)
 	if err != nil {
 		return nil, err
@@ -184,15 +202,15 @@ func (m *manager) NewAuthorizationToken(req *AuthorizeGenerateRequest) *models.T
 func (m *manager) NewAccessToken(authorizationCodeToken *models.Token,
 	req *AccessTokenGenerateRequest, accessCodeGenerate generate.AccessTokenCodeGenerate) *models.Token {
 	token := &models.Token{
-		ClientID:    req.ClientID,
-		RedirectURI: req.RedirectURL,
-		// State:              "",
+		ClientID:            req.ClientID,
+		RedirectURI:         req.RedirectURL,
+		State:               req.State,
 		CreatedAt:           time.Now(),
 		ExpiresIn:           m.AccessTokenExpireTime,
 		Scope:               authorizationCodeToken.Scope,
 		UserOrRobotIdentity: authorizationCodeToken.UserOrRobotIdentity,
 	}
-	token.Code = accessCodeGenerate.GetCode(&generate.CodeGenerateInfo{
+	token.Code = accessCodeGenerate.GenCode(&generate.CodeGenerateInfo{
 		Token:   *token,
 		Request: req.Request,
 	})
@@ -240,14 +258,22 @@ func (m *manager) GenAccessToken(ctx context.Context, req *AccessTokenGenerateRe
 	// get authorize token, and check by it
 	authorizationCodeToken, err := m.tokenStore.Get(ctx, req.Code)
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			return nil, herrors.ErrOAuthAuthorizationCodeNotExist
+		}
 		return nil, err
 	}
 
 	if err := m.CheckByAuthorizationCode(req, authorizationCodeToken); err != nil {
+		if perror.Cause(err) == herrors.ErrOAuthCodeExpired {
+			if delErr := m.tokenStore.DeleteByCode(ctx, req.Code); delErr != nil {
+				log.Warningf(ctx, "delete expired code error, err = %v", delErr)
+			}
+		}
 		return nil, err
 	}
 
-	// get authorize code and store
+	// new access token  and store
 	accessToken := m.NewAccessToken(authorizationCodeToken, req, accessCodeGenerate)
 	err = m.tokenStore.Create(ctx, accessToken)
 	if err != nil {
