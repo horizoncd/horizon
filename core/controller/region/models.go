@@ -13,6 +13,8 @@ type Region struct {
 	Server        string    `json:"server"`
 	Certificate   string    `json:"certificate"`
 	IngressDomain string    `json:"ingressDomain"`
+	HarborID      uint      `json:"harborID"`
+	HarborName    string    `json:"harborName"`
 	HarborServer  string    `json:"harborServer"`
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
@@ -45,6 +47,8 @@ func ofRegionEntities(entities []*models.RegionEntity) []*Region {
 			DisplayName:   entity.DisplayName,
 			Server:        entity.Server,
 			IngressDomain: entity.IngressDomain,
+			HarborID:      entity.Harbor.ID,
+			HarborName:    entity.Harbor.Name,
 			HarborServer:  entity.Harbor.Server,
 			CreatedAt:     entity.CreatedAt,
 			UpdatedAt:     entity.UpdatedAt,

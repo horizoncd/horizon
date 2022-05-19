@@ -5,6 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/harbor/manager"
 	"g.hz.netease.com/horizon/pkg/harbor/models"
+	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 var (
@@ -56,6 +57,9 @@ func (c controller) ListAll(ctx context.Context) (Harbors, error) {
 
 func (c controller) Update(ctx context.Context, request *UpdateHarborRequest) error {
 	err := c.harborManager.Update(ctx, &models.Harbor{
+		Model: global.Model{
+			ID: request.ID,
+		},
 		Name:            request.Name,
 		Server:          request.Server,
 		Token:           request.Token,
