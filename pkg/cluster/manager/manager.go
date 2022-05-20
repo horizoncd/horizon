@@ -27,17 +27,17 @@ type Manager interface {
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
 	ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
-		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+		filter string, query *q.Query) (int, []*models.ClusterWithRegion, error)
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int,
-		[]*models.ClusterWithEnvAndRegion, error)
+		[]*models.ClusterWithRegion, error)
 	// ListUserAuthorizedByNameFuzzily list cluster which is authorized to the specified user.
 	// 1. name is the cluster's fuzzily name.
 	// 2. applicationIDs is the applications' id which are authorized to the specified user.
 	// 3. userInfo is the user id
 	ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
-		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error)
 }
 
 func New() Manager {
@@ -91,7 +91,7 @@ func (m *manager) DeleteByID(ctx context.Context, id uint) error {
 }
 
 func (m *manager) ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
-	filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	filter string, query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	if query == nil {
 		query = &q.Query{
 			PageNumber: common.DefaultPageNumber,
@@ -112,7 +112,7 @@ func (m *manager) ListByApplicationID(ctx context.Context, applicationID uint) (
 }
 
 func (m *manager) ListByNameFuzzily(ctx context.Context, environment,
-	name string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	name string, query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	if query == nil {
 		query = &q.Query{
 			PageNumber: common.DefaultPageNumber,
@@ -133,7 +133,7 @@ func (m *manager) CheckClusterExists(ctx context.Context, cluster string) (bool,
 }
 
 func (m *manager) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
-	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	if query == nil {
 		query = &q.Query{
 			PageNumber: common.DefaultPageNumber,

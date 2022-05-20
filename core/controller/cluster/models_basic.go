@@ -105,15 +105,16 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		gitSubfolder = application.GitSubfolder
 	}
 	cluster := &models.Cluster{
-		ApplicationID:       application.ID,
-		Name:                r.Name,
-		Description:         r.Description,
-		GitURL:              gitURL,
-		GitSubfolder:        gitSubfolder,
-		GitBranch:           r.Git.Branch,
-		Template:            r.Template.Name,
-		TemplateRelease:     r.Template.Release,
-		EnvironmentRegionID: er.ID,
+		ApplicationID:   application.ID,
+		Name:            r.Name,
+		EnvironmentName: er.EnvironmentName,
+		RegionName:      er.RegionName,
+		Description:     r.Description,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubfolder,
+		GitBranch:       r.Git.Branch,
+		Template:        r.Template.Name,
+		TemplateRelease: r.Template.Release,
 	}
 	clusterTags := make([]*clustertagmodels.ClusterTag, 0)
 	for _, tag := range r.Tags {
@@ -126,7 +127,7 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 }
 
 func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
-	templateRelease string, environmentRegionID uint) *models.Cluster {
+	templateRelease string, er *envmodels.EnvironmentRegion) *models.Cluster {
 	var gitURL, gitSubfolder, gitBranch string
 	if r.Git == nil || r.Git.URL == "" {
 		gitURL = cluster.GitURL
@@ -140,13 +141,14 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		gitBranch = r.Git.Branch
 	}
 	return &models.Cluster{
-		Description:         r.Description,
-		GitURL:              gitURL,
-		GitSubfolder:        gitSubfolder,
-		GitBranch:           gitBranch,
-		TemplateRelease:     templateRelease,
-		EnvironmentRegionID: environmentRegionID,
-		Status:              cluster.Status,
+		EnvironmentName: er.EnvironmentName,
+		RegionName:      er.RegionName,
+		Description:     r.Description,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubfolder,
+		GitBranch:       gitBranch,
+		TemplateRelease: templateRelease,
+		Status:          cluster.Status,
 	}
 }
 
@@ -169,8 +171,7 @@ func toUser(user *usermodels.User) *User {
 	}
 }
 
-func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
-	er *envmodels.EnvironmentRegion, fullPath, namespace string,
+func ofClusterModel(application *appmodels.Application, cluster *models.Cluster, fullPath, namespace string,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetClusterResponse {
 	return &GetClusterResponse{
 		CreateClusterRequest: &CreateClusterRequest{
@@ -201,8 +202,8 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 			Release: cluster.TemplateRelease,
 		},
 		Scope: &Scope{
-			Environment: er.EnvironmentName,
-			Region:      er.RegionName,
+			Environment: cluster.EnvironmentName,
+			Region:      cluster.RegionName,
 		},
 		Status:    cluster.Status,
 		CreatedAt: cluster.CreatedAt,
@@ -226,7 +227,7 @@ type ListClusterResponse struct {
 	UpdatedAt   time.Time    `json:"updatedAt"`
 }
 
-func ofClusterWithEnvAndRegion(cluster *models.ClusterWithEnvAndRegion) *ListClusterResponse {
+func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterResponse {
 	return &ListClusterResponse{
 		ID:          cluster.ID,
 		Name:        cluster.Name,
@@ -249,7 +250,7 @@ func ofClusterWithEnvAndRegion(cluster *models.ClusterWithEnvAndRegion) *ListClu
 	}
 }
 
-func ofClustersWithEnvAndRegion(clusters []*models.ClusterWithEnvAndRegion) []*ListClusterResponse {
+func ofClustersWithEnvAndRegion(clusters []*models.ClusterWithRegion) []*ListClusterResponse {
 	respList := make([]*ListClusterResponse, 0)
 	for _, c := range clusters {
 		respList = append(respList, ofClusterWithEnvAndRegion(c))

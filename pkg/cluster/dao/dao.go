@@ -36,12 +36,12 @@ type DAO interface {
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
 	ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
-		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+		filter string, query *q.Query) (int, []*models.ClusterWithRegion, error)
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
-	ListByNameFuzzily(context.Context, string, string, *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+	ListByNameFuzzily(context.Context, string, string, *q.Query) (int, []*models.ClusterWithRegion, error)
 	ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
-		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error)
 }
 
 type dao struct {
@@ -182,7 +182,8 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 		clusterInDB.GitBranch = cluster.GitBranch
 		clusterInDB.TemplateRelease = cluster.TemplateRelease
 		clusterInDB.Status = cluster.Status
-		clusterInDB.EnvironmentRegionID = cluster.EnvironmentRegionID
+		clusterInDB.EnvironmentName = cluster.EnvironmentName
+		clusterInDB.RegionName = cluster.RegionName
 
 		// 3. save cluster after updated
 		if err := tx.Save(&clusterInDB).Error; err != nil {
@@ -216,7 +217,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 }
 
 func (d *dao) ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
-	filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	filter string, query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -226,7 +227,7 @@ func (d *dao) ListByApplicationAndEnvs(ctx context.Context, applicationID uint, 
 	limit := query.PageSize
 
 	like := "%" + filter + "%"
-	var clusters []*models.ClusterWithEnvAndRegion
+	var clusters []*models.ClusterWithRegion
 
 	var result *gorm.DB
 	if len(environments) > 0 {
@@ -270,7 +271,7 @@ func (d *dao) ListByApplicationID(ctx context.Context, applicationID uint) ([]*m
 }
 
 func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
-	query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -282,7 +283,7 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 	like := "%" + filter + "%"
 	whereCond, whereValues := orm.FormatFilterExp(query, columnInTable)
 	var (
-		clusters []*models.ClusterWithEnvAndRegion
+		clusters []*models.ClusterWithRegion
 		count    int
 		result   *gorm.DB
 	)
@@ -346,7 +347,7 @@ func (d *dao) CheckClusterExists(ctx context.Context, cluster string) (bool, err
 }
 
 func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
-	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -358,7 +359,7 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 	like := "%" + name + "%"
 	whereCond, whereValues := orm.FormatFilterExp(query, columnInTable)
 	var (
-		clusters []*models.ClusterWithEnvAndRegion
+		clusters []*models.ClusterWithRegion
 		count    int
 		result   *gorm.DB
 	)
