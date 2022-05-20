@@ -49,6 +49,7 @@ build:
   only:
     - develop
     - tags
+    - feat-refactor-cluster
   except:
     - schedules
 
