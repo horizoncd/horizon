@@ -70,6 +70,7 @@ func Test(t *testing.T) {
 	var (
 		applicationID   = uint(1)
 		name            = "cluster"
+		environmentName = "dev"
 		description     = "description about cluster"
 		gitURL          = "ssh://git@github.com"
 		gitSubfolder    = "/"
@@ -89,6 +90,8 @@ func Test(t *testing.T) {
 
 	cluster := &models.Cluster{
 		ApplicationID:   applicationID,
+		EnvironmentName: environmentName,
+		RegionName:      region.Name,
 		Name:            name,
 		Description:     description,
 		GitURL:          gitURL,
