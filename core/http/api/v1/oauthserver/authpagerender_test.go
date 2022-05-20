@@ -1,0 +1,108 @@
+package oauthserver
+
+import (
+	"html/template"
+	"log"
+	"os"
+	"testing"
+	"time"
+
+	"g.hz.netease.com/horizon/core/controller/oauth"
+	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/lib/orm"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/oauth/generate"
+	"g.hz.netease.com/horizon/pkg/oauth/manager"
+	"g.hz.netease.com/horizon/pkg/oauth/models"
+	"g.hz.netease.com/horizon/pkg/oauth/store"
+	"g.hz.netease.com/horizon/pkg/server/middleware"
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
+)
+
+var (
+	ctx                       = context.TODO()
+	authFileLoc               = "/Users/tomsun/Workspace/cloudmusic/code/horizon/horizon/core/http/api/v1/oauthserver/auth.html" // nolint
+	aUser       userauth.User = &userauth.DefaultInfo{
+		Name:     "alias",
+		FullName: "alias",
+		ID:       32,
+		Email:    "",
+		Admin:    false,
+	}
+	authorizeCodeExpireIn = time.Second * 3
+	accessTokenExpireIn   = time.Hour * 24
+)
+
+func Test(t *testing.T) {
+	params := AuthorizationPageParams{
+		RedirectURL: "http://overmind.com/callback",
+		State:       "dasdasjl32j4sd",
+		ClientID:    "as87dskkh9nsaljkdalsk",
+		Scope:       "dasdasdsa",
+		ClientName:  "overmind",
+	}
+	// authTemplate := template.Must(template.New("").ParseFiles(authFileLoc))
+	authTemplate, err := template.ParseFiles(authFileLoc)
+	assert.Nil(t, err)
+	// var b bytes.Buffer
+
+	err = authTemplate.Execute(os.Stdout, params)
+	assert.Nil(t, err)
+}
+func UserMiddleware(skippers ...middleware.Skipper) gin.HandlerFunc {
+	return middleware.New(func(c *gin.Context) {
+		c.Set(user.ContextUserKey, aUser)
+	}, skippers...)
+}
+
+func TestServer(t *testing.T) {
+	db, _ := orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
+		panic(err)
+	}
+	db = db.WithContext(context.WithValue(context.Background(), user.Key(), aUser))
+	callbacks.RegisterCustomCallbacks(db)
+
+	tokenStore := store.NewTokenStore(db)
+	oauthAppStore := store.NewOauthAppStore(db)
+
+	oauthManager := manager.NewManager(oauthAppStore, tokenStore, generate.NewAuthorizeGenerate(),
+		authorizeCodeExpireIn, accessTokenExpireIn)
+
+	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
+	clientIDGen := func(appType models.AppType) string {
+		return clientID
+	}
+	oauthManager.SetClientIDGenerate(clientIDGen)
+	createReq := &manager.CreateOAuthAppReq{
+		Name:        "overmind",
+		RedirectURI: "http://localhost:8083/auth/callback",
+		HomeURL:     "http://localhost:8083",
+		Desc:        "This is an example  oauth app",
+		OwnerType:   models.GroupOwnerType,
+		OwnerID:     1,
+		APPType:     models.HorizonOAuthAPP,
+	}
+	authApp, err := oauthManager.CreateOauthApp(ctx, createReq)
+	assert.Nil(t, err)
+	assert.Equal(t, authApp.ClientID, clientID)
+
+	authGetApp, err := oauthManager.GetOAuthApp(ctx, clientID)
+	assert.Nil(t, err)
+	assert.Equal(t, authGetApp.ClientID, authApp.ClientID)
+
+	oauthController := oauth.NewController(oauthManager)
+	api := NewAPI(oauthController, authFileLoc)
+
+	userMiddleWare := func(c *gin.Context) {
+		c.Set(user.ContextUserKey, aUser)
+	}
+	// init server
+	r := gin.New()
+	r.Use(userMiddleWare)
+	RegisterRoutes(r, api)
+	log.Print(r.Run(":8081"))
+}

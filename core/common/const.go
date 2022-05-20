@@ -29,6 +29,9 @@ const (
 	// RequestInfoError error to format the request
 	RequestInfoError = "RequestInfoError"
 
+	// Unauthorized  401 error code
+	Unauthorized = "Unauthorized"
+
 	// Forbidden 403 Forbidden error code
 	Forbidden = "Forbidden"
 

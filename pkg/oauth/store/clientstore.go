@@ -29,9 +29,9 @@ func (d *DBOauthAppStore) GetApp(ctx context.Context, clientID string) (*models.
 	result := d.db.Raw(common.GetOauthAppByClientID, clientID).First(&client)
 	if result.Error != nil {
 		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, herrors.NewErrNotFound(herrors.TokenInDB, result.Error.Error())
+			return nil, herrors.NewErrNotFound(herrors.OAuthInDB, result.Error.Error())
 		}
-		return nil, herrors.NewErrGetFailed(herrors.TokenInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.OAuthInDB, result.Error.Error())
 	}
 	return &client, nil
 }

@@ -38,7 +38,7 @@ var (
 )
 
 func CheckOAuthApp(req *CreateOAuthAppReq, app *models.OauthApp) bool {
-	if (req.Name == app.Name) && (req.RedirectURI == app.RedirectURI) &&
+	if (req.Name == app.Name) && (req.RedirectURI == app.RedirectURL) &&
 		(req.HomeURL == app.HomeURL) && (req.Desc == app.Desc) &&
 		(req.OwnerType == app.OwnerType) && (req.OwnerID == app.OwnerID) &&
 		req.APPType == app.AppType {
@@ -175,7 +175,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 	// GenAuthorizeCode
 	authorizaGenerateReq := &AuthorizeGenerateRequest{
 		ClientID:     oauthApp.ClientID,
-		RedirectURL:  oauthApp.RedirectURI,
+		RedirectURL:  oauthApp.RedirectURL,
 		State:        "dadk2sadjhkj24980",
 		Scope:        "",
 		UserIdentify: "43",
@@ -248,7 +248,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 	// case 6: ok
 	authorizaGenerateReq2 := &AuthorizeGenerateRequest{
 		ClientID:     oauthApp.ClientID,
-		RedirectURL:  oauthApp.RedirectURI,
+		RedirectURL:  oauthApp.RedirectURL,
 		State:        "dadk2sadjhkj24980",
 		Scope:        "",
 		UserIdentify: "43",

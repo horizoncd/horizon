@@ -57,22 +57,24 @@ var _ Manager = &manager{}
 func NewManager(oauthAppStore store.OauthAppStore, tokenStore store.TokenStore,
 	gen generate.AuthorizationCodeGenerate,
 	authorizeCodeExpireTime time.Duration,
-	accessTokenExpireTime time.Duration) Manager {
+	accessTokenExpireTime time.Duration) *manager {
 	return &manager{
-		oauthStore:              oauthAppStore,
+		oauthAppStore:           oauthAppStore,
 		tokenStore:              tokenStore,
 		authorizationGenerate:   gen,
-		AuthorizeCodeExpireTime: authorizeCodeExpireTime,
-		AccessTokenExpireTime:   accessTokenExpireTime,
+		authorizeCodeExpireTime: authorizeCodeExpireTime,
+		accessTokenExpireTime:   accessTokenExpireTime,
+		clientIdGenerate:        GenClientID,
 	}
 }
 
 type manager struct {
-	oauthStore              store.OauthAppStore
+	oauthAppStore           store.OauthAppStore
 	tokenStore              store.TokenStore
 	authorizationGenerate   generate.AuthorizationCodeGenerate
-	AuthorizeCodeExpireTime time.Duration
-	AccessTokenExpireTime   time.Duration
+	authorizeCodeExpireTime time.Duration
+	accessTokenExpireTime   time.Duration
+	clientIdGenerate        ClientIDGenerate
 }
 
 const HorizonAPPClientIDPrefix = "ho_"
@@ -89,6 +91,8 @@ func GenClientID(appType models.AppType) string {
 	}
 }
 
+type ClientIDGenerate func(appType models.AppType) string
+
 type CreateOAuthAppReq struct {
 	Name        string
 	RedirectURI string
@@ -99,26 +103,29 @@ type CreateOAuthAppReq struct {
 	APPType     models.AppType
 }
 
+func (m *manager) SetClientIDGenerate(gen ClientIDGenerate) {
+	m.clientIdGenerate = gen
+}
 func (m *manager) CreateOauthApp(ctx context.Context, info *CreateOAuthAppReq) (*models.OauthApp, error) {
-	clientID := GenClientID(info.APPType)
+	clientID := m.clientIdGenerate(info.APPType)
 	oauthApp := models.OauthApp{
 		Name:        info.Name,
 		ClientID:    clientID,
-		RedirectURI: info.RedirectURI,
+		RedirectURL: info.RedirectURI,
 		HomeURL:     info.HomeURL,
 		Desc:        info.Desc,
 		OwnerType:   info.OwnerType,
 		OwnerID:     info.OwnerID,
 		AppType:     info.APPType,
 	}
-	if err := m.oauthStore.CreateApp(ctx, oauthApp); err != nil {
+	if err := m.oauthAppStore.CreateApp(ctx, oauthApp); err != nil {
 		return nil, err
 	}
-	return m.oauthStore.GetApp(ctx, clientID)
+	return m.oauthAppStore.GetApp(ctx, clientID)
 }
 
 func (m *manager) GetOAuthApp(ctx context.Context, clientID string) (*models.OauthApp, error) {
-	return m.oauthStore.GetApp(ctx, clientID)
+	return m.oauthAppStore.GetApp(ctx, clientID)
 }
 
 func (m *manager) DeleteOAuthApp(ctx context.Context, clientID string) error {
@@ -128,11 +135,11 @@ func (m *manager) DeleteOAuthApp(ctx context.Context, clientID string) error {
 	}
 
 	// delete all the secret
-	if err := m.oauthStore.DeleteSecretByClientID(ctx, clientID); err != nil {
+	if err := m.oauthAppStore.DeleteSecretByClientID(ctx, clientID); err != nil {
 		return err
 	}
 	// delete the app
-	return m.oauthStore.DeleteApp(ctx, clientID)
+	return m.oauthAppStore.DeleteApp(ctx, clientID)
 }
 
 func (m *manager) CreateSecret(ctx context.Context, clientID string) (*models.OauthClientSecret, error) {
@@ -143,11 +150,11 @@ func (m *manager) CreateSecret(ctx context.Context, clientID string) (*models.Oa
 		CreatedAt:    time.Now(),
 		// CreatedBy:     0, // filled by middleware
 	}
-	return m.oauthStore.CreateSecret(ctx, newSecret)
+	return m.oauthAppStore.CreateSecret(ctx, newSecret)
 }
 
 func (m *manager) DeleteSecret(ctx context.Context, ClientID string, clientSecretID uint) error {
-	return m.oauthStore.DeleteSecret(ctx, ClientID, clientSecretID)
+	return m.oauthAppStore.DeleteSecret(ctx, ClientID, clientSecretID)
 }
 
 // musk the secrets
@@ -172,7 +179,7 @@ func checkMusicSecret(muskedSecret, realSecret string) bool {
 }
 
 func (m *manager) ListSecret(ctx context.Context, ClientID string) ([]models.OauthClientSecret, error) {
-	clientSecrets, err := m.oauthStore.ListSecret(ctx, ClientID)
+	clientSecrets, err := m.oauthAppStore.ListSecret(ctx, ClientID)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +196,7 @@ func (m *manager) NewAuthorizationToken(req *AuthorizeGenerateRequest) *models.T
 		RedirectURI:         req.RedirectURL,
 		State:               req.State,
 		CreatedAt:           time.Now(),
-		ExpiresIn:           m.AuthorizeCodeExpireTime,
+		ExpiresIn:           m.authorizeCodeExpireTime,
 		Scope:               req.Scope,
 		UserOrRobotIdentity: req.UserIdentify,
 	}
@@ -206,7 +213,7 @@ func (m *manager) NewAccessToken(authorizationCodeToken *models.Token,
 		RedirectURI:         req.RedirectURL,
 		State:               req.State,
 		CreatedAt:           time.Now(),
-		ExpiresIn:           m.AccessTokenExpireTime,
+		ExpiresIn:           m.accessTokenExpireTime,
 		Scope:               authorizationCodeToken.Scope,
 		UserOrRobotIdentity: authorizationCodeToken.UserOrRobotIdentity,
 	}
@@ -218,8 +225,16 @@ func (m *manager) NewAccessToken(authorizationCodeToken *models.Token,
 }
 
 func (m *manager) GenAuthorizeCode(ctx context.Context, req *AuthorizeGenerateRequest) (*models.Token, error) {
+	oauthApp, err := m.oauthAppStore.GetApp(ctx, req.ClientID)
+	if err != nil {
+		return nil, err
+	} else if req.RedirectURL != oauthApp.RedirectURL {
+		log.Warningf(ctx, "redirect URL not match")
+		return nil, perror.Wrapf(herrors.ErrOAuthReqNotValid, "redirect URL not match")
+	}
+
 	authorizationToken := m.NewAuthorizationToken(req)
-	err := m.tokenStore.Create(ctx, authorizationToken)
+	err = m.tokenStore.Create(ctx, authorizationToken)
 	return authorizationToken, err
 }
 func (m *manager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest, codeToken *models.Token) error {
@@ -232,7 +247,7 @@ func (m *manager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest, code
 			"req redirect url = %s, code redirect url = %s", req.RedirectURL, codeToken.RedirectURI)
 	}
 
-	if codeToken.CreatedAt.Add(m.AuthorizeCodeExpireTime).Before(time.Now()) {
+	if codeToken.CreatedAt.Add(m.authorizeCodeExpireTime).Before(time.Now()) {
 		return perror.Wrap(herrors.ErrOAuthCodeExpired, "")
 	}
 	return nil
@@ -240,7 +255,7 @@ func (m *manager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest, code
 func (m *manager) GenAccessToken(ctx context.Context, req *AccessTokenGenerateRequest,
 	accessCodeGenerate generate.AccessTokenCodeGenerate) (*models.Token, error) {
 	// check client secret ok
-	secrets, err := m.oauthStore.ListSecret(ctx, req.ClientID)
+	secrets, err := m.oauthAppStore.ListSecret(ctx, req.ClientID)
 	if err != nil {
 		return nil, err
 	}
