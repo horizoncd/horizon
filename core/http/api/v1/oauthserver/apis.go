@@ -96,7 +96,6 @@ func (a *API) HandleAuthorizationReq(c *gin.Context) {
 	checkReq := func() bool {
 		keys := []string{
 			ClientID,
-			// Scope,
 			State,
 			RedirectURL,
 		}
@@ -166,4 +165,57 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 }
 
 func (a *API) HandleAccessTokenReq(c *gin.Context) {
+	var err error
+	checkReq := func() bool {
+		keys := []string{
+			ClientID,
+			ClientSecret,
+			RedirectURL,
+			Code,
+		}
+		for _, key := range keys {
+			if _, ok := c.GetPostForm(key); !ok {
+				err = fmt.Errorf("%s not exist", key)
+				log.Warning(c, err.Error())
+				return false
+			}
+		}
+		return true
+	}
+	if !checkReq() {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	tokenResponse, err := a.oAuthController.GenAccessToken(c, &oauth.AccessTokenReq{
+		ClientID:     c.PostForm(ClientID),
+		ClientSecret: c.PostForm(ClientSecret),
+		Code:         c.PostForm(Code),
+		RedirectURL:  c.PostForm(RedirectURL),
+		Request:      c.Request,
+	})
+	if err != nil {
+		causeErr := perror.Cause(err)
+		switch causeErr {
+		case herrors.ErrOAuthSecretNotValid:
+			fallthrough
+		case herrors.ErrOAuthReqNotValid:
+			fallthrough
+		case herrors.ErrOAuthAuthorizationCodeNotExist:
+			fallthrough
+		case herrors.ErrOAuthCodeExpired:
+			response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
+			return
+		default:
+			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				if e.Source == herrors.OAuthInDB {
+					response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
+					return
+				}
+			}
+			response.AbortWithInternalError(c, err.Error())
+			return
+		}
+	}
+	c.JSON(http.StatusOK, tokenResponse)
 }

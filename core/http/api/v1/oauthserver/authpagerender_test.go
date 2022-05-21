@@ -32,7 +32,7 @@ var (
 		Email:    "",
 		Admin:    false,
 	}
-	authorizeCodeExpireIn = time.Second * 3
+	authorizeCodeExpireIn = time.Minute * 30
 	accessTokenExpireIn   = time.Hour * 24
 )
 
@@ -71,11 +71,15 @@ func TestServer(t *testing.T) {
 
 	oauthManager := manager.NewManager(oauthAppStore, tokenStore, generate.NewAuthorizeGenerate(),
 		authorizeCodeExpireIn, accessTokenExpireIn)
-
 	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
 	clientIDGen := func(appType models.AppType) string {
 		return clientID
 	}
+	secret, err := oauthManager.CreateSecret(ctx, clientID)
+	assert.Nil(t, err)
+	assert.NotNil(t, secret)
+	t.Logf("client secret is %s", secret.ClientSecret)
+
 	oauthManager.SetClientIDGenerate(clientIDGen)
 	createReq := &manager.CreateOAuthAppReq{
 		Name:        "overmind",

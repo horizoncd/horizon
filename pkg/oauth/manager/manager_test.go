@@ -135,7 +135,6 @@ func checkAuthorizeToken(req *AuthorizeGenerateRequest, token *models.Token) boo
 
 func checkAccessToken(codeReq *AuthorizeGenerateRequest, req *AccessTokenGenerateRequest, token *models.Token) bool {
 	if token.Code != req.Code &&
-		token.State == req.State &&
 		token.ClientID == req.ClientID &&
 		token.RedirectURI == req.RedirectURL &&
 		token.UserOrRobotIdentity == codeReq.UserIdentify &&
@@ -194,7 +193,6 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 		ClientSecret: secret.ClientSecret,
 		Code:         codeToken.Code,
 		RedirectURL:  codeToken.RedirectURI,
-		State:        codeToken.State,
 		Request:      nil,
 	}
 	accessCodeGen := generate.NewHorizonAppUserToServerAccessGenerate()
@@ -204,16 +202,6 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 	accessToken, err := oauthManager.GenAccessToken(ctx, &case1Request, accessCodeGen)
 	assert.NotNil(t, err)
 	if perror.Cause(err) != herrors.ErrOAuthSecretNotValid {
-		assert.Fail(t, "error is not found")
-	}
-	assert.Nil(t, accessToken, nil)
-
-	// case2: client state not ok
-	case2Request := *accessTokenRequest
-	case2Request.State = "errState"
-	accessToken, err = oauthManager.GenAccessToken(ctx, &case2Request, accessCodeGen)
-	assert.NotNil(t, err)
-	if perror.Cause(err) != herrors.ErrOAuthReqNotValid {
 		assert.Fail(t, "error is not found")
 	}
 	assert.Nil(t, accessToken, nil)
@@ -265,7 +253,6 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 		ClientSecret: secret.ClientSecret,
 		Code:         codeToken.Code,
 		RedirectURL:  codeToken.RedirectURI,
-		State:        codeToken.State,
 		Request:      nil,
 	}
 	case6Request := *accessTokenRequest
