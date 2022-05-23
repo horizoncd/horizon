@@ -50,7 +50,9 @@ tektonMapper:
   dev,test,reg,perf,beta,pre,online:
     server: http://el-horizon-listener.tekton-resources:8080
     namespace: tekton-resources
-    kubeconfig: "/Users/wurongjun/.kube/config"
+    # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
+    # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
+    kubeconfig: ""
     s3:
       accessKey: 
       secretKey: 
