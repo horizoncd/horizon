@@ -6,8 +6,8 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
-	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
 
@@ -91,7 +91,7 @@ type Scope struct {
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
-	er *envmodels.EnvironmentRegion) (*models.Cluster, []*clustertagmodels.ClusterTag) {
+	er *envmodels.EnvironmentRegion) (*models.Cluster, []*tagmodels.Tag) {
 	var (
 		// r.Git cannot be nil
 		gitURL       = r.Git.URL
@@ -116,14 +116,14 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		Template:        r.Template.Name,
 		TemplateRelease: r.Template.Release,
 	}
-	clusterTags := make([]*clustertagmodels.ClusterTag, 0)
+	tags := make([]*tagmodels.Tag, 0)
 	for _, tag := range r.Tags {
-		clusterTags = append(clusterTags, &clustertagmodels.ClusterTag{
+		tags = append(tags, &tagmodels.Tag{
 			Key:   tag.Key,
 			Value: tag.Value,
 		})
 	}
-	return cluster, clusterTags
+	return cluster, tags
 }
 
 func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,

@@ -7,7 +7,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/dao"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
-	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
@@ -21,13 +21,13 @@ var (
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/manager/manager.go -package=mock_manager
 type Manager interface {
 	Create(ctx context.Context, cluster *models.Cluster,
-		clusterTags []*clustertagmodels.ClusterTag, extraMembers map[string]string) (*models.Cluster, error)
+		tags []*tagmodels.Tag, extraMembers map[string]string) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
-	ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
-		filter string, query *q.Query) (int, []*models.ClusterWithRegion, error)
+	ListByApplicationEnvsTags(ctx context.Context, applicationID uint, environments []string,
+		filter string, query *q.Query, ts []tagmodels.TagSelector) (int, []*models.ClusterWithRegion, error)
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int,
@@ -53,7 +53,7 @@ type manager struct {
 }
 
 func (m *manager) Create(ctx context.Context, cluster *models.Cluster,
-	clusterTags []*clustertagmodels.ClusterTag, extraMembers map[string]string) (*models.Cluster, error) {
+	tags []*tagmodels.Tag, extraMembers map[string]string) (*models.Cluster, error) {
 	emails := make([]string, 0, len(extraMembers))
 	for email := range extraMembers {
 		emails = append(emails, email)
@@ -67,7 +67,7 @@ func (m *manager) Create(ctx context.Context, cluster *models.Cluster,
 		extraMembersWithUser[user] = extraMembers[user.Email]
 	}
 
-	return m.dao.Create(ctx, cluster, clusterTags, extraMembersWithUser)
+	return m.dao.Create(ctx, cluster, tags, extraMembersWithUser)
 }
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
@@ -90,8 +90,8 @@ func (m *manager) DeleteByID(ctx context.Context, id uint) error {
 	return m.dao.DeleteByID(ctx, id)
 }
 
-func (m *manager) ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
-	filter string, query *q.Query) (int, []*models.ClusterWithRegion, error) {
+func (m *manager) ListByApplicationEnvsTags(ctx context.Context, applicationID uint, environments []string,
+	filter string, query *q.Query, ts []tagmodels.TagSelector) (int, []*models.ClusterWithRegion, error) {
 	if query == nil {
 		query = &q.Query{
 			PageNumber: common.DefaultPageNumber,
@@ -104,7 +104,7 @@ func (m *manager) ListByApplicationAndEnvs(ctx context.Context, applicationID ui
 	if query.PageSize < 1 {
 		query.PageSize = common.DefaultPageSize
 	}
-	return m.dao.ListByApplicationAndEnvs(ctx, applicationID, environments, filter, query)
+	return m.dao.ListByApplicationEnvsTags(ctx, applicationID, environments, filter, query, ts)
 }
 
 func (m *manager) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error) {

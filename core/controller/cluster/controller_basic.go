@@ -17,13 +17,14 @@ import (
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
-	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
 	emvmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -34,12 +35,12 @@ import (
 )
 
 func (c *controller) ListCluster(ctx context.Context, applicationID uint, environments []string,
-	filter string, query *q.Query) (_ int, _ []*ListClusterResponse, err error) {
+	filter string, query *q.Query, ts []tagmodels.TagSelector) (_ int, _ []*ListClusterResponse, err error) {
 	const op = "cluster controller: list cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationAndEnvs(ctx,
-		applicationID, environments, filter, query)
+	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationEnvsTags(ctx,
+		applicationID, environments, filter, query, ts)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -396,15 +397,15 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 6. create cluster, after created, params.Cluster is the newest cluster
-	cluster, clusterTags := r.toClusterModel(application, er)
+	cluster, tags := r.toClusterModel(application, er)
 	cluster.Status = clustercommon.StatusCreating
 
-	if err := clustertagmanager.ValidateUpsert(clusterTags); err != nil {
+	if err := tagmanager.ValidateUpsert(tags); err != nil {
 		return nil, err
 	}
 
 	// 7. create cluster in db
-	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags, r.ExtraMembers)
+	cluster, err = c.clusterMgr.Create(ctx, cluster, tags, r.ExtraMembers)
 	if err != nil {
 		return nil, err
 	}
@@ -423,8 +424,8 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 			RegionEntity:        regionEntity,
 			Namespace:           r.Namespace,
 		},
-		ClusterTags: clusterTags,
-		Image:       r.Image,
+		Tags:  tags,
+		Image: r.Image,
 	})
 	if err != nil {
 		// Prevent errors like "project has already been taken" caused by automatic retries due to api timeouts

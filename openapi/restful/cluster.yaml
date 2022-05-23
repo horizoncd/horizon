@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/applications/{applicationID}/clusters?environment={environment}&filter={filter}&pageNumber={pageNumber}&pageSize={pageSize}:
+  /apis/core/v1/applications/{applicationID}/clusters?environment={environment}&filter={filter}&pageNumber={pageNumber}&pageSize={pageSize}&tagSelector={tagSelector}:
     parameters:
       - name: applicationID
         in: path
@@ -22,6 +22,10 @@ paths:
         in: query
       - name: pageSize
         in: query
+      - name: tagSelector
+        in: query
+        description: |
+          filter clusters by tags, support operators: =, in, the comma separator acts as a logical AND (&&) operator. For example, if we want to filter clusters by tags(a equals to A and b equals to c or d), the tagSelector is "a=b,b in (c,d)"  
     get:
       tags:
         - cluster

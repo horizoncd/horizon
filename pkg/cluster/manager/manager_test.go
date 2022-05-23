@@ -10,16 +10,17 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
-	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
+	"g.hz.netease.com/horizon/pkg/util/sets"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -37,7 +38,7 @@ func TestMain(m *testing.M) {
 		Name: "tony",
 		ID:   110,
 	}))
-	if err := db.AutoMigrate(&models.Cluster{}, &clustertagmodels.ClusterTag{}, &usermodels.User{},
+	if err := db.AutoMigrate(&models.Cluster{}, &tagmodels.Tag{}, &usermodels.User{},
 		&envmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{}); err != nil {
 		panic(err)
 	}
@@ -103,7 +104,7 @@ func Test(t *testing.T) {
 		UpdatedBy:       updatedBy,
 	}
 
-	cluster, err = Mgr.Create(ctx, cluster, []*clustertagmodels.ClusterTag{
+	cluster, err = Mgr.Create(ctx, cluster, []*tagmodels.Tag{
 		{
 			Key:   "k1",
 			Value: "v1",
@@ -133,40 +134,40 @@ func Test(t *testing.T) {
 	assert.Equal(t, clusterGetByID.Name, cluster.Name)
 	t.Logf("%v", clusterGetByID)
 
-	count, clustersWithEnvAndRegion, err := Mgr.ListByApplicationAndEnvs(ctx, applicationID,
-		[]string{cluster.EnvironmentName}, "", nil)
+	count, clustersWithEnvAndRegion, err := Mgr.ListByApplicationEnvsTags(ctx, applicationID,
+		[]string{environmentName}, "", nil, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 	assert.Equal(t, cluster.Name, clustersWithEnvAndRegion[0].Name)
-	assert.Equal(t, cluster.EnvironmentName, clustersWithEnvAndRegion[0].EnvironmentName)
-	assert.Equal(t, cluster.RegionName, clustersWithEnvAndRegion[0].RegionName)
+	assert.Equal(t, environmentName, clustersWithEnvAndRegion[0].EnvironmentName)
+	assert.Equal(t, region.Name, clustersWithEnvAndRegion[0].RegionName)
 
 	clusters, err := Mgr.ListByApplicationID(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.NotNil(t, clusters)
 	assert.Equal(t, 1, len(clusters))
 
-	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, cluster.EnvironmentName, "clu",
+	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, environmentName, "clu",
 		&q.Query{PageNumber: 1, PageSize: 1})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 
-	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, cluster.EnvironmentName, "clu",
+	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, environmentName, "clu",
 		&q.Query{Keywords: q.KeyWords{"template": "javaapp", "templateRelease": "v1.1.0"}, PageNumber: 1, PageSize: 1})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 
-	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, cluster.EnvironmentName, "clu",
+	count, clustersWithEnvAndRegion, err = Mgr.ListByNameFuzzily(ctx, environmentName, "clu",
 		&q.Query{Keywords: q.KeyWords{"template": "node"}, PageNumber: 1, PageSize: 1})
 	assert.Nil(t, err)
 	assert.Equal(t, 0, count)
 	assert.Equal(t, 0, len(clustersWithEnvAndRegion))
 
 	clusterCountForUser, clustersForUser, err := Mgr.ListUserAuthorizedByNameFuzzily(ctx,
-		cluster.EnvironmentName, "clu", []uint{applicationID}, user2.ID, nil)
+		environmentName, "clu", []uint{applicationID}, user2.ID, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, clusterCountForUser)
 	for _, cluster := range clustersForUser {
@@ -174,7 +175,7 @@ func Test(t *testing.T) {
 	}
 
 	clusterCountForUser, clustersForUser, err = Mgr.ListUserAuthorizedByNameFuzzily(ctx,
-		cluster.EnvironmentName, "clu", []uint{applicationID}, user2.ID,
+		environmentName, "clu", []uint{applicationID}, user2.ID,
 		&q.Query{Keywords: q.KeyWords{"template": "javaapp", "templateRelease": "v1.1.0"}})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, clusterCountForUser)
@@ -183,7 +184,7 @@ func Test(t *testing.T) {
 	}
 
 	clusterCountForUser, _, err = Mgr.ListUserAuthorizedByNameFuzzily(ctx,
-		cluster.EnvironmentName, "clu", []uint{applicationID}, user2.ID,
+		environmentName, "clu", []uint{applicationID}, user2.ID,
 		&q.Query{Keywords: q.KeyWords{"template": "node"}})
 	assert.Nil(t, err)
 	assert.Equal(t, 0, clusterCountForUser)
@@ -202,4 +203,50 @@ func Test(t *testing.T) {
 	clusterGetByID, err = Mgr.GetByID(ctx, cluster.ID)
 	assert.Nil(t, clusterGetByID)
 	assert.NotNil(t, err)
+
+	cluster2 := &models.Cluster{
+		ApplicationID:   applicationID,
+		Name:            "cluster2",
+		EnvironmentName: environmentName,
+		RegionName:      region.Name,
+		Description:     description,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubfolder,
+		GitBranch:       gitBranch,
+		Template:        template,
+		TemplateRelease: templateRelease,
+		CreatedBy:       createdBy,
+		UpdatedBy:       updatedBy,
+	}
+	_, err = Mgr.Create(ctx, cluster2, []*tagmodels.Tag{
+		{
+			Key:   "k1",
+			Value: "v3",
+		},
+		{
+			Key:   "k3",
+			Value: "v3",
+		},
+	}, map[string]string{user2.Email: role.Owner})
+	assert.Nil(t, err)
+	t.Logf("%v", cluster)
+
+	total, cs, err := Mgr.ListByApplicationEnvsTags(ctx, applicationID, nil, "", &q.Query{
+		PageNumber: 1,
+		PageSize:   10,
+	}, []tagmodels.TagSelector{
+		{
+			Key:      "k1",
+			Operator: tagmodels.In,
+			Values:   sets.NewString("v1", "v3"),
+		},
+		{
+			Key:      "k3",
+			Operator: tagmodels.In,
+			Values:   sets.NewString("v3"),
+		},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, total)
+	assert.Equal(t, 1, len(cs))
 }

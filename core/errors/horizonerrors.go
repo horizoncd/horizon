@@ -14,7 +14,7 @@ var (
 	GitlabResource            = sourceType{name: "GitlabResource"}
 	ClusterInDB               = sourceType{name: "ClusterInDB"}
 	ClusterStateInArgo        = sourceType{name: "ClusterStateInArgo"}
-	ClusterTagInDB            = sourceType{name: "ClusterTagInDB"}
+	TagInDB                   = sourceType{name: "TagInDB"}
 	ApplicationInArgo         = sourceType{name: "ApplicationInArgo"}
 	ApplicationResourceInArgo = sourceType{name: "ApplicationResourceInArgo"}
 	ApplicationInDB           = sourceType{name: "ApplicationInDB"}
