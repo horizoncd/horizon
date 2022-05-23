@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
-	models "g.hz.netease.com/horizon/pkg/clustertag/models"
+	models "g.hz.netease.com/horizon/pkg/tag/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -243,15 +243,15 @@ func (mr *MockClusterGitRepoMockRecorder) UpdateRestartTime(ctx, application, cl
 }
 
 // UpdateTags mocks base method.
-func (m *MockClusterGitRepo) UpdateTags(ctx context.Context, application, cluster, templateName string, clusterTags []*models.ClusterTag) error {
+func (m *MockClusterGitRepo) UpdateTags(ctx context.Context, application, cluster, templateName string, tags []*models.Tag) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateTags", ctx, application, cluster, templateName, clusterTags)
+	ret := m.ctrl.Call(m, "UpdateTags", ctx, application, cluster, templateName, tags)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateTags indicates an expected call of UpdateTags.
-func (mr *MockClusterGitRepoMockRecorder) UpdateTags(ctx, application, cluster, templateName, clusterTags interface{}) *gomock.Call {
+func (mr *MockClusterGitRepoMockRecorder) UpdateTags(ctx, application, cluster, templateName, tags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTags", reflect.TypeOf((*MockClusterGitRepo)(nil).UpdateTags), ctx, application, cluster, templateName, clusterTags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTags", reflect.TypeOf((*MockClusterGitRepo)(nil).UpdateTags), ctx, application, cluster, templateName, tags)
 }

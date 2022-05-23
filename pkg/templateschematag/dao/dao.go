@@ -30,14 +30,14 @@ func (d dao) ListByClusterID(ctx context.Context, clusterID uint) ([]*models.Clu
 		return nil, err
 	}
 
-	var clusterTags []*models.ClusterTemplateSchemaTag
-	result := db.Raw(common.ClusterTemplateSchemaTagListByClusterID, clusterID).Scan(&clusterTags)
+	var tags []*models.ClusterTemplateSchemaTag
+	result := db.Raw(common.ClusterTemplateSchemaTagListByClusterID, clusterID).Scan(&tags)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.TemplateSchemaTagInDB, result.Error.Error())
 	}
 
-	return clusterTags, nil
+	return tags, nil
 }
 
 func (d dao) UpsertByClusterID(ctx context.Context, clusterID uint, tags []*models.ClusterTemplateSchemaTag) error {
