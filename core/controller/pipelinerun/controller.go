@@ -83,17 +83,12 @@ func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) 
 		return nil, errors.E(op, err)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-
 	// only builddeploy have logs
 	if pr.Action != prmodels.ActionBuildDeploy {
 		return nil, errors.E(op, fmt.Errorf("%v action has no log", pr.Action))
 	}
 
-	return c.getPipelinerunLog(ctx, pr, cluster, er.EnvironmentName)
+	return c.getPipelinerunLog(ctx, pr, cluster, cluster.EnvironmentName)
 }
 
 func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_ *Log, err error) {
@@ -112,11 +107,7 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-	return c.getPipelinerunLog(ctx, pr, cluster, er.EnvironmentName)
+	return c.getPipelinerunLog(ctx, pr, cluster, cluster.EnvironmentName)
 }
 
 func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelinerun, cluster *clustermodels.Cluster,
@@ -323,11 +314,7 @@ func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (e
 		return errors.E(op, err)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return errors.E(op, err)
-	}
-	tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
+	tektonClient, err := c.tektonFty.GetTekton(cluster.EnvironmentName)
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -354,11 +341,7 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 		return errors.E(op, err)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return errors.E(op, err)
-	}
-	tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
+	tektonClient, err := c.tektonFty.GetTekton(cluster.EnvironmentName)
 	if err != nil {
 		return errors.E(op, err)
 	}

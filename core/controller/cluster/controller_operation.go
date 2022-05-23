@@ -36,11 +36,6 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
 	// 1. get config commit now
 	lastConfigCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
@@ -55,7 +50,7 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 
 	// 3. deploy cluster in cd system
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
-		Environment: er.EnvironmentName,
+		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    commit,
 	}); err != nil {
@@ -95,11 +90,6 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, err
-	}
-
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +136,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 
 	// 3. create cluster in cd system
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +146,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
 	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:   er.EnvironmentName,
+		Environment:   cluster.EnvironmentName,
 		Cluster:       cluster.Name,
 		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
 		ValueFiles:    repoInfo.ValueFiles,
@@ -177,7 +167,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 
 	// 5. deploy cluster in cd system
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
-		Environment: er.EnvironmentName,
+		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    commit,
 	}); err != nil {
@@ -234,11 +224,6 @@ func (c *controller) Rollback(ctx context.Context,
 			"the pipelinerun with id: %v is not belongs to cluster: %v", r.PipelinerunID, clusterID)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, err
@@ -263,7 +248,7 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 
 	// 5. create cluster in cd system
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +258,7 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
 	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:   er.EnvironmentName,
+		Environment:   cluster.EnvironmentName,
 		Cluster:       cluster.Name,
 		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
 		ValueFiles:    repoInfo.ValueFiles,
@@ -294,7 +279,7 @@ func (c *controller) Rollback(ctx context.Context,
 
 	// 7. deploy cluster in cd
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
-		Environment: er.EnvironmentName,
+		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    masterRevision,
 	}); err != nil {
@@ -337,13 +322,8 @@ func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
 		return err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return err
-	}
-
 	return c.cd.Next(ctx, &cd.ClusterNextParams{
-		Environment: er.EnvironmentName,
+		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 	})
 }
@@ -359,26 +339,21 @@ func (c *controller) Promote(ctx context.Context, clusterID uint) (err error) {
 		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
-	}
-
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return perror.WithMessage(err, "failed to get env value")
 	}
 
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
-		return perror.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
+		return perror.WithMessagef(err, "failed to get region by name: %s", cluster.RegionName)
 	}
 
 	param := cd.ClusterPromoteParams{
 		Namespace:    envValue.Namespace,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
-		Environment:  er.EnvironmentName,
+		Environment:  cluster.EnvironmentName,
 	}
 	return c.cd.Promote(ctx, &param)
 }
@@ -394,26 +369,21 @@ func (c *controller) Pause(ctx context.Context, clusterID uint) (err error) {
 		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
-	}
-
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return perror.WithMessage(err, "failed to get env value")
 	}
 
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
-		return perror.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
+		return perror.WithMessagef(err, "failed to get region by name: %s", cluster.RegionName)
 	}
 
 	param := cd.ClusterPauseParams{
 		Namespace:    envValue.Namespace,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
-		Environment:  er.EnvironmentName,
+		Environment:  cluster.EnvironmentName,
 	}
 	return c.cd.Pause(ctx, &param)
 }
@@ -429,26 +399,21 @@ func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
 		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get er by id: %d", cluster.EnvironmentRegionID)
-	}
-
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return perror.WithMessage(err, "failed to get env value")
 	}
 
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
-		return perror.WithMessagef(err, "failed to get region by name: %s", er.RegionName)
+		return perror.WithMessagef(err, "failed to get region by name: %s", cluster.RegionName)
 	}
 
 	param := cd.ClusterResumeParams{
 		Namespace:    envValue.Namespace,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
-		Environment:  er.EnvironmentName,
+		Environment:  cluster.EnvironmentName,
 	}
 	return c.cd.Resume(ctx, &param)
 }
@@ -474,17 +439,12 @@ func (c *controller) exec(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, err
 	}
 
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +455,7 @@ func (c *controller) exec(ctx context.Context, clusterID uint,
 	}
 
 	execResp, err := execFunc(ctx, &cd.ExecParams{
-		Environment:  er.EnvironmentName,
+		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
 		Namespace:    envValue.Namespace,

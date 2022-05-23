@@ -33,11 +33,6 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, err
@@ -67,7 +62,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 5. create cluster in cd system
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +72,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
 	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:   er.EnvironmentName,
+		Environment:   cluster.EnvironmentName,
 		Cluster:       cluster.Name,
 		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
 		ValueFiles:    repoInfo.ValueFiles,
@@ -98,7 +93,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 
 	// 7. deploy cluster in cd system
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
-		Environment: er.EnvironmentName,
+		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    masterRevision,
 	}); err != nil {

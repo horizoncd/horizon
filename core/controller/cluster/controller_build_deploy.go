@@ -49,12 +49,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +92,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 4. create pipelinerun in k8s
-	tektonClient, err := c.tektonFty.GetTekton(er.EnvironmentName)
+	tektonClient, err := c.tektonFty.GetTekton(cluster.EnvironmentName)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +107,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		ApplicationID: application.ID,
 		Cluster:       cluster.Name,
 		ClusterID:     cluster.ID,
-		Environment:   er.EnvironmentName,
+		Environment:   cluster.EnvironmentName,
 		Git: tekton.PipelineRunGit{
 			URL:       cluster.GitURL,
 			Branch:    branch,
@@ -123,7 +118,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		Operator:         currentUser.GetEmail(),
 		PipelinerunID:    prCreated.ID,
 		PipelineJSONBlob: clusterFiles.PipelineJSONBlob,
-		Region:           er.RegionName,
+		Region:           cluster.RegionName,
 		RegionID:         regionEntity.ID,
 	})
 	if err != nil {

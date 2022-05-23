@@ -112,11 +112,11 @@ func (mr *MockManagerMockRecorder) GetByName(ctx, clusterName interface{}) *gomo
 }
 
 // ListByApplicationEnvsTags mocks base method.
-func (m *MockManager) ListByApplicationEnvsTags(ctx context.Context, applicationID uint, environments []string, filter string, query *q.Query, ts []models0.TagSelector) (int, []*models.ClusterWithEnvAndRegion, error) {
+func (m *MockManager) ListByApplicationEnvsTags(ctx context.Context, applicationID uint, environments []string, filter string, query *q.Query, ts []models0.TagSelector) (int, []*models.ClusterWithRegion, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListByApplicationEnvsTags", ctx, applicationID, environments, filter, query, ts)
 	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].([]*models.ClusterWithEnvAndRegion)
+	ret1, _ := ret[1].([]*models.ClusterWithRegion)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -143,11 +143,11 @@ func (mr *MockManagerMockRecorder) ListByApplicationID(ctx, applicationID interf
 }
 
 // ListByNameFuzzily mocks base method.
-func (m *MockManager) ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+func (m *MockManager) ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListByNameFuzzily", ctx, environment, name, query)
 	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].([]*models.ClusterWithEnvAndRegion)
+	ret1, _ := ret[1].([]*models.ClusterWithRegion)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -159,11 +159,11 @@ func (mr *MockManagerMockRecorder) ListByNameFuzzily(ctx, environment, name, que
 }
 
 // ListUserAuthorizedByNameFuzzily mocks base method.
-func (m *MockManager) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment, name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+func (m *MockManager) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment, name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListUserAuthorizedByNameFuzzily", ctx, environment, name, applicationIDs, userInfo, query)
 	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].([]*models.ClusterWithEnvAndRegion)
+	ret1, _ := ret[1].([]*models.ClusterWithRegion)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
