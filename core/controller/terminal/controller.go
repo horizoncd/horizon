@@ -87,12 +87,7 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +103,7 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 	}
 
 	ref := ContainerRef{
-		Environment: er.EnvironmentName,
+		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		ClusterID:   cluster.ID,
 		Namespace:   envValue.Namespace,
@@ -145,12 +140,7 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 		return "", nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return "", nil, err
-	}
-
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return "", nil, err
 	}
@@ -172,7 +162,7 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 	}
 
 	ref := ContainerRef{
-		Environment: er.EnvironmentName,
+		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		ClusterID:   cluster.ID,
 		Namespace:   envValue.Namespace,

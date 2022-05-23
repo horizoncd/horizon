@@ -10,7 +10,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -51,18 +50,13 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
 	if latestPipelinerun == nil || latestPipelinerun.Action != prmodels.ActionBuildDeploy {
 		// if latest builddeploy pr is not exists, runningTask is noneRunningTask
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}
 	} else {
-		latestPipelineRunObject, err := c.getLatestPipelineRunObject(ctx, cluster, latestPipelinerun, er)
+		latestPipelineRunObject, err := c.getLatestPipelineRunObject(ctx, cluster, latestPipelinerun)
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +70,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +84,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	}
 
 	clusterState, err := c.cd.GetClusterState(ctx, &cd.GetClusterStateParams{
-		Environment:  er.EnvironmentName,
+		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,
 		Namespace:    envValue.Namespace,
 		RegionEntity: regionEntity,
@@ -148,10 +142,10 @@ func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,
 }
 
 func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *clustermodels.Cluster,
-	pipelinerun *prmodels.Pipelinerun, er *envmodels.EnvironmentRegion) (*v1beta1.PipelineRun, error) {
+	pipelinerun *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
 	var latestPr *v1beta1.PipelineRun
 	getPipelineRunFromCollector := func() (*v1beta1.PipelineRun, error) {
-		tektonCollector, err := c.tektonFty.GetTektonCollector(er.EnvironmentName)
+		tektonCollector, err := c.tektonFty.GetTektonCollector(cluster.EnvironmentName)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +160,7 @@ func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *cl
 		tektonClient tekton.Interface
 	)
 	if pipelinerun.PrObject == "" {
-		tektonClient, err = c.tektonFty.GetTekton(er.EnvironmentName)
+		tektonClient, err = c.tektonFty.GetTekton(cluster.EnvironmentName)
 		if err != nil {
 			return nil, err
 		}
@@ -248,11 +242,6 @@ func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podNam
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return nil, err
@@ -260,7 +249,7 @@ func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podNam
 
 	param := cd.GetContainerLogParams{
 		Namespace:   envValue.Namespace,
-		Environment: er.EnvironmentName,
+		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Pod:         podName,
 		Container:   containerName,
@@ -280,17 +269,12 @@ func (c *controller) GetPodEvents(ctx context.Context, clusterID uint, podName s
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return nil, err
 	}
 
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}
@@ -315,17 +299,12 @@ func (c *controller) GetContainers(ctx context.Context, clusterID uint, podName 
 		return nil, err
 	}
 
-	er, err := c.envMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return nil, err
 	}
 
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}

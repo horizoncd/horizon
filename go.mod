@@ -9,7 +9,7 @@ require (
 	github.com/argoproj/argo-rollouts v0.9.2
 	github.com/argoproj/gitops-engine v0.1.3-0.20200925215903-d25b8fd69f0d
 	github.com/aws/aws-sdk-go v1.31.12
-	github.com/gin-gonic/gin v1.7.3
+	github.com/gin-gonic/gin v1.7.7
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/gomodule/redigo v2.0.0+incompatible

@@ -36,7 +36,6 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 	groupMgr := groupmanager.Mgr
 	clusterMgr := clustermanager.Mgr
 	memberMgr := member.Mgr
-	envMgr := envmanager.Mgr
 	regionMgr := regionmanager.Mgr
 
 	// init data
@@ -79,19 +78,14 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
-		EnvironmentName: "testFuzzily",
-		RegionName:      "hzFuzzily",
-	})
-	assert.Nil(t, err)
-
 	for i := 0; i < 5; i++ {
 		application := applications[i]
 		name := "fuzzilyCluster" + strconv.Itoa(i)
 		cluster, err := clusterMgr.Create(ctx, &clustermodels.Cluster{
-			ApplicationID:       application.ID,
-			Name:                name,
-			EnvironmentRegionID: er.ID,
+			ApplicationID:   application.ID,
+			Name:            name,
+			EnvironmentName: "testFuzzily",
+			RegionName:      "hzFuzzily",
 		}, nil, nil)
 		assert.Nil(t, err)
 		assert.NotNil(t, cluster)
@@ -176,10 +170,11 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 		application := applications[i]
 		name := "userClusterFuzzily" + strconv.Itoa(i)
 		cluster, err := clusterMgr.Create(ctx, &clustermodels.Cluster{
-			ApplicationID:       application.ID,
-			Name:                name,
-			EnvironmentRegionID: er.ID,
-			GitURL:              "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+			ApplicationID:   application.ID,
+			Name:            name,
+			EnvironmentName: "testUserClustersFuzzily",
+			RegionName:      "hzUserClustersFuzzily",
+			GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
 		}, nil, nil)
 		assert.Nil(t, err)
 		assert.NotNil(t, cluster)
@@ -254,7 +249,6 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	appMgr := appmanager.Mgr
 	groupMgr := groupmanager.Mgr
 	clusterMgr := clustermanager.Mgr
-	envMgr := envmanager.Mgr
 	regionMgr := regionmanager.Mgr
 
 	mockCtl := gomock.NewController(t)
@@ -283,12 +277,6 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
-		EnvironmentName: "TestController_FreeOrDeleteClusterFailed",
-		RegionName:      region.Name,
-	})
-	assert.Nil(t, err)
-
 	group, err := groupMgr.Create(ctx, &groupmodels.Group{
 		Name:     "TestController_FreeOrDeleteClusterFailed",
 		Path:     "/TestController_FreeOrDeleteClusterFailed",
@@ -311,10 +299,11 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	assert.NotNil(t, application)
 
 	cluster, err := clusterMgr.Create(ctx, &clustermodels.Cluster{
-		ApplicationID:       application.ID,
-		Name:                "TestController_FreeOrDeleteClusterFailed",
-		EnvironmentRegionID: er.ID,
-		GitURL:              "",
+		ApplicationID:   application.ID,
+		Name:            "TestController_FreeOrDeleteClusterFailed",
+		EnvironmentName: "TestController_FreeOrDeleteClusterFailed",
+		RegionName:      region.Name,
+		GitURL:          "",
 	}, nil, nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, cluster)
