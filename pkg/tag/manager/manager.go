@@ -5,9 +5,9 @@ import (
 	"regexp"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/clustertag/dao"
-	"g.hz.netease.com/horizon/pkg/clustertag/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	"g.hz.netease.com/horizon/pkg/tag/dao"
+	"g.hz.netease.com/horizon/pkg/tag/models"
 )
 
 var (
@@ -16,10 +16,10 @@ var (
 )
 
 type Manager interface {
-	// ListByClusterID List cluster tags by clusterID
-	ListByClusterID(ctx context.Context, clusterID uint) ([]*models.ClusterTag, error)
-	// UpsertByClusterID upsert cluster tags
-	UpsertByClusterID(ctx context.Context, clusterID uint, tags []*models.ClusterTag) error
+	// ListByResourceTypeID List tags by resourceType and resourceID
+	ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error)
+	// UpsertByResourceTypeID upsert tags
+	UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.Tag) error
 }
 
 func New() Manager {
@@ -32,16 +32,18 @@ type manager struct {
 	dao dao.DAO
 }
 
-func (m *manager) ListByClusterID(ctx context.Context, clusterID uint) ([]*models.ClusterTag, error) {
-	return m.dao.ListByClusterID(ctx, clusterID)
+func (m *manager) ListByResourceTypeID(ctx context.Context,
+	resourceType string, resourceID uint) ([]*models.Tag, error) {
+	return m.dao.ListByResourceTypeID(ctx, resourceType, resourceID)
 }
 
-func (m *manager) UpsertByClusterID(ctx context.Context, clusterID uint, tags []*models.ClusterTag) error {
-	return m.dao.UpsertByClusterID(ctx, clusterID, tags)
+func (m *manager) UpsertByResourceTypeID(ctx context.Context,
+	resourceType string, resourceID uint, tags []*models.Tag) error {
+	return m.dao.UpsertByResourceTypeID(ctx, resourceType, resourceID, tags)
 }
 
 // ValidateUpsert tags upsert
-func ValidateUpsert(tags []*models.ClusterTag) error {
+func ValidateUpsert(tags []*models.Tag) error {
 	if len(tags) > 20 {
 		return perror.Wrap(herrors.ErrParamInvalid, "the count of tags must be less than 20")
 	}

@@ -7,24 +7,23 @@ import (
 type Cluster struct {
 	global.Model
 
-	ApplicationID       uint
-	Name                string
-	Description         string
-	GitURL              string
-	GitSubfolder        string
-	GitBranch           string
-	Template            string
-	TemplateRelease     string
-	Status              string
-	EnvironmentRegionID uint
-	CreatedBy           uint
-	UpdatedBy           uint
+	ApplicationID   uint
+	Name            string
+	EnvironmentName string
+	RegionName      string
+	Description     string
+	GitURL          string
+	GitSubfolder    string
+	GitBranch       string
+	Template        string
+	TemplateRelease string
+	Status          string
+	CreatedBy       uint
+	UpdatedBy       uint
 }
 
-type ClusterWithEnvAndRegion struct {
+type ClusterWithRegion struct {
 	*Cluster
 
-	EnvironmentName   string
-	RegionName        string
 	RegionDisplayName string
 }

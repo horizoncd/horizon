@@ -31,7 +31,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
-	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
@@ -420,7 +421,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&harbormodels.Harbor{},
-		&regionmodels.Region{}, &envmodels.EnvironmentRegion{},
+		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}); err != nil {
 		panic(err)
 	}
@@ -537,11 +538,11 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: "test",
 		RegionName:      "hz",
 	})
-	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: "dev",
 		RegionName:      "hz",
 	})
@@ -668,20 +669,20 @@ func Test(t *testing.T) {
 	assert.Equal(t, resp.TemplateInput.Application, applicationJSONBlob)
 	assert.Equal(t, resp.TemplateInput.Pipeline, pipelineJSONBlob)
 
-	count, respList, err := c.ListCluster(ctx, application.ID, []string{"test"}, "", nil)
+	count, respList, err := c.ListCluster(ctx, application.ID, []string{"test"}, "", nil, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, count, 1)
 	t.Logf("%v", respList[0])
 	assert.Equal(t, respList[0].Template.Name, "javaapp")
 	assert.Equal(t, respList[0].Template.Release, "v1.0.1")
 
-	count, respList, err = c.ListCluster(ctx, application.ID, []string{}, "", nil)
+	count, respList, err = c.ListCluster(ctx, application.ID, []string{}, "", nil, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, count, 2)
 	t.Logf("%+v", respList[0].Scope)
 	t.Logf("%+v", respList[1].Scope)
 
-	count, respList, err = c.ListCluster(ctx, application.ID, []string{"test", "dev"}, "", nil)
+	count, respList, err = c.ListCluster(ctx, application.ID, []string{"test", "dev"}, "", nil, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, count, 2)
 	t.Logf("%+v", respList[0].Scope)
@@ -778,8 +779,23 @@ func Test(t *testing.T) {
 		Title:       "deploy-title",
 		Description: "deploy-description",
 	})
+	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
+	assert.Nil(t, deployResp)
+
+	_, err = prmanager.Mgr.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID: resp.ID,
+		Action:    prmodels.ActionBuildDeploy,
+		Status:    prmodels.ResultOK,
+	})
+	assert.Nil(t, err)
+
+	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
+		Title:       "deploy-title",
+		Description: "deploy-description",
+	})
 	assert.Nil(t, err)
 	assert.NotNil(t, deployResp)
+
 	b, _ = json.Marshal(deployResp)
 	t.Logf("%s", string(b))
 

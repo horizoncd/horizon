@@ -211,7 +211,7 @@ func (a *API) Deploy(c *gin.Context) {
 			}
 		}
 
-		if perror.Cause(err) == herrors.ErrClusterNoChange {
+		if perror.Cause(err) == herrors.ErrClusterNoChange || perror.Cause(err) == herrors.ErrShouldBuildDeployFirst {
 			log.WithFiled(c, "op", op).Errorf("%+v", err)
 			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
 			return

@@ -14,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	"g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -81,10 +82,20 @@ func (a *API) List(c *gin.Context) {
 		}
 	}
 
+	var tagSelectors []models.TagSelector
+	tsFromCtx, ok := c.Get(common.TagSelector)
+	if ok {
+		tagSelectors, ok = tsFromCtx.([]models.TagSelector)
+		if !ok {
+			log.WithFiled(c, "op", op).Errorf("%+v",
+				perror.WithMessagef(herrors.ErrParamInvalid, "invalid tag selector: %v", tagSelectors))
+		}
+	}
+
 	count, respList, err := a.clusterCtl.ListCluster(c, uint(applicationID), environments, filter, &q.Query{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
-	})
+	}, tagSelectors)
 	if err != nil {
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))

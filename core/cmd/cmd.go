@@ -15,7 +15,6 @@ import (
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
-	clustertagctl "g.hz.netease.com/horizon/core/controller/clustertag"
 	codectl "g.hz.netease.com/horizon/core/controller/code"
 	envtemplatectl "g.hz.netease.com/horizon/core/controller/envtemplate"
 	groupctl "g.hz.netease.com/horizon/core/controller/group"
@@ -23,6 +22,7 @@ import (
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	sloctl "g.hz.netease.com/horizon/core/controller/slo"
+	tagctl "g.hz.netease.com/horizon/core/controller/tag"
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
 	templateschematagctl "g.hz.netease.com/horizon/core/controller/templateschematag"
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
@@ -30,7 +30,6 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/applicationregion"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
-	"g.hz.netease.com/horizon/core/http/api/v1/clustertag"
 	codeapi "g.hz.netease.com/horizon/core/http/api/v1/code"
 	"g.hz.netease.com/horizon/core/http/api/v1/environment"
 	"g.hz.netease.com/horizon/core/http/api/v1/environmentregion"
@@ -42,6 +41,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/region"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
+	"g.hz.netease.com/horizon/core/http/api/v1/tag"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
@@ -52,6 +52,7 @@ import (
 	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
+	tagmiddle "g.hz.netease.com/horizon/core/middleware/tag"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
@@ -244,7 +245,7 @@ func Run(flags *Flags) {
 		terminalCtl          = terminalctl.NewController(clusterGitRepo)
 		sloCtl               = sloctl.NewController(config.GrafanaSLO)
 		codeGitCtl           = codectl.NewController(gitGetter)
-		clusterTagCtl        = clustertagctl.NewController(clusterGitRepo)
+		tagCtl               = tagctl.NewController(clusterGitRepo)
 		templateSchemaTagCtl = templateschematagctl.NewController()
 		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers)
 		applicationRegionCtl = applicationregionctl.NewController()
@@ -268,7 +269,7 @@ func Run(flags *Flags) {
 		terminalAPI          = terminalapi.NewAPI(terminalCtl)
 		sloAPI               = sloapi.NewAPI(sloCtl)
 		codeGitAPI           = codeapi.NewAPI(codeGitCtl)
-		clusterTagAPI        = clustertag.NewAPI(clusterTagCtl)
+		tagAPI               = tag.NewAPI(tagCtl)
 		templateSchemaTagAPI = templateschematagapi.NewAPI(templateSchemaTagCtl)
 		templateAPI          = template.NewAPI(templateCtl, templateSchemaTagCtl)
 		accessAPI            = accessapi.NewAPI(accessCtl)
@@ -299,6 +300,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal"))),
 		auth.Middleware(rbacAuthorizer, rbacSkippers),
 		ormmiddle.MiddlewareSetUserContext(mysqlDB),
+		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}
 	r.Use(middlewares...)
 
@@ -323,7 +325,7 @@ func Run(flags *Flags) {
 	terminalapi.RegisterRoutes(r, terminalAPI)
 	sloapi.RegisterRoutes(r, sloAPI)
 	codeapi.RegisterRoutes(r, codeGitAPI)
-	clustertag.RegisterRoutes(r, clusterTagAPI)
+	tag.RegisterRoutes(r, tagAPI)
 	templateschematagapi.RegisterRoutes(r, templateSchemaTagAPI)
 	accessapi.RegisterRoutes(r, accessAPI)
 	applicationregion.RegisterRoutes(r, applicationRegionAPI)

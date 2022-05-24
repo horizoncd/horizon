@@ -14,7 +14,7 @@ var (
 	GitlabResource            = sourceType{name: "GitlabResource"}
 	ClusterInDB               = sourceType{name: "ClusterInDB"}
 	ClusterStateInArgo        = sourceType{name: "ClusterStateInArgo"}
-	ClusterTagInDB            = sourceType{name: "ClusterTagInDB"}
+	TagInDB                   = sourceType{name: "TagInDB"}
 	ApplicationInArgo         = sourceType{name: "ApplicationInArgo"}
 	ApplicationResourceInArgo = sourceType{name: "ApplicationResourceInArgo"}
 	ApplicationInDB           = sourceType{name: "ApplicationInDB"}
@@ -167,7 +167,8 @@ var (
 	ErrHTTPRequestFailed     = errors.New("http request failed")
 
 	// cluster
-	ErrClusterNoChange = errors.New("no change to cluster")
+	ErrClusterNoChange        = errors.New("no change to cluster")
+	ErrShouldBuildDeployFirst = errors.New("clusters with build config should build and deploy first")
 
 	// pipelinerun
 

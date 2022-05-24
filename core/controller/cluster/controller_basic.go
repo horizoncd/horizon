@@ -17,13 +17,14 @@ import (
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
-	clustertagmanager "g.hz.netease.com/horizon/pkg/clustertag/manager"
-	emvmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	emvregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -34,12 +35,12 @@ import (
 )
 
 func (c *controller) ListCluster(ctx context.Context, applicationID uint, environments []string,
-	filter string, query *q.Query) (_ int, _ []*ListClusterResponse, err error) {
+	filter string, query *q.Query, ts []tagmodels.TagSelector) (_ int, _ []*ListClusterResponse, err error) {
 	const op = "cluster controller: list cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationAndEnvs(ctx,
-		applicationID, environments, filter, query)
+	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationEnvsTags(ctx,
+		applicationID, environments, filter, query, ts)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -191,12 +192,6 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 		return nil, err
 	}
 
-	// 3. get environmentRegion
-	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return nil, err
-	}
-
 	// 4. get files in git repo
 	clusterFiles := &gitrepo.ClusterFiles{}
 	if !isClusterStatusUnstable(cluster.Status) {
@@ -223,7 +218,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 
 	// 7. transfer model
-	clusterResp := ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
+	clusterResp := ofClusterModel(application, cluster, fullPath, envValue.Namespace,
 		clusterFiles.PipelineJSONBlob, clusterFiles.ApplicationJSONBlob)
 
 	// 8. get latest deployed commit
@@ -402,15 +397,15 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 6. create cluster, after created, params.Cluster is the newest cluster
-	cluster, clusterTags := r.toClusterModel(application, er)
+	cluster, tags := r.toClusterModel(application, er)
 	cluster.Status = clustercommon.StatusCreating
 
-	if err := clustertagmanager.ValidateUpsert(clusterTags); err != nil {
+	if err := tagmanager.ValidateUpsert(tags); err != nil {
 		return nil, err
 	}
 
 	// 7. create cluster in db
-	cluster, err = c.clusterMgr.Create(ctx, cluster, clusterTags, r.ExtraMembers)
+	cluster, err = c.clusterMgr.Create(ctx, cluster, tags, r.ExtraMembers)
 	if err != nil {
 		return nil, err
 	}
@@ -429,8 +424,8 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 			RegionEntity:        regionEntity,
 			Namespace:           r.Namespace,
 		},
-		ClusterTags: clusterTags,
-		Image:       r.Image,
+		Tags:  tags,
+		Image: r.Image,
 	})
 	if err != nil {
 		// Prevent errors like "project has already been taken" caused by automatic retries due to api timeouts
@@ -463,7 +458,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, err
 	}
 
-	ret := ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
+	ret := ofClusterModel(application, cluster, fullPath, envValue.Namespace,
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
 	// 11. post hook
@@ -489,8 +484,9 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 3. get environmentRegion/namespace for this cluster
-	var er *emvmodels.EnvironmentRegion
+	var er *emvregionmodels.EnvironmentRegion
 	var regionEntity *regionmodels.RegionEntity
+	// can only update environment/region when the cluster has been freed
 	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
 		er, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
 		if err != nil {
@@ -501,9 +497,9 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 			return nil, err
 		}
 	} else {
-		er, err = c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-		if err != nil {
-			return nil, err
+		er = &emvregionmodels.EnvironmentRegion{
+			EnvironmentName: cluster.EnvironmentName,
+			RegionName:      cluster.RegionName,
 		}
 	}
 
@@ -558,7 +554,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 5. update cluster in db
-	clusterModel := r.toClusterModel(cluster, templateRelease, er.ID)
+	clusterModel := r.toClusterModel(cluster, templateRelease, er)
 	// todo: atomicity
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {
@@ -578,7 +574,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	return ofClusterModel(application, cluster, er, fullPath, envValue.Namespace,
+	return ofClusterModel(application, cluster, fullPath, envValue.Namespace,
 		pipelineJSONBlob, applicationJSONBlob), nil
 }
 
@@ -645,12 +641,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		return err
 	}
 
-	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return err
-	}
-
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, er.RegionName)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return err
 	}
@@ -695,7 +686,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 
 		// 1. delete cluster in cd system
 		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
-			Environment: er.EnvironmentName,
+			Environment: cluster.EnvironmentName,
 			Cluster:     cluster.Name,
 		}); err != nil {
 			log.Errorf(newctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
@@ -742,11 +733,6 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		return err
 	}
 
-	er, err := c.envRegionMgr.GetEnvironmentRegionByID(ctx, cluster.EnvironmentRegionID)
-	if err != nil {
-		return err
-	}
-
 	// 1. set cluster status
 	cluster.Status = clustercommon.StatusFreeing
 	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
@@ -788,7 +774,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 
 		// 2. delete cluster in cd system
 		if err = c.cd.DeleteCluster(newctx, &cd.DeleteClusterParams{
-			Environment: er.EnvironmentName,
+			Environment: cluster.EnvironmentName,
 			Cluster:     cluster.Name,
 		}); err != nil {
 			log.Errorf(newctx, "failed to delete cluster: %v in cd system, err: %v", cluster.Name, err)
