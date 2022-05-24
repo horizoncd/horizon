@@ -66,6 +66,25 @@ func TestOauthAppBasic(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, reflect.DeepEqual(oauthRetApp, oauthApp))
 
+	updateReq := UpdateOauthAppReq{
+		Name:        "OauthTest2",
+		HomeURL:     "https://exmple2.com",
+		RedirectURI: "https://example.com/oauth/redirect2",
+		Desc:        "This is",
+	}
+	updateRet, err := oauthManager.UpdateOauthApp(ctx, oauthApp.ClientID, updateReq)
+	assert.Nil(t, err)
+	assert.Equal(t, oauthApp.ID, updateRet.ID)
+	assert.Equal(t, oauthApp.ClientID, updateRet.ClientID)
+	assert.Equal(t, updateReq.Name, updateRet.Name)
+	assert.Equal(t, updateReq.HomeURL, updateRet.HomeURL)
+	assert.Equal(t, updateReq.RedirectURI, updateRet.RedirectURL)
+
+	apps, err := oauthManager.ListOauthApp(ctx, models.GroupOwnerType, createReq.OwnerID)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(apps))
+	assert.True(t, reflect.DeepEqual(*updateRet, apps[0]))
+
 	err = oauthManager.DeleteOAuthApp(ctx, oauthApp.ClientID)
 	assert.Nil(t, err)
 

@@ -35,9 +35,45 @@ func (d *DBOauthAppStore) GetApp(ctx context.Context, clientID string) (*models.
 	}
 	return &client, nil
 }
+
+func (d *DBOauthAppStore) UpdateApp(ctx context.Context,
+	clientID string, app models.OauthApp) (*models.OauthApp, error) {
+	var appInDb models.OauthApp
+	var err error
+	if err = d.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Raw(common.GetOauthAppByClientID, clientID).Scan(&appInDb)
+		if result.Error != nil {
+			return herrors.NewErrGetFailed(herrors.OAuthInDB, result.Error.Error())
+		}
+		if result.RowsAffected == 0 {
+			return herrors.NewErrNotFound(herrors.OAuthInDB, "row affected = 0s")
+		}
+		appInDb.Name = app.Name
+		appInDb.HomeURL = app.HomeURL
+		appInDb.RedirectURL = app.RedirectURL
+		appInDb.Desc = app.Desc
+		if err := tx.Save(&appInDb).Error; err != nil {
+			return herrors.NewErrUpdateFailed(herrors.OAuthInDB, err.Error())
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return &appInDb, err
+}
+
 func (d *DBOauthAppStore) DeleteApp(ctx context.Context, clientID string) error {
 	result := d.db.Exec(common.DeleteOauthAppByClientID, clientID)
 	return result.Error
+}
+
+func (d *DBOauthAppStore) ListApp(ctx context.Context, ownerType models.OwnerType,
+	ownerID uint) ([]models.OauthApp, error) {
+	var oauthApps []models.OauthApp
+	if result := d.db.Raw(common.SelectOauthAppByOwner, ownerType, ownerID).Scan(&oauthApps); result.Error != nil {
+		return nil, result.Error
+	}
+	return oauthApps, nil
 }
 
 func (d *DBOauthAppStore) CreateSecret(ctx context.Context,

@@ -70,6 +70,8 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		return
 	}
 
+	// a.oAuthController
+
 	params := AuthorizationPageParams{
 		ClientID:    c.Query(ClientID),
 		State:       c.Query(State),

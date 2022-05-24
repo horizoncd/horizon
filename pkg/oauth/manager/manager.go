@@ -34,12 +34,29 @@ type AccessTokenGenerateRequest struct {
 	Request *http.Request
 }
 
+type CreateOAuthAppReq struct {
+	Name        string
+	RedirectURI string
+	HomeURL     string
+	Desc        string
+	OwnerType   models.OwnerType
+	OwnerID     uint
+	APPType     models.AppType
+}
+
+type UpdateOauthAppReq struct {
+	Name        string
+	HomeURL     string
+	RedirectURI string
+	Desc        string
+}
+
 type Manager interface {
 	CreateOauthApp(ctx context.Context, info *CreateOAuthAppReq) (*models.OauthApp, error)
 	GetOAuthApp(ctx context.Context, clientID string) (*models.OauthApp, error)
 	DeleteOAuthApp(ctx context.Context, clientID string) error
-	// TODO: ListOauthApp by owner
-
+	ListOauthApp(ctx context.Context, ownerType models.OwnerType, ownerID uint) ([]models.OauthApp, error)
+	UpdateOauthApp(ctx context.Context, clientID string, req UpdateOauthAppReq) (*models.OauthApp, error)
 	CreateSecret(ctx context.Context, clientID string) (*models.OauthClientSecret, error)
 	DeleteSecret(ctx context.Context, ClientID string, clientSecretID uint) error
 	ListSecret(ctx context.Context, ClientID string) ([]models.OauthClientSecret, error)
@@ -92,16 +109,6 @@ func GenClientID(appType models.AppType) string {
 
 type ClientIDGenerate func(appType models.AppType) string
 
-type CreateOAuthAppReq struct {
-	Name        string
-	RedirectURI string
-	HomeURL     string
-	Desc        string
-	OwnerType   models.OwnerType
-	OwnerID     uint
-	APPType     models.AppType
-}
-
 func (m *OauthManager) SetClientIDGenerate(gen ClientIDGenerate) {
 	m.clientIDGenerate = gen
 }
@@ -139,6 +146,21 @@ func (m *OauthManager) DeleteOAuthApp(ctx context.Context, clientID string) erro
 	}
 	// delete the app
 	return m.oauthAppStore.DeleteApp(ctx, clientID)
+}
+
+func (m *OauthManager) ListOauthApp(ctx context.Context,
+	ownerType models.OwnerType, ownerID uint) ([]models.OauthApp, error) {
+	return m.oauthAppStore.ListApp(ctx, ownerType, ownerID)
+}
+
+func (m *OauthManager) UpdateOauthApp(ctx context.Context, clientID string,
+	req UpdateOauthAppReq) (*models.OauthApp, error) {
+	return m.oauthAppStore.UpdateApp(ctx, clientID, models.OauthApp{
+		Name:        req.Name,
+		RedirectURL: req.RedirectURI,
+		HomeURL:     req.HomeURL,
+		Desc:        req.Desc,
+	})
 }
 
 func (m *OauthManager) CreateSecret(ctx context.Context, clientID string) (*models.OauthClientSecret, error) {
@@ -240,7 +262,6 @@ func (m *OauthManager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest,
 		return perror.Wrapf(herrors.ErrOAuthReqNotValid,
 			"req redirect url = %s, code redirect url = %s", req.RedirectURL, codeToken.RedirectURI)
 	}
-
 	if codeToken.CreatedAt.Add(m.authorizeCodeExpireTime).Before(time.Now()) {
 		return perror.Wrap(herrors.ErrOAuthCodeExpired, "")
 	}

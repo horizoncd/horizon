@@ -297,6 +297,7 @@ const (
 const (
 	GetOauthAppByClientID        = "select * from tb_oauth_app where  client_id = ?"
 	DeleteOauthAppByClientID     = "delete from tb_oauth_app where client_id = ?"
+	SelectOauthAppByOwner        = "select * from tb_oauth_app  where owner_type = ? and owner_id = ?"
 	DeleteClientSecret           = "delete from tb_oauth_client_secret where  client_id = ? and id = ?"
 	DeleteClientSecretByClientID = "delete from tb_oauth_client_secret where client_id = ?"
 	ClientSecretSelectAll        = "select * from tb_oauth_client_secret where client_id = ?"

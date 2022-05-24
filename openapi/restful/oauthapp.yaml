@@ -6,7 +6,7 @@ info:
 servers:
   - url: 'http://localhost:8080'
 paths:
-  /apis/core/v1/groups/{groupID}/apps:
+  /apis/core/v1/groups/{groupID}/oauthapps:
     parameters:
       - name: groupID
         in: path
@@ -15,15 +15,15 @@ paths:
         required: true
     post:
       tags:
-        - app
-      operationId: createapp
+        - oauthapp
+      operationId: createoauthapp
       summary: create a oauth app
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateAppRequest"
+              $ref: "#/components/schemas/CreateOauthAppRequest"
       responses:
         "200":
           description: Success
@@ -57,8 +57,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-
-  /apis/core/v1/apps/{appID}:
+  /apis/core/v1/oauthapps/{appID}:
     get:
       tags:
         - app
@@ -120,114 +119,10 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/apps/{appID}/permissions:
-    get:
-      tags:
-        - app
-      summary: get the app permissions
-      operationId: getAppPermission
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                 $ref: "#/components/schemas/Permission"
-        default:
-          description:  Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-    put:
-      tags:
-        - app
-      operationId: updateAppPermission
-      summary: update the app permissions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Permission"
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Permission"
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-  /apis/core/v1/apps/{appID}/clientsecret:
-    get:
-      tags:
-        - app
-      operationId: listClientSecret
-      summary: list the client secrets of an horizon app
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ClientSecret"
-        default:
-          description:  Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-    put:
-      tags:
-        - app
-      operationId: generateClientSecret
-      summary: generate the horizon client secret
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ClientSecret"
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/apps/{appID}/clientsecret/{secretID}:
-    delete:
-      tags:
-        - app
-      operationId: deleteClientSecret
-      summary: delete the app's client secret
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ClientSecret"
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
 
 components:
   schemas:
-    CreateAppRequest:
+    CreateOauthAppRequest:
       type: object
       properties:
         Name:
@@ -236,13 +131,7 @@ components:
           $ref: "common.yaml#/components/schemas/Description"
         HomeURL:
           $ref: "common.yaml#/components/schemas/URL"
-        AuthorizationCallbackURL:
-          $ref: "common.yaml#/components/schemas/URL"
-        Permisssions:
-          type: array
-          items:
-            $ref: "#/components/schemas/Permission"
-        WebHook:
+        RedirectURL:
           $ref: "common.yaml#/components/schemas/URL"
 
     AppBasicInfo:
@@ -259,36 +148,10 @@ components:
         ClientID:
           type: string
           format: uuid
-        AuthorizationCallbackURL:
+        RedirectURL:
           $ref: "common.yaml#/components/schemas/URL"
-        WebHook:
-          $ref: "common.yaml#/components/schemas/URL"
-
-    Permission:
-      type: object
-      properties:
-        ResourceName:
-          type: string
-        Scope:
-          type: array
-          items:
-            type: string
 
     appName:
       type: string
       maxLength: 2048
       description: the group FullName
-
-    ClientSecret:
-      type: object
-      properties:
-        ClientID:
-          type: string
-          format: uuid
-        Secret:
-          type: string
-        CreateTime:
-          type: string
-          format: DateTime
-        CreateBy:
-          type: string

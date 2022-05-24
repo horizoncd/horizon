@@ -54,3 +54,8 @@ components:
     ID:
       type: integer
       format: uint64
+
+    GroupID:
+      type: integer
+      format: int64
+      description: the parent id of the subgroup, if not provided, a root group

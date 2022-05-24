@@ -21,7 +21,7 @@ CREATE table `tb_oauth_app` (
     `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `name`       varchar(128) COMMENT 'short name of app client',
     `client_id`  varchar(128)  COMMENT 'oauth app client',
-    `redirect_uri` varchar(256) COMMNET 'the authorization callback url',
+    `redirect_url` varchar(256) COMMNET 'the authorization callback url',
     `home_url`   varchar(256) COMMNET 'the oauth app home url',
     `desc`      varchar(256),
     `owner_type` tinyint(1) NOT NULL COMMENT '1 for group, 2 for user',
