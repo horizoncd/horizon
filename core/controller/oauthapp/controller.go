@@ -31,6 +31,10 @@ type Controller interface {
 	Delete(ctx context.Context, clientID string) error
 }
 
+func NewController(authManager manager.Manager) Controller {
+	return &controller{oauthManager: authManager}
+}
+
 type controller struct {
 	oauthManager manager.Manager
 }

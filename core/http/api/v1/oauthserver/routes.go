@@ -7,20 +7,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	BasicPath       = "/oauth"
+	AuthorizePath   = "/authorize"
+	AccessTokenPath = "/access_token"
+)
+
 func RegisterRoutes(engine *gin.Engine, api *API) {
-	apiGroup := engine.Group("/oauth")
+	apiGroup := engine.Group(BasicPath)
 
 	var routes = route.Routes{
 		{
-			Pattern:     "/authorize",
+			Pattern:     AuthorizePath,
 			Method:      http.MethodGet,
 			HandlerFunc: api.HandleAuthorizationGetReq,
 		}, {
-			Pattern:     "/authorize",
+			Pattern:     AuthorizePath,
 			Method:      http.MethodPost,
 			HandlerFunc: api.HandleAuthorizationReq,
 		}, {
-			Pattern:     "/access_token",
+			Pattern:     AccessTokenPath,
 			Method:      http.MethodPost,
 			HandlerFunc: api.HandleAccessTokenReq,
 		},

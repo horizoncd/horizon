@@ -1,16 +1,23 @@
 package oauthserver
 
 import (
+	"encoding/json"
 	"html/template"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"g.hz.netease.com/horizon/core/controller/oauth"
+	"g.hz.netease.com/horizon/core/controller/oauthapp"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/oauth/generate"
 	"g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/oauth/models"
@@ -82,7 +89,7 @@ func TestServer(t *testing.T) {
 
 	oauthManager.SetClientIDGenerate(clientIDGen)
 	createReq := &manager.CreateOAuthAppReq{
-		Name:        "overmind",
+		Name:        "HorizonOAuthApp1",
 		RedirectURI: "http://localhost:8083/auth/callback",
 		HomeURL:     "http://localhost:8083",
 		Desc:        "This is an example  oauth app",
@@ -98,8 +105,10 @@ func TestServer(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, authGetApp.ClientID, authApp.ClientID)
 
-	oauthController := oauth.NewController(oauthManager)
-	api := NewAPI(oauthController, authFileLoc)
+	oauthServerController := oauth.NewController(oauthManager)
+
+	oauthAppController := oauthapp.NewController(oauthManager)
+	api := NewAPI(oauthServerController, oauthAppController, authFileLoc)
 
 	userMiddleWare := func(c *gin.Context) {
 		c.Set(user.ContextUserKey, aUser)
@@ -108,5 +117,67 @@ func TestServer(t *testing.T) {
 	r := gin.New()
 	r.Use(userMiddleWare)
 	RegisterRoutes(r, api)
-	log.Print(r.Run(":8081"))
+	ListenPort := ":8181"
+	go func() { log.Print(r.Run(ListenPort)) }()
+
+	// wait server to start
+	time.Sleep(time.Second * 5)
+
+	// post authorize request
+	scope := ""
+	state := "98237dhka21dasd"
+	data := url.Values{
+		ClientID:    {clientID},
+		Scope:       {scope},
+		State:       {state},
+		RedirectURL: {createReq.RedirectURI},
+		Authorize:   {Authorized},
+	}
+	authorizeURI := BasicPath + AuthorizePath
+
+	ErrMyError := errors.New("Not Redirect Error")
+	httpClient := http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		return ErrMyError
+	}}
+	resp, err := httpClient.PostForm("http://localhost"+ListenPort+authorizeURI, data)
+	assert.NotNil(t, err)
+	defer resp.Body.Close()
+	urlErr, ok := err.(*url.Error)
+	assert.True(t, ok)
+	assert.Equal(t, urlErr.Err, ErrMyError)
+	assert.NotNil(t, resp)
+
+	parsedURL, err := url.Parse(urlErr.URL)
+	assert.Nil(t, err)
+	authorizeCode := parsedURL.Query().Get(Code)
+	t.Logf("code = %s", authorizeCode)
+
+	// get  the access token
+	accessTokenReqData := url.Values{
+		Code:         {authorizeCode},
+		ClientID:     {clientID},
+		ClientSecret: {secret.ClientSecret},
+		RedirectURL:  {createReq.RedirectURI},
+	}
+
+	accessTokenURI := BasicPath + AccessTokenPath
+	resp, err = http.PostForm("http://localhost"+ListenPort+accessTokenURI, accessTokenReqData)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	tokenResponse := oauth.AccessTokenResponse{}
+	assert.Nil(t, json.Unmarshal(bytes, &tokenResponse))
+	t.Logf("%v", tokenResponse)
+	switch createReq.APPType {
+	case models.HorizonOAuthAPP:
+		assert.True(t, strings.HasPrefix(tokenResponse.AccessToken, generate.HorizonAppUserToServerAccessTokenPrefix))
+	case models.DirectOAuthAPP:
+		assert.True(t, strings.HasPrefix(tokenResponse.AccessToken, generate.OauthAPPAccessTokenPrefix))
+	default:
+		assert.Fail(t, "unSupport")
+	}
 }

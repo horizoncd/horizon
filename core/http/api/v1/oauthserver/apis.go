@@ -8,6 +8,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/oauth"
+	"g.hz.netease.com/horizon/core/controller/oauthapp"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -20,22 +21,29 @@ const (
 	ClientID    = "client_id"
 	Scope       = "scope"
 	State       = "state"
-	RedirectURL = "redirect_uri"
+	RedirectURL = "redirect_url"
 	Authorize   = "authorize"
 
 	Code         = "code"
 	ClientSecret = "client_secret"
 )
 
+const (
+	Authorized = "1"
+)
+
 type API struct {
-	oAuthController   oauth.Controller
-	oauthHTMLLocation string
+	oauthAppController oauthapp.Controller
+	oAuthServer        oauth.Controller
+	oauthHTMLLocation  string
 }
 
-func NewAPI(oauthController oauth.Controller, oauthHTMLLocation string) *API {
+func NewAPI(oauthServerController oauth.Controller,
+	oauthAppController oauthapp.Controller, oauthHTMLLocation string) *API {
 	return &API{
-		oAuthController:   oauthController,
-		oauthHTMLLocation: oauthHTMLLocation,
+		oAuthServer:        oauthServerController,
+		oauthAppController: oauthAppController,
+		oauthHTMLLocation:  oauthHTMLLocation,
 	}
 }
 
@@ -70,9 +78,20 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		return
 	}
 
-	// a.oAuthController
+	appbasicInfo, err := a.oauthAppController.Get(c, c.Query(ClientID))
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.OAuthInDB {
+				response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
+				return
+			}
+		}
+		response.AbortWithInternalError(c, err.Error())
+		return
+	}
 
 	params := AuthorizationPageParams{
+		ClientName:  appbasicInfo.AppName,
 		ClientID:    c.Query(ClientID),
 		State:       c.Query(State),
 		Scope:       c.Query(Scope),
@@ -125,7 +144,7 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 		return
 	}
 	value, ok := c.GetPostForm(Authorize)
-	if !ok || value != "1" {
+	if !ok || value != Authorized {
 		const DenyKey = "error"
 		const DenyDesc = "the user has denied your application access"
 		q := url.Values{}
@@ -134,7 +153,7 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 		location := url.URL{Path: c.PostForm(RedirectURL), RawQuery: q.Encode()}
 		c.Redirect(http.StatusFound, location.RequestURI())
 	} else {
-		resp, err := a.oAuthController.GenAuthorizeCode(c, &oauth.AuthorizeReq{
+		resp, err := a.oAuthServer.GenAuthorizeCode(c, &oauth.AuthorizeReq{
 			ClientID:     c.PostForm(ClientID),
 			Scope:        c.PostForm(Scope),
 			RedirectURL:  c.PostForm(RedirectURL),
@@ -189,7 +208,7 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 		return
 	}
 
-	tokenResponse, err := a.oAuthController.GenAccessToken(c, &oauth.AccessTokenReq{
+	tokenResponse, err := a.oAuthServer.GenAccessToken(c, &oauth.AccessTokenReq{
 		ClientID:     c.PostForm(ClientID),
 		ClientSecret: c.PostForm(ClientSecret),
 		Code:         c.PostForm(Code),
