@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/oauth"
@@ -12,6 +13,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/core/middleware/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
@@ -36,23 +38,30 @@ type API struct {
 	oauthAppController oauthapp.Controller
 	oAuthServer        oauth.Controller
 	oauthHTMLLocation  string
+	scopeService       scope.Service
 }
 
 func NewAPI(oauthServerController oauth.Controller,
-	oauthAppController oauthapp.Controller, oauthHTMLLocation string) *API {
+	oauthAppController oauthapp.Controller, oauthHTMLLocation string, scopeService scope.Service) *API {
 	return &API{
 		oAuthServer:        oauthServerController,
 		oauthAppController: oauthAppController,
 		oauthHTMLLocation:  oauthHTMLLocation,
+		scopeService:       scopeService,
 	}
 }
 
+type ScopeBasic struct {
+	Name string
+	Desc string
+}
 type AuthorizationPageParams struct {
 	RedirectURL string
 	State       string
 	ClientID    string
 	Scope       string
 	ClientName  string
+	ScopeBasic  []ScopeBasic
 }
 
 func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
@@ -78,7 +87,7 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		return
 	}
 
-	appbasicInfo, err := a.oauthAppController.Get(c, c.Query(ClientID))
+	appBasicInfo, err := a.oauthAppController.Get(c, c.Query(ClientID))
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.OAuthInDB {
@@ -89,13 +98,25 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		response.AbortWithInternalError(c, err.Error())
 		return
 	}
+	scopeRules := a.scopeService.GetRulesByScope(strings.Split(c.Query(Scope), " "))
+	scopeInfo := func() []ScopeBasic {
+		scopeBasics := make([]ScopeBasic, 0)
+		for _, scope := range scopeRules {
+			scopeBasics = append(scopeBasics, ScopeBasic{
+				Name: scope.Name,
+				Desc: scope.Desc,
+			})
+		}
+		return scopeBasics
+	}
 
 	params := AuthorizationPageParams{
-		ClientName:  appbasicInfo.AppName,
+		ClientName:  appBasicInfo.AppName,
 		ClientID:    c.Query(ClientID),
 		State:       c.Query(State),
 		Scope:       c.Query(Scope),
 		RedirectURL: c.Query(RedirectURL),
+		ScopeBasic:  scopeInfo(),
 	}
 	// authTemplate := template.Must(template.New("").ParseFiles(authFileLoc))
 	authTemplate, err := template.ParseFiles(a.oauthHTMLLocation)

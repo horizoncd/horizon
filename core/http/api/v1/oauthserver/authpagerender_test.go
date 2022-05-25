@@ -108,7 +108,7 @@ func TestServer(t *testing.T) {
 	oauthServerController := oauth.NewController(oauthManager)
 
 	oauthAppController := oauthapp.NewController(oauthManager)
-	api := NewAPI(oauthServerController, oauthAppController, authFileLoc)
+	api := NewAPI(oauthServerController, oauthAppController, authFileLoc, nil)
 
 	userMiddleWare := func(c *gin.Context) {
 		c.Set(user.ContextUserKey, aUser)
