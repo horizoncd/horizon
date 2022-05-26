@@ -109,8 +109,26 @@ func (c controller) List(ctx context.Context, groupID uint) ([]APPBasicInfo, err
 }
 
 func (c controller) Update(ctx context.Context, info APPBasicInfo) (*APPBasicInfo, error) {
-	//
-	panic("implement me")
+	const op = "oauth  app controller  Update"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	app, err := c.oauthManager.UpdateOauthApp(ctx, info.ClientID, manager.UpdateOauthAppReq{
+		Name:        info.AppName,
+		HomeURL:     info.HomeURL,
+		RedirectURI: info.RedirectURL,
+		Desc:        info.Decs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &APPBasicInfo{
+		AppID:       app.ID,
+		AppName:     app.Name,
+		Decs:        app.Desc,
+		HomeURL:     app.HomeURL,
+		ClientID:    app.ClientID,
+		RedirectURL: app.RedirectURL,
+	}, nil
 }
 
 func (c controller) Delete(ctx context.Context, clientID string) error {

@@ -57,6 +57,7 @@ type Manager interface {
 	DeleteOAuthApp(ctx context.Context, clientID string) error
 	ListOauthApp(ctx context.Context, ownerType models.OwnerType, ownerID uint) ([]models.OauthApp, error)
 	UpdateOauthApp(ctx context.Context, clientID string, req UpdateOauthAppReq) (*models.OauthApp, error)
+
 	CreateSecret(ctx context.Context, clientID string) (*models.OauthClientSecret, error)
 	DeleteSecret(ctx context.Context, ClientID string, clientSecretID uint) error
 	ListSecret(ctx context.Context, ClientID string) ([]models.OauthClientSecret, error)
