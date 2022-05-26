@@ -54,11 +54,11 @@ func Test(t *testing.T) {
 		Scope:       "dasdasdsa",
 		ClientName:  "overmind",
 	}
-	// authTemplate := template.Must(template.New("").ParseFiles(authFileLoc))
 	authTemplate, err := template.ParseFiles(authFileLoc)
+	if err != nil {
+		return
+	}
 	assert.Nil(t, err)
-	// var b bytes.Buffer
-
 	err = authTemplate.Execute(os.Stdout, params)
 	assert.Nil(t, err)
 }
@@ -139,7 +139,7 @@ func TestServer(t *testing.T) {
 	authScopeService, err := scope2.NewFileScopeService(createOauthScopeConfig())
 	assert.Nil(t, err)
 
-	api := NewAPI(oauthServerController, oauthAppController, authFileLoc, authScopeService)
+	api := NewAPI(oauthServerController, oauthAppController, "authFileLoc", authScopeService)
 
 	userMiddleWare := func(c *gin.Context) {
 		c.Set(user.ContextUserKey, aUser)
@@ -212,5 +212,4 @@ func TestServer(t *testing.T) {
 	default:
 		assert.Fail(t, "unSupport")
 	}
-
 }
