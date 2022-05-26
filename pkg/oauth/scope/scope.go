@@ -11,21 +11,42 @@ type Service interface {
 }
 
 type fileScopeService struct {
-	DefaultScopeRole string
-	Roles            []types.Role
+	DefaultScopes []string
+	DefaultRoles  []types.Role
+	Roles         []types.Role
 }
 
-func NewFileScopeService(config oauth.Config) Service {
-	return &fileScopeService{
-		DefaultScopeRole: config.DefaultScopeRole,
-		Roles:            config.Roles,
+func NewFileScopeService(config oauth.Config) (Service, error) {
+	defaultRoles := make([]types.Role, 0)
+
+	getRole := func(scopeName string) *types.Role {
+		for _, role := range config.Roles {
+			if role.Name == scopeName {
+				return &role
+			}
+		}
+		return nil
 	}
+	for _, scope := range config.DefaultScopes {
+		role := getRole(scope)
+		if role != nil {
+			defaultRoles = append(defaultRoles, *role)
+		}
+	}
+	return &fileScopeService{
+		DefaultScopes: config.DefaultScopes,
+		DefaultRoles:  defaultRoles,
+		Roles:         config.Roles,
+	}, nil
 }
 
 var _ Service = &fileScopeService{}
 
 func (f *fileScopeService) GetRulesByScope(scopes []string) []types.Role {
 	var roles = make([]types.Role, 0)
+	if len(scopes) == 0 {
+		return append(roles, f.DefaultRoles...)
+	}
 	for _, scope := range scopes {
 		for _, role := range f.Roles {
 			if role.Name == scope {

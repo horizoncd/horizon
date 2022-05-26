@@ -2,6 +2,7 @@ package oauthserver
 
 import (
 	"encoding/json"
+	"errors"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -17,11 +18,13 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/errors"
+	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
 	"g.hz.netease.com/horizon/pkg/oauth/generate"
 	"g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/oauth/models"
+	scope2 "g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/oauth/store"
+	"g.hz.netease.com/horizon/pkg/rbac/types"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
@@ -65,6 +68,30 @@ func UserMiddleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	}, skippers...)
 }
 
+func createOauthScopeConfig() oauthconfig.Config {
+	var roles = make([]types.Role, 0)
+	roles = append(roles, types.Role{
+		Name:        "applications:read-only",
+		Desc:        "应用(application)及相关子资源的只读权限，包括应用配置等等",
+		PolicyRules: nil,
+	})
+	roles = append(roles, types.Role{
+		Name:        "applications:read-write",
+		Desc:        "应用(application)及其相关子资源的读写删权限，包括XXX等等",
+		PolicyRules: nil,
+	})
+	roles = append(roles, types.Role{
+		Name:        "clusters:read-only",
+		Desc:        "集群(cluster)及其相关子资源的读写删权限，包括XXX等等",
+		PolicyRules: nil,
+	})
+
+	return oauthconfig.Config{
+		DefaultScopes: []string{"applications:read-only", "applications:read-write", "clusters:read-only"},
+		Roles:         roles,
+	}
+}
+
 func TestServer(t *testing.T) {
 	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
@@ -89,7 +116,7 @@ func TestServer(t *testing.T) {
 
 	oauthManager.SetClientIDGenerate(clientIDGen)
 	createReq := &manager.CreateOAuthAppReq{
-		Name:        "HorizonOAuthApp1",
+		Name:        "Overmind",
 		RedirectURI: "http://localhost:8083/auth/callback",
 		HomeURL:     "http://localhost:8083",
 		Desc:        "This is an example  oauth app",
@@ -108,7 +135,11 @@ func TestServer(t *testing.T) {
 	oauthServerController := oauth.NewController(oauthManager)
 
 	oauthAppController := oauthapp.NewController(oauthManager)
-	api := NewAPI(oauthServerController, oauthAppController, authFileLoc, nil)
+
+	authScopeService, err := scope2.NewFileScopeService(createOauthScopeConfig())
+	assert.Nil(t, err)
+
+	api := NewAPI(oauthServerController, oauthAppController, authFileLoc, authScopeService)
 
 	userMiddleWare := func(c *gin.Context) {
 		c.Set(user.ContextUserKey, aUser)
@@ -118,6 +149,7 @@ func TestServer(t *testing.T) {
 	r.Use(userMiddleWare)
 	RegisterRoutes(r, api)
 	ListenPort := ":8181"
+
 	go func() { log.Print(r.Run(ListenPort)) }()
 
 	// wait server to start
@@ -180,4 +212,5 @@ func TestServer(t *testing.T) {
 	default:
 		assert.Fail(t, "unSupport")
 	}
+
 }

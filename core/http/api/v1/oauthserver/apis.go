@@ -56,6 +56,7 @@ type ScopeBasic struct {
 	Desc string
 }
 type AuthorizationPageParams struct {
+	UserName    string
 	RedirectURL string
 	State       string
 	ClientID    string
@@ -110,7 +111,14 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		return scopeBasics
 	}
 
+	currentUser, err := user.FromContext(c)
+	if err != nil {
+		response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
+		return
+	}
+
 	params := AuthorizationPageParams{
+		UserName:    currentUser.GetName(),
 		ClientName:  appBasicInfo.AppName,
 		ClientID:    c.Query(ClientID),
 		State:       c.Query(State),
