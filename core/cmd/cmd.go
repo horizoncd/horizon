@@ -256,13 +256,6 @@ func Run(flags *Flags) {
 	oauthAppStore := oauthstore.NewOauthAppStore(mysqlDB)
 	oauthTokenStore := oauthstore.NewTokenStore(mysqlDB)
 
-	var oauthConfig oauthconfig.Config
-	if err := yaml.Unmarshal(content, &oauthConfig); err != nil {
-		panic(err)
-	} else {
-		log.Printf("the roleConfig = %+v\n", roleConfig)
-	}
-
 	authorizeCodeExpireIn := time.Minute * 30
 	accessTokenExpireIn := time.Hour * 24
 	oauthManager := oauthmanager.NewManager(oauthAppStore, oauthTokenStore,
@@ -276,6 +269,12 @@ func Run(flags *Flags) {
 	content, err = ioutil.ReadAll(scopeFile)
 	if err != nil {
 		panic(err)
+	}
+	var oauthConfig oauthconfig.Config
+	if err = yaml.Unmarshal(content, &oauthConfig); err != nil {
+		panic(err)
+	} else {
+		log.Printf("the oauthScopeConfig = %+v\n", roleConfig)
 	}
 	scopeService, err := scope.NewFileScopeService(oauthConfig)
 	if err != nil {
