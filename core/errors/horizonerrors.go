@@ -177,8 +177,6 @@ var (
 	ErrFailedToGetUser      = errors.New("cannot get user from context")
 	ErrFailedToGetRequestID = errors.New("cannot get the requestID from context")
 
-	ErrHarborNotList = errors.New("harbor could not list")
-
 	ErrKubeDynamicCliResponseNotOK = errors.New("response for kube dynamic cli is not 200 OK")
 	ErrKubeExecFailed              = errors.New("kube exec failed")
 
@@ -187,9 +185,8 @@ var (
 	ErrS3PutObjFailed = errors.New("s3 put obj failed")
 	ErrS3GetObjFailed = errors.New("s3 get obj failed")
 
-	ErrGitlabResourceNotFound = errors.New("gitlab resource not found")
-	ErrGitlabInternal         = errors.New("gitlab internal")
-	ErrGitlabMRNotReady       = errors.New("gitlab mr is not ready and cannot be merged")
+	ErrGitlabInternal   = errors.New("gitlab internal")
+	ErrGitlabMRNotReady = errors.New("gitlab mr is not ready and cannot be merged")
 
 	// git
 	ErrBranchAndCommitEmpty = errors.New("branch and commit cannot be empty at the same time")
@@ -207,8 +204,7 @@ var (
 	// ErrHasChildren used when delete a group which still has some children
 	ErrGroupHasChildren = errors.New("children exist, cannot be deleted")
 	// ErrConflictWithApplication conflict with the application
-	ErrGroupConflictWithApplication     = errors.New("name or path is in conflict with application")
-	ErrRegionCannotSetDefaultIfDisabled = errors.New("cannot set a region to default if it is disabled")
-	ErrRegionCannotDisabledIfDefault    = errors.New("cannot disable a region if it is a default region")
-	ErrHarborCannotDelete               = errors.New("cannot delete a harbor when used by regions")
+	ErrGroupConflictWithApplication = errors.New("name or path is in conflict with application")
+
+	ErrHarborCannotDelete = errors.New("cannot delete a harbor when used by regions")
 )

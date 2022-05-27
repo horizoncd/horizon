@@ -119,8 +119,9 @@ const (
 const (
 	EnvironmentListRegion = "select * from tb_environment_region " +
 		"where environment_name = ? and disabled = 0 and deleted_ts = 0"
-	EnvironmentListEnabledRegion = "select * from tb_environment_region " +
-		"where environment_name = ? and deleted_ts = 0"
+	EnvironmentListEnabledRegion = "select r.name, r.display_name from tb_environment_region er " +
+		"join tb_region r on er.region_name = r.name " +
+		"where er.environment_name = ? and r.disabled = 0 and er.deleted_ts = 0 and r.deleted_ts = 0"
 	EnvironmentRegionGet = "select * from tb_environment_region where" +
 		" environment_name = ? and region_name = ? and deleted_ts = 0"
 	EnvironmentRegionGetByID           = "select * from tb_environment_region where id = ? and deleted_ts = 0"
@@ -132,8 +133,6 @@ const (
 	EnvironmentRegionsGetDefault = "select * from tb_environment_region where " +
 		"is_default = 1 and disabled = 0 and deleted_ts = 0"
 	EnvironmentRegionUpdateByID       = "update tb_environment_region set is_default = ?, disabled = ? where id = ?"
-	EnvironmentRegionEnableByID       = "update tb_environment_region set disabled = 0 where id = ?"
-	EnvironmentRegionDisableByID      = "update tb_environment_region set disabled = 1 where id = ?"
 	EnvironmentRegionSetDefaultByID   = "update tb_environment_region set is_default = 1 where id = ?"
 	EnvironmentRegionUnsetDefaultByID = "update tb_environment_region set is_default = 0 where id = ?"
 )
@@ -143,12 +142,18 @@ const (
 	// RegionListAll ...
 	RegionListAll       = "select * from tb_region where deleted_ts = 0"
 	RegionGetByName     = "select * from tb_region where name = ? and deleted_ts = 0"
+	RegionGetByID       = "select * from tb_region where id = ? and deleted_ts = 0"
 	RegionListByNames   = "select * from tb_region where name in ? and deleted_ts = 0"
 	RegionGetByHarborID = "select * from tb_region where harbor_id = ? and deleted_ts = 0"
+	RegionListByTags    = "select r.name, r.display_name from tb_region r " +
+		"join tb_tag tg on r.id = tg.resource_id " +
+		"where tg.resource_type = ? and r.deleted_ts = 0 and r.disabled = 0 " +
+		"and %s group by r.id having count(r.id) = ?"
 )
 
 /* sql about cluster */
 const (
+	ClusterCountByRegionName   = "select count(1) from tb_cluster where region_name = ? and deleted_ts = 0"
 	ClusterQueryByID           = "select * from tb_cluster where id = ? and deleted_ts = 0"
 	ClusterDeleteByID          = "update tb_cluster set deleted_ts = ?, updated_by = ? where id = ?"
 	ClusterQueryByName         = "select * from tb_cluster where name = ? and deleted_ts = 0"

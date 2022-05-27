@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"gorm.io/gorm"
 )
 
@@ -23,17 +24,14 @@ type DAO interface {
 	// ListRegionsByEnvironment list regions by environment
 	ListRegionsByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error)
 	// ListEnabledRegionsByEnvironment list regions by environment that are enabled
-	ListEnabledRegionsByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error)
+	ListEnabledRegionsByEnvironment(ctx context.Context, env string) (regionmodels.RegionParts, error)
 	// GetDefaultRegionByEnvironment get default regions by environment
 	GetDefaultRegionByEnvironment(ctx context.Context, env string) (*models.EnvironmentRegion, error)
 	// GetDefaultRegions get all default regions
 	GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegion, error)
-	// EnableEnvironmentRegionByID enable region by id
-	EnableEnvironmentRegionByID(ctx context.Context, id uint) error
-	// DisableEnvironmentRegionByID disable region by id
-	DisableEnvironmentRegionByID(ctx context.Context, id uint) error
 	// SetEnvironmentRegionToDefaultByID set region to default by id
 	SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error
+	DeleteByID(ctx context.Context, id uint) error
 }
 
 type dao struct{}
@@ -118,13 +116,13 @@ func (d *dao) ListRegionsByEnvironment(ctx context.Context, env string) ([]*mode
 	return regions, result.Error
 }
 
-func (d *dao) ListEnabledRegionsByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error) {
+func (d *dao) ListEnabledRegionsByEnvironment(ctx context.Context, env string) (regionmodels.RegionParts, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var regions []*models.EnvironmentRegion
+	var regions regionmodels.RegionParts
 	result := db.Raw(common.EnvironmentListEnabledRegion, env).Scan(&regions)
 
 	if result.Error != nil {
@@ -172,47 +170,6 @@ func (d *dao) GetEnvironmentRegionByEnvAndRegion(ctx context.Context,
 	return &environmentRegion, nil
 }
 
-func (d *dao) EnableEnvironmentRegionByID(ctx context.Context, id uint) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = d.GetEnvironmentRegionByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	result := db.Exec(common.EnvironmentRegionEnableByID, id)
-	if result.Error != nil {
-		return herrors.NewErrUpdateFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
-	}
-
-	return nil
-}
-
-func (d *dao) DisableEnvironmentRegionByID(ctx context.Context, id uint) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	region, err := d.GetEnvironmentRegionByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	if region.IsDefault {
-		return herrors.ErrRegionCannotDisabledIfDefault
-	}
-
-	result := db.Exec(common.EnvironmentRegionDisableByID, id)
-	if result.Error != nil {
-		return herrors.NewErrUpdateFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
-	}
-
-	return nil
-}
-
 func (d *dao) SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
@@ -222,9 +179,6 @@ func (d *dao) SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) er
 	region, err := d.GetEnvironmentRegionByID(ctx, id)
 	if err != nil {
 		return err
-	}
-	if region.Disabled {
-		return herrors.ErrRegionCannotSetDefaultIfDisabled
 	}
 
 	// get current default region
@@ -268,4 +222,19 @@ func (d *dao) ListAllEnvironmentRegions(ctx context.Context) ([]*models.Environm
 	}
 
 	return environmentRegions, nil
+}
+
+// DeleteByID implements DAO
+func (*dao) DeleteByID(ctx context.Context, id uint) error {
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	result := db.Delete(&models.EnvironmentRegion{}, id)
+	if result.Error != nil {
+		return herrors.NewErrDeleteFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+	}
+
+	return nil
 }

@@ -16,9 +16,8 @@ var (
 type Controller interface {
 	ListAll(ctx context.Context) (EnvironmentRegions, error)
 	CreateEnvironmentRegion(ctx context.Context, request *CreateEnvironmentRegionRequest) (uint, error)
-	EnableEnvironmentRegion(ctx context.Context, id uint) error
-	DisableEnvironmentRegion(ctx context.Context, id uint) error
 	SetEnvironmentRegionToDefault(ctx context.Context, id uint) error
+	DeleteByID(ctx context.Context, id uint) error
 }
 
 var _ Controller = (*controller)(nil)
@@ -33,6 +32,11 @@ func NewController() Controller {
 type controller struct {
 	envRegionMgr manager.Manager
 	regionMgr    regionmanager.Manager
+}
+
+// DeleteByID implements Controller
+func (c *controller) DeleteByID(ctx context.Context, id uint) error {
+	return c.envRegionMgr.DeleteByID(ctx, id)
 }
 
 func (c *controller) CreateEnvironmentRegion(ctx context.Context,
@@ -58,14 +62,6 @@ func (c *controller) ListAll(ctx context.Context) (_ EnvironmentRegions, err err
 	}
 
 	return ofRegionModels(regions, environmentRegions), nil
-}
-
-func (c *controller) EnableEnvironmentRegion(ctx context.Context, id uint) error {
-	return c.envRegionMgr.EnableEnvironmentRegionByID(ctx, id)
-}
-
-func (c *controller) DisableEnvironmentRegion(ctx context.Context, id uint) error {
-	return c.envRegionMgr.DisableEnvironmentRegionByID(ctx, id)
 }
 
 func (c *controller) SetEnvironmentRegionToDefault(ctx context.Context, id uint) error {

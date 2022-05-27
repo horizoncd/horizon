@@ -24,6 +24,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.Get,
 		},
 		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/applications/:%v/selectableregions", _applicationIDParam),
+			HandlerFunc: api.GetSelectableRegions,
+		},
+		{
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/applications/:%v", _applicationIDParam),
 			HandlerFunc: api.Update,

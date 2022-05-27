@@ -9,7 +9,6 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
@@ -41,12 +40,6 @@ func (a *API) List(c *gin.Context) {
 		return
 	}
 
-	if resourceType != tagmodels.TypeCluster {
-		response.AbortWithRPCError(c, rpcerror.ParamError.
-			WithErrMsg("only support cluster tag now"))
-		return
-	}
-
 	resp, err := a.tagCtl.List(c, resourceType, uint(resourceID))
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
@@ -68,12 +61,6 @@ func (a *API) Update(c *gin.Context) {
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.
 			WithErrMsg(fmt.Sprintf("invalid resource id: %s", resourceIDStr)))
-		return
-	}
-
-	if resourceType != tagmodels.TypeCluster {
-		response.AbortWithRPCError(c, rpcerror.ParamError.
-			WithErrMsg("only support cluster tag now"))
 		return
 	}
 

@@ -6,6 +6,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/environmentregion/dao"
 	"g.hz.netease.com/horizon/pkg/environmentregion/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 )
 
 var (
@@ -26,21 +27,25 @@ type Manager interface {
 		*models.EnvironmentRegion, error)
 	// ListRegionsByEnvironment list regions by env
 	ListRegionsByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error)
-	ListEnabledRegionsByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error)
+	ListEnabledRegionsByEnvironment(ctx context.Context, env string) (regionmodels.RegionParts, error)
 	GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error)
 	GetByEnvironmentAndRegion(ctx context.Context, env, region string) (*models.EnvironmentRegion, error)
 	GetDefaultRegionByEnvironment(ctx context.Context, env string) (*models.EnvironmentRegion, error)
 	GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegion, error)
-	EnableEnvironmentRegionByID(ctx context.Context, id uint) error
-	DisableEnvironmentRegionByID(ctx context.Context, id uint) error
 	SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error
 	// ListAllEnvironmentRegions list all environmentRegions
 	ListAllEnvironmentRegions(ctx context.Context) ([]*models.EnvironmentRegion, error)
+	DeleteByID(ctx context.Context, id uint) error
 }
 
 type manager struct {
 	envRegionDAO dao.DAO
 	regionDAO    regiondao.DAO
+}
+
+// DeleteByID implements Manager
+func (m *manager) DeleteByID(ctx context.Context, id uint) error {
+	return m.envRegionDAO.DeleteByID(ctx, id)
 }
 
 func (m *manager) GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegion, error) {
@@ -66,12 +71,8 @@ func (m *manager) ListRegionsByEnvironment(ctx context.Context, env string) ([]*
 }
 
 func (m *manager) ListEnabledRegionsByEnvironment(ctx context.Context, env string) (
-	[]*models.EnvironmentRegion, error) {
-	regions, err := m.envRegionDAO.ListEnabledRegionsByEnvironment(ctx, env)
-	if err != nil {
-		return nil, err
-	}
-	return regions, nil
+	regionmodels.RegionParts, error) {
+	return m.envRegionDAO.ListEnabledRegionsByEnvironment(ctx, env)
 }
 
 func (m *manager) GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error) {
@@ -81,14 +82,6 @@ func (m *manager) GetEnvironmentRegionByID(ctx context.Context, id uint) (*model
 func (m *manager) GetByEnvironmentAndRegion(ctx context.Context,
 	env, region string) (*models.EnvironmentRegion, error) {
 	return m.envRegionDAO.GetEnvironmentRegionByEnvAndRegion(ctx, env, region)
-}
-
-func (m *manager) EnableEnvironmentRegionByID(ctx context.Context, id uint) error {
-	return m.envRegionDAO.EnableEnvironmentRegionByID(ctx, id)
-}
-
-func (m *manager) DisableEnvironmentRegionByID(ctx context.Context, id uint) error {
-	return m.envRegionDAO.DisableEnvironmentRegionByID(ctx, id)
 }
 
 func (m *manager) SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error {

@@ -19,6 +19,7 @@ import (
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+	"github.com/go-yaml/yaml"
 	"gorm.io/gorm"
 )
 
@@ -52,6 +53,8 @@ type Controller interface {
 	SearchChildren(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error)
 	// ListAuthedGroup get all the authed groups of current user(if is admin, return all the groups)
 	ListAuthedGroup(ctx context.Context) ([]*Group, error)
+	// UpdateRegionSelector update regionSelector
+	UpdateRegionSelector(ctx context.Context, id uint, regionSelector RegionSelectors) error
 }
 
 type controller struct {
@@ -554,4 +557,14 @@ func (c *controller) ofGroupModel(ctx context.Context, groups []*models.Group) (
 		})
 	}
 	return ofGroups, nil
+}
+
+func (c *controller) UpdateRegionSelector(ctx context.Context, id uint, regionSelector RegionSelectors) error {
+	// marshal struct to string
+	regionSelectorBytes, err := yaml.Marshal(regionSelector)
+	if err != nil {
+		return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
+	}
+
+	return c.groupManager.UpdateRegionSelector(ctx, id, string(regionSelectorBytes))
 }

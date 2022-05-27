@@ -14,6 +14,7 @@ type Group struct {
 	Description     string
 	ParentID        uint
 	TraversalIDs    string
+	RegionSelector  string
 	CreatedBy       uint
 	UpdatedBy       uint
 }
@@ -42,3 +43,11 @@ func (g Groups) Less(i, j int) bool {
 func (g Groups) Swap(i, j int) {
 	g[i], g[j] = g[j], g[i]
 }
+
+type RegionSelector struct {
+	Key      string   `json:"key"`
+	Values   []string `json:"values"`
+	Operator string   `json:"operator" default:"in"` // not used currently
+}
+
+type RegionSelectors []*RegionSelector

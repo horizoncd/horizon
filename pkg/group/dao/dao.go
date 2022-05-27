@@ -56,6 +56,7 @@ type DAO interface {
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 	ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*models.Group, error)
+	UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error
 }
 
 // NewDAO returns an instance of the default DAO
@@ -64,6 +65,26 @@ func NewDAO() DAO {
 }
 
 type dao struct{}
+
+func (d *dao) UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error {
+	group, err := d.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	group.RegionSelector = regionSelector
+	result := db.Save(group)
+	if result.Error != nil {
+		return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
+	}
+
+	return nil
+}
 
 func (d *dao) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error) {
 	db, err := orm.FromContext(ctx)

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
+	controllertag "g.hz.netease.com/horizon/core/controller/tag"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
@@ -12,11 +13,11 @@ import (
 )
 
 type Base struct {
-	Description   string         `json:"description"`
-	Git           *Git           `json:"git"`
-	Template      *Template      `json:"template"`
-	TemplateInput *TemplateInput `json:"templateInput"`
-	Tags          []*Tag         `json:"tags"`
+	Description   string               `json:"description"`
+	Git           *Git                 `json:"git"`
+	Template      *Template            `json:"template"`
+	TemplateInput *TemplateInput       `json:"templateInput"`
+	Tags          []*controllertag.Tag `json:"tags"`
 }
 
 type TemplateInput struct {
@@ -28,11 +29,6 @@ type Git struct {
 	URL       string `json:"url"`
 	Subfolder string `json:"subfolder"`
 	Branch    string `json:"branch"`
-}
-
-type Tag struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
 }
 
 type CreateClusterRequest struct {

@@ -119,7 +119,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return herrors.NewErrDeleteFailed(herrors.HarborInDB, result.Error.Error())
 	}
 	if len(regions) > 0 {
-		return herrors.ErrHarborCannotDelete
+		return herrors.NewErrDeleteFailed(herrors.HarborInDB, "cannot delete a harbor when used by regions")
 	}
 
 	result = db.Delete(&models.Harbor{}, id)

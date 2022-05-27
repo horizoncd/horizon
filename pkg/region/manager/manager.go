@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
@@ -27,6 +28,8 @@ type Manager interface {
 	GetRegionEntity(ctx context.Context, regionName string) (*models.RegionEntity, error)
 	// UpdateByID update region by id
 	UpdateByID(ctx context.Context, id uint, region *models.Region) error
+	// ListByRegionSelectors list region by tags
+	ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (models.RegionParts, error)
 }
 
 type manager struct {
@@ -125,4 +128,9 @@ func (m *manager) getHarborByRegion(ctx context.Context, region *models.Region) 
 		return nil, err
 	}
 	return harbor, nil
+}
+
+func (m *manager) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (
+	models.RegionParts, error) {
+	return m.regionDAO.ListByRegionSelectors(ctx, selectors)
 }

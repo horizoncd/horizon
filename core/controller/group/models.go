@@ -42,3 +42,11 @@ type Group struct {
 	FullName        string    `json:"fullName"`
 	FullPath        string    `json:"fullPath"`
 }
+
+type RegionSelector struct {
+	Key      string   `json:"key"`
+	Values   []string `json:"values"`
+	Operator string   `json:"operator" default:"in"`
+}
+
+type RegionSelectors []*RegionSelector

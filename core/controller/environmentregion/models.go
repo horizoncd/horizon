@@ -19,19 +19,20 @@ type EnvironmentRegions []*EnvironmentRegion
 // ofEnvironmentModels []*models.Region to []*EnvironmentRegion
 func ofRegionModels(regions []*regionmodels.Region,
 	environmentRegions []*envregionmodels.EnvironmentRegion) EnvironmentRegions {
-	displayNameMap := make(map[string]string)
+	displayNameMap := make(map[string]*regionmodels.Region)
 	for _, region := range regions {
-		displayNameMap[region.Name] = region.DisplayName
+		displayNameMap[region.Name] = region
 	}
 
 	rs := make(EnvironmentRegions, 0)
-	for _, region := range environmentRegions {
+	for _, envRegion := range environmentRegions {
+		region := displayNameMap[envRegion.RegionName]
 		rs = append(rs, &EnvironmentRegion{
-			ID:                region.ID,
-			Region:            region.RegionName,
-			RegionDisplayName: displayNameMap[region.RegionName],
-			Environment:       region.EnvironmentName,
-			IsDefault:         region.IsDefault,
+			ID:                envRegion.ID,
+			Region:            envRegion.RegionName,
+			RegionDisplayName: region.DisplayName,
+			Environment:       envRegion.EnvironmentName,
+			IsDefault:         envRegion.IsDefault,
 			Disabled:          region.Disabled,
 		})
 	}

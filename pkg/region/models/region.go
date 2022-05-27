@@ -14,6 +14,7 @@ type Region struct {
 	Certificate   string
 	IngressDomain string
 	HarborID      uint `gorm:"column:harbor_id"`
+	Disabled      bool
 	CreatedBy     uint
 	UpdatedBy     uint
 }
@@ -24,3 +25,10 @@ type RegionEntity struct {
 
 	Harbor *harbormodels.Harbor
 }
+
+type RegionPart struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"displayName"`
+}
+
+type RegionParts []*RegionPart

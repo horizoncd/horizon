@@ -10,7 +10,6 @@ type EnvironmentRegion struct {
 	EnvironmentName string
 	RegionName      string
 	IsDefault       bool
-	Disabled        bool
 	CreatedBy       uint
 	UpdatedBy       uint
 }

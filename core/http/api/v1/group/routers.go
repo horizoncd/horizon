@@ -47,6 +47,11 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 			Pattern:     fmt.Sprintf("/:%s/transfer", _paramGroupID),
 			HandlerFunc: a.TransferGroup,
 		},
+		{
+			Method:      http.MethodPut,
+			Pattern:     fmt.Sprintf("/:%s/regionselectors", _paramGroupID),
+			HandlerFunc: a.UpdateRegionSelector,
+		},
 	}
 
 	frontAPI := engine.Group("/apis/front/v1/groups")

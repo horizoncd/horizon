@@ -52,54 +52,6 @@ func (a *API) Create(c *gin.Context) {
 	response.SuccessWithData(c, id)
 }
 
-func (a *API) Enable(c *gin.Context) {
-	idStr := c.Param(_environmentRegionIDParam)
-	id, err := strconv.ParseUint(idStr, 10, 0)
-	if err != nil {
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid id: %s, err: %s",
-			idStr, err.Error())))
-		return
-	}
-
-	err = a.environmentRegionCtl.EnableEnvironmentRegion(c, uint(id))
-	if err != nil {
-		if err != nil {
-			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-				return
-			}
-			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-			return
-		}
-	}
-
-	response.Success(c)
-}
-
-func (a *API) Disable(c *gin.Context) {
-	idStr := c.Param(_environmentRegionIDParam)
-	id, err := strconv.ParseUint(idStr, 10, 0)
-	if err != nil {
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid id: %s, err: %s",
-			idStr, err.Error())))
-		return
-	}
-
-	err = a.environmentRegionCtl.DisableEnvironmentRegion(c, uint(id))
-	if err != nil {
-		if err != nil {
-			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-				return
-			}
-			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-			return
-		}
-	}
-
-	response.Success(c)
-}
-
 func (a *API) SetDefault(c *gin.Context) {
 	idStr := c.Param(_environmentRegionIDParam)
 	id, err := strconv.ParseUint(idStr, 10, 0)
@@ -110,6 +62,30 @@ func (a *API) SetDefault(c *gin.Context) {
 	}
 
 	err = a.environmentRegionCtl.SetEnvironmentRegionToDefault(c, uint(id))
+	if err != nil {
+		if err != nil {
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+			return
+		}
+	}
+
+	response.Success(c)
+}
+
+func (a *API) DeleteByID(c *gin.Context) {
+	idStr := c.Param(_environmentRegionIDParam)
+	id, err := strconv.ParseUint(idStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid id: %s, err: %s",
+			idStr, err.Error())))
+		return
+	}
+
+	err = a.environmentRegionCtl.DeleteByID(c, uint(id))
 	if err != nil {
 		if err != nil {
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {

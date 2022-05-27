@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	models "g.hz.netease.com/horizon/pkg/group/models"
+	models0 "g.hz.netease.com/horizon/pkg/region/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -186,6 +187,21 @@ func (mr *MockManagerMockRecorder) GetChildren(ctx, parentID, pageNumber, pageSi
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChildren", reflect.TypeOf((*MockManager)(nil).GetChildren), ctx, parentID, pageNumber, pageSize)
 }
 
+// GetSelectableRegions mocks base method.
+func (m *MockManager) GetSelectableRegions(ctx context.Context, id uint, env string) (models0.RegionParts, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSelectableRegions", ctx, id, env)
+	ret0, _ := ret[0].(models0.RegionParts)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSelectableRegions indicates an expected call of GetSelectableRegions.
+func (mr *MockManagerMockRecorder) GetSelectableRegions(ctx, id, env interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelectableRegions", reflect.TypeOf((*MockManager)(nil).GetSelectableRegions), ctx, id, env)
+}
+
 // GetSubGroups mocks base method.
 func (m *MockManager) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error) {
 	m.ctrl.T.Helper()
@@ -258,4 +274,18 @@ func (m *MockManager) UpdateBasic(ctx context.Context, group *models.Group) erro
 func (mr *MockManagerMockRecorder) UpdateBasic(ctx, group interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBasic", reflect.TypeOf((*MockManager)(nil).UpdateBasic), ctx, group)
+}
+
+// UpdateRegionSelector mocks base method.
+func (m *MockManager) UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRegionSelector", ctx, id, regionSelector)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateRegionSelector indicates an expected call of UpdateRegionSelector.
+func (mr *MockManagerMockRecorder) UpdateRegionSelector(ctx, id, regionSelector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRegionSelector", reflect.TypeOf((*MockManager)(nil).UpdateRegionSelector), ctx, id, regionSelector)
 }

@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/environment/models"
 	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 )
 
 var (
@@ -20,7 +21,7 @@ type Controller interface {
 	ListEnvironments(ctx context.Context) (Environments, error)
 
 	// ListEnabledRegionsByEnvironment list regions by the environment that are enabled
-	ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (Regions, error)
+	ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (regionmodels.RegionParts, error)
 }
 
 var _ Controller = (*controller)(nil)
@@ -65,20 +66,7 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 	return ofEnvironmentModels(envs), nil
 }
 
-func (c *controller) ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (Regions, error) {
-	environmentRegions, err := c.envRegionMgr.ListEnabledRegionsByEnvironment(ctx, environment)
-	if err != nil {
-		return nil, err
-	}
-
-	regionNames := make([]string, 0)
-	for _, region := range environmentRegions {
-		regionNames = append(regionNames, region.RegionName)
-	}
-	regions, err := c.regionMgr.ListRegionsByNames(ctx, regionNames)
-	if err != nil {
-		return nil, err
-	}
-
-	return ofRegionModels(regions, environmentRegions), nil
+func (c *controller) ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (
+	regionmodels.RegionParts, error) {
+	return c.envRegionMgr.ListEnabledRegionsByEnvironment(ctx, environment)
 }
