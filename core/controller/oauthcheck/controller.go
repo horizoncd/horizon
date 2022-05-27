@@ -30,6 +30,15 @@ type controller struct {
 
 var _ Controller = &controller{}
 
+func NewOauthChecker(oauthManager manager.Manager,
+	manager2 usermanager.Manager, service scope.Service) Controller {
+	return &controller{
+		oauthManager: oauthManager,
+		userManager:  manager2,
+		scopeService: service,
+	}
+}
+
 func (c *controller) LoadAccessTokenUser(ctx context.Context, accessToken string) (user.User, error) {
 	token, err := c.oauthManager.LoadAccessToken(ctx, accessToken)
 	if err != nil {

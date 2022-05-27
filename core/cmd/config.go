@@ -32,6 +32,7 @@ type Config struct {
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
 	GrafanaMapper          grafana.Mapper          `yaml:"grafanaMapper"`
 	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
+	OauthHTMLLocation      string                  `yaml:"oauthHTMLLocation"`
 }
 
 func loadConfig(configFilePath string) (*Config, error) {

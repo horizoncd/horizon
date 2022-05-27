@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"time"
 
 	"g.hz.netease.com/horizon/core/common"
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
@@ -20,6 +21,10 @@ import (
 	envtemplatectl "g.hz.netease.com/horizon/core/controller/envtemplate"
 	groupctl "g.hz.netease.com/horizon/core/controller/group"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
+	oauthservicectl "g.hz.netease.com/horizon/core/controller/oauth"
+	oauthappctl "g.hz.netease.com/horizon/core/controller/oauthapp"
+
+	oauthcheckctl "g.hz.netease.com/horizon/core/controller/oauthcheck"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	sloctl "g.hz.netease.com/horizon/core/controller/slo"
@@ -36,7 +41,10 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/envtemplate"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
+	"g.hz.netease.com/horizon/core/http/api/v1/oauthapp"
+	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
+
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
@@ -48,7 +56,9 @@ import (
 	"g.hz.netease.com/horizon/core/middleware/authenticate"
 	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
+	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
+
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
@@ -57,12 +67,17 @@ import (
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cmdb"
+	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
 	"g.hz.netease.com/horizon/pkg/config/region"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/hook"
 	"g.hz.netease.com/horizon/pkg/hook/handler"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/oauth/generate"
+	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
+	"g.hz.netease.com/horizon/pkg/oauth/scope"
+	oauthstore "g.hz.netease.com/horizon/pkg/oauth/store"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
@@ -73,6 +88,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -84,6 +100,7 @@ type Flags struct {
 	ConfigFile       string
 	RoleConfigFile   string
 	RegionConfigFile string
+	ScopeRoleFile    string
 	Dev              bool
 	Environment      string
 	LogLevel         string
@@ -236,6 +253,35 @@ func Run(flags *Flags) {
 	go memHook.Process()
 	common.ElegantExit(memHook)
 
+	oauthAppStore := oauthstore.NewOauthAppStore(mysqlDB)
+	oauthTokenStore := oauthstore.NewTokenStore(mysqlDB)
+
+	var oauthConfig oauthconfig.Config
+	if err := yaml.Unmarshal(content, &oauthConfig); err != nil {
+		panic(err)
+	} else {
+		log.Printf("the roleConfig = %+v\n", roleConfig)
+	}
+
+	authorizeCodeExpireIn := time.Minute * 30
+	accessTokenExpireIn := time.Hour * 24
+	oauthManager := oauthmanager.NewManager(oauthAppStore, oauthTokenStore,
+		generate.NewAuthorizeGenerate(), authorizeCodeExpireIn, accessTokenExpireIn)
+
+	// init scope service
+	scopeFile, err := os.OpenFile(flags.ScopeRoleFile, os.O_RDONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	content, err = ioutil.ReadAll(scopeFile)
+	if err != nil {
+		panic(err)
+	}
+	scopeService, err := scope.NewFileScopeService(oauthConfig)
+	if err != nil {
+		panic(err)
+	}
+
 	var (
 		rbacSkippers = middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
@@ -260,6 +306,9 @@ func Run(flags *Flags) {
 		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers)
 		applicationRegionCtl = applicationregionctl.NewController(regionConfig)
 		groupCtl             = groupctl.NewController(mservice)
+		oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(oauthManager, usermanager.Mgr, scopeService)
+		oauthAppCtl          = oauthappctl.NewController(oauthManager)
+		oauthServerCtl       = oauthservicectl.NewController(oauthManager)
 	)
 
 	var (
@@ -281,6 +330,8 @@ func Run(flags *Flags) {
 		templateAPI          = template.NewAPI(templateCtl, templateSchemaTagCtl)
 		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
+		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
+		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl, config.OauthHTMLLocation, scopeService)
 	)
 
 	// init server
@@ -306,6 +357,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal"))),
 		auth.Middleware(rbacAuthorizer, rbacSkippers),
+		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers),
 		ormmiddle.MiddlewareSetUserContext(mysqlDB),
 	}
 	r.Use(middlewares...)
@@ -332,6 +384,8 @@ func Run(flags *Flags) {
 	templateschematagapi.RegisterRoutes(r, templateSchemaTagAPI)
 	accessapi.RegisterRoutes(r, accessAPI)
 	applicationregion.RegisterRoutes(r, applicationRegionAPI)
+	oauthapp.RegisterRoutes(r, oauthAppAPI)
+	oauthserver.RegisterRoutes(r, oauthServerAPI)
 
 	// start cloud event server
 	go runCloudEventServer(ormMiddleware, tektonFty, config.CloudEventServerConfig)

@@ -54,7 +54,10 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 			return
 		}
 
-		// 2.
+		// 2. token auth request ( get user by token)
+		if _, err := common.GetToken(c); err == nil {
+			c.Next()
+		}
 
 		// 3. else, get by oidc
 		oidcID := c.Request.Header.Get(config.OIDCIDHeader)
