@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	common2 "g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	memberctx "g.hz.netease.com/horizon/pkg/member/context"
@@ -86,7 +86,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Mem
 		return nil, err
 	}
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common2.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

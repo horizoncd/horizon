@@ -11,7 +11,6 @@ import (
 	"g.hz.netease.com/horizon/core/controller/oauth"
 	"g.hz.netease.com/horizon/core/controller/oauthapp"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -111,7 +110,7 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		return scopeBasics
 	}
 
-	currentUser, err := user.FromContext(c)
+	currentUser, err := common.FromContext(c)
 	if err != nil {
 		response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
 		return
@@ -166,7 +165,7 @@ func (a *API) HandleAuthorizationReq(c *gin.Context) {
 }
 
 func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
-	user, err := user.FromContext(c)
+	user, err := common.FromContext(c)
 	if err != nil {
 		// TODO: redirect
 		response.AbortWithForbiddenError(c, common.Forbidden, err.Error())

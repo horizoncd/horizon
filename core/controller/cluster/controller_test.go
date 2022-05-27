@@ -8,7 +8,6 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationmanangermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
 	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
@@ -428,7 +427,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
-	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
 		Name: "Tony",
 		ID:   uint(1),
 	})

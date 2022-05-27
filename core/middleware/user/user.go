@@ -1,11 +1,10 @@
 package user
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/common"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
@@ -17,8 +16,8 @@ import (
 )
 
 const (
-	ContextUserKey     = "contextUser"
-	HTTPHeaderOperator = "Operator"
+	HTTPHeaderOperator     = "Operator"
+	AuthorizationHeaderKey = "Authorization"
 )
 
 // Middleware check user is exists in db. If not, add user into db.
@@ -44,7 +43,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 				return
 			}
 
-			c.Set(ContextUserKey, &userauth.DefaultInfo{
+			c.Set(common.ContextUserKey, &userauth.DefaultInfo{
 				Name:     u.Name,
 				FullName: u.FullName,
 				ID:       u.ID,
@@ -55,7 +54,9 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 			return
 		}
 
-		// 2. else, get by oidc
+		// 2.
+
+		// 3. else, get by oidc
 		oidcID := c.Request.Header.Get(config.OIDCIDHeader)
 		oidcType := c.Request.Header.Get(config.OIDCTypeHeader)
 		userName := c.Request.Header.Get(config.UserHeader)
@@ -90,7 +91,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 			}
 		}
 		// attach user to context
-		c.Set(ContextUserKey, &userauth.DefaultInfo{
+		common.SetUser(c, &userauth.DefaultInfo{
 			Name:     u.Name,
 			FullName: u.FullName,
 			ID:       u.ID,
@@ -99,20 +100,4 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 		})
 		c.Next()
 	}, skippers...)
-}
-
-func FromContext(ctx context.Context) (userauth.User, error) {
-	u, ok := ctx.Value(ContextUserKey).(userauth.User)
-	if !ok {
-		return nil, herrors.ErrFailedToGetUser
-	}
-	return u, nil
-}
-
-func Key() string {
-	return ContextUserKey
-}
-
-func WithContext(parent context.Context, user userauth.User) context.Context {
-	return context.WithValue(parent, Key(), user) // nolint
 }

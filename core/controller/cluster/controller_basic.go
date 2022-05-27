@@ -8,8 +8,8 @@ import (
 	"html/template"
 	"regexp"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
@@ -91,7 +91,7 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environment,
 	filter string, query *q.Query) (count int, resp []*ListClusterWithFullResponse, err error) {
 	// get current user
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.FromContext(ctx)
 	if err != nil {
 		return 0, nil, perror.WithMessage(err, "no user in context")
 	}
@@ -672,14 +672,14 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		log.Errorf(ctx, "failed to get db from context")
 		return
 	}
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.FromContext(ctx)
 	if err != nil {
 		return
 	}
 
 	newctx := log.WithContext(context.Background(), rid)
 	newctx = orm.NewContext(newctx, db)
-	newctx = user.WithContext(newctx, currentUser)
+	newctx = common.WithContext(newctx, currentUser)
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
 		var err error
@@ -764,13 +764,13 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		log.Errorf(ctx, "failed to get db from context")
 		return
 	}
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.FromContext(ctx)
 	if err != nil {
 		return
 	}
 	newctx := log.WithContext(context.Background(), rid)
 	newctx = orm.NewContext(newctx, db)
-	newctx = user.WithContext(newctx, currentUser)
+	newctx = common.WithContext(newctx, currentUser)
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
 		var err error

@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/oauth"
 	"g.hz.netease.com/horizon/core/controller/oauthapp"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
@@ -64,7 +64,7 @@ func Test(t *testing.T) {
 }
 func UserMiddleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
-		c.Set(user.ContextUserKey, aUser)
+		common.SetUser(c, aUser)
 	}, skippers...)
 }
 
@@ -97,7 +97,7 @@ func TestServer(t *testing.T) {
 	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
 		panic(err)
 	}
-	db = db.WithContext(context.WithValue(context.Background(), user.Key(), aUser))
+	db = db.WithContext(context.WithValue(context.Background(), common.Key(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
 	tokenStore := store.NewTokenStore(db)
@@ -142,7 +142,7 @@ func TestServer(t *testing.T) {
 	api := NewAPI(oauthServerController, oauthAppController, "authFileLoc", authScopeService)
 
 	userMiddleWare := func(c *gin.Context) {
-		c.Set(user.ContextUserKey, aUser)
+		common.SetUser(c, aUser)
 	}
 	// init server
 	r := gin.New()

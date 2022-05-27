@@ -6,7 +6,6 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/user"
-	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
@@ -69,7 +68,7 @@ func (a *API) Search(c *gin.Context) {
 }
 
 func (a *API) Status(c *gin.Context) {
-	u, err := usermiddle.FromContext(c)
+	u, err := common.FromContext(c)
 	if err != nil {
 		response.Abort(c, http.StatusForbidden, common.Forbidden, "user not logged in")
 		return

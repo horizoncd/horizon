@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -49,11 +49,11 @@ func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 		newCtx = log.WithContext(context.Background(), rid)
 	}
 
-	ctxUser, err := user.FromContext(ctx)
+	ctxUser, err := common.FromContext(ctx)
 	if err != nil {
 		log.Warning(ctx, "can not find user in context")
 	} else {
-		newCtx = user.WithContext(newCtx, ctxUser)
+		newCtx = common.WithContext(newCtx, ctxUser)
 	}
 
 	newEvent := &hook.EventCtx{

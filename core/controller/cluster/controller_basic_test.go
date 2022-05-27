@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/q"
 	mockcd "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
@@ -187,7 +187,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	}
 
 	// nolint
-	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
 		Name: "Matt",
 		ID:   uint(2),
 	})

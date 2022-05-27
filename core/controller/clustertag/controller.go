@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
@@ -51,7 +50,7 @@ func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateReques
 	const op = "cluster tag controller: update"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.FromContext(ctx)
 	if err != nil {
 		return errors.E(op, http.StatusInternalServerError,
 			errors.ErrorCode(common.InternalError), "no user in context")

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/environment/manager"
@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
-	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
 		ID: uint(1),
 	})
 	os.Exit(m.Run())

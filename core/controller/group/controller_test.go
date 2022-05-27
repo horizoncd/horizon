@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	membermock "g.hz.netease.com/horizon/mock/pkg/member/service"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
@@ -49,7 +49,7 @@ func GroupValueEqual(g1, g2 *models.Group) bool {
 
 // nolint
 func init() {
-	userCtx := context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+	userCtx := context.WithValue(context.Background(), common.ContextUserKey, &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})
@@ -163,7 +163,7 @@ func TestGetAuthedGroups(t *testing.T) {
 		})
 	}
 	// case admin get all the groups
-	rootUserContext := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{ // nolint
+	rootUserContext := context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{ // nolint
 		ID:    110,
 		Admin: true,
 	})
@@ -172,7 +172,7 @@ func TestGetAuthedGroups(t *testing.T) {
 	assert.Equal(t, 3, len(groups))
 
 	// case normal user get same groups
-	normalUserContext := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{ // nolint
+	normalUserContext := context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{ // nolint
 		ID:    110,
 		Admin: false,
 	})
@@ -1055,7 +1055,7 @@ func TestControllerTransfer(t *testing.T) {
 			name: "twoRecordsTransfer",
 			args: args{
 				// nolint
-				ctx: context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+				ctx: context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
 					ID: 2,
 				}),
 				id:          id,
@@ -1123,7 +1123,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 			name: "updateExist",
 			args: args{
 				// nolint
-				ctx: context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+				ctx: context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
 					ID: 2,
 				}),
 				id: id,

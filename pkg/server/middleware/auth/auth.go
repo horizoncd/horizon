@@ -6,7 +6,6 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/auth"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/rbac"
@@ -35,7 +34,7 @@ func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) 
 			return
 		}
 		// 2. get user
-		currentUser, err := user.FromContext(c)
+		currentUser, err := common.FromContext(c)
 		if err != nil {
 			response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
 			return

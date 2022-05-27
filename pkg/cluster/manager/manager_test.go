@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	db = db.Debug()
 	// nolint
-	db = db.WithContext(context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+	db = db.WithContext(context.WithValue(context.Background(), common.ContextUserKey, &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	}))
@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 	}
 	ctx = orm.NewContext(context.TODO(), db)
 	// nolint
-	ctx = context.WithValue(ctx, user.ContextUserKey, &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.ContextUserKey, &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})

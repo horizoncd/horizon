@@ -8,6 +8,7 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/oauth/generate"
 	"g.hz.netease.com/horizon/pkg/oauth/manager"
+	"g.hz.netease.com/horizon/pkg/oauth/models"
 	oauthmodel "g.hz.netease.com/horizon/pkg/oauth/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"golang.org/x/net/context"
@@ -48,6 +49,7 @@ type AccessTokenResponse struct {
 type Controller interface {
 	GenAuthorizeCode(ctx context.Context, req *AuthorizeReq) (*AuthorizeCodeResponse, error)
 	GenAccessToken(ctx context.Context, req *AccessTokenReq) (*AccessTokenResponse, error)
+	LoadAccessToken(ctx context.Context, token string) (*models.Token, error)
 }
 
 func NewController(authManager manager.Manager) Controller {
@@ -117,4 +119,7 @@ func (c *controller) GenAccessToken(ctx context.Context, req *AccessTokenReq) (*
 		Scope:       token.Scope,
 		TokenType:   "bearer",
 	}, err
+}
+func (c *controller) LoadAccessToken(ctx context.Context, token string) (*models.Token, error) {
+	return c.oauthManager.LoadAccessToken(ctx, token)
 }

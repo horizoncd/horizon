@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	hauth "g.hz.netease.com/horizon/pkg/auth"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/rbac"
@@ -37,7 +37,7 @@ func NewController(authorizer rbac.Authorizer,
 func (c *controller) Review(ctx context.Context, apis []API) (map[string]map[string]*ReviewResult, error) {
 	reviewResponse := make(map[string]map[string]*ReviewResult)
 	// get user info
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.FromContext(ctx)
 	if err != nil {
 		return nil, perror.WithMessage(err, "failed to get user info")
 	}

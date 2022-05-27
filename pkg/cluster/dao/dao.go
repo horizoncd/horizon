@@ -7,8 +7,6 @@ import (
 	"time"
 
 	querycommon "g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/middleware/user"
-
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
@@ -57,7 +55,7 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 	if err != nil {
 		return nil, err
 	}
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := querycommon.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +199,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := querycommon.FromContext(ctx)
 	if err != nil {
 		return err
 	}

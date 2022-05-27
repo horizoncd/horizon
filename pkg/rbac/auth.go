@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/auth"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/member/models"
@@ -49,7 +49,7 @@ const (
 func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.Decision,
 	string, error) {
 	// 0. check (admin allows everything, and some are not checked)
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.FromContext(ctx)
 	if err != nil {
 		return auth.DecisionDeny, AnonymousUser, nil
 	}

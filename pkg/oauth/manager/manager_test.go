@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -301,7 +301,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
 		panic(err)
 	}
-	db = db.WithContext(context.WithValue(context.Background(), user.Key(), aUser))
+	db = db.WithContext(context.WithValue(context.Background(), common.Key(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
 	tokenStore = store.NewTokenStore(db)

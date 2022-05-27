@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/group"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -50,7 +50,7 @@ var (
 
 // nolint
 func init() {
-	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
 		Name:     contextUserName,
 		FullName: contextUserFullName,
 		ID:       contextUserID,

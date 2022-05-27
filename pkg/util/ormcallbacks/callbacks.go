@@ -1,7 +1,7 @@
 package callbacks
 
 import (
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"gorm.io/gorm"
 )
@@ -15,7 +15,7 @@ const (
 func addCreatedByUpdatedByForCreateCallback(db *gorm.DB) {
 	field := db.Statement.Schema.LookUpField(_createdBy)
 	if field != nil {
-		currentUser, err := user.FromContext(db.Statement.Context)
+		currentUser, err := common.FromContext(db.Statement.Context)
 		if err != nil {
 			db.Error = err
 			return
@@ -25,7 +25,7 @@ func addCreatedByUpdatedByForCreateCallback(db *gorm.DB) {
 
 	field = db.Statement.Schema.LookUpField(_updatedBy)
 	if field != nil {
-		currentUser, err := user.FromContext(db.Statement.Context)
+		currentUser, err := common.FromContext(db.Statement.Context)
 		if err != nil {
 			db.Error = err
 			return
@@ -38,7 +38,7 @@ func addCreatedByUpdatedByForCreateCallback(db *gorm.DB) {
 func addUpdatedByForUpdateDeleteCallback(db *gorm.DB) {
 	field := db.Statement.Schema.LookUpField(_updatedBy)
 	if field != nil {
-		currentUser, err := user.FromContext(db.Statement.Context)
+		currentUser, err := common.FromContext(db.Statement.Context)
 		if err != nil {
 			log.Errorf(db.Statement.Context, "context in gorm is: %+v", db.Statement.Context)
 			db.Error = err

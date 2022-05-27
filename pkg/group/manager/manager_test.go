@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -55,7 +55,7 @@ func getGroup(parentID uint, name, path string) *models.Group {
 
 func init() {
 	// nolint
-	userCtx := context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+	userCtx := context.WithValue(context.Background(), common.ContextUserKey, &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})

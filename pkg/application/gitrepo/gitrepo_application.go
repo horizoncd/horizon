@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"sync"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -210,7 +210,7 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 
 func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, application, repo string,
 	action gitlablib.FileAction, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.FromContext(ctx)
 	if err != nil {
 		return err
 	}

@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
@@ -389,7 +389,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.C
 }
 
 func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
-	currenUser, err := user.FromContext(ctx)
+	currenUser, err := common.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

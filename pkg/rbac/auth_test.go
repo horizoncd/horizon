@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	muser "g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	servicemock "g.hz.netease.com/horizon/mock/pkg/member/service"
 	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/auth"
@@ -46,7 +46,7 @@ func TestAuthMember(t *testing.T) {
 		Path:            "",
 	}
 
-	ctx = context.WithValue(ctx, muser.Key(), defaultUser)
+	ctx = context.WithValue(ctx, common.Key(), defaultUser)
 	decision, reason, err := testAuthorizer.Authorize(ctx, authRecord)
 	assert.Nil(t, err)
 	assert.Equal(t, auth.DecisionAllow, decision)
