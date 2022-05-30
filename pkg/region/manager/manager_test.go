@@ -288,7 +288,7 @@ func Test_manager_DeleteByID(t *testing.T) {
 		RegionName:      region.Name,
 	})
 
-	cluster, err := clustermanager.Mgr.Create(ctx, &clustermodels.Cluster{
+	_, err := clustermanager.Mgr.Create(ctx, &clustermodels.Cluster{
 		ApplicationID:   0,
 		Name:            "1",
 		EnvironmentName: "1",
@@ -300,7 +300,7 @@ func Test_manager_DeleteByID(t *testing.T) {
 	assert.NotNil(t, err)
 	t.Logf("%+v", err)
 
-	_ = clustermanager.Mgr.DeleteByID(ctx, cluster.ID)
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&clustermodels.Cluster{})
 	err = Mgr.DeleteByID(ctx, region.ID)
 	assert.Nil(t, err)
 

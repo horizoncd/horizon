@@ -212,13 +212,13 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 
 		// remove records from environmentRegion table
 		res = tx.Where("region_name = ?", regionInDB.Name).Delete(&envregionmodels.EnvironmentRegion{})
-		if res != nil {
+		if res.Error != nil {
 			return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())
 		}
 
 		// remove region itself
 		res = tx.Delete(&models.Region{}, id)
-		if res != nil {
+		if res.Error != nil {
 			return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())
 		}
 
