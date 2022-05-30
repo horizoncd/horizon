@@ -186,7 +186,7 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 				selectors: groupmodels.RegionSelectors{
 					{
 						Key:    "a",
-						Values: []string{"1,2"},
+						Values: []string{"1", "2"},
 					},
 				},
 			},
