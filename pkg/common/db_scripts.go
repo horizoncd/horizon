@@ -142,7 +142,6 @@ const (
 	RegionListAll       = "select * from tb_region where deleted_ts = 0"
 	RegionGetByName     = "select * from tb_region where name = ? and deleted_ts = 0"
 	RegionGetByID       = "select * from tb_region where id = ? and deleted_ts = 0"
-	RegionListByNames   = "select * from tb_region where name in ? and deleted_ts = 0"
 	RegionGetByHarborID = "select * from tb_region where harbor_id = ? and deleted_ts = 0"
 	RegionListByTags    = "select r.name, r.display_name from tb_region r " +
 		"join tb_tag tg on r.id = tg.resource_id " +

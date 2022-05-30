@@ -78,6 +78,21 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, hzRegionEntity)
 	assert.Equal(t, hzRegionEntity.Harbor.Server, harbor.Server)
+
+	// test updateByID
+	err = Mgr.UpdateByID(ctx, jdRegion.ID, &models.Region{
+		Name:          "jd-new",
+		DisplayName:   "",
+		Server:        "",
+		Certificate:   "",
+		IngressDomain: "",
+		HarborID:      harbor.ID,
+		Disabled:      true,
+	})
+	assert.Nil(t, err)
+	regions, _ = Mgr.ListAll(ctx)
+	assert.Equal(t, "jd", regions[1].Name)
+	assert.Equal(t, true, regions[1].Disabled)
 }
 
 func TestMain(m *testing.M) {

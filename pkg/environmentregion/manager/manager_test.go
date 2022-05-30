@@ -5,10 +5,12 @@ import (
 	"os"
 	"testing"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	"g.hz.netease.com/horizon/pkg/environmentregion/models"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 
@@ -93,6 +95,13 @@ func Test(t *testing.T) {
 	devHzErNew, err := Mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, devHzErNew.IsDefault, false)
+
+	// test deleteByID
+	err = Mgr.DeleteByID(ctx, devHzErNew.ID)
+	assert.Nil(t, err)
+	_, _ = Mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
+	_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
+	assert.True(t, ok)
 }
 
 func TestMain(m *testing.M) {

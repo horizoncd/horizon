@@ -26,8 +26,6 @@ type DAO interface {
 	GetRegion(ctx context.Context, regionName string) (*models.Region, error)
 	// GetRegionByID get a region by id
 	GetRegionByID(ctx context.Context, id uint) (*models.Region, error)
-	// ListByNames list by names
-	ListByNames(ctx context.Context, regionNames []string) ([]*models.Region, error)
 	// UpdateByID update region by id
 	UpdateByID(ctx context.Context, id uint, region *models.Region) error
 	// DeleteByID delete region by id
@@ -161,22 +159,6 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 	}
 
 	return &region, result.Error
-}
-
-func (d *dao) ListByNames(ctx context.Context, regionNames []string) ([]*models.Region, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var regions []*models.Region
-	result := db.Raw(common.RegionListByNames, regionNames).Scan(&regions)
-
-	if result.Error != nil {
-		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
-	}
-
-	return regions, result.Error
 }
 
 // DeleteByID implements DAO

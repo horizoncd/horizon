@@ -93,15 +93,15 @@ func getRegion(c *gin.Context, applicationRegions []*models.ApplicationRegion, e
 
 func getDefaultRegion(c *gin.Context, environment string) string {
 	// getDefaultRegion get default region of environment
-	appRegion, err := manager.Mgr.GetDefaultRegionByEnvironment(c, environment)
+	environmentRegion, err := manager.Mgr.GetDefaultRegionByEnvironment(c, environment)
 	if err != nil {
 		log.Errorf(c, "no default region for environment: %s, err: %+v", environment, err)
 		return ""
 	}
-	if appRegion == nil {
+	if environmentRegion == nil {
 		log.Errorf(c, "no default region for environment: %s", environment)
 		return ""
 	}
 
-	return appRegion.RegionName
+	return environmentRegion.RegionName
 }

@@ -23,7 +23,6 @@ type Manager interface {
 	ListAll(ctx context.Context) ([]*models.Region, error)
 	// ListRegionEntities list all region entity
 	ListRegionEntities(ctx context.Context) ([]*models.RegionEntity, error)
-	ListRegionsByNames(ctx context.Context, regionNames []string) ([]*models.Region, error)
 	// GetRegionEntity get region entity, todo(gjq) add cache
 	GetRegionEntity(ctx context.Context, regionName string) (*models.RegionEntity, error)
 	// UpdateByID update region by id
@@ -78,10 +77,6 @@ func (m *manager) ListRegionEntities(ctx context.Context) (ret []*models.RegionE
 		})
 	}
 	return
-}
-
-func (m *manager) ListRegionsByNames(ctx context.Context, regionNames []string) ([]*models.Region, error) {
-	return m.regionDAO.ListByNames(ctx, regionNames)
 }
 
 func (m *manager) GetRegionEntity(ctx context.Context,
