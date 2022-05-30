@@ -99,7 +99,7 @@ func Test(t *testing.T) {
 	// test deleteByID
 	err = Mgr.DeleteByID(ctx, devHzErNew.ID)
 	assert.Nil(t, err)
-	_, _ = Mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
+	_, err = Mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
 	_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
 	assert.True(t, ok)
 }
