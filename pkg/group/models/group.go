@@ -19,6 +19,11 @@ type Group struct {
 	UpdatedBy       uint
 }
 
+type GroupRegionSelectors struct {
+	*Group
+	RegionSelectors RegionSelectors
+}
+
 type GroupOrApplication struct {
 	global.Model
 	Name        string

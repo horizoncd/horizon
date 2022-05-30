@@ -419,7 +419,7 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 		return &group, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
 	}
 
-	return &group, result.Error
+	return &group, nil
 }
 
 func (d *dao) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error) {

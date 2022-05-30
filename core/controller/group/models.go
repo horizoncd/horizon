@@ -50,3 +50,8 @@ type RegionSelector struct {
 }
 
 type RegionSelectors []*RegionSelector
+
+type StructuredGroup struct {
+	*Group
+	RegionSelectors RegionSelectors `json:"regionSelectors"`
+}

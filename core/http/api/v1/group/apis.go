@@ -107,13 +107,13 @@ func (a *API) GetGroup(c *gin.Context) {
 		return
 	}
 
-	child, err := a.groupCtl.GetByID(c, uint(intID))
+	structuredGroup, err := a.groupCtl.GetByID(c, uint(intID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
 	}
 
-	response.SuccessWithData(c, child)
+	response.SuccessWithData(c, structuredGroup)
 }
 
 func (a *API) ListAuthedGroup(c *gin.Context) {
@@ -306,7 +306,7 @@ func (a *API) SearchGroups(c *gin.Context) {
 }
 
 func (a *API) UpdateRegionSelector(c *gin.Context) {
-	groupID := c.Query(_paramGroupID)
+	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.ParseUint(groupID, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
