@@ -59,6 +59,7 @@ func Test(t *testing.T) {
 	devHzEr, err := Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz",
+		IsDefault:       true,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, devHzEr)
@@ -76,6 +77,22 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(regions))
 	assert.Equal(t, "hz", regions[0].RegionName)
 	t.Logf("%v", regions[0])
+
+	// test SetEnvironmentRegionToDefaultByID
+	r2, _ := Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
+		EnvironmentName: devEnv.Name,
+		RegionName:      "hz1",
+	})
+
+	err = Mgr.SetEnvironmentRegionToDefaultByID(ctx, r2.ID)
+	assert.Nil(t, err)
+	r2New, err := Mgr.GetEnvironmentRegionByID(ctx, r2.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, r2New.IsDefault, true)
+
+	devHzErNew, err := Mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, devHzErNew.IsDefault, false)
 }
 
 func TestMain(m *testing.M) {
@@ -83,7 +100,6 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&envmodels.Environment{}); err != nil {
 		panic(err)
 	}
-
 	if err := db.AutoMigrate(&models.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}

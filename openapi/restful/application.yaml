@@ -335,7 +335,6 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-
   /apis/core/v1/applications/{applicationID}/envtemplates?environment={environment}:
     parameters:
       - name: applicationID
@@ -449,7 +448,6 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-
   /apis/core/v1/applications/{applicationID}/transfer?groupID={groupID}:
     parameters:
       - name: applicationID
@@ -460,7 +458,6 @@ paths:
         in: query
         description: The id of the group that the application transfers to.
         required: true
-
   /apis/core/v1/applications/{applicationID}/defaultregions:
     parameters:
       - name: applicationID
@@ -527,6 +524,50 @@ paths:
       responses:
         "200":
           description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/applications/{applicationID}/selectableregions?env={env}:
+    parameters:
+      - name: applicationID
+        in: path
+        description: application id
+        required: true
+      - name: env
+        in: query
+        description: enviroment name
+        required: env
+    get:
+      tags:
+        - application
+      operationId: listSelectableRegions
+      summary: list selectable regions of a application
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":[
+                          {
+                              "name": "yq",
+                              "displayName": "义桥"
+                          },
+                          {
+                              "name": "dg",
+                              "displayName": "东冠"
+                          },
+                          {
+                              "name": "eks",
+                              "displayName": "海外EKS"
+                          }
+                      ]
+                  }
         default:
           description: Unexpected error
           content:

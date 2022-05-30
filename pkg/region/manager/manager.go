@@ -30,6 +30,8 @@ type Manager interface {
 	UpdateByID(ctx context.Context, id uint, region *models.Region) error
 	// ListByRegionSelectors list region by tags
 	ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (models.RegionParts, error)
+	// DeleteByID delete region by id
+	DeleteByID(ctx context.Context, id uint) error
 }
 
 type manager struct {
@@ -133,4 +135,8 @@ func (m *manager) getHarborByRegion(ctx context.Context, region *models.Region) 
 func (m *manager) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (
 	models.RegionParts, error) {
 	return m.regionDAO.ListByRegionSelectors(ctx, selectors)
+}
+
+func (m *manager) DeleteByID(ctx context.Context, id uint) error {
+	return m.regionDAO.DeleteByID(ctx, id)
 }

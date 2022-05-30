@@ -512,9 +512,11 @@ func Test_manager_GetSelectableRegions(t *testing.T) {
 		Name: "11",
 		Path: "pp",
 		RegionSelector: `- key: "a"
+  operator: "in"
   values: 
     - "1"
 - key: "b"
+  operator: "in"
   values: 
     - "1"
 `,

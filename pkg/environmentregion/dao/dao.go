@@ -192,12 +192,12 @@ func (d *dao) SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) er
 
 	if currentDefaultRegion.ID != id {
 		return db.Transaction(func(tx *gorm.DB) error {
-			result := db.Exec(common.EnvironmentRegionUnsetDefaultByID, id)
+			result := tx.Exec(common.EnvironmentRegionUnsetDefaultByID, currentDefaultRegion.ID)
 			if result.Error != nil {
 				return herrors.NewErrUpdateFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 			}
 
-			result = db.Exec(common.EnvironmentRegionSetDefaultByID, id)
+			result = tx.Exec(common.EnvironmentRegionSetDefaultByID, id)
 			if result.Error != nil {
 				return herrors.NewErrUpdateFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 			}

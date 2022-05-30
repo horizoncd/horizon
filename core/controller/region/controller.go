@@ -16,6 +16,7 @@ type Controller interface {
 	ListRegions(ctx context.Context) ([]*Region, error)
 	Create(ctx context.Context, request *CreateRegionRequest) (uint, error)
 	UpdateByID(ctx context.Context, id uint, request *UpdateRegionRequest) error
+	DeleteByID(ctx context.Context, id uint) error
 }
 
 func NewController() Controller {
@@ -26,6 +27,10 @@ type controller struct {
 	regionMgr regionmanager.Manager
 }
 
+func (c controller) DeleteByID(ctx context.Context, id uint) error {
+	return c.regionMgr.DeleteByID(ctx, id)
+}
+
 func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegionRequest) error {
 	err := c.regionMgr.UpdateByID(ctx, id, &models.Region{
 		DisplayName:   request.DisplayName,
@@ -33,6 +38,7 @@ func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegi
 		Certificate:   request.Certificate,
 		IngressDomain: request.IngressDomain,
 		HarborID:      request.HarborID,
+		Disabled:      request.Disabled,
 	})
 	if err != nil {
 		return err

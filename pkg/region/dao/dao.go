@@ -31,7 +31,7 @@ type DAO interface {
 	// UpdateByID update region by id
 	UpdateByID(ctx context.Context, id uint, region *models.Region) error
 	// DeleteByID delete region by id
-	DeleteByID(ctx context.Context, id uint, region *models.Region) error
+	DeleteByID(ctx context.Context, id uint) error
 	// ListByRegionSelectors list region by tags
 	ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (models.RegionParts, error)
 }
@@ -180,13 +180,13 @@ func (d *dao) ListByNames(ctx context.Context, regionNames []string) ([]*models.
 }
 
 // DeleteByID implements DAO
-func (d *dao) DeleteByID(ctx context.Context, id uint, region *models.Region) error {
+func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	db, res := orm.FromContext(ctx)
 	if res != nil {
 		return res
 	}
 
-	// check en exist
+	// check region exist
 	regionInDB, res := d.GetRegionByID(ctx, id)
 	if res != nil {
 		return res
@@ -194,7 +194,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint, region *models.Region) er
 
 	// check if there are clusters using the region
 	var count int64
-	result := db.Exec(common.ClusterCountByRegionName, regionInDB.Name).Scan(&count)
+	result := db.Raw(common.ClusterCountByRegionName, regionInDB.Name).Scan(&count)
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())
 	}

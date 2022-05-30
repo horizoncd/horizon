@@ -79,3 +79,25 @@ func (a *API) Create(c *gin.Context) {
 
 	response.SuccessWithData(c, id)
 }
+
+func (a *API) DeleteByID(c *gin.Context) {
+	regionIDStr := c.Param(_regionIDParam)
+	regionID, err := strconv.ParseUint(regionIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid regionID: %s, err: %s",
+			regionIDStr, err.Error())))
+		return
+	}
+
+	err = a.regionCtl.DeleteByID(c, uint(regionID))
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.Success(c)
+}
