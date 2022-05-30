@@ -1,43 +1,53 @@
-package templateschematag
+package tag
 
 import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/controller/templateschematag"
+	"g.hz.netease.com/horizon/core/controller/tag"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
+
 	"github.com/gin-gonic/gin"
 )
 
 const (
-	_clusterIDParam = "clusterID"
+	_resourceTypeParam = "resourceType"
+	_resourceIDParam   = "resourceID "
 )
 
 type API struct {
-	templateSchemaTagCtl templateschematag.Controller
+	tagCtl tag.Controller
 }
 
-func NewAPI(tagCtl templateschematag.Controller) *API {
+func NewAPI(tagCtl tag.Controller) *API {
 	return &API{
-		templateSchemaTagCtl: tagCtl,
+		tagCtl: tagCtl,
 	}
 }
 
 func (a *API) List(c *gin.Context) {
-	const op = "template schema tag: list"
-	clusterIDStr := c.Param(_clusterIDParam)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	const op = "tag: list"
+	resourceType := c.Param(_resourceTypeParam)
+	resourceIDStr := c.Param(_resourceIDParam)
+	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.
-			WithErrMsg(fmt.Sprintf("invalid cluster id: %s", clusterIDStr)))
+			WithErrMsg(fmt.Sprintf("invalid resource id: %s", resourceIDStr)))
 		return
 	}
 
-	resp, err := a.templateSchemaTagCtl.List(c, uint(clusterID))
+	if resourceType != tagmodels.TypeCluster {
+		response.AbortWithRPCError(c, rpcerror.ParamError.
+			WithErrMsg("only support cluster tag now"))
+		return
+	}
+
+	resp, err := a.tagCtl.List(c, resourceType, uint(resourceID))
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
@@ -51,22 +61,29 @@ func (a *API) List(c *gin.Context) {
 }
 
 func (a *API) Update(c *gin.Context) {
-	const op = "template schema tag: update"
-	clusterIDStr := c.Param(_clusterIDParam)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	const op = "tag: update"
+	resourceType := c.Param(_resourceTypeParam)
+	resourceIDStr := c.Param(_resourceIDParam)
+	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.
-			WithErrMsg(fmt.Sprintf("invalid cluster id: %s", clusterIDStr)))
+			WithErrMsg(fmt.Sprintf("invalid resource id: %s", resourceIDStr)))
 		return
 	}
 
-	var request *templateschematag.UpdateRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
+	if resourceType != tagmodels.TypeCluster {
 		response.AbortWithRPCError(c, rpcerror.ParamError.
-			WithErrMsg(fmt.Sprintf("invalid body: %s, err: %s", clusterIDStr, err.Error())))
+			WithErrMsg("only support cluster tag now"))
 		return
 	}
-	err = a.templateSchemaTagCtl.Update(c, uint(clusterID), request)
+
+	var request *tag.UpdateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.
+			WithErrMsg(fmt.Sprintf("invalid request body, err: %s", err.Error())))
+		return
+	}
+	err = a.tagCtl.Update(c, resourceType, uint(resourceID), request)
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))

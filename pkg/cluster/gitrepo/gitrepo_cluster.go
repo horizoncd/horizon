@@ -12,12 +12,12 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
-	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/helmrepo"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -95,8 +95,8 @@ type BaseParams struct {
 
 type CreateClusterParams struct {
 	*BaseParams
-	ClusterTags []*clustertagmodels.ClusterTag
-	Image       string
+	Tags  []*tagmodels.Tag
+	Image string
 }
 
 type UpdateClusterParams struct {
@@ -145,7 +145,7 @@ type ClusterGitRepo interface {
 	GetEnvValue(ctx context.Context, application, cluster, templateName string) (*EnvValue, error)
 	Rollback(ctx context.Context, application, cluster, commit string) (string, error)
 	UpdateTags(ctx context.Context, application, cluster, templateName string,
-		clusterTags []*clustertagmodels.ClusterTag) error
+		tags []*tagmodels.Tag) error
 }
 
 type clusterGitRepo struct {
@@ -353,7 +353,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	}
 	marshal(&chartYAML, &err6, chart)
 	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.TemplateName))
-	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.TemplateName, params.ClusterTags))
+	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.TemplateName, params.Tags))
 
 	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8} {
 		if err != nil {
@@ -878,7 +878,7 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 }
 
 func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, templateName string,
-	clusterTags []*clustertagmodels.ClusterTag) (err error) {
+	tags []*tagmodels.Tag) (err error) {
 	const op = "cluster git repo: update tags"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -890,7 +890,7 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
 	var tagsYAML []byte
-	marshal(&tagsYAML, &err, assembleTags(templateName, clusterTags))
+	marshal(&tagsYAML, &err, assembleTags(templateName, tags))
 	if err != nil {
 		return err
 	}
@@ -914,16 +914,16 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 	}, struct {
 		Tags []*Tag `json:"tags"`
 	}{
-		Tags: func(clusterTags []*clustertagmodels.ClusterTag) []*Tag {
-			tags := make([]*Tag, 0, len(clusterTags))
-			for _, tag := range clusterTags {
-				tags = append(tags, &Tag{
+		Tags: func(tags []*tagmodels.Tag) []*Tag {
+			clusterTags := make([]*Tag, 0, len(tags))
+			for _, tag := range tags {
+				clusterTags = append(clusterTags, &Tag{
 					Key:   tag.Key,
 					Value: tag.Value,
 				})
 			}
-			return tags
-		}(clusterTags),
+			return clusterTags
+		}(tags),
 	})
 
 	_, err = g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
@@ -1091,13 +1091,13 @@ func assembleRestart(templateName string) map[string]map[string]string {
 }
 
 func assembleTags(templateName string,
-	clusterTags []*clustertagmodels.ClusterTag) map[string]map[string]map[string]string {
-	const tags = "tags"
+	tags []*tagmodels.Tag) map[string]map[string]map[string]string {
+	const tagsKey = "tags"
 	ret := make(map[string]map[string]map[string]string)
 	ret[templateName] = make(map[string]map[string]string)
-	ret[templateName][tags] = make(map[string]string)
-	for _, tag := range clusterTags {
-		ret[templateName][tags][tag.Key] = tag.Value
+	ret[templateName][tagsKey] = make(map[string]string)
+	for _, tag := range tags {
+		ret[templateName][tagsKey][tag.Key] = tag.Value
 	}
 	return ret
 }

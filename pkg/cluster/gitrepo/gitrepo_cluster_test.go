@@ -14,11 +14,11 @@ import (
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"github.com/golang/mock/gomock"
 
@@ -234,7 +234,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("%v", com)
 
-	err = r.UpdateTags(ctx, application, cluster, templateName, []*clustertagmodels.ClusterTag{
+	err = r.UpdateTags(ctx, application, cluster, templateName, []*tagmodels.Tag{
 		{
 			Key:   "a",
 			Value: "b",

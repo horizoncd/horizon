@@ -228,19 +228,14 @@ func Test(t *testing.T) {
 	tektonFty.EXPECT().GetTektonCollector(gomock.Any()).Return(tektonCollector, nil).AnyTimes()
 
 	envMgr := envmanager.Mgr
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
-		EnvironmentName: "test",
-		RegionName:      "hz",
-	})
-	assert.Nil(t, err)
-	assert.NotNil(t, er)
 
 	clusterMgr := clustermanager.Mgr
 	cluster, err := clusterMgr.Create(ctx, &clustermodel.Cluster{
-		Name:                "cluster",
-		EnvironmentRegionID: er.ID,
-		CreatedBy:           0,
-		UpdatedBy:           0,
+		Name:            "cluster",
+		EnvironmentName: "test",
+		RegionName:      "hz",
+		CreatedBy:       0,
+		UpdatedBy:       0,
 	}, nil, nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, cluster)

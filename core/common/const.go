@@ -7,6 +7,7 @@ const (
 	Filter          = "filter"
 	Template        = "template"
 	TemplateRelease = "templateRelease"
+	TagSelector     = "tagSelector"
 
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20

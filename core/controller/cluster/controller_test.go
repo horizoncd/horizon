@@ -665,20 +665,20 @@ func Test(t *testing.T) {
 	assert.Equal(t, resp.TemplateInput.Application, applicationJSONBlob)
 	assert.Equal(t, resp.TemplateInput.Pipeline, pipelineJSONBlob)
 
-	count, respList, err := c.ListCluster(ctx, application.ID, []string{"test"}, "", nil)
+	count, respList, err := c.ListCluster(ctx, application.ID, []string{"test"}, "", nil, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, count, 1)
 	t.Logf("%v", respList[0])
 	assert.Equal(t, respList[0].Template.Name, "javaapp")
 	assert.Equal(t, respList[0].Template.Release, "v1.0.1")
 
-	count, respList, err = c.ListCluster(ctx, application.ID, []string{}, "", nil)
+	count, respList, err = c.ListCluster(ctx, application.ID, []string{}, "", nil, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, count, 2)
 	t.Logf("%+v", respList[0].Scope)
 	t.Logf("%+v", respList[1].Scope)
 
-	count, respList, err = c.ListCluster(ctx, application.ID, []string{"test", "dev"}, "", nil)
+	count, respList, err = c.ListCluster(ctx, application.ID, []string{"test", "dev"}, "", nil, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, count, 2)
 	t.Logf("%+v", respList[0].Scope)

@@ -14,7 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
-	clustertagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
+	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	templateschemamodels "g.hz.netease.com/horizon/pkg/templateschematag/models"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -67,7 +67,7 @@ func Test(t *testing.T) {
 
 	c = &controller{
 		clusterMgr:          clusterMgr,
-		clusterSchemaTagMgr: clustertagmanager.Mgr,
+		clusterSchemaTagMgr: tagmanager.Mgr,
 	}
 
 	clusterID := cluster.ID

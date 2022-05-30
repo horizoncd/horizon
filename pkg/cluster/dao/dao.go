@@ -4,42 +4,45 @@ import (
 	"context"
 	goerrors "errors"
 	"fmt"
+	"strings"
 	"time"
 
-	querycommon "g.hz.netease.com/horizon/core/common"
+	common "g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
-	clustertagmodels "g.hz.netease.com/horizon/pkg/clustertag/models"
-	"g.hz.netease.com/horizon/pkg/common"
+	sqlcommon "g.hz.netease.com/horizon/pkg/common"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+
 	"gorm.io/gorm"
 )
 
 var (
 	columnInTable = map[string]string{
-		querycommon.Template:        "`c`.`template`",
-		querycommon.TemplateRelease: "`c`.`template_release`",
+		common.Template:        "`c`.`template`",
+		common.TemplateRelease: "`c`.`template_release`",
 	}
 )
 
 type DAO interface {
 	Create(ctx context.Context, cluster *models.Cluster,
-		clusterTags []*clustertagmodels.ClusterTag, extraMembers map[*usermodels.User]string) (*models.Cluster, error)
+		tags []*tagmodels.Tag, extraMembers map[*usermodels.User]string) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
-	ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
-		filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+	ListByApplicationEnvsTags(ctx context.Context, applicationID uint, environments []string,
+		filter string, query *q.Query, ts []tagmodels.TagSelector) (int, []*models.ClusterWithRegion, error)
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
-	ListByNameFuzzily(context.Context, string, string, *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+	ListByNameFuzzily(context.Context, string, string, *q.Query) (int, []*models.ClusterWithRegion, error)
 	ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
-		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error)
+		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error)
 }
 
 type dao struct {
@@ -50,12 +53,12 @@ func NewDAO() DAO {
 }
 
 func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
-	clusterTags []*clustertagmodels.ClusterTag, extraMembers map[*usermodels.User]string) (*models.Cluster, error) {
+	tags []*tagmodels.Tag, extraMembers map[*usermodels.User]string) (*models.Cluster, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	currentUser, err := querycommon.FromContext(ctx)
+	currentUser, err := common.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,14 +103,15 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 			return herrors.NewErrInsertFailed(herrors.ClusterInDB, "create member error")
 		}
 
-		if len(clusterTags) == 0 {
+		if len(tags) == 0 {
 			return nil
 		}
-		for i := 0; i < len(clusterTags); i++ {
-			clusterTags[i].ClusterID = cluster.ID
+		for i := 0; i < len(tags); i++ {
+			tags[i].ResourceType = tagmodels.TypeCluster
+			tags[i].ResourceID = cluster.ID
 		}
 
-		result = tx.Create(clusterTags)
+		result = tx.Create(tags)
 		if result.Error != nil {
 			return herrors.NewErrInsertFailed(herrors.ClusterInDB, result.Error.Error())
 		}
@@ -125,7 +129,7 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
 	}
 
 	var cluster models.Cluster
-	result := db.Raw(common.ClusterQueryByID, id).First(&cluster)
+	result := db.Raw(sqlcommon.ClusterQueryByID, id).First(&cluster)
 
 	if result.Error != nil {
 		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -144,7 +148,7 @@ func (d *dao) GetByName(ctx context.Context, clusterName string) (*models.Cluste
 	}
 
 	var cluster models.Cluster
-	result := db.Raw(common.ClusterQueryByName, clusterName).Scan(&cluster)
+	result := db.Raw(sqlcommon.ClusterQueryByName, clusterName).Scan(&cluster)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
@@ -166,7 +170,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 	var clusterInDB models.Cluster
 	if err := db.Transaction(func(tx *gorm.DB) error {
 		// 1. get application in db first
-		result := tx.Raw(common.ClusterQueryByID, id).Scan(&clusterInDB)
+		result := tx.Raw(sqlcommon.ClusterQueryByID, id).Scan(&clusterInDB)
 		if result.Error != nil {
 			return herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
 		}
@@ -180,7 +184,8 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 		clusterInDB.GitBranch = cluster.GitBranch
 		clusterInDB.TemplateRelease = cluster.TemplateRelease
 		clusterInDB.Status = cluster.Status
-		clusterInDB.EnvironmentRegionID = cluster.EnvironmentRegionID
+		clusterInDB.EnvironmentName = cluster.EnvironmentName
+		clusterInDB.RegionName = cluster.RegionName
 
 		// 3. save cluster after updated
 		if err := tx.Save(&clusterInDB).Error; err != nil {
@@ -199,12 +204,12 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	currentUser, err := querycommon.FromContext(ctx)
+	currentUser, err := common.FromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	result := db.Exec(common.ClusterDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
+	result := db.Exec(sqlcommon.ClusterDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
 
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.ClusterInDB, result.Error.Error())
@@ -213,8 +218,8 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (d *dao) ListByApplicationAndEnvs(ctx context.Context, applicationID uint, environments []string,
-	filter string, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+func (d *dao) ListByApplicationEnvsTags(ctx context.Context, applicationID uint, environments []string,
+	filter string, query *q.Query, ts []tagmodels.TagSelector) (int, []*models.ClusterWithRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -224,28 +229,54 @@ func (d *dao) ListByApplicationAndEnvs(ctx context.Context, applicationID uint, 
 	limit := query.PageSize
 
 	like := "%" + filter + "%"
-	var clusters []*models.ClusterWithEnvAndRegion
+	var clusters []*models.ClusterWithRegion
 
 	var result *gorm.DB
-	if len(environments) > 0 {
-		result = db.Raw(common.ClusterQueryByApplicationAndEnvs, applicationID,
-			environments, like, limit, offset).Scan(&clusters)
-	} else {
-		result = db.Raw(common.ClusterQueryByApplication, applicationID, like, limit, offset).Scan(&clusters)
-	}
-
-	if result.Error != nil {
-		return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
-	}
-
 	var count int
-	if len(environments) > 0 {
-		result = db.Raw(common.ClusterCountByApplicationAndEnvs, applicationID, environments, like).Scan(&count)
+
+	if len(ts) > 0 {
+		// todo: support other operators
+		var conditions []string
+		var params []interface{}
+		params = append(params, applicationID, tagmodels.TypeCluster, like)
+		for _, tagSelector := range ts {
+			if tagSelector.Operator != tagmodels.Equals && tagSelector.Operator != tagmodels.In {
+				return 0, nil, perror.Wrapf(herrors.ErrParamInvalid,
+					fmt.Sprintf("this operator %s is not supported yet", tagSelector.Operator))
+			}
+			conditions = append(conditions, "(tg.tag_key = ? and tg.tag_value in ?)")
+			params = append(params, tagSelector.Key, tagSelector.Values.List())
+		}
+		params = append(params, len(ts), limit, offset)
+		tagCondition := strings.Join(conditions, " or ")
+		tagCondition = fmt.Sprintf("(%s)", tagCondition)
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterQueryByApplicationAndTags, tagCondition), params...).Scan(&clusters)
+		if result.Error != nil {
+			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
+		}
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterCountByApplicationAndTags, tagCondition), params...).Scan(&count)
+		if result.Error != nil {
+			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
+		}
+	} else if len(environments) > 0 {
+		result = db.Raw(sqlcommon.ClusterQueryByApplicationAndEnvs, applicationID,
+			environments, like, limit, offset).Scan(&clusters)
+		if result.Error != nil {
+			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
+		}
+		result = db.Raw(sqlcommon.ClusterCountByApplicationAndEnvs, applicationID, environments, like).Scan(&count)
+		if result.Error != nil {
+			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
+		}
 	} else {
-		result = db.Raw(common.ClusterCountByApplication, applicationID, like).Scan(&count)
-	}
-	if result.Error != nil {
-		return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
+		result = db.Raw(sqlcommon.ClusterQueryByApplication, applicationID, like, limit, offset).Scan(&clusters)
+		if result.Error != nil {
+			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
+		}
+		result = db.Raw(sqlcommon.ClusterCountByApplication, applicationID, like).Scan(&count)
+		if result.Error != nil {
+			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
+		}
 	}
 
 	return count, clusters, nil
@@ -258,7 +289,7 @@ func (d *dao) ListByApplicationID(ctx context.Context, applicationID uint) ([]*m
 	}
 
 	var clusters []*models.Cluster
-	result := db.Raw(common.ClusterListByApplicationID, applicationID).Scan(&clusters)
+	result := db.Raw(sqlcommon.ClusterListByApplicationID, applicationID).Scan(&clusters)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.ClusterInDB, result.Error.Error())
@@ -268,7 +299,7 @@ func (d *dao) ListByApplicationID(ctx context.Context, applicationID uint) ([]*m
 }
 
 func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
-	query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -280,7 +311,7 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 	like := "%" + filter + "%"
 	whereCond, whereValues := orm.FormatFilterExp(query, columnInTable)
 	var (
-		clusters []*models.ClusterWithEnvAndRegion
+		clusters []*models.ClusterWithRegion
 		count    int
 		result   *gorm.DB
 	)
@@ -288,7 +319,7 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 		whereValuesForRecord := append([]interface{}(nil), whereValues...)
 		whereValuesForRecord = append(whereValuesForRecord, environment, like, limit, offset)
 
-		result = db.Raw(fmt.Sprintf(common.ClusterQueryByEnvNameFuzzily, whereCond),
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterQueryByEnvNameFuzzily, whereCond),
 			whereValuesForRecord...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
@@ -297,7 +328,7 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 		whereValuesForCount := append([]interface{}(nil), whereValues...)
 		whereValuesForCount = append(whereValuesForCount, environment, like)
 
-		result = db.Raw(fmt.Sprintf(common.ClusterCountByEnvNameFuzzily, whereCond), whereValuesForCount...).Scan(&count)
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterCountByEnvNameFuzzily, whereCond), whereValuesForCount...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
 		}
@@ -305,7 +336,7 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 		whereValuesForRecord := append([]interface{}(nil), whereValues...)
 		whereValuesForRecord = append(whereValuesForRecord, like, limit, offset)
 
-		result = db.Raw(fmt.Sprintf(common.ClusterQueryByNameFuzzily, whereCond),
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterQueryByNameFuzzily, whereCond),
 			whereValuesForRecord...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
@@ -314,7 +345,7 @@ func (d *dao) ListByNameFuzzily(ctx context.Context, environment, filter string,
 		whereValuesForCount := append([]interface{}(nil), whereValues...)
 		whereValuesForCount = append(whereValuesForCount, like)
 
-		result = db.Raw(fmt.Sprintf(common.ClusterCountByNameFuzzily, whereCond), whereValuesForCount...).Scan(&count)
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterCountByNameFuzzily, whereCond), whereValuesForCount...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
 		}
@@ -330,7 +361,7 @@ func (d *dao) CheckClusterExists(ctx context.Context, cluster string) (bool, err
 	}
 
 	var c models.Cluster
-	result := db.Raw(common.ClusterQueryByClusterName, cluster).Scan(&c)
+	result := db.Raw(sqlcommon.ClusterQueryByClusterName, cluster).Scan(&c)
 
 	if result.Error != nil {
 		return false, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
@@ -344,7 +375,7 @@ func (d *dao) CheckClusterExists(ctx context.Context, cluster string) (bool, err
 }
 
 func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
-	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithEnvAndRegion, error) {
+	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -356,7 +387,7 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 	like := "%" + name + "%"
 	whereCond, whereValues := orm.FormatFilterExp(query, columnInTable)
 	var (
-		clusters []*models.ClusterWithEnvAndRegion
+		clusters []*models.ClusterWithRegion
 		count    int
 		result   *gorm.DB
 	)
@@ -366,7 +397,7 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 		whereValuesForRecord = append(whereValuesForRecord, userInfo, like)
 		whereValuesForRecord = append(whereValuesForRecord, whereValues...)
 		whereValuesForRecord = append(whereValuesForRecord, applicationIDs, like, limit, offset)
-		result = db.Raw(fmt.Sprintf(common.ClusterQueryByUserAndNameFuzzily, whereCond, whereCond),
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterQueryByUserAndNameFuzzily, whereCond, whereCond),
 			whereValuesForRecord...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
@@ -376,7 +407,7 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 		whereValuesForCount = append(whereValuesForCount, userInfo, like)
 		whereValuesForCount = append(whereValuesForCount, whereValues...)
 		whereValuesForCount = append(whereValuesForCount, applicationIDs, like)
-		result = db.Raw(fmt.Sprintf(common.ClusterCountByUserAndNameFuzzily, whereCond, whereCond),
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterCountByUserAndNameFuzzily, whereCond, whereCond),
 			whereValuesForCount...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
@@ -386,7 +417,7 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 		whereValuesForRecord = append(whereValuesForRecord, userInfo, environment, like)
 		whereValuesForRecord = append(whereValuesForRecord, whereValues...)
 		whereValuesForRecord = append(whereValuesForRecord, applicationIDs, environment, like, limit, offset)
-		result = db.Raw(fmt.Sprintf(common.ClusterQueryByUserAndEnvAndNameFuzzily, whereCond, whereCond),
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterQueryByUserAndEnvAndNameFuzzily, whereCond, whereCond),
 			whereValuesForRecord...).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
@@ -396,7 +427,7 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 		whereValuesForCount = append(whereValuesForCount, userInfo, environment, like)
 		whereValuesForCount = append(whereValuesForCount, whereValues...)
 		whereValuesForCount = append(whereValuesForCount, applicationIDs, environment, like)
-		result = db.Raw(fmt.Sprintf(common.ClusterCountByUserAndEnvAndNameFuzzily, whereCond, whereCond),
+		result = db.Raw(fmt.Sprintf(sqlcommon.ClusterCountByUserAndEnvAndNameFuzzily, whereCond, whereCond),
 			whereValuesForCount...).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())

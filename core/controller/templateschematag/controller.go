@@ -2,12 +2,11 @@ package templateschematag
 
 import (
 	"context"
-	"net/http"
 
 	"g.hz.netease.com/horizon/core/common"
+
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/templateschematag/manager"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -32,12 +31,12 @@ func (c *controller) List(ctx context.Context, clusterID uint) (_ *ListResponse,
 	const op = "cluster template scheme tag controller: list"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	clusterTags, err := c.clusterSchemaTagMgr.ListByClusterID(ctx, clusterID)
+	tags, err := c.clusterSchemaTagMgr.ListByClusterID(ctx, clusterID)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
-	return ofClusterTemplateSchemaTags(clusterTags), nil
+	return ofClusterTemplateSchemaTags(tags), nil
 }
 
 func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateRequest) (err error) {
@@ -46,25 +45,19 @@ func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateReques
 
 	currentUser, err := common.FromContext(ctx)
 	if err != nil {
-		return errors.E(op, http.StatusInternalServerError,
-			errors.ErrorCode(common.InternalError), "no user in context")
+		return err
 	}
 
 	clusterTemplateSchemaTags := r.toClusterTemplateSchemaTags(clusterID, currentUser)
 
 	if err := manager.ValidateUpsert(clusterTemplateSchemaTags); err != nil {
-		return errors.E(op, http.StatusBadRequest,
-			errors.ErrorCode(common.InvalidRequestBody), err)
+		return err
 	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
-	if err := c.clusterSchemaTagMgr.UpsertByClusterID(ctx, cluster.ID, clusterTemplateSchemaTags); err != nil {
-		return errors.E(op, err)
-	}
-
-	return nil
+	return c.clusterSchemaTagMgr.UpsertByClusterID(ctx, cluster.ID, clusterTemplateSchemaTags)
 }
