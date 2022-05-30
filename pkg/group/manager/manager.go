@@ -62,7 +62,9 @@ type Manager interface {
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 	// GetSubGroupsByGroupIDs get groups and its subGroups by specified groupIDs
 	GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Group, error)
+	// UpdateRegionSelector update regionSelector
 	UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error
+	// GetSelectableRegions return selectable regions of the application
 	GetSelectableRegions(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
 }
 
@@ -262,6 +264,9 @@ func (m manager) GetSelectableRegions(ctx context.Context, id uint, env string) 
 	if err != nil {
 		return nil, err
 	}
+	if len(envRegionParts) == 0 {
+		return envRegionParts, nil
+	}
 
 	// get regionSelector field from group
 	group, err := m.groupDAO.GetByID(ctx, id)
@@ -279,6 +284,9 @@ func (m manager) GetSelectableRegions(ctx context.Context, id uint, env string) 
 	groupRegionParts, err := m.regionDAO.ListByRegionSelectors(ctx, regionSelectors)
 	if err != nil {
 		return nil, err
+	}
+	if len(groupRegionParts) == 0 {
+		return groupRegionParts, nil
 	}
 
 	// get regions under env and regionSelector at the same time

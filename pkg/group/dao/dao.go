@@ -283,7 +283,7 @@ func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 		return err
 	}
 
-	queryResult := models.Group{}
+	var queryResult models.Group
 	result := db.Raw(common.GroupQueryByParentIDAndName, group.ParentID, group.Name).First(&queryResult)
 
 	// update group conflict, has another record with the same parentID & name
@@ -329,6 +329,10 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 	err = d.CheckPathUnique(ctx, group)
 	if err != nil {
 		return nil, err
+	}
+	// set regionSelector from parent group
+	if pGroup != nil {
+		group.RegionSelector = pGroup.RegionSelector
 	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
