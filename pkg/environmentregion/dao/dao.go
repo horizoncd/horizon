@@ -129,7 +129,10 @@ func (d *dao) ListEnabledRegionsByEnvironment(ctx context.Context, env string) (
 		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 	}
 
-	return regions, result.Error
+	if regions == nil {
+		return regionmodels.RegionParts{}, nil
+	}
+	return regions, nil
 }
 
 func (d *dao) GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error) {
@@ -190,14 +193,16 @@ func (d *dao) SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) er
 		}
 	}
 
-	if currentDefaultRegion.ID != id {
+	if currentDefaultRegion == nil || currentDefaultRegion.ID != id {
 		return db.Transaction(func(tx *gorm.DB) error {
-			result := tx.Exec(common.EnvironmentRegionUnsetDefaultByID, currentDefaultRegion.ID)
-			if result.Error != nil {
-				return herrors.NewErrUpdateFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+			if currentDefaultRegion != nil {
+				result := tx.Exec(common.EnvironmentRegionUnsetDefaultByID, currentDefaultRegion.ID)
+				if result.Error != nil {
+					return herrors.NewErrUpdateFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+				}
 			}
 
-			result = tx.Exec(common.EnvironmentRegionSetDefaultByID, id)
+			result := tx.Exec(common.EnvironmentRegionSetDefaultByID, id)
 			if result.Error != nil {
 				return herrors.NewErrUpdateFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 			}

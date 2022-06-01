@@ -15,7 +15,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		{
 			Method:      http.MethodGet,
 			HandlerFunc: api.ListAll,
-		}, {}, {
+		}, {
+			Method:      http.MethodPost,
+			HandlerFunc: api.Create,
+		}, {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/:%v/setdefault", _environmentRegionIDParam),
 			HandlerFunc: api.SetDefault,

@@ -277,7 +277,7 @@ func (a *API) SearchMyApplication(c *gin.Context) {
 	})
 }
 
-func (a *API) GetSelectableRegions(c *gin.Context) {
+func (a *API) GetSelectableRegionsByEnv(c *gin.Context) {
 	appIDStr := c.Param(_applicationIDParam)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
@@ -292,7 +292,7 @@ func (a *API) GetSelectableRegions(c *gin.Context) {
 		return
 	}
 
-	regionParts, err := a.applicationCtl.GetSelectableRegions(c, uint(appID), env)
+	regionParts, err := a.applicationCtl.GetSelectableRegionsByEnv(c, uint(appID), env)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))

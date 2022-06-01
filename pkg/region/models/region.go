@@ -3,6 +3,7 @@ package models
 import (
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 )
 
 type Region struct {
@@ -24,6 +25,7 @@ type RegionEntity struct {
 	*Region
 
 	Harbor *harbormodels.Harbor
+	Tags   []*tagmodels.Tag
 }
 
 type RegionPart struct {

@@ -45,7 +45,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 
 	// set displayName
 	environmentInDB.DisplayName = environment.DisplayName
-	res = db.Save(environmentInDB)
+	res = db.Save(&environmentInDB)
 	if res.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.EnvironmentInDB, res.Error.Error())
 	}

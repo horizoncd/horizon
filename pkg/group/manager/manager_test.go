@@ -557,11 +557,11 @@ func Test_manager_GetSelectableRegions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Mgr.GetSelectableRegions(ctx, tt.args.id, tt.args.env)
+			got, err := Mgr.GetSelectableRegionsByEnv(ctx, tt.args.id, tt.args.env)
 			if (err != nil) != tt.wantErr {
-				t.Errorf(fmt.Sprintf("GetSelectableRegions(%v, %v, %v)", ctx, tt.args.id, tt.args.env))
+				t.Errorf(fmt.Sprintf("GetSelectableRegionsByEnv(%v, %v, %v)", ctx, tt.args.id, tt.args.env))
 			}
-			assert.Equalf(t, tt.want, got, "GetSelectableRegions(%v, %v, %v)", ctx, tt.args.id, tt.args.env)
+			assert.Equalf(t, tt.want, got, "GetSelectableRegionsByEnv(%v, %v, %v)", ctx, tt.args.id, tt.args.env)
 		})
 	}
 }

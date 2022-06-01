@@ -14,7 +14,8 @@ import (
 
 const (
 	// param
-	_regionIDParam = "regionID"
+	_regionIDParam   = "regionID"
+	_regionNameParam = "regionName"
 )
 
 type API struct {
@@ -100,4 +101,22 @@ func (a *API) DeleteByID(c *gin.Context) {
 	}
 
 	response.Success(c)
+}
+
+func (a *API) GetByName(c *gin.Context) {
+	name := c.Param(_regionNameParam)
+	if len(name) == 0 {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("region name cannot be empty"))
+	}
+	regionEntity, err := a.regionCtl.GetByName(c, name)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.SuccessWithData(c, regionEntity)
 }

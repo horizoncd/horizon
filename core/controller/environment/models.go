@@ -5,6 +5,7 @@ import (
 )
 
 type Environment struct {
+	ID          uint   `json:"id"`
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
 }
@@ -16,6 +17,7 @@ func ofEnvironmentModels(envs []*models.Environment) Environments {
 	environments := make(Environments, 0)
 	for _, env := range envs {
 		environments = append(environments, &Environment{
+			ID:          env.ID,
 			Name:        env.Name,
 			DisplayName: env.DisplayName,
 		})

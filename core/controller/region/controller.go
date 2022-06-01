@@ -17,6 +17,7 @@ type Controller interface {
 	Create(ctx context.Context, request *CreateRegionRequest) (uint, error)
 	UpdateByID(ctx context.Context, id uint, request *UpdateRegionRequest) error
 	DeleteByID(ctx context.Context, id uint) error
+	GetByName(ctx context.Context, name string) (*Region, error)
 }
 
 func NewController() Controller {
@@ -25,6 +26,15 @@ func NewController() Controller {
 
 type controller struct {
 	regionMgr regionmanager.Manager
+}
+
+func (c controller) GetByName(ctx context.Context, name string) (*Region, error) {
+	entity, err := c.regionMgr.GetRegionEntity(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return ofRegionEntity(entity), nil
 }
 
 func (c controller) DeleteByID(ctx context.Context, id uint) error {

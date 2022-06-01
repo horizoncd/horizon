@@ -9,6 +9,8 @@ import (
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	"g.hz.netease.com/horizon/pkg/region/models"
+	tagdao "g.hz.netease.com/horizon/pkg/tag/dao"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 )
 
 var (
@@ -36,12 +38,14 @@ type Manager interface {
 type manager struct {
 	regionDAO regiondao.DAO
 	harborDAO harbordao.DAO
+	tagDAO    tagdao.DAO
 }
 
 func New() Manager {
 	return &manager{
 		regionDAO: regiondao.NewDAO(),
 		harborDAO: harbordao.NewDAO(),
+		tagDAO:    tagdao.NewDAO(),
 	}
 }
 
@@ -71,9 +75,14 @@ func (m *manager) ListRegionEntities(ctx context.Context) (ret []*models.RegionE
 			return nil, fmt.Errorf("harbor with ID: %v of region: %v is not found",
 				region.HarborID, region.Name)
 		}
+		tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
+		if err != nil {
+			return nil, err
+		}
 		ret = append(ret, &models.RegionEntity{
 			Region: region,
 			Harbor: harbor,
+			Tags:   tags,
 		})
 	}
 	return

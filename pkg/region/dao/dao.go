@@ -45,7 +45,7 @@ type dao struct {
 func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (
 	models.RegionParts, error) {
 	if len(selectors) == 0 {
-		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, "regionSelectors cannot be empty")
+		return models.RegionParts{}, nil
 	}
 	db, err := orm.FromContext(ctx)
 	if err != nil {

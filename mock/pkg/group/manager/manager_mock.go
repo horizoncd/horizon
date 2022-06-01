@@ -8,8 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	models "g.hz.netease.com/horizon/pkg/group/models"
-	models0 "g.hz.netease.com/horizon/pkg/region/models"
+	models "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	models0 "g.hz.netease.com/horizon/pkg/group/models"
+	models1 "g.hz.netease.com/horizon/pkg/region/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -37,10 +38,10 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockManager) Create(ctx context.Context, group *models.Group) (*models.Group, error) {
+func (m *MockManager) Create(ctx context.Context, group *models0.Group) (*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, group)
-	ret0, _ := ret[0].(*models.Group)
+	ret0, _ := ret[0].(*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -67,10 +68,10 @@ func (mr *MockManagerMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
 }
 
 // GetAll mocks base method.
-func (m *MockManager) GetAll(ctx context.Context) ([]*models.Group, error) {
+func (m *MockManager) GetAll(ctx context.Context) ([]*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAll", ctx)
-	ret0, _ := ret[0].([]*models.Group)
+	ret0, _ := ret[0].([]*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -82,10 +83,10 @@ func (mr *MockManagerMockRecorder) GetAll(ctx interface{}) *gomock.Call {
 }
 
 // GetByID mocks base method.
-func (m *MockManager) GetByID(ctx context.Context, id uint) (*models.Group, error) {
+func (m *MockManager) GetByID(ctx context.Context, id uint) (*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", ctx, id)
-	ret0, _ := ret[0].(*models.Group)
+	ret0, _ := ret[0].(*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +98,10 @@ func (mr *MockManagerMockRecorder) GetByID(ctx, id interface{}) *gomock.Call {
 }
 
 // GetByIDNameFuzzily mocks base method.
-func (m *MockManager) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error) {
+func (m *MockManager) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByIDNameFuzzily", ctx, id, name)
-	ret0, _ := ret[0].([]*models.Group)
+	ret0, _ := ret[0].([]*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,10 +113,10 @@ func (mr *MockManagerMockRecorder) GetByIDNameFuzzily(ctx, id, name interface{})
 }
 
 // GetByIDs mocks base method.
-func (m *MockManager) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error) {
+func (m *MockManager) GetByIDs(ctx context.Context, ids []uint) ([]*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByIDs", ctx, ids)
-	ret0, _ := ret[0].([]*models.Group)
+	ret0, _ := ret[0].([]*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -127,10 +128,10 @@ func (mr *MockManagerMockRecorder) GetByIDs(ctx, ids interface{}) *gomock.Call {
 }
 
 // GetByNameFuzzily mocks base method.
-func (m *MockManager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
+func (m *MockManager) GetByNameFuzzily(ctx context.Context, name string) ([]*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByNameFuzzily", ctx, name)
-	ret0, _ := ret[0].([]*models.Group)
+	ret0, _ := ret[0].([]*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -142,10 +143,10 @@ func (mr *MockManagerMockRecorder) GetByNameFuzzily(ctx, name interface{}) *gomo
 }
 
 // GetByNameOrPathUnderParent mocks base method.
-func (m *MockManager) GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error) {
+func (m *MockManager) GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByNameOrPathUnderParent", ctx, name, path, parentID)
-	ret0, _ := ret[0].([]*models.Group)
+	ret0, _ := ret[0].([]*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -157,10 +158,10 @@ func (mr *MockManagerMockRecorder) GetByNameOrPathUnderParent(ctx, name, path, p
 }
 
 // GetByPaths mocks base method.
-func (m *MockManager) GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error) {
+func (m *MockManager) GetByPaths(ctx context.Context, paths []string) ([]*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByPaths", ctx, paths)
-	ret0, _ := ret[0].([]*models.Group)
+	ret0, _ := ret[0].([]*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -172,10 +173,10 @@ func (mr *MockManagerMockRecorder) GetByPaths(ctx, paths interface{}) *gomock.Ca
 }
 
 // GetChildren mocks base method.
-func (m *MockManager) GetChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models.GroupOrApplication, int64, error) {
+func (m *MockManager) GetChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) ([]*models0.GroupOrApplication, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetChildren", ctx, parentID, pageNumber, pageSize)
-	ret0, _ := ret[0].([]*models.GroupOrApplication)
+	ret0, _ := ret[0].([]*models0.GroupOrApplication)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -187,26 +188,56 @@ func (mr *MockManagerMockRecorder) GetChildren(ctx, parentID, pageNumber, pageSi
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChildren", reflect.TypeOf((*MockManager)(nil).GetChildren), ctx, parentID, pageNumber, pageSize)
 }
 
-// GetSelectableRegions mocks base method.
-func (m *MockManager) GetSelectableRegions(ctx context.Context, id uint, env string) (models0.RegionParts, error) {
+// GetDefaultRegions mocks base method.
+func (m *MockManager) GetDefaultRegions(ctx context.Context, id uint) ([]*models.EnvironmentRegion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSelectableRegions", ctx, id, env)
-	ret0, _ := ret[0].(models0.RegionParts)
+	ret := m.ctrl.Call(m, "GetDefaultRegions", ctx, id)
+	ret0, _ := ret[0].([]*models.EnvironmentRegion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDefaultRegions indicates an expected call of GetDefaultRegions.
+func (mr *MockManagerMockRecorder) GetDefaultRegions(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDefaultRegions", reflect.TypeOf((*MockManager)(nil).GetDefaultRegions), ctx, id)
+}
+
+// GetSelectableRegions mocks base method.
+func (m *MockManager) GetSelectableRegions(ctx context.Context, id uint) (models1.RegionParts, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSelectableRegions", ctx, id)
+	ret0, _ := ret[0].(models1.RegionParts)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetSelectableRegions indicates an expected call of GetSelectableRegions.
-func (mr *MockManagerMockRecorder) GetSelectableRegions(ctx, id, env interface{}) *gomock.Call {
+func (mr *MockManagerMockRecorder) GetSelectableRegions(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelectableRegions", reflect.TypeOf((*MockManager)(nil).GetSelectableRegions), ctx, id, env)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelectableRegions", reflect.TypeOf((*MockManager)(nil).GetSelectableRegions), ctx, id)
+}
+
+// GetSelectableRegionsByEnv mocks base method.
+func (m *MockManager) GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (models1.RegionParts, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSelectableRegionsByEnv", ctx, id, env)
+	ret0, _ := ret[0].(models1.RegionParts)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSelectableRegionsByEnv indicates an expected call of GetSelectableRegionsByEnv.
+func (mr *MockManagerMockRecorder) GetSelectableRegionsByEnv(ctx, id, env interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelectableRegionsByEnv", reflect.TypeOf((*MockManager)(nil).GetSelectableRegionsByEnv), ctx, id, env)
 }
 
 // GetSubGroups mocks base method.
-func (m *MockManager) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models.Group, int64, error) {
+func (m *MockManager) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) ([]*models0.Group, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubGroups", ctx, id, pageNumber, pageSize)
-	ret0, _ := ret[0].([]*models.Group)
+	ret0, _ := ret[0].([]*models0.Group)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -219,10 +250,10 @@ func (mr *MockManagerMockRecorder) GetSubGroups(ctx, id, pageNumber, pageSize in
 }
 
 // GetSubGroupsByGroupIDs mocks base method.
-func (m *MockManager) GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Group, error) {
+func (m *MockManager) GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubGroupsByGroupIDs", ctx, groupIDs)
-	ret0, _ := ret[0].([]*models.Group)
+	ret0, _ := ret[0].([]*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -234,10 +265,10 @@ func (mr *MockManagerMockRecorder) GetSubGroupsByGroupIDs(ctx, groupIDs interfac
 }
 
 // GetSubGroupsUnderParentIDs mocks base method.
-func (m *MockManager) GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uint) ([]*models.Group, error) {
+func (m *MockManager) GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uint) ([]*models0.Group, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubGroupsUnderParentIDs", ctx, parentIDs)
-	ret0, _ := ret[0].([]*models.Group)
+	ret0, _ := ret[0].([]*models0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -263,7 +294,7 @@ func (mr *MockManagerMockRecorder) Transfer(ctx, id, newParentID interface{}) *g
 }
 
 // UpdateBasic mocks base method.
-func (m *MockManager) UpdateBasic(ctx context.Context, group *models.Group) error {
+func (m *MockManager) UpdateBasic(ctx context.Context, group *models0.Group) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateBasic", ctx, group)
 	ret0, _ := ret[0].(error)

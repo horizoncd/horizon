@@ -7,8 +7,8 @@ import (
 
 type EnvironmentRegion struct {
 	ID                uint   `json:"id"`
-	Environment       string `json:"environment"`
-	Region            string `json:"region"`
+	EnvironmentName   string `json:"environmentName"`
+	RegionName        string `json:"regionName"`
 	RegionDisplayName string `json:"regionDisplayName"`
 	IsDefault         bool   `json:"isDefault"`
 	Disabled          bool   `json:"disabled"`
@@ -29,9 +29,9 @@ func ofRegionModels(regions []*regionmodels.Region,
 		region := displayNameMap[envRegion.RegionName]
 		rs = append(rs, &EnvironmentRegion{
 			ID:                envRegion.ID,
-			Region:            envRegion.RegionName,
+			RegionName:        envRegion.RegionName,
 			RegionDisplayName: region.DisplayName,
-			Environment:       envRegion.EnvironmentName,
+			EnvironmentName:   envRegion.EnvironmentName,
 			IsDefault:         envRegion.IsDefault,
 			Disabled:          region.Disabled,
 		})

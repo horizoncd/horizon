@@ -45,7 +45,7 @@ type Controller interface {
 	ListUserApplication(ctx context.Context, filter string, query *q.Query) (int, []*ListApplicationResponse, error)
 	// Transfer  try transfer application to another group
 	Transfer(ctx context.Context, id uint, groupID uint) error
-	GetSelectableRegions(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
+	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
 }
 
 type controller struct {
@@ -513,11 +513,12 @@ func (c *controller) ListUserApplication(ctx context.Context,
 	return count, listApplicationResp, nil
 }
 
-func (c *controller) GetSelectableRegions(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error) {
+func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (
+	regionmodels.RegionParts, error) {
 	application, err := c.applicationMgr.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.groupMgr.GetSelectableRegions(ctx, application.GroupID, env)
+	return c.groupMgr.GetSelectableRegionsByEnv(ctx, application.GroupID, env)
 }
