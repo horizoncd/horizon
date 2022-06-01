@@ -451,7 +451,7 @@ func TestGetSubGroupsByGroupIDs(t *testing.T) {
 	}
 }
 
-func Test_manager_GetSelectableRegions(t *testing.T) {
+func Test_manager_GetSelectableRegionsByEnv(t *testing.T) {
 	// initializing data
 	r1, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
@@ -473,6 +473,7 @@ func Test_manager_GetSelectableRegions(t *testing.T) {
 	_, _ = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz",
+		IsDefault:       true,
 	})
 	_, _ = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
@@ -562,6 +563,91 @@ func Test_manager_GetSelectableRegions(t *testing.T) {
 				t.Errorf(fmt.Sprintf("GetSelectableRegionsByEnv(%v, %v, %v)", ctx, tt.args.id, tt.args.env))
 			}
 			assert.Equalf(t, tt.want, got, "GetSelectableRegionsByEnv(%v, %v, %v)", ctx, tt.args.id, tt.args.env)
+		})
+	}
+
+	defaultRegions, err := Mgr.GetDefaultRegions(ctx, g2.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, len(defaultRegions), 1)
+	assert.Equal(t, defaultRegions[0].RegionName, "hz")
+	assert.Equal(t, defaultRegions[0].EnvironmentName, "dev")
+}
+
+func Test_manager_GetSelectableRegions(t *testing.T) {
+	r1, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz",
+		DisplayName: "HZ",
+	})
+	_, _ = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz-disabled",
+		DisplayName: "HZ",
+		Disabled:    true,
+	})
+	r3, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz3",
+		DisplayName: "HZ",
+	})
+
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+		{
+			ResourceType: tagmodels.TypeRegion,
+			ResourceID:   r1.ID,
+			Key:          "a",
+			Value:        "11",
+		},
+	})
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
+		{
+			ResourceType: tagmodels.TypeRegion,
+			ResourceID:   r3.ID,
+			Key:          "a",
+			Value:        "11",
+		},
+	})
+
+	g1, err := Mgr.Create(ctx, &models.Group{
+		Name: "112",
+		Path: "pp2",
+		RegionSelector: `- key: "a"
+  operator: "in"
+  values: 
+    - "11"
+`,
+	})
+	assert.Nil(t, err)
+	type args struct {
+		id uint
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    regionmodels.RegionParts
+		wantErr bool
+	}{
+		{
+			name: "normal",
+			args: args{
+				id: g1.ID,
+			},
+			want: regionmodels.RegionParts{
+				{
+					Name:        "hz",
+					DisplayName: "HZ",
+				},
+				{
+					Name:        "hz3",
+					DisplayName: "HZ",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Mgr.GetSelectableRegions(ctx, tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf(fmt.Sprintf("GetSelectableRegions(%v, %v)", ctx, tt.args.id))
+			}
+			assert.Equalf(t, tt.want, got, "GetSelectableRegions(%v, %v)", tt.args.id)
 		})
 	}
 }

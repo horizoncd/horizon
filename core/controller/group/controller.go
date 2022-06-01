@@ -424,7 +424,7 @@ func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
 func (c *controller) GetByID(ctx context.Context, id uint) (*StructuredGroup, error) {
 	group, err := c.groupManager.GetByID(ctx, id)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	full, err := c.formatFullFromGroup(ctx, group)

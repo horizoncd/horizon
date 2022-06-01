@@ -67,8 +67,8 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, regions)
 	assert.Equal(t, 2, len(regions))
-	assert.Equal(t, "hz", regions[0].Name)
-	assert.Equal(t, "jd", regions[1].Name)
+	assert.Equal(t, "jd", regions[0].Name)
+	assert.Equal(t, "hz", regions[1].Name)
 
 	regionEntities, err := Mgr.ListRegionEntities(ctx)
 	assert.Nil(t, err)
@@ -91,8 +91,8 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	regions, _ = Mgr.ListAll(ctx)
-	assert.Equal(t, "jd", regions[1].Name)
-	assert.Equal(t, true, regions[1].Disabled)
+	assert.Equal(t, "jd", regions[0].Name)
+	assert.Equal(t, true, regions[0].Disabled)
 }
 
 func TestMain(m *testing.M) {
