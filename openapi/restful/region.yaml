@@ -1,16 +1,16 @@
 openapi: 3.0.1
 info:
-  title: Horizon-Environments-Restful
+  title: Horizon-Region-Restful
   version: 1.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/environments:
+  /apis/core/v1/regions:
     get:
       tags:
-        - environment
-      operationId: listEnvironments
-      summary: list environments
+        - region
+      operationId: listRegions
+      summary: list regions
       responses:
         "200":
           description: Success
@@ -20,7 +20,7 @@ paths:
                 data:
                   type: array
                   items:
-                    $ref: '#/components/schemas/Environment'
+                    $ref: '#/components/schemas/Region'
         default:
           description: Unexpected error
           content:
@@ -29,15 +29,15 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     post:
       tags:
-        - environment
-      operationId: createEnvironment
-      summary: create a environment
+        - region
+      operationId: createRegion
+      summary: create a region
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Environment"
+              $ref: "#/components/schemas/Region"
       responses:
         "200":
           description: Success
@@ -53,21 +53,21 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/environments/{environmentID}:
+  /apis/core/v1/regions/{regionID}:
     parameters:
-      - name: environmentID
+      - name: regionID
         in: path
     put:
       tags:
-        - environment
-      operationId: updateEnvironment
-      summary: update a environment
+        - region
+      operationId: updateRegion
+      summary: update a region
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Environment'
+              $ref: '#/components/schemas/Region'
       responses:
         '200':
           description: Success
@@ -79,9 +79,9 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     delete:
       tags:
-        - environment
-      operationId: deleteEnvironment
-      summary: delete a environment
+        - region
+      operationId: deleteRegion
+      summary: delete a region
       responses:
         '200':
           description: Success
@@ -92,50 +92,24 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/environments/{environment}/regions:
-    get:
-      tags:
-        - environment
-      operationId: listRegions
-      summary: list regions of a environment
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                example: |
-                  {
-                      "data":[
-                          {
-                              "name": "yq",
-                              "displayName": "义桥"
-                          },
-                          {
-                              "name": "dg",
-                              "displayName": "东冠"
-                          },
-                          {
-                              "name": "eks",
-                              "displayName": "海外EKS"
-                          }
-                      ]
-                  }
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
 components:
   schemas:
-    Environment:
+    Region:
       type: object
       required:
         - id
         - name
         - displayName
+        - server
+        - certificate
+        - ingressDomain
+        - disabled
+        - harborID
+        - harbor
+        - tags
+        - tags
+        - createdAt
+        - updatedAt
       properties:
         id:
           type: integer
@@ -143,3 +117,30 @@ components:
           type: string
         displayName:
           type: string
+        server:
+          type: string
+        certificate:
+          type: string
+        ingressDomain:
+          type: string
+        disabled:
+          type: boolean
+        harborID:
+          type: integer
+        harbor:
+          type: object
+          properties:
+            name:
+              type: string
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              key: string
+              value: string
+        createdAt:
+          $ref: "common.yaml#/components/schemas/Date"
+        updatedAt:
+          $ref: "common.yaml#/components/schemas/Date"
+

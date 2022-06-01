@@ -6,11 +6,14 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/lib/orm"
+	appregionmanager "g.hz.netease.com/horizon/pkg/applicationregion/manager"
+	appregionmodels "g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/environment/models"
-	models2 "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envregion "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -75,6 +78,30 @@ func Test(t *testing.T) {
 	t.Logf("%v", envs[3])
 	assert.Equal(t, envs[3].Name, "online")
 	assert.Equal(t, envs[3].DisplayName, "线上-update")
+
+	err = appregionmanager.Mgr.UpsertByApplicationID(ctx, uint(1), []*appregionmodels.ApplicationRegion{
+		{
+			ID:              0,
+			ApplicationID:   uint(1),
+			EnvironmentName: "dev",
+			RegionName:      "",
+		},
+	})
+	assert.Nil(t, err)
+	_, err = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+		EnvironmentName: "dev",
+		RegionName:      "",
+	})
+	assert.Nil(t, err)
+
+	err = Mgr.DeleteByID(ctx, devEnv.ID)
+	assert.Nil(t, err)
+
+	applicationRegions, _ := appregionmanager.Mgr.ListByApplicationID(ctx, uint(1))
+	assert.Empty(t, applicationRegions)
+
+	regions, _ := envregionmanager.Mgr.ListRegionsByEnvironment(ctx, devEnv.Name)
+	assert.Empty(t, regions)
 }
 
 func TestMain(m *testing.M) {
@@ -82,11 +109,16 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&models.Environment{}); err != nil {
 		panic(err)
 	}
-
-	if err := db.AutoMigrate(&models2.EnvironmentRegion{}); err != nil {
+	if err := db.AutoMigrate(&envregion.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&regionmodels.Region{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&appregionmodels.ApplicationRegion{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&envregionmodels.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)

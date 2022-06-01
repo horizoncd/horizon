@@ -1,16 +1,16 @@
 openapi: 3.0.1
 info:
-  title: Horizon-Environments-Restful
+  title: Horizon-Harbor-Restful
   version: 1.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/environments:
+  /apis/core/v1/harbors:
     get:
       tags:
-        - environment
-      operationId: listEnvironments
-      summary: list environments
+        - harbor
+      operationId: listHarbor
+      summary: list harbors
       responses:
         "200":
           description: Success
@@ -20,7 +20,7 @@ paths:
                 data:
                   type: array
                   items:
-                    $ref: '#/components/schemas/Environment'
+                    $ref: '#/components/schemas/Harbor'
         default:
           description: Unexpected error
           content:
@@ -29,15 +29,15 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     post:
       tags:
-        - environment
-      operationId: createEnvironment
-      summary: create a environment
+        - harbor
+      operationId: createHarbor
+      summary: create a harbor
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Environment"
+              $ref: "#/components/schemas/Harbor"
       responses:
         "200":
           description: Success
@@ -53,21 +53,21 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/environments/{environmentID}:
+  /apis/core/v1/harbors/{harborID}:
     parameters:
-      - name: environmentID
+      - name: harborID
         in: path
     put:
       tags:
-        - environment
-      operationId: updateEnvironment
-      summary: update a environment
+        - harbor
+      operationId: updateHarbor
+      summary: update a harbor
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Environment'
+              $ref: '#/components/schemas/Harbor'
       responses:
         '200':
           description: Success
@@ -79,9 +79,9 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     delete:
       tags:
-        - environment
-      operationId: deleteEnvironment
-      summary: delete a environment
+        - harbor
+      operationId: deleteHarbor
+      summary: delete a harbor
       responses:
         '200':
           description: Success
@@ -92,54 +92,25 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/environments/{environment}/regions:
-    get:
-      tags:
-        - environment
-      operationId: listRegions
-      summary: list regions of a environment
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                example: |
-                  {
-                      "data":[
-                          {
-                              "name": "yq",
-                              "displayName": "义桥"
-                          },
-                          {
-                              "name": "dg",
-                              "displayName": "东冠"
-                          },
-                          {
-                              "name": "eks",
-                              "displayName": "海外EKS"
-                          }
-                      ]
-                  }
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
 components:
   schemas:
-    Environment:
+    Harbor:
       type: object
       required:
         - id
         - name
-        - displayName
+        - server
+        - token
+        - PreheatPolicyID
       properties:
         id:
           type: integer
         name:
           type: string
-        displayName:
+        server:
           type: string
+        token:
+          type: string
+        PreheatPolicyID:
+          type: integer
+

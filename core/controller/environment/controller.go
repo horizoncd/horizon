@@ -19,6 +19,7 @@ type Controller interface {
 	Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error)
 	UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error
 	ListEnvironments(ctx context.Context) (Environments, error)
+	DeleteByID(ctx context.Context, id uint) error
 
 	// ListEnabledRegionsByEnvironment list regions by the environment that are enabled
 	ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (regionmodels.RegionParts, error)
@@ -69,4 +70,8 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 func (c *controller) ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (
 	regionmodels.RegionParts, error) {
 	return c.envRegionMgr.ListEnabledRegionsByEnvironment(ctx, environment)
+}
+
+func (c *controller) DeleteByID(ctx context.Context, id uint) error {
+	return c.envMgr.DeleteByID(ctx, id)
 }

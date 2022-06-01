@@ -187,20 +187,27 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	// remove related resources from different tables
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// remove records from applicationRegion table
-		res := tx.Where("region_name = ?", regionInDB.Name).Delete(&appregionmodels.ApplicationRegion{})
-		if res.Error != nil {
+		result := tx.Where("region_name = ?", regionInDB.Name).Delete(&appregionmodels.ApplicationRegion{})
+		if result.Error != nil {
 			return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())
 		}
 
 		// remove records from environmentRegion table
-		res = tx.Where("region_name = ?", regionInDB.Name).Delete(&envregionmodels.EnvironmentRegion{})
-		if res.Error != nil {
+		result = tx.Where("region_name = ?", regionInDB.Name).Delete(&envregionmodels.EnvironmentRegion{})
+		if result.Error != nil {
+			return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())
+		}
+
+		// remove records from tag table
+		result = tx.Where("resource_id = ? and resource_type = ?", regionInDB.ID, tagmodels.TypeRegion).
+			Delete(&tagmodels.Tag{})
+		if result.Error != nil {
 			return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())
 		}
 
 		// remove region itself
-		res = tx.Delete(&models.Region{}, id)
-		if res.Error != nil {
+		result = tx.Delete(&models.Region{}, id)
+		if result.Error != nil {
 			return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())
 		}
 

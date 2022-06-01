@@ -313,7 +313,6 @@ func Test_manager_DeleteByID(t *testing.T) {
 
 	err = Mgr.DeleteByID(ctx, region.ID)
 	assert.NotNil(t, err)
-	t.Logf("%+v", err)
 
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&clustermodels.Cluster{})
 	err = Mgr.DeleteByID(ctx, region.ID)
@@ -324,4 +323,7 @@ func Test_manager_DeleteByID(t *testing.T) {
 
 	regions, _ := envregionmanager.Mgr.ListAllEnvironmentRegions(ctx)
 	assert.Empty(t, regions)
+
+	tags, _ := tagmanager.Mgr.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
+	assert.Empty(t, tags)
 }

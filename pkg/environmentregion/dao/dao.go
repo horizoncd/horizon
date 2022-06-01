@@ -31,6 +31,7 @@ type DAO interface {
 	GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegion, error)
 	// SetEnvironmentRegionToDefaultByID set region to default by id
 	SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error
+	// DeleteByID delete an environmentRegion by id
 	DeleteByID(ctx context.Context, id uint) error
 }
 
@@ -151,7 +152,7 @@ func (d *dao) GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.En
 		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 	}
 
-	return &environmentRegion, result.Error
+	return &environmentRegion, nil
 }
 
 func (d *dao) GetEnvironmentRegionByEnvAndRegion(ctx context.Context,
@@ -230,7 +231,11 @@ func (d *dao) ListAllEnvironmentRegions(ctx context.Context) ([]*models.Environm
 }
 
 // DeleteByID implements DAO
-func (*dao) DeleteByID(ctx context.Context, id uint) error {
+func (d *dao) DeleteByID(ctx context.Context, id uint) error {
+	_, err := d.GetEnvironmentRegionByID(ctx, id)
+	if err != nil {
+		return err
+	}
 	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err

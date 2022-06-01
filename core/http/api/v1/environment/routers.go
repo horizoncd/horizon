@@ -23,6 +23,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/:%v", _environmentIDParam),
 			HandlerFunc: api.Update,
 		}, {
+			Method:      http.MethodDelete,
+			Pattern:     fmt.Sprintf("/:%v", _environmentIDParam),
+			HandlerFunc: api.Delete,
+		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%v/regions", _environmentParam),
 			HandlerFunc: api.ListEnabledRegionsByEnvironment,

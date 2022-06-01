@@ -101,3 +101,24 @@ func (a *API) Create(c *gin.Context) {
 
 	response.SuccessWithData(c, id)
 }
+
+func (a *API) Delete(c *gin.Context) {
+	envIDStr := c.Param(_environmentIDParam)
+	envID, err := strconv.ParseUint(envIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+		return
+	}
+
+	err = a.envCtl.DeleteByID(c, uint(envID))
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.Success(c)
+}
