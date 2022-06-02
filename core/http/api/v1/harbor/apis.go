@@ -25,13 +25,13 @@ func NewAPI() *API {
 	return &API{harborCtl: harbor.Ctl}
 }
 
-func (a *API) listAll(c *gin.Context) {
-	regions, err := a.harborCtl.ListAll(c)
+func (a *API) ListAll(c *gin.Context) {
+	harbors, err := a.harborCtl.ListAll(c)
 	if err != nil {
-		response.AbortWithInternalError(c, err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
-	response.SuccessWithData(c, regions)
+	response.SuccessWithData(c, harbors)
 }
 
 func (a *API) Create(c *gin.Context) {
@@ -67,7 +67,7 @@ func (a *API) Update(c *gin.Context) {
 		return
 	}
 
-	err = a.harborCtl.Update(c, uint(id), request)
+	err = a.harborCtl.UpdateByID(c, uint(id), request)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -93,6 +93,10 @@ func (a *API) DeleteByID(c *gin.Context) {
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrHarborUsedByRegions {
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
 			return
 		}
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))

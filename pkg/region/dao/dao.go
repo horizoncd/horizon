@@ -81,10 +81,13 @@ func (*dao) GetRegionByID(ctx context.Context, id uint) (*models.Region, error) 
 	result := db.Raw(common.RegionGetByID, id).First(&region)
 
 	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.RegionInDB, result.Error.Error())
+		}
 		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, result.Error.Error())
 	}
 
-	return &region, result.Error
+	return &region, nil
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) error {
@@ -181,7 +184,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())
 	}
 	if count > 0 {
-		return herrors.NewErrDeleteFailed(herrors.RegionInDB, "cannot delete a region when used by clusters")
+		return herrors.ErrRegionUsedByClusters
 	}
 
 	// remove related resources from different tables

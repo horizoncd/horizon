@@ -101,7 +101,7 @@ components:
         - name
         - server
         - token
-        - PreheatPolicyID
+        - preheatPolicyID
       properties:
         id:
           type: integer
@@ -111,6 +111,6 @@ components:
           type: string
         token:
           type: string
-        PreheatPolicyID:
+        preheatPolicyID:
           type: integer
 

@@ -113,7 +113,7 @@ const (
 const (
 	// EnvironmentListAll ...
 	EnvironmentListAll = "select * from tb_environment where deleted_ts = 0"
-	EnvironmentGetByID = "select * from tb_environment where id = ?"
+	EnvironmentGetByID = "select * from tb_environment where id = ? where deleted_ts = 0"
 )
 
 /* sql about environmentRegion */

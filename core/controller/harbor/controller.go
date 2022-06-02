@@ -18,7 +18,7 @@ type Controller interface {
 	// ListAll list all harbors
 	ListAll(ctx context.Context) (Harbors, error)
 	// Update update a harbor
-	Update(ctx context.Context, id uint, request *UpdateHarborRequest) error
+	UpdateByID(ctx context.Context, id uint, request *UpdateHarborRequest) error
 	// DeleteByID delete a harbor by id
 	DeleteByID(ctx context.Context, id uint) error
 }
@@ -54,8 +54,8 @@ func (c controller) ListAll(ctx context.Context) (Harbors, error) {
 	return ofHarborModels(harbors), nil
 }
 
-func (c controller) Update(ctx context.Context, id uint, request *UpdateHarborRequest) error {
-	err := c.harborManager.Update(ctx, id, &models.Harbor{
+func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateHarborRequest) error {
+	err := c.harborManager.UpdateByID(ctx, id, &models.Harbor{
 		Name:            request.Name,
 		Server:          request.Server,
 		Token:           request.Token,

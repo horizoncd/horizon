@@ -206,5 +206,9 @@ var (
 	// ErrConflictWithApplication conflict with the application
 	ErrGroupConflictWithApplication = errors.New("name or path is in conflict with application")
 
-	ErrHarborCannotDelete = errors.New("cannot delete a harbor when used by regions")
+	// ErrHarborUsedByRegions used when deleting a harbor that is still used by regions
+	ErrHarborUsedByRegions = errors.New("cannot delete a harbor when used by regions")
+
+	// ErrRegionUsedByClusters used when deleting a region that is still used by clusters
+	ErrRegionUsedByClusters = errors.New("cannot delete a region when used by clusters")
 )

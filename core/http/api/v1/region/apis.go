@@ -26,7 +26,7 @@ func NewAPI() *API {
 	return &API{regionCtl: region.Ctl}
 }
 
-func (a *API) listRegions(c *gin.Context) {
+func (a *API) ListRegions(c *gin.Context) {
 	regions, err := a.regionCtl.ListRegions(c)
 	if err != nil {
 		response.AbortWithInternalError(c, err.Error())
@@ -94,6 +94,10 @@ func (a *API) DeleteByID(c *gin.Context) {
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrHarborUsedByRegions {
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
 			return
 		}
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))

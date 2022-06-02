@@ -43,7 +43,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, harbor.Token, "1")
 	assert.Equal(t, harbor.PreheatPolicyID, 0)
 
-	err = Mgr.Update(ctx, id, &models.Harbor{
+	err = Mgr.UpdateByID(ctx, id, &models.Harbor{
 		Name:            "2",
 		Server:          "1",
 		Token:           "2",

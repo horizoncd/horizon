@@ -4,19 +4,18 @@ import (
 	"context"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	"gorm.io/gorm"
-
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/harbor/models"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	"gorm.io/gorm"
 )
 
 type DAO interface {
 	// Create a harbor
 	Create(ctx context.Context, harbor *models.Harbor) (uint, error)
-	// Update update a harbor
-	Update(ctx context.Context, id uint, harbor *models.Harbor) error
+	// UpdateByID update a harbor
+	UpdateByID(ctx context.Context, id uint, harbor *models.Harbor) error
 	// DeleteByID delete a harbor by id
 	DeleteByID(ctx context.Context, id uint) error
 	// GetByID get by id
@@ -82,7 +81,7 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.Harbor, error) {
 	return harbors, nil
 }
 
-func (d *dao) Update(ctx context.Context, id uint, harbor *models.Harbor) error {
+func (d *dao) UpdateByID(ctx context.Context, id uint, harbor *models.Harbor) error {
 	harborInDB, err := d.GetByID(ctx, id)
 	if err != nil {
 		return err
@@ -123,7 +122,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return herrors.NewErrDeleteFailed(herrors.HarborInDB, result.Error.Error())
 	}
 	if len(regions) > 0 {
-		return herrors.NewErrDeleteFailed(herrors.HarborInDB, "cannot delete a harbor when used by regions")
+		return herrors.ErrHarborUsedByRegions
 	}
 
 	result = db.Delete(&models.Harbor{}, id)

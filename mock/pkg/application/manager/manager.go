@@ -189,7 +189,7 @@ func (mr *MockManagerMockRecorder) Transfer(ctx, id, groupID interface{}) *gomoc
 // UpdateByID mocks base method.
 func (m *MockManager) UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, application)
+	ret := m.ctrl.Call(m, "UpdateByID", ctx, id, application)
 	ret0, _ := ret[0].(*models.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -198,5 +198,5 @@ func (m *MockManager) UpdateByID(ctx context.Context, id uint, application *mode
 // UpdateByID indicates an expected call of UpdateByID.
 func (mr *MockManagerMockRecorder) UpdateByID(ctx, id, application interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockManager)(nil).UpdateByID), ctx, id, application)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByID", reflect.TypeOf((*MockManager)(nil).UpdateByID), ctx, id, application)
 }
