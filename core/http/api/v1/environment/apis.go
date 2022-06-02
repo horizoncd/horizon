@@ -15,8 +15,7 @@ import (
 
 const (
 	// param
-	_environmentParam   = "environment"
-	_environmentIDParam = "environmentID"
+	_environmentParam = "environment"
 )
 
 type API struct {
@@ -51,7 +50,7 @@ func (a *API) ListEnabledRegionsByEnvironment(c *gin.Context) {
 func (a *API) Update(c *gin.Context) {
 	const op = "environment: update"
 
-	envIDStr := c.Param(_environmentIDParam)
+	envIDStr := c.Param(_environmentParam)
 	envID, err := strconv.ParseUint(envIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
@@ -103,7 +102,7 @@ func (a *API) Create(c *gin.Context) {
 }
 
 func (a *API) Delete(c *gin.Context) {
-	envIDStr := c.Param(_environmentIDParam)
+	envIDStr := c.Param(_environmentParam)
 	envID, err := strconv.ParseUint(envIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
@@ -121,4 +120,24 @@ func (a *API) Delete(c *gin.Context) {
 	}
 
 	response.Success(c)
+}
+func (a *API) GetByID(c *gin.Context) {
+	envIDStr := c.Param(_environmentParam)
+	envID, err := strconv.ParseUint(envIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+		return
+	}
+
+	environmentEntity, err := a.envCtl.GetByID(c, uint(envID))
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.SuccessWithData(c, environmentEntity)
 }

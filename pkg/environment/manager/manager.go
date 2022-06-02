@@ -29,11 +29,16 @@ type Manager interface {
 	UpdateByID(ctx context.Context, id uint, environment *models.Environment) error
 	// DeleteByID delete environment by id
 	DeleteByID(ctx context.Context, id uint) error
+	GetByID(ctx context.Context, id uint) (*models.Environment, error)
 }
 
 type manager struct {
 	envDAO    dao.DAO
 	regionDAO regiondao.DAO
+}
+
+func (m *manager) GetByID(ctx context.Context, id uint) (*models.Environment, error) {
+	return m.envDAO.GetByID(ctx, id)
 }
 
 func (m *manager) DeleteByID(ctx context.Context, id uint) error {

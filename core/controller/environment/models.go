@@ -1,13 +1,17 @@
 package environment
 
 import (
+	"time"
+
 	"g.hz.netease.com/horizon/pkg/environment/models"
 )
 
 type Environment struct {
-	ID          uint   `json:"id"`
-	Name        string `json:"name"`
-	DisplayName string `json:"displayName"`
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	DisplayName string    `json:"displayName"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 type Environments []*Environment
@@ -16,13 +20,19 @@ type Environments []*Environment
 func ofEnvironmentModels(envs []*models.Environment) Environments {
 	environments := make(Environments, 0)
 	for _, env := range envs {
-		environments = append(environments, &Environment{
-			ID:          env.ID,
-			Name:        env.Name,
-			DisplayName: env.DisplayName,
-		})
+		environments = append(environments, ofEnvironmentModel(env))
 	}
 	return environments
+}
+
+func ofEnvironmentModel(env *models.Environment) *Environment {
+	return &Environment{
+		ID:          env.ID,
+		Name:        env.Name,
+		DisplayName: env.DisplayName,
+		CreatedAt:   env.CreatedAt,
+		UpdatedAt:   env.UpdatedAt,
+	}
 }
 
 type CreateEnvironmentRequest struct {

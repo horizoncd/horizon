@@ -57,6 +57,24 @@ paths:
     parameters:
       - name: regionID
         in: path
+    get:
+      tags:
+        - region
+      operationId: getRegion
+      summary: get a region
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Region'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
     put:
       tags:
         - region

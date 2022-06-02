@@ -49,7 +49,7 @@ func ofRegionEntity(entity *models.RegionEntity) *Region {
 			Value: t.Value,
 		})
 	}
-	return &Region{
+	r := &Region{
 		ID:            entity.ID,
 		Name:          entity.Name,
 		DisplayName:   entity.DisplayName,
@@ -58,13 +58,16 @@ func ofRegionEntity(entity *models.RegionEntity) *Region {
 		Certificate:   entity.Certificate,
 		Disabled:      entity.Disabled,
 		HarborID:      entity.HarborID,
-		Harbor: harbor.Harbor{
-			Name: entity.Harbor.Name,
-		},
-		Tags:      tags,
-		CreatedAt: entity.CreatedAt,
-		UpdatedAt: entity.UpdatedAt,
+		Tags:          tags,
+		CreatedAt:     entity.CreatedAt,
+		UpdatedAt:     entity.UpdatedAt,
 	}
+	if entity.Harbor != nil {
+		r.Harbor = harbor.Harbor{
+			Name: entity.Harbor.Name,
+		}
+	}
+	return r
 }
 
 func ofRegionEntities(entities []*models.RegionEntity) []*Region {

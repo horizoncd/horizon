@@ -20,6 +20,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodPost,
 			HandlerFunc: api.Create,
 		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%v", _regionIDParam),
+			HandlerFunc: api.GetByID,
+		}, {
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/:%v", _regionIDParam),
 			HandlerFunc: api.UpdateByID,

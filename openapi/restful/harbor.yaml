@@ -57,6 +57,24 @@ paths:
     parameters:
       - name: harborID
         in: path
+    get:
+      tags:
+        - harbor
+      operationId: getHarbor
+      summary: get a harbor
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Harbor'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
     put:
       tags:
         - harbor

@@ -2,7 +2,6 @@ package manager
 
 import (
 	"context"
-	"fmt"
 
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
@@ -27,6 +26,7 @@ type Manager interface {
 	ListRegionEntities(ctx context.Context) ([]*models.RegionEntity, error)
 	// GetRegionEntity get region entity, todo(gjq) add cache
 	GetRegionEntity(ctx context.Context, regionName string) (*models.RegionEntity, error)
+	GetRegionByID(ctx context.Context, id uint) (*models.RegionEntity, error)
 	// UpdateByID update region by id
 	UpdateByID(ctx context.Context, id uint, region *models.Region) error
 	// ListByRegionSelectors list region by tags
@@ -64,24 +64,13 @@ func (m *manager) ListRegionEntities(ctx context.Context) (ret []*models.RegionE
 		return
 	}
 
-	harborMap, err := m.getHarborMap(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	for _, region := range regions {
-		harbor, ok := harborMap[region.HarborID]
-		if !ok {
-			return nil, fmt.Errorf("harbor with ID: %v of region: %v is not found",
-				region.HarborID, region.Name)
-		}
 		tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
 		if err != nil {
 			return nil, err
 		}
 		ret = append(ret, &models.RegionEntity{
 			Region: region,
-			Harbor: harbor,
 			Tags:   tags,
 		})
 	}
@@ -115,19 +104,6 @@ func (m *manager) UpdateByID(ctx context.Context, id uint, region *models.Region
 	return m.regionDAO.UpdateByID(ctx, id, region)
 }
 
-func (m *manager) getHarborMap(ctx context.Context) (map[uint]*harbormodels.Harbor, error) {
-	harbors, err := m.harborDAO.ListAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	harborMap := make(map[uint]*harbormodels.Harbor)
-	for _, harbor := range harbors {
-		harborMap[harbor.ID] = harbor
-	}
-	return harborMap, nil
-}
-
 func (m *manager) getHarborByRegion(ctx context.Context, region *models.Region) (*harbormodels.Harbor, error) {
 	harbor, err := m.harborDAO.GetByID(ctx, region.HarborID)
 	if err != nil {
@@ -143,4 +119,27 @@ func (m *manager) ListByRegionSelectors(ctx context.Context, selectors groupmode
 
 func (m *manager) DeleteByID(ctx context.Context, id uint) error {
 	return m.regionDAO.DeleteByID(ctx, id)
+}
+
+func (m *manager) GetRegionByID(ctx context.Context, id uint) (*models.RegionEntity, error) {
+	region, err := m.regionDAO.GetRegionByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	harbor, err := m.getHarborByRegion(ctx, region)
+	if err != nil {
+		return nil, err
+	}
+
+	tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.RegionEntity{
+		Region: region,
+		Harbor: harbor,
+		Tags:   tags,
+	}, nil
 }

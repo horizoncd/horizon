@@ -17,10 +17,11 @@ type Controller interface {
 	Create(ctx context.Context, request *CreateHarborRequest) (uint, error)
 	// ListAll list all harbors
 	ListAll(ctx context.Context) (Harbors, error)
-	// Update update a harbor
+	// UpdateByID update a harbor
 	UpdateByID(ctx context.Context, id uint, request *UpdateHarborRequest) error
 	// DeleteByID delete a harbor by id
 	DeleteByID(ctx context.Context, id uint) error
+	GetByID(ctx context.Context, id uint) (*Harbor, error)
 }
 
 func NewController() Controller {
@@ -75,4 +76,13 @@ func (c controller) DeleteByID(ctx context.Context, id uint) error {
 	}
 
 	return nil
+}
+
+func (c controller) GetByID(ctx context.Context, id uint) (*Harbor, error) {
+	harbor, err := c.harborManager.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return ofHarborModel(harbor), nil
 }
