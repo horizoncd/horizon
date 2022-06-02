@@ -67,8 +67,7 @@ func (a *API) Update(c *gin.Context) {
 		return
 	}
 
-	request.ID = uint(id)
-	err = a.harborCtl.Update(c, request)
+	err = a.harborCtl.Update(c, uint(id), request)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))

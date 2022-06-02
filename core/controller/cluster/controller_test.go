@@ -522,18 +522,18 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
 
-	harbor, err := harborDAO.Create(ctx, &harbormodels.Harbor{
+	id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
 		Server:          "https://harbor.com",
 		Token:           "xxx",
 		PreheatPolicyID: 1,
 	})
 	assert.Nil(t, err)
-	assert.NotNil(t, harbor)
+	assert.NotNil(t, id)
 
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
-		HarborID:    harbor.ID,
+		HarborID:    id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)

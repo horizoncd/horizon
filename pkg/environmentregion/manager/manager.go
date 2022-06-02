@@ -31,7 +31,6 @@ type Manager interface {
 	GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error)
 	GetByEnvironmentAndRegion(ctx context.Context, env, region string) (*models.EnvironmentRegion, error)
 	GetDefaultRegionByEnvironment(ctx context.Context, env string) (*models.EnvironmentRegion, error)
-	GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegion, error)
 	SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error
 	// ListAllEnvironmentRegions list all environmentRegions
 	ListAllEnvironmentRegions(ctx context.Context) ([]*models.EnvironmentRegion, error)
@@ -46,10 +45,6 @@ type manager struct {
 // DeleteByID implements Manager
 func (m *manager) DeleteByID(ctx context.Context, id uint) error {
 	return m.envRegionDAO.DeleteByID(ctx, id)
-}
-
-func (m *manager) GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegion, error) {
-	return m.envRegionDAO.GetDefaultRegions(ctx)
 }
 
 func (m *manager) GetDefaultRegionByEnvironment(ctx context.Context, env string) (

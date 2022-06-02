@@ -35,20 +35,22 @@ var (
 
 func Test(t *testing.T) {
 	harborDAO := harbordao.NewDAO()
-	harbor, err := harborDAO.Create(ctx, &harbormodels.Harbor{
+	id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
 		Server:          "https://harbor1",
 		Token:           "asdf",
 		PreheatPolicyID: 1,
 	})
 	assert.Nil(t, err)
-	assert.NotNil(t, harbor)
+	assert.NotNil(t, id)
+	harbor, err := harborDAO.GetByID(ctx, id)
+	assert.Nil(t, err)
 
 	hzRegion, err := Mgr.Create(ctx, &models.Region{
 		Name:          "hz",
 		DisplayName:   "HZ",
 		Certificate:   "hz-cert",
 		IngressDomain: "hz.com",
-		HarborID:      harbor.ID,
+		HarborID:      id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, hzRegion)
@@ -58,7 +60,7 @@ func Test(t *testing.T) {
 		DisplayName:   "JD",
 		Certificate:   "jd-cert",
 		IngressDomain: "jd.com",
-		HarborID:      harbor.ID,
+		HarborID:      id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, jdRegion)

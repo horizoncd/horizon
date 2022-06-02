@@ -14,9 +14,9 @@ import (
 
 type DAO interface {
 	// Create a harbor
-	Create(ctx context.Context, harbor *models.Harbor) (*models.Harbor, error)
+	Create(ctx context.Context, harbor *models.Harbor) (uint, error)
 	// Update update a harbor
-	Update(ctx context.Context, harbor *models.Harbor) error
+	Update(ctx context.Context, id uint, harbor *models.Harbor) error
 	// DeleteByID delete a harbor by id
 	DeleteByID(ctx context.Context, id uint) error
 	// GetByID get by id
@@ -32,19 +32,19 @@ func NewDAO() DAO {
 	return &dao{}
 }
 
-func (d *dao) Create(ctx context.Context, harbor *models.Harbor) (*models.Harbor, error) {
+func (d *dao) Create(ctx context.Context, harbor *models.Harbor) (uint, error) {
 	db, err := orm.FromContext(ctx)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	result := db.Create(harbor)
 
 	if result.Error != nil {
-		return nil, herrors.NewErrCreateFailed(herrors.HarborInDB, result.Error.Error())
+		return 0, herrors.NewErrCreateFailed(herrors.HarborInDB, result.Error.Error())
 	}
 
-	return harbor, nil
+	return harbor.ID, nil
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Harbor, error) {
@@ -82,8 +82,8 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.Harbor, error) {
 	return harbors, nil
 }
 
-func (d *dao) Update(ctx context.Context, harbor *models.Harbor) error {
-	_, err := d.GetByID(ctx, harbor.ID)
+func (d *dao) Update(ctx context.Context, id uint, harbor *models.Harbor) error {
+	harborInDB, err := d.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,11 @@ func (d *dao) Update(ctx context.Context, harbor *models.Harbor) error {
 		return err
 	}
 
-	result := db.Save(harbor)
+	harborInDB.Name = harbor.Name
+	harborInDB.Server = harbor.Server
+	harborInDB.Token = harbor.Token
+	harborInDB.PreheatPolicyID = harbor.PreheatPolicyID
+	result := db.Save(harborInDB)
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.HarborInDB, result.Error.Error())
 	}

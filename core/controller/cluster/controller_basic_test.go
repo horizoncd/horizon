@@ -265,14 +265,14 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 		regionMgr:      regionmanager.Mgr,
 	}
 
-	harbor, err := harbordao.NewDAO().Create(ctx, &harbormodels.Harbor{
+	id, err := harbordao.NewDAO().Create(ctx, &harbormodels.Harbor{
 		Server: "http://127.0.0.1",
 	})
 	assert.Nil(t, err)
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "TestController_FreeOrDeleteClusterFailed",
 		DisplayName: "TestController_FreeOrDeleteClusterFailed",
-		HarborID:    harbor.ID,
+		HarborID:    id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
