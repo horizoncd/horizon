@@ -22,8 +22,9 @@ import (
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	oauthservicectl "g.hz.netease.com/horizon/core/controller/oauth"
 	oauthappctl "g.hz.netease.com/horizon/core/controller/oauthapp"
-
 	oauthcheckctl "g.hz.netease.com/horizon/core/controller/oauthcheck"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	sloctl "g.hz.netease.com/horizon/core/controller/slo"
@@ -89,7 +90,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -119,6 +119,9 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.RegionConfigFile, "regions", "", "regions file path")
+
+	flag.StringVar(
+		&flags.ScopeRoleFile, "scopes", "", "configuration file path")
 
 	flag.BoolVar(
 		&flags.Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
@@ -307,7 +310,7 @@ func Run(flags *Flags) {
 		applicationRegionCtl = applicationregionctl.NewController(regionConfig)
 		groupCtl             = groupctl.NewController(mservice)
 		oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(oauthManager, usermanager.Mgr, scopeService)
-		oauthAppCtl          = oauthappctl.NewController(oauthManager)
+		oauthAppCtl          = oauthappctl.NewController(oauthManager, usermanager.Mgr)
 		oauthServerCtl       = oauthservicectl.NewController(oauthManager)
 	)
 
@@ -332,6 +335,8 @@ func Run(flags *Flags) {
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl, config.OauthHTMLLocation, scopeService)
+		_                    = oauthapp.NewAPI(oauthAppCtl)
+		_                    = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl, config.OauthHTMLLocation, scopeService)
 	)
 
 	// init server

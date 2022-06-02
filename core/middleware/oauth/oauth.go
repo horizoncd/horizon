@@ -1,8 +1,6 @@
 package oauth
 
 import (
-	"net/http"
-
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/oauthcheck"
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -32,8 +30,8 @@ func MiddleWare(oauthCtl oauthcheck.Controller, skipMatchers ...middleware.Skipp
 		// 1. get user from token and set user context
 		token, err := common.GetToken(c)
 		if err != nil {
-			response.Abort(c, http.StatusBadRequest,
-				http.StatusText(http.StatusUnauthorized), err.Error())
+			log.Warning(c, "Have not got token")
+			c.Next()
 			return
 		}
 

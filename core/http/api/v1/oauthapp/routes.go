@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	_groupIDParam            = "groupID"
-	_oauthAppClientIDIDParam = "appID"
+	_groupIDParam          = "groupID"
+	_oauthAppClientIDParam = "appID"
+	_oauthClientSecretID   = "secretID"
 )
 
 func RegisterRoutes(engine *gin.Engine, api *API) {
@@ -26,16 +27,29 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.ListOauthApp,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/oauthapps/:%v", _oauthAppClientIDIDParam),
+			Pattern:     fmt.Sprintf("/oauthapps/:%v", _oauthAppClientIDParam),
 			HandlerFunc: api.GetOauthApp,
 		}, {
 			Method:      http.MethodPut,
-			Pattern:     fmt.Sprintf("/oauthapps/:%v", _oauthAppClientIDIDParam),
+			Pattern:     fmt.Sprintf("/oauthapps/:%v", _oauthAppClientIDParam),
 			HandlerFunc: api.UpdateOauthApp,
 		}, {
 			Method:      http.MethodDelete,
-			Pattern:     fmt.Sprintf("/oauthapps/:%v", _oauthAppClientIDIDParam),
+			Pattern:     fmt.Sprintf("/oauthapps/:%v", _oauthAppClientIDParam),
 			HandlerFunc: api.DeleteOauthApp,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/oauthapps/:%v/clientsecret", _oauthAppClientIDParam),
+			HandlerFunc: api.ListSecret,
+		}, {
+			Method: http.MethodDelete,
+			Pattern: fmt.Sprintf("/oauthapps/:%v/clientsecret/:%v",
+				_oauthAppClientIDParam, _oauthClientSecretID),
+			HandlerFunc: api.DeleteSecret,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/oauthapps/:%v/clientsecret", _oauthAppClientIDParam),
+			HandlerFunc: api.CreateSecret,
 		},
 	}
 	route.RegisterRoutes(apiGroup, r)

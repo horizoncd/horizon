@@ -60,7 +60,8 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 	// TODO(tom): members and pipelineruns and environments need to add to auth check
 	if attr.IsResourceRequest() && (attr.GetResource() == "members" ||
 		attr.GetResource() == "templates" ||
-		attr.GetResource() == "environments") {
+		attr.GetResource() == "environments") ||
+		attr.GetResource() == "oauthapps" {
 		log.Warning(ctx,
 			"members|templates|environments are not authed yet")
 		return auth.DecisionAllow, NotChecked, nil

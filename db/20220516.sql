@@ -21,15 +21,16 @@ CREATE table `tb_oauth_app` (
     `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `name`       varchar(128) COMMENT 'short name of app client',
     `client_id`  varchar(128)  COMMENT 'oauth app client',
-    `redirect_url` varchar(256) COMMNET 'the authorization callback url',
-    `home_url`   varchar(256) COMMNET 'the oauth app home url',
+    `redirect_url` varchar(256) COMMENT 'the authorization callback url',
+    `home_url`   varchar(256) COMMENT 'the oauth app home url',
     `desc`      varchar(256),
+    `app_type`     tinyint(1)  NOT NULL COMMENT '1 for HorizonOAuthAPP, 2 for DirectOAuthAPP',
     `owner_type` tinyint(1) NOT NULL COMMENT '1 for group, 2 for user',
     `owner_id`   bigint(20) NOT NULL,
     `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     `updated_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
-     PRIMARY KEY (`id`)
+     PRIMARY KEY (`id`),
      UNIQUE KEY `idx_client_id` (`client_id`)
 )
 
@@ -40,7 +41,7 @@ CREATE table `tb_oauth_client_secret` (
     `client_secret`  varchar(256)  COMMENT 'oauth app secret',
     `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
     UNIQUE KEY `idx_client_id_secret` (`client_id`, `client_secret`)
 )
 

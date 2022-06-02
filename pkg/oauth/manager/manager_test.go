@@ -25,7 +25,6 @@ var (
 	tokenStore    store.TokenStore
 	oauthAppStore store.OauthAppStore
 	oauthManager  Manager
-	ctx                         = context.TODO()
 	aUser         userauth.User = &userauth.DefaultInfo{
 		Name:     "alias",
 		FullName: "alias",
@@ -33,6 +32,8 @@ var (
 		Email:    "",
 		Admin:    false,
 	}
+	ctx = context.WithValue(context.Background(), common.Key(), aUser)
+
 	authorizeCodeExpireIn = time.Second * 3
 	accessTokenExpireIn   = time.Hour * 24
 )

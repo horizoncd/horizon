@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/oauth/generate"
@@ -165,12 +166,16 @@ func (m *OauthManager) UpdateOauthApp(ctx context.Context, clientID string,
 }
 
 func (m *OauthManager) CreateSecret(ctx context.Context, clientID string) (*models.OauthClientSecret, error) {
+	user, err := common.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	newSecret := &models.OauthClientSecret{
 		// ID:           0, // filled by return
 		ClientID:     clientID,
 		ClientSecret: rand.String(OauthClientSecretLength),
 		CreatedAt:    time.Now(),
-		// CreatedBy:     0, // filled by middleware
+		CreatedBy:    user.GetID(),
 	}
 	return m.oauthAppStore.CreateSecret(ctx, newSecret)
 }

@@ -282,13 +282,15 @@ components:
     ClientSecret:
       type: object
       properties:
-        ClientID:
+        id:
+          type: number
+        clientID:
           type: string
           format: uuid
-        Secret:
+        clientSecret:
           type: string
-        CreateTime:
+        createdTime:
           type: string
           format: DateTime
-        CreateBy:
+        createdBy:
           type: string

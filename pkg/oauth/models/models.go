@@ -54,9 +54,9 @@ type OauthApp struct {
 }
 
 type OauthClientSecret struct {
-	ID           uint      `gorm:"column:id"`
-	ClientID     string    `gorm:"column:client_id"`
-	ClientSecret string    `gorm:"column:client_secret"`
-	CreatedAt    time.Time `gorm:"column:created_at"`
-	CreatedBy    uint      `gorm:"column:created_by"`
+	ID           uint      `gorm:"column:id" json:"id"`
+	ClientID     string    `gorm:"column:client_id" json:"clientID"`
+	ClientSecret string    `gorm:"column:client_secret" json:"clientSecret"`
+	CreatedAt    time.Time `gorm:"column:created_at" json:"createdAt"`
+	CreatedBy    uint      `gorm:"column:created_by" json:"createdBy"`
 }

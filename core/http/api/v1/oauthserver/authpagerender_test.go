@@ -26,6 +26,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/oauth/store"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,6 @@ import (
 )
 
 var (
-	ctx                       = context.TODO()
 	authFileLoc               = "/Users/tomsun/Workspace/cloudmusic/code/horizon/horizon/core/http/api/v1/oauthserver/auth.html" // nolint
 	aUser       userauth.User = &userauth.DefaultInfo{
 		Name:     "alias",
@@ -42,6 +42,7 @@ var (
 		Email:    "",
 		Admin:    false,
 	}
+	ctx                   = context.WithValue(context.Background(), common.Key(), aUser)
 	authorizeCodeExpireIn = time.Minute * 30
 	accessTokenExpireIn   = time.Hour * 24
 )
@@ -134,7 +135,7 @@ func TestServer(t *testing.T) {
 
 	oauthServerController := oauth.NewController(oauthManager)
 
-	oauthAppController := oauthapp.NewController(oauthManager)
+	oauthAppController := oauthapp.NewController(oauthManager, usermanager.New())
 
 	authScopeService, err := scope2.NewFileScopeService(createOauthScopeConfig())
 	assert.Nil(t, err)
@@ -148,7 +149,7 @@ func TestServer(t *testing.T) {
 	r := gin.New()
 	r.Use(userMiddleWare)
 	RegisterRoutes(r, api)
-	ListenPort := ":8181"
+	ListenPort := ":18181"
 
 	go func() { log.Print(r.Run(ListenPort)) }()
 
