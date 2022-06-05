@@ -15,6 +15,7 @@ import (
 const (
 	// param
 	_environmentRegionIDParam = "environmentRegionID"
+	_environmentNameQuery     = "environmentName"
 )
 
 type API struct {
@@ -25,14 +26,22 @@ func NewAPI() *API {
 	return &API{environmentRegionCtl: environmentregion.Ctl}
 }
 
-func (a *API) ListAll(c *gin.Context) {
-	regions, err := a.environmentRegionCtl.ListAll(c)
+func (a *API) List(c *gin.Context) {
+	env := c.Query(_environmentNameQuery)
+	var envRegions environmentregion.EnvironmentRegions
+	var err error
+	if env == "" {
+		envRegions, err = a.environmentRegionCtl.ListAll(c)
+	} else {
+		envRegions, err = a.environmentRegionCtl.ListByEnvironment(c, env)
+	}
+
 	if err != nil {
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg("failed to list all environmentRegions"))
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg("failed to list environmentRegions"))
 		return
 	}
 
-	response.SuccessWithData(c, regions)
+	response.SuccessWithData(c, envRegions)
 }
 
 func (a *API) Create(c *gin.Context) {

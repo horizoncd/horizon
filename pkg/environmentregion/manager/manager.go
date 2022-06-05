@@ -25,8 +25,8 @@ type Manager interface {
 	// CreateEnvironmentRegion create a environmentRegion
 	CreateEnvironmentRegion(ctx context.Context, er *models.EnvironmentRegion) (
 		*models.EnvironmentRegion, error)
-	// ListRegionsByEnvironment list regions by env
-	ListRegionsByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error)
+	// ListByEnvironment list regions by env
+	ListByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error)
 	ListEnabledRegionsByEnvironment(ctx context.Context, env string) (regionmodels.RegionParts, error)
 	GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error)
 	GetByEnvironmentAndRegion(ctx context.Context, env, region string) (*models.EnvironmentRegion, error)
@@ -57,7 +57,7 @@ func (m *manager) CreateEnvironmentRegion(ctx context.Context,
 	return m.envRegionDAO.CreateEnvironmentRegion(ctx, er)
 }
 
-func (m *manager) ListRegionsByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error) {
+func (m *manager) ListByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error) {
 	regions, err := m.envRegionDAO.ListRegionsByEnvironment(ctx, env)
 	if err != nil {
 		return nil, err

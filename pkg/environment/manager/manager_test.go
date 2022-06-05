@@ -100,7 +100,7 @@ func Test(t *testing.T) {
 	applicationRegions, _ := appregionmanager.Mgr.ListByApplicationID(ctx, uint(1))
 	assert.Empty(t, applicationRegions)
 
-	regions, _ := envregionmanager.Mgr.ListRegionsByEnvironment(ctx, devEnv.Name)
+	regions, _ := envregionmanager.Mgr.ListByEnvironment(ctx, devEnv.Name)
 	assert.Empty(t, regions)
 }
 

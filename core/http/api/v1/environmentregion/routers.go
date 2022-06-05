@@ -14,7 +14,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			HandlerFunc: api.ListAll,
+			HandlerFunc: api.List,
 		}, {
 			Method:      http.MethodPost,
 			HandlerFunc: api.Create,
