@@ -163,7 +163,7 @@ func TestServer(t *testing.T) {
 		ClientID:    {clientID},
 		Scope:       {scope},
 		State:       {state},
-		RedirectURL: {createReq.RedirectURI},
+		RedirectURI: {createReq.RedirectURI},
 		Authorize:   {Authorized},
 	}
 	authorizeURI := BasicPath + AuthorizePath
@@ -190,7 +190,7 @@ func TestServer(t *testing.T) {
 		Code:         {authorizeCode},
 		ClientID:     {clientID},
 		ClientSecret: {secret.ClientSecret},
-		RedirectURL:  {createReq.RedirectURI},
+		RedirectURI:  {createReq.RedirectURI},
 	}
 
 	accessTokenURI := BasicPath + AccessTokenPath

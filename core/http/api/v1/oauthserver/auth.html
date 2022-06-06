@@ -72,7 +72,7 @@
     <div class="card" style="padding-top: 20px">
         <div>
             <div>
-                <form action="/oauth/authorize" method="POST">
+                <form action="/login/oauth/authorize" method="POST">
                 <input type="hidden" name="client_id" id="client_id" value="{{.ClientID }}" autocomplete="off">
                 <input type="hidden" name="redirect_uri" id="redirect_uri" value="{{ .RedirectURL }}" autocomplete="off">
                 <input type="hidden" name="state" id="state" value="{{ .State }}" autocomplete="off">

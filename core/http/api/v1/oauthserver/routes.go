@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	BasicPath       = "/oauth"
+	BasicPath       = "/login/oauth"
 	AuthorizePath   = "/authorize"
 	AccessTokenPath = "/access_token"
 )

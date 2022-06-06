@@ -22,7 +22,7 @@ type Token struct {
 
 	// grant client info
 	ClientID    string `gorm:"column:client_id"`
-	RedirectURI string `gorm:"column:redirect_url"`
+	RedirectURI string `gorm:"column:redirect_uri"`
 	State       string `gorm:"column:state"`
 
 	// token basic info

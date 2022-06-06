@@ -22,7 +22,7 @@ const (
 	ClientID    = "client_id"
 	Scope       = "scope"
 	State       = "state"
-	RedirectURL = "redirect_url"
+	RedirectURI = "redirect_uri"
 	Authorize   = "authorize"
 
 	Code         = "code"
@@ -69,9 +69,8 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 	checkReq := func() bool {
 		keys := []string{
 			ClientID,
-			Scope,
 			State,
-			RedirectURL,
+			RedirectURI,
 		}
 		for _, key := range keys {
 			if _, ok := c.GetQuery(key); !ok {
@@ -122,7 +121,7 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		ClientID:    c.Query(ClientID),
 		State:       c.Query(State),
 		Scope:       c.Query(Scope),
-		RedirectURL: c.Query(RedirectURL),
+		RedirectURL: c.Query(RedirectURI),
 		ScopeBasic:  scopeInfo(),
 	}
 	// authTemplate := template.Must(template.New("").ParseFiles(authFileLoc))
@@ -146,7 +145,7 @@ func (a *API) HandleAuthorizationReq(c *gin.Context) {
 		keys := []string{
 			ClientID,
 			State,
-			RedirectURL,
+			RedirectURI,
 		}
 		for _, key := range keys {
 			if _, ok := c.GetPostForm(key); !ok {
@@ -178,13 +177,13 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 		q := url.Values{}
 		q.Set(DenyKey, DenyDesc)
 		q.Set(State, c.PostForm(State))
-		location := url.URL{Path: c.PostForm(RedirectURL), RawQuery: q.Encode()}
+		location := url.URL{Path: c.PostForm(RedirectURI), RawQuery: q.Encode()}
 		c.Redirect(http.StatusFound, location.RequestURI())
 	} else {
 		resp, err := a.oAuthServer.GenAuthorizeCode(c, &oauth.AuthorizeReq{
 			ClientID:     c.PostForm(ClientID),
 			Scope:        c.PostForm(Scope),
-			RedirectURL:  c.PostForm(RedirectURL),
+			RedirectURL:  c.PostForm(RedirectURI),
 			State:        c.PostForm(State),
 			UserIdentity: user.GetStrID(),
 			Request:      c.Request,
@@ -219,7 +218,7 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 		keys := []string{
 			ClientID,
 			ClientSecret,
-			RedirectURL,
+			RedirectURI,
 			Code,
 		}
 		for _, key := range keys {
@@ -240,7 +239,7 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 		ClientID:     c.PostForm(ClientID),
 		ClientSecret: c.PostForm(ClientSecret),
 		Code:         c.PostForm(Code),
-		RedirectURL:  c.PostForm(RedirectURL),
+		RedirectURL:  c.PostForm(RedirectURI),
 		Request:      c.Request,
 	})
 	if err != nil {

@@ -335,8 +335,6 @@ func Run(flags *Flags) {
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl, config.OauthHTMLLocation, scopeService)
-		_                    = oauthapp.NewAPI(oauthAppCtl)
-		_                    = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl, config.OauthHTMLLocation, scopeService)
 	)
 
 	// init server

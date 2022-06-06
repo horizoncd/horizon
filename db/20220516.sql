@@ -7,12 +7,12 @@ CREATE TABLE `tb_token`
     `state`    varchar(256) COMMENT ' authorize_code state info',
     `code` varchar(256) NOT NULL COMMENT 'private-token-code/authorize_code/access_token/refresh-token',
     `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `expire_in`  bigint(20),
+    `expires_in`  bigint(20),
     `scope` varchar(256),
     `user_or_robot_identity` varchar(256),
-    PRIMARY KEY (`id`)
-    UNIQUE KEY `idx_code` (`code`)
-    KEY `idx_client_id` (`client_id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_code` (`code`),
+    KEY `idx_client_id` (`client_id`),
     KEY `idx_user_or_robot_identity` (`user_or_robot_identity`)
 )
 
