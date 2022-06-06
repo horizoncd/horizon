@@ -92,9 +92,10 @@ func Test(t *testing.T) {
 		Disabled:      true,
 	})
 	assert.Nil(t, err)
-	regions, _ = Mgr.ListAll(ctx)
-	assert.Equal(t, "jd", regions[0].Name)
-	assert.Equal(t, true, regions[0].Disabled)
+	regionEntity, err := Mgr.GetRegionByID(ctx, jdRegion.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "jd", regionEntity.Name)
+	assert.Equal(t, true, regionEntity.Disabled)
 }
 
 func TestMain(m *testing.M) {

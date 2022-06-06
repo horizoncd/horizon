@@ -29,6 +29,7 @@ type Manager interface {
 	UpdateByID(ctx context.Context, id uint, environment *models.Environment) error
 	// DeleteByID delete environment by id
 	DeleteByID(ctx context.Context, id uint) error
+	// GetByID get environment by id
 	GetByID(ctx context.Context, id uint) (*models.Environment, error)
 }
 

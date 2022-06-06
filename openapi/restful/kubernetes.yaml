@@ -1,16 +1,16 @@
 openapi: 3.0.1
 info:
-  title: Horizon-Region-Restful
+  title: Horizon-Kubernetes-Restful
   version: 1.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/regions:
+  /apis/core/v1/kubernetes:
     get:
       tags:
-        - region
-      operationId: listRegions
-      summary: list regions
+        - kubernetes
+      operationId: listKubernetes
+      summary: list kubernetes
       responses:
         "200":
           description: Success
@@ -20,7 +20,7 @@ paths:
                 data:
                   type: array
                   items:
-                    $ref: '#/components/schemas/Region'
+                    $ref: '#/components/schemas/Kubernetes'
         default:
           description: Unexpected error
           content:
@@ -29,15 +29,15 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     post:
       tags:
-        - region
-      operationId: createRegion
-      summary: create a region
+        - kubernetes
+      operationId: createKubernetes
+      summary: create a kubernetes
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Region"
+              $ref: "#/components/schemas/Kubernetes"
       responses:
         "200":
           description: Success
@@ -53,22 +53,22 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/regions/{regionID}:
+  /apis/core/v1/kubernetes/{kubernetesID}:
     parameters:
-      - name: regionID
+      - name: kubernetesID
         in: path
     get:
       tags:
-        - region
-      operationId: getRegion
-      summary: get a region
+        - kubernetes
+      operationId: getKubernetes
+      summary: get a kubernetes
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Region'
+                $ref: '#/components/schemas/Kubernetes'
         default:
           description: Unexpected error
           content:
@@ -77,15 +77,15 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     put:
       tags:
-        - region
-      operationId: updateRegion
-      summary: update a region
+        - kubernetes
+      operationId: updateKubernetes
+      summary: update a kubernetes
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Region'
+              $ref: '#/components/schemas/Kubernetes'
       responses:
         '200':
           description: Success
@@ -97,9 +97,9 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     delete:
       tags:
-        - region
-      operationId: deleteRegion
-      summary: delete a region
+        - kubernetes
+      operationId: deleteKubernetes
+      summary: delete a kubernetes
       responses:
         '200':
           description: Success
@@ -112,7 +112,7 @@ paths:
 
 components:
   schemas:
-    Region:
+    Kubernetes:
       type: object
       required:
         - id

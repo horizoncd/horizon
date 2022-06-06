@@ -31,8 +31,8 @@ func NewAPI(tagCtl tag.Controller) *API {
 
 func (a *API) List(c *gin.Context) {
 	const op = "tag: list"
-	resourceType := c.Query(_resourceTypeParam)
-	resourceIDStr := c.Query(_resourceIDParam)
+	resourceType := c.Param(_resourceTypeParam)
+	resourceIDStr := c.Param(_resourceIDParam)
 	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.
@@ -55,8 +55,8 @@ func (a *API) List(c *gin.Context) {
 
 func (a *API) Update(c *gin.Context) {
 	const op = "tag: update"
-	resourceType := c.Query(_resourceTypeParam)
-	resourceIDStr := c.Query(_resourceIDParam)
+	resourceType := c.Param(_resourceTypeParam)
+	resourceIDStr := c.Param(_resourceIDParam)
 	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.

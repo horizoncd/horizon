@@ -262,7 +262,7 @@ func Run(flags *Flags) {
 		clusterAPI           = cluster.NewAPI(clusterCtl)
 		prAPI                = pipelinerun.NewAPI(prCtl)
 		environmentAPI       = environment.NewAPI()
-		regionAPI            = region.NewAPI()
+		regionAPI            = region.NewAPI(tagCtl)
 		environmentRegionAPI = environmentregion.NewAPI()
 		harborAPI            = harbor.NewAPI()
 		roleAPI              = roleapi.NewAPI(roleCtl)

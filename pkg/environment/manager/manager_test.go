@@ -47,6 +47,9 @@ func Test(t *testing.T) {
 		DisplayName: "线上-update",
 	})
 	assert.Nil(t, err)
+	env, err := Mgr.GetByID(ctx, onlineEnv.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, env.DisplayName, "线上-update")
 
 	preEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "pre",
@@ -76,8 +79,6 @@ func Test(t *testing.T) {
 	t.Logf("%v", envs[1])
 	t.Logf("%v", envs[2])
 	t.Logf("%v", envs[3])
-	assert.Equal(t, envs[3].Name, "online")
-	assert.Equal(t, envs[3].DisplayName, "线上-update")
 
 	err = appregionmanager.Mgr.UpsertByApplicationID(ctx, uint(1), []*appregionmodels.ApplicationRegion{
 		{
@@ -90,9 +91,14 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: "dev",
-		RegionName:      "",
+		RegionName:      "hz",
 	})
 	assert.Nil(t, err)
+	regionParts, err := envregionmanager.Mgr.ListEnabledRegionsByEnvironment(ctx, "dev")
+	assert.Nil(t, err)
+	assert.Equal(t, len(regionParts), 1)
+	assert.Equal(t, regionParts[0].Name, "hz")
+	assert.Equal(t, regionParts[0].DisplayName, "HZ")
 
 	err = Mgr.DeleteByID(ctx, devEnv.ID)
 	assert.Nil(t, err)

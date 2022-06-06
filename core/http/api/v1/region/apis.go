@@ -5,10 +5,13 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/controller/region"
+	"g.hz.netease.com/horizon/core/controller/tag"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,10 +22,14 @@ const (
 
 type API struct {
 	regionCtl region.Controller
+	tagCtl    tag.Controller
 }
 
-func NewAPI() *API {
-	return &API{regionCtl: region.Ctl}
+func NewAPI(tagCtl tag.Controller) *API {
+	return &API{
+		regionCtl: region.Ctl,
+		tagCtl:    tagCtl,
+	}
 }
 
 func (a *API) ListRegions(c *gin.Context) {
@@ -126,4 +133,27 @@ func (a *API) GetByID(c *gin.Context) {
 	}
 
 	response.SuccessWithData(c, regionEntity)
+}
+
+func (a *API) ListRegionTags(c *gin.Context) {
+	const op = "tag: list"
+	regionIDStr := c.Param(_regionIDParam)
+	regionID, err := strconv.ParseUint(regionIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.
+			WithErrMsg(fmt.Sprintf("invalid resource id: %s", regionIDStr)))
+		return
+	}
+
+	resp, err := a.tagCtl.List(c, tagmodels.TypeRegion, uint(regionID))
+	if err != nil {
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.SuccessWithData(c, resp)
 }

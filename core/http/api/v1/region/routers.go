@@ -10,7 +10,7 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, api *API) {
-	apiGroup := engine.Group("/apis/core/v1/regions")
+	apiGroup := engine.Group("/apis/core/v1/kubernetes")
 
 	var routes = route.Routes{
 		{
@@ -23,6 +23,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%v", _regionIDParam),
 			HandlerFunc: api.GetByID,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%v/tags", _regionIDParam),
+			HandlerFunc: api.ListRegionTags,
 		}, {
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/:%v", _regionIDParam),
