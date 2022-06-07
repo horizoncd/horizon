@@ -69,7 +69,7 @@ func UserMiddleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	}, skippers...)
 }
 
-func createOauthScopeConfig() oauthconfig.Config {
+func createOauthScopeConfig() oauthconfig.Scopes {
 	var roles = make([]types.Role, 0)
 	roles = append(roles, types.Role{
 		Name:        "applications:read-only",
@@ -87,7 +87,7 @@ func createOauthScopeConfig() oauthconfig.Config {
 		PolicyRules: nil,
 	})
 
-	return oauthconfig.Config{
+	return oauthconfig.Scopes{
 		DefaultScopes: []string{"applications:read-only", "applications:read-write", "clusters:read-only"},
 		Roles:         roles,
 	}

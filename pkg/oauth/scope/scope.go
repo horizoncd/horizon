@@ -16,7 +16,7 @@ type fileScopeService struct {
 	Roles         []types.Role
 }
 
-func NewFileScopeService(config oauth.Config) (Service, error) {
+func NewFileScopeService(config oauth.Scopes) (Service, error) {
 	defaultRoles := make([]types.Role, 0)
 
 	getRole := func(scopeName string) *types.Role {

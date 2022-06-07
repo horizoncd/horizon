@@ -59,6 +59,7 @@ type AuthorizationPageParams struct {
 	RedirectURL string
 	State       string
 	ClientID    string
+	HomeURL     string
 	Scope       string
 	ClientName  string
 	ScopeBasic  []ScopeBasic
@@ -119,12 +120,12 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		UserName:    currentUser.GetName(),
 		ClientName:  appBasicInfo.AppName,
 		ClientID:    c.Query(ClientID),
+		HomeURL:     appBasicInfo.HomeURL,
 		State:       c.Query(State),
 		Scope:       c.Query(Scope),
 		RedirectURL: c.Query(RedirectURI),
 		ScopeBasic:  scopeInfo(),
 	}
-	// authTemplate := template.Must(template.New("").ParseFiles(authFileLoc))
 	authTemplate, err := template.ParseFiles(a.oauthHTMLLocation)
 	if err != nil {
 		log.Errorf(c, "render auth html err, err = %s", err.Error())

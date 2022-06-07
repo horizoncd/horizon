@@ -14,7 +14,7 @@
             padding:  2px 16px;
             box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
             transition: 0.3s;
-            width: 400px;
+            width: 420px;
             border-radius: 3px;
             background: white;
         }
@@ -24,6 +24,9 @@
         .text-normal {
             font-weight: 400 !important;
         }
+        .text-smaller {
+            font-size: smaller;
+        }
         .d-flex {
             display: flex !important;
         }
@@ -32,64 +35,79 @@
         }
         .buttom {
             border-radius: 3px;
-            color: #fff;
-            /*background: #1890ff*/
-            background: #1890ff;
-            width: 150px;
+            background-color: #1f75cb; /* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            display: inline-block;
+            font-size: 16px;
+            width: 200px;
+            cursor:pointer;
         }
         .buttom-cancel {
             border-radius: 3px;
-            color: #24292f;
-            /*background: #1890ff*/
+            border: none;
+            color: #000000;
             background: #f6f8fa;
-            width: 150px;
+            width: 200px;
+            font-size: 16px;
+            text-align: center;
+            cursor:pointer;
+        }
+        .center {
+            padding-top: 0px;
+            margin: auto;
+            width: 14%;
         }
     </style>
 </head>
 <body>
 <div style="background-color: #f6f8fa">
       <div class="card">
-          <h2  class="text-center text-normal">
-              {{ .ClientName }}  would like permission to Horizon:
-          </h2>
-          <div class="mb-4 position-relative lh-default" style="padding-left:45px;" >
-              <svg height="32" aria-hidden="true" viewBox="0 0 24 24" version="1.1" width="32" data-view-component="true" class="octicon octicon-person position-absolute mr-3 mt-1 color-fg-muted top-0 left-0">
+          <h2  class="text-center text-normal"><a href="{{ .HomeURL }}">{{ .ClientName }}</a> would like permission:</h2>
+          <h2  class="text-center text-normal">Horizon</h2>
+          <div class="center">
+              <svg height="60" width="60" >
+                    <path stroke="#000" id="svg_4" d="m3.99874,3.99913l42.99352,0l0,45.994l-42.99352,0l0,-45.994z" opacity="undefined" stroke-width="0" fill="#000000"/>
+                    <text stroke="#000" xml:space="preserve" text-anchor="start" font-family="Sans-serif" font-size="32" id="svg_6" y="37.03232" x="13.54039" stroke-width="0" fill="#ffffff">H</text>
+                  </g>
+              </svg>
+          </div>
+          <div style="padding-left:45px;" >
+              <svg height="32" aria-hidden="true" viewBox="0 0 24 24" version="1.1" width="32" data-view-component="true">
                   <path fill-rule="evenodd" d="M12 2.5a5.5 5.5 0 00-3.096 10.047 9.005 9.005 0 00-5.9 8.18.75.75 0 001.5.045 7.5 7.5 0 0114.993 0 .75.75 0 101.499-.044 9.005 9.005 0 00-5.9-8.181A5.5 5.5 0 0012 2.5zM8 8a4 4 0 118 0 4 4 0 01-8 0z"></path>
               </svg>
-              <strong class="pt-2 d-block color-fg-muted">Verify your Horizon identity ( {{ .UserName }} )</strong>
+              <strong>Verify your Horizon identity ({{ .UserName }})</strong>
           </div>
-          <div class="mb-4 position-relative lh-default" style="padding-left:45px;">
-              <svg height="32" aria-hidden="true" viewBox="0 0 24 24" version="1.1" width="32" data-view-component="true" class="octicon octicon-pulse position-absolute mr-3 mt-1 color-fg-muted top-0 left-0">
+          <div style="padding-left:45px; padding-top: 20px">
+              <svg height="32" aria-hidden="true" viewBox="0 0 24 24" version="1.1" width="32" data-view-component="true">
                   <path fill-rule="evenodd" d="M9.002 2.5a.75.75 0 01.691.464l6.302 15.305 2.56-6.301a.75.75 0 01.695-.468h4a.75.75 0 010 1.5h-3.495l-3.06 7.532a.75.75 0 01-1.389.004L8.997 5.21l-3.054 7.329A.75.75 0 015.25 13H.75a.75.75 0 010-1.5h4l3.558-8.538a.75.75 0 01.694-.462z"></path>
               </svg>
               <strong>Act on your behalf</strong>
           </div>
-          <div>
-              {{range .ScopeBasic}} <div><strong>{{ .Name}}:</strong> {{ .Desc }} </div>{{end}}
+          <div style="margin-top: 20px; padding-left: 45px">
+              {{range .ScopeBasic}} <div style="margin-top: 3px"><strong>{{ .Name}}:</strong> {{ .Desc }} </div>{{end}}
+          </div>
+          <div style="margin-top: 20px;">
+              <div>
+                  <form action="/login/oauth/authorize" method="POST">
+                      <input type="hidden" name="client_id" id="client_id" value="{{.ClientID }}" autocomplete="off">
+                      <input type="hidden" name="redirect_uri" id="redirect_uri" value="{{ .RedirectURL }}" autocomplete="off">
+                      <input type="hidden" name="state" id="state" value="{{ .State }}" autocomplete="off">
+                      <div class="d-flex flex-justify-center">
+                          <button type="submit" name="authorize" value="0" class="buttom-cancel">取消</button>
+                          <button type="submit" name="authorize" value="1" class="buttom">
+                              授权
+                          </button>
+                      </div>
+                  </form>
+              </div>
+              <div>
+                  <p class="text-center text-smaller">Authorizing will redirect to <br><strong class="color-fg-default">{{ .RedirectURL }} </strong></p>
+              </div>
           </div>
      </div>
-    
-    <div class="card" style="padding-top: 20px">
-        <div>
-            <div>
-                <form action="/login/oauth/authorize" method="POST">
-                <input type="hidden" name="client_id" id="client_id" value="{{.ClientID }}" autocomplete="off">
-                <input type="hidden" name="redirect_uri" id="redirect_uri" value="{{ .RedirectURL }}" autocomplete="off">
-                <input type="hidden" name="state" id="state" value="{{ .State }}" autocomplete="off">
-                <div class="d-flex flex-justify-center">
-                    <button type="submit" name="authorize" value="0" class="buttom-cancel">Cancel</button>
-                    <button type="submit" name="authorize" value="1" class="buttom">
-                        Authorize
-                    </button>
-                </div>
-                </form>
-            </div>
-            <div class="col-sm-12 mt-2">
-                <p class="text-small color-fg-muted mb-0 mt-2 mt-md-0 text-center">Authorizing will redirect to <br><strong class="color-fg-default">{{ .RedirectURL }} </strong></p>
-            </div>
-        </div>
-        </div>
-</div>
 </div>
 </body>
 </html>

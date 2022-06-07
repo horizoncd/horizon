@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"time"
 
 	"g.hz.netease.com/horizon/core/common"
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
@@ -93,7 +92,7 @@ import (
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Flags defines agent CLI flags.
@@ -259,11 +258,8 @@ func Run(flags *Flags) {
 
 	oauthAppStore := oauthstore.NewOauthAppStore(mysqlDB)
 	oauthTokenStore := oauthstore.NewTokenStore(mysqlDB)
-
-	authorizeCodeExpireIn := time.Minute * 30
-	accessTokenExpireIn := time.Hour * 24
 	oauthManager := oauthmanager.NewManager(oauthAppStore, oauthTokenStore,
-		generate.NewAuthorizeGenerate(), authorizeCodeExpireIn, accessTokenExpireIn)
+		generate.NewAuthorizeGenerate(), config.Oauth.AuthorizeCodeExpireIn, config.Oauth.AccessTokenExpireIn)
 
 	// init scope service
 	scopeFile, err := os.OpenFile(flags.ScopeRoleFile, os.O_RDONLY, 0644)
@@ -274,11 +270,11 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	var oauthConfig oauthconfig.Config
+	var oauthConfig oauthconfig.Scopes
 	if err = yaml.Unmarshal(content, &oauthConfig); err != nil {
 		panic(err)
 	} else {
-		log.Printf("the oauthScopeConfig = %+v\n", roleConfig)
+		log.Printf("the oauthScopeConfig = %+v\n", oauthConfig)
 	}
 	scopeService, err := scope.NewFileScopeService(oauthConfig)
 	if err != nil {
@@ -334,7 +330,7 @@ func Run(flags *Flags) {
 		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
-		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl, config.OauthHTMLLocation, scopeService)
+		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl, config.Oauth.OauthHTMLLocation, scopeService)
 	)
 
 	// init server
