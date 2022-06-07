@@ -6,25 +6,32 @@ import (
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 )
 
 type ApplicationRegion []*Region
 
-func ofApplicationRegion(applicationRegions []*models.ApplicationRegion,
-	environments []*envmodels.Environment, environmentRegions []*envregionmodels.EnvironmentRegion) ApplicationRegion {
+func ofApplicationRegion(applicationRegions []*models.ApplicationRegion, environments []*envmodels.Environment,
+	environmentRegions []*envregionmodels.EnvironmentRegion, regions regionmodels.RegionParts) ApplicationRegion {
 	defaultRegionMap := make(map[string]string)
 	for _, environmentRegion := range environmentRegions {
 		defaultRegionMap[environmentRegion.EnvironmentName] = environmentRegion.RegionName
+	}
+	selectableRegionMap := make(map[string]bool)
+	for _, region := range regions {
+		selectableRegionMap[region.Name] = true
 	}
 
 	retApplicationRegions := make([]*Region, 0)
 	envMap := make(map[string]bool)
 	for _, applicationRegion := range applicationRegions {
-		retApplicationRegions = append(retApplicationRegions, &Region{
-			Environment: applicationRegion.EnvironmentName,
-			Region:      applicationRegion.RegionName,
-		})
-		envMap[applicationRegion.EnvironmentName] = true
+		if _, ok := selectableRegionMap[applicationRegion.RegionName]; ok {
+			retApplicationRegions = append(retApplicationRegions, &Region{
+				Environment: applicationRegion.EnvironmentName,
+				Region:      applicationRegion.RegionName,
+			})
+			envMap[applicationRegion.EnvironmentName] = true
+		}
 	}
 
 	// append default region

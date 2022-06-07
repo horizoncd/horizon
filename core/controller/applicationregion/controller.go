@@ -59,8 +59,12 @@ func (c *controller) List(ctx context.Context, applicationID uint) (ApplicationR
 	if err != nil {
 		return nil, perror.WithMessage(err, "failed to list environmentRegions")
 	}
+	selectRegions, err := c.groupMgr.GetSelectableRegions(ctx, application.GroupID)
+	if err != nil {
+		return nil, perror.WithMessage(err, "failed to list environmentRegions")
+	}
 
-	return ofApplicationRegion(applicationRegions, environments, environmentRegions), nil
+	return ofApplicationRegion(applicationRegions, environments, environmentRegions, selectRegions), nil
 }
 
 func (c *controller) Update(ctx context.Context, applicationID uint, regions ApplicationRegion) error {
