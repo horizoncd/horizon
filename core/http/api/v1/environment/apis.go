@@ -102,6 +102,7 @@ func (a *API) Create(c *gin.Context) {
 }
 
 func (a *API) Delete(c *gin.Context) {
+	const op = "environment: delete"
 	envIDStr := c.Param(_environmentParam)
 	envID, err := strconv.ParseUint(envIDStr, 10, 0)
 	if err != nil {
@@ -115,6 +116,7 @@ func (a *API) Delete(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
@@ -122,6 +124,7 @@ func (a *API) Delete(c *gin.Context) {
 	response.Success(c)
 }
 func (a *API) GetByID(c *gin.Context) {
+	const op = "environment: get"
 	envIDStr := c.Param(_environmentParam)
 	envID, err := strconv.ParseUint(envIDStr, 10, 0)
 	if err != nil {
@@ -135,6 +138,7 @@ func (a *API) GetByID(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}

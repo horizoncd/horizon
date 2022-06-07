@@ -49,7 +49,6 @@ build:
   only:
     - develop
     - tags
-    - feat-remove-k8s-cluster-table
   except:
     - schedules
 

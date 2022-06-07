@@ -24,21 +24,21 @@ type Region struct {
 }
 
 type CreateRegionRequest struct {
-	Name          string
-	DisplayName   string
-	Server        string
-	Certificate   string
-	IngressDomain string
-	HarborID      uint `json:"harborID"`
+	Name          string `json:"name"`
+	DisplayName   string `json:"displayName"`
+	Server        string `json:"server"`
+	Certificate   string `json:"certificate"`
+	IngressDomain string `json:"ingressDomain"`
+	HarborID      uint   `json:"harborID"`
 }
 
 type UpdateRegionRequest struct {
-	DisplayName   string
-	Server        string
-	Certificate   string
-	IngressDomain string
-	HarborID      uint `json:"harborID"`
-	Disabled      bool
+	DisplayName   string `json:"displayName"`
+	Server        string `json:"server"`
+	Certificate   string `json:"certificate"`
+	IngressDomain string `json:"ingressDomain"`
+	HarborID      uint   `json:"harborID"`
+	Disabled      bool   `json:"disabled"`
 }
 
 func ofRegionEntity(entity *models.RegionEntity) *Region {
