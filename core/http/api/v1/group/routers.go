@@ -49,7 +49,7 @@ func RegisterRoutes(engine *gin.Engine, a *API) {
 		},
 		{
 			Method:      http.MethodPut,
-			Pattern:     fmt.Sprintf("/:%s/regionselectors", _paramGroupID),
+			Pattern:     fmt.Sprintf("/:%s/kubernetesselectors", _paramGroupID),
 			HandlerFunc: a.UpdateRegionSelector,
 		},
 	}

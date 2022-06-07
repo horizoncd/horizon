@@ -77,7 +77,7 @@ func (d *dao) UpdateRegionSelector(ctx context.Context, id uint, regionSelector 
 		return err
 	}
 
-	group.RegionSelector = regionSelector
+	group.KubernetesSelector = regionSelector
 	result := db.Save(group)
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
@@ -332,7 +332,7 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 	}
 	// set regionSelector from parent group
 	if pGroup != nil {
-		group.RegionSelector = pGroup.RegionSelector
+		group.KubernetesSelector = pGroup.KubernetesSelector
 	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {

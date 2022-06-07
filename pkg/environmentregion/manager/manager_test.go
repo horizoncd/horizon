@@ -91,8 +91,14 @@ func Test(t *testing.T) {
 	r2New, err := Mgr.GetEnvironmentRegionByID(ctx, r2.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, r2New.IsDefault, true)
+	r2New, err = Mgr.GetDefaultRegionByEnvironment(ctx, devEnv.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, r2New.IsDefault, true)
 
 	devHzErNew, err := Mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, devHzErNew.IsDefault, false)
+	devHzErNew, err = Mgr.GetByEnvironmentAndRegion(ctx, devEnv.Name, "hz")
 	assert.Nil(t, err)
 	assert.Equal(t, devHzErNew.IsDefault, false)
 

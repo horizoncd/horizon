@@ -440,7 +440,7 @@ func TestControllerGetByID(t *testing.T) {
 					FullName:        "1",
 					TraversalIDs:    strconv.Itoa(int(id)),
 				},
-				RegionSelectors: RegionSelectors{},
+				KubernetesSelectors: KubernetesSelectors{},
 			},
 		},
 		{

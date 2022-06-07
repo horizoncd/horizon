@@ -483,27 +483,27 @@ func Test_manager_GetSelectableRegionsByEnv(t *testing.T) {
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz3",
 	})
-	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r1.ID, []*tagmodels.Tag{
 		{
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: tagmodels.TypeKubernetes,
 			ResourceID:   r1.ID,
 			Key:          "a",
 			Value:        "1",
 		}, {
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: tagmodels.TypeKubernetes,
 			ResourceID:   r1.ID,
 			Key:          "b",
 			Value:        "1",
 		},
 	})
-	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r3.ID, []*tagmodels.Tag{
 		{
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: tagmodels.TypeKubernetes,
 			ResourceID:   r3.ID,
 			Key:          "a",
 			Value:        "1",
 		}, {
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: tagmodels.TypeKubernetes,
 			ResourceID:   r3.ID,
 			Key:          "c",
 			Value:        "1",
@@ -512,7 +512,7 @@ func Test_manager_GetSelectableRegionsByEnv(t *testing.T) {
 	g1, err := Mgr.Create(ctx, &models.Group{
 		Name: "11",
 		Path: "pp",
-		RegionSelector: `- key: "a"
+		KubernetesSelector: `- key: "a"
   operator: "in"
   values: 
     - "1"
@@ -588,17 +588,17 @@ func Test_manager_GetSelectableRegions(t *testing.T) {
 		DisplayName: "HZ",
 	})
 
-	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r1.ID, []*tagmodels.Tag{
 		{
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: tagmodels.TypeKubernetes,
 			ResourceID:   r1.ID,
 			Key:          "a",
 			Value:        "11",
 		},
 	})
-	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r3.ID, []*tagmodels.Tag{
 		{
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: tagmodels.TypeKubernetes,
 			ResourceID:   r3.ID,
 			Key:          "a",
 			Value:        "11",
@@ -608,7 +608,7 @@ func Test_manager_GetSelectableRegions(t *testing.T) {
 	g1, err := Mgr.Create(ctx, &models.Group{
 		Name: "112",
 		Path: "pp2",
-		RegionSelector: `- key: "a"
+		KubernetesSelector: `- key: "a"
   operator: "in"
   values: 
     - "11"

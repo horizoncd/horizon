@@ -312,7 +312,7 @@ func (a *API) UpdateRegionSelector(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
 	}
 
-	var regionSelectors group.RegionSelectors
+	var regionSelectors group.KubernetesSelectors
 	err = c.ShouldBindJSON(&regionSelectors)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody, fmt.Sprintf("%v", err))

@@ -53,7 +53,7 @@ type Controller interface {
 	// ListAuthedGroup get all the authed groups of current user(if is admin, return all the groups)
 	ListAuthedGroup(ctx context.Context) ([]*Group, error)
 	// UpdateRegionSelector update regionSelector
-	UpdateRegionSelector(ctx context.Context, id uint, regionSelector RegionSelectors) error
+	UpdateRegionSelector(ctx context.Context, id uint, regionSelector KubernetesSelectors) error
 }
 
 type controller struct {
@@ -432,8 +432,8 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*StructuredGroup, er
 		return nil, err
 	}
 
-	var regionSelectors RegionSelectors
-	err = yaml.Unmarshal([]byte(group.RegionSelector), &regionSelectors)
+	var regionSelectors KubernetesSelectors
+	err = yaml.Unmarshal([]byte(group.KubernetesSelector), &regionSelectors)
 	if err != nil {
 		return nil, err
 	}
@@ -451,7 +451,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*StructuredGroup, er
 			FullName:        full.FullName,
 			FullPath:        full.FullPath,
 		},
-		RegionSelectors: regionSelectors,
+		KubernetesSelectors: regionSelectors,
 	}, nil
 }
 
@@ -573,7 +573,7 @@ func (c *controller) ofGroupModel(ctx context.Context, groups []*models.Group) (
 	return ofGroups, nil
 }
 
-func (c *controller) UpdateRegionSelector(ctx context.Context, id uint, regionSelector RegionSelectors) error {
+func (c *controller) UpdateRegionSelector(ctx context.Context, id uint, regionSelector KubernetesSelectors) error {
 	// marshal struct to string
 	regionSelectorBytes, err := yaml.Marshal(regionSelector)
 	if err != nil {
