@@ -44,7 +44,7 @@ var _ Service = &fileScopeService{}
 
 func (f *fileScopeService) GetRulesByScope(scopes []string) []types.Role {
 	var roles = make([]types.Role, 0)
-	if len(scopes) == 0 {
+	if len(scopes) == 0 || (len(scopes) == 1 && scopes[0] == "") {
 		return append(roles, f.DefaultRoles...)
 	}
 	for _, scope := range scopes {
