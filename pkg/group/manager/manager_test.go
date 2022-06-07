@@ -229,6 +229,13 @@ func TestGetByPaths(t *testing.T) {
 	assert.Equal(t, id.ID, groups[0].ID)
 	assert.Equal(t, id2.ID, groups[1].ID)
 
+	// test GetByNameOrPathUnderParent
+	groups, err = Mgr.GetByNameOrPathUnderParent(ctx, "1", "b", 0)
+	assert.Nil(t, err)
+	assert.Equal(t, len(groups), 2)
+	assert.Equal(t, groups[0].Path, "a")
+	assert.Equal(t, groups[1].Name, "2")
+
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 	assert.Nil(t, res.Error)
@@ -271,6 +278,12 @@ func TestUpdateBasic(t *testing.T) {
 	group2.Name = "update1"
 	err = Mgr.UpdateBasic(ctx, group2)
 	assert.Equal(t, herrors.ErrNameConflict, perror.Cause(err))
+
+	// update regionSelector
+	err = Mgr.UpdateRegionSelector(ctx, g1.ID, "XXX")
+	assert.Nil(t, err)
+	group, _ = Mgr.GetByID(ctx, g1.ID)
+	assert.Equal(t, group.RegionSelector, "XXX")
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
