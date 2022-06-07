@@ -72,28 +72,28 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, r3)
-	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r1.ID, []*tagmodels.Tag{
+	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r1.ID,
-			ResourceType: tagmodels.TypeKubernetes,
+			ResourceType: tagmodels.TypeRegion,
 			Key:          "a",
 			Value:        "1",
 		},
 	})
 	assert.Nil(t, err)
-	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r1.ID, []*tagmodels.Tag{
+	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r2.ID,
-			ResourceType: tagmodels.TypeKubernetes,
+			ResourceType: tagmodels.TypeRegion,
 			Key:          "a",
 			Value:        "1",
 		},
 	})
 	assert.Nil(t, err)
-	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r1.ID, []*tagmodels.Tag{
+	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r3.ID,
-			ResourceType: tagmodels.TypeKubernetes,
+			ResourceType: tagmodels.TypeRegion,
 			Key:          "a",
 			Value:        "1",
 		},
@@ -141,7 +141,7 @@ func Test(t *testing.T) {
 	g, err := groupmanager.Mgr.Create(ctx, &groupmodels.Group{
 		Name: "",
 		Path: "",
-		KubernetesSelector: `- key: "a"
+		RegionSelector: `- key: "a"
   values: 
     - "1"`,
 	})

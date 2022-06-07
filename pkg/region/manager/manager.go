@@ -30,7 +30,7 @@ type Manager interface {
 	// UpdateByID update region by id
 	UpdateByID(ctx context.Context, id uint, region *models.Region) error
 	// ListByRegionSelectors list region by tags
-	ListByRegionSelectors(ctx context.Context, selectors groupmodels.KubernetesSelectors) (models.RegionParts, error)
+	ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (models.RegionParts, error)
 	// DeleteByID delete region by id
 	DeleteByID(ctx context.Context, id uint) error
 }
@@ -65,7 +65,7 @@ func (m *manager) ListRegionEntities(ctx context.Context) (ret []*models.RegionE
 	}
 
 	for _, region := range regions {
-		tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeKubernetes, region.ID)
+		tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +112,7 @@ func (m *manager) getHarborByRegion(ctx context.Context, region *models.Region) 
 	return harbor, nil
 }
 
-func (m *manager) ListByRegionSelectors(ctx context.Context, selectors groupmodels.KubernetesSelectors) (
+func (m *manager) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (
 	models.RegionParts, error) {
 	return m.regionDAO.ListByRegionSelectors(ctx, selectors)
 }
@@ -132,7 +132,7 @@ func (m *manager) GetRegionByID(ctx context.Context, id uint) (*models.RegionEnt
 		return nil, err
 	}
 
-	tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeKubernetes, region.ID)
+	tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
 	if err != nil {
 		return nil, err
 	}

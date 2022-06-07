@@ -155,53 +155,53 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r1.ID, []*tagmodels.Tag{
+	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r1.ID,
-			ResourceType: tagmodels.TypeKubernetes,
+			ResourceType: tagmodels.TypeRegion,
 			Key:          "a",
 			Value:        "1",
 		},
 		{
 			ResourceID:   r1.ID,
-			ResourceType: tagmodels.TypeKubernetes,
+			ResourceType: tagmodels.TypeRegion,
 			Key:          "b",
 			Value:        "2",
 		},
 	})
 	assert.Nil(t, err)
-	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r2.ID, []*tagmodels.Tag{
+	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r2.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r2.ID,
-			ResourceType: tagmodels.TypeKubernetes,
+			ResourceType: tagmodels.TypeRegion,
 			Key:          "a",
 			Value:        "1",
 		},
 		{
 			ResourceID:   r2.ID,
-			ResourceType: tagmodels.TypeKubernetes,
+			ResourceType: tagmodels.TypeRegion,
 			Key:          "b",
 			Value:        "2",
 		},
 	})
 	assert.Nil(t, err)
-	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeKubernetes, r3.ID, []*tagmodels.Tag{
+	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r3.ID,
-			ResourceType: tagmodels.TypeKubernetes,
+			ResourceType: tagmodels.TypeRegion,
 			Key:          "a",
 			Value:        "2",
 		},
 		{
 			ResourceID:   r3.ID,
-			ResourceType: tagmodels.TypeKubernetes,
+			ResourceType: tagmodels.TypeRegion,
 			Key:          "b",
 			Value:        "2",
 		},
 	})
 	assert.Nil(t, err)
 	type args struct {
-		selectors groupmodels.KubernetesSelectors
+		selectors groupmodels.RegionSelectors
 	}
 	tests := []struct {
 		name    string
@@ -212,7 +212,7 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 		{
 			name: "disabled",
 			args: args{
-				selectors: groupmodels.KubernetesSelectors{
+				selectors: groupmodels.RegionSelectors{
 					{
 						Key:    "b",
 						Values: []string{"2"},
@@ -233,7 +233,7 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 		{
 			name: "oneKeyTwoValues",
 			args: args{
-				selectors: groupmodels.KubernetesSelectors{
+				selectors: groupmodels.RegionSelectors{
 					{
 						Key:    "a",
 						Values: []string{"1", "2"},
@@ -254,7 +254,7 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 		{
 			name: "twoKeyValuePairs",
 			args: args{
-				selectors: groupmodels.KubernetesSelectors{
+				selectors: groupmodels.RegionSelectors{
 					{
 						Key:    "a",
 						Values: []string{"1"},
@@ -327,6 +327,6 @@ func Test_manager_DeleteByID(t *testing.T) {
 	regions, _ := envregionmanager.Mgr.ListAllEnvironmentRegions(ctx)
 	assert.Empty(t, regions)
 
-	tags, _ := tagmanager.Mgr.ListByResourceTypeID(ctx, tagmodels.TypeKubernetes, region.ID)
+	tags, _ := tagmanager.Mgr.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
 	assert.Empty(t, tags)
 }

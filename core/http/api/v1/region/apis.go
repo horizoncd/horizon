@@ -145,7 +145,7 @@ func (a *API) ListRegionTags(c *gin.Context) {
 		return
 	}
 
-	resp, err := a.tagCtl.List(c, tagmodels.TypeKubernetes, uint(regionID))
+	resp, err := a.tagCtl.List(c, tagmodels.TypeRegion, uint(regionID))
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))

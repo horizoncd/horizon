@@ -31,7 +31,7 @@ type DAO interface {
 	// DeleteByID delete region by id
 	DeleteByID(ctx context.Context, id uint) error
 	// ListByRegionSelectors list region by tags
-	ListByRegionSelectors(ctx context.Context, selectors groupmodels.KubernetesSelectors) (models.RegionParts, error)
+	ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (models.RegionParts, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -42,7 +42,7 @@ func NewDAO() DAO {
 type dao struct {
 }
 
-func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.KubernetesSelectors) (
+func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (
 	models.RegionParts, error) {
 	if len(selectors) == 0 {
 		return models.RegionParts{}, nil
@@ -54,7 +54,7 @@ func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.K
 
 	var conditions []string
 	var params []interface{}
-	params = append(params, tagmodels.TypeKubernetes)
+	params = append(params, tagmodels.TypeRegion)
 	for _, selector := range selectors {
 		conditions = append(conditions, "(tg.tag_key = ? and tg.tag_value in ?)")
 		params = append(params, selector.Key, selector.Values)
@@ -202,7 +202,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		}
 
 		// remove records from tag table
-		result = tx.Where("resource_id = ? and resource_type = ?", regionInDB.ID, tagmodels.TypeKubernetes).
+		result = tx.Where("resource_id = ? and resource_type = ?", regionInDB.ID, tagmodels.TypeRegion).
 			Delete(&tagmodels.Tag{})
 		if result.Error != nil {
 			return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())

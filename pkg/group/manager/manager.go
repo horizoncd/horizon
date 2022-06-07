@@ -300,8 +300,8 @@ func (m manager) GetSelectableRegions(ctx context.Context, id uint) (regionmodel
 		return nil, err
 	}
 	// unmarshal from yaml to struct
-	var regionSelectors groupmodels.KubernetesSelectors
-	err = yaml.Unmarshal([]byte(group.KubernetesSelector), &regionSelectors)
+	var regionSelectors groupmodels.RegionSelectors
+	err = yaml.Unmarshal([]byte(group.RegionSelector), &regionSelectors)
 	if err != nil {
 		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, err.Error())
 	}

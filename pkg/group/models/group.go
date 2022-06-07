@@ -8,20 +8,20 @@ import (
 
 type Group struct {
 	global.Model
-	Name               string
-	Path               string
-	VisibilityLevel    string
-	Description        string
-	ParentID           uint
-	TraversalIDs       string
-	KubernetesSelector string
-	CreatedBy          uint
-	UpdatedBy          uint
+	Name            string
+	Path            string
+	VisibilityLevel string
+	Description     string
+	ParentID        uint
+	TraversalIDs    string
+	RegionSelector  string
+	CreatedBy       uint
+	UpdatedBy       uint
 }
 
 type GroupRegionSelectors struct {
 	*Group
-	RegionSelectors KubernetesSelectors
+	RegionSelectors RegionSelectors
 }
 
 type GroupOrApplication struct {
@@ -49,10 +49,10 @@ func (g Groups) Swap(i, j int) {
 	g[i], g[j] = g[j], g[i]
 }
 
-type KubernetesSelector struct {
+type RegionSelector struct {
 	Key      string   `json:"key"`
 	Values   []string `json:"values"`
 	Operator string   `json:"operator" default:"in"` // not used currently
 }
 
-type KubernetesSelectors []*KubernetesSelector
+type RegionSelectors []*RegionSelector

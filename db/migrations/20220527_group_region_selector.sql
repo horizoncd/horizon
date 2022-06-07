@@ -1,5 +1,5 @@
 alter table horizon.tb_group
-    add kubernetes_selector varchar(512) default '' not null COMMENT 'used for filtering kubernetes' after traversal_ids;
+    add region_selector varchar(512) default '' not null COMMENT 'used for filtering kubernetes' after traversal_ids;
 
 alter table horizon.tb_region
     add `disabled` TINYINT(1) default 0 not null COMMENT '0 means not disabled, 1 means disabled' after harbor_id;
@@ -10,11 +10,11 @@ Alter TABLE horizon.tb_cluster
 
 -- initialize data
 update horizon.tb_group
-set kubernetes_selector = '- key: cloudnative.music.netease.com/kubernetes-group
+set region_selector = '- key: cloudnative.music.netease.com/kubernetes-group
   values:
   - public
   operator: in
-' where 1=1;
+';
 
 insert into horizon.tb_tag(resource_id, resource_type, tag_key, tag_value)
 values

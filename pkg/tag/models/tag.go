@@ -25,7 +25,7 @@ const (
 	TypeGroup       = "groups"
 	TypeApplication = "applications"
 	TypeCluster     = "clusters"
-	TypeKubernetes  = "kubernetes"
+	TypeRegion      = "regions"
 )
 
 type Tag struct {

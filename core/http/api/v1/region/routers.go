@@ -10,7 +10,7 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, api *API) {
-	apiGroup := engine.Group("/apis/core/v1/kubernetes")
+	apiGroup := engine.Group("/apis/core/v1/regions")
 
 	var routes = route.Routes{
 		{

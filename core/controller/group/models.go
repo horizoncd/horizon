@@ -43,15 +43,15 @@ type Group struct {
 	FullPath        string    `json:"fullPath"`
 }
 
-type KubernetesSelector struct {
+type RegionSelector struct {
 	Key      string   `json:"key"`
 	Values   []string `json:"values"`
 	Operator string   `json:"operator" default:"in"`
 }
 
-type KubernetesSelectors []*KubernetesSelector
+type RegionSelectors []*RegionSelector
 
 type StructuredGroup struct {
 	*Group
-	KubernetesSelectors KubernetesSelectors `json:"kubernetesSelectors"`
+	RegionSelectors RegionSelectors `json:"regionSelectors"`
 }
