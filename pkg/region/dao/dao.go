@@ -161,7 +161,7 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, result.Error.Error())
 	}
 
-	return &region, result.Error
+	return &region, nil
 }
 
 // DeleteByID implements DAO

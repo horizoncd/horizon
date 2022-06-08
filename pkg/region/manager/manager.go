@@ -27,6 +27,7 @@ type Manager interface {
 	// GetRegionEntity get region entity, todo(gjq) add cache
 	GetRegionEntity(ctx context.Context, regionName string) (*models.RegionEntity, error)
 	GetRegionByID(ctx context.Context, id uint) (*models.RegionEntity, error)
+	GetRegionByName(ctx context.Context, name string) (*models.Region, error)
 	// UpdateByID update region by id
 	UpdateByID(ctx context.Context, id uint, region *models.Region) error
 	// ListByRegionSelectors list region by tags
@@ -142,4 +143,8 @@ func (m *manager) GetRegionByID(ctx context.Context, id uint) (*models.RegionEnt
 		Harbor: harbor,
 		Tags:   tags,
 	}, nil
+}
+
+func (m *manager) GetRegionByName(ctx context.Context, name string) (*models.Region, error) {
+	return m.regionDAO.GetRegion(ctx, name)
 }
