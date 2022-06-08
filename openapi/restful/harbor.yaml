@@ -1,0 +1,134 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Harbor-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/harbors:
+    get:
+      tags:
+        - harbor
+      operationId: listHarbor
+      summary: list harbors
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Harbor'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - harbor
+      operationId: createHarbor
+      summary: create a harbor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Harbor"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                data:
+                  type: integer
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/harbors/{harborID}:
+    parameters:
+      - name: harborID
+        in: path
+    get:
+      tags:
+        - harbor
+      operationId: getHarbor
+      summary: get a harbor
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Harbor'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - harbor
+      operationId: updateHarbor
+      summary: update a harbor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Harbor'
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - harbor
+      operationId: deleteHarbor
+      summary: delete a harbor
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    Harbor:
+      type: object
+      required:
+        - id
+        - name
+        - server
+        - token
+        - preheatPolicyID
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        server:
+          type: string
+        token:
+          type: string
+        preheatPolicyID:
+          type: integer
+

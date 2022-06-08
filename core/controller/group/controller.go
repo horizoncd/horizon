@@ -19,7 +19,7 @@ import (
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/util/errors"
-	"gorm.io/gorm"
+	"github.com/go-yaml/yaml"
 )
 
 const (
@@ -35,7 +35,7 @@ type Controller interface {
 	// Delete remove a group by the id
 	Delete(ctx context.Context, id uint) error
 	// GetByID get a group by the id
-	GetByID(ctx context.Context, id uint) (*service.Child, error)
+	GetByID(ctx context.Context, id uint) (*StructuredGroup, error)
 	// GetByFullPath get a group by the URLPath
 	GetByFullPath(ctx context.Context, path string) (*service.Child, error)
 	// Transfer put a group under another parent group
@@ -52,6 +52,8 @@ type Controller interface {
 	SearchChildren(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error)
 	// ListAuthedGroup get all the authed groups of current user(if is admin, return all the groups)
 	ListAuthedGroup(ctx context.Context) ([]*Group, error)
+	// UpdateRegionSelector update regionSelector
+	UpdateRegionSelector(ctx context.Context, id uint, regionSelector RegionSelectors) error
 }
 
 type controller struct {
@@ -419,23 +421,38 @@ func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
 }
 
 // GetByID get a group by the id
-func (c *controller) GetByID(ctx context.Context, id uint) (*service.Child, error) {
-	const op = "group *controller: get group by id"
-
-	groupEntity, err := c.groupManager.GetByID(ctx, id)
+func (c *controller) GetByID(ctx context.Context, id uint) (*StructuredGroup, error) {
+	group, err := c.groupManager.GetByID(ctx, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.E(op, http.StatusNotFound, ErrCodeNotFound, fmt.Sprintf("no group matching the id: %d", id))
-		}
-		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
+		return nil, err
 	}
 
-	full, err := c.formatFullFromGroup(ctx, groupEntity)
+	full, err := c.formatFullFromGroup(ctx, group)
 	if err != nil {
-		return nil, errors.E(op, fmt.Sprintf("failed to get the group matching the id: %d", id))
+		return nil, err
 	}
 
-	return service.ConvertGroupToChild(groupEntity, full), nil
+	var regionSelectors RegionSelectors
+	err = yaml.Unmarshal([]byte(group.RegionSelector), &regionSelectors)
+	if err != nil {
+		return nil, err
+	}
+
+	return &StructuredGroup{
+		Group: &Group{
+			ID:              group.ID,
+			Name:            group.Name,
+			Path:            group.Path,
+			VisibilityLevel: group.VisibilityLevel,
+			Description:     group.Description,
+			ParentID:        group.ParentID,
+			TraversalIDs:    group.TraversalIDs,
+			UpdatedAt:       group.UpdatedAt,
+			FullName:        full.FullName,
+			FullPath:        full.FullPath,
+		},
+		RegionSelectors: regionSelectors,
+	}, nil
 }
 
 // Delete remove a group by the id
@@ -554,4 +571,14 @@ func (c *controller) ofGroupModel(ctx context.Context, groups []*models.Group) (
 		})
 	}
 	return ofGroups, nil
+}
+
+func (c *controller) UpdateRegionSelector(ctx context.Context, id uint, regionSelector RegionSelectors) error {
+	// marshal struct to string
+	regionSelectorBytes, err := yaml.Marshal(regionSelector)
+	if err != nil {
+		return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
+	}
+
+	return c.groupManager.UpdateRegionSelector(ctx, id, string(regionSelectorBytes))
 }

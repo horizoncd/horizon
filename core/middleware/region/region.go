@@ -10,10 +10,11 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	appregionmanager "g.hz.netease.com/horizon/pkg/applicationregion/manager"
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
-	"g.hz.netease.com/horizon/pkg/config/region"
+	"g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	"g.hz.netease.com/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +28,7 @@ const (
 )
 
 // Middleware to set region for create cluster API
-func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
+func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// not create cluster api, skip
 		if !_urlPattern.MatchString(c.Request.URL.Path) || c.Request.Method != _method {
@@ -68,7 +69,7 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 			return
 		}
 
-		r := getRegion(applicationRegions, config, environment)
+		r := getRegion(c, applicationRegions, environment)
 		if len(r) == 0 {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(
 				fmt.Sprintf("cannot find region for environment %v, application %v",
@@ -81,24 +82,26 @@ func Middleware(config *region.Config, skippers ...middleware.Skipper) gin.Handl
 	}, skippers...)
 }
 
-func getRegion(applicationRegions []*models.ApplicationRegion, config *region.Config,
-	environment string) string {
+func getRegion(c *gin.Context, applicationRegions []*models.ApplicationRegion, environment string) string {
 	for _, applicationRegion := range applicationRegions {
 		if applicationRegion.EnvironmentName == environment {
 			return applicationRegion.RegionName
 		}
 	}
-	return getRegionFromConfig(config, environment)
+	return getDefaultRegion(c, environment)
 }
 
-func getRegionFromConfig(config *region.Config, environment string) string {
-	if config == nil {
+func getDefaultRegion(c *gin.Context, environment string) string {
+	// getDefaultRegion get default region of environment
+	environmentRegion, err := manager.Mgr.GetDefaultRegionByEnvironment(c, environment)
+	if err != nil {
+		log.Errorf(c, "no default region for environment: %s, err: %+v", environment, err)
 		return ""
 	}
-	// getDefaultRegion get default region of environment
-	getDefaultRegion := func(environment string) string {
-		return strings.TrimSpace(config.DefaultRegions[environment])
+	if environmentRegion == nil {
+		log.Errorf(c, "no default region for environment: %s", environment)
+		return ""
 	}
 
-	return getDefaultRegion(environment)
+	return environmentRegion.RegionName
 }

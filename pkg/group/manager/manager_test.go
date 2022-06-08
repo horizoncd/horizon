@@ -16,10 +16,18 @@ import (
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 
 	"github.com/stretchr/testify/assert"
@@ -74,6 +82,26 @@ func init() {
 		os.Exit(1)
 	}
 	err = db.AutoMigrate(&membermodels.Member{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	err = db.AutoMigrate(&envregionmodels.EnvironmentRegion{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	err = db.AutoMigrate(&regionmodels.Region{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	err = db.AutoMigrate(&envmodels.Environment{})
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	err = db.AutoMigrate(&tagmodels.Tag{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
@@ -201,6 +229,13 @@ func TestGetByPaths(t *testing.T) {
 	assert.Equal(t, id.ID, groups[0].ID)
 	assert.Equal(t, id2.ID, groups[1].ID)
 
+	// test GetByNameOrPathUnderParent
+	groups, err = Mgr.GetByNameOrPathUnderParent(ctx, "1", "b", 0)
+	assert.Nil(t, err)
+	assert.Equal(t, len(groups), 2)
+	assert.Equal(t, groups[0].Path, "a")
+	assert.Equal(t, groups[1].Name, "2")
+
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 	assert.Nil(t, res.Error)
@@ -243,6 +278,12 @@ func TestUpdateBasic(t *testing.T) {
 	group2.Name = "update1"
 	err = Mgr.UpdateBasic(ctx, group2)
 	assert.Equal(t, herrors.ErrNameConflict, perror.Cause(err))
+
+	// update regionSelector
+	err = Mgr.UpdateRegionSelector(ctx, g1.ID, "XXX")
+	assert.Nil(t, err)
+	group, _ = Mgr.GetByID(ctx, g1.ID)
+	assert.Equal(t, group.RegionSelector, "XXX")
 
 	// drop table
 	res := db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
@@ -420,5 +461,206 @@ func TestGetSubGroupsByGroupIDs(t *testing.T) {
 	assert.Equal(t, g3.ID, groups3[0].ID)
 	for _, group := range groups3 {
 		t.Logf("group: %v", group)
+	}
+}
+
+func Test_manager_GetSelectableRegionsByEnv(t *testing.T) {
+	// initializing data
+	r1, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz",
+		DisplayName: "HZ",
+	})
+	_, _ = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz-disabled",
+		DisplayName: "HZ",
+		Disabled:    true,
+	})
+	r3, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz3",
+		DisplayName: "HZ",
+	})
+	devEnv, _ := envmanager.Mgr.CreateEnvironment(ctx, &envmodels.Environment{
+		Name:        "dev",
+		DisplayName: "开发",
+	})
+	_, _ = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+		EnvironmentName: devEnv.Name,
+		RegionName:      "hz",
+		IsDefault:       true,
+	})
+	_, _ = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+		EnvironmentName: devEnv.Name,
+		RegionName:      "hz-disabled",
+	})
+	_, _ = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+		EnvironmentName: devEnv.Name,
+		RegionName:      "hz3",
+	})
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+		{
+			ResourceType: tagmodels.TypeRegion,
+			ResourceID:   r1.ID,
+			Key:          "a",
+			Value:        "1",
+		}, {
+			ResourceType: tagmodels.TypeRegion,
+			ResourceID:   r1.ID,
+			Key:          "b",
+			Value:        "1",
+		},
+	})
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
+		{
+			ResourceType: tagmodels.TypeRegion,
+			ResourceID:   r3.ID,
+			Key:          "a",
+			Value:        "1",
+		}, {
+			ResourceType: tagmodels.TypeRegion,
+			ResourceID:   r3.ID,
+			Key:          "c",
+			Value:        "1",
+		},
+	})
+	g1, err := Mgr.Create(ctx, &models.Group{
+		Name: "11",
+		Path: "pp",
+		RegionSelector: `- key: "a"
+  operator: "in"
+  values: 
+    - "1"
+- key: "b"
+  operator: "in"
+  values: 
+    - "1"
+`,
+	})
+	assert.Nil(t, err)
+	// get regionSelector from parent group
+	g2, _ := Mgr.Create(ctx, &models.Group{
+		Name:     "22",
+		Path:     "p2",
+		ParentID: g1.ID,
+	})
+
+	type args struct {
+		id  uint
+		env string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    regionmodels.RegionParts
+		wantErr bool
+	}{
+		{
+			name: "normal",
+			args: args{
+				id:  g2.ID,
+				env: "dev",
+			},
+			want: regionmodels.RegionParts{
+				{
+					Name:        "hz",
+					DisplayName: "HZ",
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Mgr.GetSelectableRegionsByEnv(ctx, tt.args.id, tt.args.env)
+			if (err != nil) != tt.wantErr {
+				t.Errorf(fmt.Sprintf("GetSelectableRegionsByEnv(%v, %v, %v)", ctx, tt.args.id, tt.args.env))
+			}
+			assert.Equalf(t, tt.want, got, "GetSelectableRegionsByEnv(%v, %v, %v)", ctx, tt.args.id, tt.args.env)
+		})
+	}
+
+	defaultRegions, err := Mgr.GetDefaultRegions(ctx, g2.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, len(defaultRegions), 1)
+	assert.Equal(t, defaultRegions[0].RegionName, "hz")
+	assert.Equal(t, defaultRegions[0].EnvironmentName, "dev")
+}
+
+func Test_manager_GetSelectableRegions(t *testing.T) {
+	r1, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz",
+		DisplayName: "HZ",
+	})
+	_, _ = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz-disabled",
+		DisplayName: "HZ",
+		Disabled:    true,
+	})
+	r3, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz3",
+		DisplayName: "HZ",
+	})
+
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+		{
+			ResourceType: tagmodels.TypeRegion,
+			ResourceID:   r1.ID,
+			Key:          "a",
+			Value:        "11",
+		},
+	})
+	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
+		{
+			ResourceType: tagmodels.TypeRegion,
+			ResourceID:   r3.ID,
+			Key:          "a",
+			Value:        "11",
+		},
+	})
+
+	g1, err := Mgr.Create(ctx, &models.Group{
+		Name: "112",
+		Path: "pp2",
+		RegionSelector: `- key: "a"
+  operator: "in"
+  values: 
+    - "11"
+`,
+	})
+	assert.Nil(t, err)
+	type args struct {
+		id uint
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    regionmodels.RegionParts
+		wantErr bool
+	}{
+		{
+			name: "normal",
+			args: args{
+				id: g1.ID,
+			},
+			want: regionmodels.RegionParts{
+				{
+					Name:        "hz",
+					DisplayName: "HZ",
+				},
+				{
+					Name:        "hz3",
+					DisplayName: "HZ",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Mgr.GetSelectableRegions(ctx, tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf(fmt.Sprintf("GetSelectableRegions(%v, %v)", ctx, tt.args.id))
+			}
+			assert.Equalf(t, tt.want, got, "GetSelectableRegions(%v, %v)", tt.args.id)
+		})
 	}
 }

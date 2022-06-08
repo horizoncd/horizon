@@ -2,14 +2,14 @@ package manager
 
 import (
 	"context"
-	"fmt"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-
+	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	"g.hz.netease.com/horizon/pkg/region/models"
+	tagdao "g.hz.netease.com/horizon/pkg/tag/dao"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 )
 
 var (
@@ -26,17 +26,26 @@ type Manager interface {
 	ListRegionEntities(ctx context.Context) ([]*models.RegionEntity, error)
 	// GetRegionEntity get region entity, todo(gjq) add cache
 	GetRegionEntity(ctx context.Context, regionName string) (*models.RegionEntity, error)
+	GetRegionByID(ctx context.Context, id uint) (*models.RegionEntity, error)
+	// UpdateByID update region by id
+	UpdateByID(ctx context.Context, id uint, region *models.Region) error
+	// ListByRegionSelectors list region by tags
+	ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (models.RegionParts, error)
+	// DeleteByID delete region by id
+	DeleteByID(ctx context.Context, id uint) error
 }
 
 type manager struct {
 	regionDAO regiondao.DAO
 	harborDAO harbordao.DAO
+	tagDAO    tagdao.DAO
 }
 
 func New() Manager {
 	return &manager{
 		regionDAO: regiondao.NewDAO(),
 		harborDAO: harbordao.NewDAO(),
+		tagDAO:    tagdao.NewDAO(),
 	}
 }
 
@@ -55,20 +64,14 @@ func (m *manager) ListRegionEntities(ctx context.Context) (ret []*models.RegionE
 		return
 	}
 
-	harborMap, err := m.getHarborMap(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	for _, region := range regions {
-		harbor, ok := harborMap[region.HarborID]
-		if !ok {
-			return nil, fmt.Errorf("harbor with ID: %v of region: %v is not found",
-				region.HarborID, region.Name)
+		tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
+		if err != nil {
+			return nil, err
 		}
 		ret = append(ret, &models.RegionEntity{
 			Region: region,
-			Harbor: harbor,
+			Tags:   tags,
 		})
 	}
 	return
@@ -81,16 +84,9 @@ func (m *manager) GetRegionEntity(ctx context.Context,
 		return nil, err
 	}
 
-	harborMap, err := m.getHarborMap(ctx)
+	harbor, err := m.getHarborByRegion(ctx, region)
 	if err != nil {
 		return nil, err
-	}
-
-	harbor, ok := harborMap[region.HarborID]
-	if !ok {
-		return nil, herrors.NewErrNotFound(herrors.Harbor,
-			fmt.Sprintf("harbor with ID: %v of region: %v is not found",
-				region.HarborID, region.Name))
 	}
 
 	return &models.RegionEntity{
@@ -99,15 +95,51 @@ func (m *manager) GetRegionEntity(ctx context.Context,
 	}, nil
 }
 
-func (m *manager) getHarborMap(ctx context.Context) (map[uint]*harbormodels.Harbor, error) {
-	harbors, err := m.harborDAO.ListAll(ctx)
+func (m *manager) UpdateByID(ctx context.Context, id uint, region *models.Region) error {
+	_, err := m.getHarborByRegion(ctx, region)
+	if err != nil {
+		return err
+	}
+	// todo do more filed validation, for example ingressDomain must be format of the domain name
+	return m.regionDAO.UpdateByID(ctx, id, region)
+}
+
+func (m *manager) getHarborByRegion(ctx context.Context, region *models.Region) (*harbormodels.Harbor, error) {
+	harbor, err := m.harborDAO.GetByID(ctx, region.HarborID)
+	if err != nil {
+		return nil, err
+	}
+	return harbor, nil
+}
+
+func (m *manager) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (
+	models.RegionParts, error) {
+	return m.regionDAO.ListByRegionSelectors(ctx, selectors)
+}
+
+func (m *manager) DeleteByID(ctx context.Context, id uint) error {
+	return m.regionDAO.DeleteByID(ctx, id)
+}
+
+func (m *manager) GetRegionByID(ctx context.Context, id uint) (*models.RegionEntity, error) {
+	region, err := m.regionDAO.GetRegionByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	harborMap := make(map[uint]*harbormodels.Harbor)
-	for _, harbor := range harbors {
-		harborMap[harbor.ID] = harbor
+	harbor, err := m.getHarborByRegion(ctx, region)
+	if err != nil {
+		return nil, err
 	}
-	return harborMap, nil
+
+	tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.RegionEntity{
+		Region: region,
+		Harbor: harbor,
+		Tags:   tags,
+	}, nil
 }

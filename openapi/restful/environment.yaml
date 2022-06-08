@@ -17,39 +17,92 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":[
-                          {
-                              "name":"dev",
-                              "displayName":"开发"
-                          },
-                          {
-                              "name":"test",
-                              "displayName":"测试"
-                          },
-                          {
-                              "name":"reg",
-                              "displayName":"回归"
-                          },
-                          {
-                              "name":"perf",
-                              "displayName":"性能"
-                          },
-                          {
-                              "name":"pre",
-                              "displayName":"预发"
-                          },
-                          {
-                              "name":"beta",
-                              "displayName":"灰度"
-                          },
-                          {
-                              "name":"online",
-                              "displayName":"线上"
-                          }
-                      ]
-                  }
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Environment'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - environment
+      operationId: createEnvironment
+      summary: create a environment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Environment"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                data:
+                  type: integer
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/environments/{environmentID}:
+    parameters:
+      - name: environmentID
+        in: path
+    get:
+      tags:
+        - environment
+      operationId: getEnvironment
+      summary: get a environment
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - environment
+      operationId: updateEnvironment
+      summary: update a environment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Environment'
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - environment
+      operationId: deleteEnvironment
+      summary: delete a environment
+      responses:
+        '200':
+          description: Success
         default:
           description: Unexpected error
           content:
@@ -92,3 +145,19 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    Environment:
+      type: object
+      required:
+        - id
+        - name
+        - displayName
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        displayName:
+          type: string
