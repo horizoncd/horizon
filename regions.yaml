@@ -1,5 +1,0 @@
-defaultRegions:
-  dev,test,reg,perf,beta: hz-dev2
-  pre,online: hz-dev2
-
-applicationRegions:
