@@ -43,7 +43,7 @@ func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerF
 				return
 			}
 
-			c.Set(common.ContextUserKey, &userauth.DefaultInfo{
+			c.Set(common.UserContextKey(), &userauth.DefaultInfo{
 				Name:     u.Name,
 				FullName: u.FullName,
 				ID:       u.ID,

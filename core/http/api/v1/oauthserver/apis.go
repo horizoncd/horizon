@@ -110,7 +110,7 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 		return scopeBasics
 	}
 
-	currentUser, err := common.FromContext(c)
+	currentUser, err := common.UserFromContext(c)
 	if err != nil {
 		response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
 		return
@@ -165,7 +165,7 @@ func (a *API) HandleAuthorizationReq(c *gin.Context) {
 }
 
 func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
-	user, err := common.FromContext(c)
+	user, err := common.UserFromContext(c)
 	if err != nil {
 		// TODO: redirect
 		response.AbortWithForbiddenError(c, common.Forbidden, err.Error())

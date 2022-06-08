@@ -43,7 +43,7 @@ func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateReques
 	const op = "cluster template scheme tag controller: update"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

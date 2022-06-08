@@ -166,65 +166,6 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/apps/{appID}/clientsecret:
-    get:
-      tags:
-        - app
-      operationId: listClientSecret
-      summary: list the client secrets of an horizon app
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ClientSecret"
-        default:
-          description:  Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-    put:
-      tags:
-        - app
-      operationId: generateClientSecret
-      summary: generate the horizon client secret
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ClientSecret"
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/apps/{appID}/clientsecret/{secretID}:
-    delete:
-      tags:
-        - app
-      operationId: deleteClientSecret
-      summary: delete the app's client secret
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ClientSecret"
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
 components:
   schemas:
     CreateAppRequest:
@@ -278,19 +219,3 @@ components:
       type: string
       maxLength: 2048
       description: the group FullName
-
-    ClientSecret:
-      type: object
-      properties:
-        id:
-          type: number
-        clientID:
-          type: string
-          format: uuid
-        clientSecret:
-          type: string
-        createdTime:
-          type: string
-          format: DateTime
-        createdBy:
-          type: string

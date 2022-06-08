@@ -29,6 +29,7 @@ CREATE table `tb_oauth_app` (
     `owner_id`   bigint(20) NOT NULL,
     `created_at` datetime  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
+    `updated_at` datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
     `updated_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
      PRIMARY KEY (`id`),
      UNIQUE KEY `idx_client_id` (`client_id`)

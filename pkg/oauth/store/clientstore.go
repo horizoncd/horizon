@@ -52,6 +52,7 @@ func (d *DBOauthAppStore) UpdateApp(ctx context.Context,
 		appInDb.HomeURL = app.HomeURL
 		appInDb.RedirectURL = app.RedirectURL
 		appInDb.Desc = app.Desc
+		appInDb.UpdatedBy = app.UpdatedBy
 		if err := tx.Save(&appInDb).Error; err != nil {
 			return herrors.NewErrUpdateFailed(herrors.OAuthInDB, err.Error())
 		}

@@ -47,7 +47,9 @@ type AccessTokenResponse struct {
 }
 
 type Controller interface {
+	// GenAuthorizeCode oauth  Authorization Request ref:rfc6750
 	GenAuthorizeCode(ctx context.Context, req *AuthorizeReq) (*AuthorizeCodeResponse, error)
+	// GenAccessToken Access Token Request,ref:rfc6750
 	GenAccessToken(ctx context.Context, req *AccessTokenReq) (*AccessTokenResponse, error)
 	LoadAccessToken(ctx context.Context, token string) (*models.Token, error)
 }

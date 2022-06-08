@@ -49,7 +49,7 @@ const (
 func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.Decision,
 	string, error) {
 	// 0. check (admin allows everything, and some are not checked)
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return auth.DecisionDeny, AnonymousUser, nil
 	}

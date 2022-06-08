@@ -1,7 +1,7 @@
-DefaultScope:
+defaultScope:
   - application:read-write
   - clusters:read-write
-Roles:
+roles:
   - name: application:read-only
     desc: 应用(application)及相关子资源的只读权限等
     rules:

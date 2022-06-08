@@ -55,7 +55,7 @@ func getGroup(parentID uint, name, path string) *models.Group {
 
 func init() {
 	// nolint
-	userCtx := context.WithValue(context.Background(), common.ContextUserKey, &userauth.DefaultInfo{
+	userCtx := context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})

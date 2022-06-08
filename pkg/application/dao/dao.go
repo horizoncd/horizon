@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	common2 "g.hz.netease.com/horizon/core/common"
+	corecommon "g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
@@ -304,7 +304,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	currentUser, err := common2.FromContext(ctx)
+	currentUser, err := corecommon.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -327,7 +327,7 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 	if err != nil {
 		return err
 	}
-	currentUser, err := common2.FromContext(ctx)
+	currentUser, err := corecommon.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

@@ -389,7 +389,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.C
 }
 
 func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
-	currenUser, err := common.FromContext(ctx)
+	currenUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

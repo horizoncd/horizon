@@ -34,7 +34,7 @@ func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) 
 			return
 		}
 		// 2. get user
-		currentUser, err := common.FromContext(c)
+		currentUser, err := common.UserFromContext(c)
 		if err != nil {
 			response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
 			return

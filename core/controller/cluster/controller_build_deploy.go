@@ -23,7 +23,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	const op = "cluster controller: build deploy"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

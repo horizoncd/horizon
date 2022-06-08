@@ -18,12 +18,14 @@ type CreateOauthAPPRequest struct {
 }
 
 type APPBasicInfo struct {
-	AppID       uint   `json:"appID"`
-	AppName     string `json:"appName"`
-	Desc        string `json:"desc"`
-	HomeURL     string `json:"homeURL"`
-	ClientID    string `json:"clientID"`
-	RedirectURL string `json:"redirectURL"`
+	AppID       uint      `json:"appID"`
+	AppName     string    `json:"appName"`
+	Desc        string    `json:"desc"`
+	HomeURL     string    `json:"homeURL"`
+	ClientID    string    `json:"clientID"`
+	RedirectURL string    `json:"redirectURL"`
+	UpdatedBy   uint      `json:"updatedBy"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 type Controller interface {
@@ -139,6 +141,8 @@ func (c *controller) Create(ctx context.Context, groupID uint, request CreateOau
 		HomeURL:     oauthApp.Desc,
 		ClientID:    oauthApp.ClientID,
 		RedirectURL: oauthApp.RedirectURL,
+		UpdatedBy:   oauthApp.UpdatedBy,
+		UpdatedAt:   oauthApp.UpdatedAt,
 	}
 	return resp, err
 }
@@ -158,6 +162,8 @@ func (c *controller) Get(ctx context.Context, clientID string) (*APPBasicInfo, e
 		HomeURL:     oauthApp.HomeURL,
 		ClientID:    oauthApp.ClientID,
 		RedirectURL: oauthApp.RedirectURL,
+		UpdatedBy:   oauthApp.UpdatedBy,
+		UpdatedAt:   oauthApp.UpdatedAt,
 	}
 	return resp, err
 }
@@ -179,6 +185,8 @@ func (c *controller) List(ctx context.Context, groupID uint) ([]APPBasicInfo, er
 			HomeURL:     app.HomeURL,
 			ClientID:    app.ClientID,
 			RedirectURL: app.RedirectURL,
+			UpdatedBy:   app.UpdatedBy,
+			UpdatedAt:   app.UpdatedAt,
 		})
 	}
 	return appInfos, nil
@@ -204,6 +212,8 @@ func (c *controller) Update(ctx context.Context, info APPBasicInfo) (*APPBasicIn
 		HomeURL:     app.HomeURL,
 		ClientID:    app.ClientID,
 		RedirectURL: app.RedirectURL,
+		UpdatedBy:   app.UpdatedBy,
+		UpdatedAt:   app.UpdatedAt,
 	}, nil
 }
 

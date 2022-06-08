@@ -82,7 +82,7 @@ type Param struct {
 // nolint
 func TestMain(m *testing.M) {
 	var err error
-	ctx = context.WithValue(context.Background(), common.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 	})
 

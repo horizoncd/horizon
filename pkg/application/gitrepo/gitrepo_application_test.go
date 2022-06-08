@@ -134,7 +134,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	ctx = context.WithValue(context.Background(), common.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 	})
 

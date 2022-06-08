@@ -63,7 +63,7 @@ func NewService(roleService roleservice.Service) Service {
 
 func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error) {
 	var currentUser userauth.User
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 }
 
 func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) (*models.Member, error) {
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) 
 func (s *service) GetMemberOfResource(ctx context.Context,
 	resourceType string, resourceID uint) (*models.Member, error) {
 	var currentUser userauth.User
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (s *service) GetMember(ctx context.Context, memberID uint) (*models.Member,
 
 func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
 	var currentUser userauth.User
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
 
 func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) (*models.Member, error) {
 	var currentUser userauth.User
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +413,7 @@ func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID
 // createMemberDirect for unit test
 func (s *service) createMemberDirect(ctx context.Context, postMember PostMember) (*models.Member, error) {
 	var currentUser userauth.User
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

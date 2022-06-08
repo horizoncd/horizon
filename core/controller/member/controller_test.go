@@ -50,7 +50,7 @@ var (
 
 // nolint
 func init() {
-	ctx = context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name:     contextUserName,
 		FullName: contextUserFullName,
 		ID:       contextUserID,

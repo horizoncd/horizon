@@ -34,7 +34,7 @@ func TestApplication(t *testing.T) {
 		Name:     "hzsunjianliang",
 		FullName: "cat",
 	}
-	ctx := context.WithValue(context.TODO(), common.Key(), createUser)
+	ctx := context.WithValue(context.TODO(), common.UserContextKey(), createUser)
 
 	// 1. create application
 	createApplicationEvent := &hook.EventCtx{

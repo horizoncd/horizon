@@ -68,7 +68,7 @@ func (a *API) Search(c *gin.Context) {
 }
 
 func (a *API) Status(c *gin.Context) {
-	u, err := common.FromContext(c)
+	u, err := common.UserFromContext(c)
 	if err != nil {
 		response.Abort(c, http.StatusForbidden, common.Forbidden, "user not logged in")
 		return

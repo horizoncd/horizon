@@ -182,7 +182,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	}
 
 	// nolint
-	ctx = context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Matt",
 		ID:   uint(2),
 	})

@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	ctx = orm.NewContext(ctx, db)
-	ctx = context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 		ID:   uint(110),
 	})
@@ -103,10 +103,10 @@ func TestController_GetAccesses_Guest(t *testing.T) {
 		Name: "guest",
 	})
 
-	nonMemberCtx := context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
+	nonMemberCtx := context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		ID: 2,
 	})
-	guestCtx := context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
+	guestCtx := context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		ID: guest.ID,
 	})
 
@@ -159,7 +159,7 @@ func TestController_GetAccesses_Owner(t *testing.T) {
 		Name: "owner",
 	})
 
-	ctx := context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
+	ctx := context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		ID: owner.ID,
 	})
 
@@ -209,7 +209,7 @@ func TestController_GetAccesses_Admin(t *testing.T) {
 		Name: "admin",
 	})
 
-	ctx := context.WithValue(ctx, common.Key(), &userauth.DefaultInfo{
+	ctx := context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		ID:    admin.ID,
 		Admin: true,
 	})

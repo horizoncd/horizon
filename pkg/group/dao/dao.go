@@ -111,7 +111,7 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 	if err != nil {
 		return err
 	}
-	currentUser, err := common2.FromContext(ctx)
+	currentUser, err := common2.UserFromContext(ctx)
 	if err != nil {
 		return nil
 	}
@@ -285,7 +285,7 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 	if err != nil {
 		return nil, err
 	}
-	currentUser, err := common2.FromContext(ctx)
+	currentUser, err := common2.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +366,7 @@ func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	currentUser, err := common2.FromContext(ctx)
+	currentUser, err := common2.UserFromContext(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -440,7 +440,7 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 	if err != nil {
 		return err
 	}
-	currentUser, err := common2.FromContext(ctx)
+	currentUser, err := common2.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

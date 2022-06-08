@@ -58,7 +58,7 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 	if err != nil {
 		return nil, err
 	}
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

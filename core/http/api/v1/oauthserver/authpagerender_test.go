@@ -42,7 +42,7 @@ var (
 		Email:    "",
 		Admin:    false,
 	}
-	ctx                   = context.WithValue(context.Background(), common.Key(), aUser)
+	ctx                   = context.WithValue(context.Background(), common.UserContextKey(), aUser)
 	authorizeCodeExpireIn = time.Minute * 30
 	accessTokenExpireIn   = time.Hour * 24
 )
@@ -98,7 +98,7 @@ func TestServer(t *testing.T) {
 	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
 		panic(err)
 	}
-	db = db.WithContext(context.WithValue(context.Background(), common.Key(), aUser))
+	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
 	tokenStore := store.NewTokenStore(db)

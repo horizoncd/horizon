@@ -24,10 +24,10 @@ func Middleware(db *gorm.DB, skippers ...middleware.Skipper) gin.HandlerFunc {
 // MiddlewareSetUserContext set context to db
 func MiddlewareSetUserContext(db *gorm.DB, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
-		_user := c.Value(common.Key())
+		_user := c.Value(common.UserContextKey())
 		if _user != nil {
 			// nolint
-			c.Set(orm.Key(), db.WithContext(context.WithValue(context.Background(), common.Key(), _user)))
+			c.Set(orm.Key(), db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), _user)))
 		}
 		c.Next()
 	}, skippers...)

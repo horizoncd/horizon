@@ -32,14 +32,14 @@ var (
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	// nolint
-	db = db.WithContext(context.WithValue(context.Background(), common.ContextUserKey, &userauth.DefaultInfo{
+	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	}))
 	callbacks.RegisterCustomCallbacks(db)
 	ctx = orm.NewContext(context.TODO(), db)
 	// nolint
-	ctx = context.WithValue(ctx, common.ContextUserKey, &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})

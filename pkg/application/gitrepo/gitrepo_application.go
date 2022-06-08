@@ -210,7 +210,7 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 
 func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, application, repo string,
 	action gitlablib.FileAction, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

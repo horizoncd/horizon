@@ -37,7 +37,7 @@ func NewController(authorizer rbac.Authorizer,
 func (c *controller) Review(ctx context.Context, apis []API) (map[string]map[string]*ReviewResult, error) {
 	reviewResponse := make(map[string]map[string]*ReviewResult)
 	// get user info
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, perror.WithMessage(err, "failed to get user info")
 	}

@@ -12,7 +12,7 @@ const (
 
 // addCreatedByUpdatedByForCreateCallback will set `created_by` and `updated_by` when creating records if fields exist
 func addCreatedByUpdatedByForCreateCallback(db *gorm.DB) {
-	currentUser, err := common.FromContext(db.Statement.Context)
+	currentUser, err := common.UserFromContext(db.Statement.Context)
 	if err != nil {
 		return
 	}
@@ -29,7 +29,7 @@ func addCreatedByUpdatedByForCreateCallback(db *gorm.DB) {
 
 // addUpdatedByForUpdateDeleteCallback will set `updated_by` when updating or deleting records if fields exist
 func addUpdatedByForUpdateDeleteCallback(db *gorm.DB) {
-	currentUser, err := common.FromContext(db.Statement.Context)
+	currentUser, err := common.UserFromContext(db.Statement.Context)
 	if err != nil {
 		return
 	}

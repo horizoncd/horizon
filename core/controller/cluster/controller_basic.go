@@ -92,7 +92,7 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environment,
 	filter string, query *q.Query) (count int, resp []*ListClusterWithFullResponse, err error) {
 	// get current user
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return 0, nil, perror.WithMessage(err, "no user in context")
 	}
@@ -663,7 +663,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 		log.Errorf(ctx, "failed to get db from context")
 		return
 	}
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return
 	}
@@ -750,7 +750,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		log.Errorf(ctx, "failed to get db from context")
 		return
 	}
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return
 	}

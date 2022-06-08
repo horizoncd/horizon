@@ -49,7 +49,7 @@ func (h *InMemHook) Push(ctx context.Context, event hook.Event) {
 		newCtx = log.WithContext(context.Background(), rid)
 	}
 
-	ctxUser, err := common.FromContext(ctx)
+	ctxUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		log.Warning(ctx, "can not find user in context")
 	} else {

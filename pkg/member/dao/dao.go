@@ -86,7 +86,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Mem
 		return nil, err
 	}
 
-	currentUser, err := common2.FromContext(ctx)
+	currentUser, err := common2.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

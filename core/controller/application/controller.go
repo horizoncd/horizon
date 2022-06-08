@@ -446,7 +446,7 @@ func (c *controller) ListApplication(ctx context.Context, filter string, query q
 func (c *controller) ListUserApplication(ctx context.Context,
 	filter string, query *q.Query) (int, []*ListApplicationResponse, error) {
 	// get current user
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return 0, nil, perror.WithMessage(err, "no user in context")
 	}

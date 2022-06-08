@@ -65,7 +65,7 @@ func TestBasic(t *testing.T) {
 		FullName: "cat",
 		ID:       grantedByCat,
 	}
-	ctx = context.WithValue(ctx, common.Key(), grandUser)
+	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
 
 	retMember2, err := Mgr.UpdateByID(ctx, retMember.ID, member1.Role)
 	assert.Nil(t, err)

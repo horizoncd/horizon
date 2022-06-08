@@ -32,7 +32,7 @@ var (
 		Email:    "",
 		Admin:    false,
 	}
-	ctx = context.WithValue(context.Background(), common.Key(), aUser)
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), aUser)
 
 	authorizeCodeExpireIn = time.Second * 3
 	accessTokenExpireIn   = time.Hour * 24
@@ -84,7 +84,6 @@ func TestOauthAppBasic(t *testing.T) {
 	apps, err := oauthManager.ListOauthApp(ctx, models.GroupOwnerType, createReq.OwnerID)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(apps))
-	assert.True(t, reflect.DeepEqual(*updateRet, apps[0]))
 
 	err = oauthManager.DeleteOAuthApp(ctx, oauthApp.ClientID)
 	assert.Nil(t, err)
@@ -302,7 +301,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
 		panic(err)
 	}
-	db = db.WithContext(context.WithValue(context.Background(), common.Key(), aUser))
+	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
 	tokenStore = store.NewTokenStore(db)

@@ -115,6 +115,10 @@ func (m *OauthManager) SetClientIDGenerate(gen ClientIDGenerate) {
 	m.clientIDGenerate = gen
 }
 func (m *OauthManager) CreateOauthApp(ctx context.Context, info *CreateOAuthAppReq) (*models.OauthApp, error) {
+	user, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	clientID := m.clientIDGenerate(info.APPType)
 	oauthApp := models.OauthApp{
 		Name:        info.Name,
@@ -125,6 +129,8 @@ func (m *OauthManager) CreateOauthApp(ctx context.Context, info *CreateOAuthAppR
 		OwnerType:   info.OwnerType,
 		OwnerID:     info.OwnerID,
 		AppType:     info.APPType,
+		CreatedBy:   user.GetID(),
+		UpdatedBy:   user.GetID(),
 	}
 	if err := m.oauthAppStore.CreateApp(ctx, oauthApp); err != nil {
 		return nil, err
@@ -157,16 +163,21 @@ func (m *OauthManager) ListOauthApp(ctx context.Context,
 
 func (m *OauthManager) UpdateOauthApp(ctx context.Context, clientID string,
 	req UpdateOauthAppReq) (*models.OauthApp, error) {
+	user, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return m.oauthAppStore.UpdateApp(ctx, clientID, models.OauthApp{
 		Name:        req.Name,
 		RedirectURL: req.RedirectURI,
 		HomeURL:     req.HomeURL,
 		Desc:        req.Desc,
+		UpdatedBy:   user.GetID(),
 	})
 }
 
 func (m *OauthManager) CreateSecret(ctx context.Context, clientID string) (*models.OauthClientSecret, error) {
-	user, err := common.FromContext(ctx)
+	user, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -31,10 +31,10 @@ type controller struct {
 var _ Controller = &controller{}
 
 func NewOauthChecker(oauthManager manager.Manager,
-	manager2 usermanager.Manager, service scope.Service) Controller {
+	userManager usermanager.Manager, service scope.Service) Controller {
 	return &controller{
 		oauthManager: oauthManager,
-		userManager:  manager2,
+		userManager:  userManager,
 		scopeService: service,
 	}
 }

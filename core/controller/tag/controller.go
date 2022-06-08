@@ -49,7 +49,7 @@ func (c *controller) Update(ctx context.Context, resourceType string, resourceID
 	const op = "cluster tag controller: update"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := common.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

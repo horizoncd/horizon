@@ -49,8 +49,14 @@ type OauthApp struct {
 	HomeURL     string    `gorm:"column:home_url"`
 	Desc        string    `gorm:"column:desc"`
 	OwnerType   OwnerType `gorm:"column:owner_type"`
-	OwnerID     uint
-	AppType     AppType `gorm:"column:app_type"`
+	OwnerID     uint      `gorm:"column:owner_id"`
+	AppType     AppType   `gorm:"column:app_type"`
+
+	CreatedAt time.Time `gorm:"column:created_at"`
+	CreatedBy uint      `gorm:"column:created_by"`
+
+	UpdatedAt time.Time `gorm:"column:updated_at"`
+	UpdatedBy uint      `gorm:"column:updated_by"`
 }
 
 type OauthClientSecret struct {

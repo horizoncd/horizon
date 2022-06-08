@@ -218,4 +218,6 @@ var (
 	ErrOAuthReqNotValid               = errors.New("oauth request not valid")
 	ErrOAuthAuthorizationCodeNotExist = errors.New("authorization code not exist")
 	ErrOAuthInternal                  = errors.New("oauth internal error")
+	ErrAuthorizationHeaderNotFound    = errors.New("AuthorizationHeader not found")
+	ErrOAuthTokenFormatError          = errors.New("Oauth token format error")
 )

@@ -46,7 +46,7 @@ func TestAuthMember(t *testing.T) {
 		Path:            "",
 	}
 
-	ctx = context.WithValue(ctx, common.Key(), defaultUser)
+	ctx = context.WithValue(ctx, common.UserContextKey(), defaultUser)
 	decision, reason, err := testAuthorizer.Authorize(ctx, authRecord)
 	assert.Nil(t, err)
 	assert.Equal(t, auth.DecisionAllow, decision)

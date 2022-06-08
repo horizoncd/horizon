@@ -40,7 +40,7 @@ func (h *CMDBEventHandler) ProcessCreateApplication(event *hook.EventCtx) error 
 	e := event.Event
 	switch info := e.(type) {
 	case *application.GetApplicationResponse:
-		currentUser, err := common.FromContext(event.Ctx)
+		currentUser, err := common.UserFromContext(event.Ctx)
 		if err != nil {
 			return errors.New("can not get user from context")
 		}
@@ -86,7 +86,7 @@ func (h *CMDBEventHandler) ProcessCreateCluster(event *hook.EventCtx) error {
 	e := event.Event
 	switch info := e.(type) {
 	case *cluster.GetClusterResponse:
-		currentUser, err := common.FromContext(event.Ctx)
+		currentUser, err := common.UserFromContext(event.Ctx)
 		if err != nil {
 			return errors.New("can not get user from context")
 		}

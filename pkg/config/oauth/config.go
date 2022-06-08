@@ -7,8 +7,8 @@ import (
 )
 
 type Scopes struct {
-	DefaultScopes []string     `yaml:"DefaultScope"`
-	Roles         []types.Role `yaml:"Roles"`
+	DefaultScopes []string     `yaml:"defaultScope"`
+	Roles         []types.Role `yaml:"roles"`
 }
 type Server struct {
 	OauthHTMLLocation     string        `yaml:"oauthHTMLLocation"`
