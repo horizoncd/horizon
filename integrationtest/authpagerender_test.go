@@ -23,7 +23,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/oauth/generate"
 	"g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/oauth/models"
-	scope2 "g.hz.netease.com/horizon/pkg/oauth/scope"
+	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/oauth/store"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
@@ -132,7 +132,7 @@ func TestServer(t *testing.T) {
 
 	oauthAppController := oauthapp.NewController(oauthManager, usermanager.New())
 
-	authScopeService, err := scope2.NewFileScopeService(createOauthScopeConfig())
+	authScopeService, err := scope.NewFileScopeService(createOauthScopeConfig())
 	assert.Nil(t, err)
 
 	api := oauthserver.NewAPI(oauthServerController, oauthAppController, "authFileLoc", authScopeService)
