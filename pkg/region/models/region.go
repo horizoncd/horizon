@@ -3,6 +3,7 @@ package models
 import (
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 )
 
 type Region struct {
@@ -14,6 +15,7 @@ type Region struct {
 	Certificate   string
 	IngressDomain string
 	HarborID      uint `gorm:"column:harbor_id"`
+	Disabled      bool
 	CreatedBy     uint
 	UpdatedBy     uint
 }
@@ -23,4 +25,12 @@ type RegionEntity struct {
 	*Region
 
 	Harbor *harbormodels.Harbor
+	Tags   []*tagmodels.Tag
 }
+
+type RegionPart struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"displayName"`
+}
+
+type RegionParts []*RegionPart

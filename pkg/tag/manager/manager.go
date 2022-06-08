@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"regexp"
+	"strings"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -59,10 +60,18 @@ func ValidateUpsert(tags []*models.Tag) error {
 			return perror.Wrapf(herrors.ErrParamInvalid, "tag value: %v is invalid, length must be 1280 or less", tag.Value)
 		}
 
-		if !keyPattern.MatchString(tag.Key) {
-			return perror.Wrapf(herrors.ErrParamInvalid, "tag key: %v is invalid, "+
-				"should beginning and ending with an alphanumeric character ([a-z0-9A-Z]) "+
-				"with dashes (-), underscores (_), dots (.), and alphanumerics between", tag.Key)
+		patternErr := perror.Wrapf(herrors.ErrParamInvalid, "tag key: %v is invalid, "+
+			"should beginning and ending with an alphanumeric character ([a-z0-9A-Z]) "+
+			"with dashes (-), slash(/), underscores (_), dots (.), and alphanumerics between", tag.Key)
+
+		keySplit := strings.Split(tag.Key, "/")
+		if len(keySplit) > 2 {
+			return patternErr
+		}
+		for _, k := range keySplit {
+			if k == "" || !keyPattern.MatchString(k) {
+				return patternErr
+			}
 		}
 	}
 	return nil

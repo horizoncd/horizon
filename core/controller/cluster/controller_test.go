@@ -30,7 +30,8 @@ import (
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
@@ -420,7 +421,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&harbormodels.Harbor{},
-		&regionmodels.Region{}, &envmodels.EnvironmentRegion{},
+		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}); err != nil {
 		panic(err)
 	}
@@ -491,6 +492,7 @@ func Test(t *testing.T) {
 	regionMgr := regionmanager.Mgr
 	groupMgr := groupmanager.Mgr
 	harborDAO := harbordao.NewDAO()
+	envRegionMgr := envregionmanager.Mgr
 
 	// init data
 	group, err := groupMgr.Create(ctx, &groupmodels.Group{
@@ -520,27 +522,27 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
 
-	harbor, err := harborDAO.Create(ctx, &harbormodels.Harbor{
+	id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
 		Server:          "https://harbor.com",
 		Token:           "xxx",
 		PreheatPolicyID: 1,
 	})
 	assert.Nil(t, err)
-	assert.NotNil(t, harbor)
+	assert.NotNil(t, id)
 
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
-		HarborID:    harbor.ID,
+		HarborID:    id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: "test",
 		RegionName:      "hz",
 	})
-	er, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: "dev",
 		RegionName:      "hz",
 	})
@@ -556,6 +558,7 @@ func Test(t *testing.T) {
 		templateReleaseMgr:   trMgr,
 		templateSchemaGetter: templateSchemaGetter,
 		envMgr:               envMgr,
+		envRegionMgr:         envRegionMgr,
 		regionMgr:            regionMgr,
 		groupSvc:             groupsvc.Svc,
 		pipelinerunMgr:       prmanager.Mgr,

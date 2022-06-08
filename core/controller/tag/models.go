@@ -1,7 +1,6 @@
 package tag
 
 import (
-	"g.hz.netease.com/horizon/pkg/authentication/user"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 )
 
@@ -18,7 +17,7 @@ type UpdateRequest struct {
 	Tags []*Tag `json:"tags"`
 }
 
-func (r *UpdateRequest) toTags(resourceType string, resourceID uint, user user.User) []*tagmodels.Tag {
+func (r *UpdateRequest) toTags(resourceType string, resourceID uint) []*tagmodels.Tag {
 	tags := make([]*tagmodels.Tag, 0)
 	for _, tag := range r.Tags {
 		tags = append(tags, &tagmodels.Tag{
@@ -26,8 +25,6 @@ func (r *UpdateRequest) toTags(resourceType string, resourceID uint, user user.U
 			ResourceID:   resourceID,
 			Key:          tag.Key,
 			Value:        tag.Value,
-			CreatedBy:    user.GetID(),
-			UpdatedBy:    user.GetID(),
 		})
 	}
 	return tags

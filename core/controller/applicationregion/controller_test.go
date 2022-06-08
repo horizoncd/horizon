@@ -8,14 +8,24 @@ import (
 
 	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/applicationregion/manager"
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/config/region"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envreigonmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
+	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	"g.hz.netease.com/horizon/pkg/server/global"
+	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +38,9 @@ var (
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.ApplicationRegion{}, &regionmodels.Region{},
-		&envmodels.Environment{}, &envmodels.EnvironmentRegion{}); err != nil {
+		&envmodels.Environment{}, &envregionmodels.EnvironmentRegion{}, &tagmodels.Tag{},
+		groupmodels.Group{}, appmodels.Application{}, membermodels.Member{},
+	); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
@@ -47,7 +59,6 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, r1)
-
 	r2, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "杭州",
@@ -61,6 +72,33 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, r3)
+	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+		{
+			ResourceID:   r1.ID,
+			ResourceType: tagmodels.TypeRegion,
+			Key:          "a",
+			Value:        "1",
+		},
+	})
+	assert.Nil(t, err)
+	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+		{
+			ResourceID:   r2.ID,
+			ResourceType: tagmodels.TypeRegion,
+			Key:          "a",
+			Value:        "1",
+		},
+	})
+	assert.Nil(t, err)
+	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+		{
+			ResourceID:   r3.ID,
+			ResourceType: tagmodels.TypeRegion,
+			Key:          "a",
+			Value:        "1",
+		},
+	})
+	assert.Nil(t, err)
 
 	envMgr := envmanager.Mgr
 	envs := make([]*envmodels.Environment, 0)
@@ -72,42 +110,50 @@ func Test(t *testing.T) {
 		envs = append(envs, environment)
 	}
 
-	_, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	_, err = envreigonmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: envs[0].Name,
 		RegionName:      r1.Name,
 	})
 	assert.Nil(t, err)
 
-	_, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	_, err = envreigonmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: envs[3].Name,
 		RegionName:      r2.Name,
+		IsDefault:       true,
 	})
 	assert.Nil(t, err)
 
-	_, err = envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	_, err = envreigonmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: envs[3].Name,
 		RegionName:      r3.Name,
 	})
 	assert.Nil(t, err)
 
 	c = &controller{
-		regionConfig: &region.Config{
-			DefaultRegions: map[string]string{
-				"dev":    "hz-test",
-				"test":   "hz-test",
-				"reg":    "hz-test",
-				"perf":   "hz-test",
-				"beta":   "hz-test",
-				"pre":    "hz",
-				"online": "hz",
-			},
-		},
-		mgr:            manager.Mgr,
-		regionMgr:      regionMgr,
-		environmentMgr: envMgr,
+		mgr:                  manager.Mgr,
+		regionMgr:            regionMgr,
+		environmentMgr:       envMgr,
+		environmentRegionMgr: envregionmanager.Mgr,
+		applicationMgr:       applicationmanager.Mgr,
+		groupMgr:             groupmanager.Mgr,
 	}
 
-	applicationID := uint(1)
+	g, err := groupmanager.Mgr.Create(ctx, &groupmodels.Group{
+		Name: "",
+		Path: "",
+		RegionSelector: `- key: "a"
+  values: 
+    - "1"`,
+	})
+	assert.Nil(t, err)
+	application, err := applicationmanager.Mgr.Create(ctx, &appmodels.Application{
+		Model:   global.Model{},
+		GroupID: g.ID,
+		Name:    "",
+	}, map[string]string{})
+	assert.Nil(t, err)
+
+	applicationID := application.ID
 
 	regions, err := c.List(ctx, applicationID)
 	assert.Nil(t, err)

@@ -8,8 +8,14 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
+	envregiondao "g.hz.netease.com/horizon/pkg/environmentregion/dao"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
+	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	"github.com/go-yaml/yaml"
 )
 
 var (
@@ -41,7 +47,7 @@ type Manager interface {
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
 	// GetByIDNameFuzzily get groups that fuzzily matching the given name and id
 	GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error)
-	// GetAllGroups return all the groups
+	// GetAll return all the groups
 	GetAll(ctx context.Context) ([]*models.Group, error)
 	// UpdateBasic update basic info of a group
 	UpdateBasic(ctx context.Context, group *models.Group) error
@@ -57,11 +63,21 @@ type Manager interface {
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 	// GetSubGroupsByGroupIDs get groups and its subGroups by specified groupIDs
 	GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Group, error)
+	// UpdateRegionSelector update regionSelector
+	UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error
+	// GetSelectableRegionsByEnv return selectable regions of the group by environment
+	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
+	// GetSelectableRegions return selectable regions of the group
+	GetSelectableRegions(ctx context.Context, id uint) (regionmodels.RegionParts, error)
+	// GetDefaultRegions return default region the group
+	GetDefaultRegions(ctx context.Context, id uint) ([]*envregionmodels.EnvironmentRegion, error)
 }
 
 type manager struct {
 	groupDAO       groupdao.DAO
 	applicationDAO applicationdao.DAO
+	envregionDAO   envregiondao.DAO
+	regionDAO      regiondao.DAO
 }
 
 func (m manager) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error) {
@@ -72,6 +88,8 @@ func New() Manager {
 	return &manager{
 		groupDAO:       groupdao.NewDAO(),
 		applicationDAO: applicationdao.NewDAO(),
+		envregionDAO:   envregiondao.NewDAO(),
+		regionDAO:      regiondao.NewDAO(),
 	}
 }
 
@@ -239,4 +257,94 @@ func (m manager) GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([
 		}
 	}
 	return m.groupDAO.GetByIDs(ctx, retGroupIDs)
+}
+
+func (m manager) UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error {
+	return m.groupDAO.UpdateRegionSelector(ctx, id, regionSelector)
+}
+
+func (m manager) GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error) {
+	// query regions under env that are not disabled
+	envRegionParts, err := m.envregionDAO.ListEnabledRegionsByEnvironment(ctx, env)
+	if err != nil {
+		return nil, err
+	}
+	if len(envRegionParts) == 0 {
+		return regionmodels.RegionParts{}, nil
+	}
+
+	groupRegionParts, err := m.GetSelectableRegions(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// get regions under env and regionSelector at the same time
+	var regionParts regionmodels.RegionParts
+	partMap := make(map[string]*regionmodels.RegionPart)
+	for _, p := range envRegionParts {
+		partMap[p.Name] = p
+	}
+	for _, p := range groupRegionParts {
+		if _, ok := partMap[p.Name]; ok {
+			regionParts = append(regionParts, p)
+		}
+	}
+
+	return regionParts, nil
+}
+
+func (m manager) GetSelectableRegions(ctx context.Context, id uint) (regionmodels.RegionParts, error) {
+	// get regionSelector field from group
+	group, err := m.groupDAO.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	// unmarshal from yaml to struct
+	var regionSelectors groupmodels.RegionSelectors
+	err = yaml.Unmarshal([]byte(group.RegionSelector), &regionSelectors)
+	if err != nil {
+		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, err.Error())
+	}
+
+	regionParts, err := m.regionDAO.ListByRegionSelectors(ctx, regionSelectors)
+	if err != nil {
+		return nil, err
+	}
+	if len(regionParts) == 0 {
+		return regionmodels.RegionParts{}, nil
+	}
+
+	return regionParts, nil
+}
+
+func (m manager) GetDefaultRegions(ctx context.Context, id uint) ([]*envregionmodels.EnvironmentRegion, error) {
+	selectableRegions, err := m.GetSelectableRegions(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if len(selectableRegions) == 0 {
+		return make([]*envregionmodels.EnvironmentRegion, 0), nil
+	}
+
+	selectableRegionMap := make(map[string]*regionmodels.RegionPart)
+	for _, region := range selectableRegions {
+		selectableRegionMap[region.Name] = region
+	}
+
+	envDefaultRegions, err := m.envregionDAO.GetDefaultRegions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(envDefaultRegions) == 0 {
+		return make([]*envregionmodels.EnvironmentRegion, 0), nil
+	}
+
+	var res []*envregionmodels.EnvironmentRegion
+	for _, region := range envDefaultRegions {
+		if _, ok := selectableRegionMap[region.RegionName]; ok {
+			res = append(res, region)
+		}
+	}
+
+	return res, nil
 }

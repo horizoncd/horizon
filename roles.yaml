@@ -12,6 +12,8 @@ Roles:
           - applications/members
           - applications/envtemplates
           - applications/defaultregions
+          - applications/transfer
+          - applications/selectableregions
         verbs:
           - "*"
         scopes:
@@ -24,6 +26,7 @@ Roles:
           - groups
           - groups/members
           - groups/groups
+          - groups/transfer
         verbs:
           - "*"
         scopes:
@@ -58,6 +61,9 @@ Roles:
           - clusters/outputs
           - clusters/promote
           - clusters/shell
+          - clusters/pause
+          - clusters/resume
+          - clusters/containers
         verbs:
           - "*"
         scopes:
@@ -85,6 +91,8 @@ Roles:
           - applications/members
           - applications/envtemplates
           - applications/defaultregions
+          - applications/transfer
+          - applications/selectableregions
         verbs:
           - create
           - get
@@ -99,6 +107,7 @@ Roles:
           - groups
           - groups/members
           - groups/groups
+          - groups/transfer
         verbs:
           - get
           - create
@@ -135,6 +144,9 @@ Roles:
           - clusters/outputs
           - clusters/promote
           - clusters/shell
+          - clusters/pause
+          - clusters/resume
+          - clusters/containers
         verbs:
           - create
           - get
@@ -164,6 +176,8 @@ Roles:
           - applications/members
           - applications/envtemplates
           - applications/defaultregions
+          - applications/transfer
+          - applications/selectableregions
         verbs:
           - create
           - get
@@ -178,6 +192,8 @@ Roles:
           - groups
           - groups/members
           - groups/groups
+          - groups/transfer
+          - groups/regionselectors
         verbs:
           - get
           - create
@@ -188,7 +204,6 @@ Roles:
           - core
         resources:
           - applications/clusters
-          - clusters
           - clusters/builddeploy
           - clusters/deploy
           - clusters/diffs
@@ -215,6 +230,9 @@ Roles:
           - clusters/outputs
           - clusters/promote
           - clusters/shell
+          - clusters/pause
+          - clusters/resume
+          - clusters/containers
         verbs:
           - create
           - get
@@ -222,6 +240,14 @@ Roles:
         scopes:
           - "*"
         nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - clusters
+        scopes:
+          - '*'
+        verbs:
           - "*"
   - name: guest
     desc: guest为只读人员，拥有组/应用/项目的只读权限，以及测试环境集群创建的权限
@@ -238,6 +264,7 @@ Roles:
           - applications/members
           - applications/envtemplates
           - applications/defaultregions
+          - applications/selectableregions
           - clusters
           - clusters/diffs
           - clusters/status
@@ -253,6 +280,7 @@ Roles:
           - clusters/events
           - clusters/outputs
           - clusters/templateschematags
+          - clusters/containers
         verbs:
           - get
         scopes:

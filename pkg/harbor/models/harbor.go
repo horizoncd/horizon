@@ -7,6 +7,7 @@ import (
 type Harbor struct {
 	global.Model
 
+	Name            string
 	Server          string
 	Token           string
 	PreheatPolicyID int

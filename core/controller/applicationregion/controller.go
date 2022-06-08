@@ -3,11 +3,13 @@ package applicationregion
 import (
 	"context"
 
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/applicationregion/manager"
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
-	"g.hz.netease.com/horizon/pkg/config/region"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 )
 
@@ -17,21 +19,24 @@ type Controller interface {
 }
 
 type controller struct {
-	regionConfig *region.Config
-
-	mgr            manager.Manager
-	regionMgr      regionmanager.Manager
-	environmentMgr envmanager.Manager
+	mgr                  manager.Manager
+	regionMgr            regionmanager.Manager
+	environmentMgr       envmanager.Manager
+	environmentRegionMgr envregionmanager.Manager
+	groupMgr             groupmanager.Manager
+	applicationMgr       applicationmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
 
-func NewController(regionConfig *region.Config) Controller {
+func NewController() Controller {
 	return &controller{
-		regionConfig:   regionConfig,
-		mgr:            manager.Mgr,
-		regionMgr:      regionmanager.Mgr,
-		environmentMgr: envmanager.Mgr,
+		mgr:                  manager.Mgr,
+		regionMgr:            regionmanager.Mgr,
+		environmentMgr:       envmanager.Mgr,
+		environmentRegionMgr: envregionmanager.Mgr,
+		groupMgr:             groupmanager.Mgr,
+		applicationMgr:       applicationmanager.Mgr,
 	}
 }
 
@@ -46,23 +51,38 @@ func (c *controller) List(ctx context.Context, applicationID uint) (ApplicationR
 		return nil, perror.WithMessage(err, "failed to list environment")
 	}
 
-	return ofApplicationRegion(applicationRegions, environments, c.regionConfig), nil
+	application, err := c.applicationMgr.GetByID(ctx, applicationID)
+	if err != nil {
+		return nil, err
+	}
+	environmentRegions, err := c.groupMgr.GetDefaultRegions(ctx, application.GroupID)
+	if err != nil {
+		return nil, perror.WithMessage(err, "failed to list environmentRegions")
+	}
+	selectRegions, err := c.groupMgr.GetSelectableRegions(ctx, application.GroupID)
+	if err != nil {
+		return nil, perror.WithMessage(err, "failed to list environmentRegions")
+	}
+
+	return ofApplicationRegion(applicationRegions, environments, environmentRegions, selectRegions), nil
 }
 
 func (c *controller) Update(ctx context.Context, applicationID uint, regions ApplicationRegion) error {
 	applicationRegions := make([]*models.ApplicationRegion, 0)
 
 	for _, r := range regions {
-		_, err := c.environmentMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
-		if err != nil {
-			return perror.WithMessagef(err,
-				"environment/region %s/%s is not exists", r.Environment, r.Region)
+		if r.Environment != "" && r.Region != "" {
+			_, err := c.environmentRegionMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
+			if err != nil {
+				return perror.WithMessagef(err,
+					"environment/region %s/%s is not exists", r.Environment, r.Region)
+			}
+			applicationRegions = append(applicationRegions, &models.ApplicationRegion{
+				ApplicationID:   applicationID,
+				EnvironmentName: r.Environment,
+				RegionName:      r.Region,
+			})
 		}
-		applicationRegions = append(applicationRegions, &models.ApplicationRegion{
-			ApplicationID:   applicationID,
-			EnvironmentName: r.Environment,
-			RegionName:      r.Region,
-		})
 	}
 
 	return c.mgr.UpsertByApplicationID(ctx, applicationID, applicationRegions)

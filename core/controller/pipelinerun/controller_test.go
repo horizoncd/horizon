@@ -27,7 +27,7 @@ import (
 	clustermodel "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"

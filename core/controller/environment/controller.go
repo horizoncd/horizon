@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/pkg/environment/manager"
-	"g.hz.netease.com/horizon/pkg/util/errors"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 )
 
 var (
@@ -14,40 +16,71 @@ var (
 )
 
 type Controller interface {
+	Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error)
+	UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error
 	ListEnvironments(ctx context.Context) (Environments, error)
-	ListRegionsByEnvironment(ctx context.Context, environment string) (Regions, error)
+	DeleteByID(ctx context.Context, id uint) error
+	GetByID(ctx context.Context, id uint) (*Environment, error)
+	// ListEnabledRegionsByEnvironment deprecated, will be removed later. list regions by the environment that are enabled
+	ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (regionmodels.RegionParts, error)
 }
+
+var _ Controller = (*controller)(nil)
 
 func NewController() Controller {
 	return &controller{
-		envMgr: manager.Mgr,
+		envMgr:       manager.Mgr,
+		envRegionMgr: envregionmanager.Mgr,
+		regionMgr:    regionmanager.Mgr,
 	}
 }
 
 type controller struct {
-	envMgr manager.Manager
+	envMgr       manager.Manager
+	envRegionMgr envregionmanager.Manager
+	regionMgr    regionmanager.Manager
+}
+
+func (c *controller) GetByID(ctx context.Context, id uint) (*Environment, error) {
+	environment, err := c.envMgr.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return ofEnvironmentModel(environment), nil
+}
+
+func (c *controller) Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error) {
+	environment, err := c.envMgr.CreateEnvironment(ctx, &models.Environment{
+		Name:        request.Name,
+		DisplayName: request.DisplayName,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return environment.ID, nil
+}
+
+func (c *controller) UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error {
+	return c.envMgr.UpdateByID(ctx, id, &models.Environment{
+		DisplayName: request.DisplayName,
+	})
 }
 
 func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err error) {
-	const op = "environment controller: list environments"
-	defer wlog.Start(ctx, op).StopPrint()
-
 	envs, err := c.envMgr.ListAllEnvironment(ctx)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	return ofEnvironmentModels(envs), nil
 }
 
-func (c *controller) ListRegionsByEnvironment(ctx context.Context, environment string) (_ Regions, err error) {
-	const op = "environment controller: list regions by environment"
-	defer wlog.Start(ctx, op).StopPrint()
+func (c *controller) ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (
+	regionmodels.RegionParts, error) {
+	return c.envRegionMgr.ListEnabledRegionsByEnvironment(ctx, environment)
+}
 
-	regions, err := c.envMgr.ListRegionsByEnvironment(ctx, environment)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-
-	return ofRegionModels(regions), nil
+func (c *controller) DeleteByID(ctx context.Context, id uint) error {
+	return c.envMgr.DeleteByID(ctx, id)
 }

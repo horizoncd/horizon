@@ -4,19 +4,20 @@ import (
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
+	controllertag "g.hz.netease.com/horizon/core/controller/tag"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
 
 type Base struct {
-	Description   string         `json:"description"`
-	Git           *Git           `json:"git"`
-	Template      *Template      `json:"template"`
-	TemplateInput *TemplateInput `json:"templateInput"`
-	Tags          []*Tag         `json:"tags"`
+	Description   string               `json:"description"`
+	Git           *Git                 `json:"git"`
+	Template      *Template            `json:"template"`
+	TemplateInput *TemplateInput       `json:"templateInput"`
+	Tags          []*controllertag.Tag `json:"tags"`
 }
 
 type TemplateInput struct {
@@ -28,11 +29,6 @@ type Git struct {
 	URL       string `json:"url"`
 	Subfolder string `json:"subfolder"`
 	Branch    string `json:"branch"`
-}
-
-type Tag struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
 }
 
 type CreateClusterRequest struct {
@@ -91,7 +87,7 @@ type Scope struct {
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
-	er *envmodels.EnvironmentRegion) (*models.Cluster, []*tagmodels.Tag) {
+	er *envregionmodels.EnvironmentRegion) (*models.Cluster, []*tagmodels.Tag) {
 	var (
 		// r.Git cannot be nil
 		gitURL       = r.Git.URL
@@ -127,7 +123,7 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 }
 
 func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
-	templateRelease string, er *envmodels.EnvironmentRegion) *models.Cluster {
+	templateRelease string, er *envregionmodels.EnvironmentRegion) *models.Cluster {
 	var gitURL, gitSubfolder, gitBranch string
 	if r.Git == nil || r.Git.URL == "" {
 		gitURL = cluster.GitURL

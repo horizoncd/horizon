@@ -15,6 +15,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	environmentregionmapper "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -84,6 +85,7 @@ type controller struct {
 	templateSchemaGetter templateschema.Getter
 	outputGetter         output.Getter
 	envMgr               envmanager.Manager
+	envRegionMgr         environmentregionmapper.Manager
 	regionMgr            regionmanager.Manager
 	groupSvc             groupsvc.Service
 	hook                 hook.Hook
@@ -116,6 +118,7 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo app
 		templateSchemaGetter: templateSchemaGetter,
 		outputGetter:         outputGetter,
 		envMgr:               envmanager.Mgr,
+		envRegionMgr:         environmentregionmapper.Mgr,
 		regionMgr:            regionmanager.Mgr,
 		groupSvc:             groupsvc.Svc,
 		pipelinerunMgr:       prmanager.Mgr,

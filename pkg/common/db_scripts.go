@@ -105,31 +105,54 @@ const (
 
 /* sql about harbor */
 const (
-	HarborListAll = "select * from tb_harbor where deleted_ts = 0"
+	HarborListAll = "select * from tb_harbor where deleted_ts = 0 order by updated_at desc"
 	HarborGetByID = "select * from tb_harbor where id = ? and deleted_ts = 0"
 )
 
 /* sql about environment */
 const (
 	// EnvironmentListAll ...
-	EnvironmentListAll    = "select * from tb_environment where deleted_ts = 0"
-	EnvironmentListRegion = "select region_name from tb_environment_region " +
-		"where environment_name = ? and disabled = 0 and deleted_ts = 0"
+	EnvironmentListAll = "select * from tb_environment where deleted_ts = 0 order by updated_at desc"
+	EnvironmentGetByID = "select * from tb_environment where id = ? and deleted_ts = 0"
+)
+
+/* sql about environmentRegion */
+const (
+	EnvironmentListRegion = "select * from tb_environment_region " +
+		"where environment_name = ? and deleted_ts = 0"
+	EnvironmentListEnabledRegion = "select r.name, r.display_name from tb_environment_region er " +
+		"join tb_region r on er.region_name = r.name " +
+		"where er.environment_name = ? and er.deleted_ts = 0 and r.disabled = 0 and r.deleted_ts = 0"
 	EnvironmentRegionGet = "select * from tb_environment_region where" +
 		" environment_name = ? and region_name = ? and deleted_ts = 0"
-	EnvironmentRegionGetByID = "select * from tb_environment_region where id = ? and deleted_ts = 0"
+	EnvironmentRegionGetByID           = "select * from tb_environment_region where id = ? and deleted_ts = 0"
+	EnvironmentRegionListAll           = "select * from tb_environment_region where deleted_ts = 0"
+	EnvironmentRegionGetByEnvAndRegion = "select * from tb_environment_region where environment_name = ? and " +
+		"region_name = ? and deleted_ts = 0"
+	EnvironmentRegionGetDefaultByEnv = "select * from tb_environment_region where environment_name = ? and " +
+		"is_default = 1 and deleted_ts = 0"
+	EnvironmentRegionsGetDefault = "select * from tb_environment_region where " +
+		"is_default = 1 and deleted_ts = 0"
+	EnvironmentRegionSetDefaultByID   = "update tb_environment_region set is_default = 1 where id = ?"
+	EnvironmentRegionUnsetDefaultByID = "update tb_environment_region set is_default = 0 where id = ?"
 )
 
 /* sql about region */
 const (
 	// RegionListAll ...
-	RegionListAll     = "select * from tb_region where deleted_ts = 0"
-	RegionGetByName   = "select * from tb_region where name = ? and deleted_ts = 0"
-	RegionListByNames = "select * from tb_region where name in ? and deleted_ts = 0"
+	RegionListAll       = "select * from tb_region where deleted_ts = 0 order by updated_at desc"
+	RegionGetByName     = "select * from tb_region where name = ? and deleted_ts = 0"
+	RegionGetByID       = "select * from tb_region where id = ? and deleted_ts = 0"
+	RegionGetByHarborID = "select * from tb_region where harbor_id = ? and deleted_ts = 0"
+	RegionListByTags    = "select r.name, r.display_name from tb_region r " +
+		"join tb_tag tg on r.id = tg.resource_id " +
+		"where tg.resource_type = ? and r.deleted_ts = 0 and r.disabled = 0 " +
+		"and %s group by r.id having count(r.id) = ?"
 )
 
 /* sql about cluster */
 const (
+	ClusterCountByRegionName   = "select count(1) from tb_cluster where region_name = ? and deleted_ts = 0"
 	ClusterQueryByID           = "select * from tb_cluster where id = ? and deleted_ts = 0"
 	ClusterDeleteByID          = "update tb_cluster set deleted_ts = ?, updated_by = ? where id = ?"
 	ClusterQueryByName         = "select * from tb_cluster where name = ? and deleted_ts = 0"

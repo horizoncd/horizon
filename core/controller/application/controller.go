@@ -19,6 +19,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
@@ -44,6 +45,7 @@ type Controller interface {
 	ListUserApplication(ctx context.Context, filter string, query *q.Query) (int, []*ListApplicationResponse, error)
 	// Transfer  try transfer application to another group
 	Transfer(ctx context.Context, id uint, groupID uint) error
+	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
 }
 
 type controller struct {
@@ -509,4 +511,14 @@ func (c *controller) ListUserApplication(ctx context.Context,
 	}
 
 	return count, listApplicationResp, nil
+}
+
+func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (
+	regionmodels.RegionParts, error) {
+	application, err := c.applicationMgr.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.groupMgr.GetSelectableRegionsByEnv(ctx, application.GroupID, env)
 }
