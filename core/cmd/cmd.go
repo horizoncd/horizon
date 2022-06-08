@@ -273,7 +273,7 @@ func Run(flags *Flags) {
 	var (
 		rbacSkippers = middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
-				"(^/apis/core/v1/roles)|(^/apis/internal/.*)"))
+				"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)"))
 
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
