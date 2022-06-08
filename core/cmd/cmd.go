@@ -289,7 +289,7 @@ func Run(flags *Flags) {
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-		regionmiddle.Middleware(),
+		regionmiddle.Middleware(applicationRegionCtl),
 		// TODO(gjq): remove this authentication, add OIDC provider
 		authenticate.Middleware(config.AccessSecretKeys, // authenticate middleware, check authentication
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),

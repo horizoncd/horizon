@@ -96,6 +96,11 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "jd", regionEntity.Name)
 	assert.Equal(t, true, regionEntity.Disabled)
+
+	region, err := Mgr.GetRegionByName(ctx, regionEntity.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, regionEntity.ID, region.ID)
+	assert.Equal(t, true, region.Disabled)
 }
 
 func TestMain(m *testing.M) {
