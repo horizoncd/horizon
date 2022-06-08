@@ -90,7 +90,6 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-
   /apis/core/v1/groups/{groupID}/groups:
     parameters:
       - name: groupID
@@ -115,7 +114,28 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-
+  /apis/core/v1/groups/{groupID}/regionselectors:
+    parameters:
+      - name: groupID
+        in: path
+    put:
+      tags:
+        - group
+      operationId: setRegionselectors
+      summary: set regionSelector of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
   /apis/core/v1/groups/{groupID}/transfer?groupID={groupID}:
     parameters:
       - name: groupID
@@ -136,7 +156,6 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-
 components:
   schemas:
     NewGroup:

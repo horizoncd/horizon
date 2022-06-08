@@ -1,13 +1,17 @@
 package environment
 
 import (
+	"time"
+
 	"g.hz.netease.com/horizon/pkg/environment/models"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 )
 
 type Environment struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"displayName"`
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	DisplayName string    `json:"displayName"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 type Environments []*Environment
@@ -16,29 +20,26 @@ type Environments []*Environment
 func ofEnvironmentModels(envs []*models.Environment) Environments {
 	environments := make(Environments, 0)
 	for _, env := range envs {
-		environments = append(environments, &Environment{
-			Name:        env.Name,
-			DisplayName: env.DisplayName,
-		})
+		environments = append(environments, ofEnvironmentModel(env))
 	}
 	return environments
 }
 
-type Region struct {
+func ofEnvironmentModel(env *models.Environment) *Environment {
+	return &Environment{
+		ID:          env.ID,
+		Name:        env.Name,
+		DisplayName: env.DisplayName,
+		CreatedAt:   env.CreatedAt,
+		UpdatedAt:   env.UpdatedAt,
+	}
+}
+
+type CreateEnvironmentRequest struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
 }
 
-type Regions []*Region
-
-// ofEnvironmentModels []*models.Region to []*Region
-func ofRegionModels(regions []*regionmodels.Region) Regions {
-	rs := make(Regions, 0)
-	for _, region := range regions {
-		rs = append(rs, &Region{
-			Name:        region.Name,
-			DisplayName: region.DisplayName,
-		})
-	}
-	return rs
+type UpdateEnvironmentRequest struct {
+	DisplayName string `json:"displayName"`
 }

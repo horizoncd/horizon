@@ -419,7 +419,7 @@ func TestControllerGetByID(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *service.Child
+		want    *StructuredGroup
 		wantErr bool
 	}{
 		{
@@ -428,17 +428,19 @@ func TestControllerGetByID(t *testing.T) {
 				ctx: ctx,
 				id:  id,
 			},
-			want: &service.Child{
-				ID:              id,
-				Name:            "1",
-				Path:            "a",
-				VisibilityLevel: "private",
-				UpdatedAt:       group.UpdatedAt,
-				ParentID:        0,
-				FullPath:        "/a",
-				FullName:        "1",
-				TraversalIDs:    strconv.Itoa(int(id)),
-				Type:            service.ChildTypeGroup,
+			want: &StructuredGroup{
+				Group: &Group{
+					ID:              id,
+					Name:            "1",
+					Path:            "a",
+					VisibilityLevel: "private",
+					UpdatedAt:       group.UpdatedAt,
+					ParentID:        0,
+					FullPath:        "/a",
+					FullName:        "1",
+					TraversalIDs:    strconv.Itoa(int(id)),
+				},
+				RegionSelectors: RegionSelectors{},
 			},
 		},
 		{
@@ -457,8 +459,10 @@ func TestControllerGetByID(t *testing.T) {
 				t.Errorf("GetByID() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetByID() got = %v, want %v", got, tt.want)
+			if got != nil {
+				if !reflect.DeepEqual(got.Group, tt.want.Group) {
+					t.Errorf("GetByID() got = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}

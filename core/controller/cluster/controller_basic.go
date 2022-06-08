@@ -17,7 +17,7 @@ import (
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
-	emvmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	emvregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
@@ -379,7 +379,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	}
 
 	// 3. get environmentRegion
-	er, err := c.envMgr.GetByEnvironmentAndRegion(ctx, environment, region)
+	er, err := c.envRegionMgr.GetByEnvironmentAndRegion(ctx, environment, region)
 	if err != nil {
 		return nil, err
 	}
@@ -484,11 +484,11 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 3. get environmentRegion/namespace for this cluster
-	var er *emvmodels.EnvironmentRegion
+	var er *emvregionmodels.EnvironmentRegion
 	var regionEntity *regionmodels.RegionEntity
 	// can only update environment/region when the cluster has been freed
 	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
-		er, err = c.envMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
+		er, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
 		if err != nil {
 			return nil, err
 		}
@@ -497,7 +497,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 			return nil, err
 		}
 	} else {
-		er = &emvmodels.EnvironmentRegion{
+		er = &emvregionmodels.EnvironmentRegion{
 			EnvironmentName: cluster.EnvironmentName,
 			RegionName:      cluster.RegionName,
 		}

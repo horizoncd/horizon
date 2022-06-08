@@ -15,6 +15,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -36,7 +37,8 @@ type controller struct {
 	kubeClientFty  kubeclient.Factory
 	clusterMgr     clustermanager.Manager
 	applicationMgr applicationmanager.Manager
-	envMgr         envmanager.EnvironmentRegionManager
+	envMgr         envmanager.Manager
+	envRegionMgr   envregionmanager.Manager
 	regionMgr      regionmanager.Manager
 	clusterGitRepo gitrepo.ClusterGitRepo
 }
@@ -49,6 +51,7 @@ func NewController(clusterGitRepo gitrepo.ClusterGitRepo) Controller {
 		clusterMgr:     clustermanager.Mgr,
 		applicationMgr: applicationmanager.Mgr,
 		envMgr:         envmanager.Mgr,
+		envRegionMgr:   envregionmanager.Mgr,
 		regionMgr:      regionmanager.Mgr,
 		clusterGitRepo: clusterGitRepo,
 	}

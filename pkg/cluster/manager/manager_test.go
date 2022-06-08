@@ -10,7 +10,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 		ID:   110,
 	}))
 	if err := db.AutoMigrate(&models.Cluster{}, &tagmodels.Tag{}, &usermodels.User{},
-		&envmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{}); err != nil {
+		&envregionmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)

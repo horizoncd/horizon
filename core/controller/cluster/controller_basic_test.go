@@ -18,7 +18,8 @@ import (
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
+	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
@@ -116,7 +117,6 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	groupMgr := groupmanager.Mgr
 	clusterMgr := clustermanager.Mgr
 	memberMgr := member.Mgr
-	envMgr := envmanager.Mgr
 	regionMgr := regionmanager.Mgr
 
 	// init data
@@ -127,7 +127,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: "testUserClustersFuzzily",
 		RegionName:      "hzUserClustersFuzzily",
 	})
@@ -265,14 +265,14 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 		regionMgr:      regionmanager.Mgr,
 	}
 
-	harbor, err := harbordao.NewDAO().Create(ctx, &harbormodels.Harbor{
+	id, err := harbordao.NewDAO().Create(ctx, &harbormodels.Harbor{
 		Server: "http://127.0.0.1",
 	})
 	assert.Nil(t, err)
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "TestController_FreeOrDeleteClusterFailed",
 		DisplayName: "TestController_FreeOrDeleteClusterFailed",
-		HarborID:    harbor.ID,
+		HarborID:    id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)

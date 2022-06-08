@@ -6,8 +6,11 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/group"
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 
 	"github.com/gin-gonic/gin"
 )
@@ -104,13 +107,13 @@ func (a *API) GetGroup(c *gin.Context) {
 		return
 	}
 
-	child, err := a.groupCtl.GetByID(c, uint(intID))
+	structuredGroup, err := a.groupCtl.GetByID(c, uint(intID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
 	}
 
-	response.SuccessWithData(c, child)
+	response.SuccessWithData(c, structuredGroup)
 }
 
 func (a *API) ListAuthedGroup(c *gin.Context) {
@@ -300,4 +303,32 @@ func (a *API) SearchGroups(c *gin.Context) {
 		Total: count,
 		Items: searchGroups,
 	})
+}
+
+func (a *API) UpdateRegionSelector(c *gin.Context) {
+	groupID := c.Param(_paramGroupID)
+	intID, err := strconv.ParseUint(groupID, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, fmt.Sprintf("invalid param, groupID: %s", groupID))
+	}
+
+	var regionSelectors group.RegionSelectors
+	err = c.ShouldBindJSON(&regionSelectors)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody, fmt.Sprintf("%v", err))
+		return
+	}
+
+	// todo validate format of regionSelector param
+	err = a.groupCtl.UpdateRegionSelector(c, uint(intID), regionSelectors)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.Success(c)
 }

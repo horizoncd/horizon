@@ -3,7 +3,6 @@ package tag
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/common"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
@@ -49,13 +48,7 @@ func (c *controller) Update(ctx context.Context, resourceType string, resourceID
 	const op = "cluster tag controller: update"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := common.UserFromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	tags := r.toTags(resourceType, resourceID, currentUser)
-
+	tags := r.toTags(resourceType, resourceID)
 	if err := manager.ValidateUpsert(tags); err != nil {
 		return err
 	}

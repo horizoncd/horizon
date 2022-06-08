@@ -56,6 +56,7 @@ type DAO interface {
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
 	ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*models.Group, error)
+	UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error
 }
 
 // NewDAO returns an instance of the default DAO
@@ -64,6 +65,26 @@ func NewDAO() DAO {
 }
 
 type dao struct{}
+
+func (d *dao) UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error {
+	group, err := d.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	db, err := orm.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	group.RegionSelector = regionSelector
+	result := db.Save(group)
+	if result.Error != nil {
+		return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
+	}
+
+	return nil
+}
 
 func (d *dao) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error) {
 	db, err := orm.FromContext(ctx)
@@ -262,7 +283,7 @@ func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 		return err
 	}
 
-	queryResult := models.Group{}
+	var queryResult models.Group
 	result := db.Raw(common.GroupQueryByParentIDAndName, group.ParentID, group.Name).First(&queryResult)
 
 	// update group conflict, has another record with the same parentID & name
@@ -308,6 +329,10 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 	err = d.CheckPathUnique(ctx, group)
 	if err != nil {
 		return nil, err
+	}
+	// set regionSelector from parent group
+	if pGroup != nil {
+		group.RegionSelector = pGroup.RegionSelector
 	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
@@ -394,7 +419,7 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 		return &group, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
 	}
 
-	return &group, result.Error
+	return &group, nil
 }
 
 func (d *dao) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error) {

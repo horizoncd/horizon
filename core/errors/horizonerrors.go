@@ -157,6 +157,7 @@ var (
 	ErrReadFailed       = errors.New("read failed")
 	ErrNameConflict     = errors.New("name conflict")
 	ErrPathConflict     = errors.New("path conflict")
+	ErrPairConflict     = errors.New("entity pair conflict")
 	ErrParamInvalid     = errors.New("parameter is invalid")
 	ErrDeadlineExceeded = errors.New("time limit exceeded")
 	ErrFailedToRollback = errors.New("failed to rollback")
@@ -178,8 +179,6 @@ var (
 	ErrFailedToGetUser      = errors.New("cannot get user from context")
 	ErrFailedToGetRequestID = errors.New("cannot get the requestID from context")
 
-	ErrHarborNotList = errors.New("harbor could not list")
-
 	ErrKubeDynamicCliResponseNotOK = errors.New("response for kube dynamic cli is not 200 OK")
 	ErrKubeExecFailed              = errors.New("kube exec failed")
 
@@ -188,9 +187,8 @@ var (
 	ErrS3PutObjFailed = errors.New("s3 put obj failed")
 	ErrS3GetObjFailed = errors.New("s3 get obj failed")
 
-	ErrGitlabResourceNotFound = errors.New("gitlab resource not found")
-	ErrGitlabInternal         = errors.New("gitlab internal")
-	ErrGitlabMRNotReady       = errors.New("gitlab mr is not ready and cannot be merged")
+	ErrGitlabInternal   = errors.New("gitlab internal")
+	ErrGitlabMRNotReady = errors.New("gitlab mr is not ready and cannot be merged")
 
 	// git
 	ErrBranchAndCommitEmpty = errors.New("branch and commit cannot be empty at the same time")
@@ -220,4 +218,10 @@ var (
 	ErrOAuthInternal                  = errors.New("oauth internal error")
 	ErrAuthorizationHeaderNotFound    = errors.New("AuthorizationHeader not found")
 	ErrOAuthTokenFormatError          = errors.New("Oauth token format error")
+
+	// ErrHarborUsedByRegions used when deleting a harbor that is still used by regions
+	ErrHarborUsedByRegions = errors.New("cannot delete a harbor when used by regions")
+
+	// ErrRegionUsedByClusters used when deleting a region that is still used by clusters
+	ErrRegionUsedByClusters = errors.New("cannot delete a region when used by clusters")
 )

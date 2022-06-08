@@ -24,6 +24,7 @@ const (
 	_applicationIDParam = "applicationID"
 	_extraOwner         = "extraOwner"
 	_groupIDStr         = "groupID"
+	_envQuery           = "env"
 )
 
 type API struct {
@@ -274,4 +275,30 @@ func (a *API) SearchMyApplication(c *gin.Context) {
 		Total: int64(total),
 		Items: applications,
 	})
+}
+
+func (a *API) GetSelectableRegionsByEnv(c *gin.Context) {
+	appIDStr := c.Param(_applicationIDParam)
+	appID, err := strconv.ParseUint(appIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid appID: %s, err: %s",
+			appIDStr, err.Error())))
+		return
+	}
+
+	env := c.Query(_envQuery)
+	if env == "" {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("env in URL query parameters cannot be empty"))
+		return
+	}
+
+	regionParts, err := a.applicationCtl.GetSelectableRegionsByEnv(c, uint(appID), env)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+	}
+
+	response.SuccessWithData(c, regionParts)
 }
