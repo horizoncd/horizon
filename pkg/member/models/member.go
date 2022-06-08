@@ -24,6 +24,10 @@ const (
 	// TypePipelinerunStr currently pipelineruns do not have direct member info, will
 	// use the pipeline's cluster's member info
 	TypePipelinerunStr string = "pipelineruns"
+
+	// TypeOauthAppsStr urrently oauthapp do not have direct member info, will
+	// use the oauthapp's groups member info
+	TypeOauthAppsStr string = "oauthapps"
 )
 
 type MemberType uint8

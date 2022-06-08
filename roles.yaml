@@ -35,6 +35,8 @@ Roles:
           - core
         resources:
           - groups/oauthapps
+          - oauthapps
+          - oauthapps/clientsecret
         verbs:
           - "*"
         scopes:
@@ -175,6 +177,18 @@ Roles:
           - "*"
         nonResourceURLs:
           - "*"
+      - apiGroups:
+          - core
+        resources:
+          - groups/oauthapps
+          - oauthapps
+          - oauthapps/clientsecret
+        verbs:
+          - get
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
   - name: pe
     desc: pe为应用/集群的管理者，拥有除删除资源之外的其他权限，并且也可以进行成员管理。破格修改资源上限等
     rules:
@@ -259,6 +273,18 @@ Roles:
           - '*'
         verbs:
           - "*"
+      - apiGroups:
+          - core
+        resources:
+          - groups/oauthapps
+          - oauthapps
+          - oauthapps/clientsecret
+        verbs:
+          - get
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
   - name: guest
     desc: guest为只读人员，拥有组/应用/项目的只读权限，以及测试环境集群创建的权限
     rules:
@@ -268,6 +294,9 @@ Roles:
           - groups
           - groups/members
           - groups/groups
+          - groups/oauthapps
+          - oauthapps
+          - oauthapps/clientsecret
           - applications
           - groups/applications
           - applications/clusters

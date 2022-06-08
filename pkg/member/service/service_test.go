@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -662,7 +663,8 @@ func TestGetPipelinerunMember(t *testing.T) {
 	}
 
 	// check members
-	members, err := s.GetMemberOfResource(ctx, models.TypePipelinerunStr, pipelineRunID)
+	pipelineRunIDStr := strconv.FormatUint(uint64(pipelineRunID), 10)
+	members, err := s.GetMemberOfResource(ctx, models.TypePipelinerunStr, pipelineRunIDStr)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMembers[3], members))
 }

@@ -218,6 +218,7 @@ var (
 	ErrOAuthInternal                  = errors.New("oauth internal error")
 	ErrAuthorizationHeaderNotFound    = errors.New("AuthorizationHeader not found")
 	ErrOAuthTokenFormatError          = errors.New("Oauth token format error")
+	ErrOAuthNotGroupOwnerType         = errors.New("not group oauth app")
 
 	// ErrHarborUsedByRegions used when deleting a harbor that is still used by regions
 	ErrHarborUsedByRegions = errors.New("cannot delete a harbor when used by regions")

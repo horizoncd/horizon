@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -407,7 +408,8 @@ func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
 		authedGroups = make([]*models.Group, 0)
 		for _, item := range groups {
 			// TODO: get all group member in one request
-			member, err := c.memberSvc.GetMemberOfResource(ctx, membermodels.TypeGroupStr, item.ID)
+			strID := strconv.FormatUint(uint64(item.ID), 10)
+			member, err := c.memberSvc.GetMemberOfResource(ctx, membermodels.TypeGroupStr, strID)
 			if err != nil {
 				return nil, err
 			}

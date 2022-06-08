@@ -183,13 +183,6 @@ func Run(flags *Flags) {
 		log.Printf("the roleConfig = %+v\n", roleConfig)
 	}
 
-	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
-	if err != nil {
-		panic(err)
-	}
-	mservice := memberservice.NewService(roleService)
-	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
-
 	// init db
 	mysqlDB, err := orm.NewMySQLDB(&orm.MySQL{
 		Host:              config.DBConfig.Host,
@@ -249,6 +242,13 @@ func Run(flags *Flags) {
 	oauthTokenStore := oauthstore.NewTokenStore(mysqlDB)
 	oauthManager := oauthmanager.NewManager(oauthAppStore, oauthTokenStore,
 		generate.NewAuthorizeGenerate(), config.Oauth.AuthorizeCodeExpireIn, config.Oauth.AccessTokenExpireIn)
+
+	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
+	if err != nil {
+		panic(err)
+	}
+	mservice := memberservice.NewService(roleService, oauthManager)
+	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
 
 	// init scope service
 	scopeFile, err := os.OpenFile(flags.ScopeRoleFile, os.O_RDONLY, 0644)

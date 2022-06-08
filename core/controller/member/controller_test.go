@@ -117,7 +117,7 @@ func CreateUsers(t *testing.T) {
 }
 
 func TestCreateGroupWithOwner(t *testing.T) {
-	memberService := memberservice.NewService(nil)
+	memberService := memberservice.NewService(nil, nil)
 	Ctl := NewController(memberService)
 
 	CreateUsers(t)
@@ -165,7 +165,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	roleMockService := rolemock.NewMockService(mockCtrl)
-	memberService := memberservice.NewService(roleMockService)
+	memberService := memberservice.NewService(roleMockService, nil)
 	Ctl := NewController(memberService)
 	CreateUsers(t)
 

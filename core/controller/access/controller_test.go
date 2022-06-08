@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	memberService := memberservice.NewService(roleService)
+	memberService := memberservice.NewService(roleService, nil)
 	if err != nil {
 		panic(err)
 	}

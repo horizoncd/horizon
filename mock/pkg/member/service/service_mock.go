@@ -67,7 +67,7 @@ func (mr *MockServiceMockRecorder) GetMember(ctx, memberID interface{}) *gomock.
 }
 
 // GetMemberOfResource mocks base method.
-func (m *MockService) GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error) {
+func (m *MockService) GetMemberOfResource(ctx context.Context, resourceType, resourceID string) (*models.Member, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMemberOfResource", ctx, resourceType, resourceID)
 	ret0, _ := ret[0].(*models.Member)

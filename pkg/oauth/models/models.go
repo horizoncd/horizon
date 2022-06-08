@@ -59,6 +59,10 @@ type OauthApp struct {
 	UpdatedBy uint      `gorm:"column:updated_by"`
 }
 
+func (a *OauthApp) IsGroupOwnerType() bool {
+	return a.OwnerType == GroupOwnerType
+}
+
 type OauthClientSecret struct {
 	ID           uint      `gorm:"column:id" json:"id"`
 	ClientID     string    `gorm:"column:client_id" json:"clientID"`
