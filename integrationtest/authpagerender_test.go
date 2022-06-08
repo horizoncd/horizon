@@ -1,4 +1,4 @@
-package oauthserver
+package main
 
 import (
 	"encoding/json"
@@ -16,6 +16,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/oauth"
 	"g.hz.netease.com/horizon/core/controller/oauthapp"
+	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
@@ -48,7 +49,7 @@ var (
 )
 
 func Test(t *testing.T) {
-	params := AuthorizationPageParams{
+	params := oauthserver.AuthorizationPageParams{
 		RedirectURL: "http://overmind.com/callback",
 		State:       "dasdasjl32j4sd",
 		ClientID:    "as87dskkh9nsaljkdalsk",
@@ -140,7 +141,7 @@ func TestServer(t *testing.T) {
 	authScopeService, err := scope2.NewFileScopeService(createOauthScopeConfig())
 	assert.Nil(t, err)
 
-	api := NewAPI(oauthServerController, oauthAppController, "authFileLoc", authScopeService)
+	api := oauthserver.NewAPI(oauthServerController, oauthAppController, "authFileLoc", authScopeService)
 
 	userMiddleWare := func(c *gin.Context) {
 		common.SetUser(c, aUser)
@@ -148,7 +149,7 @@ func TestServer(t *testing.T) {
 	// init server
 	r := gin.New()
 	r.Use(userMiddleWare)
-	RegisterRoutes(r, api)
+	oauthserver.RegisterRoutes(r, api)
 	ListenPort := ":18181"
 
 	go func() { log.Print(r.Run(ListenPort)) }()
@@ -160,13 +161,13 @@ func TestServer(t *testing.T) {
 	scope := ""
 	state := "98237dhka21dasd"
 	data := url.Values{
-		ClientID:    {clientID},
-		Scope:       {scope},
-		State:       {state},
-		RedirectURI: {createReq.RedirectURI},
-		Authorize:   {Authorized},
+		oauthserver.ClientID:    {clientID},
+		oauthserver.Scope:       {scope},
+		oauthserver.State:       {state},
+		oauthserver.RedirectURI: {createReq.RedirectURI},
+		oauthserver.Authorize:   {oauthserver.Authorized},
 	}
-	authorizeURI := BasicPath + AuthorizePath
+	authorizeURI := oauthserver.BasicPath + oauthserver.AuthorizePath
 
 	ErrMyError := errors.New("Not Redirect Error")
 	httpClient := http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -182,18 +183,18 @@ func TestServer(t *testing.T) {
 
 	parsedURL, err := url.Parse(urlErr.URL)
 	assert.Nil(t, err)
-	authorizeCode := parsedURL.Query().Get(Code)
+	authorizeCode := parsedURL.Query().Get(oauthserver.Code)
 	t.Logf("code = %s", authorizeCode)
 
 	// get  the access token
 	accessTokenReqData := url.Values{
-		Code:         {authorizeCode},
-		ClientID:     {clientID},
-		ClientSecret: {secret.ClientSecret},
-		RedirectURI:  {createReq.RedirectURI},
+		oauthserver.Code:         {authorizeCode},
+		oauthserver.ClientID:     {clientID},
+		oauthserver.ClientSecret: {secret.ClientSecret},
+		oauthserver.RedirectURI:  {createReq.RedirectURI},
 	}
 
-	accessTokenURI := BasicPath + AccessTokenPath
+	accessTokenURI := oauthserver.BasicPath + oauthserver.AccessTokenPath
 	resp, err = http.PostForm("http://localhost"+ListenPort+accessTokenURI, accessTokenReqData)
 	assert.Nil(t, err)
 	defer resp.Body.Close()
