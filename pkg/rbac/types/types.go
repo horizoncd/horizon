@@ -13,6 +13,7 @@ const (
 
 type Role struct {
 	Name        string       `yaml:"name" json:"name"`
+	Desc        string       `yaml:"desc" json:"desc"`
 	PolicyRules []PolicyRule `yaml:"rules" json:"rules"`
 }
 

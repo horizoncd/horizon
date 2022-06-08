@@ -1,6 +1,9 @@
 package user
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // User describes a user that has been authenticated to the system
 type User interface {
@@ -10,6 +13,8 @@ type User interface {
 	GetEmail() string
 	String() string
 	IsAdmin() bool
+
+	GetStrID() string
 }
 
 type DefaultInfo struct {
@@ -42,4 +47,8 @@ func (d *DefaultInfo) String() string {
 
 func (d *DefaultInfo) IsAdmin() bool {
 	return d.Admin
+}
+
+func (d *DefaultInfo) GetStrID() string {
+	return strconv.FormatUint(uint64(d.GetID()), 10)
 }

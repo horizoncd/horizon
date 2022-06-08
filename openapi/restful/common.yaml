@@ -40,3 +40,22 @@ components:
       type: string
       format: date
       pattern: full-date
+
+
+    URL:
+      type: string
+      format: uri
+
+    Description:
+      type: string
+      maxLength: 1024
+      description: the  description
+
+    ID:
+      type: integer
+      format: uint64
+
+    GroupID:
+      type: integer
+      format: int64
+      description: the parent id of the subgroup, if not provided, a root group

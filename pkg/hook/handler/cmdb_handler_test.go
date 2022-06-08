@@ -5,10 +5,9 @@ import (
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
 	"g.hz.netease.com/horizon/core/controller/cluster"
-	"g.hz.netease.com/horizon/core/middleware/user"
-
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cmdb"
 	cmdbconfig "g.hz.netease.com/horizon/pkg/config/cmdb"
@@ -35,7 +34,7 @@ func TestApplication(t *testing.T) {
 		Name:     "hzsunjianliang",
 		FullName: "cat",
 	}
-	ctx := context.WithValue(context.TODO(), user.Key(), createUser)
+	ctx := context.WithValue(context.TODO(), common.UserContextKey(), createUser)
 
 	// 1. create application
 	createApplicationEvent := &hook.EventCtx{

@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
@@ -134,7 +134,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	ctx = context.WithValue(context.Background(), user.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 	})
 

@@ -1,0 +1,78 @@
+defaultScope:
+  - application:read-write
+  - clusters:read-write
+roles:
+  - name: application:read-only
+    desc: 应用(application)及相关子资源的只读权限等
+    rules:
+      - apiGroups:
+          - core
+        resources:
+          - groups/applications
+          - applications
+          - applications/members
+          - applications/envtemplates
+          - applications/defaultregions
+        verbs:
+          - get
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+  - name: application:read-write
+    desc: 应用(application)及其相关子资源的读写删权限
+    rules:
+      - apiGroups:
+          - core
+        resources:
+          - groups/applications
+          - applications
+          - applications/members
+          - applications/envtemplates
+          - applications/defaultregions
+        verbs:
+          - "*"
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+  - name: clusters:read-only
+    desc: 集群(cluster)及其相关子资源的相关的只读权限
+    rules:
+      - apiGroups:
+          - core
+        resources:
+          - applications/clusters
+          - clusters
+          - clusters/diffs
+          - clusters/status
+          - clusters/members
+          - clusters/pipelineruns
+          - clusters/containerlog
+          - clusters/tags
+        verbs:
+          - get
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+  - name: clusters:read-write
+    desc: 集群(cluster)及其相关子资源的相关的只读权限
+    rules:
+      - apiGroups:
+          - core
+        resources:
+          - applications/clusters
+          - clusters
+          - clusters/diffs
+          - clusters/status
+          - clusters/members
+          - clusters/pipelineruns
+          - clusters/containerlog
+          - clusters/tags
+        verbs:
+          - "*"
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"

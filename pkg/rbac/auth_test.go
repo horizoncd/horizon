@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	muser "g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	servicemock "g.hz.netease.com/horizon/mock/pkg/member/service"
 	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/auth"
@@ -23,16 +23,16 @@ var (
 		FullName: "tomsun",
 		ID:       1,
 	}
-	ctx = context.TODO()
+	ctx = common.WithContext(context.Background(), defaultUser)
 )
 
 // nolint
 func TestAuthMember(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	memberServiceMock := servicemock.NewMockService(mockCtl)
-	roleServieMock := rolemock.NewMockService(mockCtl)
+	roleServiceMock := rolemock.NewMockService(mockCtl)
 	testAuthorizer := Authorizer(&authorizer{
-		roleService:   roleServieMock,
+		roleService:   roleServiceMock,
 		memberService: memberServiceMock,
 	})
 
@@ -46,27 +46,11 @@ func TestAuthMember(t *testing.T) {
 		Path:            "",
 	}
 
-	ctx = context.WithValue(ctx, muser.Key(), defaultUser)
+	ctx = context.WithValue(ctx, common.UserContextKey(), defaultUser)
 	decision, reason, err := testAuthorizer.Authorize(ctx, authRecord)
 	assert.Nil(t, err)
 	assert.Equal(t, auth.DecisionAllow, decision)
 	assert.Equal(t, NotChecked, reason)
-
-	// phaseResourceError
-	authRecord = auth.AttributesRecord{
-		User:            defaultUser,
-		Verb:            "delete",
-		APIGroup:        "/apis/core",
-		APIVersion:      "v1",
-		Resource:        "groups",
-		Name:            "groupID",
-		ResourceRequest: true,
-		Path:            "",
-	}
-	decision, reason, err = testAuthorizer.Authorize(ctx, authRecord)
-	assert.Equal(t, auth.DecisionDeny, decision)
-	assert.Equal(t, ResourceFormatErr, reason)
-	assert.NotNil(t, err)
 
 	authRecord = auth.AttributesRecord{
 		User:            defaultUser,
@@ -89,7 +73,7 @@ func TestAuthMember(t *testing.T) {
 	// member not exist
 	memberServiceMock.EXPECT().GetMemberOfResource(ctx, gomock.Any(),
 		gomock.Any()).Return(nil, nil).Times(1)
-	roleServieMock.EXPECT().GetDefaultRole(ctx).Return(nil).Times(1)
+	roleServiceMock.EXPECT().GetDefaultRole(ctx).Return(nil).Times(1)
 	decision, reason, err = testAuthorizer.Authorize(ctx, authRecord)
 	assert.Equal(t, auth.DecisionDeny, decision)
 	assert.Equal(t, MemberNotExist, reason)

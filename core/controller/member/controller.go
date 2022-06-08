@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -115,7 +116,8 @@ func (c *controller) ListMember(ctx context.Context, resourceType string, id uin
 
 func (c *controller) GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*Member, error) {
 	op := errors.Op(fmt.Sprintf("group *controller: get %s member", resourceType))
-	member, err := c.memberService.GetMemberOfResource(ctx, resourceType, resourceID)
+	strID := strconv.FormatUint(uint64(resourceID), 10)
+	member, err := c.memberService.GetMemberOfResource(ctx, resourceType, strID)
 	if err != nil {
 		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
 	}

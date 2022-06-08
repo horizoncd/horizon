@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	corecommon "g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
@@ -304,7 +304,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := corecommon.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -327,7 +327,7 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 	if err != nil {
 		return err
 	}
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := corecommon.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -130,7 +130,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	ctx = orm.NewContext(context.TODO(), db)
-	ctx = user.WithContext(ctx, &userauth.DefaultInfo{
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
 		Name:     "1",
 		FullName: "1",
 		ID:       1,

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/application/manager"
@@ -448,7 +448,7 @@ func (c *controller) ListApplication(ctx context.Context, filter string, query q
 func (c *controller) ListUserApplication(ctx context.Context,
 	filter string, query *q.Query) (int, []*ListApplicationResponse, error) {
 	// get current user
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return 0, nil, perror.WithMessage(err, "no user in context")
 	}

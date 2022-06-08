@@ -1,0 +1,233 @@
+openapi: 3.0.3
+info:
+  title: Horion-APP
+  description: the horizon-app restful api
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080'
+paths:
+  /apis/core/v1/groups/{groupID}/oauthapps:
+    parameters:
+      - name: groupID
+        in: path
+        description: groupid
+        $ref:  "common.yaml#/components/schemas/GroupID"
+        required: true
+    post:
+      tags:
+        - oauthapp
+      operationId: createoauthapp
+      summary: create a oauth app
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOauthAppRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - app
+      operationId: listapp
+      summary: list the oauth app under the group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/oauthapps/{appID}:
+    get:
+      tags:
+        - app
+      summary: get a oauth app
+      operationId: getapp
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description:  Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - app
+      summary: delete the oauth app
+      operationId: deleteapp
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description:  Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - app
+      summary: update the oauth app
+      operationId: updateapp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppBasicInfo"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppBasicInfo"
+        default:
+          description:  Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/oauthapps/{appID}/clientsecret:
+    get:
+      tags:
+        - app
+      operationId: listClientSecret
+      summary: list the client secrets of an oauth app
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientSecret"
+        default:
+          description:  Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - app
+      operationId: generateClientSecret
+      summary: generate the oauth client secret
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientSecret"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/oauthapps/{appID}/clientsecret/{secretID}:
+    delete:
+      tags:
+        - app
+      operationId: deleteClientSecret
+      summary: delete the app's client secret
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientSecret"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+
+components:
+  schemas:
+    CreateOauthAppRequest:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/appName'
+        desc:
+          $ref: "common.yaml#/components/schemas/Description"
+        homeURL:
+          $ref: "common.yaml#/components/schemas/URL"
+        redirectURL:
+          $ref: "common.yaml#/components/schemas/URL"
+
+    AppBasicInfo:
+      type: object
+      properties:
+        appID:
+          $ref: "common.yaml#/components/schemas/ID"
+        appName:
+          $ref: '#/components/schemas/appName'
+        desc:
+          $ref: "common.yaml#/components/schemas/Description"
+        homeURL:
+          $ref: "common.yaml#/components/schemas/URL"
+        clientID:
+          type: string
+          format: uuid
+        redirectURL:
+          $ref: "common.yaml#/components/schemas/URL"
+
+    appName:
+      type: string
+      maxLength: 2048
+      description: the group FullName
+
+
+    ClientSecret:
+      type: object
+      properties:
+        id:
+          type: number
+        clientID:
+          type: string
+          format: uuid
+        clientSecret:
+          type: string
+        createdAt:
+          type: string
+          format: DateTime
+        createdBy:
+          type: string
