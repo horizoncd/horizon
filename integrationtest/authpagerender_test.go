@@ -26,7 +26,6 @@ import (
 	scope2 "g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/oauth/store"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
-	"g.hz.netease.com/horizon/pkg/server/middleware"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
@@ -63,11 +62,6 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	err = authTemplate.Execute(os.Stdout, params)
 	assert.Nil(t, err)
-}
-func UserMiddleware(skippers ...middleware.Skipper) gin.HandlerFunc {
-	return middleware.New(func(c *gin.Context) {
-		common.SetUser(c, aUser)
-	}, skippers...)
 }
 
 func createOauthScopeConfig() oauthconfig.Scopes {
