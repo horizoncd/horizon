@@ -71,5 +71,8 @@ grafanaSLO:
     apiDashboard: "http://grafana.yf-dev2.netease.com/d/tKjaD1-nk/horizon-api-slo?orgId=1&kiosk&theme=light"
     pipelineDashboard: "http://grafana.yf-dev2.netease.com/d/g40XAtbnk/horizon-pipeline-slo?orgId=1&kiosk&theme=light&var-env=%s"
 
-oauthHTMLLocation: /Users/tomsun/Workspace/cloudmusic/code/horizon/horizon/core/http/api/v1/oauthserver/auth.html
+oauth:
+  oauthHTMLLocation: /Users/tomsun/Workspace/cloudmusic/code/horizon/horizon/core/http/api/v1/oauthserver/auth.html
+  authorizeCodeExpireIn: 10m
+  accessTokenExpireIn: 24h
 
