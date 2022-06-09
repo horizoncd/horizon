@@ -388,7 +388,7 @@ func (h *helper) AcceptMR(ctx context.Context, pid interface{}, mrID int,
 		} else if perror.Cause(err) != herrors.ErrGitlabMRNotReady {
 			return nil, err
 		}
-		time.Sleep(time.Millisecond * 500)
+		time.Sleep(time.Second)
 	}
 	return nil, err
 }
