@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"g.hz.netease.com/horizon/pkg/application/manager"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	"g.hz.netease.com/horizon/pkg/param"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 )
 
 type Service interface {
@@ -18,7 +18,7 @@ type Service interface {
 
 type service struct {
 	groupService       groupservice.Service
-	applicationManager manager.Manager
+	applicationManager applicationmanager.Manager
 }
 
 func (s service) GetByID(ctx context.Context, id uint) (*ApplicationDetail, error) {
@@ -74,7 +74,7 @@ func (s service) GetByIDs(ctx context.Context, ids []uint) (map[uint]*Applicatio
 	return applicationMap, nil
 }
 
-func NewService(groupSvc groupservice.Service, manager *param.Manager) Service {
+func NewService(groupSvc groupservice.Service, manager *managerparam.Manager) Service {
 	return &service{
 		groupService:       groupSvc,
 		applicationManager: manager.ApplicationManager,

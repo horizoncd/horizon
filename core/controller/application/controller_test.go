@@ -12,20 +12,16 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	appgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
-	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
-	"g.hz.netease.com/horizon/pkg/member"
+	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	usersvc "g.hz.netease.com/horizon/pkg/user/service"
+	userservice "g.hz.netease.com/horizon/pkg/user/service"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -249,11 +245,13 @@ var (
         }
     }
 }`
+	manager *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&models.Application{}, &clustermodels.Cluster{}); err != nil {
 		panic(err)
 	}
@@ -311,15 +309,15 @@ func Test(t *testing.T) {
 	c = &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
-		applicationMgr:       manager.Mgr,
-		groupMgr:             groupmanager.Mgr,
-		groupSvc:             groupsvc.Svc,
-		templateReleaseMgr:   trmanager.Mgr,
-		clusterMgr:           clustermanager.Mgr,
-		userSvc:              usersvc.Svc,
+		applicationMgr:       manager.ApplicationManager,
+		groupMgr:             manager.GroupManager,
+		groupSvc:             groupservice.NewService(manager),
+		templateReleaseMgr:   manager.TemplateReleaseManager,
+		clusterMgr:           manager.ClusterMgr,
+		userSvc:              userservice.NewService(manager),
 	}
 
-	group, err := groupmanager.Mgr.Create(ctx, &groupmodels.Group{
+	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
 		Name: "ABC",
 		Path: "abc",
 	})
@@ -447,15 +445,11 @@ func Test_validateApplicationName(t *testing.T) {
 }
 
 func TestListUserApplication(t *testing.T) {
-	appMgr := manager.Mgr
-	groupMgr := groupmanager.Mgr
-	memberMgr := member.Mgr
-
 	// init data
 	var groups []*groupmodels.Group
 	for i := 0; i < 5; i++ {
 		name := "groupForAppFuzzily" + strconv.Itoa(i)
-		group, err := groupMgr.Create(ctx, &groupmodels.Group{
+		group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
 			Name:     name,
 			Path:     name,
 			ParentID: 0,
@@ -469,7 +463,7 @@ func TestListUserApplication(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		group := groups[i]
 		name := "appFuzzily" + strconv.Itoa(i)
-		application, err := appMgr.Create(ctx, &models.Application{
+		application, err := manager.ApplicationManager.Create(ctx, &models.Application{
 			GroupID:         group.ID,
 			Name:            name,
 			Priority:        "P3",
@@ -485,10 +479,10 @@ func TestListUserApplication(t *testing.T) {
 	}
 
 	c = &controller{
-		applicationMgr: appMgr,
-		groupMgr:       groupMgr,
-		groupSvc:       groupsvc.Svc,
-		memberManager:  memberMgr,
+		applicationMgr: manager.ApplicationManager,
+		groupMgr:       manager.GroupManager,
+		groupSvc:       groupservice.NewService(manager),
+		memberManager:  manager.MemberManager,
 	}
 
 	// nolint
@@ -497,7 +491,7 @@ func TestListUserApplication(t *testing.T) {
 		ID:   uint(2),
 	})
 
-	_, err := memberMgr.Create(ctx, &membermodels.Member{
+	_, err := manager.MemberManager.Create(ctx, &membermodels.Member{
 		ResourceType: membermodels.TypeGroup,
 		ResourceID:   groups[0].ID,
 		Role:         "owner",
@@ -506,7 +500,7 @@ func TestListUserApplication(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	_, err = memberMgr.Create(ctx, &membermodels.Member{
+	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
 		ResourceType: membermodels.TypeApplication,
 		ResourceID:   applications[1].ID,
 		Role:         "owner",
@@ -527,7 +521,7 @@ func TestListUserApplication(t *testing.T) {
 		t.Logf("%v", resp)
 	}
 
-	_, err = memberMgr.Create(ctx, &membermodels.Member{
+	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
 		ResourceType: membermodels.TypeGroup,
 		ResourceID:   groups[2].ID,
 		Role:         "owner",

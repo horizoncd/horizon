@@ -13,7 +13,7 @@ import (
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/group/manager"
+	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
@@ -59,7 +59,7 @@ type Controller interface {
 }
 
 type controller struct {
-	groupManager       manager.Manager
+	groupManager       groupmanager.Manager
 	applicationManager appmanager.Manager
 	clusterManager     clustermanager.Manager
 	memberSvc          memberservice.Service
@@ -480,7 +480,7 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*models.Group) ([]*models.Group, error) {
 	var ids []uint
 	for _, g := range groups {
-		ids = append(ids, manager.FormatIDsFromTraversalIDs(g.TraversalIDs)...)
+		ids = append(ids, groupmanager.FormatIDsFromTraversalIDs(g.TraversalIDs)...)
 	}
 
 	groupsByIDs, err := c.groupManager.GetByIDs(ctx, ids)
@@ -545,7 +545,7 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
 }
 
 func (c *controller) formatFullFromGroup(ctx context.Context, group *models.Group) (*service.Full, error) {
-	groups, err := c.groupManager.GetByIDs(ctx, manager.FormatIDsFromTraversalIDs(group.TraversalIDs))
+	groups, err := c.groupManager.GetByIDs(ctx, groupmanager.FormatIDsFromTraversalIDs(group.TraversalIDs))
 	if err != nil {
 		return nil, err
 	}

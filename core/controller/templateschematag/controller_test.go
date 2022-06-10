@@ -7,27 +7,27 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
-	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
-	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	templateschemamodels "g.hz.netease.com/horizon/pkg/templateschematag/models"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 )
 
 var (
-	ctx context.Context
-	c   Controller
+	ctx     context.Context
+	c       Controller
+	manager *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
 		&templateschemamodels.ClusterTemplateSchemaTag{}, &membermodels.Member{}); err != nil {
 		panic(err)
@@ -43,8 +43,8 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	appMgr := appmanager.Mgr
-	clusterMgr := clustermanager.Mgr
+	appMgr := manager.ApplicationManager
+	clusterMgr := manager.ClusterMgr
 
 	// init data
 	application, err := appMgr.Create(ctx, &appmodels.Application{
@@ -67,7 +67,7 @@ func Test(t *testing.T) {
 
 	c = &controller{
 		clusterMgr:          clusterMgr,
-		clusterSchemaTagMgr: tagmanager.Mgr,
+		clusterSchemaTagMgr: manager.ClusterSchemaTagMgr,
 	}
 
 	clusterID := cluster.ID

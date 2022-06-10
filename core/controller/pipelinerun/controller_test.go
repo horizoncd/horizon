@@ -22,14 +22,12 @@ import (
 	applicationmodel "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodel "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
-	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/golang/mock/gomock"
@@ -37,6 +35,11 @@ import (
 
 	pipelinemodel "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	usermodel "g.hz.netease.com/horizon/pkg/user/models"
+)
+
+var (
+	ctx     context.Context
+	manager *managerparam.Manager
 )
 
 func TestGetAndListPipelinerun(t *testing.T) {
@@ -198,11 +201,11 @@ func TestGetDiff(t *testing.T) {
 	assert.Equal(t, *expectResp, *resp)
 }
 
-var ctx context.Context
-
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
+
 	if err := db.AutoMigrate(&clustermodel.Cluster{}, &membermodels.Member{},
 		&envmodels.EnvironmentRegion{}, &prmodels.Pipelinerun{}); err != nil {
 		panic(err)
@@ -227,9 +230,9 @@ func Test(t *testing.T) {
 	tektonFty.EXPECT().GetTekton(gomock.Any()).Return(tekton, nil).AnyTimes()
 	tektonFty.EXPECT().GetTektonCollector(gomock.Any()).Return(tektonCollector, nil).AnyTimes()
 
-	envMgr := envmanager.Mgr
+	envMgr := manager.EnvMgr
 
-	clusterMgr := clustermanager.Mgr
+	clusterMgr := manager.ClusterMgr
 	cluster, err := clusterMgr.Create(ctx, &clustermodel.Cluster{
 		Name:            "cluster",
 		EnvironmentName: "test",
@@ -240,7 +243,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, cluster)
 
-	pipelinerunMgr := prmanager.Mgr
+	pipelinerunMgr := manager.PipelinerunMgr
 	pipelinerun, err := pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    "builddeploy",

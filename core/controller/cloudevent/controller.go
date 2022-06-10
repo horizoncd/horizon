@@ -9,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
+	"g.hz.netease.com/horizon/pkg/param"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
@@ -24,12 +25,14 @@ type Controller interface {
 type controller struct {
 	tektonFty      factory.Factory
 	pipelinerunMgr prmanager.Manager
+	pipelineMgr    pipelinemanager.Manager
 }
 
-func NewController(tektonFty factory.Factory) Controller {
+func NewController(tektonFty factory.Factory, parameter *param.Param) Controller {
 	return &controller{
 		tektonFty:      tektonFty,
-		pipelinerunMgr: prmanager.Mgr,
+		pipelinerunMgr: parameter.PipelinerunMgr,
+		pipelineMgr:    parameter.PipelinerMgr,
 	}
 }
 
@@ -97,7 +100,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	metrics.Observe(pipelineResult)
 
 	// 5. insert pipeline into db
-	err = pipelinemanager.Mgr.Create(ctx, pipelineResult)
+	err = c.pipelineMgr.Create(ctx, pipelineResult)
 	if err != nil {
 		// err不往上层抛，上层也无法处理这种异常
 		log.Errorf(ctx, "failed to save pipeline to db: %v, err: %v", pipelineResult, err)

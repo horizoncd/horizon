@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/group/manager"
+	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
-	"g.hz.netease.com/horizon/pkg/param"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 )
 
 const (
@@ -27,7 +27,7 @@ type Service interface {
 }
 
 type service struct {
-	groupManager manager.Manager
+	groupManager groupmanager.Manager
 }
 
 func (s service) GetChildByID(ctx context.Context, id uint) (*Child, error) {
@@ -36,7 +36,7 @@ func (s service) GetChildByID(ctx context.Context, id uint) (*Child, error) {
 		return nil, err
 	}
 
-	groups, err := s.groupManager.GetByIDs(ctx, manager.FormatIDsFromTraversalIDs(group.TraversalIDs))
+	groups, err := s.groupManager.GetByIDs(ctx, groupmanager.FormatIDsFromTraversalIDs(group.TraversalIDs))
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (s service) GetChildrenByIDs(ctx context.Context, ids []uint) (map[uint]*Ch
 
 	// 2.query parent groups by traversal id, and store in map
 	for _, group := range groups {
-		for _, groupID := range manager.FormatIDsFromTraversalIDs(group.TraversalIDs) {
+		for _, groupID := range groupmanager.FormatIDsFromTraversalIDs(group.TraversalIDs) {
 			groupMap[groupID] = nil
 		}
 	}
@@ -79,7 +79,7 @@ func (s service) GetChildrenByIDs(ctx context.Context, ids []uint) (map[uint]*Ch
 	// 3.convert to children map
 	for _, group := range groups {
 		parentGroups = []*models.Group{}
-		for _, id := range manager.FormatIDsFromTraversalIDs(group.TraversalIDs) {
+		for _, id := range groupmanager.FormatIDsFromTraversalIDs(group.TraversalIDs) {
 			parentGroups = append(parentGroups, groupMap[id])
 		}
 		full := GenerateFullFromGroups(parentGroups)
@@ -89,7 +89,7 @@ func (s service) GetChildrenByIDs(ctx context.Context, ids []uint) (map[uint]*Ch
 	return childrenMap, nil
 }
 
-func NewService(manager *param.Manager) Service {
+func NewService(manager *managerparam.Manager) Service {
 	return &service{
 		groupManager: manager.GroupManager,
 	}

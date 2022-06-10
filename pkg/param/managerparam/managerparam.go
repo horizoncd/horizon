@@ -7,8 +7,10 @@ import (
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	environmentregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
+	harbormanager "g.hz.netease.com/horizon/pkg/harbor/manager"
 	membermanager "g.hz.netease.com/horizon/pkg/member"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
 	templatemanager "g.hz.netease.com/horizon/pkg/template/manager"
@@ -21,7 +23,6 @@ import (
 type Manager struct {
 	UserManager              usermanager.Manager
 	ApplicationManager       applicationmanager.Manager
-	GroupMgr                 groupmanager.Manager
 	TemplateReleaseManager   trmanager.Manager
 	ClusterMgr               clustermanager.Manager
 	MemberManager            membermanager.Manager
@@ -33,15 +34,16 @@ type Manager struct {
 	EnvRegionMgr             environmentregionmanager.Manager
 	RegionMgr                regionmanager.Manager
 	PipelinerunMgr           prmanager.Manager
+	PipelinerMgr             pipelinemanager.Manager
 	EnvMgr                   envmanager.Manager
 	GroupManager             groupmanager.Manager
+	HarborManager            harbormanager.Manager
 }
 
 func InitManager(db *gorm.DB) *Manager {
 	return &Manager{
 		UserManager:              usermanager.New(db),
 		ApplicationManager:       applicationmanager.New(db),
-		GroupMgr:                 groupmanager.New(db),
 		TemplateReleaseManager:   trmanager.New(db),
 		ClusterMgr:               clustermanager.New(db),
 		MemberManager:            membermanager.New(db),
@@ -53,6 +55,9 @@ func InitManager(db *gorm.DB) *Manager {
 		EnvRegionMgr:             environmentregionmanager.New(db),
 		RegionMgr:                regionmanager.New(db),
 		PipelinerunMgr:           prmanager.New(db),
+		PipelinerMgr:             pipelinemanager.New(db),
 		EnvMgr:                   envmanager.New(db),
+		GroupManager:             groupmanager.New(db),
+		HarborManager:            harbormanager.New(db),
 	}
 }

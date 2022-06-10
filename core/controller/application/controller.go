@@ -9,7 +9,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
-	"g.hz.netease.com/horizon/pkg/application/manager"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
@@ -52,7 +52,7 @@ type Controller interface {
 type controller struct {
 	applicationGitRepo   gitrepo.ApplicationGitRepo
 	templateSchemaGetter templateschema.Getter
-	applicationMgr       manager.Manager
+	applicationMgr       applicationmanager.Manager
 	applicationSvc       applicationservice.Service
 	groupMgr             groupmanager.Manager
 	groupSvc             groupsvc.Service
@@ -71,7 +71,7 @@ func NewController(param *param.Param) Controller {
 		templateSchemaGetter: param.TemplateSchemaGetter,
 		applicationMgr:       param.ApplicationManager,
 		applicationSvc:       param.ApplicationSvc,
-		groupMgr:             param.GroupMgr,
+		groupMgr:             param.GroupManager,
 		groupSvc:             param.GroupSvc,
 		templateReleaseMgr:   param.TemplateReleaseManager,
 		clusterMgr:           param.ClusterMgr,

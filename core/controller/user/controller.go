@@ -4,13 +4,10 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-)
-
-var (
-	Ctl = NewController()
 )
 
 type Controller interface {
@@ -22,9 +19,9 @@ type controller struct {
 	userMgr manager.Manager
 }
 
-func NewController() Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		userMgr: manager.Mgr,
+		userMgr: param.UserManager,
 	}
 }
 

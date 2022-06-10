@@ -6,6 +6,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -28,6 +29,7 @@ type Param struct {
 	// service
 	MemberService  memberservice.Service
 	ApplicationSvc applicationservice.Service
+	ClusterSvc     clusterservice.Service
 	GroupSvc       groupsvc.Service
 	UserSvc        userservice.Service
 	RoleService    role.Service

@@ -9,27 +9,27 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
-	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
-	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	ctx context.Context
-	c   Controller
+	ctx     context.Context
+	c       Controller
+	manager *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
 		&tagmodels.Tag{}, &membermodels.Member{}); err != nil {
 		panic(err)
@@ -50,8 +50,8 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().UpdateTags(ctx, gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	appMgr := appmanager.Mgr
-	clusterMgr := clustermanager.Mgr
+	appMgr := manager.ApplicationManager
+	clusterMgr := manager.ClusterMgr
 
 	// init data
 	application, err := appMgr.Create(ctx, &appmodels.Application{
@@ -74,7 +74,7 @@ func Test(t *testing.T) {
 
 	c = &controller{
 		clusterMgr:     clusterMgr,
-		tagMgr:         tagmanager.Mgr,
+		tagMgr:         manager.TagManager,
 		clusterGitRepo: clusterGitRepo,
 		applicationMgr: appMgr,
 	}

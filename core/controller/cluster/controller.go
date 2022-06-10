@@ -3,7 +3,7 @@ package cluster
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/cmd"
+	"g.hz.netease.com/horizon/core/config"
 	"g.hz.netease.com/horizon/lib/q"
 	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
@@ -104,7 +104,7 @@ type controller struct {
 
 var _ Controller = (*controller)(nil)
 
-func NewController(config *cmd.Config, param *param.Param) Controller {
+func NewController(config *config.Config, param *param.Param) Controller {
 	return &controller{
 		clusterMgr:           param.ClusterMgr,
 		clusterGitRepo:       param.ClusterGitRepo,

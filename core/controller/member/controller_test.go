@@ -11,13 +11,17 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/param"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodel "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +35,19 @@ var (
 	contextUserID       uint = 1
 	contextUserName          = "Tony"
 	contextUserFullName      = "TonyWu"
-	groupCtl                 = group.NewController(nil)
+	manager                  = managerparam.InitManager(db)
+	groupCtl                 = group.NewController(&param.Param{Manager: manager})
+	groupSvc                 = groupservice.NewService(manager)
+	applicationSvc           = applicationservice.NewService(groupSvc, manager)
+	clusterSvc               = clusterservice.NewService(applicationSvc, manager)
+	memberService            = memberservice.NewService(nil, nil, manager)
+	ctl                      = NewController(&param.Param{
+		MemberService:  memberService,
+		Manager:        manager,
+		GroupSvc:       groupSvc,
+		ApplicationSvc: applicationSvc,
+		ClusterSvc:     clusterSvc,
+	})
 )
 
 var (
@@ -111,15 +127,12 @@ func CreateUsers(t *testing.T) {
 	user5.Name = user5Name
 
 	for _, user := range []usermodel.User{user1, user2, user3, user4, user5} {
-		_, err := usermanager.Mgr.Create(ctx, &user)
+		_, err := manager.UserManager.Create(ctx, &user)
 		assert.Nil(t, err)
 	}
 }
 
 func TestCreateGroupWithOwner(t *testing.T) {
-	memberService := memberservice.NewService(nil, nil)
-	Ctl := NewController(memberService)
-
 	CreateUsers(t)
 
 	// create group
@@ -134,7 +147,7 @@ func TestCreateGroupWithOwner(t *testing.T) {
 	groupID, err := groupCtl.CreateGroup(ctx, newGroup)
 	assert.Nil(t, err)
 
-	retMembers, err := Ctl.ListMember(ctx, membermodels.TypeGroupStr, groupID)
+	retMembers, err := ctl.ListMember(ctx, membermodels.TypeGroupStr, groupID)
 	expectMember := Member{
 		MemberType:   membermodels.MemberUser,
 		MemberName:   contextUserName,
@@ -165,8 +178,6 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	roleMockService := rolemock.NewMockService(mockCtrl)
-	memberService := memberservice.NewService(roleMockService, nil)
-	Ctl := NewController(memberService)
 	CreateUsers(t)
 
 	// mock the RoleCompare
@@ -193,23 +204,23 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 		MemberType:   membermodels.MemberUser,
 		Role:         roleservice.Owner,
 	}
-	retMember2, err := Ctl.CreateMember(ctx, &postMember2)
+	retMember2, err := ctl.CreateMember(ctx, &postMember2)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember2))
 
 	// update member
-	retMember3, err := Ctl.UpdateMember(ctx, retMember2.ID, "maitainer")
+	retMember3, err := ctl.UpdateMember(ctx, retMember2.ID, "maitainer")
 	assert.Nil(t, err)
 	postMember2.Role = "maitainer"
 
 	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember3))
 
 	// remove the member
-	err = Ctl.RemoveMember(ctx, retMember2.ID)
+	err = ctl.RemoveMember(ctx, retMember2.ID)
 	assert.Nil(t, err)
 
 	// list member (create post2 and then list)
-	retMember2, err = Ctl.CreateMember(ctx, &postMember2)
+	retMember2, err = ctl.CreateMember(ctx, &postMember2)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberAndMemberEqual(postMember2, *retMember2))
 
@@ -220,7 +231,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 		MemberType:   membermodels.MemberUser,
 		Role:         roleservice.Owner,
 	}
-	members, err := Ctl.ListMember(ctx, membermodels.TypeGroupStr, groupID)
+	members, err := ctl.ListMember(ctx, membermodels.TypeGroupStr, groupID)
 	assert.Nil(t, err)
 	assert.Equal(t, len(members), 2)
 	assert.True(t, PostMemberAndMemberEqual(postMemberOwner, members[0]))

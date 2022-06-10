@@ -28,7 +28,7 @@ func (d *DbTokenStore) Create(ctx context.Context, token *models.Token) error {
 
 func (d *DbTokenStore) Get(ctx context.Context, code string) (*models.Token, error) {
 	var token models.Token
-	result := d.d.db.WithContext(ctx).Raw(common.TokenGetByCode, code).First(&token)
+	result := d.db.WithContext(ctx).Raw(common.TokenGetByCode, code).First(&token)
 	if result.Error != nil {
 		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, herrors.NewErrNotFound(herrors.TokenInDB, result.Error.Error())

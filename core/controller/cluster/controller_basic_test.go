@@ -12,18 +12,15 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	mockcd "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
-	applicationsvc "g.hz.netease.com/horizon/pkg/application/service"
+	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
-	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
+	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +31,7 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 	var groups []*groupmodels.Group
 	for i := 0; i < 5; i++ {
 		name := "groupForClusterFuzzily" + strconv.Itoa(i)
-		group, err := groupMgr.Create(ctx, &groupmodels.Group{
+		group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
 			Name:     name,
 			Path:     name,
 			ParentID: 0,
@@ -48,7 +45,7 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		group := groups[i]
 		name := "appForClusterFuzzily" + strconv.Itoa(i)
-		application, err := appMgr.Create(ctx, &appmodels.Application{
+		application, err := manager.ApplicationManager.Create(ctx, &appmodels.Application{
 			GroupID:         group.ID,
 			Name:            name,
 			Priority:        "P3",
@@ -63,7 +60,7 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 		applications = append(applications, application)
 	}
 
-	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+	region, err := manager.RegionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hzFuzzily",
 		DisplayName: "HZFuzzily",
 	})
@@ -73,7 +70,7 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		application := applications[i]
 		name := "fuzzilyCluster" + strconv.Itoa(i)
-		cluster, err := clusterMgr.Create(ctx, &clustermodels.Cluster{
+		cluster, err := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
 			ApplicationID:   application.ID,
 			Name:            name,
 			EnvironmentName: "testFuzzily",
@@ -84,11 +81,11 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 	}
 
 	c = &controller{
-		clusterMgr:     clusterMgr,
-		applicationMgr: appMgr,
-		applicationSvc: applicationsvc.Svc,
-		groupManager:   groupmanager.Mgr,
-		memberManager:  memberMgr,
+		clusterMgr:     manager.ClusterMgr,
+		applicationMgr: manager.ApplicationManager,
+		applicationSvc: applicationservice.NewService(groupservice.NewService(manager), manager),
+		groupManager:   manager.GroupManager,
+		memberManager:  manager.MemberManager,
 	}
 
 	count, resps, err := c.ListClusterByNameFuzzily(ctx, "", "fuzzilyCluster", nil)
@@ -105,14 +102,14 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 
 func TestListUserClustersByNameFuzzily(t *testing.T) {
 	// init data
-	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+	region, err := manager.RegionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hzUserClustersFuzzily",
 		DisplayName: "HZUserClusters",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
+	er, err := manager.EnvironmentRegionMgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: "testUserClustersFuzzily",
 		RegionName:      "hzUserClustersFuzzily",
 	})
@@ -121,7 +118,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	var groups []*groupmodels.Group
 	for i := 0; i < 5; i++ {
 		name := "groupForUserClusterFuzzily" + strconv.Itoa(i)
-		group, err := groupMgr.Create(ctx, &groupmodels.Group{
+		group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
 			Name:     name,
 			Path:     name,
 			ParentID: 0,
@@ -135,7 +132,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		group := groups[i]
 		name := "appForUserClusterFuzzily" + strconv.Itoa(i)
-		application, err := appMgr.Create(ctx, &appmodels.Application{
+		application, err := manager.ApplicationManager.Create(ctx, &appmodels.Application{
 			GroupID:         group.ID,
 			Name:            name,
 			Priority:        "P3",
@@ -154,7 +151,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		application := applications[i]
 		name := "userClusterFuzzily" + strconv.Itoa(i)
-		cluster, err := clusterMgr.Create(ctx, &clustermodels.Cluster{
+		cluster, err := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
 			ApplicationID:   application.ID,
 			Name:            name,
 			EnvironmentName: "testUserClustersFuzzily",
@@ -171,7 +168,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 		Name: "Matt",
 		ID:   uint(2),
 	})
-	_, err = memberMgr.Create(ctx, &membermodels.Member{
+	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
 		ResourceType: membermodels.TypeGroup,
 		ResourceID:   groups[0].ID,
 		Role:         "owner",
@@ -180,7 +177,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	_, err = memberMgr.Create(ctx, &membermodels.Member{
+	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
 		ResourceType: membermodels.TypeApplication,
 		ResourceID:   applications[1].ID,
 		Role:         "owner",
@@ -189,7 +186,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	_, err = memberMgr.Create(ctx, &membermodels.Member{
+	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
 		ResourceType: membermodels.TypeApplicationCluster,
 		ResourceID:   clusters[3].ID,
 		Role:         "owner",
@@ -199,11 +196,11 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	assert.Nil(t, err)
 
 	c = &controller{
-		clusterMgr:     clusterMgr,
-		applicationMgr: appMgr,
-		applicationSvc: applicationsvc.Svc,
-		groupManager:   groupmanager.Mgr,
-		memberManager:  memberMgr,
+		clusterMgr:     manager.ClusterMgr,
+		applicationMgr: manager.ApplicationManager,
+		applicationSvc: applicationservice.NewService(groupservice.NewService(manager), manager),
+		groupManager:   manager.GroupManager,
+		memberManager:  manager.MemberManager,
 	}
 
 	count, resps, err := c.ListUserClusterByNameFuzzily(ctx, er.EnvironmentName, "cluster", nil)
@@ -237,19 +234,19 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 
 	c = &controller{
 		cd:             cd,
-		clusterMgr:     clusterMgr,
-		applicationMgr: appMgr,
-		applicationSvc: applicationsvc.Svc,
-		groupManager:   groupmanager.Mgr,
-		envMgr:         envmanager.Mgr,
-		regionMgr:      regionmanager.Mgr,
+		clusterMgr:     manager.ClusterMgr,
+		applicationMgr: manager.ApplicationManager,
+		applicationSvc: applicationservice.NewService(groupservice.NewService(manager), manager),
+		groupManager:   manager.GroupManager,
+		envMgr:         manager.EnvMgr,
+		regionMgr:      manager.RegionMgr,
 	}
 
-	id, err := harbordao.NewDAO().Create(ctx, &harbormodels.Harbor{
+	id, err := harbordao.NewDAO(db).Create(ctx, &harbormodels.Harbor{
 		Server: "http://127.0.0.1",
 	})
 	assert.Nil(t, err)
-	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+	region, err := manager.RegionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "TestController_FreeOrDeleteClusterFailed",
 		DisplayName: "TestController_FreeOrDeleteClusterFailed",
 		HarborID:    id,
@@ -257,7 +254,7 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	group, err := groupMgr.Create(ctx, &groupmodels.Group{
+	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
 		Name:     "TestController_FreeOrDeleteClusterFailed",
 		Path:     "/TestController_FreeOrDeleteClusterFailed",
 		ParentID: 0,
@@ -265,7 +262,7 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, group)
 
-	application, err := appMgr.Create(ctx, &appmodels.Application{
+	application, err := manager.ApplicationManager.Create(ctx, &appmodels.Application{
 		GroupID:         group.ID,
 		Name:            "TestController_FreeOrDeleteClusterFailed",
 		Priority:        "P3",
@@ -278,7 +275,7 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, application)
 
-	cluster, err := clusterMgr.Create(ctx, &clustermodels.Cluster{
+	cluster, err := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
 		ApplicationID:   application.ID,
 		Name:            "TestController_FreeOrDeleteClusterFailed",
 		EnvironmentName: "TestController_FreeOrDeleteClusterFailed",
@@ -292,7 +289,7 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	err = c.FreeCluster(ctx, cluster.ID)
 	assert.Nil(t, err)
 	time.Sleep(time.Second)
-	cluster, err = clusterMgr.GetByID(ctx, cluster.ID)
+	cluster, err = manager.ClusterMgr.GetByID(ctx, cluster.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, "", cluster.Status)
 
@@ -300,7 +297,7 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	err = c.DeleteCluster(ctx, cluster.ID)
 	assert.Nil(t, err)
 	time.Sleep(time.Second)
-	cluster, err = clusterMgr.GetByID(ctx, cluster.ID)
+	cluster, err = manager.ClusterMgr.GetByID(ctx, cluster.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, "", cluster.Status)
 }

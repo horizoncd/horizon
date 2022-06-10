@@ -16,9 +16,9 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	groupModels "g.hz.netease.com/horizon/pkg/group/models"
-	"g.hz.netease.com/horizon/pkg/member"
 	memberctx "g.hz.netease.com/horizon/pkg/member/context"
 	"g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
@@ -29,7 +29,9 @@ import (
 )
 
 var (
-	s Service
+	s       Service
+	db, _   = orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 )
 
 func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
@@ -43,7 +45,6 @@ func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
 // nolint
 func TestCreateAndUpdateGroupMember(t *testing.T) {
 
-	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Member{}); err != nil {
 		panic(err)
 	}
@@ -56,7 +57,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	groupManager := groupmanagermock.NewMockManager(mockCtrl)
 	roleMockService := rolemock.NewMockService(mockCtrl)
 	originService := &service{
-		memberManager: member.Mgr,
+		memberManager: manager.MemberManager,
 		groupManager:  groupManager,
 		roleService:   roleMockService,
 	}
@@ -251,8 +252,6 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 
 // nolint
 func TestListGroupMember(t *testing.T) {
-
-	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Member{}); err != nil {
 		panic(err)
 	}
@@ -265,7 +264,7 @@ func TestListGroupMember(t *testing.T) {
 
 	groupManager := groupmanagermock.NewMockManager(mockCtrl)
 	originService := &service{
-		memberManager: member.Mgr,
+		memberManager: manager.MemberManager,
 		groupManager:  groupManager,
 	}
 	s = originService
@@ -370,7 +369,6 @@ func TestListApplicationMember(t *testing.T) {
 }
 
 func TestListApplicationInstanceMember(t *testing.T) {
-	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Member{}, &usermodels.User{}); err != nil {
 		panic(err)
 	}
@@ -439,7 +437,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	}).Times(1)
 
 	originService := &service{
-		memberManager:             member.Mgr,
+		memberManager:             manager.MemberManager,
 		groupManager:              groupManager,
 		applicationManager:        applicationManager,
 		applicationClusterManager: clusterManager,
@@ -506,7 +504,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMembers[3], &members[1]))
 	assert.True(t, PostMemberEqualsMember(postMembers[2], &members[2]))
 
-	userMgr := usermanager.New()
+	userMgr := usermanager.New(db)
 	_, err = userMgr.Create(ctx, &usermodels.User{Model: global.Model{ID: catID}, Email: catEmail})
 	assert.Nil(t, err)
 
@@ -526,8 +524,6 @@ func TestListApplicationInstanceMember(t *testing.T) {
 //		ret: sph(3), jerry(2), cat(4)
 // nolint
 func TestGetPipelinerunMember(t *testing.T) {
-
-	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Member{}); err != nil {
 		panic(err)
 	}
@@ -602,7 +598,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 	}, nil).Times(1)
 
 	originService := &service{
-		memberManager:             member.Mgr,
+		memberManager:             manager.MemberManager,
 		groupManager:              groupManager,
 		applicationManager:        applicationManager,
 		applicationClusterManager: clusterManager,

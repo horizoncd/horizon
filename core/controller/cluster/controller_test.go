@@ -20,40 +20,30 @@ import (
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
 	outputmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/output"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
-	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustercd "g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
-	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
+	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
-	membermanager "g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
-	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	templateschemamanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	tagmodel "g.hz.netease.com/horizon/pkg/templateschematag/models"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-	usersvc "g.hz.netease.com/horizon/pkg/user/service"
+	userservice "g.hz.netease.com/horizon/pkg/user/service"
 	"github.com/go-yaml/yaml"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -414,12 +404,8 @@ var (
     }
 	`
 
-	db, _      = orm.NewSqliteDB("")
-	appMgr     = appmanager.New(db)
-	groupMgr   = groupmanager.New(db)
-	clusterMgr = clustermanager.New(db)
-	memberMgr  = membermanager.New(db)
-	regionMgr  = regionmanager.New(db)
+	db, _   = orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 )
 
 // nolint
@@ -492,13 +478,13 @@ func Test(t *testing.T) {
 			},
 		}, nil).AnyTimes()
 
-	appMgr := appmanager.Mgr
-	trMgr := trmanager.Mgr
-	envMgr := envmanager.Mgr
-	regionMgr := regionmanager.Mgr
-	groupMgr := groupmanager.Mgr
-	harborDAO := harbordao.NewDAO()
-	envRegionMgr := envregionmanager.Mgr
+	appMgr := manager.ApplicationManager
+	trMgr := manager.TemplateReleaseManager
+	envMgr := manager.EnvMgr
+	regionMgr := manager.RegionMgr
+	groupMgr := manager.GroupManager
+	harborDAO := harbordao.NewDAO(db)
+	envRegionMgr := manager.EnvRegionMgr
 
 	// init data
 	group, err := groupMgr.Create(ctx, &groupmodels.Group{
@@ -556,7 +542,7 @@ func Test(t *testing.T) {
 	assert.NotNil(t, er)
 
 	c = &controller{
-		clusterMgr:           clustermanager.Mgr,
+		clusterMgr:           manager.ClusterMgr,
 		clusterGitRepo:       clusterGitRepo,
 		commitGetter:         commitGetter,
 		cd:                   cd,
@@ -566,13 +552,13 @@ func Test(t *testing.T) {
 		envMgr:               envMgr,
 		envRegionMgr:         envRegionMgr,
 		regionMgr:            regionMgr,
-		groupSvc:             groupsvc.Svc,
-		pipelinerunMgr:       prmanager.Mgr,
+		groupSvc:             groupservice.NewService(manager),
+		pipelinerunMgr:       manager.PipelinerunMgr,
 		tektonFty:            tektonFty,
 		registryFty:          registryFty,
-		userManager:          usermanager.Mgr,
-		userSvc:              usersvc.Svc,
-		schemaTagManager:     templateschemamanager.Mgr,
+		userManager:          manager.UserManager,
+		userSvc:              userservice.NewService(manager),
+		schemaTagManager:     manager.ClusterSchemaTagMgr,
 	}
 
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
@@ -788,7 +774,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
 	assert.Nil(t, deployResp)
 
-	_, err = prmanager.Mgr.Create(ctx, &prmodels.Pipelinerun{
+	_, err = manager.PipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: resp.ID,
 		Action:    prmodels.ActionBuildDeploy,
 		Status:    prmodels.ResultOK,
@@ -843,7 +829,7 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().Rollback(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("rollback-commit", nil).AnyTimes()
 	// update status to 'ok'
-	err = prmanager.Mgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
+	err = manager.PipelinerunMgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
 		Result: prmodels.ResultOK,
 	})
 	assert.Nil(t, err)

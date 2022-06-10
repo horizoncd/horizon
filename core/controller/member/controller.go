@@ -28,7 +28,7 @@ type Controller interface {
 func NewController(param *param.Param) Controller {
 	return &controller{
 		memberService: param.MemberService,
-		convertHelper: New(param.Manager),
+		convertHelper: New(param),
 	}
 }
 

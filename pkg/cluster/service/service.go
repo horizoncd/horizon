@@ -6,6 +6,7 @@ import (
 
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 )
 
 type Service interface {
@@ -37,9 +38,9 @@ func (s service) GetByID(ctx context.Context, id uint) (*ClusterDetail, error) {
 	return clusterDetail, nil
 }
 
-func NewService() Service {
+func NewService(applicationSvc applicationservice.Service, manager *managerparam.Manager) Service {
 	return &service{
-		applicationService: applicationservice.Svc,
-		clusterManager:     clustermanager.Mgr,
+		applicationService: applicationSvc,
+		clusterManager:     manager.ClusterMgr,
 	}
 }

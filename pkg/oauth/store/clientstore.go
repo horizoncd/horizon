@@ -26,7 +26,7 @@ func (d *DBOauthAppStore) CreateApp(ctx context.Context, client models.OauthApp)
 }
 func (d *DBOauthAppStore) GetApp(ctx context.Context, clientID string) (*models.OauthApp, error) {
 	var client models.OauthApp
-	result := d.d.db.WithContext(ctx).Raw(common.GetOauthAppByClientID, clientID).First(&client)
+	result := d.db.WithContext(ctx).Raw(common.GetOauthAppByClientID, clientID).First(&client)
 	if result.Error != nil {
 		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, herrors.NewErrNotFound(herrors.OAuthInDB, result.Error.Error())
@@ -71,7 +71,7 @@ func (d *DBOauthAppStore) DeleteApp(ctx context.Context, clientID string) error 
 func (d *DBOauthAppStore) ListApp(ctx context.Context, ownerType models.OwnerType,
 	ownerID uint) ([]models.OauthApp, error) {
 	var oauthApps []models.OauthApp
-	if result := d.d.db.WithContext(ctx).Raw(common.SelectOauthAppByOwner, ownerType, ownerID).Scan(&oauthApps); result.Error != nil {
+	if result := d.db.WithContext(ctx).Raw(common.SelectOauthAppByOwner, ownerType, ownerID).Scan(&oauthApps); result.Error != nil {
 		return nil, result.Error
 	}
 	return oauthApps, nil
@@ -94,7 +94,7 @@ func (d *DBOauthAppStore) DeleteSecret(ctx context.Context, clientID string, cli
 }
 func (d *DBOauthAppStore) ListSecret(ctx context.Context, clientID string) ([]models.OauthClientSecret, error) {
 	var secrets []models.OauthClientSecret
-	result := d.d.db.WithContext(ctx).Raw(common.ClientSecretSelectAll, clientID).Scan(&secrets)
+	result := d.db.WithContext(ctx).Raw(common.ClientSecretSelectAll, clientID).Scan(&secrets)
 	if result.Error != nil {
 		return nil, result.Error
 	}

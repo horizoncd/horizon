@@ -22,9 +22,9 @@ type API struct {
 	envCtl environment.Controller
 }
 
-func NewAPI() *API {
+func NewAPI(ctl environment.Controller) *API {
 	return &API{
-		envCtl: environment.Ctl,
+		envCtl: ctl,
 	}
 }
 

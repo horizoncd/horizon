@@ -3,13 +3,9 @@ package region
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/pkg/param"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/region/models"
-)
-
-var (
-	// Ctl global instance of the environment controller
-	Ctl = NewController()
 )
 
 type Controller interface {
@@ -21,8 +17,8 @@ type Controller interface {
 	GetByID(ctx context.Context, id uint) (*Region, error)
 }
 
-func NewController() Controller {
-	return &controller{regionMgr: regionmanager.Mgr}
+func NewController(param *param.Param) Controller {
+	return &controller{regionMgr: param.RegionMgr}
 }
 
 type controller struct {
