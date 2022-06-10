@@ -35,11 +35,11 @@ type DAO interface {
 	DeleteByID(ctx context.Context, id uint) error
 }
 
-type dao struct{}
+type dao struct{ db *gorm.DB }
 
 // NewDAO returns an instance of the default DAO
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
 func (d *dao) GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegion, error) {

@@ -24,11 +24,11 @@ type DAO interface {
 	ListAll(ctx context.Context) ([]*models.Harbor, error)
 }
 
-type dao struct{}
+type dao struct{ db *gorm.DB }
 
 // NewDAO returns an instance of the default DAO
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
 func (d *dao) Create(ctx context.Context, harbor *models.Harbor) (uint, error) {

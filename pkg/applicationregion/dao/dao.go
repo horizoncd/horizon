@@ -18,10 +18,11 @@ type DAO interface {
 }
 
 type dao struct {
+	db *gorm.DB
 }
 
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
 func (d *dao) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.ApplicationRegion, error) {

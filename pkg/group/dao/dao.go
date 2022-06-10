@@ -60,11 +60,11 @@ type DAO interface {
 }
 
 // NewDAO returns an instance of the default DAO
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
-type dao struct{}
+type dao struct{ db *gorm.DB }
 
 func (d *dao) UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error {
 	group, err := d.GetByID(ctx, id)

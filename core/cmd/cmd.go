@@ -11,6 +11,7 @@ import (
 	"regexp"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/controller"
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
@@ -22,8 +23,6 @@ import (
 	oauthservicectl "g.hz.netease.com/horizon/core/controller/oauth"
 	oauthappctl "g.hz.netease.com/horizon/core/controller/oauthapp"
 	oauthcheckctl "g.hz.netease.com/horizon/core/controller/oauthcheck"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
-
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	sloctl "g.hz.netease.com/horizon/core/controller/slo"
@@ -60,6 +59,8 @@ import (
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
+	"g.hz.netease.com/horizon/pkg/config/grafana"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 
 	tagmiddle "g.hz.netease.com/horizon/core/middleware/tag"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
@@ -268,6 +269,45 @@ func Run(flags *Flags) {
 	scopeService, err := scope.NewFileScopeService(oauthConfig)
 	if err != nil {
 		panic(err)
+	}
+
+	param := &controller.Param{
+		MemberService:            mservice,
+		UserManager:              usermanager.New(),
+		ApplicationGitRepo:       nil,
+		TemplateSchemaGetter:     nil,
+		ApplicationManager:       nil,
+		ApplicationSvc:           nil,
+		GroupMgr:                 nil,
+		GroupSvc:                 nil,
+		TemplateReleaseManager:   nil,
+		ClusterMgr:               nil,
+		Hook:                     nil,
+		UserSvc:                  nil,
+		MemberManager:            nil,
+		EnvMgr:                   nil,
+		CommitGetter:             nil,
+		Cd:                       nil,
+		OutputGetter:             nil,
+		EnvRegionMgr:             nil,
+		RegionMgr:                nil,
+		PipelinerunMgr:           nil,
+		TektonFty:                nil,
+		RegistryFty:              nil,
+		GrafanaMapper:            nil,
+		GroupManager:             nil,
+		TagManager:               nil,
+		TemplateMgr:              nil,
+		RoleService:              nil,
+		KubeClientFty:            nil,
+		ClusterGitRepo:           nil,
+		GrafanaSLO:               grafana.SLO{},
+		GitGetter:                nil,
+		ClusterSchemaTagMgr:      nil,
+		ApplicationRegionManager: nil,
+		EnvironmentRegionMgr:     nil,
+		OauthManager:             nil,
+		ScopeService:             nil,
 	}
 
 	var (

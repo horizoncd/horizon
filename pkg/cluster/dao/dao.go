@@ -48,8 +48,8 @@ type DAO interface {
 type dao struct {
 }
 
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
 func (d *dao) Create(ctx context.Context, cluster *models.Cluster,

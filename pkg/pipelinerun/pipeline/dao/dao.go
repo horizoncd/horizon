@@ -20,7 +20,7 @@ type DAO interface {
 	Create(ctx context.Context, results *metrics.PipelineResults) error
 }
 
-type dao struct{}
+type dao struct{ db *gorm.DB }
 
 func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error {
 	db, err := orm.FromContext(ctx)
@@ -109,6 +109,6 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 	return err
 }
 
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }

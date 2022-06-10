@@ -5,11 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/dao"
-)
-
-var (
-	// Mgr is the global pipeline manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 type Manager interface {
@@ -24,8 +20,8 @@ func (m manager) Create(ctx context.Context, results *metrics.PipelineResults) e
 	return m.dao.Create(ctx, results)
 }
 
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		dao: dao.NewDAO(),
+		dao: dao.NewDAO(db),
 	}
 }

@@ -26,11 +26,11 @@ type DAO interface {
 	GetByID(ctx context.Context, id uint) (*models.Environment, error)
 }
 
-type dao struct{}
+type dao struct{ db *gorm.DB }
 
 // NewDAO returns an instance of the default DAO
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Environment) error {

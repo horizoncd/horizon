@@ -7,17 +7,13 @@ import (
 	"g.hz.netease.com/horizon/pkg/environmentregion/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	"gorm.io/gorm"
 )
 
-var (
-	// Mgr is the global environment manager
-	Mgr = New()
-)
-
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		envRegionDAO: dao.NewDAO(),
-		regionDAO:    regiondao.NewDAO(),
+		envRegionDAO: dao.NewDAO(db),
+		regionDAO:    regiondao.NewDAO(db),
 	}
 }
 

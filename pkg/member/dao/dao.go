@@ -28,11 +28,11 @@ type DAO interface {
 	ListResourceOfMemberInfo(ctx context.Context, resourceType models.ResourceType, memberInfo uint) ([]uint, error)
 }
 
-func New() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
-type dao struct{}
+type dao struct{ db *gorm.DB }
 
 func (d *dao) Create(ctx context.Context, member *models.Member) (*models.Member, error) {
 	db, err := orm.FromContext(ctx)

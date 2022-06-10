@@ -10,11 +10,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-)
-
-var (
-	// Mgr is the global template release manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 const (
@@ -30,8 +26,8 @@ type Manager interface {
 	GetByTemplateNameAndRelease(ctx context.Context, templateName, release string) (*models.TemplateRelease, error)
 }
 
-func New() Manager {
-	return &manager{dao: dao.NewDAO()}
+func New(db *gorm.DB) Manager {
+	return &manager{dao: dao.NewDAO(db)}
 }
 
 type manager struct {

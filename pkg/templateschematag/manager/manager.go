@@ -8,11 +8,7 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/templateschematag/dao"
 	"g.hz.netease.com/horizon/pkg/templateschematag/models"
-)
-
-var (
-	// Mgr is the global cluster tag manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 type Manager interface {
@@ -22,9 +18,9 @@ type Manager interface {
 	UpsertByClusterID(ctx context.Context, clusterID uint, tags []*models.ClusterTemplateSchemaTag) error
 }
 
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		dao: dao.NewDAO(),
+		dao: dao.NewDAO(db),
 	}
 }
 

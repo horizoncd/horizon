@@ -14,11 +14,11 @@ type DAO interface {
 }
 
 // NewDAO returns an instance of the default DAO
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
-type dao struct{}
+type dao struct{ db *gorm.DB }
 
 func (d dao) Create(ctx context.Context, template *models.Template) (*models.Template, error) {
 	db, err := orm.FromContext(ctx)
