@@ -72,6 +72,6 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&models.TemplateRelease{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	os.Exit(m.Run())
 }

@@ -12,9 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func runCloudEventServer(ormMiddleware gin.HandlerFunc, tektonFty factory.Factory, config server.Config, parameter *param.Param) {
+func runCloudEventServer(tektonFty factory.Factory, config server.Config, parameter *param.Param) {
 	r := gin.Default()
-	r.Use(ormMiddleware)
 
 	cloudEventCtl := cloudeventctl.NewController(tektonFty, parameter)
 

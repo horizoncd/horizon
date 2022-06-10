@@ -7,7 +7,6 @@ import (
 
 	corecommon "g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -258,16 +257,12 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, application *models.Appli
 }
 
 func (d *dao) DeleteByID(ctx context.Context, id uint) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 	currentUser, err := corecommon.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	result := db.Exec(common.ApplicationDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
+	result := d.db.Exec(common.ApplicationDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
@@ -281,15 +276,11 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 }
 
 func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 	currentUser, err := corecommon.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err = d.db.Transaction(func(tx *gorm.DB) error {
 		var group groupmodels.Group
 		result := tx.Raw(common.GroupQueryByID, groupID).Scan(&group)
 		if result.Error != nil {

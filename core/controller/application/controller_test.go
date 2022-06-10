@@ -264,7 +264,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 		ID:   1,

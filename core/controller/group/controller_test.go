@@ -30,7 +30,7 @@ import (
 var (
 	// use tmp sqlite
 	db, _    = orm.NewSqliteDB("")
-	ctx      = orm.NewContext(context.TODO(), db)
+	ctx      = context.TODO()
 	manager  = managerparam.InitManager(db)
 	groupCtl = NewController(&param.Param{Manager: manager})
 )
@@ -51,12 +51,10 @@ func GroupValueEqual(g1, g2 *models.Group) bool {
 
 // nolint
 func init() {
-	userCtx := context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})
-	db = db.WithContext(userCtx)
-	ctx = orm.NewContext(userCtx, db)
 
 	// create table
 	err := db.AutoMigrate(&models.Group{})

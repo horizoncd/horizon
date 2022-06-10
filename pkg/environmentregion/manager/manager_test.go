@@ -122,6 +122,6 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&regionmodels.Region{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	os.Exit(m.Run())
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -147,10 +146,6 @@ func (d *dao) GetEnvironmentRegionByEnvAndRegion(ctx context.Context,
 }
 
 func (d *dao) SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
 	region, err := d.GetEnvironmentRegionByID(ctx, id)
 	if err != nil {
@@ -167,7 +162,7 @@ func (d *dao) SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) er
 	}
 
 	if currentDefaultRegion == nil || currentDefaultRegion.ID != id {
-		return db.Transaction(func(tx *gorm.DB) error {
+		return d.db.Transaction(func(tx *gorm.DB) error {
 			if currentDefaultRegion != nil {
 				result := tx.Exec(common.EnvironmentRegionUnsetDefaultByID, currentDefaultRegion.ID)
 				if result.Error != nil {
@@ -204,12 +199,8 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
-	result := db.Delete(&models.EnvironmentRegion{}, id)
+	result := d.db.Delete(&models.EnvironmentRegion{}, id)
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 	}

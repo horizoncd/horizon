@@ -25,7 +25,7 @@ func init() {
 		panic(err)
 	}
 
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 }
 
 func Test(t *testing.T) {

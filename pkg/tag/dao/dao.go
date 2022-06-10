@@ -4,7 +4,6 @@ import (
 	"context"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/tag/models"
 	"gorm.io/gorm"
@@ -40,14 +39,10 @@ func (d dao) ListByResourceTypeID(ctx context.Context, resourceType string, reso
 
 func (d dao) UpsertByResourceTypeID(ctx context.Context, resourceType string,
 	resourceID uint, tags []*models.Tag) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
 	// 1. if tags is empty, delete all tags
 	if len(tags) == 0 {
-		result := db.Exec(common.TagDeleteAllByResourceTypeID, resourceType, resourceID)
+		result := d.db.Exec(common.TagDeleteAllByResourceTypeID, resourceType, resourceID)
 		if result.Error != nil {
 			return herrors.NewErrDeleteFailed(herrors.TagInDB, result.Error.Error())
 		}
@@ -59,12 +54,12 @@ func (d dao) UpsertByResourceTypeID(ctx context.Context, resourceType string,
 	for _, tag := range tags {
 		tagKeys = append(tagKeys, tag.Key)
 	}
-	if err := db.Exec(common.TagDeleteByResourceTypeIDAndKeys, resourceType, resourceID, tagKeys).Error; err != nil {
+	if err := d.db.Exec(common.TagDeleteByResourceTypeIDAndKeys, resourceType, resourceID, tagKeys).Error; err != nil {
 		return herrors.NewErrDeleteFailed(herrors.TagInDB, err.Error())
 	}
 
 	// 3. add new tags
-	result := db.Clauses(clause.OnConflict{
+	result := d.db.Clauses(clause.OnConflict{
 		Columns: []clause.Column{
 			{
 				Name: "resource_type",

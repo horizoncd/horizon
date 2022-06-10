@@ -49,7 +49,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		panic(err)
 	}
 
-	ctx := orm.NewContext(context.TODO(), db)
+	ctx := context.TODO()
 
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)
@@ -256,7 +256,7 @@ func TestListGroupMember(t *testing.T) {
 		panic(err)
 	}
 
-	ctx := orm.NewContext(context.TODO(), db)
+	ctx := context.TODO()
 
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)
@@ -373,7 +373,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 		panic(err)
 	}
 
-	ctx := orm.NewContext(context.TODO(), db)
+	ctx := context.TODO()
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -528,7 +528,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 		panic(err)
 	}
 
-	ctx := orm.NewContext(context.TODO(), db)
+	ctx := context.TODO()
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()

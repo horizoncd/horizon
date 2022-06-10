@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 		&tagmodels.Tag{}, &membermodels.Member{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 		ID:   uint(1),

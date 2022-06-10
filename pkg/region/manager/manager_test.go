@@ -134,7 +134,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appregionmodels.ApplicationRegion{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
 		Name:     "1",
 		FullName: "1",

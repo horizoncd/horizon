@@ -16,7 +16,7 @@ import (
 var (
 	// use tmp sqlite
 	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(context.TODO(), db)
+	ctx   = context.TODO()
 )
 
 func init() {

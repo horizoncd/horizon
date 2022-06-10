@@ -4,7 +4,6 @@ import (
 	"context"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/harbor/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -32,12 +31,8 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d *dao) Create(ctx context.Context, harbor *models.Harbor) (uint, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return 0, err
-	}
 
-	result := db.Create(harbor)
+	result := d.db.Create(harbor)
 
 	if result.Error != nil {
 		return 0, herrors.NewErrCreateFailed(herrors.HarborInDB, result.Error.Error())
@@ -79,16 +74,11 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, harbor *models.Harbor) er
 		return err
 	}
 
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
 	harborInDB.Name = harbor.Name
 	harborInDB.Server = harbor.Server
 	harborInDB.Token = harbor.Token
 	harborInDB.PreheatPolicyID = harbor.PreheatPolicyID
-	result := db.Save(harborInDB)
+	result := d.db.Save(harborInDB)
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.HarborInDB, result.Error.Error())
 	}
@@ -98,11 +88,6 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, harbor *models.Harbor) er
 
 func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	_, err := d.GetByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	db, err := orm.FromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -117,7 +102,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return herrors.ErrHarborUsedByRegions
 	}
 
-	result = db.Delete(&models.Harbor{}, id)
+	result = d.db.Delete(&models.Harbor{}, id)
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.HarborInDB, result.Error.Error())
 	}

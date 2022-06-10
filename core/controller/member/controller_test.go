@@ -31,7 +31,7 @@ import (
 var (
 	// use tmp sqlite
 	db, _                    = orm.NewSqliteDB("")
-	ctx                      = orm.NewContext(context.TODO(), db)
+	ctx                      = context.TODO()
 	contextUserID       uint = 1
 	contextUserName          = "Tony"
 	contextUserFullName      = "TonyWu"
@@ -40,14 +40,6 @@ var (
 	groupSvc                 = groupservice.NewService(manager)
 	applicationSvc           = applicationservice.NewService(groupSvc, manager)
 	clusterSvc               = clusterservice.NewService(applicationSvc, manager)
-	memberService            = memberservice.NewService(nil, nil, manager)
-	ctl                      = NewController(&param.Param{
-		MemberService:  memberService,
-		Manager:        manager,
-		GroupSvc:       groupSvc,
-		ApplicationSvc: applicationSvc,
-		ClusterSvc:     clusterSvc,
-	})
 )
 
 var (
@@ -133,6 +125,15 @@ func CreateUsers(t *testing.T) {
 }
 
 func TestCreateGroupWithOwner(t *testing.T) {
+	memberService := memberservice.NewService(nil, nil, manager)
+	ctl := NewController(&param.Param{
+		MemberService:  memberService,
+		Manager:        manager,
+		GroupSvc:       groupSvc,
+		ApplicationSvc: applicationSvc,
+		ClusterSvc:     clusterSvc,
+	})
+
 	CreateUsers(t)
 
 	// create group
@@ -183,6 +184,15 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	// mock the RoleCompare
 	roleMockService.EXPECT().RoleCompare(ctx, gomock.Any(), gomock.Any()).Return(
 		roleservice.RoleBigger, nil).AnyTimes()
+
+	memberService := memberservice.NewService(roleMockService, nil, manager)
+	ctl := NewController(&param.Param{
+		MemberService:  memberService,
+		Manager:        manager,
+		GroupSvc:       groupSvc,
+		ApplicationSvc: applicationSvc,
+		ClusterSvc:     clusterSvc,
+	})
 
 	// create group
 	newGroup := &group.NewGroup{

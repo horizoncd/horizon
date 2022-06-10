@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	appregionmodels "g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/environment/models"
@@ -39,14 +38,9 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 		return err
 	}
 
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
 	// set displayName
 	environmentInDB.DisplayName = environment.DisplayName
-	res := db.Save(&environmentInDB)
+	res := d.db.Save(&environmentInDB)
 	if res.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.EnvironmentInDB, res.Error.Error())
 	}
@@ -85,13 +79,8 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return err
 	}
 
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
 	// remove related resources from different tables
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err = d.db.Transaction(func(tx *gorm.DB) error {
 		// remove records from applicationRegion table
 		res := tx.Where("environment_name = ?", environment.Name).Delete(&appregionmodels.ApplicationRegion{})
 		if res.Error != nil {

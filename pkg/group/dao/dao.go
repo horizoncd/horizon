@@ -72,13 +72,8 @@ func (d *dao) UpdateRegionSelector(ctx context.Context, id uint, regionSelector 
 		return err
 	}
 
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
 	group.RegionSelector = regionSelector
-	result := db.Save(group)
+	result := d.db.Save(group)
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
 	}
@@ -120,10 +115,6 @@ func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageS
 }
 
 func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil
@@ -150,7 +141,7 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 			"group name conflict when trying to transfer to a new group")
 	}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err = d.db.Transaction(func(tx *gorm.DB) error {
 		// change parentID
 		if err := tx.Exec(dbcommon.GroupUpdateParentID, newParentID, currentUser.GetID(), id).Error; err != nil {
 			return herrors.NewErrUpdateFailed(herrors.GroupInDB, err.Error())
@@ -349,16 +340,12 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 
 // Delete can only delete a group that doesn't have any children
 func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return 0, err
-	}
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	result := db.Exec(dbcommon.GroupDelete, time.Now().Unix(), currentUser.GetID(), id)
+	result := d.db.Exec(dbcommon.GroupDelete, time.Now().Unix(), currentUser.GetID(), id)
 	if result.Error != nil {
 		return 0, herrors.NewErrDeleteFailed(herrors.GroupInDB, result.Error.Error())
 	}
@@ -395,17 +382,13 @@ func (d *dao) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Gr
 }
 
 func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, 0, err
-	}
 
 	var groups []*models.Group
 
 	sort := orm.FormatSortExp(query)
 	offset := (query.PageNumber - 1) * query.PageSize
 	var count int64
-	result := db.Order(sort).Where(query.Keywords).Offset(offset).Limit(query.PageSize).Find(&groups).
+	result := d.db.Order(sort).Where(query.Keywords).Offset(offset).Limit(query.PageSize).Find(&groups).
 		Offset(-1).Count(&count)
 	if result.Error != nil {
 		return nil, 0, herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())
@@ -415,16 +398,12 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 
 // UpdateBasic just update base info, not contains transfer logic
 func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	result := db.Exec(dbcommon.GroupUpdateBasic, group.Name, group.Path, group.Description,
+	result := d.db.Exec(dbcommon.GroupUpdateBasic, group.Name, group.Path, group.Description,
 		group.VisibilityLevel, currentUser.GetID(), group.ID)
 
 	if result.Error != nil {

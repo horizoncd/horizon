@@ -186,16 +186,13 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 }
 
 func (d *dao) DeleteByID(ctx context.Context, id uint) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
+
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	result := db.Exec(sqlcommon.ClusterDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
+	result := d.db.Exec(sqlcommon.ClusterDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
 
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.ClusterInDB, result.Error.Error())

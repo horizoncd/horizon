@@ -37,7 +37,6 @@ func TestMain(m *testing.M) {
 		ID:   110,
 	}))
 	callbacks.RegisterCustomCallbacks(db)
-	ctx = orm.NewContext(context.TODO(), db)
 	// nolint
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",

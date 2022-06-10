@@ -4,7 +4,6 @@ import (
 	"context"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -59,12 +58,8 @@ func (d *dao) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipeline
 }
 
 func (d *dao) DeleteByID(ctx context.Context, pipelinerunID uint) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
-	result := db.Exec(common.PipelinerunDeleteByID, pipelinerunID)
+	result := d.db.Exec(common.PipelinerunDeleteByID, pipelinerunID)
 
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.PipelinerunInDB, result.Error.Error())
@@ -74,12 +69,8 @@ func (d *dao) DeleteByID(ctx context.Context, pipelinerunID uint) error {
 }
 
 func (d *dao) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
-	result := db.Exec(common.PipelinerunUpdateConfigCommitByID, commit, pipelinerunID)
+	result := d.db.Exec(common.PipelinerunUpdateConfigCommitByID, commit, pipelinerunID)
 
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.PipelinerunInDB, result.Error.Error())
@@ -130,12 +121,8 @@ func (d *dao) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (
 }
 
 func (d *dao) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
-	res := db.Exec(common.PipelinerunUpdateResultByID, result.Result, result.S3Bucket,
+	res := d.db.Exec(common.PipelinerunUpdateResultByID, result.Result, result.S3Bucket,
 		result.LogObject, result.PrObject, result.StartedAt, result.FinishedAt, pipelinerunID)
 
 	if res.Error != nil {

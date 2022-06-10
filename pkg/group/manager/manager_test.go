@@ -112,7 +112,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	ctx = orm.NewContext(userCtx, db)
+	ctx = context.TODO()
 }
 
 func TestCreate(t *testing.T) {

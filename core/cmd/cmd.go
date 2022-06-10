@@ -96,7 +96,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
 	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
-	ormmiddle "g.hz.netease.com/horizon/pkg/server/middleware/orm"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -365,13 +364,11 @@ func Run(flags *Flags) {
 	// init server
 	r := gin.New()
 	// use middleware
-	ormMiddleware := ormmiddle.Middleware(mysqlDB)
 	middlewares := []gin.HandlerFunc{
 		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
 		requestid.Middleware(), // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
-		ormMiddleware,          // orm db middleware, attach a db to context
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
@@ -386,7 +383,6 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal"))),
 		auth.Middleware(rbacAuthorizer, rbacSkippers),
 		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers),
-		ormmiddle.MiddlewareSetUserContext(mysqlDB),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}
 	r.Use(middlewares...)
@@ -420,7 +416,7 @@ func Run(flags *Flags) {
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
 
 	// start cloud event server
-	go runCloudEventServer(ormMiddleware, tektonFty, coreConfig.CloudEventServerConfig, parameter)
+	go runCloudEventServer(tektonFty, coreConfig.CloudEventServerConfig, parameter)
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))

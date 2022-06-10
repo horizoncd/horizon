@@ -8,7 +8,6 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 
-	"g.hz.netease.com/horizon/lib/orm"
 	appregionmodels "g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
@@ -84,10 +83,6 @@ func (d *dao) GetRegionByID(ctx context.Context, id uint) (*models.Region, error
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
 	// check en exist
 	regionInDB, err := d.GetRegionByID(ctx, id)
@@ -102,7 +97,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) er
 	regionInDB.IngressDomain = region.IngressDomain
 	regionInDB.HarborID = region.HarborID
 	regionInDB.Disabled = region.Disabled
-	result := db.Save(regionInDB)
+	result := d.db.Save(regionInDB)
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.RegionInDB, result.Error.Error())
 	}
@@ -147,11 +142,6 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 
 // DeleteByID implements DAO
 func (d *dao) DeleteByID(ctx context.Context, id uint) error {
-	db, res := orm.FromContext(ctx)
-	if res != nil {
-		return res
-	}
-
 	// check region exist
 	regionInDB, res := d.GetRegionByID(ctx, id)
 	if res != nil {
@@ -169,7 +159,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	}
 
 	// remove related resources from different tables
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err := d.db.Transaction(func(tx *gorm.DB) error {
 		// remove records from applicationRegion table
 		result := tx.Where("region_name = ?", regionInDB.Name).Delete(&appregionmodels.ApplicationRegion{})
 		if result.Error != nil {

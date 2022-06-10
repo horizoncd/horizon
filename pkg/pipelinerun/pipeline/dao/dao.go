@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
@@ -23,10 +22,6 @@ type DAO interface {
 type dao struct{ db *gorm.DB }
 
 func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
 	prMetadata := results.Metadata
 	prBusinessData := results.BusinessData
@@ -41,7 +36,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 	}
 	application, cluster, region := prBusinessData.Application, prBusinessData.Cluster, prBusinessData.Region
 
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err = d.db.Transaction(func(tx *gorm.DB) error {
 		p := &models.Pipeline{
 			PipelinerunID: uint(pipelinerunID),
 			Application:   application,
