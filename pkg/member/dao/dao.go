@@ -35,24 +35,16 @@ func NewDAO(db *gorm.DB) DAO {
 type dao struct{ db *gorm.DB }
 
 func (d *dao) Create(ctx context.Context, member *models.Member) (*models.Member, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	result := db.Create(member)
+	result := d.db.WithContext(ctx).Create(member)
 	return member, result.Error
 }
 
 func (d *dao) Get(ctx context.Context, resourceType models.ResourceType, resourceID uint,
 	memberType models.MemberType, memberInfo uint) (*models.Member, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var member models.Member
-	result := db.Raw(common.MemberSingleQuery, resourceType, resourceID, memberType, memberInfo).Scan(&member)
+	result := d.db.WithContext(ctx).Raw(common.MemberSingleQuery, resourceType, resourceID, memberType, memberInfo).Scan(&member)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -63,13 +55,9 @@ func (d *dao) Get(ctx context.Context, resourceType models.ResourceType, resourc
 }
 
 func (d *dao) GetByID(ctx context.Context, memberID uint) (*models.Member, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var member models.Member
-	result := db.Raw(common.MemberQueryByID, memberID).Scan(&member)
+	result := d.db.WithContext(ctx).Raw(common.MemberQueryByID, memberID).Scan(&member)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -81,10 +69,6 @@ func (d *dao) GetByID(ctx context.Context, memberID uint) (*models.Member, error
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Member, error) {
 	const op = "member dao: update by ID"
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	currentUser, err := common2.UserFromContext(ctx)
 	if err != nil {
@@ -92,7 +76,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Mem
 	}
 
 	var memberInDB models.Member
-	if err := db.Transaction(func(tx *gorm.DB) error {
+	if err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 1. get member in db first
 		result := tx.Raw(common.MemberQueryByID, id).Scan(&memberInDB)
 		if result.Error != nil {
@@ -128,13 +112,9 @@ func (d *dao) Delete(ctx context.Context, memberID uint) error {
 
 func (d *dao) ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 	resourceID uint) ([]models.Member, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var members []models.Member
-	result := db.Raw(common.MemberSelectAll, resourceType, resourceID).Scan(&members)
+	result := d.db.WithContext(ctx).Raw(common.MemberSelectAll, resourceType, resourceID).Scan(&members)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -143,14 +123,10 @@ func (d *dao) ListDirectMember(ctx context.Context, resourceType models.Resource
 
 func (d *dao) ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
 	resourceID uint) ([]models.Member, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var members []models.Member
 	if emails, ok := ctx.Value(memberctx.ContextEmails).([]string); ok {
-		result := db.Raw(common.MemberSelectByUserEmails, resourceType, resourceID, emails).Scan(&members)
+		result := d.db.WithContext(ctx).Raw(common.MemberSelectByUserEmails, resourceType, resourceID, emails).Scan(&members)
 		if result.Error != nil {
 			return nil, result.Error
 		}
@@ -160,13 +136,9 @@ func (d *dao) ListDirectMemberOnCondition(ctx context.Context, resourceType mode
 
 func (d *dao) ListResourceOfMemberInfo(ctx context.Context,
 	resourceType models.ResourceType, memberInfo uint) ([]uint, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var resources []uint
-	result := db.Raw(common.MemberListResource, resourceType, memberInfo).Scan(&resources)
+	result := d.db.WithContext(ctx).Raw(common.MemberListResource, resourceType, memberInfo).Scan(&resources)
 	if result.Error != nil {
 		return nil, result.Error
 	}

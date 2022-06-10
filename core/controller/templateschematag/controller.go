@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/pkg/param"
 
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/templateschematag/manager"
@@ -20,10 +21,10 @@ type controller struct {
 	clusterSchemaTagMgr manager.Manager
 }
 
-func NewController() Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		clusterMgr:          clustermanager.Mgr,
-		clusterSchemaTagMgr: manager.Mgr,
+		clusterMgr:          param.ClusterMgr,
+		clusterSchemaTagMgr: param.ClusterSchemaTagMgr,
 	}
 }
 

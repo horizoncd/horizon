@@ -8,10 +8,6 @@ import (
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 )
 
-var (
-	Svc = NewService()
-)
-
 type Service interface {
 	// GetByID get detail of an application by id
 	GetByID(ctx context.Context, id uint) (*ClusterDetail, error)

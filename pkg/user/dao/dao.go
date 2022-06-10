@@ -4,10 +4,10 @@ import (
 	"context"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/user/models"
+	"gorm.io/gorm"
 )
 
 // _defaultQuery default query params
@@ -38,12 +38,8 @@ func NewDAO(db *gorm.DB) DAO {
 type dao struct{ db *gorm.DB }
 
 func (d *dao) Create(ctx context.Context, user *models.User) (*models.User, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	result := db.Create(user)
+	result := d.db.WithContext(ctx).WithContext(ctx).Create(user)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.UserInDB, result.Error.Error())
@@ -53,12 +49,9 @@ func (d *dao) Create(ctx context.Context, user *models.User) (*models.User, erro
 }
 
 func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]models.User, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
+
 	var users []models.User
-	result := db.Raw(common.UserGetByID, userID).Scan(&users)
+	result := d.db.WithContext(ctx).Raw(common.UserGetByID, userID).Scan(&users)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}
@@ -69,13 +62,9 @@ func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]models.User, error
 }
 
 func (d *dao) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*models.User, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var user models.User
-	result := db.Raw(common.UserQueryByOIDC, oidcType, email).Scan(&user)
+	result := d.db.WithContext(ctx).Raw(common.UserQueryByOIDC, oidcType, email).Scan(&user)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}
@@ -86,13 +75,9 @@ func (d *dao) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*model
 }
 
 func (d *dao) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var user models.User
-	result := db.Raw(common.UserQueryByEmail, email).Scan(&user)
+	result := d.db.WithContext(ctx).Raw(common.UserQueryByEmail, email).Scan(&user)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}
@@ -107,13 +92,8 @@ func (d *dao) ListByEmail(ctx context.Context, emails []string) ([]*models.User,
 		return nil, nil
 	}
 
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var users []*models.User
-	result := db.Raw(common.UserListByEmail, emails).Scan(&users)
+	result := d.db.WithContext(ctx).Raw(common.UserListByEmail, emails).Scan(&users)
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.UserInDB, result.Error.Error())
 	}
@@ -124,10 +104,6 @@ func (d *dao) ListByEmail(ctx context.Context, emails []string) ([]*models.User,
 }
 
 func (d *dao) SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return 0, nil, err
-	}
 
 	if query == nil {
 		query = _defaultQuery
@@ -146,13 +122,13 @@ func (d *dao) SearchUser(ctx context.Context, filter string, query *q.Query) (in
 
 	like := "%" + filter + "%"
 	var users []models.User
-	result := db.Raw(common.UserSearch, like, like, like, limit, offset).Scan(&users)
+	result := d.db.WithContext(ctx).Raw(common.UserSearch, like, like, like, limit, offset).Scan(&users)
 	if result.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}
 
 	var count int
-	result = db.Raw(common.UserSearchCount, like, like, like).Scan(&count)
+	result = d.db.WithContext(ctx).Raw(common.UserSearchCount, like, like, like).Scan(&count)
 	if result.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
 	}

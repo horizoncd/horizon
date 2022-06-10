@@ -12,16 +12,16 @@ import (
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _ = orm.NewSqliteDB("")
+	ctx   context.Context
+	mgr   = New(db)
 )
 
 func Test(t *testing.T) {
-	pr, err := Mgr.Create(ctx, &models.Pipelinerun{
+	pr, err := mgr.Create(ctx, &models.Pipelinerun{
 		ID:               0,
 		ClusterID:        1,
 		Action:           models.ActionBuildDeploy,
@@ -42,23 +42,23 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("%v", pr)
 
-	prGet, err := Mgr.GetByID(ctx, pr.ID)
+	prGet, err := mgr.GetByID(ctx, pr.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, "title", prGet.Title)
 	assert.Equal(t, "1", prGet.ConfigCommit)
 
-	err = Mgr.UpdateConfigCommitByID(ctx, prGet.ID, "2")
+	err = mgr.UpdateConfigCommitByID(ctx, prGet.ID, "2")
 	assert.Nil(t, err)
 
-	prGet, err = Mgr.GetByID(ctx, pr.ID)
-	assert.Nil(t, err)
-	assert.Equal(t, "2", prGet.ConfigCommit)
-
-	prGet, err = Mgr.GetLatestByClusterIDAndAction(ctx, pr.ClusterID, models.ActionBuildDeploy)
+	prGet, err = mgr.GetByID(ctx, pr.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, "2", prGet.ConfigCommit)
 
-	err = Mgr.UpdateResultByID(ctx, pr.ID, &models.Result{
+	prGet, err = mgr.GetLatestByClusterIDAndAction(ctx, pr.ClusterID, models.ActionBuildDeploy)
+	assert.Nil(t, err)
+	assert.Equal(t, "2", prGet.ConfigCommit)
+
+	err = mgr.UpdateResultByID(ctx, pr.ID, &models.Result{
 		S3Bucket:   "bucket",
 		LogObject:  "log-obj",
 		PrObject:   "pr-obj",
@@ -68,7 +68,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	prGet, err = Mgr.GetByID(ctx, pr.ID)
+	prGet, err = mgr.GetByID(ctx, pr.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, prGet.S3Bucket, "bucket")
 	assert.Equal(t, prGet.LogObject, "log-obj")
@@ -77,10 +77,10 @@ func Test(t *testing.T) {
 	b, _ := json.Marshal(prGet)
 	t.Logf("%v", string(b))
 
-	err = Mgr.DeleteByID(ctx, pr.ID)
+	err = mgr.DeleteByID(ctx, pr.ID)
 	assert.Nil(t, err)
 
-	prGet, err = Mgr.GetByID(ctx, pr.ID)
+	prGet, err = mgr.GetByID(ctx, pr.ID)
 	assert.Nil(t, err)
 	assert.Nil(t, prGet)
 }
@@ -95,15 +95,15 @@ func TestGetByClusterID(t *testing.T) {
 		Description: "description",
 		CreatedBy:   0,
 	}
-	_, err := Mgr.Create(ctx, pr)
+	_, err := mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
 	pr.ID = 2
-	_, err = Mgr.Create(ctx, pr)
+	_, err = mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
 	pr.ID = 3
-	_, err = Mgr.Create(ctx, pr)
+	_, err = mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
 	var PageSize = 2
@@ -112,7 +112,7 @@ func TestGetByClusterID(t *testing.T) {
 		PageNumber: PageNumber,
 		PageSize:   PageSize,
 	}
-	totalCount, pipelineruns, err := Mgr.GetByClusterID(ctx, clusterID, false, query)
+	totalCount, pipelineruns, err := mgr.GetByClusterID(ctx, clusterID, false, query)
 	assert.Nil(t, err)
 	assert.Equal(t, totalCount, 3)
 	assert.Equal(t, len(pipelineruns), PageSize)
@@ -121,10 +121,10 @@ func TestGetByClusterID(t *testing.T) {
 
 	pr.ID = 4
 	pr.Status = "ok"
-	_, err = Mgr.Create(ctx, pr)
+	_, err = mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
-	totalCount, pipelineruns, err = Mgr.GetByClusterID(ctx, clusterID, true, query)
+	totalCount, pipelineruns, err = mgr.GetByClusterID(ctx, clusterID, true, query)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, totalCount)
 	assert.Equal(t, 0, len(pipelineruns))
@@ -144,28 +144,28 @@ func TestGetLatestSuccessByClusterID(t *testing.T) {
 		GitCommit:   "xxxxxx",
 		UpdatedAt:   time.Now(),
 	}
-	_, err := Mgr.Create(ctx, pr)
+	_, err := mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
 	pr.ID = 6
 	pr.UpdatedAt = time.Now()
-	_, err = Mgr.Create(ctx, pr)
+	_, err = mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
 	pr.ID = 7
 	pr.UpdatedAt = time.Now()
 	pr.Action = models.ActionRollback
-	_, err = Mgr.Create(ctx, pr)
+	_, err = mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
 	pr.ID = 8
 	pr.UpdatedAt = time.Now()
 	pr.Action = models.ActionBuildDeploy
 	pr.Status = "created"
-	_, err = Mgr.Create(ctx, pr)
+	_, err = mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
-	pipelinerun, err := Mgr.GetLatestSuccessByClusterID(ctx, clusterID)
+	pipelinerun, err := mgr.GetLatestSuccessByClusterID(ctx, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, uint(7), pipelinerun.ID)
 }
@@ -184,7 +184,7 @@ func TestGetFirstCanRollbackPipelinerun(t *testing.T) {
 		UpdatedAt:   time.Now(),
 		CreatedAt:   time.Now(),
 	}
-	_, err := Mgr.Create(ctx, pr)
+	_, err := mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
 	pr = &models.Pipelinerun{
@@ -198,22 +198,21 @@ func TestGetFirstCanRollbackPipelinerun(t *testing.T) {
 		GitCommit:   "xxxxxx",
 		UpdatedAt:   time.Now(),
 	}
-	_, err = Mgr.Create(ctx, pr)
+	_, err = mgr.Create(ctx, pr)
 	assert.Nil(t, err)
 
-	pipelinerun, err := Mgr.GetFirstCanRollbackPipelinerun(ctx, clusterID)
+	pipelinerun, err := mgr.GetFirstCanRollbackPipelinerun(ctx, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, pipelinerun)
 	assert.Equal(t, 11, int(pipelinerun.ID))
 	t.Logf("%v", pipelinerun)
 
-	pipelinerun, err = Mgr.GetFirstCanRollbackPipelinerun(ctx, 10000)
+	pipelinerun, err = mgr.GetFirstCanRollbackPipelinerun(ctx, 10000)
 	assert.Nil(t, err)
 	assert.Nil(t, pipelinerun)
 }
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Pipelinerun{}); err != nil {
 		panic(err)
 	}

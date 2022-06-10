@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/templateschematag/models"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -18,6 +19,7 @@ type DAO interface {
 }
 
 type dao struct {
+	db *gorm.DB
 }
 
 func NewDAO(db *gorm.DB) DAO {
@@ -25,13 +27,9 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d dao) ListByClusterID(ctx context.Context, clusterID uint) ([]*models.ClusterTemplateSchemaTag, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var tags []*models.ClusterTemplateSchemaTag
-	result := db.Raw(common.ClusterTemplateSchemaTagListByClusterID, clusterID).Scan(&tags)
+	result := d.db.WithContext(ctx).Raw(common.ClusterTemplateSchemaTagListByClusterID, clusterID).Scan(&tags)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.TemplateSchemaTagInDB, result.Error.Error())

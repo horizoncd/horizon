@@ -12,12 +12,12 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/errors"
 
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _ = orm.NewSqliteDB("")
+	ctx   context.Context
+	mgr   = New(db)
 )
 
 func Test(t *testing.T) {
@@ -38,7 +38,7 @@ func Test(t *testing.T) {
 		CreatedBy:     createdBy,
 		UpdatedBy:     updatedBy,
 	}
-	templateRelease, err := Mgr.Create(ctx, templateRelease)
+	templateRelease, err := mgr.Create(ctx, templateRelease)
 	assert.Nil(t, err)
 
 	assert.Equal(t, name, templateRelease.Name)
@@ -49,27 +49,26 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf(string(b))
 
-	templates, err := Mgr.ListByTemplateName(ctx, templateName)
+	templates, err := mgr.ListByTemplateName(ctx, templateName)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(templates))
 	assert.Equal(t, name, templates[0].Name)
 	assert.Equal(t, description, templates[0].Description)
 	assert.Equal(t, 1, int(templates[0].ID))
 
-	template, err := Mgr.GetByTemplateNameAndRelease(ctx, templateName, name)
+	template, err := mgr.GetByTemplateNameAndRelease(ctx, templateName, name)
 	assert.Nil(t, err)
 	assert.NotNil(t, template)
 	assert.Equal(t, name, templateRelease.Name)
 
 	// template release not exists
-	template, err = Mgr.GetByTemplateNameAndRelease(ctx, templateName, "not-exist")
+	template, err = mgr.GetByTemplateNameAndRelease(ctx, templateName, "not-exist")
 	assert.NotNil(t, err)
 	assert.Equal(t, http.StatusNotFound, errors.Status(err))
 	assert.Nil(t, template)
 }
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.TemplateRelease{}); err != nil {
 		panic(err)
 	}

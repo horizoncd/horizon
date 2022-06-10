@@ -11,13 +11,9 @@ import (
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/param"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-)
-
-var (
-	// Converter us tge global member converter
-	Converter = New()
 )
 
 type UpdateMember struct {
@@ -89,9 +85,9 @@ type converter struct {
 	userManager usermanager.Manager
 }
 
-func New() ConvertMemberHelp {
+func New(manager *param.Manager) ConvertMemberHelp {
 	return &converter{
-		userManager: usermanager.Mgr,
+		userManager: manager.UserManager,
 	}
 }
 

@@ -29,12 +29,18 @@ import (
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _          = orm.NewSqliteDB("")
+	ctx            context.Context
+	mgr            = New(db)
+	envregionMgr   = envregionmanager.New(db)
+	tagMgr         = tagmanager.New(db)
+	appregionMgr   = appregionmanager.New(db)
+	applicationMgr = applicationmanager.New(db)
+	clusterMgr     = clustermanager.New(db)
 )
 
 func Test(t *testing.T) {
-	harborDAO := harbordao.NewDAO()
+	harborDAO := harbordao.NewDAO(db)
 	id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
 		Server:          "https://harbor1",
 		Token:           "asdf",
@@ -45,7 +51,7 @@ func Test(t *testing.T) {
 	harbor, err := harborDAO.GetByID(ctx, id)
 	assert.Nil(t, err)
 
-	hzRegion, err := Mgr.Create(ctx, &models.Region{
+	hzRegion, err := mgr.Create(ctx, &models.Region{
 		Name:          "hz",
 		DisplayName:   "HZ",
 		Certificate:   "hz-cert",
@@ -55,7 +61,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, hzRegion)
 
-	jdRegion, err := Mgr.Create(ctx, &models.Region{
+	jdRegion, err := mgr.Create(ctx, &models.Region{
 		Name:          "jd",
 		DisplayName:   "JD",
 		Certificate:   "jd-cert",
@@ -65,24 +71,24 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, jdRegion)
 
-	regions, err := Mgr.ListAll(ctx)
+	regions, err := mgr.ListAll(ctx)
 	assert.Nil(t, err)
 	assert.NotNil(t, regions)
 	assert.Equal(t, 2, len(regions))
 	assert.Equal(t, "jd", regions[0].Name)
 	assert.Equal(t, "hz", regions[1].Name)
 
-	regionEntities, err := Mgr.ListRegionEntities(ctx)
+	regionEntities, err := mgr.ListRegionEntities(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(regionEntities))
 
-	hzRegionEntity, err := Mgr.GetRegionEntity(ctx, "hz")
+	hzRegionEntity, err := mgr.GetRegionEntity(ctx, "hz")
 	assert.Nil(t, err)
 	assert.NotNil(t, hzRegionEntity)
 	assert.Equal(t, hzRegionEntity.Harbor.Server, harbor.Server)
 
 	// test updateByID
-	err = Mgr.UpdateByID(ctx, jdRegion.ID, &models.Region{
+	err = mgr.UpdateByID(ctx, jdRegion.ID, &models.Region{
 		Name:          "jd-new",
 		DisplayName:   "",
 		Server:        "",
@@ -92,19 +98,18 @@ func Test(t *testing.T) {
 		Disabled:      true,
 	})
 	assert.Nil(t, err)
-	regionEntity, err := Mgr.GetRegionByID(ctx, jdRegion.ID)
+	regionEntity, err := mgr.GetRegionByID(ctx, jdRegion.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, "jd", regionEntity.Name)
 	assert.Equal(t, true, regionEntity.Disabled)
 
-	region, err := Mgr.GetRegionByName(ctx, regionEntity.Name)
+	region, err := mgr.GetRegionByName(ctx, regionEntity.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, regionEntity.ID, region.ID)
 	assert.Equal(t, true, region.Disabled)
 }
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Region{}); err != nil {
 		panic(err)
 	}
@@ -141,26 +146,26 @@ func TestMain(m *testing.M) {
 }
 
 func Test_manager_ListByRegionSelectors(t *testing.T) {
-	r1, err := Mgr.Create(ctx, &models.Region{
+	r1, err := mgr.Create(ctx, &models.Region{
 		Name:        "1",
 		DisplayName: "1",
 		Disabled:    false,
 	})
 	assert.Nil(t, err)
-	r2, err := Mgr.Create(ctx, &models.Region{
+	r2, err := mgr.Create(ctx, &models.Region{
 		Name:        "2",
 		DisplayName: "2",
 		Disabled:    true,
 	})
 	assert.Nil(t, err)
-	r3, err := Mgr.Create(ctx, &models.Region{
+	r3, err := mgr.Create(ctx, &models.Region{
 		Name:        "3",
 		DisplayName: "3",
 		Disabled:    false,
 	})
 	assert.Nil(t, err)
 
-	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+	err = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r1.ID,
 			ResourceType: tagmodels.TypeRegion,
@@ -175,7 +180,7 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 		},
 	})
 	assert.Nil(t, err)
-	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r2.ID, []*tagmodels.Tag{
+	err = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r2.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r2.ID,
 			ResourceType: tagmodels.TypeRegion,
@@ -190,7 +195,7 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 		},
 	})
 	assert.Nil(t, err)
-	err = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
+	err = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r3.ID,
 			ResourceType: tagmodels.TypeRegion,
@@ -280,7 +285,7 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Mgr.ListByRegionSelectors(ctx, tt.args.selectors)
+			got, err := mgr.ListByRegionSelectors(ctx, tt.args.selectors)
 			if (err != nil) != tt.wantErr {
 				t.Errorf(fmt.Sprintf("ListByRegionSelectors(%v, %v)", ctx, tt.args.selectors))
 			}
@@ -290,15 +295,15 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 }
 
 func Test_manager_DeleteByID(t *testing.T) {
-	region, _ := Mgr.Create(ctx, &models.Region{
+	region, _ := mgr.Create(ctx, &models.Region{
 		Name:        "1",
 		DisplayName: "1",
 	})
-	application, _ := applicationmanager.Mgr.Create(ctx, &applicationmodels.Application{
+	application, _ := applicationMgr.Create(ctx, &applicationmodels.Application{
 		GroupID: 0,
 		Name:    "11",
 	}, make(map[string]string))
-	_ = appregionmanager.Mgr.UpsertByApplicationID(ctx, application.ID, []*appregionmodels.ApplicationRegion{
+	_ = appregionMgr.UpsertByApplicationID(ctx, application.ID, []*appregionmodels.ApplicationRegion{
 		{
 			ID:              0,
 			ApplicationID:   application.ID,
@@ -306,12 +311,12 @@ func Test_manager_DeleteByID(t *testing.T) {
 			RegionName:      region.Name,
 		},
 	})
-	_, _ = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+	_, _ = envregionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: "dev",
 		RegionName:      region.Name,
 	})
 
-	_, err := clustermanager.Mgr.Create(ctx, &clustermodels.Cluster{
+	_, err := clusterMgr.Create(ctx, &clustermodels.Cluster{
 		ApplicationID:   0,
 		Name:            "1",
 		EnvironmentName: "1",
@@ -319,19 +324,19 @@ func Test_manager_DeleteByID(t *testing.T) {
 	}, []*tagmodels.Tag{}, map[string]string{})
 	assert.Nil(t, err)
 
-	err = Mgr.DeleteByID(ctx, region.ID)
+	err = mgr.DeleteByID(ctx, region.ID)
 	assert.NotNil(t, err)
 
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&clustermodels.Cluster{})
-	err = Mgr.DeleteByID(ctx, region.ID)
+	err = mgr.DeleteByID(ctx, region.ID)
 	assert.Nil(t, err)
 
-	applicationRegions, _ := appregionmanager.Mgr.ListByApplicationID(ctx, application.ID)
+	applicationRegions, _ := appregionMgr.ListByApplicationID(ctx, application.ID)
 	assert.Empty(t, applicationRegions)
 
-	regions, _ := envregionmanager.Mgr.ListAllEnvironmentRegions(ctx)
+	regions, _ := envregionMgr.ListAllEnvironmentRegions(ctx)
 	assert.Empty(t, regions)
 
-	tags, _ := tagmanager.Mgr.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
+	tags, _ := tagMgr.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
 	assert.Empty(t, tags)
 }

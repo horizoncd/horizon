@@ -4,7 +4,6 @@ import (
 	"context"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"gorm.io/gorm"
@@ -24,12 +23,8 @@ func NewDAO(db *gorm.DB) DAO {
 type dao struct{ db *gorm.DB }
 
 func (d dao) Create(ctx context.Context, templateRelease *models.TemplateRelease) (*models.TemplateRelease, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	result := db.Create(templateRelease)
+	result := d.db.WithContext(ctx).Create(templateRelease)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrCreateFailed(herrors.GroupInDB, result.Error.Error())
@@ -38,13 +33,9 @@ func (d dao) Create(ctx context.Context, templateRelease *models.TemplateRelease
 }
 
 func (d dao) ListByTemplateName(ctx context.Context, templateName string) ([]*models.TemplateRelease, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var trs []*models.TemplateRelease
-	result := db.Raw(common.TemplateReleaseQueryByTemplateName, templateName).Scan(&trs)
+	result := d.db.WithContext(ctx).Raw(common.TemplateReleaseQueryByTemplateName, templateName).Scan(&trs)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.TemplateReleaseInDB, result.Error.Error())
 	}
@@ -53,13 +44,9 @@ func (d dao) ListByTemplateName(ctx context.Context, templateName string) ([]*mo
 
 func (d dao) GetByTemplateNameAndRelease(ctx context.Context,
 	templateName, release string) (*models.TemplateRelease, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var tr models.TemplateRelease
-	result := db.Raw(common.TemplateReleaseQueryByTemplateNameAndName,
+	result := d.db.WithContext(ctx).Raw(common.TemplateReleaseQueryByTemplateNameAndName,
 		templateName, release).First(&tr)
 
 	if result.Error != nil {

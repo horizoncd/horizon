@@ -6,6 +6,7 @@ import (
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/tag/manager"
 	"g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -23,12 +24,12 @@ type controller struct {
 	applicationMgr appmanager.Manager
 }
 
-func NewController(clusterGitRepo gitrepo.ClusterGitRepo) Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		clusterMgr:     clustermanager.Mgr,
-		tagMgr:         manager.Mgr,
-		clusterGitRepo: clusterGitRepo,
-		applicationMgr: appmanager.Mgr,
+		clusterMgr:     param.ClusterMgr,
+		tagMgr:         param.TagManager,
+		clusterGitRepo: param.ClusterGitRepo,
+		applicationMgr: param.ApplicationManager,
 	}
 }
 

@@ -6,10 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/application/manager"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-)
-
-var (
-	Svc = NewService()
+	"g.hz.netease.com/horizon/pkg/param"
 )
 
 type Service interface {
@@ -77,9 +74,9 @@ func (s service) GetByIDs(ctx context.Context, ids []uint) (map[uint]*Applicatio
 	return applicationMap, nil
 }
 
-func NewService() Service {
+func NewService(groupSvc groupservice.Service, manager *param.Manager) Service {
 	return &service{
-		groupService:       groupservice.Svc,
-		applicationManager: manager.Mgr,
+		groupService:       groupSvc,
+		applicationManager: manager.ApplicationManager,
 	}
 }

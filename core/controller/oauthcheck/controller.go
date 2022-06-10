@@ -11,6 +11,7 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/oauth/scope"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
 	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
@@ -30,12 +31,11 @@ type controller struct {
 
 var _ Controller = &controller{}
 
-func NewOauthChecker(oauthManager manager.Manager,
-	userManager usermanager.Manager, service scope.Service) Controller {
+func NewOauthChecker(param *param.Param) Controller {
 	return &controller{
-		oauthManager: oauthManager,
-		userManager:  userManager,
-		scopeService: service,
+		oauthManager: param.OauthManager,
+		userManager:  param.UserManager,
+		scopeService: param.ScopeService,
 	}
 }
 

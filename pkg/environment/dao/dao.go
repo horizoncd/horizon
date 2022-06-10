@@ -55,12 +55,8 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 }
 
 func (d *dao) CreateEnvironment(ctx context.Context, environment *models.Environment) (*models.Environment, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	result := db.Create(environment)
+	result := d.db.WithContext(ctx).Create(environment)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
@@ -70,14 +66,10 @@ func (d *dao) CreateEnvironment(ctx context.Context, environment *models.Environ
 }
 
 func (d *dao) ListAllEnvironment(ctx context.Context) ([]*models.Environment, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var environments []*models.Environment
 
-	result := db.Raw(common.EnvironmentListAll).Scan(&environments)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentListAll).Scan(&environments)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
@@ -124,13 +116,9 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Environment, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var environment models.Environment
-	result := db.Raw(common.EnvironmentGetByID, id).First(&environment)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentGetByID, id).First(&environment)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {

@@ -10,20 +10,16 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
-	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,11 +30,13 @@ var (
 	group       *groupmodels.Group
 	application *applicationmodels.Application
 	cluster     *clustermodels.Cluster
+	manager     *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
 		panic(err)
 	}
@@ -59,7 +57,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	memberService := memberservice.NewService(roleService, nil)
+	memberService := memberservice.NewService(roleService, nil, manager)
 	if err != nil {
 		panic(err)
 	}
@@ -75,7 +73,7 @@ func TestMain(m *testing.M) {
 			"(^/apis/core/v1/roles)|(^/apis/internal/.*)"))
 	c = NewController(rbacAuthorizer, skippers)
 
-	group, err = groupmanager.Mgr.Create(ctx, &groupmodels.Group{
+	group, err = manager.GroupManager.Create(ctx, &groupmodels.Group{
 		Name:            "group",
 		Path:            "/group",
 		VisibilityLevel: "private",
@@ -83,12 +81,12 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	application, _ = applicationmanager.Mgr.Create(ctx, &applicationmodels.Application{
+	application, _ = manager.ApplicationManager.Create(ctx, &applicationmodels.Application{
 		Name:    "application",
 		GroupID: group.ID,
 	}, nil)
 
-	cluster, _ = clustermanager.Mgr.Create(ctx, &clustermodels.Cluster{
+	cluster, _ = manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
 		Name:          "cluster",
 		ApplicationID: application.ID,
 	}, nil, nil)
@@ -99,7 +97,7 @@ func TestMain(m *testing.M) {
 // nolint
 func TestController_GetAccesses_Guest(t *testing.T) {
 
-	guest, err := usermanager.Mgr.Create(ctx, &usermodels.User{
+	guest, err := manager.UserManager.Create(ctx, &usermodels.User{
 		Name: "guest",
 	})
 
@@ -155,7 +153,7 @@ func TestController_GetAccesses_Guest(t *testing.T) {
 
 // nolint
 func TestController_GetAccesses_Owner(t *testing.T) {
-	owner, err := usermanager.Mgr.Create(ctx, &usermodels.User{
+	owner, err := manager.UserManager.Create(ctx, &usermodels.User{
 		Name: "owner",
 	})
 
@@ -163,7 +161,7 @@ func TestController_GetAccesses_Owner(t *testing.T) {
 		ID: owner.ID,
 	})
 
-	_, err = member.Mgr.Create(ctx, &membermodels.Member{
+	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
 		ResourceType: "groups",
 		ResourceID:   group.ID,
 		Role:         "owner",
@@ -205,7 +203,7 @@ func TestController_GetAccesses_Owner(t *testing.T) {
 
 // nolint
 func TestController_GetAccesses_Admin(t *testing.T) {
-	admin, err := usermanager.Mgr.Create(ctx, &usermodels.User{
+	admin, err := manager.UserManager.Create(ctx, &usermodels.User{
 		Name: "admin",
 	})
 

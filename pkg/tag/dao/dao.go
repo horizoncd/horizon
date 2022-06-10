@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/tag/models"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -18,6 +19,7 @@ type DAO interface {
 }
 
 type dao struct {
+	db *gorm.DB
 }
 
 func NewDAO(db *gorm.DB) DAO {
@@ -25,13 +27,9 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d dao) ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var tags []*models.Tag
-	result := db.Raw(common.TagListByResourceTypeID, resourceType, resourceID).Scan(&tags)
+	result := d.db.WithContext(ctx).Raw(common.TagListByResourceTypeID, resourceType, resourceID).Scan(&tags)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.TagInDB, result.Error.Error())

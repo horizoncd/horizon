@@ -26,13 +26,9 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d *dao) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.ApplicationRegion, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var applicationRegions []*models.ApplicationRegion
-	result := db.Raw(common.ApplicationRegionListByApplicationID, applicationID).Scan(&applicationRegions)
+	result := d.db.WithContext(ctx).Raw(common.ApplicationRegionListByApplicationID, applicationID).Scan(&applicationRegions)
 
 	if result.Error != nil {
 		return nil, perror.Wrapf(result.Error,

@@ -11,7 +11,6 @@ import (
 	"regexp"
 
 	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller"
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
@@ -59,8 +58,11 @@ import (
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
-	"g.hz.netease.com/horizon/pkg/config/grafana"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
+	groupservice "g.hz.netease.com/horizon/pkg/group/service"
+	"g.hz.netease.com/horizon/pkg/param"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	userservice "g.hz.netease.com/horizon/pkg/user/service"
 
 	tagmiddle "g.hz.netease.com/horizon/core/middleware/tag"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
@@ -91,7 +93,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -162,11 +163,10 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	body, err := json.MarshalIndent(config, "", " ")
+	_, err = json.MarshalIndent(config, "", " ")
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("config = %s\n", string(body))
 
 	// init roles
 	file, err := os.OpenFile(flags.RoleConfigFile, os.O_RDONLY, 0644)
@@ -244,11 +244,14 @@ func Run(flags *Flags) {
 	oauthManager := oauthmanager.NewManager(oauthAppStore, oauthTokenStore,
 		generate.NewAuthorizeGenerate(), config.Oauth.AuthorizeCodeExpireIn, config.Oauth.AccessTokenExpireIn)
 
+	// init manager parameter
+	manager := managerparam.InitManager(mysqlDB)
+
 	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
 	if err != nil {
 		panic(err)
 	}
-	mservice := memberservice.NewService(roleService, oauthManager)
+	mservice := memberservice.NewService(roleService, oauthManager, manager)
 	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
 
 	// init scope service
@@ -271,43 +274,27 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	param := &controller.Param{
-		MemberService:            mservice,
-		UserManager:              usermanager.New(),
-		ApplicationGitRepo:       nil,
-		TemplateSchemaGetter:     nil,
-		ApplicationManager:       nil,
-		ApplicationSvc:           nil,
-		GroupMgr:                 nil,
-		GroupSvc:                 nil,
-		TemplateReleaseManager:   nil,
-		ClusterMgr:               nil,
-		Hook:                     nil,
-		UserSvc:                  nil,
-		MemberManager:            nil,
-		EnvMgr:                   nil,
-		CommitGetter:             nil,
-		Cd:                       nil,
-		OutputGetter:             nil,
-		EnvRegionMgr:             nil,
-		RegionMgr:                nil,
-		PipelinerunMgr:           nil,
-		TektonFty:                nil,
-		RegistryFty:              nil,
-		GrafanaMapper:            nil,
-		GroupManager:             nil,
-		TagManager:               nil,
-		TemplateMgr:              nil,
-		RoleService:              nil,
-		KubeClientFty:            nil,
-		ClusterGitRepo:           nil,
-		GrafanaSLO:               grafana.SLO{},
-		GitGetter:                nil,
-		ClusterSchemaTagMgr:      nil,
-		ApplicationRegionManager: nil,
-		EnvironmentRegionMgr:     nil,
-		OauthManager:             nil,
-		ScopeService:             nil,
+	groupSvc := groupservice.NewService(manager)
+	applicationSvc := applicationservice.NewService(groupSvc, manager)
+	userSvc := userservice.NewService(manager)
+	parameter := &param.Param{
+		Manager:              manager,
+		OauthManager:         oauthManager,
+		MemberService:        mservice,
+		ApplicationSvc:       applicationSvc,
+		GroupSvc:             groupSvc,
+		UserSvc:              userSvc,
+		RoleService:          roleService,
+		ScopeService:         scopeService,
+		Hook:                 memHook,
+		ApplicationGitRepo:   applicationGitRepo,
+		TemplateSchemaGetter: templateSchemaGetter,
+		CommitGetter:         nil,
+		Cd:                   cd.NewCD(config.ArgoCDMapper),
+		OutputGetter:         outputGetter,
+		TektonFty:            tektonFty,
+		ClusterGitRepo:       clusterGitRepo,
+		GitGetter:            gitGetter,
 	}
 
 	var (
@@ -316,27 +303,24 @@ func Run(flags *Flags) {
 				"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)"))
 
 		// init controller
-		memberCtl      = memberctl.NewController(mservice)
-		applicationCtl = applicationctl.NewController(applicationGitRepo, templateSchemaGetter, memHook)
-		envTemplateCtl = envtemplatectl.NewController(applicationGitRepo, templateSchemaGetter)
-		clusterCtl     = clusterctl.NewController(clusterGitRepo, applicationGitRepo, gitGetter,
-			cd.NewCD(config.ArgoCDMapper), tektonFty, templateSchemaGetter, outputGetter, memHook,
-			config.GrafanaMapper, tagmanager.Mgr)
-		prCtl = prctl.NewController(tektonFty, gitGetter, clusterGitRepo)
-
-		templateCtl          = templatectl.NewController(templateSchemaGetter)
-		roleCtl              = roltctl.NewController(roleService)
-		terminalCtl          = terminalctl.NewController(clusterGitRepo)
+		memberCtl            = memberctl.NewController(parameter)
+		applicationCtl       = applicationctl.NewController(parameter)
+		envTemplateCtl       = envtemplatectl.NewController(parameter)
+		clusterCtl           = clusterctl.NewController(config, parameter)
+		prCtl                = prctl.NewController(parameter)
+		templateCtl          = templatectl.NewController(parameter)
+		roleCtl              = roltctl.NewController(parameter)
+		terminalCtl          = terminalctl.NewController(parameter)
 		sloCtl               = sloctl.NewController(config.GrafanaSLO)
 		codeGitCtl           = codectl.NewController(gitGetter)
-		tagCtl               = tagctl.NewController(clusterGitRepo)
-		templateSchemaTagCtl = templateschematagctl.NewController()
+		tagCtl               = tagctl.NewController(parameter)
+		templateSchemaTagCtl = templateschematagctl.NewController(parameter)
 		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers)
 		applicationRegionCtl = applicationregionctl.NewController()
-		groupCtl             = groupctl.NewController(mservice)
-		oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(oauthManager, usermanager.Mgr, scopeService)
-		oauthAppCtl          = oauthappctl.NewController(oauthManager, usermanager.Mgr)
-		oauthServerCtl       = oauthservicectl.NewController(oauthManager)
+		groupCtl             = groupctl.NewController(parameter)
+		oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(parameter)
+		oauthAppCtl          = oauthappctl.NewController(parameter)
+		oauthServerCtl       = oauthservicectl.NewController(parameter)
 	)
 
 	var (

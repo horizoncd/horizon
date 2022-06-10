@@ -87,13 +87,9 @@ func (d *dao) UpdateRegionSelector(ctx context.Context, id uint, regionSelector 
 }
 
 func (d *dao) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var groups []*models.Group
-	result := db.Raw(dbcommon.GroupQueryByIDNameFuzzily, fmt.Sprintf("%%%d%%", id),
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByIDNameFuzzily, fmt.Sprintf("%%%d%%", id),
 		fmt.Sprintf("%%%s%%", name)).Scan(&groups)
 
 	if result.Error != nil {
@@ -105,20 +101,16 @@ func (d *dao) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*
 
 func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) (
 	[]*models.GroupOrApplication, int64, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, 0, err
-	}
 
 	var gas []*models.GroupOrApplication
 	var count int64
 
-	result := db.Raw(dbcommon.GroupQueryGroupChildren, parentID, parentID, pageSize, (pageNumber-1)*pageSize).Scan(&gas)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryGroupChildren, parentID, parentID, pageSize, (pageNumber-1)*pageSize).Scan(&gas)
 	if result.Error != nil {
 		return nil, 0, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
 	}
 
-	result = db.Raw(dbcommon.GroupQueryGroupChildrenCount, parentID, parentID).Scan(&count)
+	result = d.db.WithContext(ctx).Raw(dbcommon.GroupQueryGroupChildrenCount, parentID, parentID).Scan(&count)
 
 	if result.Error != nil {
 		return nil, 0, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
@@ -149,7 +141,7 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 
 	// check name whether conflict
 	queryResult := models.Group{}
-	result := db.Raw(dbcommon.GroupQueryByParentIDAndName, newParentID, group.Name).First(&queryResult)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByParentIDAndName, newParentID, group.Name).First(&queryResult)
 	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
 	}
@@ -180,13 +172,9 @@ func (d *dao) Transfer(ctx context.Context, id, newParentID uint) error {
 }
 
 func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return 0, err
-	}
 
 	var count int64
-	result := db.Raw(dbcommon.GroupCountByParentID, parentID).Scan(&count)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupCountByParentID, parentID).Scan(&count)
 
 	if result.Error != nil {
 		return 0, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
@@ -196,13 +184,9 @@ func (d *dao) CountByParentID(ctx context.Context, parentID uint) (int64, error)
 }
 
 func (d *dao) GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var groups []*models.Group
-	result := db.Raw(dbcommon.GroupQueryByPaths, paths).Scan(&groups)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByPaths, paths).Scan(&groups)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
@@ -212,13 +196,9 @@ func (d *dao) GetByPaths(ctx context.Context, paths []string) ([]*models.Group, 
 }
 
 func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var groups []*models.Group
-	result := db.Raw(dbcommon.GroupQueryByIDs, ids).Scan(&groups)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByIDs, ids).Scan(&groups)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
@@ -228,23 +208,16 @@ func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, error)
 }
 
 func (d *dao) GetAll(ctx context.Context) ([]*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
+
 	var groups []*models.Group
-	result := db.Raw(dbcommon.GroupAll).Scan(&groups)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupAll).Scan(&groups)
 	return groups, result.Error
 }
 
 func (d *dao) CheckPathUnique(ctx context.Context, group *models.Group) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
 	queryResult := models.Group{}
-	result := db.Raw(dbcommon.GroupQueryByParentIDAndPath, group.ParentID, group.Path).First(&queryResult)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByParentIDAndPath, group.ParentID, group.Path).First(&queryResult)
 
 	// update group conflict, has another record with the same parentID & path
 	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
@@ -262,13 +235,9 @@ func (d *dao) CheckPathUnique(ctx context.Context, group *models.Group) error {
 }
 
 func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var groups []*models.Group
-	result := db.Raw(dbcommon.GroupQueryByNameFuzzily, fmt.Sprintf("%%%s%%", name)).Scan(&groups)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByNameFuzzily, fmt.Sprintf("%%%s%%", name)).Scan(&groups)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
@@ -278,13 +247,9 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Grou
 }
 
 func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
 
 	var queryResult models.Group
-	result := db.Raw(dbcommon.GroupQueryByParentIDAndName, group.ParentID, group.Name).First(&queryResult)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByParentIDAndName, group.ParentID, group.Name).First(&queryResult)
 
 	// update group conflict, has another record with the same parentID & name
 	if group.ID > 0 && queryResult.ID > 0 && queryResult.ID != group.ID {
@@ -302,10 +267,7 @@ func (d *dao) CheckNameUnique(ctx context.Context, group *models.Group) error {
 }
 
 func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
+
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -335,7 +297,7 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 		group.RegionSelector = pGroup.RegionSelector
 	}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err = d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// create, get id returned by the database
 		if err := tx.Create(group).Error; err != nil {
 			// rollback when error
@@ -404,13 +366,9 @@ func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var group models.Group
-	result := db.Raw(dbcommon.GroupQueryByID, id).First(&group)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByID, id).First(&group)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -423,15 +381,11 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Group, error) {
 }
 
 func (d *dao) ListWithoutPage(ctx context.Context, query *q.Query) ([]*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var groups []*models.Group
 
 	sort := orm.FormatSortExp(query)
-	result := db.Order(sort).Where(query.Keywords).Find(&groups)
+	result := d.db.WithContext(ctx).Order(sort).Where(query.Keywords).Find(&groups)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())
@@ -482,13 +436,9 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 
 func (d *dao) GetByNameOrPathUnderParent(ctx context.Context,
 	name, path string, parentID uint) ([]*models.Group, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var groups []*models.Group
-	result := db.Raw(dbcommon.GroupQueryByNameOrPathUnderParent, parentID, name, path).Scan(&groups)
+	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByNameOrPathUnderParent, parentID, name, path).Scan(&groups)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
@@ -502,11 +452,6 @@ func (d *dao) ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*mo
 		return nil, nil
 	}
 
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	idsStr := make([]string, 0)
 	for _, id := range ids {
 		idsStr = append(idsStr, "'%"+strconv.Itoa(int(id))+"%'")
@@ -515,7 +460,7 @@ func (d *dao) ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*mo
 	traversalIDLike = "traversal_ids like " + traversalIDLike
 
 	var groups []*models.Group
-	result := db.Raw(fmt.Sprintf(dbcommon.GroupQueryByTraversalID, traversalIDLike)).Scan(&groups)
+	result := d.db.WithContext(ctx).Raw(fmt.Sprintf(dbcommon.GroupQueryByTraversalID, traversalIDLike)).Scan(&groups)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())

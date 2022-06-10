@@ -36,9 +36,14 @@ import (
 
 var (
 	// use tmp sqlite
-	db, _      = orm.NewSqliteDB("")
-	ctx        context.Context
-	notExistID = uint(100)
+	db, _        = orm.NewSqliteDB("")
+	ctx          context.Context
+	notExistID   = uint(100)
+	Mgr          = New(db)
+	regionMgr    = regionmanager.New(db)
+	envMgr       = envmanager.New(db)
+	envregionMgr = envregionmanager.New(db)
+	tagMgr       = tagmanager.New(db)
 )
 
 func TestUint(t *testing.T) {
@@ -127,7 +132,7 @@ func TestCreate(t *testing.T) {
 
 	// name conflict with application
 	name := "app"
-	_, err = applicationdao.NewDAO().Create(ctx, &appmodels.Application{
+	_, err = applicationdao.NewDAO(db).Create(ctx, &appmodels.Application{
 		Name: name,
 	}, nil)
 	assert.Nil(t, err)
@@ -326,7 +331,7 @@ func TestManagerGetChildren(t *testing.T) {
 	assert.Nil(t, err)
 	g2, err := Mgr.Create(ctx, getGroup(g0.ID, "2", "b"))
 	assert.Nil(t, err)
-	a1, err := applicationdao.NewDAO().Create(ctx, &appmodels.Application{
+	a1, err := applicationdao.NewDAO(db).Create(ctx, &appmodels.Application{
 		Name:    "3",
 		GroupID: g0.ID,
 	}, nil)
@@ -466,37 +471,37 @@ func TestGetSubGroupsByGroupIDs(t *testing.T) {
 
 func Test_manager_GetSelectableRegionsByEnv(t *testing.T) {
 	// initializing data
-	r1, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+	r1, _ := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
 	})
-	_, _ = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+	_, _ = regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz-disabled",
 		DisplayName: "HZ",
 		Disabled:    true,
 	})
-	r3, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+	r3, _ := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz3",
 		DisplayName: "HZ",
 	})
-	devEnv, _ := envmanager.Mgr.CreateEnvironment(ctx, &envmodels.Environment{
+	devEnv, _ := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
 		Name:        "dev",
 		DisplayName: "开发",
 	})
-	_, _ = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+	_, _ = envregionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz",
 		IsDefault:       true,
 	})
-	_, _ = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+	_, _ = envregionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz-disabled",
 	})
-	_, _ = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+	_, _ = envregionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz3",
 	})
-	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+	_ = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
 		{
 			ResourceType: tagmodels.TypeRegion,
 			ResourceID:   r1.ID,
@@ -509,7 +514,7 @@ func Test_manager_GetSelectableRegionsByEnv(t *testing.T) {
 			Value:        "1",
 		},
 	})
-	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
+	_ = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
 		{
 			ResourceType: tagmodels.TypeRegion,
 			ResourceID:   r3.ID,
@@ -587,21 +592,21 @@ func Test_manager_GetSelectableRegionsByEnv(t *testing.T) {
 }
 
 func Test_manager_GetSelectableRegions(t *testing.T) {
-	r1, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+	r1, _ := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
 	})
-	_, _ = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+	_, _ = regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz-disabled",
 		DisplayName: "HZ",
 		Disabled:    true,
 	})
-	r3, _ := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+	r3, _ := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz3",
 		DisplayName: "HZ",
 	})
 
-	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+	_ = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
 		{
 			ResourceType: tagmodels.TypeRegion,
 			ResourceID:   r1.ID,
@@ -609,7 +614,7 @@ func Test_manager_GetSelectableRegions(t *testing.T) {
 			Value:        "11",
 		},
 	})
-	_ = tagmanager.Mgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
+	_ = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
 		{
 			ResourceType: tagmodels.TypeRegion,
 			ResourceID:   r3.ID,

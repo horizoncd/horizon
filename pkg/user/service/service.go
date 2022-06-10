@@ -5,12 +5,9 @@ import (
 	"fmt"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/pkg/param"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/sets"
-)
-
-var (
-	Svc = NewService()
 )
 
 type Service interface {
@@ -22,9 +19,9 @@ type service struct {
 	userManager usermanager.Manager
 }
 
-func NewService() Service {
+func NewService(manager *param.Manager) Service {
 	return &service{
-		userManager: usermanager.Mgr,
+		userManager: manager.UserManager,
 	}
 }
 

@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/pkg/param"
 	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -27,11 +28,11 @@ type controller struct {
 var _ Controller = (*controller)(nil)
 
 // NewController initializes a new controller
-func NewController(getter templateschema.Getter) Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		templateMgr:          tmanager.Mgr,
-		templateReleaseMgr:   trmanager.Mgr,
-		templateSchemaGetter: getter,
+		templateMgr:          param.TemplateMgr,
+		templateReleaseMgr:   param.TemplateReleaseManager,
+		templateSchemaGetter: param.TemplateSchemaGetter,
 	}
 }
 

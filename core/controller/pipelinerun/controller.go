@@ -17,6 +17,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	"g.hz.netease.com/horizon/pkg/param"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -48,17 +49,16 @@ type controller struct {
 
 var _ Controller = (*controller)(nil)
 
-func NewController(tektonFty factory.Factory, codeGetter code.GitGetter,
-	clusterRepo gitrepo.ClusterGitRepo) Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		pipelinerunMgr: prmanager.Mgr,
-		clusterMgr:     clustermanager.Mgr,
-		envMgr:         envmanager.Mgr,
-		tektonFty:      tektonFty,
-		commitGetter:   codeGetter,
-		applicationMgr: appmanager.Mgr,
-		clusterGitRepo: clusterRepo,
-		userManager:    usermanager.Mgr,
+		pipelinerunMgr: param.PipelinerunMgr,
+		clusterMgr:     param.ClusterMgr,
+		envMgr:         param.EnvMgr,
+		tektonFty:      param.TektonFty,
+		commitGetter:   param.CommitGetter,
+		applicationMgr: param.ApplicationManager,
+		clusterGitRepo: param.ClusterGitRepo,
+		userManager:    param.UserManager,
 	}
 }
 

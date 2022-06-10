@@ -47,13 +47,9 @@ func (d *dao) Create(ctx context.Context, harbor *models.Harbor) (uint, error) {
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Harbor, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var harbor models.Harbor
-	result := db.Raw(common.HarborGetByID, id).First(&harbor)
+	result := d.db.WithContext(ctx).Raw(common.HarborGetByID, id).First(&harbor)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -66,13 +62,9 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Harbor, error) {
 }
 
 func (d *dao) ListAll(ctx context.Context) ([]*models.Harbor, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var harbors []*models.Harbor
-	result := db.Raw(common.HarborListAll).Scan(&harbors)
+	result := d.db.WithContext(ctx).Raw(common.HarborListAll).Scan(&harbors)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.HarborInDB, result.Error.Error())
@@ -117,7 +109,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 
 	// check if any region use the harbor
 	var regions []*regionmodels.Region
-	result := db.Raw(common.RegionGetByHarborID, id).Scan(&regions)
+	result := d.db.WithContext(ctx).Raw(common.RegionGetByHarborID, id).Scan(&regions)
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.HarborInDB, result.Error.Error())
 	}

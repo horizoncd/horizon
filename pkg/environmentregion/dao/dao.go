@@ -43,13 +43,9 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d *dao) GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegion, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var environmentRegion []*models.EnvironmentRegion
-	result := db.Raw(common.EnvironmentRegionsGetDefault).Scan(&environmentRegion)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentRegionsGetDefault).Scan(&environmentRegion)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
@@ -59,13 +55,9 @@ func (d *dao) GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegio
 }
 
 func (d *dao) GetDefaultRegionByEnvironment(ctx context.Context, env string) (*models.EnvironmentRegion, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var environmentRegion models.EnvironmentRegion
-	result := db.Raw(common.EnvironmentRegionGetDefaultByEnv, env).First(&environmentRegion)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentRegionGetDefaultByEnv, env).First(&environmentRegion)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -79,13 +71,9 @@ func (d *dao) GetDefaultRegionByEnvironment(ctx context.Context, env string) (*m
 
 func (d *dao) CreateEnvironmentRegion(ctx context.Context,
 	er *models.EnvironmentRegion) (*models.EnvironmentRegion, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var environmentRegions []*models.EnvironmentRegion
-	result := db.Raw(common.EnvironmentRegionGetByEnvAndRegion, er.EnvironmentName,
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentRegionGetByEnvAndRegion, er.EnvironmentName,
 		er.RegionName).Scan(&environmentRegions)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
@@ -94,7 +82,7 @@ func (d *dao) CreateEnvironmentRegion(ctx context.Context,
 		return nil, perror.Wrap(herrors.ErrPairConflict, "environmentRegion pair already exists")
 	}
 
-	result = db.Create(er)
+	result = d.db.WithContext(ctx).Create(er)
 	if result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
 	}
@@ -102,13 +90,9 @@ func (d *dao) CreateEnvironmentRegion(ctx context.Context,
 }
 
 func (d *dao) ListRegionsByEnvironment(ctx context.Context, env string) ([]*models.EnvironmentRegion, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var regions []*models.EnvironmentRegion
-	result := db.Raw(common.EnvironmentListRegion, env).Scan(&regions)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentListRegion, env).Scan(&regions)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
@@ -118,13 +102,9 @@ func (d *dao) ListRegionsByEnvironment(ctx context.Context, env string) ([]*mode
 }
 
 func (d *dao) ListEnabledRegionsByEnvironment(ctx context.Context, env string) (regionmodels.RegionParts, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var regions regionmodels.RegionParts
-	result := db.Raw(common.EnvironmentListEnabledRegion, env).Scan(&regions)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentListEnabledRegion, env).Scan(&regions)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
@@ -137,13 +117,9 @@ func (d *dao) ListEnabledRegionsByEnvironment(ctx context.Context, env string) (
 }
 
 func (d *dao) GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.EnvironmentRegion, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var environmentRegion models.EnvironmentRegion
-	result := db.Raw(common.EnvironmentRegionGetByID, id).First(&environmentRegion)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentRegionGetByID, id).First(&environmentRegion)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -157,13 +133,9 @@ func (d *dao) GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.En
 
 func (d *dao) GetEnvironmentRegionByEnvAndRegion(ctx context.Context,
 	env, region string) (*models.EnvironmentRegion, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var environmentRegion models.EnvironmentRegion
-	result := db.Raw(common.EnvironmentRegionGet, env, region).First(&environmentRegion)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentRegionGet, env, region).First(&environmentRegion)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -215,13 +187,9 @@ func (d *dao) SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) er
 }
 
 func (d *dao) ListAllEnvironmentRegions(ctx context.Context) ([]*models.EnvironmentRegion, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var environmentRegions []*models.EnvironmentRegion
-	result := db.Raw(common.EnvironmentRegionListAll).Scan(&environmentRegions)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentRegionListAll).Scan(&environmentRegions)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())

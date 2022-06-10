@@ -5,6 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	"g.hz.netease.com/horizon/pkg/param"
 )
 
 const (
@@ -16,10 +17,6 @@ const (
 	ChildTypeCluster = "cluster"
 	// RootGroupID id of the root group, which is not actually exists in the group table
 	RootGroupID = 0
-)
-
-var (
-	Svc = NewService()
 )
 
 type Service interface {
@@ -92,8 +89,8 @@ func (s service) GetChildrenByIDs(ctx context.Context, ids []uint) (map[uint]*Ch
 	return childrenMap, nil
 }
 
-func NewService() Service {
+func NewService(manager *param.Manager) Service {
 	return &service{
-		groupManager: manager.Mgr,
+		groupManager: manager.GroupManager,
 	}
 }

@@ -37,6 +37,7 @@ import (
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
+	membermanager "g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -412,11 +413,17 @@ var (
         }
     }
 	`
+
+	db, _      = orm.NewSqliteDB("")
+	appMgr     = appmanager.New(db)
+	groupMgr   = groupmanager.New(db)
+	clusterMgr = clustermanager.New(db)
+	memberMgr  = membermanager.New(db)
+	regionMgr  = regionmanager.New(db)
 )
 
 // nolint
 func TestMain(m *testing.M) {
-	db, _ := orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&harbormodels.Harbor{},
@@ -565,7 +572,7 @@ func Test(t *testing.T) {
 		registryFty:          registryFty,
 		userManager:          usermanager.Mgr,
 		userSvc:              usersvc.Svc,
-		tagManager:           templateschemamanager.Mgr,
+		schemaTagManager:     templateschemamanager.Mgr,
 	}
 
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()

@@ -825,7 +825,7 @@ func (c *controller) customizeTemplateInfo(ctx context.Context,
 }
 
 func (c *controller) getRenderValueFromTag(ctx context.Context, clusterID uint) (map[string]string, error) {
-	tags, err := c.tagManager.ListByClusterID(ctx, clusterID)
+	tags, err := c.schemaTagManager.ListByClusterID(ctx, clusterID)
 	if err != nil {
 		return nil, err
 	}

@@ -11,11 +11,9 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/q"
 	mockcd "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
-	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	applicationsvc "g.hz.netease.com/horizon/pkg/application/service"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
@@ -24,7 +22,6 @@ import (
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
-	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -33,12 +30,6 @@ import (
 )
 
 func TestListClusterByNameFuzzily(t *testing.T) {
-	appMgr := appmanager.Mgr
-	groupMgr := groupmanager.Mgr
-	clusterMgr := clustermanager.Mgr
-	memberMgr := member.Mgr
-	regionMgr := regionmanager.Mgr
-
 	// init data
 	var groups []*groupmodels.Group
 	for i := 0; i < 5; i++ {
@@ -113,12 +104,6 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 }
 
 func TestListUserClustersByNameFuzzily(t *testing.T) {
-	appMgr := appmanager.Mgr
-	groupMgr := groupmanager.Mgr
-	clusterMgr := clustermanager.Mgr
-	memberMgr := member.Mgr
-	regionMgr := regionmanager.Mgr
-
 	// init data
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hzUserClustersFuzzily",
@@ -246,11 +231,6 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 }
 
 func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
-	appMgr := appmanager.Mgr
-	groupMgr := groupmanager.Mgr
-	clusterMgr := clustermanager.Mgr
-	regionMgr := regionmanager.Mgr
-
 	mockCtl := gomock.NewController(t)
 	cd := mockcd.NewMockCD(mockCtl)
 	cd.EXPECT().DeleteCluster(gomock.Any(), gomock.Any()).Return(errors.New("test")).AnyTimes()

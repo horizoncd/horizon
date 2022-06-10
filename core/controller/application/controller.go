@@ -19,6 +19,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -64,20 +65,19 @@ type controller struct {
 
 var _ Controller = (*controller)(nil)
 
-func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
-	templateSchemaGetter templateschema.Getter, hook hook.Hook) Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		applicationGitRepo:   applicationGitRepo,
-		templateSchemaGetter: templateSchemaGetter,
-		applicationMgr:       manager.Mgr,
-		applicationSvc:       applicationservice.Svc,
-		groupMgr:             groupmanager.Mgr,
-		groupSvc:             groupsvc.Svc,
-		templateReleaseMgr:   trmanager.Mgr,
-		clusterMgr:           clustermanager.Mgr,
-		hook:                 hook,
-		userSvc:              usersvc.Svc,
-		memberManager:        member.Mgr,
+		applicationGitRepo:   param.ApplicationGitRepo,
+		templateSchemaGetter: param.TemplateSchemaGetter,
+		applicationMgr:       param.ApplicationManager,
+		applicationSvc:       param.ApplicationSvc,
+		groupMgr:             param.GroupMgr,
+		groupSvc:             param.GroupSvc,
+		templateReleaseMgr:   param.TemplateReleaseManager,
+		clusterMgr:           param.ClusterMgr,
+		hook:                 param.Hook,
+		userSvc:              param.UserSvc,
+		memberManager:        param.MemberManager,
 	}
 }
 

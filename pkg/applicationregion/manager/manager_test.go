@@ -10,16 +10,15 @@ import (
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _ = orm.NewSqliteDB("")
+	ctx   context.Context
+	mgr   = New(db)
 )
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.ApplicationRegion{}); err != nil {
 		panic(err)
 	}
@@ -29,7 +28,7 @@ func TestMain(m *testing.M) {
 
 func Test(t *testing.T) {
 	applicationID := uint(1)
-	err := Mgr.UpsertByApplicationID(ctx, applicationID, []*models.ApplicationRegion{
+	err := mgr.UpsertByApplicationID(ctx, applicationID, []*models.ApplicationRegion{
 		{
 			ApplicationID:   applicationID,
 			EnvironmentName: "test",
@@ -47,7 +46,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	appRegions, err := Mgr.ListByApplicationID(ctx, applicationID)
+	appRegions, err := mgr.ListByApplicationID(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, "pre", appRegions[0].EnvironmentName)
 	assert.Equal(t, "hz", appRegions[0].RegionName)
@@ -57,7 +56,7 @@ func Test(t *testing.T) {
 		t.Logf("%v", string(b))
 	}
 
-	err = Mgr.UpsertByApplicationID(ctx, applicationID, []*models.ApplicationRegion{
+	err = mgr.UpsertByApplicationID(ctx, applicationID, []*models.ApplicationRegion{
 		{
 			ApplicationID:   applicationID,
 			EnvironmentName: "pre",
@@ -68,7 +67,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	appRegions, err = Mgr.ListByApplicationID(ctx, applicationID)
+	appRegions, err = mgr.ListByApplicationID(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, "singapore", appRegions[0].RegionName)
 	assert.Equal(t, uint(2), appRegions[0].UpdatedBy)
@@ -77,7 +76,7 @@ func Test(t *testing.T) {
 		t.Logf("%v", string(b))
 	}
 
-	err = Mgr.UpsertByApplicationID(ctx, applicationID, []*models.ApplicationRegion{
+	err = mgr.UpsertByApplicationID(ctx, applicationID, []*models.ApplicationRegion{
 		{
 			ApplicationID:   applicationID,
 			EnvironmentName: "online",
@@ -88,7 +87,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	appRegions, err = Mgr.ListByApplicationID(ctx, applicationID)
+	appRegions, err = mgr.ListByApplicationID(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(appRegions))
 	assert.Equal(t, "online", appRegions[0].EnvironmentName)

@@ -15,50 +15,52 @@ import (
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _     = orm.NewSqliteDB("")
+	ctx       context.Context
+	regionMgr = regionmanager.New(db)
+	envMgr    = envmanager.New(db)
+	mgr       = New(db)
 )
 
 func Test(t *testing.T) {
-	_, err := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+	_, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
 	})
 	assert.Nil(t, err)
 
-	onlineEnv, err := envmanager.Mgr.CreateEnvironment(ctx, &envmodels.Environment{
+	onlineEnv, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
 		Name:        "online",
 		DisplayName: "线上",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", onlineEnv)
 
-	preEnv, err := envmanager.Mgr.CreateEnvironment(ctx, &envmodels.Environment{
+	preEnv, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
 		Name:        "pre",
 		DisplayName: "预发",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", preEnv)
 
-	testEnv, err := envmanager.Mgr.CreateEnvironment(ctx, &envmodels.Environment{
+	testEnv, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
 		Name:        "test",
 		DisplayName: "测试",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", testEnv)
 
-	devEnv, err := envmanager.Mgr.CreateEnvironment(ctx, &envmodels.Environment{
+	devEnv, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
 		Name:        "dev",
 		DisplayName: "开发",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", devEnv)
 
-	devHzEr, err := Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
+	devHzEr, err := mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz",
 		IsDefault:       true,
@@ -67,51 +69,50 @@ func Test(t *testing.T) {
 	assert.NotNil(t, devHzEr)
 	t.Logf("%v", devHzEr)
 
-	_, err = Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
+	_, err = mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz",
 	})
 	assert.NotNil(t, err)
 	t.Logf("%v", err)
 
-	regions, err := Mgr.ListByEnvironment(ctx, devEnv.Name)
+	regions, err := mgr.ListByEnvironment(ctx, devEnv.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(regions))
 	assert.Equal(t, "hz", regions[0].RegionName)
 	t.Logf("%v", regions[0])
 
 	// test SetEnvironmentRegionToDefaultByID
-	r2, _ := Mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
+	r2, _ := mgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz1",
 	})
 
-	err = Mgr.SetEnvironmentRegionToDefaultByID(ctx, r2.ID)
+	err = mgr.SetEnvironmentRegionToDefaultByID(ctx, r2.ID)
 	assert.Nil(t, err)
-	r2New, err := Mgr.GetEnvironmentRegionByID(ctx, r2.ID)
+	r2New, err := mgr.GetEnvironmentRegionByID(ctx, r2.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, r2New.IsDefault, true)
-	r2New, err = Mgr.GetDefaultRegionByEnvironment(ctx, devEnv.Name)
+	r2New, err = mgr.GetDefaultRegionByEnvironment(ctx, devEnv.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, r2New.IsDefault, true)
 
-	devHzErNew, err := Mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
+	devHzErNew, err := mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, devHzErNew.IsDefault, false)
-	devHzErNew, err = Mgr.GetByEnvironmentAndRegion(ctx, devEnv.Name, "hz")
+	devHzErNew, err = mgr.GetByEnvironmentAndRegion(ctx, devEnv.Name, "hz")
 	assert.Nil(t, err)
 	assert.Equal(t, devHzErNew.IsDefault, false)
 
 	// test deleteByID
-	err = Mgr.DeleteByID(ctx, devHzErNew.ID)
+	err = mgr.DeleteByID(ctx, devHzErNew.ID)
 	assert.Nil(t, err)
-	_, err = Mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
+	_, err = mgr.GetEnvironmentRegionByID(ctx, devHzEr.ID)
 	_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
 	assert.True(t, ok)
 }
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&envmodels.Environment{}); err != nil {
 		panic(err)
 	}

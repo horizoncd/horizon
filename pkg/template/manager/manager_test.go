@@ -9,12 +9,12 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/template/models"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _ = orm.NewSqliteDB("")
+	ctx   context.Context
+	mgr   = New(db)
 )
 
 func Test(t *testing.T) {
@@ -30,7 +30,7 @@ func Test(t *testing.T) {
 		CreatedBy:   createdBy,
 		UpdatedBy:   updatedBy,
 	}
-	template, err := Mgr.Create(ctx, template)
+	template, err := mgr.Create(ctx, template)
 	assert.Nil(t, err)
 
 	assert.Equal(t, name, template.Name)
@@ -41,7 +41,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf(string(b))
 
-	templates, err := Mgr.List(ctx)
+	templates, err := mgr.List(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(templates))
 	assert.Equal(t, name, templates[0].Name)
@@ -50,7 +50,6 @@ func Test(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Template{}); err != nil {
 		panic(err)
 	}

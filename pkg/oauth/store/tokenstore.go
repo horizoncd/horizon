@@ -22,13 +22,13 @@ func NewTokenStore(db *gorm.DB) TokenStore {
 var _ TokenStore = &DbTokenStore{}
 
 func (d *DbTokenStore) Create(ctx context.Context, token *models.Token) error {
-	result := d.db.Create(token)
+	result := d.db.WithContext(ctx).Create(token)
 	return result.Error
 }
 
 func (d *DbTokenStore) Get(ctx context.Context, code string) (*models.Token, error) {
 	var token models.Token
-	result := d.db.Raw(common.TokenGetByCode, code).First(&token)
+	result := d.d.db.WithContext(ctx).Raw(common.TokenGetByCode, code).First(&token)
 	if result.Error != nil {
 		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, herrors.NewErrNotFound(herrors.TokenInDB, result.Error.Error())
@@ -39,11 +39,11 @@ func (d *DbTokenStore) Get(ctx context.Context, code string) (*models.Token, err
 }
 
 func (d *DbTokenStore) DeleteByCode(ctx context.Context, code string) error {
-	result := d.db.Exec(common.DeleteByCode, code)
+	result := d.db.WithContext(ctx).Exec(common.DeleteByCode, code)
 	return result.Error
 }
 
 func (d *DbTokenStore) DeleteByClientID(ctx context.Context, clientID string) error {
-	result := d.db.Exec(common.DeleteByClientID, clientID)
+	result := d.db.WithContext(ctx).Exec(common.DeleteByClientID, clientID)
 	return result.Error
 }

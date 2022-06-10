@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/core/cmd"
 	"g.hz.netease.com/horizon/lib/q"
 	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
@@ -20,13 +21,14 @@ import (
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/member"
+	"g.hz.netease.com/horizon/pkg/param"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	tagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
+	templateschematagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 )
@@ -97,40 +99,37 @@ type controller struct {
 	userSvc              usersvc.Service
 	memberManager        member.Manager
 	groupManager         groupmanager.Manager
-	tagManager           tagmanager.Manager
+	schemaTagManager     templateschematagmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
 
-func NewController(clusterGitRepo gitrepo.ClusterGitRepo, applicationGitRepo appgitrepo.ApplicationGitRepo,
-	commitGetter code.GitGetter, cd cd.CD, tektonFty factory.Factory,
-	templateSchemaGetter templateschema.Getter, outputGetter output.Getter,
-	hook hook.Hook, grafanaMapper grafana.Mapper, tagManager tagmanager.Manager) Controller {
+func NewController(config *cmd.Config, param *param.Param) Controller {
 	return &controller{
-		clusterMgr:           clustermanager.Mgr,
-		clusterGitRepo:       clusterGitRepo,
-		applicationGitRepo:   applicationGitRepo,
-		commitGetter:         commitGetter,
-		cd:                   cd,
-		applicationMgr:       appmanager.Mgr,
-		applicationSvc:       applicationservice.Svc,
-		templateReleaseMgr:   trmanager.Mgr,
-		templateSchemaGetter: templateSchemaGetter,
-		outputGetter:         outputGetter,
-		envMgr:               envmanager.Mgr,
-		envRegionMgr:         environmentregionmapper.Mgr,
-		regionMgr:            regionmanager.Mgr,
-		groupSvc:             groupsvc.Svc,
-		pipelinerunMgr:       prmanager.Mgr,
-		tektonFty:            tektonFty,
+		clusterMgr:           param.ClusterMgr,
+		clusterGitRepo:       param.ClusterGitRepo,
+		applicationGitRepo:   param.ApplicationGitRepo,
+		commitGetter:         param.CommitGetter,
+		cd:                   param.Cd,
+		applicationMgr:       param.ApplicationManager,
+		applicationSvc:       param.ApplicationSvc,
+		templateReleaseMgr:   param.TemplateReleaseManager,
+		templateSchemaGetter: param.TemplateSchemaGetter,
+		outputGetter:         param.OutputGetter,
+		envMgr:               param.EnvMgr,
+		envRegionMgr:         param.EnvRegionMgr,
+		regionMgr:            param.RegionMgr,
+		groupSvc:             param.GroupSvc,
+		pipelinerunMgr:       param.PipelinerunMgr,
+		tektonFty:            param.TektonFty,
 		registryFty:          registryfty.Fty,
-		hook:                 hook,
-		grafanaMapper:        grafanaMapper,
-		userManager:          usermanager.Mgr,
-		userSvc:              usersvc.Svc,
-		memberManager:        member.Mgr,
-		groupManager:         groupmanager.Mgr,
-		tagManager:           tagManager,
+		hook:                 param.Hook,
+		grafanaMapper:        config.GrafanaMapper,
+		userManager:          param.UserManager,
+		userSvc:              param.UserSvc,
+		memberManager:        param.MemberManager,
+		groupManager:         param.GroupManager,
+		schemaTagManager:     param.ClusterSchemaTagMgr,
 	}
 }
 

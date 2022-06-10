@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -13,8 +14,8 @@ type Controller interface {
 	ListRole(ctx context.Context) ([]types.Role, error)
 }
 
-func NewController(service role.Service) Controller {
-	return &controller{roleService: service}
+func NewController(param *param.Param) Controller {
+	return &controller{roleService: param.RoleService}
 }
 
 type controller struct {

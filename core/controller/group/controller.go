@@ -18,6 +18,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"github.com/go-yaml/yaml"
@@ -65,12 +66,12 @@ type controller struct {
 }
 
 // NewController initializes a new group controller
-func NewController(service memberservice.Service) Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		groupManager:       manager.Mgr,
-		applicationManager: appmanager.Mgr,
-		clusterManager:     clustermanager.Mgr,
-		memberSvc:          service,
+		groupManager:       param.GroupManager,
+		applicationManager: param.ApplicationManager,
+		clusterManager:     param.ClusterMgr,
+		memberSvc:          param.MemberService,
 	}
 }
 

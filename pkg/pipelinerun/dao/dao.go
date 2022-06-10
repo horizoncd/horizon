@@ -8,6 +8,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	"gorm.io/gorm"
 )
 
 type DAO interface {
@@ -34,12 +35,8 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d *dao) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	result := db.Create(pipelinerun)
+	result := d.db.WithContext(ctx).Create(pipelinerun)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.PipelinerunInDB, result.Error.Error())
@@ -49,13 +46,9 @@ func (d *dao) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*mod
 }
 
 func (d *dao) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var pr models.Pipelinerun
-	result := db.Raw(common.PipelinerunGetByID, pipelinerunID).Scan(&pr)
+	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetByID, pipelinerunID).Scan(&pr)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
 	}
@@ -96,13 +89,9 @@ func (d *dao) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, co
 
 func (d *dao) GetLatestByClusterIDAndAction(ctx context.Context,
 	clusterID uint, action string) (*models.Pipelinerun, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var pipelinerun models.Pipelinerun
-	result := db.Raw(common.PipelinerunGetLatestByClusterIDAndAction, clusterID, action).Scan(&pipelinerun)
+	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestByClusterIDAndAction, clusterID, action).Scan(&pipelinerun)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
 	}
@@ -114,13 +103,9 @@ func (d *dao) GetLatestByClusterIDAndAction(ctx context.Context,
 
 func (d *dao) GetLatestByClusterIDAndActionAndStatus(ctx context.Context,
 	clusterID uint, action string, status string) (*models.Pipelinerun, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var pipelinerun models.Pipelinerun
-	result := db.Raw(common.PipelinerunGetLatestByClusterIDAndActionAndStatus, clusterID,
+	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestByClusterIDAndActionAndStatus, clusterID,
 		action, status).Scan(&pipelinerun)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
@@ -132,13 +117,9 @@ func (d *dao) GetLatestByClusterIDAndActionAndStatus(ctx context.Context,
 }
 
 func (d *dao) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var pipelinerun models.Pipelinerun
-	result := db.Raw(common.PipelinerunGetLatestSuccessByClusterID, clusterID).Scan(&pipelinerun)
+	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestSuccessByClusterID, clusterID).Scan(&pipelinerun)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
 	}
@@ -165,10 +146,6 @@ func (d *dao) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *
 
 func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
 	canRollback bool, query q.Query) (int, []*models.Pipelinerun, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return 0, nil, err
-	}
 	offset := (query.PageNumber - 1) * query.PageSize
 	limit := query.PageSize
 
@@ -181,13 +158,13 @@ func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
 		queryScript = common.PipelinerunCanRollbackGetByClusterID
 		countScript = common.PipelinerunCanRollbackGetByClusterIDTotalCount
 	}
-	result := db.Raw(queryScript,
+	result := d.db.WithContext(ctx).Raw(queryScript,
 		clusterID, limit, offset).Scan(&pipelineruns)
 	if result.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
 	}
 	var total int
-	result = db.Raw(countScript,
+	result = d.db.WithContext(ctx).Raw(countScript,
 		clusterID).Scan(&total)
 
 	if total < 0 {
@@ -202,13 +179,9 @@ func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
 }
 
 func (d *dao) GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var pipelinerun models.Pipelinerun
-	result := db.Raw(common.PipelinerunGetFirstCanRollbackByClusterID, clusterID).Scan(&pipelinerun)
+	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetFirstCanRollbackByClusterID, clusterID).Scan(&pipelinerun)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
