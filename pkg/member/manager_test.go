@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/member/models"
@@ -65,7 +65,7 @@ func TestBasic(t *testing.T) {
 		FullName: "cat",
 		ID:       grantedByCat,
 	}
-	ctx = context.WithValue(ctx, user.Key(), grandUser)
+	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
 
 	retMember2, err := Mgr.UpdateByID(ctx, retMember.ID, member1.Role)
 	assert.Nil(t, err)

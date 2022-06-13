@@ -49,7 +49,6 @@ func (c *controller) Update(ctx context.Context, resourceType string, resourceID
 	defer wlog.Start(ctx, op).StopPrint()
 
 	tags := r.toTags(resourceType, resourceID)
-
 	if err := manager.ValidateUpsert(tags); err != nil {
 		return err
 	}

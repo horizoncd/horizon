@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -59,12 +59,12 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	memberService := memberservice.NewService(roleService)
+	memberService := memberservice.NewService(roleService, nil)
 	if err != nil {
 		panic(err)
 	}
 	ctx = orm.NewContext(ctx, db)
-	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 		ID:   uint(110),
 	})
@@ -103,10 +103,10 @@ func TestController_GetAccesses_Guest(t *testing.T) {
 		Name: "guest",
 	})
 
-	nonMemberCtx := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	nonMemberCtx := context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		ID: 2,
 	})
-	guestCtx := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	guestCtx := context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		ID: guest.ID,
 	})
 
@@ -159,7 +159,7 @@ func TestController_GetAccesses_Owner(t *testing.T) {
 		Name: "owner",
 	})
 
-	ctx := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	ctx := context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		ID: owner.ID,
 	})
 
@@ -209,7 +209,7 @@ func TestController_GetAccesses_Admin(t *testing.T) {
 		Name: "admin",
 	})
 
-	ctx := context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	ctx := context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		ID:    admin.ID,
 		Admin: true,
 	})

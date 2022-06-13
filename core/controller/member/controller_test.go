@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/group"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -50,7 +50,7 @@ var (
 
 // nolint
 func init() {
-	ctx = context.WithValue(ctx, user.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name:     contextUserName,
 		FullName: contextUserFullName,
 		ID:       contextUserID,
@@ -117,7 +117,7 @@ func CreateUsers(t *testing.T) {
 }
 
 func TestCreateGroupWithOwner(t *testing.T) {
-	memberService := memberservice.NewService(nil)
+	memberService := memberservice.NewService(nil, nil)
 	Ctl := NewController(memberService)
 
 	CreateUsers(t)
@@ -165,7 +165,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	roleMockService := rolemock.NewMockService(mockCtrl)
-	memberService := memberservice.NewService(roleMockService)
+	memberService := memberservice.NewService(roleMockService, nil)
 	Ctl := NewController(memberService)
 	CreateUsers(t)
 

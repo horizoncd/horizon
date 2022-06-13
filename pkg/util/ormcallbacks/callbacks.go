@@ -1,8 +1,7 @@
 package callbacks
 
 import (
-	"g.hz.netease.com/horizon/core/middleware/user"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	"g.hz.netease.com/horizon/core/common"
 	"gorm.io/gorm"
 )
 
@@ -13,37 +12,29 @@ const (
 
 // addCreatedByUpdatedByForCreateCallback will set `created_by` and `updated_by` when creating records if fields exist
 func addCreatedByUpdatedByForCreateCallback(db *gorm.DB) {
+	currentUser, err := common.UserFromContext(db.Statement.Context)
+	if err != nil {
+		return
+	}
 	field := db.Statement.Schema.LookUpField(_createdBy)
 	if field != nil {
-		currentUser, err := user.FromContext(db.Statement.Context)
-		if err != nil {
-			db.Error = err
-			return
-		}
 		db.Statement.SetColumn(_createdBy, currentUser.GetID(), true)
 	}
 
 	field = db.Statement.Schema.LookUpField(_updatedBy)
 	if field != nil {
-		currentUser, err := user.FromContext(db.Statement.Context)
-		if err != nil {
-			db.Error = err
-			return
-		}
 		db.Statement.SetColumn(_updatedBy, currentUser.GetID(), true)
 	}
 }
 
 // addUpdatedByForUpdateDeleteCallback will set `updated_by` when updating or deleting records if fields exist
 func addUpdatedByForUpdateDeleteCallback(db *gorm.DB) {
+	currentUser, err := common.UserFromContext(db.Statement.Context)
+	if err != nil {
+		return
+	}
 	field := db.Statement.Schema.LookUpField(_updatedBy)
 	if field != nil {
-		currentUser, err := user.FromContext(db.Statement.Context)
-		if err != nil {
-			log.Errorf(db.Statement.Context, "context in gorm is: %+v", db.Statement.Context)
-			db.Error = err
-			return
-		}
 		db.Statement.SetColumn(_updatedBy, currentUser.GetID())
 	}
 }

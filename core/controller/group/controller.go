@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
@@ -391,7 +392,7 @@ func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.C
 }
 
 func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
-	currenUser, err := user.FromContext(ctx)
+	currenUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +408,8 @@ func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
 		authedGroups = make([]*models.Group, 0)
 		for _, item := range groups {
 			// TODO: get all group member in one request
-			member, err := c.memberSvc.GetMemberOfResource(ctx, membermodels.TypeGroupStr, item.ID)
+			strID := strconv.FormatUint(uint64(item.ID), 10)
+			member, err := c.memberSvc.GetMemberOfResource(ctx, membermodels.TypeGroupStr, strID)
 			if err != nil {
 				return nil, err
 			}

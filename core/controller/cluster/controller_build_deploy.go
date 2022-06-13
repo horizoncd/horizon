@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
@@ -24,7 +23,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	const op = "cluster controller: build deploy"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

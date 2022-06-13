@@ -3,7 +3,8 @@ package templateschematag
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
+
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -42,7 +43,7 @@ func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateReques
 	const op = "cluster template scheme tag controller: update"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

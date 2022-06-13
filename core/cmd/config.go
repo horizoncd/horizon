@@ -11,11 +11,12 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	"g.hz.netease.com/horizon/pkg/config/helmrepo"
+	"g.hz.netease.com/horizon/pkg/config/oauth"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
 	"g.hz.netease.com/horizon/pkg/config/server"
 	"g.hz.netease.com/horizon/pkg/config/tekton"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -32,6 +33,7 @@ type Config struct {
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
 	GrafanaMapper          grafana.Mapper          `yaml:"grafanaMapper"`
 	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
+	Oauth                  oauth.Server            `yaml:"oauth"`
 }
 
 func loadConfig(configFilePath string) (*Config, error) {

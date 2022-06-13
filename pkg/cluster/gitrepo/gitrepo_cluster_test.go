@@ -8,8 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -82,7 +82,7 @@ type Param struct {
 // nolint
 func TestMain(m *testing.M) {
 	var err error
-	ctx = context.WithValue(context.Background(), user.Key(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 	})
 

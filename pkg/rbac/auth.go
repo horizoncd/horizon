@@ -3,12 +3,9 @@ package rbac
 import (
 	"context"
 	"fmt"
-	"strconv"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/auth"
-	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
@@ -49,7 +46,7 @@ const (
 func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.Decision,
 	string, error) {
 	// 0. check (admin allows everything, and some are not checked)
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return auth.DecisionDeny, AnonymousUser, nil
 	}
@@ -68,13 +65,7 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 
 	// 1. get the member
 	resourceIDStr := attr.GetName()
-	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
-	if err != nil {
-		log.Errorf(ctx, "resourceType = %s, resourceID = %s, format error\n", attr.GetResource(), attr.GetName())
-		return auth.DecisionDeny, ResourceFormatErr, perror.Wrap(herrors.ErrParamInvalid, err.Error())
-	}
-
-	member, err := a.memberService.GetMemberOfResource(ctx, attr.GetResource(), uint(resourceID))
+	member, err := a.memberService.GetMemberOfResource(ctx, attr.GetResource(), resourceIDStr)
 	if err != nil {
 		log.Warningf(ctx, "GetMemberOfResource error, resourceType = %s, resourceID = %s, user = %s\n",
 			attr.GetResource(), attr.GetName(), attr.GetUser().String())

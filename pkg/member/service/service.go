@@ -5,7 +5,8 @@ import (
 	"errors"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
+	herror "g.hz.netease.com/horizon/core/errors"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	applicationclustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
@@ -13,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/member"
 	memberctx "g.hz.netease.com/horizon/pkg/member/context"
 	"g.hz.netease.com/horizon/pkg/member/models"
+	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
 	pipelinerunmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -38,7 +40,7 @@ type Service interface {
 	// ListMember list all the member of the resource
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
 	// GetMemberOfResource return the current user's role of the resource (member from direct or parent)
-	GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*models.Member, error)
+	GetMemberOfResource(ctx context.Context, resourceType string, resourceID string) (*models.Member, error)
 }
 
 type service struct {
@@ -48,9 +50,10 @@ type service struct {
 	applicationClusterManager applicationclustermanager.Manager
 	pipelineManager           pipelinerunmanager.Manager
 	roleService               roleservice.Service
+	oauthManager              oauthmanager.Manager
 }
 
-func NewService(roleService roleservice.Service) Service {
+func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manager) Service {
 	return &service{
 		memberManager:             member.Mgr,
 		groupManager:              groupmanager.Mgr,
@@ -58,12 +61,13 @@ func NewService(roleService roleservice.Service) Service {
 		applicationClusterManager: applicationclustermanager.Mgr,
 		pipelineManager:           pipelinerunmanager.Mgr,
 		roleService:               roleService,
+		oauthManager:              oauthManager,
 	}
 }
 
 func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error) {
 	var currentUser userauth.User
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +111,23 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 	return s.memberManager.Create(ctx, member)
 }
 
+func (s *service) getOauthAppMember(ctx context.Context, clientID string) (*models.Member, error) {
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	app, err := s.oauthManager.GetOAuthApp(ctx, clientID)
+	if err != nil {
+		return nil, err
+	}
+	if !app.IsGroupOwnerType() {
+		return nil, herror.ErrOAuthNotGroupOwnerType
+	}
+	return s.getMember(ctx, models.TypeGroupStr, app.OwnerID, models.MemberUser, currentUser.GetID())
+}
+
 func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) (*models.Member, error) {
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -125,17 +144,21 @@ func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) 
 }
 
 func (s *service) GetMemberOfResource(ctx context.Context,
-	resourceType string, resourceID uint) (*models.Member, error) {
+	resourceType string, resourceIDStr string) (*models.Member, error) {
 	var currentUser userauth.User
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var memberInfo *models.Member
 	if resourceType == models.TypePipelinerunStr {
-		memberInfo, err = s.getPipelinerunMember(ctx, resourceID)
+		resourceID, _ := strconv.Atoi(resourceIDStr)
+		memberInfo, err = s.getPipelinerunMember(ctx, uint(resourceID))
+	} else if resourceType == models.TypeOauthAppsStr {
+		memberInfo, err = s.getOauthAppMember(ctx, resourceIDStr)
 	} else {
-		memberInfo, err = s.getMember(ctx, resourceType, resourceID, models.MemberUser, currentUser.GetID())
+		resourceID, _ := strconv.Atoi(resourceIDStr)
+		memberInfo, err = s.getMember(ctx, resourceType, uint(resourceID), models.MemberUser, currentUser.GetID())
 	}
 	if err != nil {
 		return nil, err
@@ -143,12 +166,13 @@ func (s *service) GetMemberOfResource(ctx context.Context,
 	if memberInfo == nil {
 		defaultRole := s.roleService.GetDefaultRole(ctx)
 		if nil != defaultRole {
+			resourceID, _ := strconv.Atoi(resourceIDStr)
 			memberInfo = &models.Member{
 				MemberType:   models.MemberUser,
 				Role:         defaultRole.Name,
 				MemberNameID: currentUser.GetID(),
 				ResourceType: models.ResourceType(resourceType),
-				ResourceID:   resourceID,
+				ResourceID:   uint(resourceID),
 			}
 		}
 	}
@@ -161,7 +185,7 @@ func (s *service) GetMember(ctx context.Context, memberID uint) (*models.Member,
 
 func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
 	var currentUser userauth.User
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -199,7 +223,7 @@ func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
 
 func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) (*models.Member, error) {
 	var currentUser userauth.User
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +437,7 @@ func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID
 // createMemberDirect for unit test
 func (s *service) createMemberDirect(ctx context.Context, postMember PostMember) (*models.Member, error) {
 	var currentUser userauth.User
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

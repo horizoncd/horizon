@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
@@ -308,7 +308,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	const op = "cluster git repo: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -438,7 +438,7 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 	const op = "cluster git repo: update cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -632,7 +632,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	const op = "cluster git repo: update pipeline output"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -699,7 +699,7 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 	const op = "cluster git repo: update restartTime"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -803,7 +803,7 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	const op = "cluster git repo: rollback"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -882,7 +882,7 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 	const op = "cluster git repo: update tags"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	currentUser, err := user.FromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
 	}

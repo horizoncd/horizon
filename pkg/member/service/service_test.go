@@ -2,9 +2,10 @@ package service
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/user"
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationmanagermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
 	clustermanagermock "g.hz.netease.com/horizon/mock/pkg/cluster/manager"
@@ -75,7 +76,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		FullName: "tom",
 		ID:       tomID,
 	}
-	ctx = context.WithValue(ctx, user.Key(), grandUser)
+	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
 	// insert service to group2
 	postMemberTom2 := PostMember{
 		ResourceType: models.TypeGroupStr,
@@ -284,7 +285,7 @@ func TestListGroupMember(t *testing.T) {
 		FullName: "tom",
 		ID:       tomID,
 	}
-	ctx = context.WithValue(ctx, user.Key(), grandUser)
+	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
 
 	// insert service to group2
 	postMemberTom2 := PostMember{
@@ -396,7 +397,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 			ID:       1,
 		}
 	)
-	ctx = context.WithValue(ctx, user.Key(), grandUser) // nolint
+	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser) // nolint
 
 	// mock the groupManager
 	groupManager := groupmanagermock.NewMockManager(mockCtrl)
@@ -553,7 +554,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 		}
 		pipelineRunID uint = 23123
 	)
-	ctx = context.WithValue(ctx, user.Key(), grandUser)
+	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
 
 	// mock the groupManager
 	groupManager := groupmanagermock.NewMockManager(mockCtrl)
@@ -662,7 +663,8 @@ func TestGetPipelinerunMember(t *testing.T) {
 	}
 
 	// check members
-	members, err := s.GetMemberOfResource(ctx, models.TypePipelinerunStr, pipelineRunID)
+	pipelineRunIDStr := strconv.FormatUint(uint64(pipelineRunID), 10)
+	members, err := s.GetMemberOfResource(ctx, models.TypePipelinerunStr, pipelineRunIDStr)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMembers[3], members))
 }

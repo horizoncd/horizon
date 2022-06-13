@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
@@ -33,14 +32,14 @@ var (
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
 	// nolint
-	db = db.WithContext(context.WithValue(context.Background(), user.ContextUserKey, &userauth.DefaultInfo{
+	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	}))
 	callbacks.RegisterCustomCallbacks(db)
 	ctx = orm.NewContext(context.TODO(), db)
 	// nolint
-	ctx = context.WithValue(ctx, user.ContextUserKey, &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})

@@ -48,7 +48,9 @@ var (
 	TektonClient    = sourceType{name: "TektonClient"}
 	TektonCollector = sourceType{name: "TektonCollector"}
 
-	HelmRepo = sourceType{name: "HelmRepo"}
+	HelmRepo  = sourceType{name: "HelmRepo"}
+	OAuthInDB = sourceType{name: "OauthAppClient"}
+	TokenInDB = sourceType{name: "TokenInDB"}
 )
 
 type HorizonErrNotFound struct {
@@ -205,6 +207,18 @@ var (
 	ErrGroupHasChildren = errors.New("children exist, cannot be deleted")
 	// ErrConflictWithApplication conflict with the application
 	ErrGroupConflictWithApplication = errors.New("name or path is in conflict with application")
+
+	// ErrOAuthSecretNotFound oauth clientid secret was not valid
+	ErrOAuthSecretNotValid = errors.New("secret not valid")
+
+	// ErrOAuthCodeExpired oauth authorization code  or access token expire
+	ErrOAuthCodeExpired               = errors.New("code expired")
+	ErrOAuthReqNotValid               = errors.New("oauth request not valid")
+	ErrOAuthAuthorizationCodeNotExist = errors.New("authorization code not exist")
+	ErrOAuthInternal                  = errors.New("oauth internal error")
+	ErrAuthorizationHeaderNotFound    = errors.New("AuthorizationHeader not found")
+	ErrOAuthTokenFormatError          = errors.New("Oauth token format error")
+	ErrOAuthNotGroupOwnerType         = errors.New("not group oauth app")
 
 	// ErrHarborUsedByRegions used when deleting a harbor that is still used by regions
 	ErrHarborUsedByRegions = errors.New("cannot delete a harbor when used by regions")

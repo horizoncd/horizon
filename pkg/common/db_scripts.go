@@ -302,3 +302,20 @@ const (
 	ApplicationRegionListByApplicationID      = "select * from tb_application_region where application_id = ?"
 	ApplicationRegionDeleteAllByApplicationID = "delete from tb_application_region where application_id = ?"
 )
+
+/* sql about token*/
+const (
+	DeleteByCode     = "delete  from tb_token where code = ?"
+	TokenGetByCode   = "select * from tb_token where code = ?"
+	DeleteByClientID = "delete from tb_token where client_id = ?"
+)
+
+/* sql about oauth app*/
+const (
+	GetOauthAppByClientID        = "select * from tb_oauth_app where  client_id = ?"
+	DeleteOauthAppByClientID     = "delete from tb_oauth_app where client_id = ?"
+	SelectOauthAppByOwner        = "select * from tb_oauth_app  where owner_type = ? and owner_id = ?"
+	DeleteClientSecret           = "delete from tb_oauth_client_secret where  client_id = ? and id = ?"
+	DeleteClientSecretByClientID = "delete from tb_oauth_client_secret where client_id = ?"
+	ClientSecretSelectAll        = "select * from tb_oauth_client_secret where client_id = ?"
+)

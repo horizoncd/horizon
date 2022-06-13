@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/application"
 	"g.hz.netease.com/horizon/core/controller/cluster"
-	"g.hz.netease.com/horizon/core/middleware/user"
 	applicationmodel "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cmdb"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -40,7 +40,7 @@ func (h *CMDBEventHandler) ProcessCreateApplication(event *hook.EventCtx) error 
 	e := event.Event
 	switch info := e.(type) {
 	case *application.GetApplicationResponse:
-		currentUser, err := user.FromContext(event.Ctx)
+		currentUser, err := common.UserFromContext(event.Ctx)
 		if err != nil {
 			return errors.New("can not get user from context")
 		}
@@ -86,7 +86,7 @@ func (h *CMDBEventHandler) ProcessCreateCluster(event *hook.EventCtx) error {
 	e := event.Event
 	switch info := e.(type) {
 	case *cluster.GetClusterResponse:
-		currentUser, err := user.FromContext(event.Ctx)
+		currentUser, err := common.UserFromContext(event.Ctx)
 		if err != nil {
 			return errors.New("can not get user from context")
 		}
