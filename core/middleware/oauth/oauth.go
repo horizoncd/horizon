@@ -62,6 +62,7 @@ func MiddleWare(oauthCtl oauthcheck.Controller, skipMatchers ...middleware.Skipp
 		if !result {
 			log.WithFiled(c, CheckResult, result).Warningf("reason = %s", reason)
 			response.AbortWithForbiddenError(c, common.Forbidden, "")
+			return
 		}
 		log.WithFiled(c, CheckResult, result).Infof("reason = %s", reason)
 		c.Next()
