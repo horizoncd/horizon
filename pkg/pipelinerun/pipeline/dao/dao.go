@@ -22,7 +22,6 @@ type DAO interface {
 type dao struct{ db *gorm.DB }
 
 func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error {
-
 	prMetadata := results.Metadata
 	prBusinessData := results.BusinessData
 	prResult := results.PrResult

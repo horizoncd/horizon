@@ -26,7 +26,6 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d dao) ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error) {
-
 	var tags []*models.Tag
 	result := d.db.WithContext(ctx).Raw(common.TagListByResourceTypeID, resourceType, resourceID).Scan(&tags)
 
@@ -39,10 +38,9 @@ func (d dao) ListByResourceTypeID(ctx context.Context, resourceType string, reso
 
 func (d dao) UpsertByResourceTypeID(ctx context.Context, resourceType string,
 	resourceID uint, tags []*models.Tag) error {
-
 	// 1. if tags is empty, delete all tags
 	if len(tags) == 0 {
-		result := d.db.Exec(common.TagDeleteAllByResourceTypeID, resourceType, resourceID)
+		result := d.db.WithContext(ctx).Exec(common.TagDeleteAllByResourceTypeID, resourceType, resourceID)
 		if result.Error != nil {
 			return herrors.NewErrDeleteFailed(herrors.TagInDB, result.Error.Error())
 		}
@@ -54,12 +52,13 @@ func (d dao) UpsertByResourceTypeID(ctx context.Context, resourceType string,
 	for _, tag := range tags {
 		tagKeys = append(tagKeys, tag.Key)
 	}
-	if err := d.db.Exec(common.TagDeleteByResourceTypeIDAndKeys, resourceType, resourceID, tagKeys).Error; err != nil {
+	if err := d.db.WithContext(ctx).Exec(common.TagDeleteByResourceTypeIDAndKeys, resourceType,
+		resourceID, tagKeys).Error; err != nil {
 		return herrors.NewErrDeleteFailed(herrors.TagInDB, err.Error())
 	}
 
 	// 3. add new tags
-	result := d.db.Clauses(clause.OnConflict{
+	result := d.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns: []clause.Column{
 			{
 				Name: "resource_type",

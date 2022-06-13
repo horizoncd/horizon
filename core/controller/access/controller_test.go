@@ -61,8 +61,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(ctx, db)
-	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 		ID:   uint(110),
 	})
@@ -96,7 +95,6 @@ func TestMain(m *testing.M) {
 
 // nolint
 func TestController_GetAccesses_Guest(t *testing.T) {
-
 	guest, err := manager.UserManager.Create(ctx, &usermodels.User{
 		Name: "guest",
 	})

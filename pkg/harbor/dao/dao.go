@@ -31,8 +31,7 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d *dao) Create(ctx context.Context, harbor *models.Harbor) (uint, error) {
-
-	result := d.db.Create(harbor)
+	result := d.db.WithContext(ctx).Create(harbor)
 
 	if result.Error != nil {
 		return 0, herrors.NewErrCreateFailed(herrors.HarborInDB, result.Error.Error())
@@ -42,7 +41,6 @@ func (d *dao) Create(ctx context.Context, harbor *models.Harbor) (uint, error) {
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Harbor, error) {
-
 	var harbor models.Harbor
 	result := d.db.WithContext(ctx).Raw(common.HarborGetByID, id).First(&harbor)
 
@@ -57,7 +55,6 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Harbor, error) {
 }
 
 func (d *dao) ListAll(ctx context.Context) ([]*models.Harbor, error) {
-
 	var harbors []*models.Harbor
 	result := d.db.WithContext(ctx).Raw(common.HarborListAll).Scan(&harbors)
 
@@ -78,7 +75,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, harbor *models.Harbor) er
 	harborInDB.Server = harbor.Server
 	harborInDB.Token = harbor.Token
 	harborInDB.PreheatPolicyID = harbor.PreheatPolicyID
-	result := d.db.Save(harborInDB)
+	result := d.db.WithContext(ctx).Save(harborInDB)
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.HarborInDB, result.Error.Error())
 	}
@@ -102,7 +99,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return herrors.ErrHarborUsedByRegions
 	}
 
-	result = d.db.Delete(&models.Harbor{}, id)
+	result = d.db.WithContext(ctx).Delete(&models.Harbor{}, id)
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.HarborInDB, result.Error.Error())
 	}

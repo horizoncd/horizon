@@ -44,7 +44,6 @@ func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
 
 // nolint
 func TestCreateAndUpdateGroupMember(t *testing.T) {
-
 	if err := db.AutoMigrate(&models.Member{}); err != nil {
 		panic(err)
 	}

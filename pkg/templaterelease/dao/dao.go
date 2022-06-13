@@ -23,7 +23,6 @@ func NewDAO(db *gorm.DB) DAO {
 type dao struct{ db *gorm.DB }
 
 func (d dao) Create(ctx context.Context, templateRelease *models.TemplateRelease) (*models.TemplateRelease, error) {
-
 	result := d.db.WithContext(ctx).Create(templateRelease)
 
 	if result.Error != nil {
@@ -33,7 +32,6 @@ func (d dao) Create(ctx context.Context, templateRelease *models.TemplateRelease
 }
 
 func (d dao) ListByTemplateName(ctx context.Context, templateName string) ([]*models.TemplateRelease, error) {
-
 	var trs []*models.TemplateRelease
 	result := d.db.WithContext(ctx).Raw(common.TemplateReleaseQueryByTemplateName, templateName).Scan(&trs)
 	if result.Error != nil {
@@ -44,7 +42,6 @@ func (d dao) ListByTemplateName(ctx context.Context, templateName string) ([]*mo
 
 func (d dao) GetByTemplateNameAndRelease(ctx context.Context,
 	templateName, release string) (*models.TemplateRelease, error) {
-
 	var tr models.TemplateRelease
 	result := d.db.WithContext(ctx).Raw(common.TemplateReleaseQueryByTemplateNameAndName,
 		templateName, release).First(&tr)

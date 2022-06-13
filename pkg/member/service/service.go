@@ -54,7 +54,8 @@ type service struct {
 	oauthManager              oauthmanager.Manager
 }
 
-func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manager, manager *managerparam.Manager) Service {
+func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manager,
+	manager *managerparam.Manager) Service {
 	return &service{
 		memberManager:             manager.MemberManager,
 		groupManager:              manager.GroupManager,

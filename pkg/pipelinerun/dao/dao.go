@@ -34,7 +34,6 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d *dao) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error) {
-
 	result := d.db.WithContext(ctx).Create(pipelinerun)
 
 	if result.Error != nil {
@@ -45,7 +44,6 @@ func (d *dao) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*mod
 }
 
 func (d *dao) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error) {
-
 	var pr models.Pipelinerun
 	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetByID, pipelinerunID).Scan(&pr)
 	if result.Error != nil {
@@ -58,8 +56,7 @@ func (d *dao) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipeline
 }
 
 func (d *dao) DeleteByID(ctx context.Context, pipelinerunID uint) error {
-
-	result := d.db.Exec(common.PipelinerunDeleteByID, pipelinerunID)
+	result := d.db.WithContext(ctx).Exec(common.PipelinerunDeleteByID, pipelinerunID)
 
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.PipelinerunInDB, result.Error.Error())
@@ -69,8 +66,7 @@ func (d *dao) DeleteByID(ctx context.Context, pipelinerunID uint) error {
 }
 
 func (d *dao) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error {
-
-	result := d.db.Exec(common.PipelinerunUpdateConfigCommitByID, commit, pipelinerunID)
+	result := d.db.WithContext(ctx).Exec(common.PipelinerunUpdateConfigCommitByID, commit, pipelinerunID)
 
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.PipelinerunInDB, result.Error.Error())
@@ -80,9 +76,9 @@ func (d *dao) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, co
 
 func (d *dao) GetLatestByClusterIDAndAction(ctx context.Context,
 	clusterID uint, action string) (*models.Pipelinerun, error) {
-
 	var pipelinerun models.Pipelinerun
-	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestByClusterIDAndAction, clusterID, action).Scan(&pipelinerun)
+	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestByClusterIDAndAction,
+		clusterID, action).Scan(&pipelinerun)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
 	}
@@ -94,7 +90,6 @@ func (d *dao) GetLatestByClusterIDAndAction(ctx context.Context,
 
 func (d *dao) GetLatestByClusterIDAndActionAndStatus(ctx context.Context,
 	clusterID uint, action string, status string) (*models.Pipelinerun, error) {
-
 	var pipelinerun models.Pipelinerun
 	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestByClusterIDAndActionAndStatus, clusterID,
 		action, status).Scan(&pipelinerun)
@@ -108,7 +103,6 @@ func (d *dao) GetLatestByClusterIDAndActionAndStatus(ctx context.Context,
 }
 
 func (d *dao) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
-
 	var pipelinerun models.Pipelinerun
 	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestSuccessByClusterID, clusterID).Scan(&pipelinerun)
 	if result.Error != nil {
@@ -121,8 +115,7 @@ func (d *dao) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (
 }
 
 func (d *dao) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {
-
-	res := d.db.Exec(common.PipelinerunUpdateResultByID, result.Result, result.S3Bucket,
+	res := d.db.WithContext(ctx).Exec(common.PipelinerunUpdateResultByID, result.Result, result.S3Bucket,
 		result.LogObject, result.PrObject, result.StartedAt, result.FinishedAt, pipelinerunID)
 
 	if res.Error != nil {
@@ -166,7 +159,6 @@ func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
 }
 
 func (d *dao) GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
-
 	var pipelinerun models.Pipelinerun
 	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetFirstCanRollbackByClusterID, clusterID).Scan(&pipelinerun)
 

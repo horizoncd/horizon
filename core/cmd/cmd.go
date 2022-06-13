@@ -358,7 +358,8 @@ func Run(flags *Flags) {
 		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
-		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl, coreConfig.Oauth.OauthHTMLLocation, scopeService)
+		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl,
+			coreConfig.Oauth.OauthHTMLLocation, scopeService)
 	)
 
 	// init server
@@ -377,7 +378,8 @@ func Run(flags *Flags) {
 		authenticate.Middleware(coreConfig.AccessSecretKeys, // authenticate middleware, check authentication
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-		usermiddle.Middleware(parameter, coreConfig.OIDCConfig, //  user middleware, check user and attach current user to context.
+		//  user middleware, check user and attach current user to context.
+		usermiddle.Middleware(parameter, coreConfig.OIDCConfig,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal"))),

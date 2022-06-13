@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 	}))
 	callbacks.RegisterCustomCallbacks(db)
 	// nolint
-	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})

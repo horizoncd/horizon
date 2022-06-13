@@ -21,13 +21,11 @@ func NewDAO(db *gorm.DB) DAO {
 type dao struct{ db *gorm.DB }
 
 func (d dao) Create(ctx context.Context, template *models.Template) (*models.Template, error) {
-
 	result := d.db.WithContext(ctx).Create(template)
 	return template, result.Error
 }
 
 func (d dao) List(ctx context.Context) ([]models.Template, error) {
-
 	var templates []models.Template
 	result := d.db.WithContext(ctx).Raw(common.TemplateQuery).Scan(&templates)
 	if result.Error != nil {

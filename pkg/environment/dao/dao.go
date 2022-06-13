@@ -40,7 +40,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 
 	// set displayName
 	environmentInDB.DisplayName = environment.DisplayName
-	res := d.db.Save(&environmentInDB)
+	res := d.db.WithContext(ctx).Save(&environmentInDB)
 	if res.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.EnvironmentInDB, res.Error.Error())
 	}
@@ -49,7 +49,6 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 }
 
 func (d *dao) CreateEnvironment(ctx context.Context, environment *models.Environment) (*models.Environment, error) {
-
 	result := d.db.WithContext(ctx).Create(environment)
 
 	if result.Error != nil {
@@ -60,7 +59,6 @@ func (d *dao) CreateEnvironment(ctx context.Context, environment *models.Environ
 }
 
 func (d *dao) ListAllEnvironment(ctx context.Context) ([]*models.Environment, error) {
-
 	var environments []*models.Environment
 
 	result := d.db.WithContext(ctx).Raw(common.EnvironmentListAll).Scan(&environments)
@@ -80,7 +78,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	}
 
 	// remove related resources from different tables
-	err = d.db.Transaction(func(tx *gorm.DB) error {
+	err = d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// remove records from applicationRegion table
 		res := tx.Where("environment_name = ?", environment.Name).Delete(&appregionmodels.ApplicationRegion{})
 		if res.Error != nil {
@@ -105,7 +103,6 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Environment, error) {
-
 	var environment models.Environment
 	result := d.db.WithContext(ctx).Raw(common.EnvironmentGetByID, id).First(&environment)
 

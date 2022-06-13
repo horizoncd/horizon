@@ -1,8 +1,8 @@
 # "horizon:O{AyroRA@@tcp(music-horizon-dev-jd-26519.rds.cn-east-p1.internal:3331)/horizon?charset=utf8mb4&parseTime=True&loc=Local"
 serverConfig:
-  port: 8181
+  port: 8080
 cloudEventServerConfig:
-  port: 8282
+  port: 8181
 dbConfig:
   host: music-horizon-dev-jd-26519.rds.cn-east-p1.internal
   port: 3331

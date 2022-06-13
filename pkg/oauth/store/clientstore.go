@@ -71,7 +71,8 @@ func (d *DBOauthAppStore) DeleteApp(ctx context.Context, clientID string) error 
 func (d *DBOauthAppStore) ListApp(ctx context.Context, ownerType models.OwnerType,
 	ownerID uint) ([]models.OauthApp, error) {
 	var oauthApps []models.OauthApp
-	if result := d.db.WithContext(ctx).Raw(common.SelectOauthAppByOwner, ownerType, ownerID).Scan(&oauthApps); result.Error != nil {
+	if result := d.db.WithContext(ctx).Raw(common.SelectOauthAppByOwner, ownerType,
+		ownerID).Scan(&oauthApps); result.Error != nil {
 		return nil, result.Error
 	}
 	return oauthApps, nil

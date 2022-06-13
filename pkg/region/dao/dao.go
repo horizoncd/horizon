@@ -68,7 +68,6 @@ func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.R
 
 // GetRegionByID implements DAO
 func (d *dao) GetRegionByID(ctx context.Context, id uint) (*models.Region, error) {
-
 	var region models.Region
 	result := d.db.WithContext(ctx).Raw(common.RegionGetByID, id).First(&region)
 
@@ -83,7 +82,6 @@ func (d *dao) GetRegionByID(ctx context.Context, id uint) (*models.Region, error
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) error {
-
 	// check en exist
 	regionInDB, err := d.GetRegionByID(ctx, id)
 	if err != nil {
@@ -97,7 +95,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) er
 	regionInDB.IngressDomain = region.IngressDomain
 	regionInDB.HarborID = region.HarborID
 	regionInDB.Disabled = region.Disabled
-	result := d.db.Save(regionInDB)
+	result := d.db.WithContext(ctx).Save(regionInDB)
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.RegionInDB, result.Error.Error())
 	}
@@ -106,7 +104,6 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) er
 }
 
 func (d *dao) Create(ctx context.Context, region *models.Region) (*models.Region, error) {
-
 	result := d.db.WithContext(ctx).Create(region)
 
 	if result.Error != nil {
@@ -117,7 +114,6 @@ func (d *dao) Create(ctx context.Context, region *models.Region) (*models.Region
 }
 
 func (d *dao) ListAll(ctx context.Context) ([]*models.Region, error) {
-
 	var regions []*models.Region
 	result := d.db.WithContext(ctx).Raw(common.RegionListAll).Scan(&regions)
 
@@ -129,7 +125,6 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.Region, error) {
 }
 
 func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region, error) {
-
 	var region models.Region
 	result := d.db.WithContext(ctx).Raw(common.RegionGetByName, regionName).First(&region)
 
@@ -159,7 +154,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	}
 
 	// remove related resources from different tables
-	err := d.db.Transaction(func(tx *gorm.DB) error {
+	err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// remove records from applicationRegion table
 		result := tx.Where("region_name = ?", regionInDB.Name).Delete(&appregionmodels.ApplicationRegion{})
 		if result.Error != nil {

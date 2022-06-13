@@ -60,7 +60,6 @@ func (d *dao) CountByGroupID(ctx context.Context, groupID uint) (int64, error) {
 }
 
 func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error) {
-
 	var applications []*models.Application
 	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByFuzzily, fmt.Sprintf("%%%s%%", name)).Scan(&applications)
 
@@ -84,7 +83,8 @@ func (d *dao) GetByNameFuzzilyByPagination(ctx context.Context, name string, que
 	offset := (query.PageNumber - 1) * query.PageSize
 	limit := query.PageSize
 
-	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByFuzzilyAndPagination, fmt.Sprintf("%%%s%%", name), limit, offset).
+	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByFuzzilyAndPagination,
+		fmt.Sprintf("%%%s%%", name), limit, offset).
 		Scan(&applications)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -99,7 +99,6 @@ func (d *dao) GetByNameFuzzilyByPagination(ctx context.Context, name string, que
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error) {
-
 	var application models.Application
 	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByID, id).First(&application)
 
@@ -114,7 +113,6 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error)
 }
 
 func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error) {
-
 	var applications []*models.Application
 	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByIDs, ids).Scan(&applications)
 
@@ -129,7 +127,6 @@ func (d *dao) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, 
 }
 
 func (d *dao) GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Application, error) {
-
 	var applications []*models.Application
 	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByGroupIDs, groupIDs).Scan(&applications)
 
@@ -144,7 +141,6 @@ func (d *dao) GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.App
 }
 
 func (d *dao) GetByName(ctx context.Context, name string) (*models.Application, error) {
-
 	var application models.Application
 	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByName, name).First(&application)
 
@@ -159,7 +155,6 @@ func (d *dao) GetByName(ctx context.Context, name string) (*models.Application, 
 }
 
 func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error) {
-
 	var applications []*models.Application
 	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByNamesUnderGroup, groupID, names).Scan(&applications)
 
@@ -175,7 +170,6 @@ func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []st
 
 func (d *dao) Create(ctx context.Context, application *models.Application,
 	extraMembers map[*usermodels.User]string) (*models.Application, error) {
-
 	err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// TODO: check the group exist
 
@@ -223,7 +217,6 @@ func (d *dao) Create(ctx context.Context, application *models.Application,
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error) {
-
 	var applicationInDB models.Application
 	if err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 1. get application in db first
@@ -262,7 +255,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return err
 	}
 
-	result := d.db.Exec(common.ApplicationDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
+	result := d.db.WithContext(ctx).Exec(common.ApplicationDeleteByID, time.Now().Unix(), currentUser.GetID(), id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
@@ -314,7 +307,8 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context,
 	limit := query.PageSize
 	like := "%" + name + "%"
 
-	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByUserAndNameFuzzily, userInfo, like, groupIDs, like, limit, offset).
+	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByUserAndNameFuzzily,
+		userInfo, like, groupIDs, like, limit, offset).
 		Scan(&applications)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -323,7 +317,8 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context,
 		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
-	result = d.db.WithContext(ctx).Raw(common.ApplicationCountByUserAndNameFuzzily, userInfo, like, groupIDs, like).Scan(&total)
+	result = d.db.WithContext(ctx).Raw(common.ApplicationCountByUserAndNameFuzzily, userInfo,
+		like, groupIDs, like).Scan(&total)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return 0, nil, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())

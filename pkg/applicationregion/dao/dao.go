@@ -25,9 +25,9 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d *dao) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.ApplicationRegion, error) {
-
 	var applicationRegions []*models.ApplicationRegion
-	result := d.db.WithContext(ctx).Raw(common.ApplicationRegionListByApplicationID, applicationID).Scan(&applicationRegions)
+	result := d.db.WithContext(ctx).Raw(common.ApplicationRegionListByApplicationID,
+		applicationID).Scan(&applicationRegions)
 
 	if result.Error != nil {
 		return nil, perror.Wrapf(result.Error,
@@ -41,7 +41,7 @@ func (d *dao) UpsertByApplicationID(ctx context.Context, applicationID uint,
 	applicationRegions []*models.ApplicationRegion) error {
 	var result *gorm.DB
 	if len(applicationRegions) == 0 {
-		result = d.db.Exec(common.ApplicationRegionDeleteAllByApplicationID, applicationID)
+		result = d.db.WithContext(ctx).Exec(common.ApplicationRegionDeleteAllByApplicationID, applicationID)
 		if result.Error != nil {
 			return perror.Wrapf(result.Error,
 				"failed to delete applicationRegions of applicationID: %d", applicationID)
