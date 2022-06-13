@@ -1,8 +1,8 @@
 # "horizon:O{AyroRA@@tcp(music-horizon-dev-jd-26519.rds.cn-east-p1.internal:3331)/horizon?charset=utf8mb4&parseTime=True&loc=Local"
 serverConfig:
-  port: 8181
+  port: 8080
 cloudEventServerConfig:
-  port: 8282
+  port: 8181
 dbConfig:
   host: music-horizon-dev-jd-26519.rds.cn-east-p1.internal
   port: 3331
@@ -52,7 +52,7 @@ tektonMapper:
     namespace: tekton-resources
     # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
     # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
-    kubeconfig: /Users/tomsun/.kube/config
+    kubeconfig: ""
     s3:
       accessKey: 
       secretKey: 
@@ -72,7 +72,9 @@ grafanaSLO:
     pipelineDashboard: "http://grafana.yf-dev2.netease.com/d/g40XAtbnk/horizon-pipeline-slo?orgId=1&kiosk&theme=light&var-env=%s"
 
 oauth:
-  oauthHTMLLocation: /Users/tomsun/Workspace/cloudmusic/code/horizon/horizon/core/http/api/v1/oauthserver/auth.html
+  # if you run horizon on local machine, you need to set this to the absolute path of your auth.html
+  # for example ${projectdir}/core/http/api/v1/oauthserver/auth.html
+  oauthHTMLLocation:
   authorizeCodeExpireIn: 10m
   accessTokenExpireIn: 24h
 
