@@ -68,13 +68,11 @@ func getGroup(parentID uint, name, path string) *models.Group {
 
 func init() {
 	// nolint
-	userCtx := context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})
 	callbacks.RegisterCustomCallbacks(db)
-
-	db = db.WithContext(userCtx)
 	// create table
 	err := db.AutoMigrate(&models.Group{})
 	if err != nil {
@@ -111,8 +109,6 @@ func init() {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
-
-	ctx = context.TODO()
 }
 
 func TestCreate(t *testing.T) {
