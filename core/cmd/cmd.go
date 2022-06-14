@@ -273,7 +273,7 @@ func Run(flags *Flags) {
 	var (
 		rbacSkippers = middleware.MethodAndPathSkipper("*",
 			regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
-				"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)"))
+				"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)"))
 
 		// init controller
 		memberCtl      = memberctl.NewController(mservice)
@@ -343,12 +343,13 @@ func Run(flags *Flags) {
 		authenticate.Middleware(config.AccessSecretKeys, // authenticate middleware, check authentication
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
+		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers),
 		usermiddle.Middleware(config.OIDCConfig, //  user middleware, check user and attach current user to context.
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal"))),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token"))),
 		auth.Middleware(rbacAuthorizer, rbacSkippers),
-		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers),
 		ormmiddle.MiddlewareSetUserContext(mysqlDB),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}

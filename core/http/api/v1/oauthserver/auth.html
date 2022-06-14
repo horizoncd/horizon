@@ -96,6 +96,7 @@
                       <input type="hidden" name="client_id" id="client_id" value="{{.ClientID }}" autocomplete="off">
                       <input type="hidden" name="redirect_uri" id="redirect_uri" value="{{ .RedirectURL }}" autocomplete="off">
                       <input type="hidden" name="state" id="state" value="{{ .State }}" autocomplete="off">
+                      <input type="hidden" name="scope" id="scope" value="{{ .Scope }}" autocomplete="off">
                       <div class="d-flex flex-justify-center">
                           <button type="submit" name="authorize" value="0" class="buttom-cancel">取消</button>
                           <button type="submit" name="authorize" value="1" class="buttom">
