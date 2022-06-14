@@ -154,6 +154,7 @@ components:
         access_token:
           $ref: "#/components/schemas/Access_Token"
         expires_in:
+          description: "The lifetime in seconds of the access token."
           type: number
           format: uint64
         scope:
@@ -163,7 +164,7 @@ components:
 
     Access_Token:
       type: string
-      description: the access token
+      description: The access token issued by the authorization server.
 
     Client_ID:
       type: string
