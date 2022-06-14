@@ -1,8 +1,8 @@
 defaultScope:
-  - application:read-write
+  - applications:read-write
   - clusters:read-write
 roles:
-  - name: application:read-only
+  - name: applications:read-only
     desc: 应用(application)及相关子资源的只读权限等
     rules:
       - apiGroups:
@@ -19,7 +19,7 @@ roles:
           - "*"
         nonResourceURLs:
           - "*"
-  - name: application:read-write
+  - name: applications:read-write
     desc: 应用(application)及其相关子资源的读写删权限
     rules:
       - apiGroups:
