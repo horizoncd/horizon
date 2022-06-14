@@ -17,6 +17,7 @@ const (
 	_pipeline    = "pipeline"
 	_task        = "task"
 	_result      = "result"
+	_template    = "template"
 )
 
 func init() {
@@ -27,19 +28,19 @@ func init() {
 		Name:    "horizon_pipelinerun_duration_seconds",
 		Help:    "PipelineRun duration info",
 		Buckets: buckets,
-	}, []string{_environment, _pipeline, _result})
+	}, []string{_environment, _template, _pipeline, _result})
 
 	_trHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_taskrun_duration_seconds",
 		Help:    "Taskrun duration info",
 		Buckets: buckets,
-	}, []string{_environment, _pipeline, _result, _task})
+	}, []string{_environment, _template, _pipeline, _result, _task})
 
 	_stepHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "horizon_step_duration_seconds",
 		Help:    "Step duration info",
 		Buckets: buckets,
-	}, []string{_environment, _pipeline, _result, _task, _step})
+	}, []string{_environment, _template, _pipeline, _result, _task, _step})
 }
 
 func Observe(results *PipelineResults) {
@@ -53,6 +54,7 @@ func Observe(results *PipelineResults) {
 
 	_prHistogram.With(prometheus.Labels{
 		_environment: prBusinessData.Environment,
+		_template:    prBusinessData.Template,
 		_pipeline:    prMetadata.Pipeline,
 		_result:      prResult.Result,
 	}).Observe(prResult.DurationSeconds)
@@ -60,6 +62,7 @@ func Observe(results *PipelineResults) {
 	for _, trResult := range trResults {
 		_trHistogram.With(prometheus.Labels{
 			_environment: prBusinessData.Environment,
+			_template:    prBusinessData.Template,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        trResult.Task,
 			_result:      trResult.Result,
@@ -69,6 +72,7 @@ func Observe(results *PipelineResults) {
 	for _, stepResult := range stepResults {
 		_stepHistogram.With(prometheus.Labels{
 			_environment: prBusinessData.Environment,
+			_template:    prBusinessData.Template,
 			_step:        stepResult.Step,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        stepResult.Task,

@@ -63,6 +63,7 @@ type (
 		PipelineJSONBlob map[string]interface{} `json:"pipelineJSONBlob"`
 		Region           string                 `json:"region"`
 		RegionID         uint                   `json:"regionID"`
+		Template         string                 `json:"template"`
 	}
 	PipelineRunGit struct {
 		URL       string `json:"url"`

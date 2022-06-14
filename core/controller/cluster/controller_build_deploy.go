@@ -119,6 +119,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		PipelineJSONBlob: clusterFiles.PipelineJSONBlob,
 		Region:           cluster.RegionName,
 		RegionID:         regionEntity.ID,
+		Template:         cluster.Template,
 	})
 	if err != nil {
 		return nil, err
