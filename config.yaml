@@ -52,7 +52,7 @@ tektonMapper:
     namespace: tekton-resources
     # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
     # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
-    kubeconfig: "/Users/tomsun/.kube/config"
+    kubeconfig: ""
     s3:
       accessKey: 
       secretKey: 
@@ -74,7 +74,7 @@ grafanaSLO:
 oauth:
   # if you run horizon on local machine, you need to set this to the absolute path of your auth.html
   # for example ${projectdir}/core/http/api/v1/oauthserver/auth.html
-  oauthHTMLLocation: /Users/tomsun/Workspace/cloudmusic/code/horizon/horizon/core/http/api/v1/oauthserver/auth.html
+  oauthHTMLLocation:
   authorizeCodeExpireIn: 10m
   accessTokenExpireIn: 24h
 
