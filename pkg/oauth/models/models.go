@@ -47,7 +47,7 @@ type OauthApp struct {
 	ClientID    string    `gorm:"column:client_id"`
 	RedirectURL string    `gorm:"column:redirect_url"`
 	HomeURL     string    `gorm:"column:home_url"`
-	Desc        string    `gorm:"column:desc"`
+	Desc        string    `gorm:"column:description"`
 	OwnerType   OwnerType `gorm:"column:owner_type"`
 	OwnerID     uint      `gorm:"column:owner_id"`
 	AppType     AppType   `gorm:"column:app_type"`
