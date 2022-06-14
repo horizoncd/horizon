@@ -35,7 +35,7 @@ import (
 )
 
 var (
-	authFileLoc               = "/Users/tomsun/Workspace/cloudmusic/code/horizon/horizon/core/http/api/v1/oauthserver/auth.html" // nolint
+	authFileLoc               = ""
 	aUser       userauth.User = &userauth.DefaultInfo{
 		Name:     "alias",
 		FullName: "alias",

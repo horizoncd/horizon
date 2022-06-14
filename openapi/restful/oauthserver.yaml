@@ -8,23 +8,35 @@ servers:
 paths:
   /login/oauth/authorize:
     get:
+      description: Issue an Authorization Request， ref oauth 2.0 Protocol Flow, https://datatracker.ietf.org/doc/html/rfc6749#section-1.2
       tags:
         - oauth
       parameters:
         - name: client_id
           in: query
-          description: the horizon app client_id
+          description: the oauth app client_id
+          required: true
           schema:
             type: string
         - name: redirect_url
           in: query
           description: the oauth redirect url after grant
           schema:
-            $ref:  "common.yaml#/components/schemas/"
+            $ref:  "common.yaml#/components/schemas/URL"
           required: true
         - name: state
           in: query
           description: This should contain a random string to protect against forgery attacks and could contain any other arbitrary data.
+          required: true
+          schema:
+            type: string
+        - name: scope
+          in: query
+          description: A space delimited list of scopes.
+            current supprt ["applications:read-only", "applications:read-write", "clusters:read-only", "clusters:read-write"]
+             defaults to an empty is ["applications:read-write", "clusters:read-write"]
+            refer https://docs.popo.netease.com/lingxi/188cc9677632447c86b2981052daf026#EneQ-1653471285656
+          required: false
           schema:
             type: string
       operationId: requestHorizonUserIdentity
@@ -33,7 +45,7 @@ paths:
         '200':
           description: "if not grant, return a grant html page"
         '302':
-          description: "case1: if not login, redirect to login page; case2: if granted, return redirect url"
+          description: "case1: if not login, redirect to login page; case2: if granted, return grant html page"
         default:
           description: Unexpected error
           content:
@@ -41,6 +53,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
     post:
+      description: Grant Authorization Request by Horizon User
       tags:
         - oauth
       operationId: requestHorizonUserIdentity
@@ -63,6 +76,7 @@ paths:
 
   /login/oauth/access_token:
     post:
+      description:  get an Access Token baed on the used granted Authorization code
       tags:
         - oauth
       operationId:  retrieveHorizonUserAccessToken
@@ -98,6 +112,12 @@ components:
 
     RetrieveHorizonUserAccessTokenForm:
       type: object
+      required:
+        - client_id
+        - client_secret
+        - code
+        - redirect_uri
+        - state
       properties:
         client_id:
           $ref: '#/components/schemas/Client_ID'
@@ -105,6 +125,7 @@ components:
           type: string
         code:
           type: string
+          description: "the authorize code get from Authorization Request"
         redirect_uri:
           $ref: "common.yaml#/components/schemas/URL"
         state:
@@ -112,6 +133,10 @@ components:
 
     RequestHorizonUserIdentityForm:
       type: object
+      required:
+        - client_id
+        - redirect_url
+        - state
       properties:
         client_id:
           $ref: '#/components/schemas/Client_ID'
@@ -120,6 +145,7 @@ components:
         state:
           $ref: '#/components/schemas/State'
         scope:
+          description: A space delimited list of scopes.
           type: string
 
     Token:
@@ -128,6 +154,7 @@ components:
         access_token:
           $ref: "#/components/schemas/Access_Token"
         expires_in:
+          description: "The lifetime in seconds of the access token."
           type: number
           format: uint64
         scope:
@@ -137,7 +164,7 @@ components:
 
     Access_Token:
       type: string
-      description: the access token
+      description: The access token issued by the authorization server.
 
     Client_ID:
       type: string
@@ -150,4 +177,3 @@ components:
     State:
       description: This should contain a random string to protect against forgery attacks and could contain any other arbitrary data.
       type: string
-
