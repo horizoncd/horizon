@@ -379,7 +379,8 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers),
-		usermiddle.Middleware(parameter, coreConfig.OIDCConfig, //  user middleware, check user and attach current user to context.
+		//  user middleware, check user and attach current user to context.
+		usermiddle.Middleware(parameter, coreConfig.OIDCConfig,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
