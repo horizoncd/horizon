@@ -213,6 +213,7 @@ var (
 
 	// ErrOAuthCodeExpired oauth authorization code  or access token expire
 	ErrOAuthCodeExpired               = errors.New("code expired")
+	ErrOAuthAccessTokenExpired        = errors.New("Access Token Expired")
 	ErrOAuthReqNotValid               = errors.New("oauth request not valid")
 	ErrOAuthAuthorizationCodeNotExist = errors.New("authorization code not exist")
 	ErrOAuthInternal                  = errors.New("oauth internal error")

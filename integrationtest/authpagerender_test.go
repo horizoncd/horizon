@@ -16,7 +16,10 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/oauth"
 	"g.hz.netease.com/horizon/core/controller/oauthapp"
+	oauthcheckctl "g.hz.netease.com/horizon/core/controller/oauthcheck"
+	clusterAPI "g.hz.netease.com/horizon/core/http/api/v1/cluster"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
+	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
@@ -44,7 +47,7 @@ var (
 	}
 	ctx                   = context.WithValue(context.Background(), common.UserContextKey(), aUser)
 	authorizeCodeExpireIn = time.Minute * 30
-	accessTokenExpireIn   = time.Hour * 24
+	accessTokenExpireIn   = time.Second * 3
 )
 
 func Test(t *testing.T) {
@@ -140,10 +143,18 @@ func TestServer(t *testing.T) {
 	userMiddleWare := func(c *gin.Context) {
 		common.SetUser(c, aUser)
 	}
+	oauthCheckerCtl := oauthcheckctl.NewOauthChecker(oauthManager, nil, nil)
+	middlewares := []gin.HandlerFunc{
+		oauthmiddle.MiddleWare(oauthCheckerCtl),
+		userMiddleWare,
+	}
+
 	// init server
 	r := gin.New()
-	r.Use(userMiddleWare)
+	r.Use(middlewares...)
+
 	oauthserver.RegisterRoutes(r, api)
+	clusterAPI.RegisterRoutes(r, nil)
 	ListenPort := ":18181"
 
 	go func() { log.Print(r.Run(ListenPort)) }()
@@ -208,4 +219,20 @@ func TestServer(t *testing.T) {
 	default:
 		assert.Fail(t, "unSupport")
 	}
+
+	//  token expired
+	time.Sleep(accessTokenExpireIn)
+	resourceURI := "/apis/core/v1/clusters/123"
+	req, err := http.NewRequest("GET", "http://localhost"+ListenPort+resourceURI, nil)
+	assert.Nil(t, err)
+	req.Header.Set(common.AuthorizationHeaderKey, common.TokenHeaderValuePrefix+" "+tokenResponse.AccessToken)
+	client := &http.Client{}
+	resp, err = client.Do(req)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+	bytes, err = ioutil.ReadAll(resp.Body)
+	t.Logf("%s", string(bytes))
+	assert.True(t, strings.Contains(string(bytes), common.CodeExpired))
+	assert.Nil(t, err)
+	assert.Equal(t, resp.StatusCode, http.StatusUnauthorized)
 }

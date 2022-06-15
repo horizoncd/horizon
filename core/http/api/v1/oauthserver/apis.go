@@ -251,9 +251,10 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 		case herrors.ErrOAuthReqNotValid:
 			fallthrough
 		case herrors.ErrOAuthAuthorizationCodeNotExist:
-			fallthrough
-		case herrors.ErrOAuthCodeExpired:
 			response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
+			return
+		case herrors.ErrOAuthCodeExpired:
+			response.AbortWithUnauthorized(c, common.CodeExpired, err.Error())
 			return
 		default:
 			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
