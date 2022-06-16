@@ -580,9 +580,6 @@ func Test(t *testing.T) {
 		ValueFiles:    []string{},
 	}).AnyTimes()
 	imageName := "image"
-	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{
-		Image: &imageName,
-	}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -767,6 +764,8 @@ func Test(t *testing.T) {
 	t.Logf("%s", string(b))
 
 	// test deploy
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, herrors.ErrPipelineOutputEmpty).Times(1)
+
 	deployResp, err := c.Deploy(ctx, resp.ID, &DeployRequest{
 		Title:       "deploy-title",
 		Description: "deploy-description",
@@ -774,12 +773,19 @@ func Test(t *testing.T) {
 	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
 	assert.Nil(t, deployResp)
 
-	_, err = manager.PipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
-		ClusterID: resp.ID,
-		Action:    prmodels.ActionBuildDeploy,
-		Status:    prmodels.ResultOK,
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{},
+		nil).Times(1)
+
+	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
+		Title:       "deploy-title",
+		Description: "deploy-description",
 	})
-	assert.Nil(t, err)
+	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
+	assert.Nil(t, deployResp)
+
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{
+		Image: &imageName,
+	}, nil).AnyTimes()
 
 	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
 		Title:       "deploy-title",

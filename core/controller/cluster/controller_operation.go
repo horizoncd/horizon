@@ -98,14 +98,16 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-	// if pipeline config exists, should build&deploy first
+	// if pipeline config exists && image is empty, should buildDeploy first
 	if len(clusterFiles.PipelineJSONBlob) > 0 {
-		pr, err := c.pipelinerunMgr.GetLatestByClusterIDAndActionAndStatus(ctx, clusterID,
-			prmodels.ActionBuildDeploy, prmodels.ResultOK)
+		po, err := c.clusterGitRepo.GetPipelineOutput(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
-			return nil, err
+			if perror.Cause(err) != herrors.ErrPipelineOutputEmpty {
+				return nil, err
+			}
+			return nil, herrors.ErrShouldBuildDeployFirst
 		}
-		if pr == nil {
+		if po == nil || po.Image == nil || *po.Image == "" {
 			return nil, herrors.ErrShouldBuildDeployFirst
 		}
 	}
@@ -136,11 +138,11 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 
 	// 3. create cluster in cd system
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return nil, err
 	}
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
 	}

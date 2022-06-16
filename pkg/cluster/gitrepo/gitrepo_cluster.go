@@ -134,7 +134,7 @@ type ClusterGitRepo interface {
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
 	// MergeBranch merge gitops branch to master branch, and return master branch's newest commit
 	MergeBranch(ctx context.Context, application, cluster string) (string, error)
-	GetPipelineOutput(ctx context.Context, pid interface{}, template string) (*PipelineOutput, error)
+	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (*PipelineOutput, error)
 	UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
 		pipelineOutputParam PipelineOutput) (string, error)
 	// UpdateRestartTime update restartTime in git repo for restart
@@ -600,9 +600,10 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	return mr.MergeCommitSHA, nil
 }
 
-func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, pid interface{},
+func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, cluster string,
 	template string) (*PipelineOutput, error) {
 	ret := make(map[string]*PipelineOutput)
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
 	if err != nil {
 		return nil, perror.WithMessage(err, "failed to get gitlab file")
@@ -639,7 +640,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
-	pipelineOutput, err := g.GetPipelineOutput(ctx, pid, template)
+	pipelineOutput, err := g.GetPipelineOutput(ctx, application, cluster, template)
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrPipelineOutputEmpty {
 			pipelineOutput = &pipelineOutputParam
