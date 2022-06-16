@@ -5,7 +5,7 @@ CREATE TABLE `tb_token`
     `client_id`              varchar(256) COMMENT 'oauth app client',
     `redirect_uri`           varchar(256),
     `state`                  varchar(256) COMMENT ' authorize_code state info',
-    `code`                   varchar(256)        NOT NULL COMMENT 'private-token-code/authorize_code/access_token/refresh-token',
+    `code`                   varchar(256) NOT NULL DEFAULT  '' COMMENT 'private-token-code/authorize_code/access_token/refresh-token',
     `created_at`             datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `expires_in`             bigint(20),
     `scope`                  varchar(256),
@@ -24,11 +24,11 @@ CREATE table `tb_oauth_app`
     `client_id`    varchar(128) COMMENT 'oauth app client',
     `redirect_url` varchar(256) COMMENT 'the authorization callback url',
     `home_url`     varchar(256) COMMENT 'the oauth app home url',
-    `desc`         varchar(256),
-    `app_type`     tinyint(1)          NOT NULL COMMENT '1 for HorizonOAuthAPP, 2 for DirectOAuthAPP',
-    `owner_type`   tinyint(1)          NOT NULL COMMENT '1 for group, 2 for user',
-    `owner_id`     bigint(20)          NOT NULL,
-    `created_at`   datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `description`         varchar(256) COMMENT 'the description of app',
+    `app_type`     tinyint(1)          NOT NULL DEFAULT 1 COMMENT '1 for HorizonOAuthAPP, 2 for DirectOAuthAPP',
+    `owner_type`   tinyint(1)          NOT NULL DEFAULT 1 COMMENT '1 for group, 2 for user',
+    `owner_id`     bigint(20) COMMENT 'group owner id',
+    `created_at`   datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT 'created_at',
     `created_by`   bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     `updated_at`   datetime                     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
     `updated_by`   bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
@@ -47,30 +47,3 @@ CREATE table `tb_oauth_client_secret`
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_client_id_secret` (`client_id`, `client_secret`)
 );
-
--- Horizon app table
-CREATE table `tb_horizon_app`
-(
-    `id`           bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-    `name`         varchar(128)        NOT NULL COMMENT 'name of horizon app',
-    `desc`         varchar(128) COMMENT 'desc of horizon app',
-    `home_url`     varchar(256) COMMENT 'the oauth app home url',
-    `oauth_app_id` bigint(20) unsigned NOT NULL COMMENT 'the oauth app of horizon app',
-    `owner_type`   tinyint(1)          NOT NULL COMMENT '1 for group, 2 for user',
-    `owner_id`     bigint(20)          NOT NULL,
-    `created_at`   datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `created_by`   bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
-    `updated_by`   bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater'
-);
-
--- Horizon permission table
-CREATE table `tb_horizon_app_permission`
-(
-    `id`             bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-    `horizon_app_id` bigint(20)          NOT NULL,
-    `permissions`    JSON COMMENT 'Horizon app permission list',
-    `created_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `created_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
-    `updated_by`     bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater'
-)
