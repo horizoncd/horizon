@@ -109,7 +109,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		clusterMgr:           param.ClusterMgr,
 		clusterGitRepo:       param.ClusterGitRepo,
 		applicationGitRepo:   param.ApplicationGitRepo,
-		commitGetter:         param.CommitGetter,
+		commitGetter:         param.GitGetter,
 		cd:                   param.Cd,
 		applicationMgr:       param.ApplicationManager,
 		applicationSvc:       param.ApplicationSvc,
