@@ -38,7 +38,7 @@ func NewDAO(db *gorm.DB) DAO {
 type dao struct{ db *gorm.DB }
 
 func (d *dao) Create(ctx context.Context, user *models.User) (*models.User, error) {
-	result := d.db.WithContext(ctx).WithContext(ctx).Create(user)
+	result := d.db.WithContext(ctx).Create(user)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.UserInDB, result.Error.Error())
