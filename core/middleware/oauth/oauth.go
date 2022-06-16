@@ -45,6 +45,7 @@ func MiddleWare(oauthCtl oauthcheck.Controller, skipMatchers ...middleware.Skipp
 				response.AbortWithUnauthorized(c, common.Unauthorized, e.Error())
 				return
 			}
+			response.AbortWithUnauthorized(c, common.InternalError, err.Error())
 			return
 		}
 

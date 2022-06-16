@@ -95,6 +95,7 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 				return
 			}
 		}
+		log.Error(c, err.Error())
 		response.AbortWithInternalError(c, err.Error())
 		return
 	}
@@ -193,6 +194,7 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 			causeErr := perror.Cause(err)
 			switch causeErr {
 			case herrors.ErrOAuthReqNotValid:
+				log.Warning(c, err.Error())
 				response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
 			default:
 				if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
@@ -201,6 +203,7 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 						return
 					}
 				}
+				log.Error(c, err.Error())
 				response.AbortWithInternalError(c, err.Error())
 			}
 		} else {
