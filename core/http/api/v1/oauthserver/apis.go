@@ -95,6 +95,7 @@ func (a *API) HandleAuthorizationGetReq(c *gin.Context) {
 				return
 			}
 		}
+		log.Error(c, err.Error())
 		response.AbortWithInternalError(c, err.Error())
 		return
 	}
@@ -193,6 +194,7 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 			causeErr := perror.Cause(err)
 			switch causeErr {
 			case herrors.ErrOAuthReqNotValid:
+				log.Warning(c, err.Error())
 				response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
 			default:
 				if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
@@ -201,6 +203,7 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 						return
 					}
 				}
+				log.Error(c, err.Error())
 				response.AbortWithInternalError(c, err.Error())
 			}
 		} else {
@@ -245,15 +248,17 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 	})
 	if err != nil {
 		causeErr := perror.Cause(err)
+		log.Warning(c, err.Error())
 		switch causeErr {
 		case herrors.ErrOAuthSecretNotValid:
 			fallthrough
 		case herrors.ErrOAuthReqNotValid:
 			fallthrough
 		case herrors.ErrOAuthAuthorizationCodeNotExist:
-			fallthrough
-		case herrors.ErrOAuthCodeExpired:
 			response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
+			return
+		case herrors.ErrOAuthCodeExpired:
+			response.AbortWithUnauthorized(c, common.CodeExpired, err.Error())
 			return
 		default:
 			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
@@ -263,6 +268,7 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 				}
 			}
 			response.AbortWithInternalError(c, err.Error())
+			log.Error(c, err.Error())
 			return
 		}
 	}
