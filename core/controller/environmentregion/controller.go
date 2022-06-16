@@ -3,14 +3,10 @@ package environmentregion
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	environmentregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	"g.hz.netease.com/horizon/pkg/environmentregion/models"
+	"g.hz.netease.com/horizon/pkg/param"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
-)
-
-var (
-	// Ctl global instance of the environment controller
-	Ctl = NewController()
 )
 
 type Controller interface {
@@ -23,15 +19,15 @@ type Controller interface {
 
 var _ Controller = (*controller)(nil)
 
-func NewController() Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		envRegionMgr: manager.Mgr,
-		regionMgr:    regionmanager.Mgr,
+		envRegionMgr: param.EnvRegionMgr,
+		regionMgr:    param.RegionMgr,
 	}
 }
 
 type controller struct {
-	envRegionMgr manager.Manager
+	envRegionMgr environmentregionmanager.Manager
 	regionMgr    regionmanager.Manager
 }
 

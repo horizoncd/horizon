@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 )
 
@@ -24,10 +25,10 @@ type Controller interface {
 }
 
 // NewController initializes a new group controller
-func NewController(memberService memberservice.Service) Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		memberService: memberService,
-		convertHelper: Converter,
+		memberService: param.MemberService,
+		convertHelper: New(param),
 	}
 }
 

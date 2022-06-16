@@ -9,11 +9,7 @@ import (
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-)
-
-var (
-	// Mgr is the global application manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 // nolint
@@ -40,11 +36,11 @@ type Manager interface {
 		name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error)
 }
 
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		applicationDAO: applicationdao.NewDAO(),
-		groupDAO:       groupdao.NewDAO(),
-		userDAO:        userdao.NewDAO(),
+		applicationDAO: applicationdao.NewDAO(db),
+		groupDAO:       groupdao.NewDAO(db),
+		userDAO:        userdao.NewDAO(db),
 	}
 }
 

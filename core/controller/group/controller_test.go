@@ -14,10 +14,11 @@ import (
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
@@ -29,8 +30,9 @@ import (
 var (
 	// use tmp sqlite
 	db, _    = orm.NewSqliteDB("")
-	ctx      = orm.NewContext(context.TODO(), db)
-	groupCtl = NewController(nil)
+	ctx      = context.TODO()
+	manager  = managerparam.InitManager(db)
+	groupCtl = NewController(&param.Param{Manager: manager})
 )
 
 func GroupValueEqual(g1, g2 *models.Group) bool {
@@ -49,12 +51,10 @@ func GroupValueEqual(g1, g2 *models.Group) bool {
 
 // nolint
 func init() {
-	userCtx := context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})
-	db = db.WithContext(userCtx)
-	ctx = orm.NewContext(userCtx, db)
 
 	// create table
 	err := db.AutoMigrate(&models.Group{})
@@ -80,7 +80,10 @@ func TestGetAuthedGroups(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	memberMock := membermock.NewMockService(mockCtrl)
-	myGroupCtl := NewController(memberMock)
+	myGroupCtl := NewController(&param.Param{
+		Manager:       manager,
+		MemberService: memberMock,
+	})
 
 	type args struct {
 		ctx      context.Context
@@ -140,12 +143,12 @@ func TestGetAuthedGroups(t *testing.T) {
 				return
 			}
 			if err == nil {
-				group, _ := manager.Mgr.GetByID(ctx, got)
+				group, _ := manager.GroupManager.GetByID(ctx, got)
 				var traversalIDs string
 				if group.ParentID == 0 {
 					traversalIDs = strconv.Itoa(int(got))
 				} else {
-					parent, _ := manager.Mgr.GetByID(ctx, tt.args.newGroup.ParentID)
+					parent, _ := manager.GroupManager.GetByID(ctx, tt.args.newGroup.ParentID)
 					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
 				}
 
@@ -271,12 +274,12 @@ func TestControllerCreateGroup(t *testing.T) {
 				return
 			}
 			if err == nil {
-				group, _ := manager.Mgr.GetByID(ctx, got)
+				group, _ := manager.GroupManager.GetByID(ctx, got)
 				var traversalIDs string
 				if group.ParentID == 0 {
 					traversalIDs = strconv.Itoa(int(got))
 				} else {
-					parent, _ := manager.Mgr.GetByID(ctx, tt.args.newGroup.ParentID)
+					parent, _ := manager.GroupManager.GetByID(ctx, tt.args.newGroup.ParentID)
 					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
 				}
 
@@ -324,12 +327,12 @@ func TestControllerCreateGroup(t *testing.T) {
 				return
 			}
 			if err == nil {
-				group, _ := manager.Mgr.GetByID(ctx, got)
+				group, _ := manager.GroupManager.GetByID(ctx, got)
 				var traversalIDs string
 				if group.ParentID == 0 {
 					traversalIDs = strconv.Itoa(int(got))
 				} else {
-					parent, _ := manager.Mgr.GetByID(ctx, tt.args.newGroup.ParentID)
+					parent, _ := manager.GroupManager.GetByID(ctx, tt.args.newGroup.ParentID)
 					traversalIDs = fmt.Sprintf("%s,%d", parent.TraversalIDs, got)
 				}
 
@@ -408,7 +411,7 @@ func TestControllerGetByID(t *testing.T) {
 	id, err := groupCtl.CreateGroup(ctx, newRootGroup)
 	assert.Nil(t, err)
 
-	group, err := manager.Mgr.GetByID(ctx, id)
+	group, err := manager.GroupManager.GetByID(ctx, id)
 
 	assert.Nil(t, err)
 
@@ -481,7 +484,7 @@ func TestControllerGetByPath(t *testing.T) {
 	assert.Nil(t, err)
 	child, err := groupCtl.GetByID(ctx, id)
 	assert.Nil(t, err)
-	applicationDAO := applicationdao.NewDAO()
+	applicationDAO := applicationdao.NewDAO(db)
 	app, err := applicationDAO.Create(ctx, &appmodels.Application{
 		GroupID:     id,
 		Name:        "app",
@@ -583,7 +586,7 @@ func TestControllerGetChildren(t *testing.T) {
 	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
 	group2, _ := groupCtl.GetByID(ctx, id2)
 
-	applicationDAO := applicationdao.NewDAO()
+	applicationDAO := applicationdao.NewDAO(db)
 	app, err := applicationDAO.Create(ctx, &appmodels.Application{
 		GroupID: id,
 		Name:    "c",
@@ -780,7 +783,7 @@ func TestControllerSearchChildren(t *testing.T) {
 	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
 	_, _ = groupCtl.GetByID(ctx, id2)
 
-	applicationDAO := applicationdao.NewDAO()
+	applicationDAO := applicationdao.NewDAO(db)
 	app, err := applicationDAO.Create(ctx, &appmodels.Application{
 		GroupID: id,
 		Name:    "c",
@@ -1077,7 +1080,7 @@ func TestControllerTransfer(t *testing.T) {
 	}
 
 	// check transfer success
-	g, err := manager.Mgr.GetByID(ctx, id)
+	g, err := manager.GroupManager.GetByID(ctx, id)
 
 	assert.Nil(t, err)
 	assert.Equal(t, id3, g.ParentID)
@@ -1146,7 +1149,7 @@ func TestControllerUpdateBasic(t *testing.T) {
 			if err := groupCtl.UpdateBasic(tt.args.ctx, tt.args.id, tt.args.updateGroup); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateBasic() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			group, _ := manager.Mgr.GetByID(ctx, tt.args.id)
+			group, _ := manager.GroupManager.GetByID(ctx, tt.args.id)
 
 			if group != nil {
 				if group.ID > 0 {

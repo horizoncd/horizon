@@ -22,8 +22,8 @@ type API struct {
 	environmentRegionCtl environmentregion.Controller
 }
 
-func NewAPI() *API {
-	return &API{environmentRegionCtl: environmentregion.Ctl}
+func NewAPI(ctl environmentregion.Controller) *API {
+	return &API{environmentRegionCtl: ctl}
 }
 
 func (a *API) List(c *gin.Context) {

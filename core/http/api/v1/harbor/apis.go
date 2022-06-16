@@ -21,8 +21,8 @@ type API struct {
 	harborCtl harbor.Controller
 }
 
-func NewAPI() *API {
-	return &API{harborCtl: harbor.Ctl}
+func NewAPI(ctl harbor.Controller) *API {
+	return &API{harborCtl: ctl}
 }
 
 func (a *API) ListAll(c *gin.Context) {

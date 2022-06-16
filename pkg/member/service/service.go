@@ -9,12 +9,13 @@ import (
 	herror "g.hz.netease.com/horizon/core/errors"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	applicationclustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/member"
 	memberctx "g.hz.netease.com/horizon/pkg/member/context"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	pipelinerunmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -47,19 +48,20 @@ type service struct {
 	memberManager             member.Manager
 	groupManager              groupmanager.Manager
 	applicationManager        applicationmanager.Manager
-	applicationClusterManager applicationclustermanager.Manager
+	applicationClusterManager clustermanager.Manager
 	pipelineManager           pipelinerunmanager.Manager
 	roleService               roleservice.Service
 	oauthManager              oauthmanager.Manager
 }
 
-func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manager) Service {
+func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manager,
+	manager *managerparam.Manager) Service {
 	return &service{
-		memberManager:             member.Mgr,
-		groupManager:              groupmanager.Mgr,
-		applicationManager:        applicationmanager.Mgr,
-		applicationClusterManager: applicationclustermanager.Mgr,
-		pipelineManager:           pipelinerunmanager.Mgr,
+		memberManager:             manager.MemberManager,
+		groupManager:              manager.GroupManager,
+		applicationManager:        manager.ApplicationManager,
+		applicationClusterManager: manager.ClusterMgr,
+		pipelineManager:           manager.PipelinerunMgr,
 		roleService:               roleService,
 		oauthManager:              oauthManager,
 	}

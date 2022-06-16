@@ -6,8 +6,9 @@ import (
 	"net/http"
 
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
-	"g.hz.netease.com/horizon/pkg/application/manager"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
+	"g.hz.netease.com/horizon/pkg/param"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
@@ -22,17 +23,16 @@ type Controller interface {
 type controller struct {
 	applicationGitRepo   gitrepo.ApplicationGitRepo
 	templateSchemaGetter templateschema.Getter
-	applicationMgr       manager.Manager
+	applicationMgr       applicationmanager.Manager
 	envMgr               envmanager.Manager
 }
 
-func NewController(applicationGitRepo gitrepo.ApplicationGitRepo,
-	templateSchemaGetter templateschema.Getter) Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		applicationGitRepo:   applicationGitRepo,
-		templateSchemaGetter: templateSchemaGetter,
-		applicationMgr:       manager.Mgr,
-		envMgr:               envmanager.Mgr,
+		applicationGitRepo:   param.ApplicationGitRepo,
+		templateSchemaGetter: param.TemplateSchemaGetter,
+		applicationMgr:       param.ApplicationManager,
+		envMgr:               param.EnvMgr,
 	}
 }
 

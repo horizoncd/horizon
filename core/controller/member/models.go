@@ -11,13 +11,9 @@ import (
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
+	"g.hz.netease.com/horizon/pkg/param"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-)
-
-var (
-	// Converter us tge global member converter
-	Converter = New()
 )
 
 type UpdateMember struct {
@@ -86,12 +82,18 @@ type ConvertMemberHelp interface {
 }
 
 type converter struct {
-	userManager usermanager.Manager
+	userManager    usermanager.Manager
+	groupSvc       groupservice.Service
+	applicationSvc applicationservice.Service
+	clusterSvc     clusterservice.Service
 }
 
-func New() ConvertMemberHelp {
+func New(param *param.Param) ConvertMemberHelp {
 	return &converter{
-		userManager: usermanager.Mgr,
+		userManager:    param.UserManager,
+		groupSvc:       param.GroupSvc,
+		applicationSvc: param.ApplicationSvc,
+		clusterSvc:     param.ClusterSvc,
 	}
 }
 
@@ -148,21 +150,21 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 		var resourceName, resourcePath string
 		switch member.ResourceType {
 		case models.TypeGroup:
-			group, err := groupservice.Svc.GetChildByID(ctx, member.ResourceID)
+			group, err := c.groupSvc.GetChildByID(ctx, member.ResourceID)
 			if err != nil {
 				return nil, err
 			}
 			resourceName = group.Name
 			resourcePath = group.FullPath
 		case models.TypeApplication:
-			application, err := applicationservice.Svc.GetByID(ctx, member.ResourceID)
+			application, err := c.applicationSvc.GetByID(ctx, member.ResourceID)
 			if err != nil {
 				return nil, err
 			}
 			resourceName = application.Name
 			resourcePath = application.FullPath
 		case models.TypeApplicationCluster:
-			cluster, err := clusterservice.Svc.GetByID(ctx, member.ResourceID)
+			cluster, err := c.clusterSvc.GetByID(ctx, member.ResourceID)
 			if err != nil {
 				return nil, err
 			}

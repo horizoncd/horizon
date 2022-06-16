@@ -1,4 +1,4 @@
-package cmd
+package config
 
 import (
 	"io/ioutil"
@@ -36,7 +36,7 @@ type Config struct {
 	Oauth                  oauth.Server            `yaml:"oauth"`
 }
 
-func loadConfig(configFilePath string) (*Config, error) {
+func LoadConfig(configFilePath string) (*Config, error) {
 	var config Config
 	data, err := ioutil.ReadFile(configFilePath)
 	if err != nil {

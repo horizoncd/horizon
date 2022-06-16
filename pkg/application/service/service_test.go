@@ -7,17 +7,18 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	groupModels "g.hz.netease.com/horizon/pkg/group/models"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
 	// use tmp sqlite
-	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(context.TODO(), db)
+	db, _   = orm.NewSqliteDB("")
+	ctx     = context.TODO()
+	manager = managerparam.InitManager(db)
 )
 
 // nolint
@@ -46,8 +47,8 @@ func TestServiceGetByID(t *testing.T) {
 
 	t.Run("GetByID", func(t *testing.T) {
 		s := service{
-			groupService:       groupservice.Svc,
-			applicationManager: manager.Mgr,
+			groupService:       groupservice.NewService(manager),
+			applicationManager: manager.ApplicationManager,
 		}
 		result, err := s.GetByID(ctx, application.ID)
 		assert.Nil(t, err)
@@ -56,8 +57,8 @@ func TestServiceGetByID(t *testing.T) {
 
 	t.Run("GetByIDs", func(t *testing.T) {
 		s := service{
-			groupService:       groupservice.Svc,
-			applicationManager: manager.Mgr,
+			groupService:       groupservice.NewService(manager),
+			applicationManager: manager.ApplicationManager,
 		}
 		result, err := s.GetByIDs(ctx, []uint{application.ID})
 		assert.Nil(t, err)

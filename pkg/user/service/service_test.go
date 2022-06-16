@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/lib/orm"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/stretchr/testify/assert"
@@ -14,21 +14,23 @@ import (
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db      *gorm.DB
+	ctx     context.Context
+	manager *managerparam.Manager
 )
 
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&models.User{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	os.Exit(m.Run())
 }
 
 func Test_service_CheckUsersExists(t *testing.T) {
-	userManger := usermanager.Mgr
+	userManger := manager.UserManager
 	_, err := userManger.Create(ctx, &models.User{
 		Name:  "tony",
 		Email: "tony@corp.com",
@@ -41,7 +43,7 @@ func Test_service_CheckUsersExists(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	svc := NewService()
+	svc := NewService(manager)
 	err = svc.CheckUsersExists(ctx, []string{"tony@corp.com"})
 	assert.Nil(t, err)
 

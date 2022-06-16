@@ -14,12 +14,12 @@ import (
 	"g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _ = orm.NewSqliteDB("")
+	ctx   context.Context
+	mgr   = New(db)
 )
 
 func Test(t *testing.T) {
@@ -29,7 +29,7 @@ func Test(t *testing.T) {
 		oidcID   = "H12323"
 		oidcType = "ne"
 	)
-	u, err := Mgr.Create(ctx, &models.User{
+	u, err := mgr.Create(ctx, &models.User{
 		Name:     name,
 		Email:    email,
 		OIDCId:   oidcID,
@@ -44,7 +44,7 @@ func Test(t *testing.T) {
 	}
 	t.Logf(string(b))
 
-	u2, err := Mgr.GetByOIDCMeta(ctx, oidcType, email)
+	u2, err := mgr.GetByOIDCMeta(ctx, oidcType, email)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,22 +52,22 @@ func Test(t *testing.T) {
 	assert.Equal(t, email, u2.Email)
 
 	// user not exits
-	u3, err := Mgr.GetByOIDCMeta(ctx, "not-exist", "not-exist")
+	u3, err := mgr.GetByOIDCMeta(ctx, "not-exist", "not-exist")
 	assert.Nil(t, err)
 	assert.Nil(t, u3)
 
-	u4, err := Mgr.GetUserByEmail(ctx, email)
+	u4, err := mgr.GetUserByEmail(ctx, email)
 	assert.Nil(t, err)
 	assert.NotNil(t, u4)
 	assert.Equal(t, u4.Name, name)
 
-	users, err := Mgr.GetUserByIDs(ctx, []uint{u4.ID})
+	users, err := mgr.GetUserByIDs(ctx, []uint{u4.ID})
 	assert.Nil(t, err)
 	assert.NotNil(t, users)
 	assert.Equal(t, 1, len(users))
 	assert.Equal(t, u4.Name, users[0].Name)
 
-	userMap, err := Mgr.GetUserMapByIDs(ctx, []uint{u4.ID})
+	userMap, err := mgr.GetUserMapByIDs(ctx, []uint{u4.ID})
 	assert.Nil(t, err)
 	assert.NotNil(t, userMap)
 	assert.Equal(t, 1, len(userMap))
@@ -82,7 +82,7 @@ func TestSearchUser(t *testing.T) {
 		err error
 	)
 	for i := 0; i < 10; i++ {
-		_, err = Mgr.Create(ctx, &models.User{
+		_, err = mgr.Create(ctx, &models.User{
 			Name:     fmt.Sprintf("%s%d", name1, i),
 			Email:    fmt.Sprintf("%s%d@163.com", name1, i),
 			FullName: fmt.Sprintf("%s%d", strings.ToUpper(name1), i),
@@ -93,7 +93,7 @@ func TestSearchUser(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = Mgr.Create(ctx, &models.User{
+		_, err = mgr.Create(ctx, &models.User{
 			Name:     fmt.Sprintf("%s%d", name2, i),
 			Email:    fmt.Sprintf("%s%d@163.com", name2, i),
 			FullName: fmt.Sprintf("%s%d", strings.ToUpper(name2), i),
@@ -105,7 +105,7 @@ func TestSearchUser(t *testing.T) {
 		}
 	}
 
-	count, users, err := Mgr.SearchUser(ctx, name1, &q.Query{
+	count, users, err := mgr.SearchUser(ctx, name1, &q.Query{
 		PageNumber: 1,
 		PageSize:   5,
 	})
@@ -117,7 +117,7 @@ func TestSearchUser(t *testing.T) {
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = Mgr.SearchUser(ctx, name1, &q.Query{
+	count, users, err = mgr.SearchUser(ctx, name1, &q.Query{
 		PageNumber: 2,
 		PageSize:   5,
 	})
@@ -129,7 +129,7 @@ func TestSearchUser(t *testing.T) {
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = Mgr.SearchUser(ctx, name2, &q.Query{
+	count, users, err = mgr.SearchUser(ctx, name2, &q.Query{
 		PageNumber: 0,
 		PageSize:   3,
 	})
@@ -141,7 +141,7 @@ func TestSearchUser(t *testing.T) {
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = Mgr.SearchUser(ctx, "5", &q.Query{
+	count, users, err = mgr.SearchUser(ctx, "5", &q.Query{
 		PageNumber: 0,
 		PageSize:   3,
 	})
@@ -153,7 +153,7 @@ func TestSearchUser(t *testing.T) {
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = Mgr.SearchUser(ctx, "e", nil)
+	count, users, err = mgr.SearchUser(ctx, "e", nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 20, len(users))
 	assert.Equal(t, 20, count)
@@ -164,10 +164,9 @@ func TestSearchUser(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.User{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	os.Exit(m.Run())
 }

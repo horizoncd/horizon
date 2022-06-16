@@ -15,64 +15,67 @@ import (
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _        = orm.NewSqliteDB("")
+	regionMgr    = regionmanager.New(db)
+	ctx          context.Context
+	mgr          = New(db)
+	appregionMgr = appregionmanager.New(db)
+	envregionMgr = envregionmanager.New(db)
 )
 
 func Test(t *testing.T) {
-	_, err := regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+	_, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
 	})
 	assert.Nil(t, err)
 
-	_, err = regionmanager.Mgr.Create(ctx, &regionmodels.Region{
+	_, err = regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz-update",
 		DisplayName: "HZ",
 	})
 	assert.Nil(t, err)
 
-	onlineEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
+	onlineEnv, err := mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "online",
 		DisplayName: "线上",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", onlineEnv)
-	err = Mgr.UpdateByID(ctx, onlineEnv.ID, &models.Environment{
+	err = mgr.UpdateByID(ctx, onlineEnv.ID, &models.Environment{
 		Name:        "online-update",
 		DisplayName: "线上-update",
 	})
 	assert.Nil(t, err)
-	env, err := Mgr.GetByID(ctx, onlineEnv.ID)
+	env, err := mgr.GetByID(ctx, onlineEnv.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, env.DisplayName, "线上-update")
 
-	preEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
+	preEnv, err := mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "pre",
 		DisplayName: "预发",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", preEnv)
 
-	testEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
+	testEnv, err := mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "test",
 		DisplayName: "测试",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", testEnv)
 
-	devEnv, err := Mgr.CreateEnvironment(ctx, &models.Environment{
+	devEnv, err := mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "dev",
 		DisplayName: "开发",
 	})
 	assert.Nil(t, err)
 	t.Logf("%v", devEnv)
 
-	envs, err := Mgr.ListAllEnvironment(ctx)
+	envs, err := mgr.ListAllEnvironment(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, len(envs), 4)
 	t.Logf("%v", envs[0])
@@ -80,7 +83,7 @@ func Test(t *testing.T) {
 	t.Logf("%v", envs[2])
 	t.Logf("%v", envs[3])
 
-	err = appregionmanager.Mgr.UpsertByApplicationID(ctx, uint(1), []*appregionmodels.ApplicationRegion{
+	err = appregionMgr.UpsertByApplicationID(ctx, uint(1), []*appregionmodels.ApplicationRegion{
 		{
 			ID:              0,
 			ApplicationID:   uint(1),
@@ -89,29 +92,28 @@ func Test(t *testing.T) {
 		},
 	})
 	assert.Nil(t, err)
-	_, err = envregionmanager.Mgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+	_, err = envregionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
 		EnvironmentName: "dev",
 		RegionName:      "hz",
 	})
 	assert.Nil(t, err)
-	regionParts, err := envregionmanager.Mgr.ListEnabledRegionsByEnvironment(ctx, "dev")
+	regionParts, err := envregionMgr.ListEnabledRegionsByEnvironment(ctx, "dev")
 	assert.Nil(t, err)
 	assert.Equal(t, len(regionParts), 1)
 	assert.Equal(t, regionParts[0].Name, "hz")
 	assert.Equal(t, regionParts[0].DisplayName, "HZ")
 
-	err = Mgr.DeleteByID(ctx, devEnv.ID)
+	err = mgr.DeleteByID(ctx, devEnv.ID)
 	assert.Nil(t, err)
 
-	applicationRegions, _ := appregionmanager.Mgr.ListByApplicationID(ctx, uint(1))
+	applicationRegions, _ := appregionMgr.ListByApplicationID(ctx, uint(1))
 	assert.Empty(t, applicationRegions)
 
-	regions, _ := envregionmanager.Mgr.ListByEnvironment(ctx, devEnv.Name)
+	regions, _ := envregionMgr.ListByEnvironment(ctx, devEnv.Name)
 	assert.Empty(t, regions)
 }
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Environment{}); err != nil {
 		panic(err)
 	}
@@ -127,6 +129,6 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&envregionmodels.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	os.Exit(m.Run())
 }

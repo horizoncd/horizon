@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/pkg/param"
 
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/templateschematag/manager"
+	templateschematagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -17,13 +18,13 @@ type Controller interface {
 
 type controller struct {
 	clusterMgr          clustermanager.Manager
-	clusterSchemaTagMgr manager.Manager
+	clusterSchemaTagMgr templateschematagmanager.Manager
 }
 
-func NewController() Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		clusterMgr:          clustermanager.Mgr,
-		clusterSchemaTagMgr: manager.Mgr,
+		clusterMgr:          param.ClusterMgr,
+		clusterSchemaTagMgr: param.ClusterSchemaTagMgr,
 	}
 }
 
@@ -50,7 +51,7 @@ func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateReques
 
 	clusterTemplateSchemaTags := r.toClusterTemplateSchemaTags(clusterID, currentUser)
 
-	if err := manager.ValidateUpsert(clusterTemplateSchemaTags); err != nil {
+	if err := templateschematagmanager.ValidateUpsert(clusterTemplateSchemaTags); err != nil {
 		return err
 	}
 

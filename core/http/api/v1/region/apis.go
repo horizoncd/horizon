@@ -25,9 +25,9 @@ type API struct {
 	tagCtl    tag.Controller
 }
 
-func NewAPI(tagCtl tag.Controller) *API {
+func NewAPI(ctl region.Controller, tagCtl tag.Controller) *API {
 	return &API{
-		regionCtl: region.Ctl,
+		regionCtl: ctl,
 		tagCtl:    tagCtl,
 	}
 }

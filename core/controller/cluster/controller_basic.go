@@ -10,7 +10,6 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
@@ -658,18 +657,12 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 	if err != nil {
 		log.Errorf(ctx, "failed to get request id from context")
 	}
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		log.Errorf(ctx, "failed to get db from context")
-		return
-	}
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return
 	}
 
 	newctx := log.WithContext(context.Background(), rid)
-	newctx = orm.NewContext(newctx, db)
 	newctx = common.WithContext(newctx, currentUser)
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
@@ -745,17 +738,11 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	if err != nil {
 		log.Errorf(ctx, "failed to get request id from context")
 	}
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		log.Errorf(ctx, "failed to get db from context")
-		return
-	}
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return
 	}
 	newctx := log.WithContext(context.Background(), rid)
-	newctx = orm.NewContext(newctx, db)
 	newctx = common.WithContext(newctx, currentUser)
 	// delete cluster asynchronously, if any error occurs, ignore and return
 	go func() {
@@ -825,7 +812,7 @@ func (c *controller) customizeTemplateInfo(ctx context.Context,
 }
 
 func (c *controller) getRenderValueFromTag(ctx context.Context, clusterID uint) (map[string]string, error) {
-	tags, err := c.tagManager.ListByClusterID(ctx, clusterID)
+	tags, err := c.schemaTagManager.ListByClusterID(ctx, clusterID)
 	if err != nil {
 		return nil, err
 	}

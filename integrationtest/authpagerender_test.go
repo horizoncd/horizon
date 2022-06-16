@@ -24,12 +24,13 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
 	"g.hz.netease.com/horizon/pkg/oauth/generate"
-	"g.hz.netease.com/horizon/pkg/oauth/manager"
+	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/oauth/models"
 	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/oauth/store"
+	"g.hz.netease.com/horizon/pkg/param"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -48,6 +49,7 @@ var (
 	ctx                   = context.WithValue(context.Background(), common.UserContextKey(), aUser)
 	authorizeCodeExpireIn = time.Minute * 30
 	accessTokenExpireIn   = time.Second * 3
+	manager               *managerparam.Manager
 )
 
 func Test(t *testing.T) {
@@ -93,6 +95,7 @@ func createOauthScopeConfig() oauthconfig.Scopes {
 
 func TestServer(t *testing.T) {
 	db, _ := orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
 		panic(err)
 	}
@@ -102,7 +105,7 @@ func TestServer(t *testing.T) {
 	tokenStore := store.NewTokenStore(db)
 	oauthAppStore := store.NewOauthAppStore(db)
 
-	oauthManager := manager.NewManager(oauthAppStore, tokenStore, generate.NewAuthorizeGenerate(),
+	oauthManager := oauthmanager.NewManager(oauthAppStore, tokenStore, generate.NewAuthorizeGenerate(),
 		authorizeCodeExpireIn, accessTokenExpireIn)
 	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
 	clientIDGen := func(appType models.AppType) string {
@@ -114,7 +117,7 @@ func TestServer(t *testing.T) {
 	t.Logf("client secret is %s", secret.ClientSecret)
 
 	oauthManager.SetClientIDGenerate(clientIDGen)
-	createReq := &manager.CreateOAuthAppReq{
+	createReq := &oauthmanager.CreateOAuthAppReq{
 		Name:        "Overmind",
 		RedirectURI: "http://localhost:8083/auth/callback",
 		HomeURL:     "http://localhost:8083",
@@ -131,9 +134,9 @@ func TestServer(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, authGetApp.ClientID, authApp.ClientID)
 
-	oauthServerController := oauth.NewController(oauthManager)
+	oauthServerController := oauth.NewController(&param.Param{Manager: manager})
 
-	oauthAppController := oauthapp.NewController(oauthManager, usermanager.New())
+	oauthAppController := oauthapp.NewController(&param.Param{Manager: manager})
 
 	authScopeService, err := scope.NewFileScopeService(createOauthScopeConfig())
 	assert.Nil(t, err)
@@ -143,7 +146,7 @@ func TestServer(t *testing.T) {
 	userMiddleWare := func(c *gin.Context) {
 		common.SetUser(c, aUser)
 	}
-	oauthCheckerCtl := oauthcheckctl.NewOauthChecker(oauthManager, nil, nil)
+	oauthCheckerCtl := oauthcheckctl.NewOauthChecker(&param.Param{Manager: manager})
 	middlewares := []gin.HandlerFunc{
 		oauthmiddle.MiddleWare(oauthCheckerCtl),
 		userMiddleWare,

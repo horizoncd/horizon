@@ -10,11 +10,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/region/models"
 	tagdao "g.hz.netease.com/horizon/pkg/tag/dao"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
-)
-
-var (
-	// Mgr is the global region manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 type Manager interface {
@@ -42,11 +38,11 @@ type manager struct {
 	tagDAO    tagdao.DAO
 }
 
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		regionDAO: regiondao.NewDAO(),
-		harborDAO: harbordao.NewDAO(),
-		tagDAO:    tagdao.NewDAO(),
+		regionDAO: regiondao.NewDAO(db),
+		harborDAO: harbordao.NewDAO(db),
+		tagDAO:    tagdao.NewDAO(db),
 	}
 }
 
