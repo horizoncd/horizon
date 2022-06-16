@@ -245,6 +245,7 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 	})
 	if err != nil {
 		causeErr := perror.Cause(err)
+		log.Warning(c, err.Error())
 		switch causeErr {
 		case herrors.ErrOAuthSecretNotValid:
 			fallthrough
@@ -264,6 +265,7 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 				}
 			}
 			response.AbortWithInternalError(c, err.Error())
+			log.Error(c, err.Error())
 			return
 		}
 	}
