@@ -5,11 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/applicationregion/dao"
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
-)
-
-var (
-	// Mgr is the global application region manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 type Manager interface {
@@ -19,9 +15,9 @@ type Manager interface {
 	UpsertByApplicationID(ctx context.Context, applicationID uint, applicationRegions []*models.ApplicationRegion) error
 }
 
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		dao: dao.NewDAO(),
+		dao: dao.NewDAO(db),
 	}
 }
 

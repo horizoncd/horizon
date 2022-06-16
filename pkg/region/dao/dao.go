@@ -8,7 +8,6 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 
-	"g.hz.netease.com/horizon/lib/orm"
 	appregionmodels "g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
@@ -35,21 +34,18 @@ type DAO interface {
 }
 
 // NewDAO returns an instance of the default DAO
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
 type dao struct {
+	db *gorm.DB
 }
 
 func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (
 	models.RegionParts, error) {
 	if len(selectors) == 0 {
 		return models.RegionParts{}, nil
-	}
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
 	}
 
 	var conditions []string
@@ -62,7 +58,7 @@ func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.R
 	params = append(params, len(selectors))
 	tagCondition := fmt.Sprintf("(%s)", strings.Join(conditions, " or "))
 	var regionParts models.RegionParts
-	result := db.Raw(fmt.Sprintf(common.RegionListByTags, tagCondition), params...).Scan(&regionParts)
+	result := d.db.WithContext(ctx).Raw(fmt.Sprintf(common.RegionListByTags, tagCondition), params...).Scan(&regionParts)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, result.Error.Error())
 	}
@@ -71,14 +67,9 @@ func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.R
 }
 
 // GetRegionByID implements DAO
-func (*dao) GetRegionByID(ctx context.Context, id uint) (*models.Region, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (d *dao) GetRegionByID(ctx context.Context, id uint) (*models.Region, error) {
 	var region models.Region
-	result := db.Raw(common.RegionGetByID, id).First(&region)
+	result := d.db.WithContext(ctx).Raw(common.RegionGetByID, id).First(&region)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -91,11 +82,6 @@ func (*dao) GetRegionByID(ctx context.Context, id uint) (*models.Region, error) 
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) error {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
 	// check en exist
 	regionInDB, err := d.GetRegionByID(ctx, id)
 	if err != nil {
@@ -109,7 +95,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) er
 	regionInDB.IngressDomain = region.IngressDomain
 	regionInDB.HarborID = region.HarborID
 	regionInDB.Disabled = region.Disabled
-	result := db.Save(regionInDB)
+	result := d.db.WithContext(ctx).Save(regionInDB)
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.RegionInDB, result.Error.Error())
 	}
@@ -118,12 +104,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) er
 }
 
 func (d *dao) Create(ctx context.Context, region *models.Region) (*models.Region, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := db.Create(region)
+	result := d.db.WithContext(ctx).Create(region)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.RegionInDB, result.Error.Error())
@@ -133,13 +114,8 @@ func (d *dao) Create(ctx context.Context, region *models.Region) (*models.Region
 }
 
 func (d *dao) ListAll(ctx context.Context) ([]*models.Region, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var regions []*models.Region
-	result := db.Raw(common.RegionListAll).Scan(&regions)
+	result := d.db.WithContext(ctx).Raw(common.RegionListAll).Scan(&regions)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, result.Error.Error())
@@ -149,13 +125,8 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.Region, error) {
 }
 
 func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var region models.Region
-	result := db.Raw(common.RegionGetByName, regionName).First(&region)
+	result := d.db.WithContext(ctx).Raw(common.RegionGetByName, regionName).First(&region)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.RegionInDB, result.Error.Error())
@@ -166,11 +137,6 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 
 // DeleteByID implements DAO
 func (d *dao) DeleteByID(ctx context.Context, id uint) error {
-	db, res := orm.FromContext(ctx)
-	if res != nil {
-		return res
-	}
-
 	// check region exist
 	regionInDB, res := d.GetRegionByID(ctx, id)
 	if res != nil {
@@ -179,7 +145,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 
 	// check if there are clusters using the region
 	var count int64
-	result := db.Raw(common.ClusterCountByRegionName, regionInDB.Name).Scan(&count)
+	result := d.db.WithContext(ctx).Raw(common.ClusterCountByRegionName, regionInDB.Name).Scan(&count)
 	if result.Error != nil {
 		return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())
 	}
@@ -188,7 +154,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	}
 
 	// remove related resources from different tables
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// remove records from applicationRegion table
 		result := tx.Where("region_name = ?", regionInDB.Name).Delete(&appregionmodels.ApplicationRegion{})
 		if result.Error != nil {

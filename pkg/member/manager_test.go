@@ -11,12 +11,12 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _ = orm.NewSqliteDB("")
+	ctx   context.Context
+	mgr   = New(db)
 )
 
 func MemberValueEqual(member1, member2 *models.Member) bool {
@@ -44,7 +44,7 @@ func TestBasic(t *testing.T) {
 	}
 
 	// test create
-	member, err := Mgr.Create(ctx, member1)
+	member, err := mgr.Create(ctx, member1)
 	assert.Nil(t, err)
 
 	b, err := json.Marshal(member)
@@ -52,7 +52,7 @@ func TestBasic(t *testing.T) {
 
 	t.Logf(string(b))
 
-	retMember, err := Mgr.GetByID(ctx, member.ID)
+	retMember, err := mgr.GetByID(ctx, member.ID)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(retMember, member))
 
@@ -67,19 +67,19 @@ func TestBasic(t *testing.T) {
 	}
 	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
 
-	retMember2, err := Mgr.UpdateByID(ctx, retMember.ID, member1.Role)
+	retMember2, err := mgr.UpdateByID(ctx, retMember.ID, member1.Role)
 	assert.Nil(t, err)
 
 	member1.GrantedBy = grantedByCat
 	assert.True(t, MemberValueEqual(retMember2, member1))
 
-	retMember3, err := Mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberNameID)
+	retMember3, err := mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberNameID)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(retMember2, retMember3))
 
 	// test delete
-	assert.Nil(t, Mgr.DeleteMember(ctx, retMember3.ID))
-	retMember4, err := Mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberNameID)
+	assert.Nil(t, mgr.DeleteMember(ctx, retMember3.ID))
+	retMember4, err := mgr.Get(ctx, member1.ResourceType, member1.ResourceID, models.MemberUser, member1.MemberNameID)
 	assert.Nil(t, err)
 	assert.Nil(t, retMember4)
 }
@@ -97,7 +97,7 @@ func TestList(t *testing.T) {
 	}
 
 	// create 1
-	retMember1, err := Mgr.Create(ctx, member1)
+	retMember1, err := mgr.Create(ctx, member1)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(member1, retMember1))
 
@@ -110,11 +110,11 @@ func TestList(t *testing.T) {
 		MemberNameID: 2,
 		GrantedBy:    grantedByAdmin,
 	}
-	retMember2, err := Mgr.Create(ctx, member2)
+	retMember2, err := mgr.Create(ctx, member2)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(member2, retMember2))
 
-	members, err := Mgr.ListDirectMember(ctx, member1.ResourceType, member1.ResourceID)
+	members, err := mgr.ListDirectMember(ctx, member1.ResourceType, member1.ResourceID)
 	assert.Nil(t, err)
 	assert.Equal(t, len(members), 2)
 	assert.True(t, MemberValueEqual(&members[0], retMember1))
@@ -134,7 +134,7 @@ func TestListResourceOfMemberInfo(t *testing.T) {
 	}
 
 	// create 1
-	retMember1, err := Mgr.Create(ctx, member1)
+	retMember1, err := mgr.Create(ctx, member1)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(member1, retMember1))
 
@@ -147,11 +147,11 @@ func TestListResourceOfMemberInfo(t *testing.T) {
 		MemberNameID: 1,
 		GrantedBy:    grantedByAdmin,
 	}
-	retMember2, err := Mgr.Create(ctx, member2)
+	retMember2, err := mgr.Create(ctx, member2)
 	assert.Nil(t, err)
 	assert.True(t, MemberValueEqual(member2, retMember2))
 
-	resourceIDs, err := Mgr.ListResourceOfMemberInfo(ctx, models.TypeGroup, 1)
+	resourceIDs, err := mgr.ListResourceOfMemberInfo(ctx, models.TypeGroup, 1)
 	assert.Nil(t, err)
 	t.Logf("%v", resourceIDs)
 	assert.Equal(t, 2, len(resourceIDs))
@@ -160,10 +160,9 @@ func TestListResourceOfMemberInfo(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Member{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	os.Exit(m.Run())
 }

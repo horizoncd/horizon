@@ -5,11 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/harbor/manager"
 	"g.hz.netease.com/horizon/pkg/harbor/models"
-)
-
-var (
-	// Ctl global instance of the environment controller
-	Ctl = NewController()
+	"g.hz.netease.com/horizon/pkg/param"
 )
 
 type Controller interface {
@@ -24,8 +20,8 @@ type Controller interface {
 	GetByID(ctx context.Context, id uint) (*Harbor, error)
 }
 
-func NewController() Controller {
-	return &controller{harborManager: manager.Mgr}
+func NewController(param *param.Param) Controller {
+	return &controller{harborManager: param.HarborManager}
 }
 
 type controller struct {

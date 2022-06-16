@@ -14,7 +14,7 @@ import (
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
-	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -27,15 +27,18 @@ var (
 	ctx context.Context
 
 	pipelineRun *v1beta1.PipelineRun
+
+	manager *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&prmodels.Pipelinerun{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 		ID:   uint(1),
@@ -202,7 +205,7 @@ func Test(t *testing.T) {
 
 	tekton.EXPECT().DeletePipelineRun(ctx, gomock.Any()).Return(nil)
 
-	pipelinerunMgr := prmanager.Mgr
+	pipelinerunMgr := manager.PipelinerunMgr
 	_, err := pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID:   1,
 		Action:      "builddeploy",

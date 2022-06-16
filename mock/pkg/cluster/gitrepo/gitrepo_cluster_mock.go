@@ -140,18 +140,18 @@ func (mr *MockClusterGitRepoMockRecorder) GetEnvValue(ctx, application, cluster,
 }
 
 // GetPipelineOutput mocks base method.
-func (m *MockClusterGitRepo) GetPipelineOutput(ctx context.Context, pid interface{}, template string) (*gitrepo.PipelineOutput, error) {
+func (m *MockClusterGitRepo) GetPipelineOutput(ctx context.Context, application, cluster, template string) (*gitrepo.PipelineOutput, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPipelineOutput", ctx, pid, template)
+	ret := m.ctrl.Call(m, "GetPipelineOutput", ctx, application, cluster, template)
 	ret0, _ := ret[0].(*gitrepo.PipelineOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPipelineOutput indicates an expected call of GetPipelineOutput.
-func (mr *MockClusterGitRepoMockRecorder) GetPipelineOutput(ctx, pid, template interface{}) *gomock.Call {
+func (mr *MockClusterGitRepoMockRecorder) GetPipelineOutput(ctx, application, cluster, template interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPipelineOutput", reflect.TypeOf((*MockClusterGitRepo)(nil).GetPipelineOutput), ctx, pid, template)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPipelineOutput", reflect.TypeOf((*MockClusterGitRepo)(nil).GetPipelineOutput), ctx, application, cluster, template)
 }
 
 // GetRepoInfo mocks base method.

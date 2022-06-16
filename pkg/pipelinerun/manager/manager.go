@@ -6,11 +6,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/dao"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
-)
-
-var (
-	// Mgr is the global pipelinerun manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 type Manager interface {
@@ -32,9 +28,9 @@ type manager struct {
 	dao dao.DAO
 }
 
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		dao: dao.NewDAO(),
+		dao: dao.NewDAO(db),
 	}
 }
 

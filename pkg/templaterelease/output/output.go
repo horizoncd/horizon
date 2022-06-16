@@ -7,6 +7,7 @@ import (
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -36,14 +37,14 @@ var (
 	ErrFormat = errors.New("FileFormatError")
 )
 
-func NewOutPutGetter(ctx context.Context, gitlabFty gitlabfty.Factory) (Getter, error) {
+func NewOutPutGetter(ctx context.Context, gitlabFty gitlabfty.Factory, m *managerparam.Manager) (Getter, error) {
 	gitlabLib, err := gitlabFty.GetByName(ctx, _gitlabName)
 	if err != nil {
 		return nil, err
 	}
 	return &getter{
 		gitlabLib:          gitlabLib,
-		templateReleaseMgr: manager.Mgr,
+		templateReleaseMgr: m.TemplateReleaseManager,
 	}, nil
 }
 

@@ -5,11 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/template/dao"
 	"g.hz.netease.com/horizon/pkg/template/models"
-)
-
-var (
-	// Mgr is the global template manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 type Manager interface {
@@ -19,8 +15,8 @@ type Manager interface {
 	List(ctx context.Context) ([]models.Template, error)
 }
 
-func New() Manager {
-	return &manager{dao: dao.NewDAO()}
+func New(db *gorm.DB) Manager {
+	return &manager{dao: dao.NewDAO(db)}
 }
 
 type manager struct {

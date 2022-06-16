@@ -14,6 +14,7 @@ var (
 	// use tmp sqlite
 	db, _ = orm.NewSqliteDB("")
 	ctx   context.Context
+	mgr   = New(db)
 )
 
 func init() {
@@ -24,11 +25,11 @@ func init() {
 		panic(err)
 	}
 
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 }
 
 func Test(t *testing.T) {
-	id, err := Mgr.Create(ctx, &models.Harbor{
+	id, err := mgr.Create(ctx, &models.Harbor{
 		Name:            "1",
 		Server:          "2",
 		Token:           "1",
@@ -36,29 +37,29 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	harbor, err := Mgr.GetByID(ctx, id)
+	harbor, err := mgr.GetByID(ctx, id)
 	assert.Nil(t, err)
 	assert.Equal(t, harbor.Name, "1")
 	assert.Equal(t, harbor.Server, "2")
 	assert.Equal(t, harbor.Token, "1")
 	assert.Equal(t, harbor.PreheatPolicyID, 0)
 
-	err = Mgr.UpdateByID(ctx, id, &models.Harbor{
+	err = mgr.UpdateByID(ctx, id, &models.Harbor{
 		Name:            "2",
 		Server:          "1",
 		Token:           "2",
 		PreheatPolicyID: 1,
 	})
 	assert.Nil(t, err)
-	harbor, _ = Mgr.GetByID(ctx, id)
+	harbor, _ = mgr.GetByID(ctx, id)
 	assert.Equal(t, harbor.Name, "2")
 	assert.Equal(t, harbor.Server, "1")
 	assert.Equal(t, harbor.Token, "2")
 	assert.Equal(t, harbor.PreheatPolicyID, 1)
 
-	err = Mgr.DeleteByID(ctx, id)
+	err = mgr.DeleteByID(ctx, id)
 	assert.Nil(t, err)
-	harbor, err = Mgr.GetByID(ctx, id)
+	harbor, err = mgr.GetByID(ctx, id)
 	assert.NotNil(t, err)
 	assert.Nil(t, harbor)
 }

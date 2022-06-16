@@ -16,11 +16,7 @@ import (
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"github.com/go-yaml/yaml"
-)
-
-var (
-	// Mgr is the global group manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 const (
@@ -84,12 +80,12 @@ func (m manager) GetByIDNameFuzzily(ctx context.Context, id uint, name string) (
 	return m.groupDAO.GetByIDNameFuzzily(ctx, id, name)
 }
 
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		groupDAO:       groupdao.NewDAO(),
-		applicationDAO: applicationdao.NewDAO(),
-		envregionDAO:   envregiondao.NewDAO(),
-		regionDAO:      regiondao.NewDAO(),
+		groupDAO:       groupdao.NewDAO(db),
+		applicationDAO: applicationdao.NewDAO(db),
+		envregionDAO:   envregiondao.NewDAO(db),
+		regionDAO:      regiondao.NewDAO(db),
 	}
 }
 

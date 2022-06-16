@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	appregionmodels "g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/environment/models"
@@ -26,11 +25,11 @@ type DAO interface {
 	GetByID(ctx context.Context, id uint) (*models.Environment, error)
 }
 
-type dao struct{}
+type dao struct{ db *gorm.DB }
 
 // NewDAO returns an instance of the default DAO
-func NewDAO() DAO {
-	return &dao{}
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Environment) error {
@@ -39,14 +38,9 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 		return err
 	}
 
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
 	// set displayName
 	environmentInDB.DisplayName = environment.DisplayName
-	res := db.Save(&environmentInDB)
+	res := d.db.WithContext(ctx).Save(&environmentInDB)
 	if res.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.EnvironmentInDB, res.Error.Error())
 	}
@@ -55,12 +49,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 }
 
 func (d *dao) CreateEnvironment(ctx context.Context, environment *models.Environment) (*models.Environment, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := db.Create(environment)
+	result := d.db.WithContext(ctx).Create(environment)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
@@ -70,14 +59,9 @@ func (d *dao) CreateEnvironment(ctx context.Context, environment *models.Environ
 }
 
 func (d *dao) ListAllEnvironment(ctx context.Context) ([]*models.Environment, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var environments []*models.Environment
 
-	result := db.Raw(common.EnvironmentListAll).Scan(&environments)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentListAll).Scan(&environments)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
@@ -93,13 +77,8 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return err
 	}
 
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return err
-	}
-
 	// remove related resources from different tables
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err = d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// remove records from applicationRegion table
 		res := tx.Where("environment_name = ?", environment.Name).Delete(&appregionmodels.ApplicationRegion{})
 		if res.Error != nil {
@@ -124,13 +103,8 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Environment, error) {
-	db, err := orm.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var environment models.Environment
-	result := db.Raw(common.EnvironmentGetByID, id).First(&environment)
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentGetByID, id).First(&environment)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {

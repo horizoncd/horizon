@@ -5,11 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/harbor/dao"
 	"g.hz.netease.com/horizon/pkg/harbor/models"
-)
-
-var (
-	// Mgr is the global region manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 type Manager interface {
@@ -29,9 +25,9 @@ type manager struct {
 	harborDAO dao.DAO
 }
 
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		harborDAO: dao.NewDAO(),
+		harborDAO: dao.NewDAO(db),
 	}
 }
 

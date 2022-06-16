@@ -17,6 +17,7 @@ import (
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	"g.hz.netease.com/horizon/pkg/param"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -45,15 +46,15 @@ type controller struct {
 
 var _ Controller = (*controller)(nil)
 
-func NewController(clusterGitRepo gitrepo.ClusterGitRepo) Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
 		kubeClientFty:  kubeclient.Fty,
-		clusterMgr:     clustermanager.Mgr,
-		applicationMgr: applicationmanager.Mgr,
-		envMgr:         envmanager.Mgr,
-		envRegionMgr:   envregionmanager.Mgr,
-		regionMgr:      regionmanager.Mgr,
-		clusterGitRepo: clusterGitRepo,
+		clusterMgr:     param.ClusterMgr,
+		applicationMgr: param.ApplicationManager,
+		envMgr:         param.EnvMgr,
+		envRegionMgr:   param.EnvRegionMgr,
+		regionMgr:      param.RegionMgr,
+		clusterGitRepo: param.ClusterGitRepo,
 	}
 }
 

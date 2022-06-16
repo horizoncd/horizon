@@ -7,9 +7,9 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/user/models"
 
 	"github.com/gin-gonic/gin"
@@ -22,9 +22,9 @@ const (
 
 // Middleware check user is exists in db. If not, add user into db.
 // Then attach a User object into context.
-func Middleware(config oidc.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
+func Middleware(param *param.Param, config oidc.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
-		mgr := manager.Mgr
+		mgr := param.UserManager
 
 		operator := c.Request.Header.Get(HTTPHeaderOperator)
 		// TODO(gjq): remove this later

@@ -8,14 +8,15 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 )
 
 var (
 	// use tmp sqlite
-	db, _ = orm.NewSqliteDB("")
-	ctx   = orm.NewContext(context.TODO(), db)
+	db, _   = orm.NewSqliteDB("")
+	ctx     = context.TODO()
+	manager = managerparam.InitManager(db)
 )
 
 // nolint
@@ -65,7 +66,7 @@ func TestServiceGetChildByID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := service{
-				groupManager: manager.Mgr,
+				groupManager: manager.GroupManager,
 			}
 			got, err := s.GetChildByID(ctx, tt.args.id)
 			if (err != nil) != tt.wantErr {

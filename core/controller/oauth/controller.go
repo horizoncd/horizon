@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/oauth/models"
 	oauthmodel "g.hz.netease.com/horizon/pkg/oauth/models"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"golang.org/x/net/context"
 )
@@ -54,8 +55,8 @@ type Controller interface {
 	LoadAccessToken(ctx context.Context, token string) (*models.Token, error)
 }
 
-func NewController(authManager manager.Manager) Controller {
-	return &controller{oauthManager: authManager}
+func NewController(param *param.Param) Controller {
+	return &controller{oauthManager: param.OauthManager}
 }
 
 var _ Controller = &controller{}

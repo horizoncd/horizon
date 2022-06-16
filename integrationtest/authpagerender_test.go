@@ -16,17 +16,21 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/oauth"
 	"g.hz.netease.com/horizon/core/controller/oauthapp"
+	oauthcheckctl "g.hz.netease.com/horizon/core/controller/oauthcheck"
+	clusterAPI "g.hz.netease.com/horizon/core/http/api/v1/cluster"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
+	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
 	"g.hz.netease.com/horizon/pkg/oauth/generate"
-	"g.hz.netease.com/horizon/pkg/oauth/manager"
+	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/oauth/models"
 	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/oauth/store"
+	"g.hz.netease.com/horizon/pkg/param"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -44,7 +48,8 @@ var (
 	}
 	ctx                   = context.WithValue(context.Background(), common.UserContextKey(), aUser)
 	authorizeCodeExpireIn = time.Minute * 30
-	accessTokenExpireIn   = time.Hour * 24
+	accessTokenExpireIn   = time.Second * 3
+	manager               *managerparam.Manager
 )
 
 func Test(t *testing.T) {
@@ -90,6 +95,7 @@ func createOauthScopeConfig() oauthconfig.Scopes {
 
 func TestServer(t *testing.T) {
 	db, _ := orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
 		panic(err)
 	}
@@ -99,7 +105,7 @@ func TestServer(t *testing.T) {
 	tokenStore := store.NewTokenStore(db)
 	oauthAppStore := store.NewOauthAppStore(db)
 
-	oauthManager := manager.NewManager(oauthAppStore, tokenStore, generate.NewAuthorizeGenerate(),
+	oauthManager := oauthmanager.NewManager(oauthAppStore, tokenStore, generate.NewAuthorizeGenerate(),
 		authorizeCodeExpireIn, accessTokenExpireIn)
 	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
 	clientIDGen := func(appType models.AppType) string {
@@ -111,7 +117,7 @@ func TestServer(t *testing.T) {
 	t.Logf("client secret is %s", secret.ClientSecret)
 
 	oauthManager.SetClientIDGenerate(clientIDGen)
-	createReq := &manager.CreateOAuthAppReq{
+	createReq := &oauthmanager.CreateOAuthAppReq{
 		Name:        "Overmind",
 		RedirectURI: "http://localhost:8083/auth/callback",
 		HomeURL:     "http://localhost:8083",
@@ -128,9 +134,9 @@ func TestServer(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, authGetApp.ClientID, authApp.ClientID)
 
-	oauthServerController := oauth.NewController(oauthManager)
+	oauthServerController := oauth.NewController(&param.Param{Manager: manager})
 
-	oauthAppController := oauthapp.NewController(oauthManager, usermanager.New())
+	oauthAppController := oauthapp.NewController(&param.Param{Manager: manager})
 
 	authScopeService, err := scope.NewFileScopeService(createOauthScopeConfig())
 	assert.Nil(t, err)
@@ -140,10 +146,18 @@ func TestServer(t *testing.T) {
 	userMiddleWare := func(c *gin.Context) {
 		common.SetUser(c, aUser)
 	}
+	oauthCheckerCtl := oauthcheckctl.NewOauthChecker(&param.Param{Manager: manager})
+	middlewares := []gin.HandlerFunc{
+		oauthmiddle.MiddleWare(oauthCheckerCtl),
+		userMiddleWare,
+	}
+
 	// init server
 	r := gin.New()
-	r.Use(userMiddleWare)
+	r.Use(middlewares...)
+
 	oauthserver.RegisterRoutes(r, api)
+	clusterAPI.RegisterRoutes(r, nil)
 	ListenPort := ":18181"
 
 	go func() { log.Print(r.Run(ListenPort)) }()
@@ -208,4 +222,20 @@ func TestServer(t *testing.T) {
 	default:
 		assert.Fail(t, "unSupport")
 	}
+
+	//  token expired
+	time.Sleep(accessTokenExpireIn)
+	resourceURI := "/apis/core/v1/clusters/123"
+	req, err := http.NewRequest("GET", "http://localhost"+ListenPort+resourceURI, nil)
+	assert.Nil(t, err)
+	req.Header.Set(common.AuthorizationHeaderKey, common.TokenHeaderValuePrefix+" "+tokenResponse.AccessToken)
+	client := &http.Client{}
+	resp, err = client.Do(req)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+	bytes, err = ioutil.ReadAll(resp.Body)
+	t.Logf("%s", string(bytes))
+	assert.True(t, strings.Contains(string(bytes), common.CodeExpired))
+	assert.Nil(t, err)
+	assert.Equal(t, resp.StatusCode, http.StatusUnauthorized)
 }

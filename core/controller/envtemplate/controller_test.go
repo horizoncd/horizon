@@ -10,12 +10,11 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	appgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
-	"g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -240,15 +239,18 @@ var (
         }
     }
 }`
+
+	manager *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&models.Application{}, &envmodels.Environment{}, &membermodels.Member{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 	})
@@ -289,8 +291,8 @@ func Test(t *testing.T) {
 			},
 		}, nil).AnyTimes()
 
-	envMgr := envmanager.Mgr
-	applicationMgr := manager.Mgr
+	envMgr := manager.EnvMgr
+	applicationMgr := manager.ApplicationManager
 	c = &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,

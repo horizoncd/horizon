@@ -10,26 +10,25 @@ import (
 	"g.hz.netease.com/horizon/pkg/tag/models"
 
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _ = orm.NewSqliteDB("")
+	ctx   context.Context
+	mgr   = New(db)
 )
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&models.Tag{}); err != nil {
 		panic(err)
 	}
-	ctx = orm.NewContext(context.TODO(), db)
+	ctx = context.TODO()
 	os.Exit(m.Run())
 }
 
 func Test(t *testing.T) {
 	clusterID := uint(1)
-	err := Mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
+	err := mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
 		{
 			ResourceType: models.TypeCluster,
 			ResourceID:   clusterID,
@@ -44,7 +43,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	tags, err := Mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err := mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tags)
 	assert.Equal(t, 2, len(tags))
@@ -53,7 +52,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "b", tags[1].Key)
 	assert.Equal(t, "2", tags[1].Value)
 
-	err = Mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
+	err = mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
 		{
 			ResourceType: models.TypeCluster,
 			ResourceID:   clusterID,
@@ -68,7 +67,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	tags, err = Mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err = mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tags)
 	assert.Equal(t, 2, len(tags))
@@ -77,7 +76,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "c", tags[1].Key)
 	assert.Equal(t, "3", tags[1].Value)
 
-	err = Mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
+	err = mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
 		{
 			ResourceType: models.TypeCluster,
 			ResourceID:   clusterID,
@@ -97,7 +96,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	tags, err = Mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err = mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tags)
 	assert.Equal(t, 3, len(tags))
@@ -108,7 +107,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "d", tags[2].Key)
 	assert.Equal(t, "4", tags[2].Value)
 
-	err = Mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
+	err = mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
 		{
 			ResourceType: models.TypeCluster,
 			ResourceID:   clusterID,
@@ -117,16 +116,16 @@ func Test(t *testing.T) {
 		},
 	})
 	assert.Nil(t, err)
-	tags, err = Mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err = mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tags)
 	assert.Equal(t, 1, len(tags))
 	assert.Equal(t, "d", tags[0].Key)
 	assert.Equal(t, "4", tags[0].Value)
 
-	err = Mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, nil)
+	err = mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, nil)
 	assert.Nil(t, err)
-	tags, err = Mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err = mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, 0, len(tags))
 }

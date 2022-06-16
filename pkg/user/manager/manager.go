@@ -6,11 +6,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/user/dao"
 	"g.hz.netease.com/horizon/pkg/user/models"
-)
-
-var (
-	// Mgr is the global user manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 type Manager interface {
@@ -31,8 +27,8 @@ type manager struct {
 	dao dao.DAO
 }
 
-func New() Manager {
-	return &manager{dao: dao.NewDAO()}
+func New(db *gorm.DB) Manager {
+	return &manager{dao: dao.NewDAO(db)}
 }
 
 func (m *manager) Create(ctx context.Context, user *models.User) (*models.User, error) {

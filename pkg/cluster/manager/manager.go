@@ -10,11 +10,7 @@ import (
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-)
-
-var (
-	// Mgr is the global cluster manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 // nolint
@@ -40,10 +36,10 @@ type Manager interface {
 		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error)
 }
 
-func New() Manager {
+func New(db *gorm.DB) Manager {
 	return &manager{
-		dao:     dao.NewDAO(),
-		userDAO: userdao.NewDAO(),
+		dao:     dao.NewDAO(db),
+		userDAO: userdao.NewDAO(db),
 	}
 }
 

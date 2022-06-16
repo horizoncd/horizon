@@ -13,6 +13,7 @@ require (
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/gomodule/redigo v2.0.0+incompatible
+	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.4
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/johannesboyne/gofakes3 v0.0.0-20210819161434-5c8dfcfe5310
@@ -31,6 +32,7 @@ require (
 	gopkg.in/igm/sockjs-go.v3 v3.0.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/driver/sqlite v1.1.5
 	gorm.io/gorm v1.21.15

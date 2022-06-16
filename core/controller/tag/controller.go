@@ -6,7 +6,8 @@ import (
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/tag/manager"
+	"g.hz.netease.com/horizon/pkg/param"
+	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
 	"g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -18,17 +19,17 @@ type Controller interface {
 
 type controller struct {
 	clusterMgr     clustermanager.Manager
-	tagMgr         manager.Manager
+	tagMgr         tagmanager.Manager
 	clusterGitRepo gitrepo.ClusterGitRepo
 	applicationMgr appmanager.Manager
 }
 
-func NewController(clusterGitRepo gitrepo.ClusterGitRepo) Controller {
+func NewController(param *param.Param) Controller {
 	return &controller{
-		clusterMgr:     clustermanager.Mgr,
-		tagMgr:         manager.Mgr,
-		clusterGitRepo: clusterGitRepo,
-		applicationMgr: appmanager.Mgr,
+		clusterMgr:     param.ClusterMgr,
+		tagMgr:         param.TagManager,
+		clusterGitRepo: param.ClusterGitRepo,
+		applicationMgr: param.ApplicationManager,
 	}
 }
 
@@ -49,7 +50,7 @@ func (c *controller) Update(ctx context.Context, resourceType string, resourceID
 	defer wlog.Start(ctx, op).StopPrint()
 
 	tags := r.toTags(resourceType, resourceID)
-	if err := manager.ValidateUpsert(tags); err != nil {
+	if err := tagmanager.ValidateUpsert(tags); err != nil {
 		return err
 	}
 

@@ -8,15 +8,14 @@ import (
 	"g.hz.netease.com/horizon/core/http/cloudevent"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/config/server"
+	"g.hz.netease.com/horizon/pkg/param"
 	"github.com/gin-gonic/gin"
 )
 
-func runCloudEventServer(ormMiddleware gin.HandlerFunc,
-	tektonFty factory.Factory, config server.Config) {
+func runCloudEventServer(tektonFty factory.Factory, config server.Config, parameter *param.Param) {
 	r := gin.Default()
-	r.Use(ormMiddleware)
 
-	cloudEventCtl := cloudeventctl.NewController(tektonFty)
+	cloudEventCtl := cloudeventctl.NewController(tektonFty, parameter)
 
 	cloudevent.RegisterRoutes(r, cloudevent.NewAPI(cloudEventCtl))
 

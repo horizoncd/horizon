@@ -5,11 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/member/dao"
 	"g.hz.netease.com/horizon/pkg/member/models"
-)
-
-var (
-	// Mgr is the global member manager
-	Mgr = New()
+	"gorm.io/gorm"
 )
 
 type Manager interface {
@@ -46,8 +42,8 @@ type manager struct {
 	dao dao.DAO
 }
 
-func New() Manager {
-	return &manager{dao: dao.New()}
+func New(db *gorm.DB) Manager {
+	return &manager{dao: dao.NewDAO(db)}
 }
 
 func (m *manager) Create(ctx context.Context, member *models.Member) (*models.Member, error) {

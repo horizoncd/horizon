@@ -13,7 +13,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	"g.hz.netease.com/horizon/pkg/member"
+	membermanager "g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
@@ -21,25 +21,24 @@ import (
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
-	db  *gorm.DB
-	ctx context.Context
+	db, _     = orm.NewSqliteDB("")
+	ctx       context.Context
+	mgr       = New(db)
+	memberMgr = membermanager.New(db)
 )
 
 func TestMain(m *testing.M) {
-	db, _ = orm.NewSqliteDB("")
 	// nolint
 	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	}))
 	callbacks.RegisterCustomCallbacks(db)
-	ctx = orm.NewContext(context.TODO(), db)
 	// nolint
-	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "tony",
 		ID:   110,
 	})
@@ -58,7 +57,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	userDAO := userdao.NewDAO()
+	userDAO := userdao.NewDAO(db)
 	user1, err := userDAO.Create(ctx, &usermodels.User{
 		Name:  "tony",
 		Email: "tony@corp.com",
@@ -73,7 +72,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, user2)
 
-	groupDAO := groupdao.NewDAO()
+	groupDAO := groupdao.NewDAO(db)
 	group, err := groupDAO.Create(ctx, &groupmodels.Group{
 		Model:    global.Model{},
 		Name:     "group1",
@@ -118,12 +117,12 @@ func Test(t *testing.T) {
 		CreatedBy:       createdBy,
 		UpdatedBy:       updatedBy,
 	}
-	application, err = Mgr.Create(ctx, application, map[string]string{user2.Email: role.Owner})
+	application, err = mgr.Create(ctx, application, map[string]string{user2.Email: role.Owner})
 	assert.Nil(t, err)
 
 	assert.Equal(t, name, application.Name)
 	assert.Equal(t, 1, int(application.ID))
-	clusterMembers, err := member.Mgr.ListDirectMember(ctx, membermodels.TypeApplication, application.ID)
+	clusterMembers, err := memberMgr.ListDirectMember(ctx, membermodels.TypeApplication, application.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(clusterMembers))
 	assert.Equal(t, user2.ID, clusterMembers[1].MemberNameID)
@@ -133,30 +132,30 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf(string(b))
 
-	appGetByID, err := Mgr.GetByID(ctx, application.ID)
+	appGetByID, err := mgr.GetByID(ctx, application.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, application.Name, appGetByID.Name)
 
-	appGetByName, err := Mgr.GetByName(ctx, application.Name)
+	appGetByName, err := mgr.GetByName(ctx, application.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, application.ID, appGetByName.ID)
 
 	appGetByName.Description = "new"
-	appGetByName, err = Mgr.UpdateByID(ctx, application.ID, appGetByName)
+	appGetByName, err = mgr.UpdateByID(ctx, application.ID, appGetByName)
 	assert.Nil(t, err)
 
-	apps, err := Mgr.GetByNameFuzzily(ctx, "app")
+	apps, err := mgr.GetByNameFuzzily(ctx, "app")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, appGetByName.Name, apps[0].Name)
 
-	total, apps, err := Mgr.GetByNameFuzzilyByPagination(ctx, "app", q.Query{PageSize: 1, PageNumber: 1})
+	total, apps, err := mgr.GetByNameFuzzilyByPagination(ctx, "app", q.Query{PageSize: 1, PageNumber: 1})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, total)
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, name, apps[0].Name)
 
-	totalForUser, appsForUser, err := Mgr.ListUserAuthorizedByNameFuzzily(ctx,
+	totalForUser, appsForUser, err := mgr.ListUserAuthorizedByNameFuzzily(ctx,
 		"app", []uint{1}, user2.ID, &q.Query{
 			PageNumber: 0,
 			PageSize:   common.DefaultPageSize,
@@ -166,32 +165,32 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(appsForUser))
 	assert.Equal(t, name, apps[0].Name)
 
-	apps, err = Mgr.GetByIDs(ctx, []uint{application.ID})
+	apps, err = mgr.GetByIDs(ctx, []uint{application.ID})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, name, apps[0].Name)
 
-	apps, err = Mgr.GetByGroupIDs(ctx, []uint{uint(groupID)})
+	apps, err = mgr.GetByGroupIDs(ctx, []uint{uint(groupID)})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, name, apps[0].Name)
 
 	// test transfer application
 	var transferGroupID uint = 2
-	err = Mgr.Transfer(ctx, application.ID, transferGroupID)
+	err = mgr.Transfer(ctx, application.ID, transferGroupID)
 	assert.Nil(t, err)
 
 	var transferNotExistGroupID uint = 100
-	err = Mgr.Transfer(ctx, application.ID, transferNotExistGroupID)
+	err = mgr.Transfer(ctx, application.ID, transferNotExistGroupID)
 	assert.NotNil(t, err)
 
 	// case 2 create the group and retry ok
-	apps, err = Mgr.GetByIDs(ctx, []uint{application.ID})
+	apps, err = mgr.GetByIDs(ctx, []uint{application.ID})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, transferGroupID, apps[0].GroupID)
 
 	assert.Equal(t, appGetByName.Name, apps[0].Name)
-	err = Mgr.DeleteByID(ctx, appGetByName.ID)
+	err = mgr.DeleteByID(ctx, appGetByName.ID)
 	assert.Nil(t, err)
 }
