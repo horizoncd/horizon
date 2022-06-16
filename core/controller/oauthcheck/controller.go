@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	rbactype "g.hz.netease.com/horizon/pkg/auth"
@@ -19,6 +20,7 @@ import (
 )
 
 type Controller interface {
+	ValidateToken(ctx context.Context, token string) error
 	LoadAccessTokenUser(ctx context.Context, token string) (user.User, error)
 	CheckScopePermission(ctx context.Context, token string, authInfo auth.RequestInfo) (bool, string, error)
 }
@@ -37,6 +39,17 @@ func NewOauthChecker(param *param.Param) Controller {
 		userManager:  param.UserManager,
 		scopeService: param.ScopeService,
 	}
+}
+
+func (c *controller) ValidateToken(ctx context.Context, accessToken string) error {
+	token, err := c.oauthManager.LoadAccessToken(ctx, accessToken)
+	if err != nil {
+		return err
+	}
+	if token.CreatedAt.Add(token.ExpiresIn).Before(time.Now()) {
+		return perror.Wrap(herrors.ErrOAuthAccessTokenExpired, "")
+	}
+	return nil
 }
 
 func (c *controller) LoadAccessTokenUser(ctx context.Context, accessToken string) (user.User, error) {

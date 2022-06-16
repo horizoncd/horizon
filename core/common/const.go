@@ -36,6 +36,9 @@ const (
 	// Forbidden 403 Forbidden error code
 	Forbidden = "Forbidden"
 
+	// CodeExpired 403 AccessToken and Authorization Token error code
+	CodeExpired = "Expired"
+
 	// NotFound 404 NotFound error code
 	NotFound = "NotFound"
 )

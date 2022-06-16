@@ -35,7 +35,21 @@ func MiddleWare(oauthCtl oauthcheck.Controller, skipMatchers ...middleware.Skipp
 			return
 		}
 
-		// 2. do scope check(get requestInfo, and do check)
+		// 2. check token valid
+		if err := oauthCtl.ValidateToken(c, token); err != nil {
+			if perror.Cause(err) == herrors.ErrOAuthAccessTokenExpired {
+				response.AbortWithUnauthorized(c, common.CodeExpired, err.Error())
+				return
+			}
+			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithUnauthorized(c, common.Unauthorized, e.Error())
+				return
+			}
+			response.AbortWithUnauthorized(c, common.InternalError, err.Error())
+			return
+		}
+
+		// 3. do scope check(get requestInfo, and do check)
 		user, err := oauthCtl.LoadAccessTokenUser(c, token)
 		if err != nil {
 			if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
