@@ -37,6 +37,7 @@ func (a *API) ListEnvironments(c *gin.Context) {
 	response.SuccessWithData(c, envs)
 }
 
+// ListEnabledRegionsByEnvironment deprecated, use GetSelectableRegionsByEnv in environment api
 func (a *API) ListEnabledRegionsByEnvironment(c *gin.Context) {
 	env := c.Param(_environmentParam)
 	regions, err := a.envCtl.ListEnabledRegionsByEnvironment(c, env)

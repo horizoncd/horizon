@@ -120,9 +120,9 @@ const (
 const (
 	EnvironmentListRegion = "select * from tb_environment_region " +
 		"where environment_name = ? and deleted_ts = 0"
-	EnvironmentListEnabledRegion = "select r.name, r.display_name from tb_environment_region er " +
+	EnvironmentListEnabledRegion = "select r.name, r.display_name, r.disabled from tb_environment_region er " +
 		"join tb_region r on er.region_name = r.name " +
-		"where er.environment_name = ? and er.deleted_ts = 0 and r.disabled = 0 and r.deleted_ts = 0"
+		"where er.environment_name = ? and er.deleted_ts = 0 and r.deleted_ts = 0"
 	EnvironmentRegionGet = "select * from tb_environment_region where" +
 		" environment_name = ? and region_name = ? and deleted_ts = 0"
 	EnvironmentRegionGetByID           = "select * from tb_environment_region where id = ? and deleted_ts = 0"
@@ -144,9 +144,9 @@ const (
 	RegionGetByName     = "select * from tb_region where name = ? and deleted_ts = 0"
 	RegionGetByID       = "select * from tb_region where id = ? and deleted_ts = 0"
 	RegionGetByHarborID = "select * from tb_region where harbor_id = ? and deleted_ts = 0"
-	RegionListByTags    = "select r.name, r.display_name from tb_region r " +
+	RegionListByTags    = "select r.name, r.display_name, r.disabled from tb_region r " +
 		"join tb_tag tg on r.id = tg.resource_id " +
-		"where tg.resource_type = ? and r.deleted_ts = 0 and r.disabled = 0 " +
+		"where tg.resource_type = ? and r.deleted_ts = 0 " +
 		"and %s group by r.id having count(r.id) = ?"
 )
 

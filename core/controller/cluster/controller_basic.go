@@ -388,6 +388,10 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 	if err != nil {
 		return nil, err
 	}
+	if regionEntity.Disabled {
+		return nil, perror.Wrap(herrors.ErrDisabled,
+			"the region which is disabled cannot be used to create a cluster")
+	}
 
 	// 5. get templateRelease
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, r.Template.Name, r.Template.Release)
