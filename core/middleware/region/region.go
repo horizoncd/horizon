@@ -64,8 +64,8 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 				fmt.Sprintf("failed to get applicationRegions by id: %v", applicationID))
 			return
 		}
-		r := getRegion(c, applicationRegions, environment, param)
-		if len(r) == 0 {
+		r, ok := getRegion(c, applicationRegions, environment, param)
+		if !ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(
 				fmt.Sprintf("cannot find region for environment %v, application %v",
 					environment, applicationID)))
@@ -78,31 +78,21 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 }
 
 func getRegion(c *gin.Context, applicationRegions applicationregion.ApplicationRegion,
-	environment string, p *param.Param) string {
+	environment string, p *param.Param) (string, bool) {
 	for _, applicationRegion := range applicationRegions {
 		if applicationRegion.Environment == environment {
-			return applicationRegion.Region
+			r := applicationRegion.Region
+			region, err := p.RegionMgr.GetRegionByName(c, r)
+			if err != nil {
+				log.Errorf(c, "query region failed: %s, err: %+v", r, err)
+				return "", false
+			}
+			if region.Disabled {
+				log.Errorf(c, "region disabled: %s", r)
+				return "", false
+			}
+			return r, true
 		}
 	}
-	return getDefaultRegion(c, environment, p)
-}
-
-func getDefaultRegion(c *gin.Context, environment string, p *param.Param) string {
-	// getDefaultRegion get default region of environment
-	environmentRegion, err := p.EnvironmentRegionMgr.GetDefaultRegionByEnvironment(c, environment)
-	if err != nil {
-		log.Errorf(c, "no default region for environment: %s, err: %+v", environment, err)
-		return ""
-	}
-	region, err := p.RegionMgr.GetRegionByName(c, environmentRegion.RegionName)
-	if err != nil {
-		log.Errorf(c, "query region failed: %s, err: %+v", environmentRegion.RegionName, err)
-		return ""
-	}
-	if region.Disabled {
-		log.Errorf(c, "region disabled: %s", environmentRegion.RegionName)
-		return ""
-	}
-
-	return environmentRegion.RegionName
+	return "", false
 }

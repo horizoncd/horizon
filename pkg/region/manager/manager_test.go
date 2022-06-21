@@ -233,10 +233,17 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 				{
 					Name:        "1",
 					DisplayName: "1",
+					Disabled:    false,
+				},
+				{
+					Name:        "2",
+					DisplayName: "2",
+					Disabled:    true,
 				},
 				{
 					Name:        "3",
 					DisplayName: "3",
+					Disabled:    false,
 				},
 			},
 		},
@@ -254,10 +261,17 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 				{
 					Name:        "1",
 					DisplayName: "1",
+					Disabled:    false,
+				},
+				{
+					Name:        "2",
+					DisplayName: "2",
+					Disabled:    true,
 				},
 				{
 					Name:        "3",
 					DisplayName: "3",
+					Disabled:    false,
 				},
 			},
 		},
@@ -279,6 +293,12 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 				{
 					Name:        "1",
 					DisplayName: "1",
+					Disabled:    false,
+				},
+				{
+					Name:        "2",
+					DisplayName: "2",
+					Disabled:    true,
 				},
 			},
 		},
