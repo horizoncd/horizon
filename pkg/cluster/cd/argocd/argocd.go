@@ -171,8 +171,9 @@ var (
 			},
 			Timeout: _timeout,
 		},
-		RetryMax:   _retry,
-		CheckRetry: retryablehttp.DefaultRetryPolicy,
+		RetryMax:     _retry,
+		CheckRetry:   retryablehttp.DefaultRetryPolicy,
+		ErrorHandler: retryablehttp.PassthroughErrorHandler,
 		Backoff: func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
 			// 每次失败，等待 _backoff 时间后，进行下次重试
 			return _backoff
