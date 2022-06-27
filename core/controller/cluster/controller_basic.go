@@ -489,6 +489,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	// 3. get environmentRegion/namespace for this cluster
 	var er *emvregionmodels.EnvironmentRegion
 	var regionEntity *regionmodels.RegionEntity
+	var namespace string
+
 	// can only update environment/region when the cluster has been freed
 	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
 		er, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
@@ -499,11 +501,22 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, err
 		}
+
 	} else {
 		er = &emvregionmodels.EnvironmentRegion{
 			EnvironmentName: cluster.EnvironmentName,
 			RegionName:      cluster.RegionName,
 		}
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, err
+	}
+
+	// if environment has not changed, keep the namespace unchanged (for cloudnative app)
+	if er.EnvironmentName == cluster.EnvironmentName {
+		namespace = envValue.Namespace
 	}
 
 	var templateRelease string
@@ -543,6 +556,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 				Application:         application,
 				Environment:         er.EnvironmentName,
 				RegionEntity:        regionEntity,
+				Namespace:           namespace,
 			},
 		}); err != nil {
 			return nil, err
@@ -572,9 +586,11 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	// 7. get namespace
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
-	if err != nil {
-		return nil, err
+	if namespace == "" {
+		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return ofClusterModel(application, cluster, fullPath, envValue.Namespace,
