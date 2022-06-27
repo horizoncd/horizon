@@ -487,9 +487,12 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 3. get environmentRegion/namespace for this cluster
-	var er *emvregionmodels.EnvironmentRegion
-	var regionEntity *regionmodels.RegionEntity
-	var namespace string
+	var (
+		er               *emvregionmodels.EnvironmentRegion
+		regionEntity     *regionmodels.RegionEntity
+		namespace        string
+		namespaceChanged bool
+	)
 
 	// can only update environment/region when the cluster has been freed
 	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
@@ -501,7 +504,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, err
 		}
-
 	} else {
 		er = &emvregionmodels.EnvironmentRegion{
 			EnvironmentName: cluster.EnvironmentName,
@@ -517,6 +519,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	// if environment has not changed, keep the namespace unchanged (for cloudnative app)
 	if er.EnvironmentName == cluster.EnvironmentName {
 		namespace = envValue.Namespace
+	} else {
+		namespaceChanged = true
 	}
 
 	var templateRelease string
@@ -586,7 +590,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	// 7. get namespace
-	if namespace == "" {
+	if namespaceChanged {
 		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
 			return nil, err
