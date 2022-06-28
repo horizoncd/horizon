@@ -580,6 +580,9 @@ func Test(t *testing.T) {
 		ValueFiles:    []string{},
 	}).AnyTimes()
 	imageName := "image"
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{
+		Image: &imageName,
+	}, nil).Times(1)
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -1025,4 +1028,38 @@ javaapp:
 	t.Logf("outPutRenderStr = \n%+s", string(jsonBytes))
 	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"."}}` // nolint
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
+}
+
+func TestIsClusterActuallyHealthy(t *testing.T) {
+	imageV1 := "v1"
+	imageV2 := "v2"
+	cs := &clustercd.ClusterState{}
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, imageV1))
+
+	containerV1 := &clustercd.Container{
+		Image: imageV1,
+	}
+	containerV2 := &clustercd.Container{
+		Image: imageV2,
+	}
+	Pod1 := &clustercd.ClusterPod{}
+	Pod2 := &clustercd.ClusterPod{}
+	Pod3 := &clustercd.ClusterPod{}
+
+	Pod1.Spec.Containers = []*clustercd.Container{containerV1, containerV2}
+	Pod2.Spec.InitContainers = []*clustercd.Container{containerV1, containerV2}
+	Pod3.Spec.InitContainers = []*clustercd.Container{containerV2}
+
+	cs.PodTemplateHash = "test"
+	cs.Versions = map[string]*clustercd.ClusterVersion{}
+	cs.Versions[cs.PodTemplateHash] = &clustercd.ClusterVersion{
+		Pods: map[string]*clustercd.ClusterPod{"Pod3": Pod3},
+	}
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, imageV1))
+
+	cs.Versions[cs.PodTemplateHash].Pods["Pod2"] = Pod2
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, imageV1))
+
+	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, imageV1))
 }
