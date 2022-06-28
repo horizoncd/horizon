@@ -129,6 +129,17 @@ func GetPod(ctx context.Context, kubeClientset kubernetes.Interface, namespace, 
 	return pod, nil
 }
 
+func DeletePods(ctx context.Context, kubeClientset kubernetes.Interface, namespace string, pod string) (err error) {
+	err = kubeClientset.CoreV1().Pods(namespace).Delete(ctx, pod, metav1.DeleteOptions{})
+	if err != nil {
+		if kubeerror.IsNotFound(err) {
+			return herrors.NewErrNotFound(herrors.PodsInK8S, err.Error())
+		}
+		return herrors.NewErrDeleteFailed(herrors.PodsInK8S, err.Error())
+	}
+	return nil
+}
+
 // BuildClient 根据传入的kubeconfig地址生成对应的k8sClient
 // kubeconfig表示kubeconfig文件的地址。如果该地址为空，则默认使用InClusterConfig，即本Pod所在集群的config
 func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) {

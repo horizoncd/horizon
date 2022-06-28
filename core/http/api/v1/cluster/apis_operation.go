@@ -438,6 +438,30 @@ func (a *API) GetClusterPods(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
+func (a *API) DeleteClusterPods(c *gin.Context) {
+	op := "cluster: get cluster pods"
+	clusterIDStr := c.Param(_clusterIDParam)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	pods := c.QueryArray(_podName)
+	if len(pods) == 0 {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("pod name list should not be empty"))
+		return
+	}
+
+	resp, err := a.clusterCtl.DeleteClusterPods(c, uint(clusterID), pods)
+	if err != nil {
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
 func (a *API) Promote(c *gin.Context) {
 	const op = "cluster: promote"
 	clusterIDStr := c.Param(_clusterIDParam)

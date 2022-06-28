@@ -81,6 +81,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/clusters/:%v/pods", _clusterIDParam),
 			HandlerFunc: api.GetClusterPods,
 		}, {
+			Method:      http.MethodDelete,
+			Pattern:     fmt.Sprintf("/clusters/:%v/pods", _clusterIDParam),
+			HandlerFunc: api.DeleteClusterPods,
+		}, {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/free", _clusterIDParam),
 			HandlerFunc: api.Free,
