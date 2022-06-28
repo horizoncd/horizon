@@ -453,18 +453,13 @@ func (a *API) DeleteClusterPods(c *gin.Context) {
 		return
 	}
 
-	err = a.clusterCtl.DeleteClusterPods(c, uint(clusterID), pods)
+	resp, err := a.clusterCtl.DeleteClusterPods(c, uint(clusterID), pods)
 	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
-			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-			return
-		}
-
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
-	response.Success(c)
+	response.SuccessWithData(c, resp)
 }
 
 func (a *API) Promote(c *gin.Context) {

@@ -183,6 +183,11 @@ type ExecResp struct {
 	Error  error
 }
 
+type OperationResult struct {
+	Result bool
+	Error  error
+}
+
 type ExecFunc func(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 
 type CD interface {
@@ -200,7 +205,7 @@ type CD interface {
 	GetPodEvents(ctx context.Context, params *GetPodEventsParams) ([]Event, error)
 	Online(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 	Offline(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
-	DeletePods(ctx context.Context, params *DeletePodsParams) (err error)
+	DeletePods(ctx context.Context, params *DeletePodsParams) (map[string]OperationResult, error)
 }
 
 type cd struct {
@@ -575,18 +580,28 @@ func (c *cd) GetPodContainers(ctx context.Context,
 }
 
 func (c *cd) DeletePods(ctx context.Context,
-	params *DeletePodsParams) (err error) {
+	params *DeletePodsParams) (map[string]OperationResult, error) {
+	result := map[string]OperationResult{}
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	err = kube.DeletePods(ctx, kubeClient.Basic, params.Namespace, params.Pods)
-	if err != nil {
-		return err
+	for _, pod := range params.Pods {
+		err = kube.DeletePods(ctx, kubeClient.Basic, params.Namespace, pod)
+		if err != nil {
+			result[pod] = OperationResult{
+				Result: false,
+				Error:  err,
+			}
+			continue
+		}
+		result[pod] = OperationResult{
+			Result: true,
+		}
 	}
 
-	return nil
+	return result, nil
 }
 
 func (c *cd) GetPodEvents(ctx context.Context,

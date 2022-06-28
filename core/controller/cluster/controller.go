@@ -47,7 +47,7 @@ type Controller interface {
 	UpdateCluster(ctx context.Context, clusterID uint,
 		request *UpdateClusterRequest) (*GetClusterResponse, error)
 	DeleteCluster(ctx context.Context, clusterID uint) error
-	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) error
+	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
 	GetClusterByName(ctx context.Context,
 		clusterName string) (*GetClusterByNameResponse, error)
 

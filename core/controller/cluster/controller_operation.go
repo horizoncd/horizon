@@ -591,37 +591,37 @@ func (c *controller) GetClusterPods(ctx context.Context, clusterID uint, start, 
 	}, nil
 }
 
-func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) error {
+func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = c.cd.DeletePods(ctx, &cd.DeletePodsParams{
+	result, err := c.cd.DeletePods(ctx, &cd.DeletePodsParams{
 		Namespace:    envValue.Namespace,
 		RegionEntity: regionEntity,
 		Pods:         podName,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return ofBatchResp(result), nil
 }
 
 func removeDuplicatePods(pods []KubePodInfo) []KubePodInfo {

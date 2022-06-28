@@ -1017,6 +1017,35 @@ paths:
                       }
                     }
                   }
+  /apis/core/v1/clusters/{clusterID}/pods?podName={podName}:
+    parameters:
+      - name: clusterID
+        in: path
+        description: id of cluster
+        required: true
+    delete:
+      tags:
+        - cluster
+      operationId: deletepod
+      summary: delete pods of cluster
+      response:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example:
+                  {
+                    "data": {
+                      "pod1": {
+                        "result": true
+                      },
+                      "pod2": {
+                        "result": false,
+                        "errorMsg": "why do we failed to delete this pod"
+                      }
+                    }
+                  }
   /apis/core/v1/clusters/{clusterID}/offline:
     parameters:
       - name: clusterID

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -130,10 +129,8 @@ func GetPod(ctx context.Context, kubeClientset kubernetes.Interface, namespace, 
 	return pod, nil
 }
 
-func DeletePods(ctx context.Context, kubeClientset kubernetes.Interface, namespace string, pods []string) (err error) {
-	err = kubeClientset.CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
-		FieldSelector: "metadata.name in " + strings.Join(pods, ","),
-	})
+func DeletePods(ctx context.Context, kubeClientset kubernetes.Interface, namespace string, pod string) (err error) {
+	err = kubeClientset.CoreV1().Pods(namespace).Delete(ctx, pod, metav1.DeleteOptions{})
 	if err != nil {
 		if kubeerror.IsNotFound(err) {
 			return herrors.NewErrNotFound(herrors.PodsInK8S, err.Error())

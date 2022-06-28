@@ -64,11 +64,12 @@ func (mr *MockCDMockRecorder) DeleteCluster(ctx, params interface{}) *gomock.Cal
 }
 
 // DeletePods mocks base method.
-func (m *MockCD) DeletePods(ctx context.Context, params *cd.DeletePodsParams) error {
+func (m *MockCD) DeletePods(ctx context.Context, params *cd.DeletePodsParams) (map[string]cd.OperationResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeletePods", ctx, params)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(map[string]cd.OperationResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DeletePods indicates an expected call of DeletePods.
