@@ -846,6 +846,9 @@ func Test(t *testing.T) {
 	assert.NotNil(t, rollbackResp)
 	b, _ = json.Marshal(rollbackResp)
 	t.Logf("%s", string(b))
+
+	cd.EXPECT().DeletePods(ctx, gomock.Any()).Return(nil)
+	assert.Nil(t, c.DeleteClusterPods(ctx, resp.ID, []string{"pod1"}))
 }
 
 func TestGetClusterOutPut(t *testing.T) {

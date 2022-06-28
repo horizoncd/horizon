@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -127,6 +128,19 @@ func GetPod(ctx context.Context, kubeClientset kubernetes.Interface, namespace, 
 		return nil, herrors.NewErrGetFailed(herrors.PodsInK8S, err.Error())
 	}
 	return pod, nil
+}
+
+func DeletePods(ctx context.Context, kubeClientset kubernetes.Interface, namespace string, pods []string) (err error) {
+	err = kubeClientset.CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
+		FieldSelector: "metadata.name in " + strings.Join(pods, ","),
+	})
+	if err != nil {
+		if kubeerror.IsNotFound(err) {
+			return herrors.NewErrNotFound(herrors.PodsInK8S, err.Error())
+		}
+		return herrors.NewErrDeleteFailed(herrors.PodsInK8S, err.Error())
+	}
+	return nil
 }
 
 // BuildClient 根据传入的kubeconfig地址生成对应的k8sClient

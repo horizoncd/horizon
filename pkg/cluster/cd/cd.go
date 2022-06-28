@@ -121,6 +121,12 @@ type GetPodContainersParams struct {
 	Pod          string
 }
 
+type DeletePodsParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Namespace    string
+	Pods         []string
+}
+
 type DeleteClusterParams struct {
 	Environment string
 	Cluster     string
@@ -194,6 +200,7 @@ type CD interface {
 	GetPodEvents(ctx context.Context, params *GetPodEventsParams) ([]Event, error)
 	Online(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 	Offline(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
+	DeletePods(ctx context.Context, params *DeletePodsParams) (err error)
 }
 
 type cd struct {
@@ -565,6 +572,21 @@ func (c *cd) GetPodContainers(ctx context.Context,
 	}
 
 	return extractContainerDetail(pod), nil
+}
+
+func (c *cd) DeletePods(ctx context.Context,
+	params *DeletePodsParams) (err error) {
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	if err != nil {
+		return err
+	}
+
+	err = kube.DeletePods(ctx, kubeClient.Basic, params.Namespace, params.Pods)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *cd) GetPodEvents(ctx context.Context,

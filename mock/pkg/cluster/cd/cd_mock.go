@@ -63,6 +63,20 @@ func (mr *MockCDMockRecorder) DeleteCluster(ctx, params interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCluster", reflect.TypeOf((*MockCD)(nil).DeleteCluster), ctx, params)
 }
 
+// DeletePods mocks base method.
+func (m *MockCD) DeletePods(ctx context.Context, params *cd.DeletePodsParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePods", ctx, params)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePods indicates an expected call of DeletePods.
+func (mr *MockCDMockRecorder) DeletePods(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePods", reflect.TypeOf((*MockCD)(nil).DeletePods), ctx, params)
+}
+
 // DeployCluster mocks base method.
 func (m *MockCD) DeployCluster(ctx context.Context, params *cd.DeployClusterParams) error {
 	m.ctrl.T.Helper()
