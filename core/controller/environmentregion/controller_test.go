@@ -67,4 +67,29 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
+
+	ers, err := ctl.ListAll(ctx)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(ers))
+	assert.Equal(t, "hz", ers[0].RegionName)
+
+	ers, err = ctl.ListByEnvironment(ctx, "dev")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(ers))
+	assert.Equal(t, "hz", ers[0].RegionName)
+
+	err = ctl.SetEnvironmentRegionToDefault(ctx, er)
+	assert.Nil(t, err)
+
+	ers, err = ctl.ListAll(ctx)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(ers))
+	assert.Equal(t, true, ers[0].IsDefault)
+
+	err = ctl.DeleteByID(ctx, er)
+	assert.Nil(t, err)
+
+	ers, err = ctl.ListAll(ctx)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(ers))
 }
