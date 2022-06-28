@@ -556,15 +556,18 @@ paths:
                       "data":[
                           {
                               "name": "hz",
-                              "displayName": "义桥"
+                              "displayName": "义桥",
+                              "disabled": false
                           },
                           {
                               "name": "dg",
-                              "displayName": "东冠"
+                              "displayName": "东冠",
+                              "disabled": false
                           },
                           {
                               "name": "eks",
-                              "displayName": "海外EKS"
+                              "displayName": "海外EKS",
+                              "disabled": false
                           }
                       ]
                   }
