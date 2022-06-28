@@ -76,9 +76,14 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	}
 
 	envValue := &gitrepo.EnvValue{}
+	po := &gitrepo.PipelineOutput{}
 	if !isClusterStatusUnstable(cluster.Status) {
 		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
+			return nil, err
+		}
+		po, err = c.clusterGitRepo.GetPipelineOutput(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil && perror.Cause(err) != herrors.ErrPipelineOutputEmpty {
 			return nil, err
 		}
 	}
@@ -107,7 +112,15 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		if cluster.Status != "" {
 			clusterState.Status = health.HealthStatusCode(cluster.Status)
 		}
+
+		// there is a possibility that healthy cluster is not reconciled by operator yet
+		if clusterState.Status == health.HealthStatusHealthy {
+			if po != nil && po.Image != nil && !isClusterActuallyHealthy(clusterState, *po.Image) {
+				clusterState.Status = health.HealthStatusProgressing
+			}
+		}
 		resp.ClusterStatus = clusterState
+
 		if cluster.Status == "" && resp.RunningTask.Task == _taskNone && clusterState.Status != "" {
 			// task为none的情况下，判断是否单独在发布（重启、回滚等）
 			// 如果是的话，把runningTask.task设置为deploy，并设置runningTask.taskStatus对应的状态，
@@ -124,6 +137,36 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		}
 	}
 	return resp, nil
+}
+
+// isClusterActuallyHealthy judge if the cluster is healthy by checking image
+func isClusterActuallyHealthy(clusterState *cd.ClusterState, image string) bool {
+	checkImage := func(clusterVersion *cd.ClusterVersion) bool {
+		if len(clusterVersion.Pods) == 0 || image == "" {
+			return true
+		}
+		for _, pod := range clusterVersion.Pods {
+			for _, container := range pod.Spec.InitContainers {
+				if container.Image == image {
+					return true
+				}
+			}
+			for _, container := range pod.Spec.Containers {
+				if container.Image == image {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	podTemplateHash := clusterState.PodTemplateHash
+	clusterVersion, ok := clusterState.Versions[podTemplateHash]
+	if !ok {
+		return false
+	}
+
+	return checkImage(clusterVersion)
 }
 
 func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,

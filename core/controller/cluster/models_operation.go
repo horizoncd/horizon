@@ -20,26 +20,46 @@ type ExecRequest struct {
 type ExecResponse map[string]ExecResult
 
 type ExecResult struct {
-	// Result bool value indicates whether the result is successfully
-	Result bool   `json:"result"`
+	OperationResult
 	Stdout string `json:"stdout,omitempty"`
 	Stderr string `json:"stderr,omitempty"`
-	Error  error  `json:"error,omitempty"`
 }
 
 func ofExecResp(resp map[string]cd.ExecResp) ExecResponse {
 	resultMap := make(ExecResponse)
 	for k, v := range resp {
-		resultMap[k] = ExecResult{
-			Result: v.Result,
+		execResult := ExecResult{
 			Stdout: v.Stdout,
 			Stderr: v.Stderr,
-			Error:  v.Error,
 		}
+		execResult.Result = v.Result
+		execResult.Error = v.Error
+		resultMap[k] = execResult
 	}
 	return resultMap
 }
 
 type RollbackRequest struct {
 	PipelinerunID uint `json:"pipelinerunID"`
+}
+
+type BatchResponse map[string]OperationResult
+type OperationResult struct {
+	// Result bool value indicates whether the result is successfully
+	Result   bool   `json:"result"`
+	Error    error  `json:"error,omitempty"`
+	ErrorMsg string `json:"errorMsg,omitempty"`
+}
+
+func ofBatchResp(resp map[string]cd.OperationResult) BatchResponse {
+	resultMap := make(BatchResponse)
+	for k, v := range resp {
+		opResult := OperationResult{}
+		opResult.Result = v.Result
+		if v.Error != nil {
+			opResult.ErrorMsg = v.Error.Error()
+		}
+		resultMap[k] = opResult
+	}
+	return resultMap
 }
