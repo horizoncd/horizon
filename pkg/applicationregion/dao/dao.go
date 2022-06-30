@@ -13,6 +13,7 @@ import (
 
 type DAO interface {
 	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.ApplicationRegion, error)
+	ListByEnvApplicationID(ctx context.Context, env string, applicationID uint) (*models.ApplicationRegion, error)
 	UpsertByApplicationID(ctx context.Context, applicationID uint, applicationRegions []*models.ApplicationRegion) error
 }
 
@@ -22,6 +23,19 @@ type dao struct {
 
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
+}
+
+func (d *dao) ListByEnvApplicationID(ctx context.Context, env string, applicationID uint) (*models.ApplicationRegion, error) {
+	var applicationRegion *models.ApplicationRegion
+	result := d.db.WithContext(ctx).Raw(common.ApplicationRegionListByEnvApplicationID, env,
+		applicationID).First(&applicationRegion)
+
+	if result.Error != nil {
+		return nil, perror.Wrapf(result.Error,
+			"failed to list applicationRegions for applicationID: %d", applicationID)
+	}
+
+	return applicationRegion, nil
 }
 
 func (d *dao) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.ApplicationRegion, error) {
