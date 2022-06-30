@@ -82,3 +82,27 @@ func (a *API) Update(c *gin.Context) {
 	}
 	response.Success(c)
 }
+
+func (a *API) ListSubResourceTags(c *gin.Context) {
+	const op = "tag: list sub resource tags"
+	resourceType := c.Param(_resourceTypeParam)
+	resourceIDStr := c.Param(_resourceIDParam)
+	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.
+			WithErrMsg(fmt.Sprintf("invalid resource id: %s", resourceIDStr)))
+		return
+	}
+
+	resp, err := a.tagCtl.ListSubResourceTags(c, resourceType, uint(resourceID))
+	if err != nil {
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.SuccessWithData(c, resp)
+}

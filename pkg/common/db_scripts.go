@@ -282,6 +282,8 @@ const (
 	// TagListByResourceTypeID ...
 	TagListByResourceTypeID = "select * from tb_tag where resource_type = ?" +
 		" and resource_id = ? order by id"
+	TagListByResourceTypeIDs = "select distinct tag_key, tag_value from tb_tag where resource_type = ?" +
+		" and resource_id in ? order by id"
 	TagDeleteAllByResourceTypeID = "delete from tb_tag where resource_type = ?" +
 		" and resource_id = ?"
 	TagDeleteByResourceTypeIDAndKeys = "delete from tb_tag where resource_type = ?" +

@@ -13,6 +13,8 @@ import (
 type DAO interface {
 	// ListByResourceTypeID List tags by resourceType and resourceID
 	ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error)
+	// ListByResourceTypeID List tags by resourceType and resourceIDs
+	ListByResourceTypeIDs(ctx context.Context, resourceType string, resourceIDs []uint) ([]*models.Tag, error)
 	// UpsertByResourceTypeID upsert tags
 	UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.Tag) error
 }
@@ -28,6 +30,17 @@ func NewDAO(db *gorm.DB) DAO {
 func (d dao) ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error) {
 	var tags []*models.Tag
 	result := d.db.WithContext(ctx).Raw(common.TagListByResourceTypeID, resourceType, resourceID).Scan(&tags)
+
+	if result.Error != nil {
+		return nil, herrors.NewErrListFailed(herrors.TagInDB, result.Error.Error())
+	}
+
+	return tags, nil
+}
+
+func (d dao) ListByResourceTypeIDs(ctx context.Context, resourceType string, resourceID []uint) ([]*models.Tag, error) {
+	var tags []*models.Tag
+	result := d.db.WithContext(ctx).Raw(common.TagListByResourceTypeIDs, resourceType, resourceID).Scan(&tags)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.TagInDB, result.Error.Error())

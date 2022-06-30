@@ -20,6 +20,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/:%v/:%v/tags", _resourceTypeParam, _resourceIDParam),
 			HandlerFunc: api.Update,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%v/:%v/subresourcetags", _resourceTypeParam, _resourceIDParam),
+			HandlerFunc: api.ListSubResourceTags,
 		},
 	}
 	route.RegisterRoutes(group, routes)
