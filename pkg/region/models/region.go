@@ -32,6 +32,7 @@ type RegionPart struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
 	Disabled    bool   `json:"disabled"`
+	IsDefault   bool   `json:"isDefault"`
 }
 
 type RegionParts []*RegionPart

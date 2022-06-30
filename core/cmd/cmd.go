@@ -107,13 +107,12 @@ import (
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile       string
-	RoleConfigFile   string
-	RegionConfigFile string
-	ScopeRoleFile    string
-	Dev              bool
-	Environment      string
-	LogLevel         string
+	ConfigFile     string
+	RoleConfigFile string
+	ScopeRoleFile  string
+	Dev            bool
+	Environment    string
+	LogLevel       string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -125,9 +124,6 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.RoleConfigFile, "roles", "", "roles file path")
-
-	flag.StringVar(
-		&flags.RegionConfigFile, "regions", "", "regions file path")
 
 	flag.StringVar(
 		&flags.ScopeRoleFile, "scopes", "", "configuration file path")

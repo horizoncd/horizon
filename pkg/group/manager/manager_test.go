@@ -564,6 +564,7 @@ func Test_manager_GetSelectableRegionsByEnv(t *testing.T) {
 				{
 					Name:        "hz",
 					DisplayName: "HZ",
+					IsDefault:   true,
 				},
 			},
 			wantErr: false,

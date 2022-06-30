@@ -12,6 +12,7 @@ import (
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
+	applicationregionmanager "g.hz.netease.com/horizon/pkg/applicationregion/manager"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
@@ -61,6 +62,7 @@ type controller struct {
 	hook                 hook.Hook
 	userSvc              usersvc.Service
 	memberManager        member.Manager
+	applicationRegionMgr applicationregionmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -78,6 +80,7 @@ func NewController(param *param.Param) Controller {
 		hook:                 param.Hook,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
+		applicationRegionMgr: param.ApplicationRegionManager,
 	}
 }
 
@@ -519,6 +522,21 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 	if err != nil {
 		return nil, err
 	}
+	selectableRegionsByEnv, err := c.groupMgr.GetSelectableRegionsByEnv(ctx, application.GroupID, env)
+	if err != nil {
+		return nil, err
+	}
 
-	return c.groupMgr.GetSelectableRegionsByEnv(ctx, application.GroupID, env)
+	// set isDefault field
+	applicationRegion, err := c.applicationRegionMgr.ListByEnvApplicationID(ctx, env, id)
+	if err != nil {
+		return nil, err
+	}
+	if applicationRegion != nil {
+		for _, regionPart := range selectableRegionsByEnv {
+			regionPart.IsDefault = regionPart.Name == applicationRegion.RegionName
+		}
+	}
+
+	return selectableRegionsByEnv, nil
 }
