@@ -25,7 +25,8 @@ func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }
 
-func (d *dao) ListByEnvApplicationID(ctx context.Context, env string, applicationID uint) (*models.ApplicationRegion, error) {
+func (d *dao) ListByEnvApplicationID(ctx context.Context, env string,
+	applicationID uint) (*models.ApplicationRegion, error) {
 	var applicationRegion *models.ApplicationRegion
 	result := d.db.WithContext(ctx).Raw(common.ApplicationRegionListByEnvApplicationID, env,
 		applicationID).First(&applicationRegion)

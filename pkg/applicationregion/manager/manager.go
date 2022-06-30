@@ -27,7 +27,8 @@ type manager struct {
 	dao dao.DAO
 }
 
-func (m *manager) ListByEnvApplicationID(ctx context.Context, env string, applicationID uint) (*models.ApplicationRegion, error) {
+func (m *manager) ListByEnvApplicationID(ctx context.Context, env string,
+	applicationID uint) (*models.ApplicationRegion, error) {
 	return m.dao.ListByEnvApplicationID(ctx, env, applicationID)
 }
 

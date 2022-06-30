@@ -120,7 +120,8 @@ const (
 const (
 	EnvironmentListRegion = "select * from tb_environment_region " +
 		"where environment_name = ? and deleted_ts = 0"
-	EnvironmentListEnabledRegion = "select r.name, r.display_name, r.disabled, er.is_default from tb_environment_region er " +
+	EnvironmentListEnabledRegion = "select r.name, r.display_name, r.disabled, er.is_default " +
+		"from tb_environment_region er " +
 		"join tb_region r on er.region_name = r.name " +
 		"where er.environment_name = ? and er.deleted_ts = 0 and r.deleted_ts = 0"
 	EnvironmentRegionGet = "select * from tb_environment_region where" +
@@ -299,7 +300,8 @@ const (
 
 /* sql about application region */
 const (
-	ApplicationRegionListByEnvApplicationID   = "select * from tb_application_region where environment_name = ? and application_id = ?"
+	ApplicationRegionListByEnvApplicationID = "select * from tb_application_region where environment_name = ? " +
+		"and application_id = ?"
 	ApplicationRegionListByApplicationID      = "select * from tb_application_region where application_id = ?"
 	ApplicationRegionDeleteAllByApplicationID = "delete from tb_application_region where application_id = ?"
 )
