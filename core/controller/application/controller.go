@@ -530,7 +530,9 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 	// set isDefault field
 	applicationRegion, err := c.applicationRegionMgr.ListByEnvApplicationID(ctx, env, id)
 	if err != nil {
-		return nil, err
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return nil, err
+		}
 	}
 	if applicationRegion != nil {
 		for _, regionPart := range selectableRegionsByEnv {
