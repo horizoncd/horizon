@@ -18,6 +18,7 @@ var (
 	ApplicationInArgo         = sourceType{name: "ApplicationInArgo"}
 	ApplicationResourceInArgo = sourceType{name: "ApplicationResourceInArgo"}
 	ApplicationInDB           = sourceType{name: "ApplicationInDB"}
+	ApplicationRegionInDB     = sourceType{name: "ApplicationRegionInDB"}
 	EnvironmentRegionInDB     = sourceType{name: "EnvironmentRegionInDB"}
 	EnvironmentInDB           = sourceType{name: "EnvironmentInDB"}
 	RegionInDB                = sourceType{name: "RegionInDB"}

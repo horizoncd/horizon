@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -32,8 +33,10 @@ func (d *dao) ListByEnvApplicationID(ctx context.Context, env string,
 		applicationID).First(&applicationRegion)
 
 	if result.Error != nil {
-		return nil, perror.Wrapf(result.Error,
-			"failed to list applicationRegions for applicationID: %d", applicationID)
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.ApplicationRegionInDB, result.Error.Error())
+		}
+		return nil, herrors.NewErrGetFailed(herrors.ApplicationRegionInDB, result.Error.Error())
 	}
 
 	return applicationRegion, nil
