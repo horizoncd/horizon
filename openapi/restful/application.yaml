@@ -557,17 +557,20 @@ paths:
                           {
                               "name": "hz",
                               "displayName": "义桥",
-                              "disabled": false
+                              "disabled": false,
+                              "isDefault": true
                           },
                           {
                               "name": "dg",
                               "displayName": "东冠",
-                              "disabled": false
+                              "disabled": false,
+                              "isDefault": false
                           },
                           {
                               "name": "eks",
                               "displayName": "海外EKS",
-                              "disabled": false
+                              "disabled": false,
+                              "isDefault": false
                           }
                       ]
                   }
