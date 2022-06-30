@@ -269,18 +269,18 @@ func (m manager) GetSelectableRegionsByEnv(ctx context.Context, id uint, env str
 		return regionmodels.RegionParts{}, nil
 	}
 
+	// get regions with group's regionSelector
 	groupRegionParts, err := m.GetSelectableRegions(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-
-	// get regions under env and regionSelector at the same time
-	var regionParts regionmodels.RegionParts
 	partMap := make(map[string]*regionmodels.RegionPart)
-	for _, p := range envRegionParts {
+	for _, p := range groupRegionParts {
 		partMap[p.Name] = p
 	}
-	for _, p := range groupRegionParts {
+
+	var regionParts regionmodels.RegionParts
+	for _, p := range envRegionParts {
 		if _, ok := partMap[p.Name]; ok {
 			regionParts = append(regionParts, p)
 		}
