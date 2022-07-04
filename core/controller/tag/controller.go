@@ -93,7 +93,7 @@ func (c *controller) ListSubResourceTags(ctx context.Context, resourceType strin
 		for _, cluster := range clusters {
 			clusterIDs = append(clusterIDs, cluster.ID)
 		}
-		tags, err := c.tagMgr.ListByResourceTypeIDs(ctx, models.TypeCluster, clusterIDs)
+		tags, err := c.tagMgr.ListByResourceTypeIDs(ctx, models.TypeCluster, clusterIDs, true)
 		if err != nil {
 			return nil, err
 		}

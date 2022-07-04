@@ -16,7 +16,8 @@ type Manager interface {
 	// ListByResourceTypeID List tags by resourceType and resourceID
 	ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error)
 	// ListByResourceTypeIDs List tags by resourceType and resourceID
-	ListByResourceTypeIDs(ctx context.Context, resourceType string, resourceIDs []uint) ([]*models.Tag, error)
+	ListByResourceTypeIDs(ctx context.Context, resourceType string, resourceIDs []uint,
+		deduplicate bool) ([]*models.Tag, error)
 	// UpsertByResourceTypeID upsert tags
 	UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.Tag) error
 }
@@ -36,9 +37,9 @@ func (m *manager) ListByResourceTypeID(ctx context.Context,
 	return m.dao.ListByResourceTypeID(ctx, resourceType, resourceID)
 }
 
-func (m *manager) ListByResourceTypeIDs(ctx context.Context,
-	resourceType string, resourceIDs []uint) ([]*models.Tag, error) {
-	return m.dao.ListByResourceTypeIDs(ctx, resourceType, resourceIDs)
+func (m *manager) ListByResourceTypeIDs(ctx context.Context, resourceType string,
+	resourceIDs []uint, deduplicate bool) ([]*models.Tag, error) {
+	return m.dao.ListByResourceTypeIDs(ctx, resourceType, resourceIDs, deduplicate)
 }
 
 func (m *manager) UpsertByResourceTypeID(ctx context.Context,

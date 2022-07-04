@@ -44,7 +44,17 @@ func (c *controller) ListCluster(ctx context.Context, applicationID uint, enviro
 		return 0, nil, err
 	}
 
-	return count, ofClustersWithEnvAndRegion(clustersWithEnvAndRegion), nil
+	clusterIDs := []uint{}
+	for _, c := range clustersWithEnvAndRegion {
+		clusterIDs = append(clusterIDs, c.ID)
+	}
+
+	tags, err := c.tagMgr.ListByResourceTypeIDs(ctx, tagmodels.TypeCluster, clusterIDs, false)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return count, ofClustersWithEnvRegionTags(clustersWithEnvAndRegion, tags), nil
 }
 
 func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
