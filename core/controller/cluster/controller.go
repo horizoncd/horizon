@@ -24,6 +24,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/param"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
+	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
@@ -101,6 +102,7 @@ type controller struct {
 	memberManager        member.Manager
 	groupManager         groupmanager.Manager
 	schemaTagManager     templateschematagmanager.Manager
+	tagMgr               tagmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -131,6 +133,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		memberManager:        param.MemberManager,
 		groupManager:         param.GroupManager,
 		schemaTagManager:     param.ClusterSchemaTagMgr,
+		tagMgr:               param.TagManager,
 	}
 }
 

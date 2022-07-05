@@ -213,14 +213,15 @@ type GitResponse struct {
 }
 
 type ListClusterResponse struct {
-	ID          uint         `json:"id"`
-	Name        string       `json:"name"`
-	Description string       `json:"description"`
-	Scope       *Scope       `json:"scope"`
-	Template    *Template    `json:"template"`
-	Git         *GitResponse `json:"git"`
-	CreatedAt   time.Time    `json:"createdAt"`
-	UpdatedAt   time.Time    `json:"updatedAt"`
+	ID          uint                  `json:"id"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Scope       *Scope                `json:"scope"`
+	Template    *Template             `json:"template"`
+	Git         *GitResponse          `json:"git"`
+	CreatedAt   time.Time             `json:"createdAt"`
+	UpdatedAt   time.Time             `json:"updatedAt"`
+	Tags        []*tagmodels.TagBasic `json:"tags,omitempty"`
 }
 
 func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterResponse {
@@ -246,10 +247,21 @@ func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterRe
 	}
 }
 
-func ofClustersWithEnvAndRegion(clusters []*models.ClusterWithRegion) []*ListClusterResponse {
+func ofClustersWithEnvRegionTags(clusters []*models.ClusterWithRegion, tags []*tagmodels.Tag) []*ListClusterResponse {
+	tagMap := map[uint][]*tagmodels.TagBasic{}
+	for _, tag := range tags {
+		tagBasic := &tagmodels.TagBasic{
+			Key:   tag.Key,
+			Value: tag.Value,
+		}
+		tagMap[tag.ResourceID] = append(tagMap[tag.ResourceID], tagBasic)
+	}
+
 	respList := make([]*ListClusterResponse, 0)
 	for _, c := range clusters {
-		respList = append(respList, ofClusterWithEnvAndRegion(c))
+		cluster := ofClusterWithEnvAndRegion(c)
+		cluster.Tags = tagMap[c.ID]
+		respList = append(respList, cluster)
 	}
 	return respList
 }

@@ -161,11 +161,11 @@ const (
 	ClusterQueryByApplication  = "select c.*, r.display_name as region_display_name from tb_cluster c " +
 		"join tb_region r on r.name = c.region_name " +
 		"where c.application_id = ? " +
-		"and c.name like ? and c.deleted_ts = 0 limit ? offset ?"
+		"and c.name like ? and (c.environment_name in ? or ? = 0) and c.deleted_ts = 0 limit ? offset ?"
 	ClusterCountByApplication = "select count(1) from tb_cluster c " +
 		"join tb_region r on r.name = c.region_name " +
 		"where c.application_id = ? " +
-		"and c.name like ? and c.deleted_ts = 0"
+		"and c.name like ? and (c.environment_name in ? or ? = 0) and c.deleted_ts = 0"
 	ClusterQueryByApplicationAndEnvs = "select c.*, r.display_name as region_display_name from tb_cluster c " +
 		"join tb_region r on r.name = c.region_name " +
 		"where c.application_id = ? and c.environment_name in ? " +
@@ -240,13 +240,15 @@ const (
 		"join tb_tag tg on c.id = tg.resource_id " +
 		"join tb_region r on r.name = c.region_name " +
 		"where c.application_id = ? and tg.resource_type = ? " +
-		"and c.name like ? and c.deleted_ts = 0 and %s group by c.id having count(c.id) = ? " +
+		"and c.name like ? and (c.environment_name in ? or ? = 0) " +
+		"and c.deleted_ts = 0 and %s group by c.id having count(c.id) = ? " +
 		"limit ? offset ?"
 	ClusterCountByApplicationAndTags = "select count(1) from (select c.id from tb_cluster c " +
 		"join tb_tag tg on c.id = tg.resource_id " +
 		"join tb_region r on r.name = c.region_name " +
 		"where c.application_id = ? and tg.resource_type = ? " +
-		"and c.name like ? and c.deleted_ts = 0 and %s group by c.id having count(c.id) = ?) as cid"
+		"and c.name like ? and (c.environment_name in ? or ? = 0) " +
+		"and c.deleted_ts = 0 and %s group by c.id having count(c.id) = ?) as cid"
 )
 
 /* sql about pipelinerun */
@@ -283,6 +285,10 @@ const (
 	// TagListByResourceTypeID ...
 	TagListByResourceTypeID = "select * from tb_tag where resource_type = ?" +
 		" and resource_id = ? order by id"
+	TagListByResourceTypeIDs = "select * from tb_tag where resource_type = ?" +
+		" and resource_id in ? order by id"
+	TagListDistinctByResourceTypeIDs = "select distinct tag_key, tag_value from tb_tag where resource_type = ?" +
+		" and resource_id in ? order by id"
 	TagDeleteAllByResourceTypeID = "delete from tb_tag where resource_type = ?" +
 		" and resource_id = ?"
 	TagDeleteByResourceTypeIDAndKeys = "delete from tb_tag where resource_type = ?" +

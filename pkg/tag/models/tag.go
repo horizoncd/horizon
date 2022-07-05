@@ -40,6 +40,11 @@ type Tag struct {
 	UpdatedBy    uint
 }
 
+type TagBasic struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type TagSelector struct {
 	Key      string      `json:"key"`
 	Values   sets.String `json:"values"`

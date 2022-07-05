@@ -13,6 +13,10 @@ import (
 type DAO interface {
 	// ListByResourceTypeID List tags by resourceType and resourceID
 	ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error)
+	// ListByResourceTypeID List tags by resourceType and resourceIDs
+	// if distinct enabled, tags only contains tag_key and tag_value
+	ListByResourceTypeIDs(ctx context.Context, resourceType string, resourceIDs []uint,
+		deduplicate bool) ([]*models.Tag, error)
 	// UpsertByResourceTypeID upsert tags
 	UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.Tag) error
 }
@@ -28,6 +32,24 @@ func NewDAO(db *gorm.DB) DAO {
 func (d dao) ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error) {
 	var tags []*models.Tag
 	result := d.db.WithContext(ctx).Raw(common.TagListByResourceTypeID, resourceType, resourceID).Scan(&tags)
+
+	if result.Error != nil {
+		return nil, herrors.NewErrListFailed(herrors.TagInDB, result.Error.Error())
+	}
+
+	return tags, nil
+}
+
+func (d dao) ListByResourceTypeIDs(ctx context.Context, resourceType string,
+	resourceID []uint, deduplicate bool) ([]*models.Tag, error) {
+	var tags []*models.Tag
+
+	querySQL := common.TagListByResourceTypeIDs
+	if deduplicate {
+		querySQL = common.TagListDistinctByResourceTypeIDs
+	}
+
+	result := d.db.WithContext(ctx).Raw(querySQL, resourceType, resourceID).Scan(&tags)
 
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.TagInDB, result.Error.Error())
