@@ -187,4 +187,28 @@ func Test(t *testing.T) {
 	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, request)
 	assert.NotNil(t, err)
 	t.Logf("%v", err.Error())
+
+	cluster2, err := clusterMgr.Create(ctx, &models.Cluster{
+		ApplicationID: application.ID,
+		Name:          "cluster2",
+	}, nil, nil)
+	assert.Nil(t, err)
+
+	err = c.Update(ctx, tagmodels.TypeCluster, cluster2.ID, &UpdateRequest{
+		Tags: []*Tag{
+			{
+				Key:   "d",
+				Value: "4",
+			},
+			{
+				Key:   "e",
+				Value: "5",
+			},
+		},
+	})
+	assert.Nil(t, err)
+
+	resp, err = c.ListSubResourceTags(ctx, tagmodels.TypeApplication, cluster.ApplicationID)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(resp.Tags))
 }

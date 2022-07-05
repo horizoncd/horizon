@@ -18,6 +18,7 @@ import (
 	registryftymock "g.hz.netease.com/horizon/mock/pkg/cluster/registry/factory"
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
+	tagmock "g.hz.netease.com/horizon/mock/pkg/tag/manager"
 	outputmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/output"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -38,6 +39,7 @@ import (
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	tmodel "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -414,7 +416,7 @@ func TestMain(m *testing.M) {
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&harbormodels.Harbor{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
-		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}); err != nil {
+		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
@@ -454,6 +456,7 @@ func Test(t *testing.T) {
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockFactory(mockCtl)
 	commitGetter := commitmock.NewMockGitGetter(mockCtl)
+	tagManager := tagmock.NewMockManager(mockCtl)
 
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	expectparams := make(map[string]string)
@@ -559,8 +562,10 @@ func Test(t *testing.T) {
 		userManager:          manager.UserManager,
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
+		tagMgr:               tagManager,
 	}
 
+	tagManager.EXPECT().ListByResourceTypeIDs(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
@@ -601,6 +606,7 @@ func Test(t *testing.T) {
 	}
 
 	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest)
+	assert.Nil(t, err)
 	createClusterRequest.Name = "app-cluster-new"
 	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest)
 	assert.Nil(t, err)

@@ -14,6 +14,8 @@ import (
 
 type Controller interface {
 	List(ctx context.Context, resourceType string, resourceID uint) (*ListResponse, error)
+	ListSubResourceTags(ctx context.Context, resourceType string,
+		resourceID uint) (*ListResponse, error)
 	Update(ctx context.Context, resourceType string, resourceID uint, r *UpdateRequest) error
 }
 
@@ -73,4 +75,30 @@ func (c *controller) Update(ctx context.Context, resourceType string, resourceID
 	}
 
 	return c.tagMgr.UpsertByResourceTypeID(ctx, resourceType, resourceID, tags)
+}
+
+func (c *controller) ListSubResourceTags(ctx context.Context, resourceType string,
+	resourceID uint) (*ListResponse, error) {
+	const op = "cluster tag controller: list sub resource tags"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	var results []*models.Tag
+	if resourceType == models.TypeApplication {
+		clusters, err := c.clusterMgr.ListByApplicationID(ctx, resourceID)
+		if err != nil {
+			return nil, err
+		}
+
+		var clusterIDs []uint
+		for _, cluster := range clusters {
+			clusterIDs = append(clusterIDs, cluster.ID)
+		}
+		tags, err := c.tagMgr.ListByResourceTypeIDs(ctx, models.TypeCluster, clusterIDs, true)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, tags...)
+	}
+
+	return ofTags(results), nil
 }

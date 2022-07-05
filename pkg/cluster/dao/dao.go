@@ -211,7 +211,8 @@ func (d *dao) ListByApplicationEnvsTags(ctx context.Context, applicationID uint,
 		// todo: support other operators
 		var conditions []string
 		var params []interface{}
-		params = append(params, applicationID, tagmodels.TypeCluster, like)
+		params = append(params, applicationID, tagmodels.TypeCluster,
+			like, environments, len(environments))
 		for _, tagSelector := range ts {
 			if tagSelector.Operator != tagmodels.Equals && tagSelector.Operator != tagmodels.In {
 				return 0, nil, perror.Wrapf(herrors.ErrParamInvalid,
@@ -233,24 +234,14 @@ func (d *dao) ListByApplicationEnvsTags(ctx context.Context, applicationID uint,
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
 		}
-	} else if len(environments) > 0 {
-		result = d.db.WithContext(ctx).Raw(sqlcommon.ClusterQueryByApplicationAndEnvs, applicationID,
-			environments, like, limit, offset).Scan(&clusters)
-		if result.Error != nil {
-			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
-		}
-		result = d.db.WithContext(ctx).Raw(sqlcommon.ClusterCountByApplicationAndEnvs, applicationID,
-			environments, like).Scan(&count)
-		if result.Error != nil {
-			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
-		}
 	} else {
 		result = d.db.WithContext(ctx).Raw(sqlcommon.ClusterQueryByApplication, applicationID, like,
-			limit, offset).Scan(&clusters)
+			environments, len(environments), limit, offset).Scan(&clusters)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
 		}
-		result = d.db.WithContext(ctx).Raw(sqlcommon.ClusterCountByApplication, applicationID, like).Scan(&count)
+		result = d.db.WithContext(ctx).Raw(sqlcommon.ClusterCountByApplication, applicationID,
+			like, environments, len(environments)).Scan(&count)
 		if result.Error != nil {
 			return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
 		}
