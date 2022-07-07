@@ -218,11 +218,23 @@ func Test(t *testing.T) {
 	t.Logf("mr.ID: %v", mr.ID)
 	t.Logf("mr.IID: %v", mr.IID)
 
-	// 14. accept a mr
+	// 14. close a mr
+	mr2, err := g.CloseMR(ctx, pid, mr.IID)
+	assert.Nil(t, err)
+	assert.Equal(t, mr.IID, mr2.IID)
+
+	// 15. create a mr
+	mr, err = g.CreateMR(ctx, pid, newBranch, startBranch, "this is title")
+	assert.Nil(t, err)
+	t.Logf(mr.WebURL)
+	t.Logf("mr.ID: %v", mr.ID)
+	t.Logf("mr.IID: %v", mr.IID)
+
+	// 16. accept a mr
 	_, err = g.AcceptMR(ctx, pid, mr.IID, nil, nil)
 	assert.Nil(t, err)
 
-	// 15. transfer a project
+	// 17. transfer a project
 	newGroupName := "newGroup"
 	_, err = g.CreateGroup(ctx, newGroupName, newGroupName, intToPtr(rootGroupID))
 	assert.Nil(t, err)
@@ -235,14 +247,14 @@ func Test(t *testing.T) {
 		_ = g.DeleteGroup(ctx, newGroupPath)
 	}()
 
-	// 16. edit a project's name and path
+	// 18. edit a project's name and path
 	pid = fmt.Sprintf("%v/%v", newGroupPath, projectName)
 	newProjectName := fmt.Sprintf("%v-%d", projectName, 1)
 	newProjectPath := newProjectName
 	err = g.EditNameAndPathForProject(ctx, pid, &newProjectName, &newProjectPath)
 	assert.Nil(t, err)
 
-	// 17. delete project
+	// 19. delete project
 	pid = fmt.Sprintf("%v/%v", newGroupPath, newProjectPath)
 	err = g.DeleteProject(ctx, pid)
 	assert.Nil(t, err)

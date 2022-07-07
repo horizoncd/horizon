@@ -91,6 +91,11 @@ type Interface interface {
 	AcceptMR(ctx context.Context, pid interface{}, mrID int,
 		mergeCommitMsg *string, shouldRemoveSourceBranch *bool) (*gitlab.MergeRequest, error)
 
+	// CloseMR merge a merge request for specified project.
+	// The pid can be the project's ID or relative path such as fist/second.
+	// See https://docs.gitlab.com/ee/api/merge_requests.html#update-mr for more information.
+	CloseMR(ctx context.Context, pid interface{}, mrID int) (mr *gitlab.MergeRequest, err error)
+
 	// WriteFiles write including create, delete, update multiple files within a specified project.
 	// The pid can be the project's ID or relative path such as fist/second.
 	// See https://docs.gitlab.com/ee/api/commits.html#create-a-commit-with-multiple-files-and-actions
@@ -363,6 +368,26 @@ func (h *helper) ListMRs(ctx context.Context, pid interface{},
 	}
 
 	return mrs, nil
+}
+
+func (h *helper) CloseMR(ctx context.Context, pid interface{}, mrID int) (mr *gitlab.MergeRequest, err error) {
+	const op = "gitlab: close mr"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	closeEvent := "close"
+	mr, resp, err := h.client.MergeRequests.UpdateMergeRequest(pid, mrID, &gitlab.UpdateMergeRequestOptions{
+		StateEvent: &closeEvent,
+	}, gitlab.WithContext(ctx))
+	if err == nil {
+		return mr, nil
+	}
+
+	err2 := parseError(resp, err)
+	if _, ok := perror.Cause(err2).(*herrors.HorizonErrNotFound); ok {
+		log.Warningf(ctx, "project %v, mr %d have been closed", pid, mrID)
+		return nil, nil
+	}
+	return nil, err2
 }
 
 func (h *helper) AcceptMR(ctx context.Context, pid interface{}, mrID int,

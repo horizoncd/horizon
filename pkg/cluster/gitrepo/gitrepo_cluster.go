@@ -585,6 +585,20 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	if len(mrs) > 0 {
 		// merge old mr when it is existed, because given specified source and target, gitlab only allows 1 mr to exist
 		mr = mrs[0]
+
+		// close the redundant mrs
+		// gitlab has a bug for when concurrency create merge request(will exist 2 more merge request for the same
+		// (source,target), caused we can't merge anymore)
+		if len(mrs) >= 2 {
+			log.Warningf(ctx, "there %d mrs for (src:%s, des:%s), here will kill redundant mrs",
+				len(mrs), _branchGitops, _branchMaster)
+			for i := 1; i < len(mrs); i++ {
+				_, err := g.gitlabLib.CloseMR(ctx, pid, mrs[i].IID)
+				if err != nil {
+					return "", err
+				}
+			}
+		}
 	} else {
 		// create new mr
 		mr, err = g.gitlabLib.CreateMR(ctx, pid, _branchGitops, _branchMaster, title)
