@@ -95,7 +95,7 @@ func Middleware(keys authenticate.KeysConfig, skippers ...middleware.Skipper) gi
 				}
 			}
 			if found {
-				log.Infof(c, "the caller name: %v", user)
+				log.Infof(c, "the caller name: %v, operator: %v", user, operator)
 				break
 			}
 		}

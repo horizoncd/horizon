@@ -19,11 +19,11 @@ const (
 
 // GitGetter interface to get commit for user code
 type GitGetter interface {
-	// GetCommit to get commit of a branch or a commitID for a specified git URL
-	// If branch and commit are both provided, use branch.
+	// GetCommit to get commit of a branch/tag/commitID for a specified git URL
 	// gitURL is a ssh url, looks like: ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git
-	GetCommit(ctx context.Context, gitURL string, branch *string, commit *string) (*Commit, error)
+	GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*Commit, error)
 	ListBranch(ctx context.Context, gitURL string, params *SearchParams) ([]string, error)
+	ListTag(ctx context.Context, gitURL string, params *SearchParams) ([]string, error)
 }
 
 var _ GitGetter = (*gitGetter)(nil)
@@ -66,32 +66,66 @@ func (g *gitGetter) ListBranch(ctx context.Context, gitURL string, params *Searc
 	return branchNames, nil
 }
 
-func (g *gitGetter) GetCommit(ctx context.Context, gitURL string, branch *string, commit *string) (*Commit, error) {
+func (g *gitGetter) ListTag(ctx context.Context, gitURL string, params *SearchParams) ([]string, error) {
 	pid, err := extractProjectPathFromSSHURL(gitURL)
 	if err != nil {
 		return nil, err
 	}
-	if branch == nil && commit == nil {
-		return nil, perror.Wrap(herrors.ErrBranchAndCommitEmpty, "branch and commit are empty")
+	listParam := &gitlab.ListTagsOptions{
+		ListOptions: gitlab.ListOptions{
+			Page:    params.PageNumber,
+			PerPage: params.PageSize,
+		},
+		Search: &params.Filter,
 	}
-	if branch != nil {
-		gitlabBranch, err := g.gitlabLib.GetBranch(ctx, pid, *branch)
+	tags, err := g.gitlabLib.ListTag(ctx, pid, listParam)
+	if err != nil {
+		return nil, err
+	}
+	tagNames := make([]string, 0)
+	for _, tag := range tags {
+		tagNames = append(tagNames, tag.Name)
+	}
+	return tagNames, nil
+}
+
+func (g *gitGetter) GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*Commit, error) {
+	pid, err := extractProjectPathFromSSHURL(gitURL)
+	if err != nil {
+		return nil, err
+	}
+
+	switch refType {
+	case GitRefTypeCommit:
+		commit, err := g.gitlabLib.GetCommit(ctx, pid, ref)
 		if err != nil {
 			return nil, err
 		}
 		return &Commit{
-			ID:      gitlabBranch.Commit.ID,
-			Message: gitlabBranch.Commit.Message,
+			ID:      commit.ID,
+			Message: commit.Message,
 		}, nil
+	case GitRefTypeTag:
+		tag, err := g.gitlabLib.GetTag(ctx, pid, ref)
+		if err != nil {
+			return nil, err
+		}
+		return &Commit{
+			ID:      tag.Commit.ID,
+			Message: tag.Commit.Message,
+		}, nil
+	case GitRefTypeBranch:
+		branch, err := g.gitlabLib.GetBranch(ctx, pid, ref)
+		if err != nil {
+			return nil, err
+		}
+		return &Commit{
+			ID:      branch.Commit.ID,
+			Message: branch.Commit.Message,
+		}, nil
+	default:
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "git ref type %s is invalid", refType)
 	}
-	c, err := g.gitlabLib.GetCommit(ctx, pid, *commit)
-	if err != nil {
-		return nil, err
-	}
-	return &Commit{
-		ID:      c.ID,
-		Message: c.Message,
-	}, nil
 }
 
 // extractProjectPathFromSSHURL extract gitlab project path from ssh url.

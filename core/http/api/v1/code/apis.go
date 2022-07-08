@@ -45,3 +45,28 @@ func (a *API) ListBranch(c *gin.Context) {
 	}
 	response.SuccessWithData(c, branches)
 }
+
+func (a *API) ListTag(c *gin.Context) {
+	gitURL := c.Query(_gitURL)
+	if gitURL == "" {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, "giturl is empty")
+		return
+	}
+	pageNumber, pageSize, err := request.GetPageParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	filter := c.Query(common.Filter)
+
+	tags, err := a.codeCtl.ListTag(c, gitURL, &codegetter.SearchParams{
+		Filter:     filter,
+		PageNumber: pageNumber,
+		PageSize:   pageSize,
+	})
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, tags)
+}

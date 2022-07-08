@@ -652,15 +652,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 			pipelineOutput.Image = pipelineOutputParam.Image
 		}
 		if pipelineOutputParam.Git != nil {
-			if pipelineOutputParam.Git.URL != nil {
-				pipelineOutput.Git.URL = pipelineOutputParam.Git.URL
-			}
-			if pipelineOutputParam.Git.Branch != nil {
-				pipelineOutput.Git.Branch = pipelineOutputParam.Git.Branch
-			}
-			if pipelineOutputParam.Git.CommitID != nil {
-				pipelineOutput.Git.CommitID = pipelineOutputParam.Git.CommitID
-			}
+			pipelineOutput.Git = pipelineOutputParam.Git
 		}
 	}
 
@@ -1004,6 +996,7 @@ type Git struct {
 	URL      *string `yaml:"url,omitempty"`
 	CommitID *string `yaml:"commitID,omitempty"`
 	Branch   *string `yaml:"branch,omitempty"`
+	Tag      *string `yaml:"tag,omitempty"`
 }
 
 type BaseValueTemplate struct {

@@ -59,6 +59,11 @@ type Interface interface {
 	// See https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch for more information.
 	GetBranch(ctx context.Context, pid interface{}, branch string) (*gitlab.Branch, error)
 
+	// GetBranch get tag of the specified project.
+	// The pid can be the project's ID or relative path such as fist/second.
+	// see https://docs.gitlab.com/ee/api/tags.html#get-a-single-repository-tag for more information
+	GetTag(ctx context.Context, pid interface{}, tag string) (_ *gitlab.Tag, err error)
+
 	// CreateBranch create a branch from fromRef for the specified project.
 	// The pid can be the project's ID or relative path such as fist/second.
 	// The fromRef can be the name of branch, tag or commit.
@@ -74,6 +79,11 @@ type Interface interface {
 	// see https://docs.gitlab.com/ee/api/branches.html#list-repository-branches
 	ListBranch(ctx context.Context, pid interface{},
 		listBranchOptions *gitlab.ListBranchesOptions) (_ []*gitlab.Branch, err error)
+
+	// ListTag list the tag, Get a list of repository tag from a project, sorted by name alphabetically.
+	// see https://docs.gitlab.com/ee/api/tags.html#list-project-repository-tags for more information
+	ListTag(ctx context.Context, pid interface{},
+		listTagOptions *gitlab.ListTagsOptions) (_ []*gitlab.Tag, err error)
 
 	// CreateMR create a merge request from source to target with the specified title in project.
 	// The pid can be the project's ID or relative path such as fist/second.
@@ -293,11 +303,35 @@ func (h *helper) ListBranch(ctx context.Context, pid interface{},
 	return branches, nil
 }
 
+func (h *helper) ListTag(ctx context.Context, pid interface{},
+	listTagsOptions *gitlab.ListTagsOptions) (_ []*gitlab.Tag, err error) {
+	const op = "gitlab: list tag"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	tags, rsp, err := h.client.Tags.ListTags(pid, listTagsOptions, nil)
+	if err != nil {
+		return nil, parseError(rsp, err)
+	}
+	return tags, nil
+}
+
 func (h *helper) GetCommit(ctx context.Context, pid interface{}, commit string) (_ *gitlab.Commit, err error) {
 	const op = "gitlab: get commit"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	c, rsp, err := h.client.Commits.GetCommit(pid, commit, gitlab.WithContext(ctx))
+	if err != nil {
+		return nil, parseError(rsp, err)
+	}
+
+	return c, nil
+}
+
+func (h *helper) GetTag(ctx context.Context, pid interface{}, tag string) (_ *gitlab.Tag, err error) {
+	const op = "gitlab: get commit"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	c, rsp, err := h.client.Tags.GetTag(pid, tag, gitlab.WithContext(ctx))
 	if err != nil {
 		return nil, parseError(rsp, err)
 	}

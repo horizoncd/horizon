@@ -14,7 +14,8 @@ type Cluster struct {
 	Description     string
 	GitURL          string
 	GitSubfolder    string
-	GitBranch       string
+	GitRef          string
+	GitRefType      string
 	Template        string
 	TemplateRelease string
 	Status          string

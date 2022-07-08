@@ -22,6 +22,7 @@ import (
 	applicationmodel "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustermodel "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
@@ -152,7 +153,8 @@ func TestGetDiff(t *testing.T) {
 		ID:               0,
 		ClusterID:        clusterID,
 		GitURL:           gitURL,
-		GitBranch:        gitBranch,
+		GitRefType:       codemodels.GitRefTypeBranch,
+		GitRef:           gitBranch,
 		GitCommit:        gitCommit,
 		LastConfigCommit: lastConfigCommit,
 		ConfigCommit:     configCommit,
@@ -171,10 +173,11 @@ func TestGetDiff(t *testing.T) {
 	}, nil).Times(1)
 
 	commitMsg := "hello world"
-	mockCommitGetter.EXPECT().GetCommit(ctx, gitURL, nil, &gitCommit).Return(&code.Commit{
-		ID:      gitCommit,
-		Message: commitMsg,
-	}, nil)
+	mockCommitGetter.EXPECT().GetCommit(ctx, gitURL, codemodels.GitRefTypeBranch, gitCommit).
+		Return(&code.Commit{
+			ID:      gitCommit,
+			Message: commitMsg,
+		}, nil)
 
 	diff := "this is mydiff"
 	mockClusterGitRepo.EXPECT().CompareConfig(ctx, applicationName, clusterName,

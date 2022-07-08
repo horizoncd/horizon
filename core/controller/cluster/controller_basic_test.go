@@ -51,7 +51,7 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 			Priority:        "P3",
 			GitURL:          "ssh://git.com",
 			GitSubfolder:    "/test",
-			GitBranch:       "master",
+			GitRef:          "master",
 			Template:        "javaapp",
 			TemplateRelease: "v1.0.0",
 		}, nil)
@@ -138,7 +138,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 			Priority:        "P3",
 			GitURL:          "ssh://git.com",
 			GitSubfolder:    "/test",
-			GitBranch:       "master",
+			GitRef:          "master",
 			Template:        "javaapp",
 			TemplateRelease: "v1.0.0",
 		}, nil)
@@ -268,7 +268,7 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 		Priority:        "P3",
 		GitURL:          "ssh://git.com",
 		GitSubfolder:    "/test",
-		GitBranch:       "master",
+		GitRef:          "master",
 		Template:        "javaapp",
 		TemplateRelease: "v1.0.0",
 	}, nil)

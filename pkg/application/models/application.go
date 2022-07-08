@@ -21,7 +21,8 @@ type Application struct {
 	Priority        Priority
 	GitURL          string
 	GitSubfolder    string
-	GitBranch       string
+	GitRef          string
+	GitRefType      string
 	Template        string
 	TemplateRelease string
 	CreatedBy       uint

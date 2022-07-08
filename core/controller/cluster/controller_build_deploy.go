@@ -9,6 +9,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -38,12 +39,21 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	var branch = cluster.GitBranch
-	if r.Git != nil && r.Git.Branch != "" {
-		branch = r.Git.Branch
+	var gitRef, gitRefType = cluster.GitRef, cluster.GitRefType
+	if r.Git != nil {
+		if r.Git.Commit != "" {
+			gitRefType = codemodels.GitRefTypeCommit
+			gitRef = r.Git.Commit
+		} else if r.Git.Tag != "" {
+			gitRefType = codemodels.GitRefTypeTag
+			gitRef = r.Git.Tag
+		} else if r.Git.Branch != "" {
+			gitRefType = codemodels.GitRefTypeBranch
+			gitRef = r.Git.Branch
+		}
 	}
 
-	commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, &branch, nil)
+	commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, gitRefType, gitRef)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +74,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 2. update image in git repo
-	imageURL := assembleImageURL(regionEntity, application.Name, cluster.Name, branch, commit.ID)
+	imageURL := assembleImageURL(regionEntity, application.Name, cluster.Name, gitRef, commit.ID)
 
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
@@ -79,7 +89,8 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		Title:            r.Title,
 		Description:      r.Description,
 		GitURL:           cluster.GitURL,
-		GitBranch:        branch,
+		GitRefType:       gitRefType,
+		GitRef:           gitRef,
 		GitCommit:        commit.ID,
 		ImageURL:         imageURL,
 		LastConfigCommit: configCommit.Master,
@@ -109,7 +120,6 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		Environment:   cluster.EnvironmentName,
 		Git: tekton.PipelineRunGit{
 			URL:       cluster.GitURL,
-			Branch:    branch,
 			Subfolder: cluster.GitSubfolder,
 			Commit:    commit.ID,
 		},
@@ -153,7 +163,7 @@ func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 		domain, application, cluster, normalizedBranch, commit[:8], timeStr)
 }
 
-func (c *controller) GetDiff(ctx context.Context, clusterID uint, codeBranch string) (_ *GetDiffResponse, err error) {
+func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref string) (_ *GetDiffResponse, err error) {
 	const op = "cluster controller: get diff"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -171,8 +181,8 @@ func (c *controller) GetDiff(ctx context.Context, clusterID uint, codeBranch str
 
 	// 3. get code commit
 	var commit *code.Commit
-	if codeBranch != "" {
-		commit, err = c.commitGetter.GetCommit(ctx, cluster.GitURL, &codeBranch, nil)
+	if ref != "" {
+		commit, err = c.commitGetter.GetCommit(ctx, cluster.GitURL, refType, ref)
 		if err != nil {
 			return nil, err
 		}
@@ -183,10 +193,10 @@ func (c *controller) GetDiff(ctx context.Context, clusterID uint, codeBranch str
 	if err != nil {
 		return nil, err
 	}
-	return ofClusterDiff(cluster.GitURL, codeBranch, commit, diff), nil
+	return ofClusterDiff(cluster.GitURL, refType, ref, commit, diff), nil
 }
 
-func ofClusterDiff(gitURL, branch string, commit *code.Commit, diff string) *GetDiffResponse {
+func ofClusterDiff(gitURL, refType, ref string, commit *code.Commit, diff string) *GetDiffResponse {
 	var codeInfo *CodeInfo
 
 	// TODO: support any gitlab or gitlab not only internal
@@ -195,13 +205,18 @@ func ofClusterDiff(gitURL, branch string, commit *code.Commit, diff string) *Get
 		var historyLink string
 		if strings.HasPrefix(gitURL, common.InternalGitSSHPrefix) {
 			httpURL := common.InternalSSHToHTTPURL(gitURL)
-			historyLink = httpURL + common.CommitHistoryMiddle + branch
+			historyLink = httpURL + common.CommitHistoryMiddle + ref
 		}
 		codeInfo = &CodeInfo{
-			Branch:    branch,
 			CommitID:  commit.ID,
 			CommitMsg: commit.Message,
 			Link:      historyLink,
+		}
+		switch refType {
+		case codemodels.GitRefTypeTag:
+			codeInfo.Tag = ref
+		case codemodels.GitRefTypeBranch:
+			codeInfo.Branch = ref
 		}
 	}
 

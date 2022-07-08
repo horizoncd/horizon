@@ -111,7 +111,7 @@ func Test(t *testing.T) {
 		Priority:        priority,
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubfolder,
-		GitBranch:       gitBranch,
+		GitRef:          gitBranch,
 		Template:        template,
 		TemplateRelease: templateRelease,
 		CreatedBy:       createdBy,

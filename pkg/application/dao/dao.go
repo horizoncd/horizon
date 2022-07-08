@@ -236,7 +236,8 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, application *models.Appli
 		applicationInDB.Priority = application.Priority
 		applicationInDB.GitURL = application.GitURL
 		applicationInDB.GitSubfolder = application.GitSubfolder
-		applicationInDB.GitBranch = application.GitBranch
+		applicationInDB.GitRefType = application.GitRefType
+		applicationInDB.GitRef = application.GitRef
 		applicationInDB.Template = application.Template
 		applicationInDB.TemplateRelease = application.TemplateRelease
 		// 3. save application after updated
