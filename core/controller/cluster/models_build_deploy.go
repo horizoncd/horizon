@@ -8,6 +8,8 @@ type BuildDeployRequest struct {
 
 type BuildDeployRequestGit struct {
 	Branch string `json:"branch"`
+	Tag    string `json:"tag"`
+	Commit string `json:"commit"`
 }
 
 type BuildDeployResponse struct {
@@ -21,7 +23,9 @@ type GetDiffResponse struct {
 
 type CodeInfo struct {
 	// deploy branch info
-	Branch string `json:"branch"`
+	Branch string `json:"branch,omitempty"`
+	// deploy tag info
+	Tag string `json:"tag,omitempty"`
 	// current branch commit
 	CommitID string `json:"commitID"`
 	// commit message

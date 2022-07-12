@@ -14,6 +14,7 @@ import (
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
@@ -331,7 +332,7 @@ func Test(t *testing.T) {
 				Name:    "javaapp",
 				Release: "v1.0.0",
 			},
-			Git: &Git{
+			Git: &codemodels.Git{
 				URL:       "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
 				Subfolder: "/",
 				Branch:    "develop",
@@ -365,7 +366,7 @@ func Test(t *testing.T) {
 				Name:    "javaapp",
 				Release: "v1.0.0",
 			},
-			Git: &Git{
+			Git: &codemodels.Git{
 				URL:       "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
 				Subfolder: "/",
 				Branch:    "develop",
@@ -469,7 +470,7 @@ func TestListUserApplication(t *testing.T) {
 			Priority:        "P3",
 			GitURL:          "ssh://git.com",
 			GitSubfolder:    "/test",
-			GitBranch:       "master",
+			GitRef:          "master",
 			Template:        "javaapp",
 			TemplateRelease: "v1.0.0",
 		}, nil)

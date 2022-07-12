@@ -6,6 +6,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	controllertag "g.hz.netease.com/horizon/core/controller/tag"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
@@ -14,7 +15,7 @@ import (
 
 type Base struct {
 	Description   string               `json:"description"`
-	Git           *Git                 `json:"git"`
+	Git           *codemodels.Git      `json:"git"`
 	Template      *Template            `json:"template"`
 	TemplateInput *TemplateInput       `json:"templateInput"`
 	Tags          []*controllertag.Tag `json:"tags"`
@@ -23,12 +24,6 @@ type Base struct {
 type TemplateInput struct {
 	Application map[string]interface{} `json:"application"`
 	Pipeline    map[string]interface{} `json:"pipeline"`
-}
-
-type Git struct {
-	URL       string `json:"url"`
-	Subfolder string `json:"subfolder"`
-	Branch    string `json:"branch"`
 }
 
 type CreateClusterRequest struct {
@@ -108,7 +103,8 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		Description:     r.Description,
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubfolder,
-		GitBranch:       r.Git.Branch,
+		GitRef:          r.Git.Ref(),
+		GitRefType:      r.Git.RefType(),
 		Template:        r.Template.Name,
 		TemplateRelease: r.Template.Release,
 	}
@@ -124,25 +120,32 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 
 func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 	templateRelease string, er *envregionmodels.EnvironmentRegion) *models.Cluster {
-	var gitURL, gitSubfolder, gitBranch string
-	if r.Git == nil || r.Git.URL == "" {
-		gitURL = cluster.GitURL
-	} else {
-		gitURL = r.Git.URL
+	var gitURL, gitSubfolder, gitRef, gitRefType string
+	if r.Git != nil {
+		gitURL, gitSubfolder, gitRefType, gitRef = r.Git.URL,
+			r.Git.Subfolder, r.Git.RefType(), r.Git.Ref()
+		if gitURL == "" {
+			gitURL = cluster.GitURL
+		}
+		if gitSubfolder == "" {
+			gitSubfolder = cluster.GitSubfolder
+		}
+		if gitRefType == "" {
+			gitRefType = cluster.GitRefType
+		}
+		if gitRef == "" {
+			gitRef = cluster.GitRef
+		}
 	}
-	gitSubfolder = r.Git.Subfolder
-	if r.Git == nil || r.Git.Branch == "" {
-		gitBranch = cluster.GitBranch
-	} else {
-		gitBranch = r.Git.Branch
-	}
+
 	return &models.Cluster{
 		EnvironmentName: er.EnvironmentName,
 		RegionName:      er.RegionName,
 		Description:     r.Description,
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubfolder,
-		GitBranch:       gitBranch,
+		GitRef:          gitRef,
+		GitRefType:      gitRefType,
 		TemplateRelease: templateRelease,
 		Status:          cluster.Status,
 	}
@@ -173,11 +176,8 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 		CreateClusterRequest: &CreateClusterRequest{
 			Base: &Base{
 				Description: cluster.Description,
-				Git: &Git{
-					URL:       cluster.GitURL,
-					Subfolder: cluster.GitSubfolder,
-					Branch:    cluster.GitBranch,
-				},
+				Git: codemodels.NewGit(cluster.GitURL, cluster.GitSubfolder,
+					cluster.GitRefType, cluster.GitRef),
 				TemplateInput: &TemplateInput{
 					Application: applicationJSONBlob,
 					Pipeline:    pipelineJSONBlob,
@@ -267,14 +267,14 @@ func ofClustersWithEnvRegionTags(clusters []*models.ClusterWithRegion, tags []*t
 }
 
 type GetClusterByNameResponse struct {
-	ID          uint      `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Template    *Template `json:"template"`
-	Git         *Git      `json:"git"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-	FullPath    string    `json:"fullPath"`
+	ID          uint            `json:"id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Template    *Template       `json:"template"`
+	Git         *codemodels.Git `json:"git"`
+	CreatedAt   time.Time       `json:"createdAt"`
+	UpdatedAt   time.Time       `json:"updatedAt"`
+	FullPath    string          `json:"fullPath"`
 }
 
 type ListClusterWithFullResponse struct {

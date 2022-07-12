@@ -25,6 +25,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustercd "g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
@@ -505,7 +506,7 @@ func Test(t *testing.T) {
 		Priority:        "P3",
 		GitURL:          gitURL,
 		GitSubfolder:    "/test",
-		GitBranch:       "master",
+		GitRef:          "master",
 		Template:        "javaapp",
 		TemplateRelease: "v1.0.0",
 	}, nil)
@@ -594,7 +595,7 @@ func Test(t *testing.T) {
 	createClusterRequest := &CreateClusterRequest{
 		Base: &Base{
 			Description: "cluster description",
-			Git: &Git{
+			Git: &codemodels.Git{
 				Branch: "develop",
 			},
 			TemplateInput: &TemplateInput{
@@ -622,7 +623,7 @@ func Test(t *testing.T) {
 	updateClusterRequest := &UpdateClusterRequest{
 		Base: &Base{
 			Description: "new description",
-			Git: &Git{
+			Git: &codemodels.Git{
 				URL:       UpdateGitURL,
 				Subfolder: "/new",
 				Branch:    "new",
@@ -747,7 +748,7 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().CompareConfig(ctx, gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return(configDiff, nil).AnyTimes()
 
-	getdiffResp, err := c.GetDiff(ctx, resp.ID, codeBranch)
+	getdiffResp, err := c.GetDiff(ctx, resp.ID, codemodels.GitRefTypeBranch, codeBranch)
 	assert.Nil(t, err)
 
 	assert.Equal(t, &GetDiffResponse{

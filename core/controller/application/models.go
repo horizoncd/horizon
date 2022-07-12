@@ -4,16 +4,17 @@ import (
 	"time"
 
 	"g.hz.netease.com/horizon/pkg/application/models"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 )
 
 // Base holds the parameters which can be updated of an application
 type Base struct {
-	Description   string         `json:"description"`
-	Priority      string         `json:"priority"`
-	Template      *Template      `json:"template"`
-	Git           *Git           `json:"git"`
-	TemplateInput *TemplateInput `json:"templateInput"`
+	Description   string          `json:"description"`
+	Priority      string          `json:"priority"`
+	Template      *Template       `json:"template"`
+	Git           *codemodels.Git `json:"git"`
+	TemplateInput *TemplateInput  `json:"templateInput"`
 }
 
 type TemplateInput struct {
@@ -60,13 +61,6 @@ type Template struct {
 	RecommendedRelease string `json:"recommendedRelease,omitempty"`
 }
 
-// Git struct about git
-type Git struct {
-	URL       string `json:"url"`
-	Subfolder string `json:"subfolder"`
-	Branch    string `json:"branch"`
-}
-
 // toApplicationModel transfer CreateApplicationRequest to models.Application
 func (m *CreateApplicationRequest) toApplicationModel(groupID uint) *models.Application {
 	return &models.Application{
@@ -76,7 +70,8 @@ func (m *CreateApplicationRequest) toApplicationModel(groupID uint) *models.Appl
 		Priority:        models.Priority(m.Priority),
 		GitURL:          m.Git.URL,
 		GitSubfolder:    m.Git.Subfolder,
-		GitBranch:       m.Git.Branch,
+		GitRefType:      m.Git.RefType(),
+		GitRef:          m.Git.Ref(),
 		Template:        m.Template.Name,
 		TemplateRelease: m.Template.Release,
 	}
@@ -89,7 +84,8 @@ func (m *UpdateApplicationRequest) toApplicationModel(appExistsInDB *models.Appl
 		Priority:        appExistsInDB.Priority,
 		GitURL:          appExistsInDB.GitURL,
 		GitSubfolder:    appExistsInDB.GitSubfolder,
-		GitBranch:       appExistsInDB.GitBranch,
+		GitRef:          appExistsInDB.GitRef,
+		GitRefType:      appExistsInDB.GitRefType,
 		Template:        appExistsInDB.Template,
 		TemplateRelease: appExistsInDB.TemplateRelease,
 	}
@@ -101,9 +97,8 @@ func (m *UpdateApplicationRequest) toApplicationModel(appExistsInDB *models.Appl
 		if m.Git.URL != "" {
 			application.GitURL = m.Git.URL
 		}
-		if m.Git.Branch != "" {
-			application.GitBranch = m.Git.Branch
-		}
+		application.GitRefType = m.Git.RefType()
+		application.GitRef = m.Git.Ref()
 		application.GitSubfolder = m.Git.Subfolder
 	}
 	if m.Template != nil {
@@ -127,7 +122,8 @@ func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodel
 			recommendedRelease = tr.Name
 		}
 	}
-	return &GetApplicationResponse{
+
+	resp := &GetApplicationResponse{
 		CreateApplicationRequest: CreateApplicationRequest{
 			Base: Base{
 				Description: app.Description,
@@ -137,11 +133,7 @@ func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodel
 					Release:            app.TemplateRelease,
 					RecommendedRelease: recommendedRelease,
 				},
-				Git: &Git{
-					URL:       app.GitURL,
-					Subfolder: app.GitSubfolder,
-					Branch:    app.GitBranch,
-				},
+				Git: codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRefType, app.GitRef),
 				TemplateInput: &TemplateInput{
 					Application: applicationJSONBlob,
 					Pipeline:    pipelineJSONBlob,
@@ -155,4 +147,5 @@ func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodel
 		CreatedAt: app.CreatedAt,
 		UpdatedAt: app.UpdatedAt,
 	}
+	return resp
 }

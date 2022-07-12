@@ -15,6 +15,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     "code/listbranch",
 			HandlerFunc: api.ListBranch,
 		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     "code/listtag",
+			HandlerFunc: api.ListTag,
+		},
 	}
 	route.RegisterRoutes(group, routes)
 }

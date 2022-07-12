@@ -54,7 +54,7 @@ type Controller interface {
 
 	BuildDeploy(ctx context.Context, clusterID uint,
 		request *BuildDeployRequest) (*BuildDeployResponse, error)
-	GetDiff(ctx context.Context, clusterID uint, codeBranch string) (*GetDiffResponse, error)
+	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
 	Restart(ctx context.Context, clusterID uint) (*PipelinerunIDResponse, error)
 	Deploy(ctx context.Context, clusterID uint, request *DeployRequest) (*PipelinerunIDResponse, error)

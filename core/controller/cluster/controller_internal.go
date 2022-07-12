@@ -6,6 +6,7 @@ import (
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -39,15 +40,21 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 3. update image in git repo, and update newest commit to pr
-	commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name, cluster.Template,
-		gitrepo.PipelineOutput{
-			Image: &pr.ImageURL,
-			Git: &gitrepo.Git{
-				URL:      &pr.GitURL,
-				Branch:   &pr.GitBranch,
-				CommitID: &pr.GitCommit,
-			},
-		})
+	po := gitrepo.PipelineOutput{
+		Image: &pr.ImageURL,
+		Git: &gitrepo.Git{
+			URL:      &pr.GitURL,
+			CommitID: &pr.GitCommit,
+		},
+	}
+	switch pr.GitRefType {
+	case codemodels.GitRefTypeTag:
+		po.Git.Tag = &pr.GitRef
+	case codemodels.GitRefTypeBranch:
+		po.Git.Branch = &pr.GitRef
+	}
+	commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
+		cluster.Template, po)
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}

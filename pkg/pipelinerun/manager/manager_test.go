@@ -9,6 +9,7 @@ import (
 
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,8 @@ func Test(t *testing.T) {
 		Title:            "title",
 		Description:      "description",
 		GitURL:           "",
-		GitBranch:        "",
+		GitRefType:       codemodels.GitRefTypeBranch,
+		GitRef:           "",
 		GitCommit:        "",
 		ImageURL:         "",
 		LastConfigCommit: "",

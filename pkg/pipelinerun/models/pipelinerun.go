@@ -34,8 +34,10 @@ type Pipelinerun struct {
 	Description string
 	// GitURL the git url this pipelinerun to build with, can be empty when action is not builddeploy
 	GitURL string
-	// GitBranch the git branch this pipelinerun to build with, can be empty when action is not builddeploy
-	GitBranch string
+	// GitRef the git reference this pipelinerun to build with, can be empty when action is not builddeploy
+	GitRef string
+	// GitRefType the git reference type this pipelinerun to build with, can be empty when action is not builddeploy
+	GitRefType string
 	// GitCommit the git commit this pipelinerun to build with, can be empty when action is not builddeploy
 	GitCommit string
 	// ImageURL image url of this pipelinerun to build image

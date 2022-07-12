@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
@@ -169,8 +170,9 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 	// 3. get code diff
 	var codeDiff *CodeInfo
 	if pipelinerun.GitURL != "" && pipelinerun.GitCommit != "" &&
-		pipelinerun.GitBranch != "" {
-		commit, err := c.commitGetter.GetCommit(ctx, pipelinerun.GitURL, nil, &pipelinerun.GitCommit)
+		pipelinerun.GitRef != "" {
+		commit, err := c.commitGetter.GetCommit(ctx, pipelinerun.GitURL,
+			codemodels.GitRefTypeCommit, pipelinerun.GitCommit)
 		if err != nil {
 			return nil, err
 		}
@@ -180,10 +182,15 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 			historyLink = httpURL + common.CommitHistoryMiddle + pipelinerun.GitCommit
 		}
 		codeDiff = &CodeInfo{
-			Branch:    pipelinerun.GitBranch,
 			CommitID:  pipelinerun.GitCommit,
 			CommitMsg: commit.Message,
 			Link:      historyLink,
+		}
+		switch pipelinerun.GitRefType {
+		case codemodels.GitRefTypeTag:
+			codeDiff.Tag = pipelinerun.GitRef
+		case codemodels.GitRefTypeBranch:
+			codeDiff.Branch = pipelinerun.GitRef
 		}
 	}
 
@@ -262,14 +269,13 @@ func (c *controller) ofPipelineBasic(ctx context.Context,
 		return pr.Action != prmodels.ActionRestart && pr.Status == prmodels.ResultOK
 	}()
 
-	return &PipelineBasic{
+	prBasic := &PipelineBasic{
 		ID:               pr.ID,
 		Title:            pr.Title,
 		Description:      pr.Description,
 		Action:           pr.Action,
 		Status:           pr.Status,
 		GitURL:           pr.GitURL,
-		GitBranch:        pr.GitBranch,
 		GitCommit:        pr.GitCommit,
 		ImageURL:         pr.ImageURL,
 		LastConfigCommit: pr.LastConfigCommit,
@@ -282,7 +288,14 @@ func (c *controller) ofPipelineBasic(ctx context.Context,
 			UserID:   pr.CreatedBy,
 			UserName: user.Name,
 		},
-	}, nil
+	}
+	switch pr.GitRefType {
+	case codemodels.GitRefTypeTag:
+		prBasic.GitTag = pr.GitRef
+	case codemodels.GitRefTypeBranch:
+		prBasic.GitBranch = pr.GitRef
+	}
+	return prBasic, nil
 }
 
 func (c *controller) ofPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
