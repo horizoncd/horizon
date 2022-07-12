@@ -171,7 +171,8 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 	var codeDiff *CodeInfo
 	if pipelinerun.GitURL != "" && pipelinerun.GitCommit != "" &&
 		pipelinerun.GitRef != "" {
-		commit, err := c.commitGetter.GetCommit(ctx, pipelinerun.GitURL, pipelinerun.GitRefType, pipelinerun.GitCommit)
+		commit, err := c.commitGetter.GetCommit(ctx, pipelinerun.GitURL,
+			codemodels.GitRefTypeCommit, pipelinerun.GitCommit)
 		if err != nil {
 			return nil, err
 		}
