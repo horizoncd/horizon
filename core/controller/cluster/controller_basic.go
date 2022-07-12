@@ -864,8 +864,8 @@ func (c *controller) validateCreate(r *CreateClusterRequest) error {
 	if err := validateClusterName(r.Name); err != nil {
 		return err
 	}
-	if r.Git == nil || r.Git.Branch == "" {
-		return perror.Wrap(herrors.ErrParamInvalid, "git branch cannot be empty")
+	if r.Git == nil || r.Git.Ref() == "" || r.Git.RefType() == "" {
+		return perror.Wrap(herrors.ErrParamInvalid, "git ref cannot be empty")
 	}
 	if r.TemplateInput != nil && r.TemplateInput.Application == nil {
 		return perror.Wrap(herrors.ErrParamInvalid, "application config for template cannot be empty")
