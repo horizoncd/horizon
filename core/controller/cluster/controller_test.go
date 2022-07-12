@@ -591,6 +591,8 @@ func Test(t *testing.T) {
 	}, nil).Times(1)
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().Pause(ctx, gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().Promote(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
 		Base: &Base{
@@ -782,6 +784,12 @@ func Test(t *testing.T) {
 	})
 	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
 	assert.Nil(t, deployResp)
+
+	err = c.Pause(ctx, resp.ID)
+	assert.Nil(t, err)
+
+	err = c.Promote(ctx, resp.ID)
+	assert.Nil(t, err)
 
 	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{},
 		nil).Times(1)
