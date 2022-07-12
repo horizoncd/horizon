@@ -11,7 +11,9 @@ type GetDiffResponse struct {
 
 type CodeInfo struct {
 	// deploy branch info
-	Branch string `json:"branch"`
+	Branch string `json:"branch,omitempty"`
+	// deploy tag info
+	Tag string `json:"tag,omitempty"`
 	// branch commit
 	CommitID string `json:"commitID"`
 	// commit message
@@ -42,7 +44,9 @@ type PipelineBasic struct {
 	// GitURL the git url this pipelinerun to build with, can be empty when action is not builddeploy
 	GitURL string `json:"gitURL"`
 	// GitBranch the git branch this pipelinerun to build with, can be empty when action is not builddeploy
-	GitBranch string `json:"gitBranch"`
+	GitBranch string `json:"gitBranch,omitempty"`
+	// GitTag the git tag this pipelinerun to build with, can be empty when action is not builddeploy
+	GitTag string `json:"gitTag,omitempty"`
 	// GitCommit the git commit this pipelinerun to build with, can be empty when action is not builddeploy
 	GitCommit string `json:"gitCommit"`
 	// ImageURL image url of this pipelinerun to build image

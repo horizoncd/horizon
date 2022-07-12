@@ -25,6 +25,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustercd "g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
@@ -505,7 +506,7 @@ func Test(t *testing.T) {
 		Priority:        "P3",
 		GitURL:          gitURL,
 		GitSubfolder:    "/test",
-		GitBranch:       "master",
+		GitRef:          "master",
 		Template:        "javaapp",
 		TemplateRelease: "v1.0.0",
 	}, nil)
@@ -590,11 +591,13 @@ func Test(t *testing.T) {
 	}, nil).Times(1)
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().Pause(ctx, gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().Promote(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
 		Base: &Base{
 			Description: "cluster description",
-			Git: &Git{
+			Git: &codemodels.Git{
 				Branch: "develop",
 			},
 			TemplateInput: &TemplateInput{
@@ -622,7 +625,7 @@ func Test(t *testing.T) {
 	updateClusterRequest := &UpdateClusterRequest{
 		Base: &Base{
 			Description: "new description",
-			Git: &Git{
+			Git: &codemodels.Git{
 				URL:       UpdateGitURL,
 				Subfolder: "/new",
 				Branch:    "new",
@@ -747,7 +750,7 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().CompareConfig(ctx, gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return(configDiff, nil).AnyTimes()
 
-	getdiffResp, err := c.GetDiff(ctx, resp.ID, codeBranch)
+	getdiffResp, err := c.GetDiff(ctx, resp.ID, codemodels.GitRefTypeBranch, codeBranch)
 	assert.Nil(t, err)
 
 	assert.Equal(t, &GetDiffResponse{
@@ -781,6 +784,12 @@ func Test(t *testing.T) {
 	})
 	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
 	assert.Nil(t, deployResp)
+
+	err = c.Pause(ctx, resp.ID)
+	assert.Nil(t, err)
+
+	err = c.Promote(ctx, resp.ID)
+	assert.Nil(t, err)
 
 	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{},
 		nil).Times(1)

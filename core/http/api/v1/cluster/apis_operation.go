@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cluster"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
@@ -57,9 +58,23 @@ func (a *API) GetDiff(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
+	targetTag := c.Query(_targetTag)
 	targetBranch := c.Query(_targetBranch)
-	resp, err := a.clusterCtl.GetDiff(c, uint(clusterID), targetBranch)
+	targetCommit := c.Query(_targetCommit)
+	var refType, ref string
 
+	if targetTag != "" {
+		refType = codemodels.GitRefTypeTag
+		ref = targetTag
+	} else if targetBranch != "" {
+		refType = codemodels.GitRefTypeBranch
+		ref = targetBranch
+	} else if targetCommit != "" {
+		refType = codemodels.GitRefTypeCommit
+		ref = targetCommit
+	}
+
+	resp, err := a.clusterCtl.GetDiff(c, uint(clusterID), refType, ref)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.ClusterInDB {

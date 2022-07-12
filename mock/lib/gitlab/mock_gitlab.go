@@ -286,6 +286,21 @@ func (mr *MockInterfaceMockRecorder) GetSSHURL(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSSHURL", reflect.TypeOf((*MockInterface)(nil).GetSSHURL), ctx)
 }
 
+// GetTag mocks base method.
+func (m *MockInterface) GetTag(ctx context.Context, pid interface{}, tag string) (*gitlab0.Tag, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTag", ctx, pid, tag)
+	ret0, _ := ret[0].(*gitlab0.Tag)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTag indicates an expected call of GetTag.
+func (mr *MockInterfaceMockRecorder) GetTag(ctx, pid, tag interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTag", reflect.TypeOf((*MockInterface)(nil).GetTag), ctx, pid, tag)
+}
+
 // ListBranch mocks base method.
 func (m *MockInterface) ListBranch(ctx context.Context, pid interface{}, listBranchOptions *gitlab0.ListBranchesOptions) ([]*gitlab0.Branch, error) {
 	m.ctrl.T.Helper()
@@ -329,6 +344,21 @@ func (m *MockInterface) ListMRs(ctx context.Context, pid interface{}, source, ta
 func (mr *MockInterfaceMockRecorder) ListMRs(ctx, pid, source, target, state interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMRs", reflect.TypeOf((*MockInterface)(nil).ListMRs), ctx, pid, source, target, state)
+}
+
+// ListTag mocks base method.
+func (m *MockInterface) ListTag(ctx context.Context, pid interface{}, listTagOptions *gitlab0.ListTagsOptions) ([]*gitlab0.Tag, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTag", ctx, pid, listTagOptions)
+	ret0, _ := ret[0].([]*gitlab0.Tag)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTag indicates an expected call of ListTag.
+func (mr *MockInterfaceMockRecorder) ListTag(ctx, pid, listTagOptions interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTag", reflect.TypeOf((*MockInterface)(nil).ListTag), ctx, pid, listTagOptions)
 }
 
 // TransferProject mocks base method.

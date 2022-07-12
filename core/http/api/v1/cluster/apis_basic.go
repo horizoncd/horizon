@@ -27,6 +27,8 @@ const (
 	_scope              = "scope"
 	_environment        = "environment"
 	_targetBranch       = "targetBranch"
+	_targetCommit       = "targetCommit"
+	_targetTag          = "targetTag"
 	_containerName      = "containerName"
 	_podName            = "podName"
 	_tailLines          = "tailLines"

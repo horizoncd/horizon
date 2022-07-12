@@ -192,9 +192,6 @@ var (
 	ErrGitlabInternal   = errors.New("gitlab internal")
 	ErrGitlabMRNotReady = errors.New("gitlab mr is not ready and cannot be merged")
 
-	// git
-	ErrBranchAndCommitEmpty = errors.New("branch and commit cannot be empty at the same time")
-
 	// pipeline
 	ErrPipelineOutputEmpty = errors.New("pipeline output is empty")
 

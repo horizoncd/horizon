@@ -13,6 +13,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
@@ -646,11 +647,12 @@ func (c *controller) GetClusterByName(ctx context.Context,
 			Name:    cluster.Template,
 			Release: cluster.TemplateRelease,
 		},
-		Git: &Git{
-			URL:       cluster.GitURL,
-			Subfolder: cluster.GitSubfolder,
-			Branch:    cluster.GitBranch,
-		},
+		Git: codemodels.NewGit(
+			cluster.GitURL,
+			cluster.GitSubfolder,
+			cluster.GitRefType,
+			cluster.GitRef,
+		),
 		CreatedAt: cluster.CreatedAt,
 		UpdatedAt: cluster.UpdatedAt,
 		FullPath:  fullPath,
