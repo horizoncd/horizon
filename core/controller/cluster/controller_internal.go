@@ -41,6 +41,10 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 3. update image in git repo
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
 	po := gitrepo.PipelineOutput{
 		Image: &pr.ImageURL,
 		Git: &gitrepo.Git{
@@ -55,7 +59,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		po.Git.Branch = &pr.GitRef
 	}
 	commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
-		cluster.Template, po)
+		tr.ChartName, po)
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}
@@ -92,7 +96,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}

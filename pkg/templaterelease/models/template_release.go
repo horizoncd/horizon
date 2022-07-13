@@ -6,12 +6,13 @@ import (
 
 type TemplateRelease struct {
 	global.Model
-
-	TemplateName  string
-	Name          string
-	Description   string
-	GitlabProject string
-	Recommended   bool
-	CreatedBy     uint
-	UpdatedBy     uint
+	Template     uint
+	TemplateName string
+	Name         string
+	ChartName    string
+	Description  string
+	Recommended  *bool
+	OnlyAdmin    *bool
+	CreatedBy    uint
+	UpdatedBy    uint
 }

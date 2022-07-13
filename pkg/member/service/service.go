@@ -10,14 +10,16 @@ import (
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	memberctx "g.hz.netease.com/horizon/pkg/context"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/member"
-	memberctx "g.hz.netease.com/horizon/pkg/member/context"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	pipelinerunmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
+	templatemanager "g.hz.netease.com/horizon/pkg/template/manager"
+	templatereleasemanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
@@ -49,6 +51,8 @@ type service struct {
 	groupManager              groupmanager.Manager
 	applicationManager        applicationmanager.Manager
 	applicationClusterManager clustermanager.Manager
+	templateManager           templatemanager.Manager
+	templateReleaseManager    templatereleasemanager.Manager
 	pipelineManager           pipelinerunmanager.Manager
 	roleService               roleservice.Service
 	oauthManager              oauthmanager.Manager
@@ -62,6 +66,8 @@ func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manag
 		applicationManager:        manager.ApplicationManager,
 		applicationClusterManager: manager.ClusterMgr,
 		pipelineManager:           manager.PipelinerunMgr,
+		templateReleaseManager:    manager.TemplateReleaseManager,
+		templateManager:           manager.TemplateMgr,
 		roleService:               roleService,
 		oauthManager:              oauthManager,
 	}
@@ -143,6 +149,19 @@ func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) 
 	}
 	return s.getMember(ctx, common.ResourceCluster,
 		pipeline.ClusterID, models.MemberUser, currentUser.GetID())
+}
+
+func (s *service) listPipelinerunMember(ctx context.Context, pipelinerunID uint) ([]models.Member, error) {
+	pipeline, err := s.pipelineManager.GetByID(ctx, pipelinerunID)
+	if err != nil {
+		return nil, err
+	}
+	if pipeline == nil {
+		log.Warningf(ctx, "pipeline do not found, pipelineID = %d", pipelinerunID)
+		return nil, ErrMemberNotExist
+	}
+	return s.ListMember(ctx, common.ResourceApplication,
+		pipeline.ClusterID)
 }
 
 func (s *service) GetMemberOfResource(ctx context.Context,
@@ -282,6 +301,12 @@ func (s *service) ListMember(ctx context.Context, resourceType string, resourceI
 		allMembers, err = s.listApplicationMembers(ctx, resourceID)
 	case common.ResourceCluster:
 		allMembers, err = s.listApplicationInstanceMembers(ctx, resourceID)
+	case common.ResourceTemplate:
+		allMembers, err = s.listTemplateMembers(ctx, resourceID)
+	case common.ResourceTemplateRelease:
+		allMembers, err = s.listReleaseMembers(ctx, resourceID)
+	case common.ResourcePipelinerun:
+		allMembers, err = s.listPipelinerunMember(ctx, resourceID)
 	default:
 		err = errors.New("unsupported resourceType")
 	}
@@ -330,8 +355,8 @@ func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]mode
 		err        error
 	)
 
-	onCondition, onConditionOK := ctx.Value(memberctx.ContextQueryOnCondition).(bool)
-	if directMemberOnly, ok := ctx.Value(memberctx.ContextDirectMemberOnly).(bool); ok && directMemberOnly {
+	onCondition, onConditionOK := ctx.Value(memberctx.MemberQueryOnCondition).(bool)
+	if directMemberOnly, ok := ctx.Value(memberctx.MemberDirectMemberOnly).(bool); ok && directMemberOnly {
 		if onConditionOK && onCondition {
 			members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeGroup, resourceID)
 		} else {
@@ -344,7 +369,11 @@ func (s *service) listGroupMembers(ctx context.Context, resourceID uint) ([]mode
 	}
 
 	// 1. list all the groups of the group
-	groupInfo, err := s.groupManager.GetByID(ctx, uint(resourceID))
+	if s.groupManager.IsRootGroup(ctx, resourceID) {
+		// XXX: make sure only admins could access root group
+		return []models.Member{}, nil
+	}
+	groupInfo, err := s.groupManager.GetByID(ctx, resourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +401,7 @@ func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) (
 		members    []models.Member
 		err        error
 	)
-	if onCondition, ok := ctx.Value(memberctx.ContextQueryOnCondition).(bool); ok && onCondition {
+	if onCondition, ok := ctx.Value(memberctx.MemberQueryOnCondition).(bool); ok && onCondition {
 		members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeApplication, resourceID)
 	} else {
 		members, err = s.memberManager.ListDirectMember(ctx, models.TypeApplication, resourceID)
@@ -382,7 +411,7 @@ func (s *service) listApplicationMembers(ctx context.Context, resourceID uint) (
 	}
 	retMembers = append(retMembers, members...)
 
-	if directMemberOnly, ok := ctx.Value(memberctx.ContextDirectMemberOnly).(bool); !ok || !directMemberOnly {
+	if directMemberOnly, ok := ctx.Value(memberctx.MemberDirectMemberOnly).(bool); !ok || !directMemberOnly {
 		// 1. query the application's service
 		applicationInfo, err := s.applicationManager.GetByID(ctx, resourceID)
 		if err != nil {
@@ -407,7 +436,7 @@ func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID
 	)
 
 	var members []models.Member
-	if onCondition, ok := ctx.Value(memberctx.ContextQueryOnCondition).(bool); ok && onCondition {
+	if onCondition, ok := ctx.Value(memberctx.MemberQueryOnCondition).(bool); ok && onCondition {
 		members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeApplicationCluster, resourceID)
 	} else {
 		members, err = s.memberManager.ListDirectMember(ctx, models.TypeApplicationCluster, resourceID)
@@ -418,7 +447,7 @@ func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID
 	}
 	retMembers = append(retMembers, members...)
 
-	if directMemberOnly, ok := ctx.Value(memberctx.ContextDirectMemberOnly).(bool); !ok || !directMemberOnly {
+	if directMemberOnly, ok := ctx.Value(memberctx.MemberDirectMemberOnly).(bool); !ok || !directMemberOnly {
 		// 1. query the application cluster's members
 		clusterInfo, err := s.applicationClusterManager.GetByID(ctx, resourceID)
 		if err != nil {
@@ -450,4 +479,46 @@ func (s *service) createMemberDirect(ctx context.Context, postMember PostMember)
 		return nil, err
 	}
 	return s.memberManager.Create(ctx, member)
+}
+
+func (s *service) listTemplateMembers(ctx context.Context, resourceID uint) ([]models.Member, error) {
+	var (
+		retMembers []models.Member
+		members    []models.Member
+		err        error
+	)
+	if onCondition, ok := ctx.Value(memberctx.MemberQueryOnCondition).(bool); ok && onCondition {
+		members, err = s.memberManager.ListDirectMemberOnCondition(ctx, models.TypeTemplate, resourceID)
+	} else {
+		members, err = s.memberManager.ListDirectMember(ctx, models.TypeTemplate, resourceID)
+	}
+	if err != nil {
+		return nil, err
+	}
+	retMembers = append(retMembers, members...)
+
+	if directMemberOnly, ok := ctx.Value(memberctx.MemberDirectMemberOnly).(bool); !ok || !directMemberOnly {
+		// 1. query the application's service
+		templateInfo, err := s.templateManager.GetByID(ctx, resourceID)
+		if err != nil {
+			return nil, err
+		}
+
+		// 2. query the group's service
+		members, err = s.listGroupMembers(ctx, templateInfo.GroupID)
+		if err != nil {
+			return nil, err
+		}
+		retMembers = append(retMembers, members...)
+	}
+
+	return DeduplicateMember(retMembers), nil
+}
+
+func (s *service) listReleaseMembers(ctx context.Context, id uint) ([]models.Member, error) {
+	tr, err := s.templateReleaseManager.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.listTemplateMembers(ctx, tr.Template)
 }

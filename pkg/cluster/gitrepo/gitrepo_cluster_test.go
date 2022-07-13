@@ -16,10 +16,12 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
+	config "g.hz.netease.com/horizon/pkg/config/templaterepo"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
+	"g.hz.netease.com/horizon/pkg/templaterepo/harbor"
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
@@ -118,6 +120,21 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
+	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
+	r := &clusterGitRepo{
+		gitlabLib: g,
+		clusterRepoConf: &gitlab.Repo{
+			Parent: &gitlab.Parent{
+				Path: fmt.Sprintf("%v/%v", rootGroupName, "clusters"),
+				ID:   4970,
+			},
+			RecyclingParent: &gitlab.Parent{
+				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-clusters"),
+				ID:   4971,
+			},
+		},
+		templateRepo: repo,
+	}
 	application := "app"
 	cluster := "cluster"
 
@@ -127,6 +144,7 @@ func Test(t *testing.T) {
 		ApplicationJSONBlob: applicationJSONBlob,
 		TemplateRelease: &trmodels.TemplateRelease{
 			TemplateName: templateName,
+			ChartName:    templateName,
 			Name:         "v1.0.0",
 		},
 		Application: &appmodels.Application{
@@ -148,22 +166,6 @@ func Test(t *testing.T) {
 	}
 	createParams := &CreateClusterParams{
 		BaseParams: baseParams,
-	}
-	r := &clusterGitRepo{
-		gitlabLib: g,
-		clusterRepoConf: &gitlab.Repo{
-			Parent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "clusters"),
-				ID:   4970,
-			},
-			RecyclingParent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-clusters"),
-				ID:   4971,
-			},
-		},
-		helmRepoMapper: map[string]string{
-			"test": "https://test.helm.com",
-		},
 	}
 	updateParams := &UpdateClusterParams{
 		BaseParams: baseParams,
@@ -279,6 +281,7 @@ func TestHardDeleteCluster(t *testing.T) {
 	createParams := &CreateClusterParams{
 		BaseParams: baseParams,
 	}
+	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
 	r := &clusterGitRepo{
 		gitlabLib: g,
 		clusterRepoConf: &gitlab.Repo{
@@ -286,10 +289,12 @@ func TestHardDeleteCluster(t *testing.T) {
 				Path: fmt.Sprintf("%v/%v", rootGroupName, "clusters"),
 				ID:   4970,
 			},
+			RecyclingParent: &gitlab.Parent{
+				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-clusters"),
+				ID:   4971,
+			},
 		},
-		helmRepoMapper: map[string]string{
-			"test": "https://test.helm.com",
-		},
+		templateRepo: repo,
 	}
 	err := r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
@@ -320,7 +325,7 @@ func TestGetClusterValueFile(t *testing.T) {
 	clusterGitRepoInstance = &clusterGitRepo{
 		gitlabLib:       gitlabmockLib,
 		clusterRepoConf: &repoConfig,
-		helmRepoMapper:  nil,
+		templateRepo:    &harbor.TemplateRepo{},
 	}
 
 	// 1. test gitlab get file error
@@ -390,7 +395,7 @@ java:
 	clusterGitRepoInstance = &clusterGitRepo{
 		gitlabLib:       gitlabmockLib,
 		clusterRepoConf: &repoConfig,
-		helmRepoMapper:  nil,
+		templateRepo:    &harbor.TemplateRepo{},
 	}
 
 	expectedOutput := `java:

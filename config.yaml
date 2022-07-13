@@ -40,8 +40,15 @@ gitlabRepoConfig:
     recyclingParent:
       path: music-cloud-native/recycling-clusters
       id: 4587
-helmRepoMapper:
-  dev,test,reg,perf,beta,pre,online: "https://harbor.mock.org/chartrepo/horizon-template"
+templateRepo:
+  host: "https://harbor.mock.org"
+  repoName: "horizon-template"
+  username: username
+  password: password
+  insecure: true
+  certFile: ""
+  keyFile: ""
+  caFile: ""
 argoCDMapper:
   dev,test,reg,perf,beta,pre,online:
     url: http://argocd.yf-dev2.netease.com

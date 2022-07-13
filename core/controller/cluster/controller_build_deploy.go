@@ -106,8 +106,13 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
+
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
 	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx,
-		application.Name, cluster.Name, cluster.Template)
+		application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}

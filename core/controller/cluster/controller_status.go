@@ -77,11 +77,16 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+
 	envValue := &gitrepo.EnvValue{}
 	po := &gitrepo.PipelineOutput{}
 	restartTime := ""
 	if !isClusterStatusUnstable(cluster.Status) {
-		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 		if err != nil {
 			return nil, err
 		}
@@ -324,7 +329,11 @@ func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podNam
 		return nil, err
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +360,11 @@ func (c *controller) GetPodEvents(ctx context.Context, clusterID uint, podName s
 		return nil, err
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +394,11 @@ func (c *controller) GetContainers(ctx context.Context, clusterID uint, podName 
 		return nil, err
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}

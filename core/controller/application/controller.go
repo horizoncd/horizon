@@ -372,7 +372,11 @@ func validateGit(b Base) error {
 // validateTemplateInput validate templateInput is valid for template schema
 func (c *controller) validateTemplateInput(ctx context.Context,
 	template, release string, templateInput *TemplateInput) error {
-	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release, nil)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, template, release)
+	if err != nil {
+		return err
+	}
+	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, tr.ChartName, tr.Name, nil)
 	if err != nil {
 		return err
 	}

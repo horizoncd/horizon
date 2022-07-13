@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -12,26 +13,29 @@ import (
 	groupmanagermock "g.hz.netease.com/horizon/mock/pkg/group/manager"
 	pipelinemock "g.hz.netease.com/horizon/mock/pkg/pipelinerun/manager"
 	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
-	applicationModels "g.hz.netease.com/horizon/pkg/application/models"
+	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
+	memberctx "g.hz.netease.com/horizon/pkg/context"
 	groupModels "g.hz.netease.com/horizon/pkg/group/models"
-	memberctx "g.hz.netease.com/horizon/pkg/member/context"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	templatemodels "g.hz.netease.com/horizon/pkg/template/models"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 )
 
 var (
 	s       Service
-	db, _   = orm.NewSqliteDB("")
-	manager = managerparam.InitManager(db)
+	ctx     context.Context
+	db      *gorm.DB
+	manager *managerparam.Manager
 )
 
 func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
@@ -44,11 +48,7 @@ func PostMemberEqualsMember(postMember PostMember, member *models.Member) bool {
 
 // nolint
 func TestCreateAndUpdateGroupMember(t *testing.T) {
-	if err := db.AutoMigrate(&models.Member{}); err != nil {
-		panic(err)
-	}
-
-	ctx := context.TODO()
+	createEnv(t)
 
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)
@@ -151,6 +151,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
+	groupManager.EXPECT().IsRootGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(false)
 	postMemberCat2 := PostMember{
 		ResourceType: common.ResourceGroup,
 		ResourceID:   group2ID,
@@ -251,11 +252,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 
 // nolint
 func TestListGroupMember(t *testing.T) {
-	if err := db.AutoMigrate(&models.Member{}); err != nil {
-		panic(err)
-	}
-
-	ctx := context.TODO()
+	createEnv(t)
 
 	// mock the groupManager
 	mockCtrl := gomock.NewController(t)
@@ -355,6 +352,7 @@ func TestListGroupMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
+	groupManager.EXPECT().IsRootGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(false)
 	members, err := s.ListMember(ctx, common.ResourceGroup, group2ID)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(members))
@@ -368,11 +366,7 @@ func TestListApplicationMember(t *testing.T) {
 }
 
 func TestListApplicationInstanceMember(t *testing.T) {
-	if err := db.AutoMigrate(&models.Member{}, &usermodels.User{}); err != nil {
-		panic(err)
-	}
-
-	ctx := context.TODO()
+	createEnv(t)
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -410,12 +404,13 @@ func TestListApplicationInstanceMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
+	groupManager.EXPECT().IsRootGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(false)
 
 	// mock the applicationManager
 	applicationManager := applicationmanagermock.NewMockManager(mockCtrl)
 	applicationManager.EXPECT().GetByID(gomock.Any(),
-		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*applicationModels.Application, error) {
-		return &applicationModels.Application{
+		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*applicationmodels.Application, error) {
+		return &applicationmodels.Application{
 			Model:       global.Model{},
 			Name:        "",
 			Description: "",
@@ -507,9 +502,9 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	_, err = userMgr.Create(ctx, &usermodels.User{Model: global.Model{ID: catID}, Email: catEmail})
 	assert.Nil(t, err)
 
-	ctx = context.WithValue(ctx, memberctx.ContextQueryOnCondition, true)
-	ctx = context.WithValue(ctx, memberctx.ContextDirectMemberOnly, true)
-	ctx = context.WithValue(ctx, memberctx.ContextEmails, []string{catEmail})
+	ctx = context.WithValue(ctx, memberctx.MemberQueryOnCondition, true)
+	ctx = context.WithValue(ctx, memberctx.MemberDirectMemberOnly, true)
+	ctx = context.WithValue(ctx, memberctx.MemberEmails, []string{catEmail})
 	members, err = s.ListMember(ctx, common.ResourceCluster, cluster4ID)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMembers[5], &members[0]))
@@ -523,11 +518,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 //		ret: sph(3), jerry(2), cat(4)
 // nolint
 func TestGetPipelinerunMember(t *testing.T) {
-	if err := db.AutoMigrate(&models.Member{}); err != nil {
-		panic(err)
-	}
-
-	ctx := context.TODO()
+	createEnv(t)
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -565,12 +556,13 @@ func TestGetPipelinerunMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).AnyTimes()
+	groupManager.EXPECT().IsRootGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(false)
 
 	// mock the applicationManager
 	applicationManager := applicationmanagermock.NewMockManager(mockCtrl)
 	applicationManager.EXPECT().GetByID(gomock.Any(),
-		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*applicationModels.Application, error) {
-		return &applicationModels.Application{
+		gomock.Any()).DoAndReturn(func(_ context.Context, id uint) (*applicationmodels.Application, error) {
+		return &applicationmodels.Application{
 			Model:       global.Model{},
 			Name:        "",
 			Description: "",
@@ -675,4 +667,103 @@ func TestGetPipelinerunMember(t *testing.T) {
 
 	err = s.RemoveMember(ctx, members.ID)
 	assert.Nil(t, err)
+}
+
+func TestListTemplateMember(t *testing.T) {
+	createEnv(t)
+
+	s = &service{
+		memberManager:             manager.MemberManager,
+		groupManager:              manager.GroupManager,
+		applicationManager:        manager.ApplicationManager,
+		applicationClusterManager: manager.ClusterMgr,
+		templateManager:           manager.TemplateMgr,
+		pipelineManager:           manager.PipelinerunMgr,
+		roleService:               nil,
+	}
+
+	jerry := &usermodels.User{
+		Name:     "Jerry",
+		FullName: "Jerry",
+		Email:    "jerry@mail.com",
+		Phone:    "",
+		OIDCId:   "HZjerry",
+		OIDCType: "netease",
+		Admin:    false,
+	}
+	jerry, err := manager.UserManager.Create(ctx, jerry)
+	assert.Nil(t, err)
+
+	// nolint
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:     jerry.Name,
+		FullName: jerry.FullName,
+		ID:       jerry.ID,
+		Email:    jerry.Email,
+		Admin:    jerry.Admin,
+	})
+
+	group1 := &groupModels.Group{
+		Name:            "test",
+		Path:            "test",
+		VisibilityLevel: "",
+		Description:     "test",
+		ParentID:        0,
+		TraversalIDs:    "1",
+	}
+	group1, err = manager.GroupManager.Create(ctx, group1)
+	assert.Nil(t, err)
+
+	group2 := &groupModels.Group{
+		Name:            "test2",
+		Path:            "test2",
+		VisibilityLevel: "",
+		Description:     "test2",
+		ParentID:        group1.ID,
+		TraversalIDs:    "1,2",
+	}
+	group2, err = manager.GroupManager.Create(ctx, group2)
+	assert.Nil(t, err)
+
+	template := &templatemodels.Template{
+		Name:       "javaapp",
+		Token:      "token",
+		Repository: "repo",
+		GroupID:    group2.ID,
+	}
+	template, err = manager.TemplateMgr.Create(ctx, template)
+	assert.Nil(t, err)
+
+	_, err = manager.MemberManager.Create(ctx, &models.Member{
+		ResourceType: models.TypeGroup,
+		ResourceID:   group1.ID,
+		Role:         "pe",
+		MemberType:   0,
+		MemberNameID: jerry.ID,
+	})
+	assert.Nil(t, err)
+	err = manager.MemberManager.DeleteMember(ctx, 1)
+	assert.Nil(t, err)
+	err = manager.MemberManager.DeleteMember(ctx, 2)
+	assert.Nil(t, err)
+
+	memberInfo, err := s.GetMemberOfResource(ctx, common.ResourceTemplate, fmt.Sprintf("%d", template.ID))
+	assert.Nil(t, err)
+	assert.NotNil(t, memberInfo)
+	assert.Equal(t, jerry.ID, memberInfo.MemberNameID)
+	assert.Equal(t, "pe", memberInfo.Role)
+}
+
+func createEnv(t *testing.T) {
+	db, _ = orm.NewSqliteDB("")
+	err := db.AutoMigrate(&models.Member{},
+		&groupModels.Group{},
+		&usermodels.User{},
+		&applicationmodels.Application{},
+		&clustermodels.Cluster{},
+		&templatemodels.Template{})
+	assert.Nil(t, err)
+
+	ctx = context.Background()
+	manager = managerparam.InitManager(db)
 }

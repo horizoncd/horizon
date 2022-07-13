@@ -134,7 +134,7 @@ func TestServer(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, authGetApp.ClientID, authApp.ClientID)
 
-	oauthServerController := oauth.NewController(&param.Param{Manager: manager})
+	oauthServerController := oauth.NewController(&param.Param{Manager: manager, OauthManager: oauthManager})
 
 	oauthAppController := oauthapp.NewController(&param.Param{Manager: manager})
 
@@ -160,7 +160,9 @@ func TestServer(t *testing.T) {
 	clusterAPI.RegisterRoutes(r, nil)
 	ListenPort := ":18181"
 
-	go func() { log.Print(r.Run(ListenPort)) }()
+	go func() {
+		log.Print(r.Run(ListenPort))
+	}()
 
 	// wait server to start
 	time.Sleep(time.Second * 5)

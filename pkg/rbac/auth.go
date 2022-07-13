@@ -40,7 +40,7 @@ const (
 	InternalError     = "internal error"
 	MemberNotExist    = "member not exist"
 	RoleNotExist      = "role not exist"
-	AmdinAllow        = "admin allows everything"
+	AdminAllow        = "admin allows everything"
 )
 
 func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.Decision,
@@ -51,15 +51,14 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 		return auth.DecisionDeny, AnonymousUser, nil
 	}
 	if currentUser.IsAdmin() {
-		return auth.DecisionAllow, AmdinAllow, nil
+		return auth.DecisionAllow, AdminAllow, nil
 	}
 
 	// TODO(tom): members and pipelineruns and environments need to add to auth check
 	if attr.IsResourceRequest() && (attr.GetResource() == "members" ||
-		attr.GetResource() == "templates" ||
 		attr.GetResource() == "environments") {
 		log.Warning(ctx,
-			"members|templates|environments are not authed yet")
+			"members|environments are not authed yet")
 		return auth.DecisionAllow, NotChecked, nil
 	}
 

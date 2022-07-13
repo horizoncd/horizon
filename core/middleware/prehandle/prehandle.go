@@ -17,6 +17,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	pathReleaseSchema = "schema"
+)
+
 var RequestInfoFty auth.RequestInfoFactory
 
 func init() {
@@ -86,4 +90,84 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 
 		c.Next()
 	}, skippers...)
+}
+
+func handleApplication(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
+	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
+	app, err := mgr.ApplicationManager.GetByName(c, authRecord.Name)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		c.Next()
+	} else {
+		c.Request.URL.Path = "/" + path.Join(requestInfo.APIPrefix, requestInfo.APIGroup, requestInfo.APIVersion,
+			requestInfo.Resource, fmt.Sprintf("%d", app.ID), requestInfo.Subresource)
+		r.HandleContext(c)
+		c.Abort()
+	}
+}
+func handleCluster(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
+	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
+	cluster, err := mgr.ClusterMgr.GetByName(c, authRecord.Name)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		c.Next()
+	} else {
+		c.Request.URL.Path = "/" + path.Join(requestInfo.APIPrefix, requestInfo.APIGroup, requestInfo.APIVersion,
+			requestInfo.Resource, fmt.Sprintf("%d", cluster.ID), requestInfo.Subresource)
+		r.HandleContext(c)
+		c.Abort()
+	}
+}
+
+func handleGetSchema(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
+	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
+	template, err := mgr.TemplateMgr.GetByName(c, authRecord.Name)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.TemplateInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		c.Next()
+		return
+	}
+
+	release, err := mgr.TemplateReleaseManager.
+		GetByTemplateNameAndRelease(c, authRecord.Name, requestInfo.Parts[3])
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.TemplateReleaseInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		c.Next()
+		return
+	}
+
+	c.Request.URL.Path = "/" + path.Join(requestInfo.APIPrefix, requestInfo.APIGroup, requestInfo.APIVersion,
+		requestInfo.Resource, fmt.Sprintf("%d", template.ID),
+		requestInfo.Subresource, fmt.Sprintf("%d", release.ID), pathReleaseSchema)
+	r.HandleContext(c)
+	c.Abort()
+}
+
+func handleTemplate(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
+	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
+	template, err := mgr.TemplateMgr.GetByName(c, authRecord.Name)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.TemplateInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		c.Next()
+	} else {
+		c.Request.URL.Path = "/" + path.Join(requestInfo.APIPrefix, requestInfo.APIGroup, requestInfo.APIVersion,
+			requestInfo.Resource, fmt.Sprintf("%d", template.ID), requestInfo.Subresource)
+		r.HandleContext(c)
+		c.Abort()
+	}
 }

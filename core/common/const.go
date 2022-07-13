@@ -62,6 +62,10 @@ const (
 	// ResourceOauthApps urrently oauthapp do not have direct member info, will
 	// use the oauthapp's groups member info
 	ResourceOauthApps = "oauthapps"
+
+	ResourceTemplate = "templates"
+
+	ResourceTemplateRelease = "releases"
 )
 
 const (

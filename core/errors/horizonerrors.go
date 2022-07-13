@@ -11,6 +11,8 @@ type sourceType struct {
 }
 
 var (
+	TLS                       = sourceType{name: "TLS"}
+	GitlabClient              = sourceType{name: "GitlabClient"}
 	GitlabResource            = sourceType{name: "GitlabResource"}
 	ClusterInDB               = sourceType{name: "ClusterInDB"}
 	ClusterStateInArgo        = sourceType{name: "ClusterStateInArgo"}
@@ -33,8 +35,8 @@ var (
 	TaskInDB                  = sourceType{name: "TaskInDB"}
 	StepInDB                  = sourceType{name: "StepInDB"}
 	UserInDB                  = sourceType{name: "UserInDB"}
-	TemplateInDB              = sourceType{name: "TemplateInDB"}
 	TemplateSchemaTagInDB     = sourceType{name: "TemplateSchemaTagInDB"}
+	TemplateInDB              = sourceType{name: "TemplateInDB"}
 	TemplateReleaseInDB       = sourceType{name: "TemplateReleaseInDB"}
 	ApplicationManifestInArgo = sourceType{name: "ApplicationManifestInArgo"}
 	PodsInK8S                 = sourceType{name: "PodsInK8S"}
@@ -53,9 +55,11 @@ var (
 	TektonClient    = sourceType{name: "TektonClient"}
 	TektonCollector = sourceType{name: "TektonCollector"}
 
-	HelmRepo  = sourceType{name: "HelmRepo"}
-	OAuthInDB = sourceType{name: "OauthAppClient"}
-	TokenInDB = sourceType{name: "TokenInDB"}
+	HelmRepo       = sourceType{name: "HelmRepo"}
+	OAuthInDB      = sourceType{name: "OauthAppClient"}
+	TokenInDB      = sourceType{name: "TokenInDB"}
+	HarborChartURL = sourceType{name: "HarborChartURL"}
+	ChartFile      = sourceType{name: "ChartFile"}
 )
 
 type HorizonErrNotFound struct {
@@ -163,7 +167,10 @@ var (
 	ErrNameConflict     = errors.New("name conflict")
 	ErrPathConflict     = errors.New("path conflict")
 	ErrPairConflict     = errors.New("entity pair conflict")
+	ErrSubResourceExist = errors.New("sub resource exist")
+	ErrNoPrivilege      = errors.New("no privilege")
 	ErrParamInvalid     = errors.New("parameter is invalid")
+	ErrForbidden        = errors.New("forbidden")
 	ErrDeadlineExceeded = errors.New("time limit exceeded")
 	ErrGenerateRandomID = errors.New("failed to generate random id")
 	ErrDisabled         = errors.New("entity is disabled")
@@ -192,8 +199,13 @@ var (
 	ErrS3PutObjFailed = errors.New("s3 put obj failed")
 	ErrS3GetObjFailed = errors.New("s3 get obj failed")
 
-	ErrGitlabInternal   = errors.New("gitlab internal")
-	ErrGitlabMRNotReady = errors.New("gitlab mr is not ready and cannot be merged")
+	ErrGitlabInternal         = errors.New("gitlab internal")
+	ErrGitlabMRNotReady       = errors.New("gitlab mr is not ready and cannot be merged")
+	ErrGitlabResourceNotFound = errors.New("gitlab resource not found")
+
+	// git
+	ErrBranchAndCommitEmpty      = errors.New("branch and commit cannot be empty at the same time")
+	ErrGitlabInterfaceCallFailed = errors.New("failed to call gitlab interface")
 
 	// pipeline
 	ErrPipelineOutputEmpty = errors.New("pipeline output is empty")
@@ -206,6 +218,9 @@ var (
 
 	// grafana
 	ErrGrafanaNotSupport = errors.New("grafana not support")
+
+	// helm
+	ErrLoadChartArchive = errors.New("failed to load archive")
 
 	// group
 	// ErrHasChildren used when delete a group which still has some children
@@ -231,4 +246,7 @@ var (
 
 	// ErrRegionUsedByClusters used when deleting a region that is still used by clusters
 	ErrRegionUsedByClusters = errors.New("cannot delete a region when used by clusters")
+
+	ErrTemplateParamInvalid        = errors.New("parameters of template are invalid")
+	ErrTemplateReleaseParamInvalid = errors.New("parameters of release are invalid")
 )

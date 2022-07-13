@@ -4,28 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"strconv"
 	"sync"
 	"text/template"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
-	templateschemamanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/Masterminds/sprig"
 )
-
-const _gitlabName = "control"
-
-// Getter provides some functions for template schema
-type Getter interface {
-	// GetTemplateSchema get schema for specified template release. todo(gjq) add cache
-	GetTemplateSchema(ctx context.Context, templateName, releaseName string, params map[string]string) (*Schemas, error)
-}
 
 type Schemas struct {
 	Application *Schema
@@ -39,10 +24,14 @@ type Schema struct {
 
 const (
 	// json schema file path
-	_pipelineSchemaPath    = "schema/pipeline.schema.json"
+	// nolint
+	_pipelineSchemaPath = "schema/pipeline.schema.json"
+	// nolint
 	_applicationSchemaPath = "schema/application.schema.json"
 	// ui schema file path
-	_pipelineUISchemaPath    = "schema/pipeline.ui.schema.json"
+	// nolint
+	_pipelineUISchemaPath = "schema/pipeline.ui.schema.json"
+	// nolint
 	_applicationUISchemaPath = "schema/application.ui.schema.json"
 )
 
@@ -52,43 +41,12 @@ const (
 	ResourceTypeKey string = "resourceType"
 )
 
-type getter struct {
-	gitlabLib            gitlablib.Interface
-	templateReleaseMgr   manager.Manager
-	templateSchemaTagMGr templateschemamanager.Manager
-}
-
-func NewSchemaGetter(ctx context.Context, gitlabFty gitlabfty.Factory, m *managerparam.Manager) (Getter, error) {
-	gitlabLib, err := gitlabFty.GetByName(ctx, _gitlabName)
-	if err != nil {
-		return nil, err
-	}
-	return &getter{
-		gitlabLib:            gitlabLib,
-		templateReleaseMgr:   m.TemplateReleaseManager,
-		templateSchemaTagMGr: m.ClusterSchemaTagMgr,
-	}, nil
-}
-
-func (g *getter) GeneratorRenderParams(ctx context.Context, params map[string]string) (map[string]string, error) {
-	if params != nil {
-		clusterIDStr, ok := params[ClusterIDKey]
-		if ok {
-			clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-			if err != nil {
-				return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
-			}
-			tags, err := g.templateSchemaTagMGr.ListByClusterID(ctx, uint(clusterID))
-			if err != nil {
-				return nil, err
-			}
-			for _, tag := range tags {
-				params[tag.Key] = tag.Value
-			}
-			delete(params, ClusterIDKey)
-		}
-	}
-	return params, nil
+// Getter provides some functions for template schema
+// nolint
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/templaterelease/schema/mock_schema.go -package=mock_schema
+type Getter interface {
+	// GetTemplateSchema get schema for specified template release. todo(gjq) add cache
+	GetTemplateSchema(ctx context.Context, templateName, releaseName string, params map[string]string) (*Schemas, error)
 }
 
 func RenderFiles(params map[string]string, files ...[]byte) (retFiles [][]byte, _ error) {
@@ -104,37 +62,10 @@ func RenderFiles(params map[string]string, files ...[]byte) (retFiles [][]byte, 
 	return retFiles, nil
 }
 
-func (g *getter) GetTemplateSchema(ctx context.Context,
-	templateName, releaseName string, params map[string]string) (_ *Schemas, err error) {
-	const op = "template schema getter: getTemplateSchema"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	tr, err := g.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, releaseName)
-	if err != nil {
-		return nil, err
-	}
-
-	// 1. read file concurrently
-	var err1, err2, err3, err4 error
-	var pipelineSchemaBytes, applicationSchemaBytes, pipelineUISchemaBytes, applicationUISchemaBytes []byte
-	var wgReadFile sync.WaitGroup
-	wgReadFile.Add(4)
-	readFile := func(b *[]byte, err *error, filePath string) {
-		defer wgReadFile.Done()
-		bytes, e := g.gitlabLib.GetFile(ctx, tr.GitlabProject, tr.Name, filePath)
-		*b = bytes
-		*err = e
-	}
-	go readFile(&pipelineSchemaBytes, &err1, _pipelineSchemaPath)
-	go readFile(&applicationSchemaBytes, &err2, _applicationSchemaPath)
-	go readFile(&pipelineUISchemaBytes, &err3, _pipelineUISchemaPath)
-	go readFile(&applicationUISchemaBytes, &err4, _applicationUISchemaPath)
-	wgReadFile.Wait()
-	for _, err := range []error{err1, err2, err3, err4} {
-		if err != nil {
-			return nil, err
-		}
-	}
+func ParseFiles(params map[string]string,
+	pipelineSchemaBytes, applicationSchemaBytes,
+	pipelineUISchemaBytes, applicationUISchemaBytes []byte,
+) (*Schemas, error) {
 	readerSchemas, err := RenderFiles(params, pipelineSchemaBytes, applicationSchemaBytes)
 	if err != nil {
 		return nil, err
@@ -142,6 +73,7 @@ func (g *getter) GetTemplateSchema(ctx context.Context,
 	pipelineSchemaBytes = readerSchemas[0]
 	applicationSchemaBytes = readerSchemas[1]
 
+	var err1, err2, err3, err4 error
 	// 2. unmarshal concurrently
 	var pipelineSchema, applicationSchema, pipelineUISchema, applicationUISchema map[string]interface{}
 	var wgUnmarshal sync.WaitGroup

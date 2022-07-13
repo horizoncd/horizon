@@ -19,6 +19,7 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"k8s.io/client-go/tools/remotecommand"
@@ -35,26 +36,28 @@ type Controller interface {
 }
 
 type controller struct {
-	kubeClientFty  kubeclient.Factory
-	clusterMgr     clustermanager.Manager
-	applicationMgr applicationmanager.Manager
-	envMgr         envmanager.Manager
-	envRegionMgr   envregionmanager.Manager
-	regionMgr      regionmanager.Manager
-	clusterGitRepo gitrepo.ClusterGitRepo
+	kubeClientFty      kubeclient.Factory
+	clusterMgr         clustermanager.Manager
+	applicationMgr     applicationmanager.Manager
+	templateReleaseMgr trmanager.Manager
+	envMgr             envmanager.Manager
+	envRegionMgr       envregionmanager.Manager
+	regionMgr          regionmanager.Manager
+	clusterGitRepo     gitrepo.ClusterGitRepo
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		kubeClientFty:  kubeclient.Fty,
-		clusterMgr:     param.ClusterMgr,
-		applicationMgr: param.ApplicationManager,
-		envMgr:         param.EnvMgr,
-		envRegionMgr:   param.EnvRegionMgr,
-		regionMgr:      param.RegionMgr,
-		clusterGitRepo: param.ClusterGitRepo,
+		kubeClientFty:      kubeclient.Fty,
+		clusterMgr:         param.ClusterMgr,
+		applicationMgr:     param.ApplicationManager,
+		templateReleaseMgr: param.TemplateReleaseManager,
+		envMgr:             param.EnvMgr,
+		envRegionMgr:       param.EnvRegionMgr,
+		regionMgr:          param.RegionMgr,
+		clusterGitRepo:     param.ClusterGitRepo,
 	}
 }
 
@@ -101,7 +104,11 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 		return nil, err
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +161,11 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 		return "", nil, err
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return "", nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return "", nil, err
 	}

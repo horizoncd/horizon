@@ -1,4 +1,4 @@
-package schema
+package gitlab
 
 import (
 	"context"
@@ -7,9 +7,12 @@ import (
 	"testing"
 
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
+	tmock "g.hz.netease.com/horizon/mock/pkg/template/manager"
 	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	tmodels "g.hz.netease.com/horizon/pkg/template/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
+	"g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -203,7 +206,7 @@ func TestFunc(t *testing.T) {
 `
 	params := make(map[string]string)
 	params["maxReplicas"] = "122"
-	files, err := RenderFiles(params, []byte(file))
+	files, err := schema.RenderFiles(params, []byte(file))
 	assert.Nil(t, err)
 	t.Logf("%s", string(files[0]))
 }
@@ -212,17 +215,27 @@ func TestNoTag(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	gitlabLib := gitlablibmock.NewMockInterface(mockCtl)
 	templateReleaseMgr := trmock.NewMockManager(mockCtl)
+	templateMgr := tmock.NewMockManager(mockCtl)
 
+	templateMgr.EXPECT().GetByName(ctx, templateName).
+		Return(&tmodels.Template{
+			Name:       templateName,
+			Repository: templateGitlabProject,
+		}, nil)
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
 		releaseName).Return(&trmodels.TemplateRelease{
 		Model: global.Model{
 			ID: 1,
 		},
-		TemplateName:  templateName,
-		Name:          releaseName,
-		GitlabProject: templateGitlabProject,
+		TemplateName: templateName,
+		Name:         releaseName,
 	}, nil)
 
+	templateMgr.EXPECT().GetByName(ctx, templateName).
+		Return(&tmodels.Template{
+			Name:       templateName,
+			Repository: templateGitlabProject,
+		}, nil)
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
 		"release-not-exists").Return(nil, errors.E("", http.StatusNotFound))
 
@@ -239,6 +252,7 @@ func TestNoTag(t *testing.T) {
 		[]byte(jsonSchema), nil)
 
 	g := &getter{
+		templateMgr:        templateMgr,
 		templateReleaseMgr: templateReleaseMgr,
 		gitlabLib:          gitlabLib,
 	}

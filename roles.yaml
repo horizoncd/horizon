@@ -92,6 +92,21 @@ Roles:
           - "*"
         nonResourceURLs:
           - "*"
+      - apiGroups:
+          - core
+        resources:
+          - groups/templates
+          - templates/releases
+          - templates
+          - templates/members
+          - releases
+          - releases/sync
+        verbs:
+          - "*"
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
   - name: maintainer
     desc: maintainer为组/应用/集群的管理者，拥有除删除资源之外的其他权限，并且也可以进行成员管理
     rules:
@@ -183,8 +198,43 @@ Roles:
           - groups/oauthapps
           - oauthapps
           - oauthapps/clientsecret
+          - groups/templates
+          - templates/releases
         verbs:
           - get
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - releases/sync
+        verbs:
+          - create
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templates
+          - releases
+        verbs:
+          - get
+          - update
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templates/members
+        verbs:
+          - get
+          - create
         scopes:
           - "*"
         nonResourceURLs:
@@ -222,6 +272,43 @@ Roles:
           - get
           - create
           - update
+        scopes:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templates
+          - releases
+        verbs:
+          - get
+          - delete
+          - update
+        scopes:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - releases/sync
+        verbs:
+          - create
+        scopes:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - groups/templates
+          - templates/releases
+        verbs:
+          - get
+        scopes:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templates/members
+        verbs:
+          - get
+          - create
         scopes:
           - "*"
       - apiGroups:
@@ -337,3 +424,5 @@ Roles:
           - "reg/*"
           - "perf/*"
           - "pre/*"
+        nonResourceURLs:
+          - "*"
