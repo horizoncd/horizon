@@ -53,24 +53,18 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 		id := uint(0)
 
 		if _, err := strconv.Atoi(authRecord.Name); err != nil && authRecord.Name != "" {
-			redirect = true
-		}
-
-		if redirect {
 			if authRecord.Resource == resourceApplication {
 				app, err := mgr.ApplicationManager.GetByName(c, authRecord.Name)
-				if err != nil {
-					c.Next()
-					return
+				if err == nil {
+					redirect = true
+					id = app.ID
 				}
-				id = app.ID
 			} else if authRecord.Resource == resourceCluster {
 				cluster, err := mgr.ClusterMgr.GetByName(c, authRecord.Name)
-				if err != nil {
-					c.Next()
-					return
+				if err == nil {
+					redirect = true
+					id = cluster.ID
 				}
-				id = cluster.ID
 			}
 		}
 
