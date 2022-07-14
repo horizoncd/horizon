@@ -15,12 +15,20 @@ import (
 
 func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
+		// get user
+		currentUser, err := common.UserFromContext(c)
+		if err != nil {
+			response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
+			return
+		}
+
 		record, ok := c.Get(common.ContextAuthRecord)
 		if !ok {
 			c.Abort()
 			return
 		}
 		authRecord := record.(auth.AttributesRecord)
+		authRecord.User = currentUser
 
 		decision, reason, err := authorizer.Authorize(c, authRecord)
 		if err != nil {

@@ -34,16 +34,9 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 			response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
 			return
 		}
-		// 2. get user
-		currentUser, err := common.UserFromContext(c)
-		if err != nil {
-			response.AbortWithForbiddenError(c, common.Forbidden, err.Error())
-			return
-		}
 
-		// 3. do rbac auth
+		// 2. construct record
 		authRecord := auth.AttributesRecord{
-			User:            currentUser,
 			Verb:            requestInfo.Verb,
 			APIGroup:        requestInfo.APIGroup,
 			APIVersion:      requestInfo.APIVersion,
