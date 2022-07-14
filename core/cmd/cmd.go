@@ -63,6 +63,7 @@ import (
 	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
+	prehandlemiddle "g.hz.netease.com/horizon/core/middleware/prehandle"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
@@ -361,8 +362,9 @@ func Run(flags *Flags) {
 	r := gin.New()
 	// use middleware
 	middlewares := []gin.HandlerFunc{
-		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		gin.Recovery(),
+		prehandlemiddle.Middleware(r, manager),
+		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		requestid.Middleware(), // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
 		metricsmiddle.Middleware( // metrics middleware

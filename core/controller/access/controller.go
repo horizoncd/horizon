@@ -5,11 +5,11 @@ import (
 	"net/http"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/prehandle"
 	hauth "g.hz.netease.com/horizon/pkg/auth"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
-	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
 )
 
 type Controller interface {
@@ -18,7 +18,7 @@ type Controller interface {
 }
 
 type controller struct {
-	requestInfoFty auth.RequestInfoFactory
+	requestInfoFty hauth.RequestInfoFactory
 	authorizer     rbac.Authorizer
 	skippers       []middleware.Skipper
 }
@@ -28,7 +28,7 @@ var _ Controller = (*controller)(nil)
 func NewController(authorizer rbac.Authorizer,
 	skippers ...middleware.Skipper) Controller {
 	return &controller{
-		requestInfoFty: auth.RequestInfoFty,
+		requestInfoFty: prehandle.RequestInfoFty,
 		authorizer:     authorizer,
 		skippers:       skippers,
 	}

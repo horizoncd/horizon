@@ -7,6 +7,7 @@ import (
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/pkg/auth"
 	rbactype "g.hz.netease.com/horizon/pkg/auth"
 	"g.hz.netease.com/horizon/pkg/authentication/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -14,7 +15,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/rbac/types"
-	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"golang.org/x/net/context"
 )
