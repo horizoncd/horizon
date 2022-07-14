@@ -47,6 +47,7 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 			ResourceRequest: requestInfo.IsResourceRequest,
 			Path:            requestInfo.Path,
 		}
+		c.Set(common.ContextAuthRecord, authRecord)
 
 		redirect := false
 		id := uint(0)
@@ -81,7 +82,6 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 			return
 		}
 
-		c.Set(common.ContextAuthRecord, authRecord)
 		c.Next()
 	}, skippers...)
 }
