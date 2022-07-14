@@ -24,7 +24,8 @@ func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) 
 
 		record, ok := c.Get(common.ContextAuthRecord)
 		if !ok {
-			c.Abort()
+			response.AbortWithRPCError(c,
+				rpcerror.BadRequestError.WithErrMsg("request with no auth record"))
 			return
 		}
 		authRecord := record.(auth.AttributesRecord)

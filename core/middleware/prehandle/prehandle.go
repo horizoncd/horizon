@@ -75,7 +75,7 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 		}
 
 		if redirect {
-			c.Request.URL.Path = path.Join(requestInfo.APIPrefix, requestInfo.APIGroup, requestInfo.APIVersion,
+			c.Request.URL.Path = "/" + path.Join(requestInfo.APIPrefix, requestInfo.APIGroup, requestInfo.APIVersion,
 				requestInfo.Resource, fmt.Sprintf("%d", id), requestInfo.Subresource)
 			r.HandleContext(c)
 			c.Abort()
