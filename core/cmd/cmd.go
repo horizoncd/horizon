@@ -363,7 +363,6 @@ func Run(flags *Flags) {
 	// use middleware
 	middlewares := []gin.HandlerFunc{
 		gin.Recovery(),
-		prehandlemiddle.Middleware(r, manager),
 		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		requestid.Middleware(), // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
@@ -382,6 +381,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token"))),
+		prehandlemiddle.Middleware(r, manager),
 		auth.Middleware(rbacAuthorizer, rbacSkippers),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}
