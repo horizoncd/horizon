@@ -63,6 +63,7 @@ import (
 	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
+	prehandlemiddle "g.hz.netease.com/horizon/core/middleware/prehandle"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
@@ -380,6 +381,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token"))),
+		prehandlemiddle.Middleware(r, manager),
 		auth.Middleware(rbacAuthorizer, rbacSkippers),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}

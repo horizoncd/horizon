@@ -80,7 +80,7 @@ func Test(t *testing.T) {
 	}
 
 	clusterID := cluster.ID
-	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
+	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "a",
@@ -93,7 +93,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	resp, err := c.List(ctx, tagmodels.TypeCluster, clusterID)
+	resp, err := c.List(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(resp.Tags))
 	assert.Equal(t, "a", resp.Tags[0].Key)
@@ -101,7 +101,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "b", resp.Tags[1].Key)
 	assert.Equal(t, "2", resp.Tags[1].Value)
 
-	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
+	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "a",
@@ -114,7 +114,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	resp, err = c.List(ctx, tagmodels.TypeCluster, clusterID)
+	resp, err = c.List(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(resp.Tags))
 	assert.Equal(t, "a", resp.Tags[0].Key)
@@ -122,7 +122,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "c", resp.Tags[1].Key)
 	assert.Equal(t, "3", resp.Tags[1].Value)
 
-	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
+	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "a",
@@ -138,7 +138,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	resp, err = c.List(ctx, tagmodels.TypeCluster, clusterID)
+	resp, err = c.List(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(resp.Tags))
 	assert.Equal(t, "a", resp.Tags[0].Key)
@@ -148,7 +148,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "d", resp.Tags[2].Key)
 	assert.Equal(t, "4", resp.Tags[2].Value)
 
-	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
+	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "d",
@@ -158,18 +158,18 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	resp, err = c.List(ctx, tagmodels.TypeCluster, clusterID)
+	resp, err = c.List(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(resp.Tags))
 	assert.Equal(t, "d", resp.Tags[0].Key)
 	assert.Equal(t, "4", resp.Tags[0].Value)
 
-	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, &UpdateRequest{
+	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
 		Tags: []*Tag{},
 	})
 	assert.Nil(t, err)
 
-	resp, err = c.List(ctx, tagmodels.TypeCluster, clusterID)
+	resp, err = c.List(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(resp.Tags))
 
@@ -184,7 +184,7 @@ func Test(t *testing.T) {
 	var request = &UpdateRequest{
 		Tags: tags,
 	}
-	err = c.Update(ctx, tagmodels.TypeCluster, clusterID, request)
+	err = c.Update(ctx, common.ResourceCluster, clusterID, request)
 	assert.NotNil(t, err)
 	t.Logf("%v", err.Error())
 
@@ -194,7 +194,7 @@ func Test(t *testing.T) {
 	}, nil, nil)
 	assert.Nil(t, err)
 
-	err = c.Update(ctx, tagmodels.TypeCluster, cluster2.ID, &UpdateRequest{
+	err = c.Update(ctx, common.ResourceCluster, cluster2.ID, &UpdateRequest{
 		Tags: []*Tag{
 			{
 				Key:   "d",
@@ -208,7 +208,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	resp, err = c.ListSubResourceTags(ctx, tagmodels.TypeApplication, cluster.ApplicationID)
+	resp, err = c.ListSubResourceTags(ctx, common.ResourceApplication, cluster.ApplicationID)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(resp.Tags))
 }

@@ -79,7 +79,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
 	// insert service to group2
 	postMemberTom2 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group2ID,
 		MemberInfo:   tomID,
 		MemberType:   models.MemberUser,
@@ -90,7 +90,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMemberTom2, member))
 
 	postMemberJerry2 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group2ID,
 		MemberInfo:   jerryID,
 		MemberType:   models.MemberUser,
@@ -102,7 +102,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 
 	// insert member to group1
 	postMemberTom1 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group1ID,
 		MemberInfo:   tomID,
 		MemberType:   models.MemberUser,
@@ -113,7 +113,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMemberTom1, tomMember1))
 
 	postMemberJerry1 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group1ID,
 		MemberInfo:   jerryID,
 		MemberType:   models.MemberUser,
@@ -124,7 +124,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMemberJerry1, member))
 
 	postMemberCat1 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group1ID,
 		MemberInfo:   catID,
 		MemberType:   models.MemberUser,
@@ -152,7 +152,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		}, nil
 	}).Times(1)
 	postMemberCat2 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group2ID,
 		MemberInfo:   catID,
 		MemberType:   models.MemberUser,
@@ -178,7 +178,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		}, nil
 	}).Times(1)
 	postMemberCat2 = PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group2ID,
 		MemberInfo:   catID,
 		MemberType:   models.MemberUser,
@@ -287,7 +287,7 @@ func TestListGroupMember(t *testing.T) {
 
 	// insert service to group2
 	postMemberTom2 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group2ID,
 		MemberInfo:   tomID,
 		MemberType:   models.MemberUser,
@@ -298,7 +298,7 @@ func TestListGroupMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMemberTom2, member))
 
 	postMemberJerry2 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group2ID,
 		MemberInfo:   jerryID,
 		MemberType:   models.MemberUser,
@@ -310,7 +310,7 @@ func TestListGroupMember(t *testing.T) {
 
 	// insert service to group1
 	postMemberTom1 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group1ID,
 		MemberInfo:   tomID,
 		MemberType:   models.MemberUser,
@@ -321,7 +321,7 @@ func TestListGroupMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMemberTom1, member))
 
 	postMemberJerry1 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group1ID,
 		MemberInfo:   jerryID,
 		MemberType:   models.MemberUser,
@@ -332,7 +332,7 @@ func TestListGroupMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMemberJerry1, member))
 
 	postMemberCat1 := PostMember{
-		ResourceType: models.TypeGroupStr,
+		ResourceType: common.ResourceGroup,
 		ResourceID:   group1ID,
 		MemberInfo:   catID,
 		MemberType:   models.MemberUser,
@@ -355,7 +355,7 @@ func TestListGroupMember(t *testing.T) {
 			TraversalIDs:    traversalIDs,
 		}, nil
 	}).Times(1)
-	members, err := s.ListMember(ctx, models.TypeGroupStr, group2ID)
+	members, err := s.ListMember(ctx, common.ResourceGroup, group2ID)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(members))
 	assert.True(t, PostMemberEqualsMember(postMemberTom2, &members[0]))
@@ -446,42 +446,42 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	// insert members
 	postMembers := []PostMember{
 		{
-			ResourceType: models.TypeGroupStr,
+			ResourceType: common.ResourceGroup,
 			ResourceID:   group1ID,
 			MemberInfo:   sphID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeGroupStr,
+			ResourceType: common.ResourceGroup,
 			ResourceID:   group2ID,
 			MemberInfo:   sphID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeGroupStr,
+			ResourceType: common.ResourceGroup,
 			ResourceID:   group2ID,
 			MemberInfo:   jerryID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeApplicationStr,
+			ResourceType: common.ResourceApplication,
 			ResourceID:   application3ID,
 			MemberInfo:   sphID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeApplicationStr,
+			ResourceType: common.ResourceApplication,
 			ResourceID:   application3ID,
 			MemberInfo:   catID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeApplicationClusterStr,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   cluster4ID,
 			MemberInfo:   catID,
 			MemberType:   models.MemberUser,
@@ -496,7 +496,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	}
 
 	// check members
-	members, err := s.ListMember(ctx, models.TypeApplicationClusterStr, cluster4ID)
+	members, err := s.ListMember(ctx, common.ResourceCluster, cluster4ID)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(members))
 	assert.True(t, PostMemberEqualsMember(postMembers[5], &members[0]))
@@ -510,7 +510,7 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	ctx = context.WithValue(ctx, memberctx.ContextQueryOnCondition, true)
 	ctx = context.WithValue(ctx, memberctx.ContextDirectMemberOnly, true)
 	ctx = context.WithValue(ctx, memberctx.ContextEmails, []string{catEmail})
-	members, err = s.ListMember(ctx, models.TypeApplicationClusterStr, cluster4ID)
+	members, err = s.ListMember(ctx, common.ResourceCluster, cluster4ID)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMembers[5], &members[0]))
 }
@@ -608,42 +608,42 @@ func TestGetPipelinerunMember(t *testing.T) {
 	// insert members
 	postMembers := []PostMember{
 		{
-			ResourceType: models.TypeGroupStr,
+			ResourceType: common.ResourceGroup,
 			ResourceID:   group1ID,
 			MemberInfo:   sphID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeGroupStr,
+			ResourceType: common.ResourceGroup,
 			ResourceID:   group2ID,
 			MemberInfo:   sphID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeGroupStr,
+			ResourceType: common.ResourceGroup,
 			ResourceID:   group2ID,
 			MemberInfo:   jerryID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeApplicationStr,
+			ResourceType: common.ResourceApplication,
 			ResourceID:   application3ID,
 			MemberInfo:   sphID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeApplicationStr,
+			ResourceType: common.ResourceApplication,
 			ResourceID:   application3ID,
 			MemberInfo:   catID,
 			MemberType:   models.MemberUser,
 			Role:         "owner",
 		},
 		{
-			ResourceType: models.TypeApplicationClusterStr,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   cluster4ID,
 			MemberInfo:   catID,
 			MemberType:   models.MemberUser,
@@ -659,7 +659,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 
 	// check members
 	pipelineRunIDStr := strconv.FormatUint(uint64(pipelineRunID), 10)
-	members, err := s.GetMemberOfResource(ctx, models.TypePipelinerunStr, pipelineRunIDStr)
+	members, err := s.GetMemberOfResource(ctx, common.ResourcePipelinerun, pipelineRunIDStr)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMembers[3], members))
 }

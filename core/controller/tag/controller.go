@@ -3,6 +3,7 @@ package tag
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/core/common"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
@@ -56,7 +57,7 @@ func (c *controller) Update(ctx context.Context, resourceType string, resourceID
 		return err
 	}
 
-	if resourceType == models.TypeCluster {
+	if resourceType == common.ResourceCluster {
 		cluster, err := c.clusterMgr.GetByID(ctx, resourceID)
 		if err != nil {
 			return err
@@ -83,7 +84,7 @@ func (c *controller) ListSubResourceTags(ctx context.Context, resourceType strin
 	defer wlog.Start(ctx, op).StopPrint()
 
 	var results []*models.Tag
-	if resourceType == models.TypeApplication {
+	if resourceType == common.ResourceApplication {
 		clusters, err := c.clusterMgr.ListByApplicationID(ctx, resourceID)
 		if err != nil {
 			return nil, err
@@ -93,7 +94,7 @@ func (c *controller) ListSubResourceTags(ctx context.Context, resourceType strin
 		for _, cluster := range clusters {
 			clusterIDs = append(clusterIDs, cluster.ID)
 		}
-		tags, err := c.tagMgr.ListByResourceTypeIDs(ctx, models.TypeCluster, clusterIDs, true)
+		tags, err := c.tagMgr.ListByResourceTypeIDs(ctx, common.ResourceCluster, clusterIDs, true)
 		if err != nil {
 			return nil, err
 		}

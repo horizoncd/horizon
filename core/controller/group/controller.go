@@ -16,7 +16,6 @@ import (
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/group/service"
-	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
@@ -410,7 +409,7 @@ func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
 		for _, item := range groups {
 			// TODO: get all group member in one request
 			strID := strconv.FormatUint(uint64(item.ID), 10)
-			member, err := c.memberSvc.GetMemberOfResource(ctx, membermodels.TypeGroupStr, strID)
+			member, err := c.memberSvc.GetMemberOfResource(ctx, common.ResourceGroup, strID)
 			if err != nil {
 				return nil, err
 			}

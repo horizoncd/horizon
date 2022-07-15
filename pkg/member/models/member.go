@@ -3,31 +3,21 @@ package models
 import (
 	"fmt"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/server/global"
 )
 
 type ResourceType string
 
 const (
-	TypeGroupStr string = "groups"
 	// TypeGroup represent the group member entry.
-	TypeGroup = (ResourceType)(TypeGroupStr)
+	TypeGroup = (ResourceType)(common.ResourceGroup)
 
-	TypeApplicationStr string = "applications"
 	// TypeApplication represent the application  member entry.
-	TypeApplication = (ResourceType)(TypeApplicationStr)
+	TypeApplication = (ResourceType)(common.ResourceApplication)
 
-	TypeApplicationClusterStr string = "clusters"
 	// TypeApplicationCluster represent the application instance member entry
-	TypeApplicationCluster = (ResourceType)(TypeApplicationClusterStr)
-
-	// TypePipelinerunStr currently pipelineruns do not have direct member info, will
-	// use the pipeline's cluster's member info
-	TypePipelinerunStr string = "pipelineruns"
-
-	// TypeOauthAppsStr urrently oauthapp do not have direct member info, will
-	// use the oauthapp's groups member info
-	TypeOauthAppsStr string = "oauthapps"
+	TypeApplicationCluster = (ResourceType)(common.ResourceCluster)
 )
 
 type MemberType uint8

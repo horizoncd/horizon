@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/tag/models"
 
@@ -28,14 +29,14 @@ func TestMain(m *testing.M) {
 
 func Test(t *testing.T) {
 	clusterID := uint(1)
-	err := mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
+	err := mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.Tag{
 		{
-			ResourceType: models.TypeCluster,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   clusterID,
 			Key:          "a",
 			Value:        "1",
 		}, {
-			ResourceType: models.TypeCluster,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   clusterID,
 			Key:          "b",
 			Value:        "2",
@@ -43,7 +44,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	tags, err := mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err := mgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tags)
 	assert.Equal(t, 2, len(tags))
@@ -52,14 +53,14 @@ func Test(t *testing.T) {
 	assert.Equal(t, "b", tags[1].Key)
 	assert.Equal(t, "2", tags[1].Value)
 
-	err = mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
+	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.Tag{
 		{
-			ResourceType: models.TypeCluster,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   clusterID,
 			Key:          "a",
 			Value:        "1",
 		}, {
-			ResourceType: models.TypeCluster,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   clusterID,
 			Key:          "c",
 			Value:        "3",
@@ -67,7 +68,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	tags, err = mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err = mgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tags)
 	assert.Equal(t, 2, len(tags))
@@ -76,19 +77,19 @@ func Test(t *testing.T) {
 	assert.Equal(t, "c", tags[1].Key)
 	assert.Equal(t, "3", tags[1].Value)
 
-	err = mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
+	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.Tag{
 		{
-			ResourceType: models.TypeCluster,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   clusterID,
 			Key:          "a",
 			Value:        "1",
 		}, {
-			ResourceType: models.TypeCluster,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   clusterID,
 			Key:          "c",
 			Value:        "3",
 		}, {
-			ResourceType: models.TypeCluster,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   clusterID,
 			Key:          "d",
 			Value:        "4",
@@ -96,7 +97,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	tags, err = mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err = mgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tags)
 	assert.Equal(t, 3, len(tags))
@@ -107,25 +108,25 @@ func Test(t *testing.T) {
 	assert.Equal(t, "d", tags[2].Key)
 	assert.Equal(t, "4", tags[2].Value)
 
-	err = mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, []*models.Tag{
+	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.Tag{
 		{
-			ResourceType: models.TypeCluster,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   clusterID,
 			Key:          "d",
 			Value:        "4",
 		},
 	})
 	assert.Nil(t, err)
-	tags, err = mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err = mgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, tags)
 	assert.Equal(t, 1, len(tags))
 	assert.Equal(t, "d", tags[0].Key)
 	assert.Equal(t, "4", tags[0].Value)
 
-	err = mgr.UpsertByResourceTypeID(ctx, models.TypeCluster, clusterID, nil)
+	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, nil)
 	assert.Nil(t, err)
-	tags, err = mgr.ListByResourceTypeID(ctx, models.TypeCluster, clusterID)
+	tags, err = mgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
 	assert.Nil(t, err)
 	assert.NotNil(t, 0, len(tags))
 }

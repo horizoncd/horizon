@@ -42,3 +42,24 @@ const (
 	// NotFound 404 NotFound error code
 	NotFound = "NotFound"
 )
+
+const (
+	// ResourceApplication represent the application  member entry.
+	ResourceApplication = "applications"
+
+	// ResourceCluster represent the application instance member entry
+	ResourceCluster = "clusters"
+
+	ResourceRegion = "regions"
+
+	// ResourceGroup represent the group member entry.
+	ResourceGroup = "groups"
+
+	// ResourcePipelinerun currently pipelineruns do not have direct member info, will
+	// use the pipeline's cluster's member info
+	ResourcePipelinerun = "pipelineruns"
+
+	// ResourceOauthApps urrently oauthapp do not have direct member info, will
+	// use the oauthapp's groups member info
+	ResourceOauthApps = "oauthapps"
+)

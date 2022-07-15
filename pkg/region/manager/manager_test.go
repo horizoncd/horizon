@@ -165,46 +165,46 @@ func Test_manager_ListByRegionSelectors(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	err = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r1.ID, []*tagmodels.Tag{
+	err = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r1.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r1.ID,
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: common.ResourceRegion,
 			Key:          "a",
 			Value:        "1",
 		},
 		{
 			ResourceID:   r1.ID,
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: common.ResourceRegion,
 			Key:          "b",
 			Value:        "2",
 		},
 	})
 	assert.Nil(t, err)
-	err = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r2.ID, []*tagmodels.Tag{
+	err = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r2.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r2.ID,
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: common.ResourceRegion,
 			Key:          "a",
 			Value:        "1",
 		},
 		{
 			ResourceID:   r2.ID,
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: common.ResourceRegion,
 			Key:          "b",
 			Value:        "2",
 		},
 	})
 	assert.Nil(t, err)
-	err = tagMgr.UpsertByResourceTypeID(ctx, tagmodels.TypeRegion, r3.ID, []*tagmodels.Tag{
+	err = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r3.ID, []*tagmodels.Tag{
 		{
 			ResourceID:   r3.ID,
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: common.ResourceRegion,
 			Key:          "a",
 			Value:        "2",
 		},
 		{
 			ResourceID:   r3.ID,
-			ResourceType: tagmodels.TypeRegion,
+			ResourceType: common.ResourceRegion,
 			Key:          "b",
 			Value:        "2",
 		},
@@ -357,6 +357,6 @@ func Test_manager_DeleteByID(t *testing.T) {
 	regions, _ := envregionMgr.ListAllEnvironmentRegions(ctx)
 	assert.Empty(t, regions)
 
-	tags, _ := tagMgr.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
+	tags, _ := tagMgr.ListByResourceTypeID(ctx, common.ResourceRegion, region.ID)
 	assert.Empty(t, tags)
 }

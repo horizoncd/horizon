@@ -4,26 +4,27 @@ import (
 	"net/http"
 	"testing"
 
+	"g.hz.netease.com/horizon/pkg/auth"
 	"g.hz.netease.com/horizon/pkg/util/sets"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRequestInfo(t *testing.T) {
-	requestInfoFactory := RequestInfoFactory{
+	requestInfoFactory := auth.RequestInfoFactory{
 		APIPrefixes: sets.NewString("apis", "api"),
 	}
 
 	caseTable := []struct {
 		method            string
 		path              string
-		expectRequestInfo RequestInfo
+		expectRequestInfo auth.RequestInfo
 	}{
 		{
 			// get subresource
 			"GET",
 			"/apis/core/v1/groups/1/member",
-			RequestInfo{
+			auth.RequestInfo{
 				IsResourceRequest: true,
 				Path:              "/apis/core/v1/groups/1/member",
 				APIPrefix:         "apis",
@@ -40,7 +41,7 @@ func TestRequestInfo(t *testing.T) {
 			// non-resource request
 			method: "GET",
 			path:   "/ao/dsds?scope=pre",
-			expectRequestInfo: RequestInfo{
+			expectRequestInfo: auth.RequestInfo{
 				IsResourceRequest: false,
 				Path:              "/ao/dsds",
 				Verb:              "get",
@@ -51,7 +52,7 @@ func TestRequestInfo(t *testing.T) {
 			// list group
 			method: "GET",
 			path:   "/apis/core/v1/groups?path=path",
-			expectRequestInfo: RequestInfo{
+			expectRequestInfo: auth.RequestInfo{
 				IsResourceRequest: true,
 				Path:              "/apis/core/v1/groups",
 				APIPrefix:         "apis",
@@ -66,7 +67,7 @@ func TestRequestInfo(t *testing.T) {
 			// post resource
 			method: "POST",
 			path:   "/apis/core/v1/groups?scope=production",
-			expectRequestInfo: RequestInfo{
+			expectRequestInfo: auth.RequestInfo{
 				IsResourceRequest: true,
 				Path:              "/apis/core/v1/groups",
 				APIPrefix:         "apis",
@@ -82,7 +83,7 @@ func TestRequestInfo(t *testing.T) {
 			// get resource
 			method: "GET",
 			path:   "/apis/core/v1/groups/1",
-			expectRequestInfo: RequestInfo{
+			expectRequestInfo: auth.RequestInfo{
 				IsResourceRequest: true,
 				Path:              "/apis/core/v1/groups/1",
 				APIPrefix:         "apis",
@@ -98,7 +99,7 @@ func TestRequestInfo(t *testing.T) {
 			// get resource
 			method: "PUT",
 			path:   "/apis/core/v1/groups/1",
-			expectRequestInfo: RequestInfo{
+			expectRequestInfo: auth.RequestInfo{
 				IsResourceRequest: true,
 				Path:              "/apis/core/v1/groups/1",
 				APIPrefix:         "apis",
@@ -114,7 +115,7 @@ func TestRequestInfo(t *testing.T) {
 			// get resource
 			method: "PATCH",
 			path:   "/apis/core/v1/groups/1",
-			expectRequestInfo: RequestInfo{
+			expectRequestInfo: auth.RequestInfo{
 				IsResourceRequest: true,
 				Path:              "/apis/core/v1/groups/1",
 				APIPrefix:         "apis",
@@ -130,7 +131,7 @@ func TestRequestInfo(t *testing.T) {
 			// get resource
 			method: "DELETE",
 			path:   "/apis/core/v1/groups/1",
-			expectRequestInfo: RequestInfo{
+			expectRequestInfo: auth.RequestInfo{
 				IsResourceRequest: true,
 				Path:              "/apis/core/v1/groups/1",
 				APIPrefix:         "apis",
@@ -145,7 +146,7 @@ func TestRequestInfo(t *testing.T) {
 	}
 
 	for _, v := range caseTable {
-		assert.Equal(t, &v.expectRequestInfo, func(method, url string) *RequestInfo {
+		assert.Equal(t, &v.expectRequestInfo, func(method, url string) *auth.RequestInfo {
 			req, _ := http.NewRequest(method, url, nil)
 			requestInfo, _ := requestInfoFactory.NewRequestInfo(req)
 			return requestInfo
