@@ -22,11 +22,6 @@ func init() {
 	}
 }
 
-var (
-	resourceApplication = "applications"
-	resourceCluster     = "clusters"
-)
-
 func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		requestInfo, err := RequestInfoFty.NewRequestInfo(c.Request)
@@ -53,13 +48,13 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 		id := uint(0)
 
 		if _, err := strconv.Atoi(authRecord.Name); err != nil && authRecord.Name != "" {
-			if authRecord.Resource == resourceApplication {
+			if authRecord.Resource == common.ResourceApplication {
 				app, err := mgr.ApplicationManager.GetByName(c, authRecord.Name)
 				if err == nil {
 					redirect = true
 					id = app.ID
 				}
-			} else if authRecord.Resource == resourceCluster {
+			} else if authRecord.Resource == common.ResourceCluster {
 				cluster, err := mgr.ClusterMgr.GetByName(c, authRecord.Name)
 				if err == nil {
 					redirect = true

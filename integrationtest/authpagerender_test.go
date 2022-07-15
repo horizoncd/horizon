@@ -166,7 +166,9 @@ func TestServer(t *testing.T) {
 	time.Sleep(time.Second * 5)
 
 	// post authorize request
+	// nolint
 	scope := ""
+	// nolint
 	state := "98237dhka21dasd"
 	data := url.Values{
 		oauthserver.ClientID:    {clientID},

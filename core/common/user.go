@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	contextUserKey         = "contextUser"
-	ContextAuthRecord      = "authRecord"
+	contextUserKey = "contextUser"
+
 	AuthorizationHeaderKey = "Authorization"
 	TokenHeaderValuePrefix = "Bearer"
 )

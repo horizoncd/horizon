@@ -50,7 +50,7 @@ func (c *controller) ListCluster(ctx context.Context, applicationID uint, enviro
 		clusterIDs = append(clusterIDs, c.ID)
 	}
 
-	tags, err := c.tagMgr.ListByResourceTypeIDs(ctx, tagmodels.TypeCluster, clusterIDs, false)
+	tags, err := c.tagMgr.ListByResourceTypeIDs(ctx, common.ResourceCluster, clusterIDs, false)
 	if err != nil {
 		return 0, nil, err
 	}

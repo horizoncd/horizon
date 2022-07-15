@@ -362,8 +362,8 @@ func Run(flags *Flags) {
 	r := gin.New()
 	// use middleware
 	middlewares := []gin.HandlerFunc{
-		gin.Recovery(),
 		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
+		gin.Recovery(),
 		requestid.Middleware(), // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
 		metricsmiddle.Middleware( // metrics middleware

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/member/models"
 )
@@ -59,11 +60,11 @@ func ConvertResourceType(resourceTypeStr string) (models.ResourceType, bool) {
 	var resourceType models.ResourceType
 
 	switch resourceTypeStr {
-	case models.TypeGroupStr:
+	case common.ResourceGroup:
 		resourceType = models.TypeGroup
-	case models.TypeApplicationStr:
+	case common.ResourceApplication:
 		resourceType = models.TypeApplication
-	case models.TypeApplicationClusterStr:
+	case common.ResourceCluster:
 		resourceType = models.TypeApplicationCluster
 	default:
 		convertOk = false

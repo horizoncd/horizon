@@ -104,7 +104,7 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 			return nil
 		}
 		for i := 0; i < len(tags); i++ {
-			tags[i].ResourceType = tagmodels.TypeCluster
+			tags[i].ResourceType = common.ResourceCluster
 			tags[i].ResourceID = cluster.ID
 		}
 
@@ -212,7 +212,7 @@ func (d *dao) ListByApplicationEnvsTags(ctx context.Context, applicationID uint,
 		// todo: support other operators
 		var conditions []string
 		var params []interface{}
-		params = append(params, applicationID, tagmodels.TypeCluster,
+		params = append(params, applicationID, common.ResourceCluster,
 			like, environments, len(environments))
 		for _, tagSelector := range ts {
 			if tagSelector.Operator != tagmodels.Equals && tagSelector.Operator != tagmodels.In {
