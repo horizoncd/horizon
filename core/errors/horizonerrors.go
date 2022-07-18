@@ -30,6 +30,7 @@ var (
 	PipelinerunInTekton       = sourceType{name: "PipelinerunInTekton"}
 	PipelinerunInDB           = sourceType{name: "PipelinerunInDB"}
 	UserInDB                  = sourceType{name: "UserInDB"}
+	TemplateInDB              = sourceType{name: "TemplateInDB"}
 	TemplateSchemaTagInDB     = sourceType{name: "TemplateSchemaTagInDB"}
 	TemplateReleaseInDB       = sourceType{name: "TemplateReleaseInDB"}
 	ApplicationManifestInArgo = sourceType{name: "ApplicationManifestInArgo"}
