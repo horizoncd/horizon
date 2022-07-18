@@ -50,7 +50,8 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 		redirect := false
 		id := uint(0)
 
-		if _, err := strconv.Atoi(authRecord.Name); err != nil && authRecord.Name != "" {
+		if _, err := strconv.Atoi(authRecord.Name); err != nil &&
+			authRecord.Name != "" && authRecord.APIGroup == common.GroupCore {
 			if authRecord.Resource == common.ResourceApplication {
 				app, err := mgr.ApplicationManager.GetByName(c, authRecord.Name)
 				if err != nil {
