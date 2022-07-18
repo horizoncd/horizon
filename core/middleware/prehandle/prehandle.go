@@ -6,10 +6,13 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/auth"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"g.hz.netease.com/horizon/pkg/util/sets"
 	"github.com/gin-gonic/gin"
 )
@@ -50,13 +53,23 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 		if _, err := strconv.Atoi(authRecord.Name); err != nil && authRecord.Name != "" {
 			if authRecord.Resource == common.ResourceApplication {
 				app, err := mgr.ApplicationManager.GetByName(c, authRecord.Name)
-				if err == nil {
+				if err != nil {
+					if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
+						response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+						return
+					}
+				} else {
 					redirect = true
 					id = app.ID
 				}
 			} else if authRecord.Resource == common.ResourceCluster {
 				cluster, err := mgr.ClusterMgr.GetByName(c, authRecord.Name)
-				if err == nil {
+				if err != nil {
+					if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+						response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+						return
+					}
+				} else {
 					redirect = true
 					id = cluster.ID
 				}
