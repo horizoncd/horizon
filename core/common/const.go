@@ -63,3 +63,8 @@ const (
 	// use the oauthapp's groups member info
 	ResourceOauthApps = "oauthapps"
 )
+
+const (
+	GroupCore  = "core"
+	GroupFront = "front"
+)
