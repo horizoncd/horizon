@@ -125,7 +125,7 @@ func (s *service) getOauthAppMember(ctx context.Context, clientID string) (*mode
 	if !app.IsGroupOwnerType() {
 		return nil, herror.ErrOAuthNotGroupOwnerType
 	}
-	return s.getMember(ctx, models.TypeGroupStr, app.OwnerID, models.MemberUser, currentUser.GetID())
+	return s.getMember(ctx, common.ResourceGroup, app.OwnerID, models.MemberUser, currentUser.GetID())
 }
 
 func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) (*models.Member, error) {
@@ -141,7 +141,7 @@ func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) 
 		log.Warningf(ctx, "pipeline do not found, pipelineID = %d", pipelinerunID)
 		return nil, ErrMemberNotExist
 	}
-	return s.getMember(ctx, models.TypeApplicationClusterStr,
+	return s.getMember(ctx, common.ResourceCluster,
 		pipeline.ClusterID, models.MemberUser, currentUser.GetID())
 }
 
@@ -153,10 +153,10 @@ func (s *service) GetMemberOfResource(ctx context.Context,
 		return nil, err
 	}
 	var memberInfo *models.Member
-	if resourceType == models.TypePipelinerunStr {
+	if resourceType == common.ResourcePipelinerun {
 		resourceID, _ := strconv.Atoi(resourceIDStr)
 		memberInfo, err = s.getPipelinerunMember(ctx, uint(resourceID))
-	} else if resourceType == models.TypeOauthAppsStr {
+	} else if resourceType == common.ResourceOauthApps {
 		memberInfo, err = s.getOauthAppMember(ctx, resourceIDStr)
 	} else {
 		resourceID, _ := strconv.Atoi(resourceIDStr)
@@ -276,11 +276,11 @@ func (s *service) ListMember(ctx context.Context, resourceType string, resourceI
 	var allMembers []models.Member
 	var err error
 	switch resourceType {
-	case models.TypeGroupStr:
+	case common.ResourceGroup:
 		allMembers, err = s.listGroupMembers(ctx, resourceID)
-	case models.TypeApplicationStr:
+	case common.ResourceApplication:
 		allMembers, err = s.listApplicationMembers(ctx, resourceID)
-	case models.TypeApplicationClusterStr:
+	case common.ResourceCluster:
 		allMembers, err = s.listApplicationInstanceMembers(ctx, resourceID)
 	default:
 		err = errors.New("unsupported resourceType")

@@ -55,7 +55,7 @@ func (a *API) CreateGroupMember(c *gin.Context) {
 		return
 	}
 
-	postMember.ResourceType = membermodels.TypeGroupStr
+	postMember.ResourceType = common.ResourceGroup
 	postMember.ResourceID = uint(uintID)
 
 	if err := a.validatePostMember(c, postMember); err != nil {
@@ -89,7 +89,7 @@ func (a *API) CreateApplicationMember(c *gin.Context) {
 		return
 	}
 
-	postMember.ResourceType = membermodels.TypeApplicationStr
+	postMember.ResourceType = common.ResourceApplication
 	postMember.ResourceID = uint(uintID)
 
 	if err := a.validatePostMember(c, postMember); err != nil {
@@ -123,7 +123,7 @@ func (a *API) CreateApplicationClusterMember(c *gin.Context) {
 		return
 	}
 
-	postMember.ResourceType = membermodels.TypeApplicationClusterStr
+	postMember.ResourceType = common.ResourceCluster
 	postMember.ResourceID = uint(uintID)
 
 	if err := a.validatePostMember(c, postMember); err != nil {

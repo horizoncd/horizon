@@ -8,6 +8,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 
+	hcommon "g.hz.netease.com/horizon/core/common"
 	appregionmodels "g.hz.netease.com/horizon/pkg/applicationregion/models"
 	"g.hz.netease.com/horizon/pkg/common"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
@@ -50,7 +51,7 @@ func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.R
 
 	var conditions []string
 	var params []interface{}
-	params = append(params, tagmodels.TypeRegion)
+	params = append(params, hcommon.ResourceRegion)
 	for _, selector := range selectors {
 		conditions = append(conditions, "(tg.tag_key = ? and tg.tag_value in ?)")
 		params = append(params, selector.Key, selector.Values)
@@ -168,7 +169,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		}
 
 		// remove records from tag table
-		result = tx.Where("resource_id = ? and resource_type = ?", regionInDB.ID, tagmodels.TypeRegion).
+		result = tx.Where("resource_id = ? and resource_type = ?", regionInDB.ID, hcommon.ResourceRegion).
 			Delete(&tagmodels.Tag{})
 		if result.Error != nil {
 			return herrors.NewErrDeleteFailed(herrors.RegionInDB, result.Error.Error())

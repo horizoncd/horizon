@@ -3,13 +3,13 @@ package manager
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/core/common"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	"g.hz.netease.com/horizon/pkg/region/models"
 	tagdao "g.hz.netease.com/horizon/pkg/tag/dao"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"gorm.io/gorm"
 )
 
@@ -62,7 +62,7 @@ func (m *manager) ListRegionEntities(ctx context.Context) (ret []*models.RegionE
 	}
 
 	for _, region := range regions {
-		tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
+		tags, err := m.tagDAO.ListByResourceTypeID(ctx, common.ResourceRegion, region.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -129,7 +129,7 @@ func (m *manager) GetRegionByID(ctx context.Context, id uint) (*models.RegionEnt
 		return nil, err
 	}
 
-	tags, err := m.tagDAO.ListByResourceTypeID(ctx, tagmodels.TypeRegion, region.ID)
+	tags, err := m.tagDAO.ListByResourceTypeID(ctx, common.ResourceRegion, region.ID)
 	if err != nil {
 		return nil, err
 	}

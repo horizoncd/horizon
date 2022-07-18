@@ -21,13 +21,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/sets"
 )
 
-const (
-	TypeGroup       = "groups"
-	TypeApplication = "applications"
-	TypeCluster     = "clusters"
-	TypeRegion      = "regions"
-)
-
 type Tag struct {
 	ID           uint   `gorm:"primarykey"`
 	ResourceID   uint   `gorm:"uniqueIndex:idx_resource_key"`

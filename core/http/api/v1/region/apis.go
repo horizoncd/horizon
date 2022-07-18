@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/region"
 	"g.hz.netease.com/horizon/core/controller/tag"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -145,7 +145,7 @@ func (a *API) ListRegionTags(c *gin.Context) {
 		return
 	}
 
-	resp, err := a.tagCtl.List(c, tagmodels.TypeRegion, uint(regionID))
+	resp, err := a.tagCtl.List(c, common.ResourceRegion, uint(regionID))
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
