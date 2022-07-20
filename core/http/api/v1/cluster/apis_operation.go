@@ -24,7 +24,7 @@ func (a *API) BuildDeploy(c *gin.Context) {
 		return
 	}
 
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -52,7 +52,7 @@ func (a *API) BuildDeploy(c *gin.Context) {
 
 func (a *API) GetDiff(c *gin.Context) {
 	op := "cluster: get diff"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -91,7 +91,7 @@ func (a *API) GetDiff(c *gin.Context) {
 
 func (a *API) ClusterStatus(c *gin.Context) {
 	op := "cluster: cluster status"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -113,7 +113,7 @@ func (a *API) ClusterStatus(c *gin.Context) {
 
 func (a *API) PodEvents(c *gin.Context) {
 	op := "cluster: pod events"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -146,7 +146,7 @@ func (a *API) PodEvents(c *gin.Context) {
 
 func (a *API) InternalDeploy(c *gin.Context) {
 	op := "cluster: internal deploy"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -181,7 +181,7 @@ func (a *API) InternalDeploy(c *gin.Context) {
 
 func (a *API) Restart(c *gin.Context) {
 	op := "cluster: restart"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -203,7 +203,7 @@ func (a *API) Restart(c *gin.Context) {
 
 func (a *API) Deploy(c *gin.Context) {
 	op := "cluster: deploy"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -242,7 +242,7 @@ func (a *API) Deploy(c *gin.Context) {
 
 func (a *API) Next(c *gin.Context) {
 	op := "cluster: op"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -268,7 +268,7 @@ func (a *API) Next(c *gin.Context) {
 const defaultTailLines = 1000
 
 func (a *API) GetContainerLog(c *gin.Context) {
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -307,7 +307,7 @@ func (a *API) GetContainerLog(c *gin.Context) {
 
 func (a *API) Online(c *gin.Context) {
 	op := "cluster: online"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -336,7 +336,7 @@ func (a *API) Online(c *gin.Context) {
 
 func (a *API) Offline(c *gin.Context) {
 	op := "cluster: offline"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -365,7 +365,7 @@ func (a *API) Offline(c *gin.Context) {
 
 func (a *API) Rollback(c *gin.Context) {
 	op := "cluster: rollback"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -393,7 +393,7 @@ func (a *API) Rollback(c *gin.Context) {
 
 func (a *API) GetDashBoard(c *gin.Context) {
 	op := "cluster: get dashboard"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -417,7 +417,7 @@ func (a *API) GetDashBoard(c *gin.Context) {
 
 func (a *API) GetClusterPods(c *gin.Context) {
 	op := "cluster: get cluster pods"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -455,7 +455,7 @@ func (a *API) GetClusterPods(c *gin.Context) {
 
 func (a *API) DeleteClusterPods(c *gin.Context) {
 	op := "cluster: get cluster pods"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -479,7 +479,7 @@ func (a *API) DeleteClusterPods(c *gin.Context) {
 
 func (a *API) Promote(c *gin.Context) {
 	const op = "cluster: promote"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		err = perror.Wrap(err, "failed to parse cluster id")
@@ -504,7 +504,7 @@ func (a *API) Promote(c *gin.Context) {
 
 func (a *API) Pause(c *gin.Context) {
 	const op = "cluster: pause"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		err = perror.Wrap(err, "failed to parse cluster id")
@@ -529,7 +529,7 @@ func (a *API) Pause(c *gin.Context) {
 
 func (a *API) Resume(c *gin.Context) {
 	const op = "cluster: resume"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		err = perror.Wrap(err, "failed to parse cluster id")

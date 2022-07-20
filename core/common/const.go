@@ -68,3 +68,9 @@ const (
 	GroupCore  = "core"
 	GroupFront = "front"
 )
+
+const (
+	ParamApplicationID = "applicationID"
+	ParamGroupID       = "groupID"
+	ParamClusterID     = "clusterID"
+)
