@@ -199,6 +199,9 @@ var (
 	// pipeline
 	ErrPipelineOutputEmpty = errors.New("pipeline output is empty")
 
+	// restart
+	ErrRestartFileEmpty = errors.New("restart file is empty")
+
 	// tekton
 	ErrTektonInternal = errors.New("tekton internal error")
 

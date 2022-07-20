@@ -294,7 +294,7 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	assert.Equal(t, "", cluster.Status)
 
 	// if failed to delete, status should be set to empty
-	err = c.DeleteCluster(ctx, cluster.ID)
+	err = c.DeleteCluster(ctx, cluster.ID, false)
 	assert.Nil(t, err)
 	time.Sleep(time.Second)
 	cluster, err = manager.ClusterMgr.GetByID(ctx, cluster.ID)

@@ -140,6 +140,8 @@ type ClusterGitRepo interface {
 		pipelineOutputParam PipelineOutput) (string, error)
 	// UpdateRestartTime update restartTime in git repo for restart
 	// TODO(gjq): some template cannot restart, for example serverless, how to do it ?
+	GetRestartTime(ctx context.Context, application, cluster string,
+		template string) (string, error)
 	UpdateRestartTime(ctx context.Context, application, cluster, template string) (string, error)
 	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
 	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
@@ -708,6 +710,31 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	}
 
 	return commit.ID, nil
+}
+
+func (g *clusterGitRepo) GetRestartTime(ctx context.Context, application, cluster string,
+	template string) (string, error) {
+	ret := make(map[string]map[string]string)
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathRestart)
+	if err != nil {
+		return "", perror.WithMessage(err, "failed to get gitlab file")
+	}
+
+	restartBytes, err := kyaml.YAMLToJSON(content)
+	if err != nil {
+		return "", perror.Wrap(herrors.ErrParamInvalid, err.Error())
+	}
+	if err := json.Unmarshal(restartBytes, &ret); err != nil {
+		return "", perror.Wrap(herrors.ErrParamInvalid, err.Error())
+	}
+
+	restartStr, ok := ret[template]["restartTime"]
+	if !ok {
+		return "", perror.Wrapf(herrors.ErrRestartFileEmpty, "no template in restart.yaml")
+	}
+
+	return restartStr, nil
 }
 
 func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,

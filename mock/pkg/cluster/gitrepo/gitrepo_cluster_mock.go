@@ -168,6 +168,21 @@ func (mr *MockClusterGitRepoMockRecorder) GetRepoInfo(ctx, application, cluster 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepoInfo", reflect.TypeOf((*MockClusterGitRepo)(nil).GetRepoInfo), ctx, application, cluster)
 }
 
+// GetRestartTime mocks base method.
+func (m *MockClusterGitRepo) GetRestartTime(ctx context.Context, application, cluster, template string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRestartTime", ctx, application, cluster, template)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRestartTime indicates an expected call of GetRestartTime.
+func (mr *MockClusterGitRepoMockRecorder) GetRestartTime(ctx, application, cluster, template interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestartTime", reflect.TypeOf((*MockClusterGitRepo)(nil).GetRestartTime), ctx, application, cluster, template)
+}
+
 // HardDeleteCluster mocks base method.
 func (m *MockClusterGitRepo) HardDeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error {
 	m.ctrl.T.Helper()

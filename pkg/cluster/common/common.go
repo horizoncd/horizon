@@ -11,6 +11,7 @@ const (
 	RegionIDLabelKey      = "cloudnative.music.netease.com/region-id"
 	OperatorAnnotationKey = "cloudnative.music.netease.com/operator"
 	TemplateKey           = "cloudnative.music.netease.com/template"
+	RestartTimeKey        = "cloudnative.music.netease.com/user-restart-time"
 )
 
 // status of cluster
