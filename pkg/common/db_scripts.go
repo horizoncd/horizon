@@ -255,6 +255,7 @@ const (
 const (
 	PipelinerunGetByID                       = "select * from tb_pipelinerun where id = ?"
 	PipelinerunDeleteByID                    = "delete from tb_pipelinerun where id = ?"
+	PipelinerunDeleteByClusterID             = "delete from tb_pipelinerun where cluster_id = ?"
 	PipelinerunUpdateConfigCommitByID        = "update tb_pipelinerun set config_commit = ? where id = ?"
 	PipelinerunGetLatestByClusterIDAndAction = "select * from tb_pipelinerun where cluster_id = ? " +
 		"and action = ? order by id desc limit 1"
@@ -327,4 +328,11 @@ const (
 	DeleteClientSecret           = "delete from tb_oauth_client_secret where  client_id = ? and id = ?"
 	DeleteClientSecretByClientID = "delete from tb_oauth_client_secret where client_id = ?"
 	ClientSecretSelectAll        = "select * from tb_oauth_client_secret where client_id = ?"
+)
+
+/* sql about pipeline*/
+const (
+	PipelineDeleteByCluster = "delete from tb_pipeline where cluster= ?"
+	TaskDeleteByCluster     = "delete from tb_task where cluster= ?"
+	StepDeleteByCluster     = "delete from tb_step where cluster= ?"
 )

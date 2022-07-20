@@ -40,7 +40,7 @@ type Controller interface {
 	UpdateApplication(ctx context.Context, id uint,
 		request *UpdateApplicationRequest) (*GetApplicationResponse, error)
 	// DeleteApplication delete an application by name
-	DeleteApplication(ctx context.Context, id uint) error
+	DeleteApplication(ctx context.Context, id uint, hard bool) error
 	// ListApplication list application by filter
 	ListApplication(ctx context.Context, filter string, query q.Query) (int, []*ListApplicationResponse, error)
 	// ListUserApplication list application that authorized to current user by filter
@@ -272,7 +272,7 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application), nil
 }
 
-func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error) {
+func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) (err error) {
 	const op = "application controller: delete application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -293,8 +293,17 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint) (err error)
 	}
 
 	// 2. delete application in git repo
-	if err := c.applicationGitRepo.DeleteApplication(ctx, app.Name, app.ID); err != nil {
-		return err
+	if hard {
+		if err := c.applicationRegionMgr.UpsertByApplicationID(ctx, app.ID, nil); err != nil {
+			return err
+		}
+		if err := c.applicationGitRepo.HardDeleteApplication(ctx, app.Name, app.ID); err != nil {
+			return err
+		}
+	} else {
+		if err := c.applicationGitRepo.DeleteApplication(ctx, app.Name, app.ID); err != nil {
+			return err
+		}
 	}
 
 	// 3. delete application in db

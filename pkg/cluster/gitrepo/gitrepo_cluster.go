@@ -129,6 +129,7 @@ type ClusterGitRepo interface {
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
 	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
+	HardDeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
 	// CompareConfig compare config of `from` commit with `to` commit.
 	// if `from` or `to` is nil, compare the master branch with gitops branch
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
@@ -540,6 +541,14 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 	newPid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, newPath)
 	return g.gitlabLib.TransferProject(ctx, newPid,
 		fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
+}
+
+func (g *clusterGitRepo) HardDeleteCluster(ctx context.Context, application, cluster string, clusterID uint) (err error) {
+	const op = "cluster git repo: hard delete cluster"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	return g.gitlabLib.DeleteProject(ctx, pid)
 }
 
 func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,

@@ -23,6 +23,7 @@ const (
 	_extraOwner = "extraOwner"
 	_groupIDStr = "groupID"
 	_envQuery   = "env"
+	_hard       = "hard"
 )
 
 type API struct {
@@ -184,7 +185,13 @@ func (a *API) Delete(c *gin.Context) {
 			appIDStr, err.Error())))
 		return
 	}
-	if err := a.applicationCtl.DeleteApplication(c, uint(appID)); err != nil {
+	hardStr := c.Param(_hard)
+	hard, err := strconv.ParseBool(hardStr)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	if err := a.applicationCtl.DeleteApplication(c, uint(appID), hard); err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))

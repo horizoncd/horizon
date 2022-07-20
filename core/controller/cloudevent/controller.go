@@ -32,7 +32,7 @@ func NewController(tektonFty factory.Factory, parameter *param.Param) Controller
 	return &controller{
 		tektonFty:      tektonFty,
 		pipelinerunMgr: parameter.PipelinerunMgr,
-		pipelineMgr:    parameter.PipelinerMgr,
+		pipelineMgr:    parameter.PipelineMgr,
 	}
 }
 

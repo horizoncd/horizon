@@ -168,6 +168,20 @@ func (mr *MockClusterGitRepoMockRecorder) GetRepoInfo(ctx, application, cluster 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepoInfo", reflect.TypeOf((*MockClusterGitRepo)(nil).GetRepoInfo), ctx, application, cluster)
 }
 
+// HardDeleteCluster mocks base method.
+func (m *MockClusterGitRepo) HardDeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HardDeleteCluster", ctx, application, cluster, clusterID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// HardDeleteCluster indicates an expected call of HardDeleteCluster.
+func (mr *MockClusterGitRepoMockRecorder) HardDeleteCluster(ctx, application, cluster, clusterID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HardDeleteCluster", reflect.TypeOf((*MockClusterGitRepo)(nil).HardDeleteCluster), ctx, application, cluster, clusterID)
+}
+
 // MergeBranch mocks base method.
 func (m *MockClusterGitRepo) MergeBranch(ctx context.Context, application, cluster string) (string, error) {
 	m.ctrl.T.Helper()

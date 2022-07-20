@@ -16,6 +16,7 @@ type Manager interface {
 		query q.Query) (int, []*models.Pipelinerun, error)
 	GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
+	DeleteByClusterID(ctx context.Context, clusterID uint) error
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
 	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
 	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint, action,
@@ -44,6 +45,10 @@ func (m *manager) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipe
 
 func (m *manager) DeleteByID(ctx context.Context, pipelinerunID uint) error {
 	return m.dao.DeleteByID(ctx, pipelinerunID)
+}
+
+func (m *manager) DeleteByClusterID(ctx context.Context, clusterID uint) error {
+	return m.dao.DeleteByID(ctx, clusterID)
 }
 
 func (m *manager) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error {
