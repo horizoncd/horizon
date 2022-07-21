@@ -421,9 +421,6 @@ func TestMain(m *testing.M) {
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
-		panic(err)
-	}
 	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -1068,7 +1065,7 @@ func TestIsClusterActuallyHealthy(t *testing.T) {
 		Image: &imageV1,
 	}
 	cs := &clustercd.ClusterState{}
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, ""))
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, "", nil))
 
 	containerV1 := &clustercd.Container{
 		Image: imageV1,
@@ -1097,14 +1094,14 @@ func TestIsClusterActuallyHealthy(t *testing.T) {
 	cs.Versions[cs.PodTemplateHash] = &clustercd.ClusterVersion{
 		Pods: map[string]*clustercd.ClusterPod{"Pod3": Pod3},
 	}
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, ""))
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, "", nil))
 
 	cs.Versions[cs.PodTemplateHash].Pods["Pod2"] = Pod2
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, ""))
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, "", nil))
 
 	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1))
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1, nil))
 
 	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t2))
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t2, nil))
 }
