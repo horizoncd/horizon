@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/server/route"
 	"github.com/gin-gonic/gin"
 )
@@ -14,103 +15,103 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var routes = route.Routes{
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/applications/:%v/clusters", _applicationIDParam),
+			Pattern:     fmt.Sprintf("/applications/:%v/clusters", common.ParamApplicationID),
 			HandlerFunc: api.Create,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/applications/:%v/clusters", _applicationIDParam),
+			Pattern:     fmt.Sprintf("/applications/:%v/clusters", common.ParamApplicationID),
 			HandlerFunc: api.List,
 		}, {
 			Method:      http.MethodPut,
-			Pattern:     fmt.Sprintf("/clusters/:%v", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v", common.ParamClusterID),
 			HandlerFunc: api.Update,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v", common.ParamClusterID),
 			HandlerFunc: api.Get,
 		}, {
 			Method:      http.MethodDelete,
-			Pattern:     fmt.Sprintf("/clusters/:%v", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v", common.ParamClusterID),
 			HandlerFunc: api.Delete,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/builddeploy", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/builddeploy", common.ParamClusterID),
 			HandlerFunc: api.BuildDeploy,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/diffs", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/diffs", common.ParamClusterID),
 			HandlerFunc: api.GetDiff,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/status", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/status", common.ParamClusterID),
 			HandlerFunc: api.ClusterStatus,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/restart", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/restart", common.ParamClusterID),
 			HandlerFunc: api.Restart,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/deploy", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/deploy", common.ParamClusterID),
 			HandlerFunc: api.Deploy,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/rollback", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/rollback", common.ParamClusterID),
 			HandlerFunc: api.Rollback,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/next", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/next", common.ParamClusterID),
 			HandlerFunc: api.Next,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/containerlog", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/containerlog", common.ParamClusterID),
 			HandlerFunc: api.GetContainerLog,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/online", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/online", common.ParamClusterID),
 			HandlerFunc: api.Online,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/offline", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/offline", common.ParamClusterID),
 			HandlerFunc: api.Offline,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/dashboards", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/dashboards", common.ParamClusterID),
 			HandlerFunc: api.GetDashBoard,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/pods", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/pods", common.ParamClusterID),
 			HandlerFunc: api.GetClusterPods,
 		}, {
 			Method:      http.MethodDelete,
-			Pattern:     fmt.Sprintf("/clusters/:%v/pods", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/pods", common.ParamClusterID),
 			HandlerFunc: api.DeleteClusterPods,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/free", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/free", common.ParamClusterID),
 			HandlerFunc: api.Free,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/events", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/events", common.ParamClusterID),
 			HandlerFunc: api.PodEvents,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/outputs", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/outputs", common.ParamClusterID),
 			HandlerFunc: api.GetOutput,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/promote", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/promote", common.ParamClusterID),
 			HandlerFunc: api.Promote,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/pause", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/pause", common.ParamClusterID),
 			HandlerFunc: api.Pause,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/resume", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/resume", common.ParamClusterID),
 			HandlerFunc: api.Resume,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/containers", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/clusters/:%v/containers", common.ParamClusterID),
 			HandlerFunc: api.GetContainers,
 		},
 	}
@@ -127,18 +128,13 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     "/searchmyclusters",
 			HandlerFunc: api.ListUserClusterByNameFuzzily,
 		},
-		{
-			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%v", _clusterParam),
-			HandlerFunc: api.GetByName,
-		},
 	}
 
 	internalGroup := engine.Group("/apis/internal/v1/clusters")
 	var internalRoutes = route.Routes{
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/:%v/deploy", _clusterIDParam),
+			Pattern:     fmt.Sprintf("/:%v/deploy", common.ParamClusterID),
 			HandlerFunc: api.InternalDeploy,
 		},
 	}

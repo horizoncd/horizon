@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/server/route"
 
 	"github.com/gin-gonic/gin"
@@ -15,12 +16,12 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/applications/:%v/defaultregions", _applicationIDParam),
+			Pattern:     fmt.Sprintf("/applications/:%v/defaultregions", common.ParamApplicationID),
 			HandlerFunc: api.List,
 		},
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/applications/:%v/defaultregions", _applicationIDParam),
+			Pattern:     fmt.Sprintf("/applications/:%v/defaultregions", common.ParamApplicationID),
 			HandlerFunc: api.Update,
 		},
 	}

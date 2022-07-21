@@ -47,9 +47,6 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 		}
 		c.Set(common.ContextAuthRecord, authRecord)
 
-		redirect := false
-		id := uint(0)
-
 		if _, err := strconv.Atoi(authRecord.Name); err != nil &&
 			authRecord.Name != "" && authRecord.APIGroup == common.GroupCore {
 			if authRecord.Resource == common.ResourceApplication {
@@ -60,8 +57,13 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 						return
 					}
 				} else {
-					redirect = true
-					id = app.ID
+					c.Request.URL.Path = "/" + path.Join(requestInfo.APIPrefix, requestInfo.APIGroup, requestInfo.APIVersion,
+						requestInfo.Resource, fmt.Sprintf("%d", app.ID), requestInfo.Subresource)
+					for i, param := range c.Params {
+						if param.Key == common.ParamApplicationID {
+							c.Params[i].Value = fmt.Sprintf("%d", app.ID)
+						}
+					}
 				}
 			} else if authRecord.Resource == common.ResourceCluster {
 				cluster, err := mgr.ClusterMgr.GetByName(c, authRecord.Name)
@@ -71,18 +73,15 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 						return
 					}
 				} else {
-					redirect = true
-					id = cluster.ID
+					c.Request.URL.Path = "/" + path.Join(requestInfo.APIPrefix, requestInfo.APIGroup, requestInfo.APIVersion,
+						requestInfo.Resource, fmt.Sprintf("%d", cluster.ID), requestInfo.Subresource)
+					for i, param := range c.Params {
+						if param.Key == common.ParamClusterID {
+							c.Params[i].Value = fmt.Sprintf("%d", cluster.ID)
+						}
+					}
 				}
 			}
-		}
-
-		if redirect {
-			c.Request.URL.Path = "/" + path.Join(requestInfo.APIPrefix, requestInfo.APIGroup, requestInfo.APIVersion,
-				requestInfo.Resource, fmt.Sprintf("%d", id), requestInfo.Subresource)
-			r.HandleContext(c)
-			c.Abort()
-			return
 		}
 
 		c.Next()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/applicationregion"
 	"g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -11,11 +12,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	// param
-	_applicationIDParam = "applicationID"
 )
 
 type API struct {
@@ -29,7 +25,7 @@ func NewAPI(applicationRegionCtl applicationregion.Controller) *API {
 }
 
 func (a *API) List(c *gin.Context) {
-	applicationIDStr := c.Param(_applicationIDParam)
+	applicationIDStr := c.Param(common.ParamApplicationID)
 	applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
@@ -44,7 +40,7 @@ func (a *API) List(c *gin.Context) {
 }
 
 func (a *API) Update(c *gin.Context) {
-	applicationIDStr := c.Param(_applicationIDParam)
+	applicationIDStr := c.Param(common.ParamApplicationID)
 	applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))

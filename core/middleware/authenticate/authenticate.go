@@ -101,6 +101,7 @@ func Middleware(keys authenticate.KeysConfig, skippers ...middleware.Skipper) gi
 		}
 		if secretKey == "" {
 			response.Abort(c, http.StatusForbidden, errCodeForbidden, "invalid access key")
+			return
 		}
 
 		// 签名验证
