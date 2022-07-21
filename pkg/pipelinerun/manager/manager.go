@@ -48,7 +48,7 @@ func (m *manager) DeleteByID(ctx context.Context, pipelinerunID uint) error {
 }
 
 func (m *manager) DeleteByClusterID(ctx context.Context, clusterID uint) error {
-	return m.dao.DeleteByID(ctx, clusterID)
+	return m.dao.DeleteByClusterID(ctx, clusterID)
 }
 
 func (m *manager) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error {

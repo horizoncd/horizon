@@ -735,10 +735,6 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		}
 
 		if hard {
-			if err = c.clusterGitRepo.HardDeleteCluster(newctx, application.Name, cluster.Name, cluster.ID); err != nil {
-				log.Errorf(newctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
-			}
-
 			if err := c.pipelinerunMgr.DeleteByClusterID(ctx, clusterID); err != nil {
 				log.Errorf(newctx, "failed to delete pipelineruns of cluster: %v, err: %v", cluster.Name, err)
 			}
@@ -749,6 +745,13 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 
 			if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, nil); err != nil {
 				log.Errorf(newctx, "failed to delete tags of cluster: %v, err: %v", cluster.Name, err)
+			}
+
+			err = c.clusterGitRepo.HardDeleteCluster(newctx, application.Name, cluster.Name, cluster.ID)
+			if err != nil {
+				if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+					log.Errorf(newctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
+				}
 			}
 		} else {
 			if err = c.clusterGitRepo.DeleteCluster(newctx, application.Name, cluster.Name, cluster.ID); err != nil {

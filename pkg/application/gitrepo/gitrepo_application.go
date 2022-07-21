@@ -31,7 +31,6 @@ const (
 	_default = "default"
 )
 
-//go:generate mockgen -source=$GOFILE -destination=../../mock/pkg/application/gitrepo/gitrepo_application.go -package=mock_gitrepo
 // ApplicationGitRepo interface to provide the management functions with git repo for applications
 type ApplicationGitRepo interface {
 	// CreateApplication create an application, with the pipeline jsonBlob and application jsonBlob

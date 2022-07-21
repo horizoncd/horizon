@@ -392,7 +392,7 @@ func Test(t *testing.T) {
 
 	assert.Equal(t, resp.Description, updatedDescription)
 
-	err = c.DeleteApplication(ctx, resp.ID)
+	err = c.DeleteApplication(ctx, resp.ID, false)
 	assert.Nil(t, err)
 }
 

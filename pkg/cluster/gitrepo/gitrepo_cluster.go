@@ -545,7 +545,8 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 		fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
 }
 
-func (g *clusterGitRepo) HardDeleteCluster(ctx context.Context, application, cluster string, clusterID uint) (err error) {
+func (g *clusterGitRepo) HardDeleteCluster(ctx context.Context, application,
+	cluster string, clusterID uint) (err error) {
 	const op = "cluster git repo: hard delete cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 

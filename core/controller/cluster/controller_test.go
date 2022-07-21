@@ -719,6 +719,8 @@ func Test(t *testing.T) {
 	b, _ = json.Marshal(buildDeployResp)
 	t.Logf("%v", string(b))
 
+	clusterGitRepo.EXPECT().GetRestartTime(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("", nil).AnyTimes()
 	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
 		GitRepoSSHURL: "ssh://xxxx.git",

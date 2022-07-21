@@ -185,11 +185,14 @@ func (a *API) Delete(c *gin.Context) {
 			appIDStr, err.Error())))
 		return
 	}
-	hardStr := c.Param(_hard)
-	hard, err := strconv.ParseBool(hardStr)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
+	hard := false
+	hardStr, ok := c.GetQuery(_hard)
+	if ok {
+		hard, err = strconv.ParseBool(hardStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+			return
+		}
 	}
 	if err := a.applicationCtl.DeleteApplication(c, uint(appID), hard); err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {

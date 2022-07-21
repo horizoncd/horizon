@@ -51,6 +51,20 @@ func (mr *MockManagerMockRecorder) Create(ctx, pipelinerun interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockManager)(nil).Create), ctx, pipelinerun)
 }
 
+// DeleteByClusterID mocks base method.
+func (m *MockManager) DeleteByClusterID(ctx context.Context, clusterID uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteByClusterID", ctx, clusterID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteByClusterID indicates an expected call of DeleteByClusterID.
+func (mr *MockManagerMockRecorder) DeleteByClusterID(ctx, clusterID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByClusterID", reflect.TypeOf((*MockManager)(nil).DeleteByClusterID), ctx, clusterID)
+}
+
 // DeleteByID mocks base method.
 func (m *MockManager) DeleteByID(ctx context.Context, pipelinerunID uint) error {
 	m.ctrl.T.Helper()
