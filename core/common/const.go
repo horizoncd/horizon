@@ -78,4 +78,6 @@ const (
 	ParamGroupID       = "groupID"
 	ParamClusterID     = "clusterID"
 	ParamClusterName   = "cluster"
+	ParamTemplateID    = "templateID"
+	ParamReleaseID     = "releaseID"
 )
