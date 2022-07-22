@@ -717,7 +717,7 @@ func (g *clusterGitRepo) GetRestartTime(ctx context.Context, application, cluste
 	template string) (string, error) {
 	ret := make(map[string]map[string]string)
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathRestart)
+	content, err := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathRestart)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to get gitlab file")
 	}

@@ -294,6 +294,11 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 
 	// 2. delete application in git repo
 	if hard {
+		// delete member
+		if err := c.memberManager.HardDeleteMemberByResourceTypeID(ctx,
+			string(membermodels.TypeApplication), id); err != nil {
+			return err
+		}
 		// delete region config
 		if err := c.applicationRegionMgr.UpsertByApplicationID(ctx, app.ID, nil); err != nil {
 			return err

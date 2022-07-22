@@ -25,6 +25,9 @@ type Manager interface {
 	// DeleteMember Delete a member by memberID
 	DeleteMember(ctx context.Context, memberID uint) error
 
+	// DeleteMemberByResourceTypeID Delete a member by memberID
+	HardDeleteMemberByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) error
+
 	// ListDirectMember List the direct member of the resource
 	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
@@ -65,6 +68,11 @@ func (m *manager) UpdateByID(ctx context.Context, memberID uint, role string) (*
 
 func (m *manager) DeleteMember(ctx context.Context, memberID uint) error {
 	return m.dao.Delete(ctx, memberID)
+}
+
+func (m *manager) HardDeleteMemberByResourceTypeID(ctx context.Context,
+	resourceType string, resourceID uint) error {
+	return m.dao.HardDelete(ctx, resourceType, resourceID)
 }
 
 func (m *manager) ListDirectMember(ctx context.Context, resourceType models.ResourceType,

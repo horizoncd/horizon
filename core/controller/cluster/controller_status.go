@@ -90,8 +90,11 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 			return nil, err
 		}
 		restartTime, err = c.clusterGitRepo.GetRestartTime(ctx, application.Name, cluster.Name, cluster.Template)
-		if err != nil && perror.Cause(err) != herrors.ErrRestartFileEmpty {
-			return nil, err
+		if err != nil {
+			_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
+			if !ok && perror.Cause(err) != herrors.ErrRestartFileEmpty {
+				return nil, err
+			}
 		}
 	}
 
