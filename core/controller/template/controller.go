@@ -534,7 +534,7 @@ func checkPermission(ctx context.Context, c *controller, resource string, id uin
 		if err != nil {
 			return err
 		}
-		if *template.OnlyAdmin {
+		if template.OnlyAdmin != nil && *template.OnlyAdmin {
 			return perror.Wrap(herrors.ErrForbidden, "you can not access it")
 		}
 	case common.ResourceTemplateRelease:
@@ -542,7 +542,7 @@ func checkPermission(ctx context.Context, c *controller, resource string, id uin
 		if err != nil {
 			return err
 		}
-		if *release.OnlyAdmin {
+		if release.OnlyAdmin != nil && *release.OnlyAdmin {
 			return perror.Wrap(herrors.ErrForbidden, "you can not access it")
 		}
 	}

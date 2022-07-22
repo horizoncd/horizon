@@ -42,27 +42,33 @@ var (
 )
 
 func TestList(t *testing.T) {
+	createContext()
+
 	mockCtl := gomock.NewController(t)
 	templateMgr := tmock.NewMockManager(mockCtl)
 	templateReleaseMgr := trmock.NewMockManager(mockCtl)
 
-	templateMgr.EXPECT().List(ctx).Return([]*models.Template{
+	onlyAdminTrue := true
+	onlyAdminFalse := false
+	templateMgr.EXPECT().List(gomock.Any()).Return([]*models.Template{
 		{
 			Model: global.Model{
 				ID: 1,
 			},
-			Name: "javaapp",
+			Name:      "javaapp",
+			OnlyAdmin: &onlyAdminTrue,
 		}, {
 			Model: global.Model{
 				ID: 2,
 			},
-			Name: "tomcat",
+			Name:      "tomcat",
+			OnlyAdmin: &onlyAdminFalse,
 		},
-	}, nil)
+	}, nil).Times(2)
 
 	recommends := []bool{false, true, false}
 
-	templateReleaseMgr.EXPECT().ListByTemplateName(ctx, "javaapp").
+	templateReleaseMgr.EXPECT().ListByTemplateName(gomock.Any(), "javaapp").
 		Return([]*trmodels.TemplateRelease{
 			{
 				Model: global.Model{
@@ -71,6 +77,7 @@ func TestList(t *testing.T) {
 				Template:    1,
 				Name:        "v1.0.0",
 				Recommended: &recommends[0],
+				OnlyAdmin:   &onlyAdminTrue,
 			}, {
 				Model: global.Model{
 					ID: 1,
@@ -78,6 +85,7 @@ func TestList(t *testing.T) {
 				Template:    1,
 				Name:        "v1.0.1",
 				Recommended: &recommends[1],
+				OnlyAdmin:   &onlyAdminFalse,
 			}, {
 				Model: global.Model{
 					ID: 1,
@@ -85,12 +93,13 @@ func TestList(t *testing.T) {
 				Template:    1,
 				Name:        "v1.0.2",
 				Recommended: &recommends[2],
+				OnlyAdmin:   &onlyAdminFalse,
 			},
-		}, nil)
+		}, nil).Times(2)
 
 	ctl := &controller{
-		templateReleaseMgr: templateReleaseMgr,
 		templateMgr:        templateMgr,
+		templateReleaseMgr: templateReleaseMgr,
 	}
 
 	templates, err := ctl.ListTemplate(ctx)
@@ -105,6 +114,23 @@ func TestList(t *testing.T) {
 	assert.Equal(t, "v1.0.1", templateReleases[0].Name)
 	assert.Equal(t, "v1.0.2", templateReleases[1].Name)
 	assert.Equal(t, "v1.0.0", templateReleases[2].Name)
+
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:  "Jerry",
+		ID:    1,
+		Admin: false,
+	})
+
+	templates, err = ctl.ListTemplate(ctx)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(templates))
+	assert.Equal(t, "tomcat", templates[0].Name)
+
+	templateReleases, err = ctl.ListTemplateRelease(ctx, "javaapp")
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(templateReleases))
+	assert.Equal(t, "v1.0.1", templateReleases[0].Name)
+	assert.Equal(t, "v1.0.2", templateReleases[1].Name)
 }
 
 func TestGetSchema(t *testing.T) {
