@@ -190,7 +190,7 @@ func isClusterActuallyHealthy(clusterState *cd.ClusterState, po *gitrepo.Pipelin
 
 	// argocd may remain healthy for a short time after the deploy starts
 	waitDeploy := func() bool {
-		if lastPipelineRun != nil &&
+		if lastPipelineRun != nil && lastPipelineRun.FinishedAt != nil &&
 			time.Now().Before(lastPipelineRun.FinishedAt.Add(time.Second*5)) {
 			return false
 		}
