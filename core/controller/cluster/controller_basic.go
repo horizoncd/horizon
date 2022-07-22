@@ -747,7 +747,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 				log.Errorf(newctx, "failed to delete tags of cluster: %v, err: %v", cluster.Name, err)
 			}
 
-			err = c.clusterGitRepo.HardDeleteCluster(newctx, application.Name, cluster.Name, cluster.ID)
+			err = c.clusterGitRepo.HardDeleteCluster(newctx, application.Name, cluster.Name)
 			if err != nil {
 				if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 					log.Errorf(newctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)

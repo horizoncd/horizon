@@ -95,17 +95,17 @@ func (mr *MockApplicationGitRepoMockRecorder) GetApplicationEnvTemplate(ctx, app
 }
 
 // HardDeleteApplication mocks base method.
-func (m *MockApplicationGitRepo) HardDeleteApplication(ctx context.Context, application string, applicationID uint) error {
+func (m *MockApplicationGitRepo) HardDeleteApplication(ctx context.Context, application string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HardDeleteApplication", ctx, application, applicationID)
+	ret := m.ctrl.Call(m, "HardDeleteApplication", ctx, application)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // HardDeleteApplication indicates an expected call of HardDeleteApplication.
-func (mr *MockApplicationGitRepoMockRecorder) HardDeleteApplication(ctx, application, applicationID interface{}) *gomock.Call {
+func (mr *MockApplicationGitRepoMockRecorder) HardDeleteApplication(ctx, application interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HardDeleteApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).HardDeleteApplication), ctx, application, applicationID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HardDeleteApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).HardDeleteApplication), ctx, application)
 }
 
 // UpdateApplication mocks base method.

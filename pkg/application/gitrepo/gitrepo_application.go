@@ -52,7 +52,7 @@ type ApplicationGitRepo interface {
 	// DeleteApplication soft delete an application by the specified application name
 	DeleteApplication(ctx context.Context, application string, applicationID uint) error
 	// DeleteApplication hard delete an application by the specified application name
-	HardDeleteApplication(ctx context.Context, application string, applicationID uint) error
+	HardDeleteApplication(ctx context.Context, application string) error
 }
 
 type applicationGitlabRepo struct {
@@ -211,7 +211,7 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 }
 
 func (g *applicationGitlabRepo) HardDeleteApplication(ctx context.Context,
-	application string, applicationID uint) (err error) {
+	application string) (err error) {
 	const op = "gitlab repo: hard delete application"
 	defer wlog.Start(ctx, op).StopPrint()
 

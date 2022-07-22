@@ -299,7 +299,7 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 			return err
 		}
 		// delete git repo
-		if err := c.applicationGitRepo.HardDeleteApplication(ctx, app.Name, app.ID); err != nil {
+		if err := c.applicationGitRepo.HardDeleteApplication(ctx, app.Name); err != nil {
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 				return err
 			}
