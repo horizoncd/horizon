@@ -134,10 +134,12 @@ func TestList(t *testing.T) {
 }
 
 func TestGetSchema(t *testing.T) {
+	createContext()
 	groupID := 0
 	charName := fmt.Sprintf(ChartNameFormat, groupID, templateName)
 
 	mockCtl := gomock.NewController(t)
+	// templateMgr := tmock.NewMockManager(mockCtl)
 	templateReleaseMgr := releasemanagermock.NewMockManager(mockCtl)
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	schema := map[string]interface{}{
@@ -464,6 +466,7 @@ func createController(t *testing.T) Controller {
 		groupMgr:             mgr.GroupManager,
 		templateMgr:          mgr.TemplateMgr,
 		templateReleaseMgr:   mgr.TemplateReleaseManager,
+		memberMgr:            mgr.MemberManager,
 		templateSchemaGetter: getter,
 	}
 	return ctl
