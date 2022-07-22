@@ -291,7 +291,7 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo(mockCtl)
-	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(1).Return(nil)
+	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(2).Return(nil)
 	applicationGitRepo.EXPECT().UpdateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Return(nil).AnyTimes()
 	applicationGitRepo.EXPECT().DeleteApplication(ctx, appName, uint(1)).Return(nil).AnyTimes()
 	applicationGitRepo.EXPECT().GetApplication(ctx, appName).Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
@@ -392,7 +392,17 @@ func Test(t *testing.T) {
 
 	assert.Equal(t, resp.Description, updatedDescription)
 
-	err = c.DeleteApplication(ctx, resp.ID)
+	err = c.DeleteApplication(ctx, resp.ID, false)
+	assert.Nil(t, err)
+
+	resp, err = c.CreateApplication(ctx, group.ID, createRequest)
+	if err != nil {
+		t.Logf("%v", err)
+		t.Fatal(err)
+	}
+	t.Logf("%v", resp)
+
+	err = c.DeleteApplication(ctx, resp.ID, true)
 	assert.Nil(t, err)
 }
 

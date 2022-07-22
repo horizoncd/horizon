@@ -32,6 +32,7 @@ const (
 	_start         = "start"
 	_end           = "end"
 	_extraOwner    = "extraOwner"
+	_hard          = "hard"
 )
 
 type API struct {
@@ -234,7 +235,16 @@ func (a *API) Delete(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	if err := a.clusterCtl.DeleteCluster(c, uint(clusterID)); err != nil {
+	hard := false
+	hardStr, ok := c.GetQuery(_hard)
+	if ok {
+		hard, err = strconv.ParseBool(hardStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+			return
+		}
+	}
+	if err := a.clusterCtl.DeleteCluster(c, uint(clusterID), hard); err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return

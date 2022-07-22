@@ -18,6 +18,7 @@ type DAO interface {
 		canRollback bool, query q.Query) (int, []*models.Pipelinerun, error)
 	// DeleteByID delete pipelinerun by id
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
+	DeleteByClusterID(ctx context.Context, clusterID uint) error
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
 	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
 	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint,
@@ -53,6 +54,16 @@ func (d *dao) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipeline
 		return nil, nil
 	}
 	return &pr, nil
+}
+
+func (d *dao) DeleteByClusterID(ctx context.Context, clusterID uint) error {
+	result := d.db.WithContext(ctx).Exec(common.PipelinerunDeleteByClusterID, clusterID)
+
+	if result.Error != nil {
+		return herrors.NewErrDeleteFailed(herrors.PipelinerunInDB, result.Error.Error())
+	}
+
+	return result.Error
 }
 
 func (d *dao) DeleteByID(ctx context.Context, pipelinerunID uint) error {

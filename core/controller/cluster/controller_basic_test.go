@@ -294,10 +294,23 @@ func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
 	assert.Equal(t, "", cluster.Status)
 
 	// if failed to delete, status should be set to empty
-	err = c.DeleteCluster(ctx, cluster.ID)
+	err = c.DeleteCluster(ctx, cluster.ID, false)
 	assert.Nil(t, err)
 	time.Sleep(time.Second)
 	cluster, err = manager.ClusterMgr.GetByID(ctx, cluster.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, "", cluster.Status)
+
+	cluster, err = manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
+		ApplicationID:   application.ID,
+		Name:            "TestController_FreeOrDeleteClusterFailed2",
+		EnvironmentName: "TestController_FreeOrDeleteClusterFailed2",
+		RegionName:      region.Name,
+		GitURL:          "",
+	}, nil, nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, cluster)
+
+	err = c.DeleteCluster(ctx, cluster.ID, true)
+	assert.Nil(t, err)
 }

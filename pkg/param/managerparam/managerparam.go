@@ -34,7 +34,7 @@ type Manager struct {
 	EnvRegionMgr             environmentregionmanager.Manager
 	RegionMgr                regionmanager.Manager
 	PipelinerunMgr           prmanager.Manager
-	PipelinerMgr             pipelinemanager.Manager
+	PipelineMgr              pipelinemanager.Manager
 	EnvMgr                   envmanager.Manager
 	GroupManager             groupmanager.Manager
 	HarborManager            harbormanager.Manager
@@ -55,7 +55,7 @@ func InitManager(db *gorm.DB) *Manager {
 		EnvRegionMgr:             environmentregionmanager.New(db),
 		RegionMgr:                regionmanager.New(db),
 		PipelinerunMgr:           prmanager.New(db),
-		PipelinerMgr:             pipelinemanager.New(db),
+		PipelineMgr:              pipelinemanager.New(db),
 		EnvMgr:                   envmanager.New(db),
 		GroupManager:             groupmanager.New(db),
 		HarborManager:            harbormanager.New(db),

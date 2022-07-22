@@ -29,6 +29,9 @@ var (
 	Pipelinerun               = sourceType{name: "Pipelinerun"}
 	PipelinerunInTekton       = sourceType{name: "PipelinerunInTekton"}
 	PipelinerunInDB           = sourceType{name: "PipelinerunInDB"}
+	PipelineInDB              = sourceType{name: "PipelineInDB"}
+	TaskInDB                  = sourceType{name: "TaskInDB"}
+	StepInDB                  = sourceType{name: "StepInDB"}
 	UserInDB                  = sourceType{name: "UserInDB"}
 	TemplateInDB              = sourceType{name: "TemplateInDB"}
 	TemplateSchemaTagInDB     = sourceType{name: "TemplateSchemaTagInDB"}
@@ -195,6 +198,9 @@ var (
 
 	// pipeline
 	ErrPipelineOutputEmpty = errors.New("pipeline output is empty")
+
+	// restart
+	ErrRestartFileEmpty = errors.New("restart file is empty")
 
 	// tekton
 	ErrTektonInternal = errors.New("tekton internal error")

@@ -6,34 +6,35 @@ package mock_gitrepo
 
 import (
 	context "context"
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockApplicationGitRepo is a mock of ApplicationGitRepo interface
+// MockApplicationGitRepo is a mock of ApplicationGitRepo interface.
 type MockApplicationGitRepo struct {
 	ctrl     *gomock.Controller
 	recorder *MockApplicationGitRepoMockRecorder
 }
 
-// MockApplicationGitRepoMockRecorder is the mock recorder for MockApplicationGitRepo
+// MockApplicationGitRepoMockRecorder is the mock recorder for MockApplicationGitRepo.
 type MockApplicationGitRepoMockRecorder struct {
 	mock *MockApplicationGitRepo
 }
 
-// NewMockApplicationGitRepo creates a new mock instance
+// NewMockApplicationGitRepo creates a new mock instance.
 func NewMockApplicationGitRepo(ctrl *gomock.Controller) *MockApplicationGitRepo {
 	mock := &MockApplicationGitRepo{ctrl: ctrl}
 	mock.recorder = &MockApplicationGitRepoMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockApplicationGitRepo) EXPECT() *MockApplicationGitRepoMockRecorder {
 	return m.recorder
 }
 
-// CreateApplication mocks base method
+// CreateApplication mocks base method.
 func (m *MockApplicationGitRepo) CreateApplication(ctx context.Context, application string, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateApplication", ctx, application, pipelineJSONBlob, applicationJSONBlob)
@@ -41,27 +42,27 @@ func (m *MockApplicationGitRepo) CreateApplication(ctx context.Context, applicat
 	return ret0
 }
 
-// CreateApplication indicates an expected call of CreateApplication
+// CreateApplication indicates an expected call of CreateApplication.
 func (mr *MockApplicationGitRepoMockRecorder) CreateApplication(ctx, application, pipelineJSONBlob, applicationJSONBlob interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).CreateApplication), ctx, application, pipelineJSONBlob, applicationJSONBlob)
 }
 
-// UpdateApplication mocks base method
-func (m *MockApplicationGitRepo) UpdateApplication(ctx context.Context, application string, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
+// DeleteApplication mocks base method.
+func (m *MockApplicationGitRepo) DeleteApplication(ctx context.Context, application string, applicationID uint) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateApplication", ctx, application, pipelineJSONBlob, applicationJSONBlob)
+	ret := m.ctrl.Call(m, "DeleteApplication", ctx, application, applicationID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateApplication indicates an expected call of UpdateApplication
-func (mr *MockApplicationGitRepoMockRecorder) UpdateApplication(ctx, application, pipelineJSONBlob, applicationJSONBlob interface{}) *gomock.Call {
+// DeleteApplication indicates an expected call of DeleteApplication.
+func (mr *MockApplicationGitRepoMockRecorder) DeleteApplication(ctx, application, applicationID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).UpdateApplication), ctx, application, pipelineJSONBlob, applicationJSONBlob)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).DeleteApplication), ctx, application, applicationID)
 }
 
-// GetApplication mocks base method
+// GetApplication mocks base method.
 func (m *MockApplicationGitRepo) GetApplication(ctx context.Context, application string) (map[string]interface{}, map[string]interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplication", ctx, application)
@@ -71,27 +72,13 @@ func (m *MockApplicationGitRepo) GetApplication(ctx context.Context, application
 	return ret0, ret1, ret2
 }
 
-// GetApplication indicates an expected call of GetApplication
+// GetApplication indicates an expected call of GetApplication.
 func (mr *MockApplicationGitRepoMockRecorder) GetApplication(ctx, application interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).GetApplication), ctx, application)
 }
 
-// UpdateApplicationEnvTemplate mocks base method
-func (m *MockApplicationGitRepo) UpdateApplicationEnvTemplate(ctx context.Context, application, env string, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateApplicationEnvTemplate", ctx, application, env, pipelineJSONBlob, applicationJSONBlob)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateApplicationEnvTemplate indicates an expected call of UpdateApplicationEnvTemplate
-func (mr *MockApplicationGitRepoMockRecorder) UpdateApplicationEnvTemplate(ctx, application, env, pipelineJSONBlob, applicationJSONBlob interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplicationEnvTemplate", reflect.TypeOf((*MockApplicationGitRepo)(nil).UpdateApplicationEnvTemplate), ctx, application, env, pipelineJSONBlob, applicationJSONBlob)
-}
-
-// GetApplicationEnvTemplate mocks base method
+// GetApplicationEnvTemplate mocks base method.
 func (m *MockApplicationGitRepo) GetApplicationEnvTemplate(ctx context.Context, application, env string) (map[string]interface{}, map[string]interface{}, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplicationEnvTemplate", ctx, application, env)
@@ -101,22 +88,50 @@ func (m *MockApplicationGitRepo) GetApplicationEnvTemplate(ctx context.Context, 
 	return ret0, ret1, ret2
 }
 
-// GetApplicationEnvTemplate indicates an expected call of GetApplicationEnvTemplate
+// GetApplicationEnvTemplate indicates an expected call of GetApplicationEnvTemplate.
 func (mr *MockApplicationGitRepoMockRecorder) GetApplicationEnvTemplate(ctx, application, env interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationEnvTemplate", reflect.TypeOf((*MockApplicationGitRepo)(nil).GetApplicationEnvTemplate), ctx, application, env)
 }
 
-// DeleteApplication mocks base method
-func (m *MockApplicationGitRepo) DeleteApplication(ctx context.Context, application string, applicationID uint) error {
+// HardDeleteApplication mocks base method.
+func (m *MockApplicationGitRepo) HardDeleteApplication(ctx context.Context, application string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteApplication", ctx, application, applicationID)
+	ret := m.ctrl.Call(m, "HardDeleteApplication", ctx, application)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteApplication indicates an expected call of DeleteApplication
-func (mr *MockApplicationGitRepoMockRecorder) DeleteApplication(ctx, application, applicationID interface{}) *gomock.Call {
+// HardDeleteApplication indicates an expected call of HardDeleteApplication.
+func (mr *MockApplicationGitRepoMockRecorder) HardDeleteApplication(ctx, application interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).DeleteApplication), ctx, application, applicationID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HardDeleteApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).HardDeleteApplication), ctx, application)
+}
+
+// UpdateApplication mocks base method.
+func (m *MockApplicationGitRepo) UpdateApplication(ctx context.Context, application string, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateApplication", ctx, application, pipelineJSONBlob, applicationJSONBlob)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateApplication indicates an expected call of UpdateApplication.
+func (mr *MockApplicationGitRepoMockRecorder) UpdateApplication(ctx, application, pipelineJSONBlob, applicationJSONBlob interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockApplicationGitRepo)(nil).UpdateApplication), ctx, application, pipelineJSONBlob, applicationJSONBlob)
+}
+
+// UpdateApplicationEnvTemplate mocks base method.
+func (m *MockApplicationGitRepo) UpdateApplicationEnvTemplate(ctx context.Context, application, env string, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateApplicationEnvTemplate", ctx, application, env, pipelineJSONBlob, applicationJSONBlob)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateApplicationEnvTemplate indicates an expected call of UpdateApplicationEnvTemplate.
+func (mr *MockApplicationGitRepoMockRecorder) UpdateApplicationEnvTemplate(ctx, application, env, pipelineJSONBlob, applicationJSONBlob interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplicationEnvTemplate", reflect.TypeOf((*MockApplicationGitRepo)(nil).UpdateApplicationEnvTemplate), ctx, application, env, pipelineJSONBlob, applicationJSONBlob)
 }

@@ -26,6 +26,7 @@ import (
 	clustercd "g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
+	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
@@ -420,9 +421,6 @@ func TestMain(m *testing.M) {
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
-		panic(err)
-	}
 	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -718,6 +716,8 @@ func Test(t *testing.T) {
 	b, _ = json.Marshal(buildDeployResp)
 	t.Logf("%v", string(b))
 
+	clusterGitRepo.EXPECT().GetRestartTime(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("", nil).AnyTimes()
 	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
 		GitRepoSSHURL: "ssh://xxxx.git",
@@ -1057,10 +1057,15 @@ javaapp:
 }
 
 func TestIsClusterActuallyHealthy(t *testing.T) {
+	t1 := "1"
+	t2 := "2"
 	imageV1 := "v1"
 	imageV2 := "v2"
+	po1 := &gitrepo.PipelineOutput{
+		Image: &imageV1,
+	}
 	cs := &clustercd.ClusterState{}
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, imageV1))
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, "", nil))
 
 	containerV1 := &clustercd.Container{
 		Image: imageV1,
@@ -1072,8 +1077,16 @@ func TestIsClusterActuallyHealthy(t *testing.T) {
 	Pod2 := &clustercd.ClusterPod{}
 	Pod3 := &clustercd.ClusterPod{}
 
+	Pod1.Metadata.Annotations = map[string]string{
+		clustercommon.RestartTimeKey: t1,
+	}
 	Pod1.Spec.Containers = []*clustercd.Container{containerV1, containerV2}
+
+	Pod2.Metadata.Annotations = map[string]string{
+		clustercommon.RestartTimeKey: t1,
+	}
 	Pod2.Spec.InitContainers = []*clustercd.Container{containerV1, containerV2}
+
 	Pod3.Spec.InitContainers = []*clustercd.Container{containerV2}
 
 	cs.PodTemplateHash = "test"
@@ -1081,11 +1094,14 @@ func TestIsClusterActuallyHealthy(t *testing.T) {
 	cs.Versions[cs.PodTemplateHash] = &clustercd.ClusterVersion{
 		Pods: map[string]*clustercd.ClusterPod{"Pod3": Pod3},
 	}
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, imageV1))
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, "", nil))
 
 	cs.Versions[cs.PodTemplateHash].Pods["Pod2"] = Pod2
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, imageV1))
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, "", nil))
 
 	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, imageV1))
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1, nil))
+
+	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t2, nil))
 }

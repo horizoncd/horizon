@@ -3,10 +3,12 @@ package cluster
 import (
 	"context"
 	"strings"
+	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
@@ -77,6 +79,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 
 	envValue := &gitrepo.EnvValue{}
 	po := &gitrepo.PipelineOutput{}
+	restartTime := ""
 	if !isClusterStatusUnstable(cluster.Status) {
 		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
@@ -85,6 +88,13 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		po, err = c.clusterGitRepo.GetPipelineOutput(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil && perror.Cause(err) != herrors.ErrPipelineOutputEmpty {
 			return nil, err
+		}
+		restartTime, err = c.clusterGitRepo.GetRestartTime(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
+			_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
+			if !ok && perror.Cause(err) != herrors.ErrRestartFileEmpty {
+				return nil, err
+			}
 		}
 	}
 
@@ -115,7 +125,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 
 		// there is a possibility that healthy cluster is not reconciled by operator yet
 		if clusterState.Status == health.HealthStatusHealthy {
-			if po != nil && po.Image != nil && !isClusterActuallyHealthy(clusterState, *po.Image) {
+			if !isClusterActuallyHealthy(clusterState, po, restartTime, latestPipelinerun) {
 				clusterState.Status = health.HealthStatusProgressing
 			}
 		}
@@ -140,24 +150,51 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 }
 
 // isClusterActuallyHealthy judge if the cluster is healthy by checking image
-func isClusterActuallyHealthy(clusterState *cd.ClusterState, image string) bool {
+func isClusterActuallyHealthy(clusterState *cd.ClusterState, po *gitrepo.PipelineOutput,
+	restartTime string, lastPipelineRun *prmodels.Pipelinerun) bool {
 	checkImage := func(clusterVersion *cd.ClusterVersion) bool {
-		if len(clusterVersion.Pods) == 0 || image == "" {
+		if po == nil || po.Image == nil || len(clusterVersion.Pods) == 0 {
 			return true
 		}
 		for _, pod := range clusterVersion.Pods {
 			for _, container := range pod.Spec.InitContainers {
-				if container.Image == image {
+				if container.Image == *po.Image {
 					return true
 				}
 			}
 			for _, container := range pod.Spec.Containers {
-				if container.Image == image {
+				if container.Image == *po.Image {
 					return true
 				}
 			}
 		}
 		return false
+	}
+
+	checkRestart := func(clusterVersion *cd.ClusterVersion) bool {
+		if len(clusterVersion.Pods) == 0 || restartTime == "" {
+			return true
+		}
+		checkResult := true
+		for _, pod := range clusterVersion.Pods {
+			v, ok := pod.Metadata.Annotations[common.RestartTimeKey]
+			if ok {
+				if v == restartTime {
+					return true
+				}
+				checkResult = false
+			}
+		}
+		return checkResult
+	}
+
+	// argocd may remain healthy for a short time after the deploy starts
+	waitDeploy := func() bool {
+		if lastPipelineRun != nil &&
+			time.Now().Before(lastPipelineRun.FinishedAt.Add(time.Second*5)) {
+			return false
+		}
+		return true
 	}
 
 	podTemplateHash := clusterState.PodTemplateHash
@@ -166,7 +203,7 @@ func isClusterActuallyHealthy(clusterState *cd.ClusterState, image string) bool 
 		return false
 	}
 
-	return checkImage(clusterVersion)
+	return checkImage(clusterVersion) && checkRestart(clusterVersion) && waitDeploy()
 }
 
 func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,

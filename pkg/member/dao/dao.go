@@ -19,6 +19,7 @@ type DAO interface {
 		memberType models.MemberType, memberInfo uint) (*models.Member, error)
 	GetByID(ctx context.Context, memberID uint) (*models.Member, error)
 	Delete(ctx context.Context, memberID uint) error
+	HardDelete(ctx context.Context, resourceType string, resourceID uint) error
 	UpdateByID(ctx context.Context, memberID uint, role string) (*models.Member, error)
 	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
@@ -99,6 +100,11 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, role string) (*models.Mem
 
 func (d *dao) Delete(ctx context.Context, memberID uint) error {
 	result := d.db.WithContext(ctx).Exec(common.MemberSingleDelete, time.Now().Unix(), memberID)
+	return result.Error
+}
+
+func (d *dao) HardDelete(ctx context.Context, resourceType string, resourceID uint) error {
+	result := d.db.WithContext(ctx).Exec(common.MemberHardDeleteByResourceTypeID, resourceType, resourceID)
 	return result.Error
 }
 

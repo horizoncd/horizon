@@ -564,7 +564,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 			ParentID:        0,
 			TraversalIDs:    traversalIDs,
 		}, nil
-	}).Times(1)
+	}).AnyTimes()
 
 	// mock the applicationManager
 	applicationManager := applicationmanagermock.NewMockManager(mockCtrl)
@@ -576,7 +576,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 			Description: "",
 			GroupID:     group2ID,
 		}, nil
-	}).Times(1)
+	}).AnyTimes()
 
 	// mock the applicationClusterManager
 	clusterManager := clustermanagermock.NewMockManager(mockCtrl)
@@ -588,22 +588,28 @@ func TestGetPipelinerunMember(t *testing.T) {
 			Description:   "",
 			ApplicationID: application3ID,
 		}, nil
-	}).Times(1)
+	}).AnyTimes()
 
 	pipelineMockManager := pipelinemock.NewMockManager(mockCtrl)
 	pipelineMockManager.EXPECT().GetByID(gomock.Any(), pipelineRunID).Return(&pipelinemodels.Pipelinerun{
 		ID:        0,
 		ClusterID: cluster4ID,
-	}, nil).Times(1)
+	}, nil).AnyTimes()
 
+	roleSvc := rolemock.NewMockService(mockCtrl)
 	originService := &service{
 		memberManager:             manager.MemberManager,
 		groupManager:              groupManager,
 		applicationManager:        applicationManager,
 		applicationClusterManager: clusterManager,
 		pipelineManager:           pipelineMockManager,
+		roleService:               roleSvc,
 	}
 	s = originService
+
+	roleSvc.EXPECT().RoleCompare(gomock.Any(), roleservice.Owner, roleservice.Maintainer).Return(roleservice.RoleBigger, nil)
+	roleSvc.EXPECT().RoleCompare(gomock.Any(), roleservice.Owner, roleservice.Owner).Return(roleservice.RoleEqual, nil)
+	roleSvc.EXPECT().RoleCompare(gomock.Any(), roleservice.Maintainer, roleservice.Maintainer).Return(roleservice.RoleEqual, nil)
 
 	// insert members
 	postMembers := []PostMember{
@@ -662,4 +668,11 @@ func TestGetPipelinerunMember(t *testing.T) {
 	members, err := s.GetMemberOfResource(ctx, common.ResourcePipelinerun, pipelineRunIDStr)
 	assert.Nil(t, err)
 	assert.True(t, PostMemberEqualsMember(postMembers[3], members))
+
+	members, err = s.UpdateMember(ctx, members.ID, roleservice.Maintainer)
+	assert.Nil(t, err)
+	assert.Equal(t, roleservice.Maintainer, members.Role)
+
+	err = s.RemoveMember(ctx, members.ID)
+	assert.Nil(t, err)
 }
