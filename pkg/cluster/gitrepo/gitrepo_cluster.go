@@ -129,6 +129,7 @@ type ClusterGitRepo interface {
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
 	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
+	HardDeleteCluster(ctx context.Context, application, cluster string) error
 	// CompareConfig compare config of `from` commit with `to` commit.
 	// if `from` or `to` is nil, compare the master branch with gitops branch
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
@@ -139,6 +140,8 @@ type ClusterGitRepo interface {
 		pipelineOutputParam PipelineOutput) (string, error)
 	// UpdateRestartTime update restartTime in git repo for restart
 	// TODO(gjq): some template cannot restart, for example serverless, how to do it ?
+	GetRestartTime(ctx context.Context, application, cluster string,
+		template string) (string, error)
 	UpdateRestartTime(ctx context.Context, application, cluster, template string) (string, error)
 	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
 	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
@@ -542,6 +545,15 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 		fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
 }
 
+func (g *clusterGitRepo) HardDeleteCluster(ctx context.Context, application,
+	cluster string) (err error) {
+	const op = "cluster git repo: hard delete cluster"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	return g.gitlabLib.DeleteProject(ctx, pid)
+}
+
 func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 	cluster string, from, to *string) (_ string, err error) {
 	const op = "cluster git repo: compare config"
@@ -699,6 +711,31 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	}
 
 	return commit.ID, nil
+}
+
+func (g *clusterGitRepo) GetRestartTime(ctx context.Context, application, cluster string,
+	template string) (string, error) {
+	ret := make(map[string]map[string]string)
+	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	content, err := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathRestart)
+	if err != nil {
+		return "", perror.WithMessage(err, "failed to get gitlab file")
+	}
+
+	restartBytes, err := kyaml.YAMLToJSON(content)
+	if err != nil {
+		return "", perror.Wrap(herrors.ErrParamInvalid, err.Error())
+	}
+	if err := json.Unmarshal(restartBytes, &ret); err != nil {
+		return "", perror.Wrap(herrors.ErrParamInvalid, err.Error())
+	}
+
+	restartStr, ok := ret[template]["restartTime"]
+	if !ok {
+		return "", perror.Wrapf(herrors.ErrRestartFileEmpty, "no template in restart.yaml")
+	}
+
+	return restartStr, nil
 }
 
 func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,

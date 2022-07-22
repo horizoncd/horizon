@@ -49,8 +49,10 @@ type ApplicationGitRepo interface {
 	// if env template is not exists, return the default template
 	GetApplicationEnvTemplate(ctx context.Context, application, env string) (pipelineJSONBlob,
 		applicationJSONBlob map[string]interface{}, err error)
-	// DeleteApplication delete an application by the specified application name
+	// DeleteApplication soft delete an application by the specified application name
 	DeleteApplication(ctx context.Context, application string, applicationID uint) error
+	// DeleteApplication hard delete an application by the specified application name
+	HardDeleteApplication(ctx context.Context, application string) error
 }
 
 type applicationGitlabRepo struct {
@@ -208,7 +210,17 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 	return g.gitlabLib.DeleteGroup(ctx, gid)
 }
 
+func (g *applicationGitlabRepo) HardDeleteApplication(ctx context.Context,
+	application string) (err error) {
+	const op = "gitlab repo: hard delete application"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	return g.gitlabLib.DeleteGroup(ctx, gid)
+}
+
 func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, application, repo string,
+
 	action gitlablib.FileAction, pipelineJSONBlob, applicationJSONBlob map[string]interface{}) error {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {

@@ -215,4 +215,11 @@ func Test(t *testing.T) {
 	if reflect.DeepEqual(applicationJSON, pipelineJSONBlob) {
 		t.Fatal("wrong application")
 	}
+
+	appToDelete := "appToDelete"
+	err = r.CreateApplication(ctx, appToDelete, pipelineJSONBlob, applicationJSONBlob)
+	assert.Nil(t, err)
+
+	err = r.HardDeleteApplication(ctx, appToDelete)
+	assert.Nil(t, err)
 }

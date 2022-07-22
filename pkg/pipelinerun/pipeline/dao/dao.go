@@ -4,7 +4,9 @@ import (
 	"context"
 	"strconv"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
+	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
 	"gorm.io/gorm"
@@ -17,9 +19,26 @@ var (
 type DAO interface {
 	// Create create a pipeline
 	Create(ctx context.Context, results *metrics.PipelineResults) error
+	DeleteByClusterName(ctx context.Context, clusterName string) error
 }
 
 type dao struct{ db *gorm.DB }
+
+func (d dao) DeleteByClusterName(ctx context.Context, clusterName string) error {
+	result := d.db.WithContext(ctx).Exec(common.PipelineDeleteByCluster, clusterName)
+	if result.Error != nil {
+		return herrors.NewErrDeleteFailed(herrors.PipelinerunInDB, result.Error.Error())
+	}
+	result = d.db.WithContext(ctx).Exec(common.TaskDeleteByCluster, clusterName)
+	if result.Error != nil {
+		return herrors.NewErrDeleteFailed(herrors.PipelinerunInDB, result.Error.Error())
+	}
+	result = d.db.WithContext(ctx).Exec(common.StepDeleteByCluster, clusterName)
+	if result.Error != nil {
+		return herrors.NewErrDeleteFailed(herrors.PipelinerunInDB, result.Error.Error())
+	}
+	return result.Error
+}
 
 func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error {
 	prMetadata := results.Metadata

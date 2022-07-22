@@ -661,7 +661,7 @@ func (c *controller) GetClusterByName(ctx context.Context,
 
 // DeleteCluster TODO(gjq): failed to delete cluster, give user a alert.
 // TODO(gjq): add a deleting tag for cluster
-func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err error) {
+func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard bool) (err error) {
 	const op = "cluster controller: delete cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -734,9 +734,35 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint) (err err
 			log.Errorf(newctx, "failed to delete harbor repository: %v, err: %v", cluster.Name, err)
 		}
 
-		// 3. delete cluster in git repo
-		if err = c.clusterGitRepo.DeleteCluster(newctx, application.Name, cluster.Name, cluster.ID); err != nil {
-			log.Errorf(newctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
+		if hard {
+			// delete member
+			if err := c.memberManager.HardDeleteMemberByResourceTypeID(ctx,
+				string(membermodels.TypeApplicationCluster), clusterID); err != nil {
+				log.Errorf(newctx, "failed to delete members of cluster: %v, err: %v", cluster.Name, err)
+			}
+			// delete pipelinerun
+			if err := c.pipelinerunMgr.DeleteByClusterID(ctx, clusterID); err != nil {
+				log.Errorf(newctx, "failed to delete pipelineruns of cluster: %v, err: %v", cluster.Name, err)
+			}
+			// delete pipeline
+			if err := c.pipelineMgr.DeleteByClusterName(ctx, cluster.Name); err != nil {
+				log.Errorf(newctx, "failed to delete pipelineruns of cluster: %v, err: %v", cluster.Name, err)
+			}
+			// delete tag
+			if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, nil); err != nil {
+				log.Errorf(newctx, "failed to delete tags of cluster: %v, err: %v", cluster.Name, err)
+			}
+			// delete gitrepo
+			err = c.clusterGitRepo.HardDeleteCluster(newctx, application.Name, cluster.Name)
+			if err != nil {
+				if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+					log.Errorf(newctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
+				}
+			}
+		} else {
+			if err = c.clusterGitRepo.DeleteCluster(newctx, application.Name, cluster.Name, cluster.ID); err != nil {
+				log.Errorf(newctx, "failed to delete cluster: %v in git repo, err: %v", cluster.Name, err)
+			}
 		}
 
 		// 4. delete cluster in db

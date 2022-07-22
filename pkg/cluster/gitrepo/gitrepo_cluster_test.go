@@ -118,24 +118,9 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	r := &clusterGitRepo{
-		gitlabLib: g,
-		clusterRepoConf: &gitlab.Repo{
-			Parent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "clusters"),
-				ID:   4970,
-			},
-			RecyclingParent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-clusters"),
-				ID:   4971,
-			},
-		},
-		helmRepoMapper: map[string]string{
-			"test": "https://test.helm.com",
-		},
-	}
 	application := "app"
 	cluster := "cluster"
+
 	baseParams := &BaseParams{
 		Cluster:             cluster,
 		PipelineJSONBlob:    pipelineJSONBlob,
@@ -164,7 +149,22 @@ func Test(t *testing.T) {
 	createParams := &CreateClusterParams{
 		BaseParams: baseParams,
 	}
-
+	r := &clusterGitRepo{
+		gitlabLib: g,
+		clusterRepoConf: &gitlab.Repo{
+			Parent: &gitlab.Parent{
+				Path: fmt.Sprintf("%v/%v", rootGroupName, "clusters"),
+				ID:   4970,
+			},
+			RecyclingParent: &gitlab.Parent{
+				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-clusters"),
+				ID:   4971,
+			},
+		},
+		helmRepoMapper: map[string]string{
+			"test": "https://test.helm.com",
+		},
+	}
 	updateParams := &UpdateClusterParams{
 		BaseParams: baseParams,
 	}
@@ -240,6 +240,61 @@ func Test(t *testing.T) {
 			Value: "b",
 		},
 	})
+	assert.Nil(t, err)
+
+	restartTime, err := r.GetRestartTime(ctx, application, cluster, templateName)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, restartTime)
+}
+
+func TestHardDeleteCluster(t *testing.T) {
+	application := "app"
+	cluster := "cluster"
+
+	baseParams := &BaseParams{
+		Cluster:             cluster,
+		PipelineJSONBlob:    pipelineJSONBlob,
+		ApplicationJSONBlob: applicationJSONBlob,
+		TemplateRelease: &trmodels.TemplateRelease{
+			TemplateName: templateName,
+			Name:         "v1.0.0",
+		},
+		Application: &appmodels.Application{
+			GroupID:  10,
+			Name:     application,
+			Priority: "P0",
+		},
+		Environment: "test",
+		RegionEntity: &regionmodels.RegionEntity{
+			Region: &regionmodels.Region{
+				Name:        "hz",
+				DisplayName: "HZ",
+				Server:      "https://k8s.com",
+			},
+			Harbor: &harbormodels.Harbor{
+				Server: "https://harbor.com",
+			},
+		},
+	}
+	createParams := &CreateClusterParams{
+		BaseParams: baseParams,
+	}
+	r := &clusterGitRepo{
+		gitlabLib: g,
+		clusterRepoConf: &gitlab.Repo{
+			Parent: &gitlab.Parent{
+				Path: fmt.Sprintf("%v/%v", rootGroupName, "clusters"),
+				ID:   4970,
+			},
+		},
+		helmRepoMapper: map[string]string{
+			"test": "https://test.helm.com",
+		},
+	}
+	err := r.CreateCluster(ctx, createParams)
+	assert.Nil(t, err)
+
+	err = r.HardDeleteCluster(ctx, application, cluster)
 	assert.Nil(t, err)
 }
 

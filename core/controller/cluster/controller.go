@@ -23,6 +23,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/member"
 	"g.hz.netease.com/horizon/pkg/param"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
@@ -47,7 +48,7 @@ type Controller interface {
 		request *CreateClusterRequest) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
 		request *UpdateClusterRequest) (*GetClusterResponse, error)
-	DeleteCluster(ctx context.Context, clusterID uint) error
+	DeleteCluster(ctx context.Context, clusterID uint, hard bool) error
 	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
 	GetClusterByName(ctx context.Context,
 		clusterName string) (*GetClusterByNameResponse, error)
@@ -94,6 +95,7 @@ type controller struct {
 	groupSvc             groupsvc.Service
 	hook                 hook.Hook
 	pipelinerunMgr       prmanager.Manager
+	pipelineMgr          pipelinemanager.Manager
 	tektonFty            factory.Factory
 	registryFty          registryfty.Factory
 	grafanaMapper        grafana.Mapper
@@ -124,6 +126,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		regionMgr:            param.RegionMgr,
 		groupSvc:             param.GroupSvc,
 		pipelinerunMgr:       param.PipelinerunMgr,
+		pipelineMgr:          param.PipelineMgr,
 		tektonFty:            param.TektonFty,
 		registryFty:          registryfty.Fty,
 		hook:                 param.Hook,

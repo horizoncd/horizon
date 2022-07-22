@@ -20,11 +20,10 @@ import (
 
 const (
 	// param
-	_groupIDParam       = "groupID"
-	_applicationIDParam = "applicationID"
-	_extraOwner         = "extraOwner"
-	_groupIDStr         = "groupID"
-	_envQuery           = "env"
+	_extraOwner = "extraOwner"
+	_groupIDStr = "groupID"
+	_envQuery   = "env"
+	_hard       = "hard"
 )
 
 type API struct {
@@ -39,7 +38,7 @@ func NewAPI(applicationCtl application.Controller) *API {
 
 func (a *API) Get(c *gin.Context) {
 	op := "application: get"
-	appIDStr := c.Param(_applicationIDParam)
+	appIDStr := c.Param(common.ParamApplicationID)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid appID: %s, err: %s",
@@ -64,7 +63,7 @@ func (a *API) Get(c *gin.Context) {
 
 func (a *API) Create(c *gin.Context) {
 	const op = "application: create"
-	groupIDStr := c.Param(_groupIDParam)
+	groupIDStr := c.Param(common.ParamGroupID)
 	groupID, err := strconv.ParseUint(groupIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid groupID: %s, err: %s",
@@ -118,7 +117,7 @@ func (a *API) Update(c *gin.Context) {
 			err.Error())))
 		return
 	}
-	appIDStr := c.Param(_applicationIDParam)
+	appIDStr := c.Param(common.ParamApplicationID)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
@@ -144,7 +143,7 @@ func (a *API) Update(c *gin.Context) {
 
 func (a *API) Transfer(c *gin.Context) {
 	const op = "application: transfer"
-	appIDStr := c.Param(_applicationIDParam)
+	appIDStr := c.Param(common.ParamApplicationID)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid appID: %s, err: %s",
@@ -179,14 +178,23 @@ func (a *API) Transfer(c *gin.Context) {
 
 func (a *API) Delete(c *gin.Context) {
 	const op = "application: delete"
-	appIDStr := c.Param(_applicationIDParam)
+	appIDStr := c.Param(common.ParamApplicationID)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid appID: %s, err: %s",
 			appIDStr, err.Error())))
 		return
 	}
-	if err := a.applicationCtl.DeleteApplication(c, uint(appID)); err != nil {
+	hard := false
+	hardStr, ok := c.GetQuery(_hard)
+	if ok {
+		hard, err = strconv.ParseBool(hardStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+			return
+		}
+	}
+	if err := a.applicationCtl.DeleteApplication(c, uint(appID), hard); err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -278,7 +286,7 @@ func (a *API) SearchMyApplication(c *gin.Context) {
 }
 
 func (a *API) GetSelectableRegionsByEnv(c *gin.Context) {
-	appIDStr := c.Param(_applicationIDParam)
+	appIDStr := c.Param(common.ParamApplicationID)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid appID: %s, err: %s",

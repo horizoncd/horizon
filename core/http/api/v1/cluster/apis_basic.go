@@ -21,20 +21,18 @@ import (
 
 const (
 	// param
-	_applicationIDParam = "applicationID"
-	_clusterIDParam     = "clusterID"
-	_clusterParam       = "cluster"
-	_scope              = "scope"
-	_environment        = "environment"
-	_targetBranch       = "targetBranch"
-	_targetCommit       = "targetCommit"
-	_targetTag          = "targetTag"
-	_containerName      = "containerName"
-	_podName            = "podName"
-	_tailLines          = "tailLines"
-	_start              = "start"
-	_end                = "end"
-	_extraOwner         = "extraOwner"
+	_scope         = "scope"
+	_environment   = "environment"
+	_targetBranch  = "targetBranch"
+	_targetCommit  = "targetCommit"
+	_targetTag     = "targetTag"
+	_containerName = "containerName"
+	_podName       = "podName"
+	_tailLines     = "tailLines"
+	_start         = "start"
+	_end           = "end"
+	_extraOwner    = "extraOwner"
+	_hard          = "hard"
 )
 
 type API struct {
@@ -49,7 +47,7 @@ func NewAPI(clusterCtl cluster.Controller) *API {
 
 func (a *API) List(c *gin.Context) {
 	const op = "cluster: list"
-	applicationIDStr := c.Param(_applicationIDParam)
+	applicationIDStr := c.Param(common.ParamApplicationID)
 	applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -112,7 +110,7 @@ func (a *API) List(c *gin.Context) {
 
 func (a *API) Create(c *gin.Context) {
 	op := "cluster: create"
-	applicationIDStr := c.Param(_applicationIDParam)
+	applicationIDStr := c.Param(common.ParamApplicationID)
 	applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -175,7 +173,7 @@ func (a *API) Create(c *gin.Context) {
 
 func (a *API) Update(c *gin.Context) {
 	op := "cluster: update"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -210,7 +208,7 @@ func (a *API) Update(c *gin.Context) {
 
 func (a *API) Get(c *gin.Context) {
 	op := "cluster: get"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -229,31 +227,24 @@ func (a *API) Get(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-func (a *API) GetByName(c *gin.Context) {
-	op := "cluster: get by name"
-	clusterName := c.Param(_clusterParam)
-	resp, err := a.clusterCtl.GetClusterByName(c, clusterName)
-	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
-			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-			return
-		}
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-	response.SuccessWithData(c, resp)
-}
-
 func (a *API) Delete(c *gin.Context) {
 	op := "cluster: delete"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	if err := a.clusterCtl.DeleteCluster(c, uint(clusterID)); err != nil {
+	hard := false
+	hardStr, ok := c.GetQuery(_hard)
+	if ok {
+		hard, err = strconv.ParseBool(hardStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+			return
+		}
+	}
+	if err := a.clusterCtl.DeleteCluster(c, uint(clusterID), hard); err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
@@ -328,7 +319,7 @@ func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
 
 func (a *API) Free(c *gin.Context) {
 	op := "cluster: free"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -350,7 +341,7 @@ func (a *API) Free(c *gin.Context) {
 
 func (a *API) GetOutput(c *gin.Context) {
 	op := "cluster: get output"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
@@ -372,7 +363,7 @@ func (a *API) GetOutput(c *gin.Context) {
 
 func (a *API) GetContainers(c *gin.Context) {
 	const op = "cluster: get containers"
-	clusterIDStr := c.Param(_clusterIDParam)
+	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
