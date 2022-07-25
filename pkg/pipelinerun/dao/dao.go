@@ -24,7 +24,6 @@ type DAO interface {
 	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint,
 		action, status string) (*models.Pipelinerun, error)
 	UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error
-	// TODO(rename it)
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 	GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)

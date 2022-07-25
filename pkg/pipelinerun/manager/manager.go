@@ -23,7 +23,7 @@ type Manager interface {
 		status string) (*models.Pipelinerun, error)
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 	UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error
-	// Todo(rename) here is update result after restore pipeline
+	// UpdateResultByID  update the pipelinerun restore result
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 }
 
