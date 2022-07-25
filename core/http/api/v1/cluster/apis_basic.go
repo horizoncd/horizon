@@ -390,3 +390,19 @@ func (a *API) GetContainers(c *gin.Context) {
 	}
 	response.SuccessWithData(c, outPut)
 }
+
+func (a *API) GetByName(c *gin.Context) {
+	op := "cluster: get by name"
+	clusterName := c.Param(common.ParamClusterName)
+	resp, err := a.clusterCtl.GetClusterByName(c, clusterName)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
