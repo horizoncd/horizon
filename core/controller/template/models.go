@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 	"sort"
+	"strings"
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -12,6 +13,8 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 )
+
+const gitSuffix = ".git"
 
 type CreateTemplateRequest struct {
 	// when creating template, user must create a release,
@@ -38,6 +41,7 @@ func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
 			"Repository is empty")
 	}
+	c.Repository = strings.TrimSuffix(c.Repository, gitSuffix)
 	if !checkIfNameValid(c.Name) {
 		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
 			"Name starts with a letter and consists of an "+
@@ -100,6 +104,7 @@ func (c *UpdateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
 			"Repository is empty")
 	}
+	c.Repository = strings.TrimSuffix(c.Repository, gitSuffix)
 	t := &tmodels.Template{
 		Description: c.Description,
 		Repository:  c.Repository,
