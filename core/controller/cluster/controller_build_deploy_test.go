@@ -10,7 +10,7 @@ import (
 	"github.com/mozillazg/go-pinyin"
 )
 
-func Test_imageURL(t *testing.T) {
+func testImageURL(t *testing.T) {
 	type args struct {
 		regionEntity *regionmodels.RegionEntity
 		application  string
@@ -94,7 +94,7 @@ func Test_imageURL(t *testing.T) {
 	}
 }
 
-func TestPinyin(t *testing.T) {
+func testPinyin(t *testing.T) {
 	args := pinyin.Args{
 		Fallback: func(r rune, a pinyin.Args) []string {
 			return []string{string(r)}

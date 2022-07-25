@@ -128,6 +128,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     "/searchmyclusters",
 			HandlerFunc: api.ListUserClusterByNameFuzzily,
 		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%v", common.ParamClusterName),
+			HandlerFunc: api.GetByName,
+		},
 	}
 
 	internalGroup := engine.Group("/apis/internal/v1/clusters")
