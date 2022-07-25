@@ -148,7 +148,7 @@ func TestWrappedPipelineRun_ResolvePrResult(t *testing.T) {
 			},
 			want: &PrResult{
 				DurationSeconds: 127,
-				Result:          prmodels.ResultOK,
+				Result:          string(prmodels.StatusOK),
 				StartTime:       parseTime("2021-07-08T06:36:11Z"),
 				CompletionTime:  parseTime("2021-07-08T06:38:18Z"),
 			},
@@ -177,7 +177,7 @@ func TestWrappedPipelineRun_ResolvePrResult(t *testing.T) {
 			},
 			want: &PrResult{
 				DurationSeconds: 67,
-				Result:          prmodels.ResultOK,
+				Result:          string(prmodels.StatusOK),
 				StartTime:       parseTime("2021-07-08T06:36:11Z"),
 				CompletionTime:  parseTime("2021-07-08T06:37:18Z"),
 			},
@@ -206,7 +206,7 @@ func TestWrappedPipelineRun_ResolvePrResult(t *testing.T) {
 			},
 			want: &PrResult{
 				DurationSeconds: 119,
-				Result:          prmodels.ResultFailed,
+				Result:          string(prmodels.StatusFailed),
 				StartTime:       parseTime("2021-07-08T06:36:11Z"),
 				CompletionTime:  parseTime("2021-07-08T06:38:10Z"),
 			},
@@ -235,7 +235,7 @@ func TestWrappedPipelineRun_ResolvePrResult(t *testing.T) {
 			},
 			want: &PrResult{
 				DurationSeconds: 123,
-				Result:          prmodels.ResultFailed,
+				Result:          string(prmodels.StatusFailed),
 				StartTime:       parseTime("2021-07-08T06:36:11Z"),
 				CompletionTime:  parseTime("2021-07-08T06:38:14Z"),
 			},
@@ -264,7 +264,7 @@ func TestWrappedPipelineRun_ResolvePrResult(t *testing.T) {
 			},
 			want: &PrResult{
 				DurationSeconds: 123,
-				Result:          prmodels.ResultCancelled,
+				Result:          string(prmodels.StatusCancelled),
 				StartTime:       parseTime("2021-07-08T06:36:11Z"),
 				CompletionTime:  parseTime("2021-07-08T06:38:14Z"),
 			},
@@ -293,7 +293,7 @@ func TestWrappedPipelineRun_ResolvePrResult(t *testing.T) {
 			},
 			want: &PrResult{
 				DurationSeconds: 123,
-				Result:          prmodels.ResultUnknown,
+				Result:          string(prmodels.StatusUnknown),
 				StartTime:       parseTime("2021-07-08T06:36:11Z"),
 				CompletionTime:  parseTime("2021-07-08T06:38:14Z"),
 			},
@@ -553,7 +553,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					StartTime:       parseTime("2021-06-24T06:36:11Z"),
 					CompletionTime:  parseTime("2021-06-24T06:36:43Z"),
 					DurationSeconds: 32,
-					Result:          prmodels.ResultOK,
+					Result:          string(prmodels.StatusOK),
 				},
 				{
 					Name:            "test-music-docker-q58rp-deploy-xzjkg",
@@ -562,7 +562,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					StartTime:       parseTime("2021-06-24T06:36:43Z"),
 					CompletionTime:  parseTime("2021-06-24T06:38:18Z"),
 					DurationSeconds: 95,
-					Result:          prmodels.ResultOK,
+					Result:          string(prmodels.StatusOK),
 				},
 			},
 			want1: StepResults{
@@ -573,7 +573,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					StartTime:       parseTime("2021-06-24T06:36:18Z"),
 					CompletionTime:  parseTime("2021-06-24T06:36:26Z"),
 					DurationSeconds: 8,
-					Result:          prmodels.ResultOK,
+					Result:          string(prmodels.StatusOK),
 				},
 				{
 					Step:            "compile",
@@ -582,7 +582,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					StartTime:       parseTime("2021-06-24T06:36:26Z"),
 					CompletionTime:  parseTime("2021-06-24T06:36:34Z"),
 					DurationSeconds: 8,
-					Result:          prmodels.ResultOK,
+					Result:          string(prmodels.StatusOK),
 				},
 				{
 					Step:            "image",
@@ -591,7 +591,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					StartTime:       parseTime("2021-06-24T06:36:34Z"),
 					CompletionTime:  parseTime("2021-06-24T06:36:42Z"),
 					DurationSeconds: 8,
-					Result:          prmodels.ResultOK,
+					Result:          string(prmodels.StatusOK),
 				},
 				{
 					Step:            "deploy",
@@ -600,7 +600,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					StartTime:       parseTime("2021-06-24T06:36:48Z"),
 					CompletionTime:  parseTime("2021-06-24T06:38:18Z"),
 					DurationSeconds: 90,
-					Result:          prmodels.ResultOK,
+					Result:          string(prmodels.StatusOK),
 				},
 			},
 		},
@@ -617,7 +617,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					StartTime:       parseTime("2021-06-17T06:33:28Z"),
 					CompletionTime:  parseTime("2021-06-17T06:33:36Z"),
 					DurationSeconds: 8,
-					Result:          prmodels.ResultFailed,
+					Result:          string(prmodels.StatusFailed),
 				},
 			},
 			want1: StepResults{
@@ -628,7 +628,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					StartTime:       parseTime("2021-06-17T06:33:34Z"),
 					CompletionTime:  parseTime("2021-06-17T06:33:35Z"),
 					DurationSeconds: 1,
-					Result:          prmodels.ResultOK,
+					Result:          string(prmodels.StatusOK),
 				},
 				{
 					Step:            "compile",
@@ -637,7 +637,7 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
 					StartTime:       parseTime("2021-06-17T06:33:36Z"),
 					CompletionTime:  parseTime("2021-06-17T06:33:36Z"),
 					DurationSeconds: 0,
-					Result:          prmodels.ResultFailed,
+					Result:          string(prmodels.StatusFailed),
 				},
 			},
 		},

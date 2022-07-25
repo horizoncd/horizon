@@ -58,6 +58,8 @@ type PipelineBasic struct {
 	ConfigCommit string `json:"configCommit"`
 	// CreatedAt create time of this pipelinerun
 	CreatedAt time.Time `json:"createdAt"`
+	// UpdatedAt update time of this pipelinerun
+	UpdatedAt time.Time `json:"updatedAt"`
 	// StartedAt start time of this pipelinerun
 	StartedAt *time.Time `json:"startedAt"`
 	// FinishedAt finish time of this pipelinerun

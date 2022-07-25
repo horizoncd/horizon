@@ -854,7 +854,7 @@ func Test(t *testing.T) {
 		Return("rollback-commit", nil).AnyTimes()
 	// update status to 'ok'
 	err = manager.PipelinerunMgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
-		Result: prmodels.ResultOK,
+		Result: prmodels.StatusOK,
 	})
 	assert.Nil(t, err)
 	rollbackResp, err := c.Rollback(ctx, resp.ID, &RollbackRequest{

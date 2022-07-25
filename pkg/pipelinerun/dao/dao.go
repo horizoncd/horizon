@@ -23,6 +23,8 @@ type DAO interface {
 	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
 	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint,
 		action, status string) (*models.Pipelinerun, error)
+	UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error
+	// TODO(rename it)
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 	GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
@@ -123,6 +125,14 @@ func (d *dao) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (
 		return nil, nil
 	}
 	return &pipelinerun, nil
+}
+
+func (d *dao) UpdateStatusByID(ctx context.Context, pipelinerunID uint, status models.PipelineStatus) error {
+	res := d.db.WithContext(ctx).Exec(common.PipelinerunUpdateStatusByID, status, pipelinerunID)
+	if res.Error != nil {
+		return herrors.NewErrGetFailed(herrors.PipelinerunInDB, res.Error.Error())
+	}
+	return res.Error
 }
 
 func (d *dao) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {

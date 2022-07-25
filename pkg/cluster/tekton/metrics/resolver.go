@@ -187,31 +187,31 @@ func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
 
 // ResolvePrResult 解析pipelineRun整体的执行结果
 func (wpr *WrappedPipelineRun) ResolvePrResult() *PrResult {
-	r := func() string {
+	r := func() prmodels.PipelineStatus {
 		prc := wpr.PipelineRun.Status.GetCondition(apis.ConditionSucceeded)
 		if prc == nil {
-			return prmodels.ResultUnknown
+			return prmodels.StatusUnknown
 		}
 		switch v1beta1.PipelineRunReason(prc.GetReason()) {
 		case v1beta1.PipelineRunReasonSuccessful, v1beta1.PipelineRunReasonCompleted:
-			return prmodels.ResultOK
+			return prmodels.StatusOK
 		case v1beta1.PipelineRunReasonFailed, v1beta1.PipelineRunReasonTimedOut:
-			return prmodels.ResultFailed
+			return prmodels.StatusFailed
 			// tekton pipelines v0.18.1版本，取消的情况下，
 			// 实际用的是v1beta1.PipelineRunSpecStatusCancelled字段，
 			// ref: (1) https://github.com/tektoncd/pipeline/blob/v0.18.1/pkg/reconciler/pipelinerun/cancel.go#L67
 			// (2) https://github.com/tektoncd/pipeline/blob/v0.18.1/pkg/reconciler/pipelinerun/pipelinerun.go#L99
 		case v1beta1.PipelineRunReasonCancelled, v1beta1.PipelineRunSpecStatusCancelled:
-			return prmodels.ResultCancelled
+			return prmodels.StatusCancelled
 		}
-		return prmodels.ResultUnknown
+		return prmodels.StatusUnknown
 	}()
 
 	return &PrResult{
 		DurationSeconds: durationSeconds(
 			wpr.PipelineRun.Status.StartTime,
 			wpr.PipelineRun.Status.CompletionTime),
-		Result:         r,
+		Result:         string(r),
 		StartTime:      wpr.PipelineRun.Status.StartTime,
 		CompletionTime: wpr.PipelineRun.Status.CompletionTime,
 	}
@@ -233,22 +233,22 @@ func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults
 			Task: trStatus.PipelineTaskName,
 			DurationSeconds: durationSeconds(
 				trStatus.Status.StartTime, trStatus.Status.CompletionTime),
-			Result:         trResult(trStatus),
+			Result:         string(trResult(trStatus)),
 			StartTime:      trStatus.Status.StartTime,
 			CompletionTime: trStatus.Status.CompletionTime,
 		})
 
 		for _, step := range trStatus.Status.Steps {
-			stepResult := func() string {
+			stepResult := func() prmodels.PipelineStatus {
 				if step.Terminated == nil {
-					return prmodels.ResultUnknown
+					return prmodels.StatusUnknown
 				}
 				if step.Terminated.ExitCode == 0 {
-					return prmodels.ResultOK
+					return prmodels.StatusOK
 				}
-				return prmodels.ResultFailed
+				return prmodels.StatusFailed
 			}()
-			if stepResult == prmodels.ResultUnknown {
+			if stepResult == prmodels.StatusUnknown {
 				// ResultUnknown的情况表示pipelineRun取消执行，当前step被取消，此时可以跳过后续step
 				break
 			}
@@ -265,9 +265,9 @@ func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults
 					return durationSeconds(
 						&step.Terminated.StartedAt, &step.Terminated.FinishedAt)
 				}(),
-				Result: stepResult,
+				Result: string(stepResult),
 			})
-			if stepResult == prmodels.ResultFailed {
+			if stepResult == prmodels.StatusFailed {
 				// 如果一个step失败了，那么后续的step都会跳过执行，故这里跳过后续step
 				break
 			}
@@ -281,20 +281,20 @@ func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults
 }
 
 // trResult 根据 v1beta1.PipelineRunTaskRunStatus 获取 taskRun 的执行结果
-func trResult(trStatus *v1beta1.PipelineRunTaskRunStatus) string {
+func trResult(trStatus *v1beta1.PipelineRunTaskRunStatus) prmodels.PipelineStatus {
 	if trStatus == nil {
-		return prmodels.ResultUnknown
+		return prmodels.StatusUnknown
 	}
 	trc := trStatus.Status.GetCondition(apis.ConditionSucceeded)
 	switch v1beta1.TaskRunReason(trc.GetReason()) {
 	case v1beta1.TaskRunReasonSuccessful:
-		return prmodels.ResultOK
+		return prmodels.StatusOK
 	case v1beta1.TaskRunReasonFailed, v1beta1.TaskRunReasonTimedOut:
-		return prmodels.ResultFailed
+		return prmodels.StatusFailed
 	case v1beta1.TaskRunReasonCancelled:
-		return prmodels.ResultCancelled
+		return prmodels.StatusCancelled
 	}
-	return prmodels.ResultUnknown
+	return prmodels.StatusUnknown
 }
 
 // durationSeconds 根据起始时间计算以秒为单位的时间差

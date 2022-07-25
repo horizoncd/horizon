@@ -11,12 +11,17 @@ const (
 	ActionRollback    = "rollback"
 )
 
+type PipelineStatus string
+
 const (
-	ResultCreated   = "created"
-	ResultOK        = "ok"
-	ResultFailed    = "failed"
-	ResultCancelled = "cancelled"
-	ResultUnknown   = "unknown"
+	StatusCreated   PipelineStatus = "created"
+	StatusCommitted PipelineStatus = "committed"
+	StatusMerged    PipelineStatus = "merged"
+	StatusDeployed  PipelineStatus = "deployed"
+	StatusOK        PipelineStatus = "ok"
+	StatusFailed    PipelineStatus = "failed"
+	StatusCancelled PipelineStatus = "cancelled"
+	StatusUnknown   PipelineStatus = "unknown"
 )
 
 type Pipelinerun struct {
