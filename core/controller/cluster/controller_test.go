@@ -447,8 +447,21 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestAll(t *testing.T) {
+	t.Run("Test", test)
+	t.Run("TestGetClusterOutPut", testGetClusterOutPut)
+	t.Run("TestRenderOutPutObject", testRenderOutPutObject)
+	t.Run("TestRenderOutPutObjectMissingKey", testRenderOutPutObjectMissingKey)
+	t.Run("TestIsClusterActuallyHealthy", testIsClusterActuallyHealthy)
+	t.Run("TestImageURL", testImageURL)
+	t.Run("TestPinyin", testPinyin)
+	t.Run("TestListClusterByNameFuzzily", testListClusterByNameFuzzily)
+	t.Run("TestListUserClustersByNameFuzzily", testListUserClustersByNameFuzzily)
+	t.Run("TestControllerFreeOrDeleteClusterFailed", testControllerFreeOrDeleteClusterFailed)
+}
+
 // nolint
-func Test(t *testing.T) {
+func test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
@@ -877,7 +890,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, true, value.Result)
 }
 
-func TestGetClusterOutPut(t *testing.T) {
+func testGetClusterOutPut(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	appManagerMock := applicationmanangermock.NewMockManager(mockCtl)
 	clusterManagerMock := clustermanagermock.NewMockManager(mockCtl)
@@ -986,7 +999,7 @@ javaapp:
       resource: large
 `
 
-func TestRenderOutPutObject(t *testing.T) {
+func testRenderOutPutObject(t *testing.T) {
 	var envValueFile, horizonValueFile, applicationValueFile gitrepo.ClusterValueFile
 	err := yaml.Unmarshal([]byte(envValue), &(envValueFile.Content))
 	assert.Nil(t, err)
@@ -1013,7 +1026,7 @@ func TestRenderOutPutObject(t *testing.T) {
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }
 
-func TestRenderOutPutObject_missingKey(t *testing.T) {
+func testRenderOutPutObjectMissingKey(t *testing.T) {
 	var envValueFile, horizonValueFile, applicationValueFile gitrepo.ClusterValueFile
 	var envValue = `
 javaapp:
@@ -1056,7 +1069,7 @@ javaapp:
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }
 
-func TestIsClusterActuallyHealthy(t *testing.T) {
+func testIsClusterActuallyHealthy(t *testing.T) {
 	t1 := "1"
 	t2 := "2"
 	imageV1 := "v1"

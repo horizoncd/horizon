@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestListClusterByNameFuzzily(t *testing.T) {
+func testListClusterByNameFuzzily(t *testing.T) {
 	// init data
 	var groups []*groupmodels.Group
 	for i := 0; i < 5; i++ {
@@ -100,7 +100,7 @@ func TestListClusterByNameFuzzily(t *testing.T) {
 	}
 }
 
-func TestListUserClustersByNameFuzzily(t *testing.T) {
+func testListUserClustersByNameFuzzily(t *testing.T) {
 	// init data
 	region, err := manager.RegionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hzUserClustersFuzzily",
@@ -227,7 +227,7 @@ func TestListUserClustersByNameFuzzily(t *testing.T) {
 	}
 }
 
-func TestController_FreeOrDeleteClusterFailed(t *testing.T) {
+func testControllerFreeOrDeleteClusterFailed(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	cd := mockcd.NewMockCD(mockCtl)
 	cd.EXPECT().DeleteCluster(gomock.Any(), gomock.Any()).Return(errors.New("test")).AnyTimes()
