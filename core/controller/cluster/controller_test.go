@@ -718,7 +718,8 @@ func Test(t *testing.T) {
 
 	clusterGitRepo.EXPECT().GetRestartTime(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("", nil).AnyTimes()
-	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
+	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any(),
+		gomock.Any()).Return("newest-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
 		GitRepoSSHURL: "ssh://xxxx.git",
 		ValueFiles:    []string{"file1", "file2"},
@@ -854,7 +855,7 @@ func Test(t *testing.T) {
 		Return("rollback-commit", nil).AnyTimes()
 	// update status to 'ok'
 	err = manager.PipelinerunMgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
-		Result: prmodels.StatusOK,
+		Result: string(prmodels.StatusOK),
 	})
 	assert.Nil(t, err)
 	rollbackResp, err := c.Rollback(ctx, resp.ID, &RollbackRequest{

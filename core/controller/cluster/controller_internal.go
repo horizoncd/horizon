@@ -63,7 +63,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 4. merge branch from gitops to master
-	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
+	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, pr.ID)
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}
