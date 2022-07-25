@@ -73,4 +73,5 @@ const (
 	ParamApplicationID = "applicationID"
 	ParamGroupID       = "groupID"
 	ParamClusterID     = "clusterID"
+	ParamClusterName   = "cluster"
 )
