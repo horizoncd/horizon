@@ -209,6 +209,9 @@ func TestCreateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(releases))
 	assert.Equal(t, releaseName, releases[0].Name)
+
+	err = ctl.SyncReleaseToRepo(ctx, 1)
+	assert.Nil(t, err)
 }
 
 func TestCreateTemplateInNonRootGroup(t *testing.T) {
@@ -298,10 +301,13 @@ func TestUpdateTemplate(t *testing.T) {
 
 	defer func() { _ = ctl.DeleteRelease(ctx, 1) }()
 
+	onlyAdminTrue := true
+
 	tplRequest := UpdateTemplateRequest{
 		Description: "hello, world",
 		Token:       "token",
 		Repository:  "repo",
+		OnlyAdmin:   &onlyAdminTrue,
 	}
 	err := ctl.UpdateTemplate(ctx, 1, tplRequest)
 	assert.Nil(t, err)
@@ -310,6 +316,7 @@ func TestUpdateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, tplRequest.Description, template.Description)
 	assert.Equal(t, tplRequest.Repository, template.Repository)
+	assert.Equal(t, onlyAdminTrue, template.OnlyAdmin)
 
 	oldDescription := tplRequest.Description
 	tplRequest.Description = ""
@@ -322,11 +329,13 @@ func TestUpdateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, oldDescription, template.Description)
 	assert.Equal(t, tplRequest.Repository, template.Repository)
+	assert.Equal(t, onlyAdminTrue, template.OnlyAdmin)
 
 	b := true
 	trRequest := UpdateReleaseRequest{
 		Description: "hello, world",
 		Recommended: &b,
+		OnlyAdmin:   &onlyAdminTrue,
 	}
 	err = ctl.UpdateRelease(ctx, 1, trRequest)
 	assert.Nil(t, err)
@@ -335,6 +344,7 @@ func TestUpdateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, trRequest.Description, release.Description)
 	assert.Equal(t, *trRequest.Recommended, release.Recommended)
+	assert.Equal(t, onlyAdminTrue, release.OnlyAdmin)
 
 	oldDescription = trRequest.Description
 	trRequest.Description = ""
@@ -347,6 +357,19 @@ func TestUpdateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, oldDescription, release.Description)
 	assert.Equal(t, b, release.Recommended)
+	assert.Equal(t, onlyAdminTrue, release.OnlyAdmin)
+
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:  "Jerry",
+		ID:    1,
+		Admin: false,
+	})
+
+	err = ctl.UpdateTemplate(ctx, 1, tplRequest)
+	assert.NotNil(t, err)
+
+	err = ctl.UpdateRelease(ctx, 1, trRequest)
+	assert.NotNil(t, err)
 }
 
 func TestListTemplate(t *testing.T) {

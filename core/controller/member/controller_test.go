@@ -2,8 +2,6 @@ package member
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -22,6 +20,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	tmodels "g.hz.netease.com/horizon/pkg/template/models"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	usermodel "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -36,10 +36,10 @@ var (
 	contextUserName          = "Tony"
 	contextUserFullName      = "TonyWu"
 	manager                  = managerparam.InitManager(db)
-	groupCtl                 = group.NewController(&param.Param{Manager: manager})
-	groupSvc                 = groupservice.NewService(manager)
-	applicationSvc           = applicationservice.NewService(groupSvc, manager)
-	clusterSvc               = clusterservice.NewService(applicationSvc, manager)
+	groupCtl            group.Controller
+	groupSvc            groupservice.Service
+	applicationSvc      applicationservice.Service
+	clusterSvc          clusterservice.Service
 )
 
 var (
@@ -57,34 +57,26 @@ var (
 )
 
 // nolint
-func init() {
-	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
+func createContext(t *testing.T) {
+	db, _ = orm.NewSqliteDB("")
+	manager = managerparam.InitManager(db)
+
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name:     contextUserName,
 		FullName: contextUserFullName,
 		ID:       contextUserID,
+		Admin:    true,
 	})
 	// create table
-	err := db.AutoMigrate(&models.Group{})
-	if err != nil {
-		fmt.Printf("%+v", err)
-		os.Exit(1)
-	}
-	err = db.AutoMigrate(&appmodels.Application{})
-	if err != nil {
-		fmt.Printf("%+v", err)
-		os.Exit(1)
-	}
-	err = db.AutoMigrate(&membermodels.Member{})
-	if err != nil {
-		fmt.Printf("%+v", err)
-		os.Exit(1)
-	}
+	err := db.AutoMigrate(&models.Group{}, &usermodel.User{},
+		&appmodels.Application{}, &membermodels.Member{},
+		&tmodels.Template{}, &trmodels.TemplateRelease{})
+	assert.Nil(t, err)
 
-	err = db.AutoMigrate(&usermodel.User{})
-	if err != nil {
-		fmt.Printf("%+v", err)
-		os.Exit(1)
-	}
+	groupCtl = group.NewController(&param.Param{Manager: manager})
+	groupSvc = groupservice.NewService(manager)
+	applicationSvc = applicationservice.NewService(groupSvc, manager)
+	clusterSvc = clusterservice.NewService(applicationSvc, manager)
 }
 
 func MemberSame(m1, m2 Member) bool {
@@ -125,6 +117,7 @@ func CreateUsers(t *testing.T) {
 }
 
 func TestCreateGroupWithOwner(t *testing.T) {
+	createContext(t)
 	memberService := memberservice.NewService(nil, nil, manager)
 	ctl := NewController(&param.Param{
 		MemberService:  memberService,
@@ -176,6 +169,7 @@ func PostMemberAndMemberEqual(postMember PostMember, member2 Member) bool {
 }
 
 func TestCreateGetUpdateRemoveList(t *testing.T) {
+	createContext(t)
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	roleMockService := rolemock.NewMockService(mockCtrl)
@@ -250,4 +244,67 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
+}
+
+func TestTemplateMember(t *testing.T) {
+	createContext(t)
+	memberService := memberservice.NewService(nil, nil, manager)
+	ctl := NewController(&param.Param{
+		MemberService:  memberService,
+		Manager:        manager,
+		GroupSvc:       groupSvc,
+		ApplicationSvc: applicationSvc,
+		ClusterSvc:     clusterSvc,
+	})
+
+	onlyAdmin := false
+	template := &tmodels.Template{
+		Model:     global.Model{},
+		Name:      "javaapp",
+		ChartName: "javaapp",
+		GroupID:   0,
+		OnlyAdmin: &onlyAdmin,
+	}
+	template, err := manager.TemplateMgr.Create(ctx, template)
+	assert.Nil(t, err)
+
+	recommended := true
+	release := &trmodels.TemplateRelease{
+		Model:        global.Model{},
+		Template:     1,
+		TemplateName: "javaapp",
+		Name:         "v1.0.0",
+		ChartName:    "javaapp",
+		Recommended:  &recommended,
+		OnlyAdmin:    &onlyAdmin,
+	}
+
+	_, err = manager.TemplateReleaseManager.Create(ctx, release)
+	assert.Nil(t, err)
+
+	jerry := &usermodel.User{
+		Model:    global.Model{},
+		Name:     "Jerry",
+		FullName: "Jerry",
+		Email:    "Jerry@mail.com",
+		Phone:    "12390821",
+		OIDCId:   "HZ32131",
+		OIDCType: "netease",
+		Admin:    false,
+	}
+	jerry, err = manager.UserManager.Create(ctx, jerry)
+	assert.Nil(t, err)
+	createMemberParam := &PostMember{
+		ResourceType: common.ResourceTemplate,
+		ResourceID:   template.ID,
+		MemberType:   membermodels.MemberUser,
+		MemberNameID: jerry.ID,
+		Role:         "owner",
+	}
+	_, err = ctl.CreateMember(ctx, createMemberParam)
+	assert.Nil(t, err)
+
+	member, err := ctl.GetMemberOfResource(ctx, common.ResourceTemplate, template.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, createMemberParam.Role, member.Role)
 }
