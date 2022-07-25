@@ -165,7 +165,6 @@ var (
 	ErrPairConflict     = errors.New("entity pair conflict")
 	ErrParamInvalid     = errors.New("parameter is invalid")
 	ErrDeadlineExceeded = errors.New("time limit exceeded")
-	ErrFailedToRollback = errors.New("failed to rollback")
 	ErrGenerateRandomID = errors.New("failed to generate random id")
 	ErrDisabled         = errors.New("entity is disabled")
 	// ErrInternal = errors.New("internal error")
