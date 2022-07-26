@@ -543,7 +543,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 4. if templateInput is not empty, validate templateInput and update templateInput in git repo
-	var applicationJSONBlob, pipelineJSONBlob map[string]interface{}
 	if r.TemplateInput != nil {
 		// merge cluster config and request config
 		// merge patch allows users to pass only some fields
@@ -553,20 +552,20 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 			if err != nil {
 				return nil, err
 			}
-			applicationJSONBlob, err = mergemap.Merge(files.ApplicationJSONBlob,
+
+			r.TemplateInput.Application, err = mergemap.Merge(files.ApplicationJSONBlob,
 				r.TemplateInput.Application)
 			if err != nil {
 				return nil, err
 			}
-			pipelineJSONBlob, err = mergemap.Merge(files.PipelineJSONBlob,
+
+			r.TemplateInput.Pipeline, err = mergemap.Merge(files.PipelineJSONBlob,
 				r.TemplateInput.Pipeline)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			applicationJSONBlob = r.TemplateInput.Application
-			pipelineJSONBlob = r.TemplateInput.Pipeline
 		}
+
 		// validate template input
 		tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, templateRelease)
 		if err != nil {
@@ -576,8 +575,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, err
 		}
-		r.TemplateInput.Application = applicationJSONBlob
-		r.TemplateInput.Pipeline = pipelineJSONBlob
 		if err := c.validateTemplateInput(ctx,
 			cluster.Template, templateRelease, r.TemplateInput, renderValues); err != nil {
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
@@ -588,8 +585,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 			BaseParams: &gitrepo.BaseParams{
 				ClusterID:           cluster.ID,
 				Cluster:             cluster.Name,
-				PipelineJSONBlob:    pipelineJSONBlob,
-				ApplicationJSONBlob: applicationJSONBlob,
+				PipelineJSONBlob:    r.TemplateInput.Pipeline,
+				ApplicationJSONBlob: r.TemplateInput.Application,
 				TemplateRelease:     tr,
 				Application:         application,
 				Environment:         er.EnvironmentName,
@@ -604,8 +601,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, err
 		}
-		applicationJSONBlob = files.ApplicationJSONBlob
-		pipelineJSONBlob = files.PipelineJSONBlob
+		r.TemplateInput.Application = files.ApplicationJSONBlob
+		r.TemplateInput.Pipeline = files.PipelineJSONBlob
 	}
 
 	// 5. update cluster in db
@@ -632,7 +629,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	return ofClusterModel(application, cluster, fullPath, envValue.Namespace,
-		pipelineJSONBlob, applicationJSONBlob), nil
+		r.TemplateInput.Pipeline, r.TemplateInput.Application), nil
 }
 
 func (c *controller) GetClusterByName(ctx context.Context,

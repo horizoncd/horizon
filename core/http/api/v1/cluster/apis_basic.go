@@ -22,7 +22,7 @@ import (
 const (
 	// param
 	_scope         = "scope"
-	_mergePatch    = "mergepatch"
+	_mergePatch    = "mergePatch"
 	_environment   = "environment"
 	_targetBranch  = "targetBranch"
 	_targetCommit  = "targetCommit"

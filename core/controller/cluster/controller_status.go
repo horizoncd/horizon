@@ -52,10 +52,8 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
-	// if latest builddeploy pr is not exists, runningTask is noneRunningTask
 	if latestPipelinerun == nil ||
-		latestPipelinerun.Action != prmodels.ActionBuildDeploy ||
-		latestPipelinerun.Status != prmodels.ResultCreated {
+		latestPipelinerun.Action != prmodels.ActionBuildDeploy {
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}
