@@ -22,6 +22,7 @@ import (
 const (
 	// param
 	_scope         = "scope"
+	_mergePatch    = "mergepatch"
 	_environment   = "environment"
 	_targetBranch  = "targetBranch"
 	_targetCommit  = "targetCommit"
@@ -127,6 +128,17 @@ func (a *API) Create(c *gin.Context) {
 	environment := scopeArray[0]
 	region := scopeArray[1]
 
+	mergePatch := false
+	mergepatchStr := c.Request.URL.Query().Get(_mergePatch)
+	if mergepatchStr != "" {
+		mergePatch, err = strconv.ParseBool(mergepatchStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam,
+				fmt.Sprintf("mergepatch is invalid, err: %v", err))
+			return
+		}
+	}
+
 	extraOwners := c.QueryArray(_extraOwner)
 
 	var request *cluster.CreateClusterRequest
@@ -149,7 +161,8 @@ func (a *API) Create(c *gin.Context) {
 	for _, extraOwner := range extraOwners {
 		request.ExtraMembers[extraOwner] = role.Owner
 	}
-	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment, region, request)
+	resp, err := a.clusterCtl.CreateCluster(c, uint(applicationID), environment,
+		region, request, mergePatch)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -180,13 +193,24 @@ func (a *API) Update(c *gin.Context) {
 		return
 	}
 
+	mergePatch := false
+	mergepatchStr := c.Request.URL.Query().Get(_mergePatch)
+	if mergepatchStr != "" {
+		mergePatch, err = strconv.ParseBool(mergepatchStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam,
+				fmt.Sprintf("mergepatch is invalid, err: %v", err))
+			return
+		}
+	}
+
 	var request *cluster.UpdateClusterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	resp, err := a.clusterCtl.UpdateCluster(c, uint(clusterID), request)
+	resp, err := a.clusterCtl.UpdateCluster(c, uint(clusterID), request, mergePatch)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))

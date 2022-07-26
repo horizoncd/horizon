@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"g.hz.netease.com/horizon/core/config"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
+	applicationgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	applicationmanangermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
 	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
 	commitmock "g.hz.netease.com/horizon/mock/pkg/cluster/code"
@@ -474,6 +476,7 @@ func test(t *testing.T) {
 	// test
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockFactory(mockCtl)
@@ -585,13 +588,21 @@ func test(t *testing.T) {
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		tagMgr:               tagManager,
+		applicationGitRepo:   applicationGitRepo,
 	}
 
 	tagManager.EXPECT().ListByResourceTypeIDs(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
-	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplicationEnvTemplate(ctx, gomock.Any(), gomock.Any()).
+		Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
+	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(2)
+	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
 		"app-cluster", "javaapp").Return(&gitrepo.ClusterFiles{
+		PipelineJSONBlob:    pipelineJSONBlob,
+		ApplicationJSONBlob: applicationJSONBlob,
+	}, nil).AnyTimes()
+	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
+		"app-cluster-mergepatch", "javaapp").Return(&gitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 	}, nil).AnyTimes()
@@ -630,10 +641,10 @@ func test(t *testing.T) {
 		Name: "app-cluster",
 	}
 
-	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest)
+	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
 	createClusterRequest.Name = "app-cluster-new"
-	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest)
+	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
 	b, _ := json.MarshalIndent(resp, "", "  ")
 	t.Logf("%v", string(b))
@@ -670,7 +681,7 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, newTr)
 
-	resp, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest)
+	resp, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest, false)
 	assert.Nil(t, err)
 	assert.Equal(t, resp.Git.URL, UpdateGitURL)
 	assert.Equal(t, resp.Git.Branch, "new")
@@ -911,6 +922,155 @@ func test(t *testing.T) {
 
 	_, err = c.GetClusterPods(ctx, resp.ID, 0, 19)
 	assert.NotNil(t, err)
+	patchJSONStr := `{
+		"app": {
+		  "params": {
+			"xmx": "1024",
+			"jvmExtra": "-Dserver.port=8181"
+		  }
+		}
+	  }`
+
+	mergedJSONStr := `{
+		"app": {
+		  "spec": {
+			"replicas": 1,
+			"resource": "small"
+		  },
+		  "strategy": {
+			"stepsTotal": 1,
+			"pauseType": "first"
+		  },
+		  "params": {
+			"xmx": "1024",
+			"xms": "512",
+			"maxPerm": "128",
+			"mainClassName": "com.netease.horizon.WebApplication",
+			"jvmExtra": "-Dserver.port=8181"
+		  },
+		  "health": {
+			"check": "/api/test",
+			"status": "/health/status",
+			"online": "/health/online",
+			"offline": "/health/offline",
+			"port": 8080
+		  }
+		}
+	  }`
+
+	patchJsonBlob := map[string]interface{}{}
+	err = json.Unmarshal([]byte(patchJSONStr), &patchJsonBlob)
+	assert.Nil(t, err)
+	createClusterRequest = &CreateClusterRequest{
+		Base: &Base{
+			Description: "cluster description",
+			Git: &codemodels.Git{
+				Branch: "develop",
+			},
+			TemplateInput: &TemplateInput{
+				Application: patchJsonBlob,
+				Pipeline:    pipelineJSONBlob,
+			},
+		},
+		Name: "app-cluster-mergepatch",
+	}
+
+	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).DoAndReturn(
+		func(_ context.Context, params *gitrepo.CreateClusterParams) error {
+			blob := map[string]interface{}{}
+			err := json.Unmarshal([]byte(mergedJSONStr), &blob)
+			assert.Nil(t, err)
+			assertMapEqual(t, blob, params.ApplicationJSONBlob)
+			return nil
+		},
+	).Times(1)
+	resp, err = c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest, true)
+	assert.Nil(t, err)
+
+	patchJSONStr = `{
+		"app": {
+		  "params": {
+			"xmx": "2048",
+			"jvmExtra": "-Dserver.port=8282"
+		  }
+		}
+	  }`
+	mergedJSONStr = `{
+		"app": {
+		  "spec": {
+			"replicas": 1,
+			"resource": "small"
+		  },
+		  "strategy": {
+			"stepsTotal": 1,
+			"pauseType": "first"
+		  },
+		  "params": {
+			"xmx": "2048",
+			"xms": "512",
+			"maxPerm": "128",
+			"mainClassName": "com.netease.horizon.WebApplication",
+			"jvmExtra": "-Dserver.port=8282"
+		  },
+		  "health": {
+			"check": "/api/test",
+			"status": "/health/status",
+			"online": "/health/online",
+			"offline": "/health/offline",
+			"port": 8080
+		  }
+		}
+	  }`
+
+	patchJsonBlob = map[string]interface{}{}
+	err = json.Unmarshal([]byte(patchJSONStr), &patchJsonBlob)
+	assert.Nil(t, err)
+	updateClusterRequest = &UpdateClusterRequest{
+		Base: &Base{
+			Description: "new description",
+			Git: &codemodels.Git{
+				URL:       UpdateGitURL,
+				Subfolder: "/new",
+				Branch:    "new",
+			},
+			TemplateInput: &TemplateInput{
+				Application: patchJsonBlob,
+				Pipeline:    pipelineJSONBlob,
+			},
+			Template: &Template{
+				Name:    "tomcat7_jdk8",
+				Release: "v1.0.1",
+			},
+		},
+	}
+	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).DoAndReturn(
+		func(_ context.Context, params *gitrepo.UpdateClusterParams) error {
+			blob := map[string]interface{}{}
+			err := json.Unmarshal([]byte(mergedJSONStr), &blob)
+			assert.Nil(t, err)
+			assertMapEqual(t, blob, params.ApplicationJSONBlob)
+			return nil
+		},
+	).Times(1)
+	_, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest, true)
+	assert.Nil(t, err)
+}
+
+func assertMapEqual(t *testing.T, expected, got map[string]interface{}) {
+	expectedBuf, err := json.Marshal(expected)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	gotBuf, err := json.Marshal(got)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if !bytes.Equal(expectedBuf, gotBuf) {
+		t.Errorf("expected %s,\n got %s", string(expectedBuf), string(gotBuf))
+		return
+	}
 }
 
 func testGetClusterOutPut(t *testing.T) {

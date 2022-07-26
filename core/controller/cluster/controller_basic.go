@@ -27,6 +27,7 @@ import (
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
+	"g.hz.netease.com/horizon/pkg/util/mergemap"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/Masterminds/sprig"
@@ -346,8 +347,8 @@ func RenderOutputObject(outPutStr, templateName string,
 	return retJSONObject, nil
 }
 
-func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
-	environment, region string, r *CreateClusterRequest) (_ *GetClusterResponse, err error) {
+func (c *controller) CreateCluster(ctx context.Context, applicationID uint, environment,
+	region string, r *CreateClusterRequest, mergePatch bool) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -380,7 +381,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 		return nil, err
 	}
 
-	if err := c.customizeTemplateInfo(ctx, r, application, environment); err != nil {
+	if err := c.customizeTemplateInfo(ctx, r, application, environment, mergePatch); err != nil {
 		return nil, err
 	}
 	if err := c.validateTemplateInput(ctx, r.Template.Name,
@@ -481,7 +482,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint,
 }
 
 func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
-	r *UpdateClusterRequest) (_ *GetClusterResponse, err error) {
+	r *UpdateClusterRequest, mergePatch bool) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: update cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -544,8 +545,28 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	// 4. if templateInput is not empty, validate templateInput and update templateInput in git repo
 	var applicationJSONBlob, pipelineJSONBlob map[string]interface{}
 	if r.TemplateInput != nil {
-		applicationJSONBlob = r.TemplateInput.Application
-		pipelineJSONBlob = r.TemplateInput.Pipeline
+		// merge cluster config and request config
+		// merge patch allows users to pass only some fields
+		if mergePatch {
+			files, err := c.clusterGitRepo.GetCluster(ctx, application.Name,
+				cluster.Name, cluster.Template)
+			if err != nil {
+				return nil, err
+			}
+			applicationJSONBlob, err = mergemap.Merge(files.ApplicationJSONBlob,
+				r.TemplateInput.Application)
+			if err != nil {
+				return nil, err
+			}
+			pipelineJSONBlob, err = mergemap.Merge(files.PipelineJSONBlob,
+				r.TemplateInput.Pipeline)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			applicationJSONBlob = r.TemplateInput.Application
+			pipelineJSONBlob = r.TemplateInput.Pipeline
+		}
 		// validate template input
 		tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, templateRelease)
 		if err != nil {
@@ -555,6 +576,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, err
 		}
+		r.TemplateInput.Application = applicationJSONBlob
+		r.TemplateInput.Pipeline = pipelineJSONBlob
 		if err := c.validateTemplateInput(ctx,
 			cluster.Template, templateRelease, r.TemplateInput, renderValues); err != nil {
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
@@ -565,8 +588,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 			BaseParams: &gitrepo.BaseParams{
 				ClusterID:           cluster.ID,
 				Cluster:             cluster.Name,
-				PipelineJSONBlob:    r.TemplateInput.Pipeline,
-				ApplicationJSONBlob: r.TemplateInput.Application,
+				PipelineJSONBlob:    pipelineJSONBlob,
+				ApplicationJSONBlob: applicationJSONBlob,
 				TemplateRelease:     tr,
 				Application:         application,
 				Environment:         er.EnvironmentName,
@@ -842,8 +865,8 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	return nil
 }
 
-func (c *controller) customizeTemplateInfo(ctx context.Context,
-	r *CreateClusterRequest, application *models.Application, environment string) error {
+func (c *controller) customizeTemplateInfo(ctx context.Context, r *CreateClusterRequest,
+	application *models.Application, environment string, mergePatch bool) error {
 	// 1. if template is empty, set it with application's template
 	if r.Template == nil {
 		r.Template = &Template{
@@ -863,6 +886,26 @@ func (c *controller) customizeTemplateInfo(ctx context.Context,
 	if r.TemplateInput == nil {
 		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.
 			GetApplicationEnvTemplate(ctx, application.Name, environment)
+		if err != nil {
+			return err
+		}
+		r.TemplateInput = &TemplateInput{}
+		r.TemplateInput.Application = applicationJSONBlob
+		r.TemplateInput.Pipeline = pipelineJSONBlob
+	} else if mergePatch {
+		// merge patch allows users to pass only some fields
+		pipelineConfigOfApp, applicationConfigOfApp, err := c.applicationGitRepo.
+			GetApplicationEnvTemplate(ctx, application.Name, environment)
+		if err != nil {
+			return err
+		}
+		applicationJSONBlob, err := mergemap.Merge(applicationConfigOfApp,
+			r.TemplateInput.Application)
+		if err != nil {
+			return err
+		}
+		pipelineJSONBlob, err := mergemap.Merge(pipelineConfigOfApp,
+			r.TemplateInput.Pipeline)
 		if err != nil {
 			return err
 		}

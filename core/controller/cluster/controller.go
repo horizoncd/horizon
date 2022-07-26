@@ -45,9 +45,9 @@ type Controller interface {
 	ListUserClusterByNameFuzzily(ctx context.Context, environment,
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
 	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
-		request *CreateClusterRequest) (*GetClusterResponse, error)
+		request *CreateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
-		request *UpdateClusterRequest) (*GetClusterResponse, error)
+		request *UpdateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
 	DeleteCluster(ctx context.Context, clusterID uint, hard bool) error
 	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
 	GetClusterByName(ctx context.Context,
