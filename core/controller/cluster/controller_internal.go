@@ -10,6 +10,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -33,13 +35,12 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. update image in git repo, and update newest commit to pr
+	// 3. update image in git repo
 	po := gitrepo.PipelineOutput{
 		Image: &pr.ImageURL,
 		Git: &gitrepo.Git{
@@ -58,17 +59,35 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}
+
+	// 4. update config commit and status
 	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
 		return nil, err
 	}
+	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
+		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, pr.ID, pState); err != nil {
+			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
+				pr.ID, pState, err)
+			return err
+		}
+		log.Infof(ctx, "InternalDeploy status, pr = %d, status = %s, revision = %s",
+			pr.ID, pState, revision)
+		return nil
+	}
+	if err := updatePRStatus(prmodels.StatusCommitted, commit); err != nil {
+		return nil, err
+	}
 
-	// 4. merge branch from gitops to master
+	// 5. merge branch from gitops to master  and update status
 	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, pr.ID)
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}
+	if err := updatePRStatus(prmodels.StatusMerged, masterRevision); err != nil {
+		return nil, err
+	}
 
-	// 5. create cluster in cd system
+	// 6. create cluster in cd system
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
@@ -89,7 +108,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 6. reset cluster status
+	// 7. reset cluster status
 	if cluster.Status == common.StatusFreed {
 		cluster.Status = common.StatusEmpty
 		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
@@ -98,12 +117,17 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 		}
 	}
 
-	// 7. deploy cluster in cd system
+	// 8. deploy cluster in cd system
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
 		Revision:    masterRevision,
 	}); err != nil {
+		return nil, err
+	}
+
+	// 9. update status
+	if err := updatePRStatus(prmodels.StatusOK, masterRevision); err != nil {
 		return nil, err
 	}
 

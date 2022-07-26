@@ -60,12 +60,21 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	if err != nil {
 		return nil, err
 	}
-	log.Infof(ctx, "Restart Merged, pr = %d, masterRevision = %s", prCreated.ID, commit)
-
-	// 4. update pipeline status
-	if err := c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, prmodels.StatusCommitted); err != nil {
-		log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
-			prCreated.ID, prmodels.StatusMerged, err)
+	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
+		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, pState); err != nil {
+			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
+				prCreated.ID, pState, err)
+			return err
+		}
+		log.Infof(ctx, "Restart status, pr = %d, status = %s, revision = %s",
+			prCreated.ID, pState, revision)
+		return nil
+	}
+	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, prCreated.ID, commit); err != nil {
+		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
+			prCreated.ID, commit, err)
+	}
+	if err := updatePRStatus(prmodels.StatusMerged, commit); err != nil {
 		return nil, err
 	}
 
@@ -79,17 +88,10 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	}
 	log.Infof(ctx, "Restart Deployed, pr = %d, commit = %s", prCreated.ID, commit)
 
-	// 6. update commit and status
-	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, prCreated.ID, commit); err != nil {
-		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
-			prCreated.ID, commit, err)
-	}
-	if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, prmodels.StatusOK); err != nil {
-		log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
-			prCreated.ID, prmodels.StatusOK, err)
+	// 6. update status
+	if err := updatePRStatus(prmodels.StatusOK, commit); err != nil {
 		return nil, err
 	}
-
 	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,
 	}, nil
@@ -104,12 +106,10 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, err
 	}
-
 	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 3. merge branch
+	// 3. merge branch & update status
 	var commit string
 	if diff == "" {
 		// freed cluster is allowed to deploy without diff
@@ -167,11 +167,17 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 			return nil, err
 		}
 	}
-
-	// 4. update status
-	if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, prmodels.StatusMerged); err != nil {
-		log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
-			prCreated.ID, prmodels.StatusMerged, err)
+	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
+		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, pState); err != nil {
+			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
+				prCreated.ID, pState, err)
+			return err
+		}
+		log.Infof(ctx, "Deploy status, pr = %d, status =  %s, revision = %s",
+			prCreated.ID, pState, revision)
+		return nil
+	}
+	if err := updatePRStatus(prmodels.StatusMerged, commit); err != nil {
 		return nil, err
 	}
 
@@ -213,13 +219,10 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}); err != nil {
 		return nil, err
 	}
-
-	// 8. update status
-	if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, prmodels.StatusOK); err != nil {
-		log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
-			prCreated.ID, prmodels.StatusOK, err)
+	if err := updatePRStatus(prmodels.StatusOK, commit); err != nil {
 		return nil, err
 	}
+
 	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,
 	}, nil
@@ -282,31 +285,35 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	// 4. rollback cluster config in git repo
+	// 4. rollback cluster config in git repo and update status
 	newConfigCommit, err := c.clusterGitRepo.Rollback(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof(ctx, "Rollback Committed, pr = %d, newConfigCommit = %s", prCreated.ID, newConfigCommit)
-
-	// 5. update status
-	if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, prmodels.StatusCommitted); err != nil {
-		log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
-			prCreated.ID, prmodels.StatusCommitted, err)
+	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
+		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, pState); err != nil {
+			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
+				prCreated.ID, pState, err)
+			return err
+		}
+		log.Infof(ctx, "Rollback status, pr = %d, status =  %s, revision = %s",
+			prCreated.ID, pState, revision)
+		return nil
+	}
+	if err := updatePRStatus(prmodels.StatusCommitted, newConfigCommit); err != nil {
 		return nil, err
 	}
 
-	// 6. merge branch
+	// 5. merge branch & update config commit and status
 	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, prCreated.ID)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof(ctx, "Rollback Merged, pr = %d, masterRevision = %s", prCreated.ID, masterRevision)
-
-	// 7. update status
-	if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, prmodels.StatusMerged); err != nil {
-		log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
-			prCreated.ID, prmodels.StatusMerged, err)
+	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, prCreated.ID, masterRevision); err != nil {
+		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
+			prCreated.ID, masterRevision, err)
+	}
+	if err := updatePRStatus(prmodels.StatusMerged, masterRevision); err != nil {
 		return nil, err
 	}
 
@@ -340,7 +347,7 @@ func (c *controller) Rollback(ctx context.Context,
 		}
 	}
 
-	// 10. deploy cluster in cd
+	// 10. deploy cluster in cd and update status
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
@@ -348,16 +355,7 @@ func (c *controller) Rollback(ctx context.Context,
 	}); err != nil {
 		return nil, err
 	}
-	log.Infof(ctx, "Rollback Deployed, pr = %d, masterRevision = %s", prCreated.ID, masterRevision)
-
-	// 11. update  commit and status
-	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, prCreated.ID, newConfigCommit); err != nil {
-		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
-			prCreated.ID, newConfigCommit, err)
-	}
-	if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, prmodels.StatusOK); err != nil {
-		log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
-			prCreated.ID, prmodels.StatusOK, err)
+	if err := updatePRStatus(prmodels.StatusOK, masterRevision); err != nil {
 		return nil, err
 	}
 

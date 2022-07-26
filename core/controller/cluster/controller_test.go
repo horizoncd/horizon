@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/config"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationmanangermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
@@ -36,6 +37,7 @@ import (
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -462,6 +464,14 @@ func TestAll(t *testing.T) {
 
 // nolint
 func test(t *testing.T) {
+	// for test
+	conf := config.Config{}
+	param := param.Param{
+		Manager: managerparam.InitManager(nil),
+	}
+	NewController(&conf, &param)
+
+	// test
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
