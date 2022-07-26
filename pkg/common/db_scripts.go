@@ -164,7 +164,8 @@ const (
 	ClusterQueryByApplication  = "select c.*, r.display_name as region_display_name from tb_cluster c " +
 		"join tb_region r on r.name = c.region_name " +
 		"where c.application_id = ? " +
-		"and c.name like ? and (c.environment_name in ? or ? = 0) and c.deleted_ts = 0 limit ? offset ?"
+		"and c.name like ? and (c.environment_name in ? or ? = 0) and c.deleted_ts = 0 " +
+		"order by c.updated_at desc limit ? offset ?"
 	ClusterCountByApplication = "select count(1) from tb_cluster c " +
 		"join tb_region r on r.name = c.region_name " +
 		"where c.application_id = ? " +
@@ -245,7 +246,7 @@ const (
 		"where c.application_id = ? and tg.resource_type = ? " +
 		"and c.name like ? and (c.environment_name in ? or ? = 0) " +
 		"and c.deleted_ts = 0 and %s group by c.id having count(c.id) = ? " +
-		"limit ? offset ?"
+		"order by c.updated_at desc limit ? offset ?"
 	ClusterCountByApplicationAndTags = "select count(1) from (select c.id from tb_cluster c " +
 		"join tb_tag tg on c.id = tg.resource_id " +
 		"join tb_region r on r.name = c.region_name " +
