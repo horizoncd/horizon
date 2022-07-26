@@ -613,6 +613,7 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().Pause(ctx, gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().Resume(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().Promote(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
@@ -812,6 +813,9 @@ func test(t *testing.T) {
 	err = c.Pause(ctx, resp.ID)
 	assert.Nil(t, err)
 
+	err = c.Resume(ctx, resp.ID)
+	assert.Nil(t, err)
+
 	err = c.Promote(ctx, resp.ID)
 	assert.Nil(t, err)
 
@@ -899,6 +903,14 @@ func test(t *testing.T) {
 	value, ok := result["pod1"]
 	assert.Equal(t, true, ok)
 	assert.Equal(t, true, value.Result)
+
+	// test GetDashboard
+	grafanaResponse, err := c.GetDashboard(ctx, resp.ID)
+	assert.NotNil(t, err)
+	assert.Nil(t, grafanaResponse)
+
+	_, err = c.GetClusterPods(ctx, resp.ID, 0, 19)
+	assert.NotNil(t, err)
 }
 
 func testGetClusterOutPut(t *testing.T) {
