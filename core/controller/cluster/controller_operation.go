@@ -241,7 +241,7 @@ func (c *controller) Rollback(ctx context.Context,
 
 	if pipelinerun.Action == prmodels.ActionRestart || pipelinerun.Status != string(prmodels.StatusOK) ||
 		pipelinerun.ConfigCommit == "" {
-		return nil, perror.Wrapf(herrors.ErrFailedToRollback,
+		return nil, perror.Wrapf(herrors.ErrParamInvalid,
 			"the pipelinerun with id: %v can not be rollbacked", r.PipelinerunID)
 	}
 

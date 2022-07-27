@@ -52,8 +52,8 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
-	if latestPipelinerun == nil || latestPipelinerun.Action != prmodels.ActionBuildDeploy {
-		// if latest builddeploy pr is not exists, runningTask is noneRunningTask
+	if latestPipelinerun == nil ||
+		latestPipelinerun.Action != prmodels.ActionBuildDeploy {
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}
@@ -246,12 +246,10 @@ func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *cl
 		}
 		latestPr, err = tektonClient.GetPipelineRunByID(ctx, cluster.Name, cluster.ID, pipelinerun.ID)
 		if err != nil {
-			// get pipelineRun from k8s error, it can be deleted and uploaded to collector,
-			// so try to get pipelineRun from collector again
-			latestPr, err = getPipelineRunFromCollector()
-			if err != nil {
-				return nil, err
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				return nil, nil
 			}
+			return nil, err
 		}
 	} else {
 		latestPr, err = getPipelineRunFromCollector()
@@ -269,7 +267,11 @@ func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun
 		Task: _taskNone,
 	}
 	if pr == nil {
-		return noneRunningTask
+		// if tekton pipelinerun is not created yet, return pending build task
+		return &RunningTask{
+			Task:       _taskBuild,
+			TaskStatus: _taskStatusPending,
+		}
 	}
 
 	prs := tekton.GetPipelineRunStatus(ctx, pr)
