@@ -211,7 +211,7 @@ func Test(t *testing.T) {
 	assert.NotNil(t, repoInfo)
 	t.Logf("%v", repoInfo)
 
-	com, err := r.MergeBranch(ctx, application, cluster)
+	com, err := r.MergeBranch(ctx, application, cluster, 123)
 	assert.Nil(t, err)
 	t.Logf("%v", com)
 

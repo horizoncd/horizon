@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -42,13 +42,43 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		return nil, err
 	}
 
-	// 2. update restartTime in git repo, and return the newest commit
-	commit, err := c.clusterGitRepo.UpdateRestartTime(ctx, application.Name, cluster.Name, cluster.Template)
+	// 2. create pipeline record
+	prCreated, err := c.pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID:        clusterID,
+		Action:           prmodels.ActionRestart,
+		Status:           string(prmodels.StatusCreated),
+		Title:            prmodels.ActionRestart,
+		LastConfigCommit: lastConfigCommit.Master,
+		ConfigCommit:     lastConfigCommit.Master,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. deploy cluster in cd system
+	// 3. update restartTime in git repo, and return the newest commit
+	commit, err := c.clusterGitRepo.UpdateRestartTime(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, err
+	}
+	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
+		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, pState); err != nil {
+			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
+				prCreated.ID, pState, err)
+			return err
+		}
+		log.Infof(ctx, "Restart status, pr = %d, status = %s, revision = %s",
+			prCreated.ID, pState, revision)
+		return nil
+	}
+	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, prCreated.ID, commit); err != nil {
+		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
+			prCreated.ID, commit, err)
+	}
+	if err := updatePRStatus(prmodels.StatusMerged, commit); err != nil {
+		return nil, err
+	}
+
+	// 5. deploy cluster in cd system
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
@@ -56,24 +86,12 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	}); err != nil {
 		return nil, err
 	}
+	log.Infof(ctx, "Restart Deployed, pr = %d, commit = %s", prCreated.ID, commit)
 
-	// 4. add pipelinerun in db
-	timeNow := time.Now()
-	pr := &prmodels.Pipelinerun{
-		ClusterID:        clusterID,
-		Action:           prmodels.ActionRestart,
-		Status:           prmodels.ResultOK,
-		Title:            "restart",
-		LastConfigCommit: lastConfigCommit.Master,
-		ConfigCommit:     commit,
-		StartedAt:        &timeNow,
-		FinishedAt:       &timeNow,
-	}
-	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
-	if err != nil {
+	// 6. update status
+	if err := updatePRStatus(prmodels.StatusOK, commit); err != nil {
 		return nil, err
 	}
-
 	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,
 	}, nil
@@ -88,12 +106,10 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, err
 	}
-
 	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return nil, err
@@ -122,22 +138,50 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
+	if diff == "" && cluster.Status != clustercommon.StatusFreed {
+		return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
+	}
+
+	// 2. create pipeline record
+	prCreated, err := c.pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID:        clusterID,
+		Action:           prmodels.ActionDeploy,
+		Status:           string(prmodels.StatusCreated),
+		Title:            r.Title,
+		Description:      r.Description,
+		LastConfigCommit: configCommit.Master,
+		ConfigCommit:     configCommit.Gitops,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. merge branch & update status
 	var commit string
 	if diff == "" {
-		if cluster.Status != clustercommon.StatusFreed {
-			return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
-		}
 		// freed cluster is allowed to deploy without diff
 		commit = configCommit.Master
 	} else {
-		// 2. merge branch
-		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
+		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, prCreated.ID)
 		if err != nil {
 			return nil, err
 		}
 	}
+	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
+		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, pState); err != nil {
+			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
+				prCreated.ID, pState, err)
+			return err
+		}
+		log.Infof(ctx, "Deploy status, pr = %d, status =  %s, revision = %s",
+			prCreated.ID, pState, revision)
+		return nil
+	}
+	if err := updatePRStatus(prmodels.StatusMerged, commit); err != nil {
+		return nil, err
+	}
 
-	// 3. create cluster in cd system
+	// 5. create cluster in cd system
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return nil, err
@@ -158,7 +202,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 4. reset cluster status
+	// 6. reset cluster status
 	if cluster.Status == clustercommon.StatusFreed {
 		cluster.Status = clustercommon.StatusEmpty
 		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
@@ -167,7 +211,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		}
 	}
 
-	// 5. deploy cluster in cd system
+	// 7. deploy cluster in cd system
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
@@ -175,22 +219,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}); err != nil {
 		return nil, err
 	}
-
-	timeNow := time.Now()
-	// 6. add pipelinerun in db
-	pr := &prmodels.Pipelinerun{
-		ClusterID:        clusterID,
-		Action:           prmodels.ActionDeploy,
-		Status:           prmodels.ResultOK,
-		Title:            r.Title,
-		Description:      r.Description,
-		LastConfigCommit: configCommit.Master,
-		ConfigCommit:     configCommit.Gitops,
-		StartedAt:        &timeNow,
-		FinishedAt:       &timeNow,
-	}
-	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
-	if err != nil {
+	if err := updatePRStatus(prmodels.StatusOK, commit); err != nil {
 		return nil, err
 	}
 
@@ -210,7 +239,7 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	if pipelinerun.Action == prmodels.ActionRestart || pipelinerun.Status != prmodels.ResultOK ||
+	if pipelinerun.Action == prmodels.ActionRestart || pipelinerun.Status != string(prmodels.StatusOK) ||
 		pipelinerun.ConfigCommit == "" {
 		return nil, perror.Wrapf(herrors.ErrFailedToRollback,
 			"the pipelinerun with id: %v can not be rollbacked", r.PipelinerunID)
@@ -237,19 +266,58 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	// 3. rollback cluster config in git repo
+	// 3. create record
+	prCreated, err := c.pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+		ClusterID:        clusterID,
+		Action:           prmodels.ActionRollback,
+		Status:           string(prmodels.StatusCreated),
+		Title:            prmodels.ActionRollback,
+		GitURL:           pipelinerun.GitURL,
+		GitRefType:       pipelinerun.GitRefType,
+		GitRef:           pipelinerun.GitRef,
+		GitCommit:        pipelinerun.GitCommit,
+		ImageURL:         pipelinerun.ImageURL,
+		LastConfigCommit: lastConfigCommit.Master,
+		ConfigCommit:     lastConfigCommit.Master,
+		RollbackFrom:     &r.PipelinerunID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. rollback cluster config in git repo and update status
 	newConfigCommit, err := c.clusterGitRepo.Rollback(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
 	if err != nil {
 		return nil, err
 	}
-
-	// 4. merge branch
-	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name)
-	if err != nil {
+	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
+		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, prCreated.ID, pState); err != nil {
+			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
+				prCreated.ID, pState, err)
+			return err
+		}
+		log.Infof(ctx, "Rollback status, pr = %d, status =  %s, revision = %s",
+			prCreated.ID, pState, revision)
+		return nil
+	}
+	if err := updatePRStatus(prmodels.StatusCommitted, newConfigCommit); err != nil {
 		return nil, err
 	}
 
-	// 5. create cluster in cd system
+	// 5. merge branch & update config commit and status
+	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, prCreated.ID)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, prCreated.ID, masterRevision); err != nil {
+		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
+			prCreated.ID, masterRevision, err)
+	}
+	if err := updatePRStatus(prmodels.StatusMerged, masterRevision); err != nil {
+		return nil, err
+	}
+
+	// 8. create cluster in cd system
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
@@ -270,7 +338,7 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	// 6. reset cluster status
+	// 9. reset cluster status
 	if cluster.Status == clustercommon.StatusFreed {
 		cluster.Status = clustercommon.StatusEmpty
 		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
@@ -279,7 +347,7 @@ func (c *controller) Rollback(ctx context.Context,
 		}
 	}
 
-	// 7. deploy cluster in cd
+	// 10. deploy cluster in cd and update status
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
@@ -287,27 +355,7 @@ func (c *controller) Rollback(ctx context.Context,
 	}); err != nil {
 		return nil, err
 	}
-
-	timeNow := time.Now()
-	// 8. add pipelinerun in db
-	pr := &prmodels.Pipelinerun{
-		ClusterID:        clusterID,
-		Action:           prmodels.ActionRollback,
-		Status:           prmodels.ResultOK,
-		Title:            prmodels.ActionRollback,
-		GitURL:           pipelinerun.GitURL,
-		GitRefType:       pipelinerun.GitRefType,
-		GitRef:           pipelinerun.GitRef,
-		GitCommit:        pipelinerun.GitCommit,
-		ImageURL:         pipelinerun.ImageURL,
-		LastConfigCommit: lastConfigCommit.Master,
-		ConfigCommit:     newConfigCommit,
-		StartedAt:        &timeNow,
-		FinishedAt:       &timeNow,
-		RollbackFrom:     &r.PipelinerunID,
-	}
-	prCreated, err := c.pipelinerunMgr.Create(ctx, pr)
-	if err != nil {
+	if err := updatePRStatus(prmodels.StatusOK, masterRevision); err != nil {
 		return nil, err
 	}
 

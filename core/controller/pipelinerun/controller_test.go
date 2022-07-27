@@ -339,7 +339,7 @@ func Test(t *testing.T) {
 	pipelinerun, err = pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    "builddeploy",
-		Status:    prmodels.ResultCreated,
+		Status:    string(prmodels.StatusCreated),
 		S3Bucket:  "",
 		LogObject: "",
 		PrObject:  "",

@@ -60,6 +60,12 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "2", prGet.ConfigCommit)
 
+	err = mgr.UpdateStatusByID(ctx, pr.ID, models.StatusMerged)
+	assert.Nil(t, err)
+	prGet, err = mgr.GetByID(ctx, pr.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, prGet.Status, string(models.StatusMerged))
+
 	err = mgr.UpdateResultByID(ctx, pr.ID, &models.Result{
 		S3Bucket:   "bucket",
 		LogObject:  "log-obj",

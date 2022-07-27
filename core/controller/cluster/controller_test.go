@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/config"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationmanangermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
@@ -36,6 +37,7 @@ import (
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -462,6 +464,14 @@ func TestAll(t *testing.T) {
 
 // nolint
 func test(t *testing.T) {
+	// for test
+	conf := config.Config{}
+	param := param.Param{
+		Manager: managerparam.InitManager(nil),
+	}
+	NewController(&conf, &param)
+
+	// test
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
@@ -603,6 +613,7 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().Pause(ctx, gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().Resume(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().Promote(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
@@ -731,7 +742,8 @@ func test(t *testing.T) {
 
 	clusterGitRepo.EXPECT().GetRestartTime(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("", nil).AnyTimes()
-	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
+	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any(),
+		gomock.Any()).Return("newest-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
 		GitRepoSSHURL: "ssh://xxxx.git",
 		ValueFiles:    []string{"file1", "file2"},
@@ -801,6 +813,9 @@ func test(t *testing.T) {
 	err = c.Pause(ctx, resp.ID)
 	assert.Nil(t, err)
 
+	err = c.Resume(ctx, resp.ID)
+	assert.Nil(t, err)
+
 	err = c.Promote(ctx, resp.ID)
 	assert.Nil(t, err)
 
@@ -867,7 +882,7 @@ func test(t *testing.T) {
 		Return("rollback-commit", nil).AnyTimes()
 	// update status to 'ok'
 	err = manager.PipelinerunMgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
-		Result: prmodels.ResultOK,
+		Result: string(prmodels.StatusOK),
 	})
 	assert.Nil(t, err)
 	rollbackResp, err := c.Rollback(ctx, resp.ID, &RollbackRequest{
@@ -888,6 +903,14 @@ func test(t *testing.T) {
 	value, ok := result["pod1"]
 	assert.Equal(t, true, ok)
 	assert.Equal(t, true, value.Result)
+
+	// test GetDashboard
+	grafanaResponse, err := c.GetDashboard(ctx, resp.ID)
+	assert.NotNil(t, err)
+	assert.Nil(t, grafanaResponse)
+
+	_, err = c.GetClusterPods(ctx, resp.ID, 0, 19)
+	assert.NotNil(t, err)
 }
 
 func testGetClusterOutPut(t *testing.T) {

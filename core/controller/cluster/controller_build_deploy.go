@@ -85,7 +85,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionBuildDeploy,
-		Status:           prmodels.ResultCreated,
+		Status:           string(prmodels.StatusCreated),
 		Title:            r.Title,
 		Description:      r.Description,
 		GitURL:           cluster.GitURL,
