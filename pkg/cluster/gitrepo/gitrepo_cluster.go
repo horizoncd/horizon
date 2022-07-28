@@ -134,7 +134,7 @@ type ClusterGitRepo interface {
 	// if `from` or `to` is nil, compare the master branch with gitops branch
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
 	// MergeBranch merge gitops branch to master branch, and return master branch's newest commit
-	MergeBranch(ctx context.Context, application, cluster string) (string, error)
+	MergeBranch(ctx context.Context, application, cluster string, prID uint) (string, error)
 	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (*PipelineOutput, error)
 	UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
 		pipelineOutputParam PipelineOutput) (string, error)
@@ -582,12 +582,13 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 	return diffStr, nil
 }
 
-func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster string) (_ string, err error) {
+func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster string,
+	prID uint) (_ string, err error) {
 	mergeCommitMsg := "git merge gitops"
 	removeSourceBranch := false
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
 
-	title := fmt.Sprintf("git merge %v", _branchGitops)
+	title := fmt.Sprintf("git merge %v, id = %d", _branchGitops, prID)
 
 	var mr *gitlab.MergeRequest
 	mrs, err := g.gitlabLib.ListMRs(ctx, pid, _branchGitops, _branchMaster, _mergeRequestStateOpen)

@@ -114,7 +114,7 @@ type GetPodEventsParams struct {
 	Pod          string
 }
 
-type GetPodContainersParams struct {
+type GetPodParams struct {
 	RegionEntity *regionmodels.RegionEntity
 	Cluster      string
 	Namespace    string
@@ -201,7 +201,8 @@ type CD interface {
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
-	GetPodContainers(ctx context.Context, params *GetPodContainersParams) ([]ContainerDetail, error)
+	GetPod(ctx context.Context, params *GetPodParams) (*corev1.Pod, error)
+	GetPodContainers(ctx context.Context, params *GetPodParams) ([]ContainerDetail, error)
 	GetPodEvents(ctx context.Context, params *GetPodEventsParams) ([]Event, error)
 	Online(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 	Offline(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
@@ -565,7 +566,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 }
 
 func (c *cd) GetPodContainers(ctx context.Context,
-	params *GetPodContainersParams) (containers []ContainerDetail, err error) {
+	params *GetPodParams) (containers []ContainerDetail, err error) {
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
@@ -577,6 +578,21 @@ func (c *cd) GetPodContainers(ctx context.Context,
 	}
 
 	return extractContainerDetail(pod), nil
+}
+
+func (c *cd) GetPod(ctx context.Context,
+	params *GetPodParams) (pod *corev1.Pod, err error) {
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	if err != nil {
+		return nil, err
+	}
+
+	pod, err = kube.GetPod(ctx, kubeClient.Basic, params.Namespace, params.Pod)
+	if err != nil {
+		return nil, err
+	}
+
+	return pod, nil
 }
 
 func (c *cd) DeletePods(ctx context.Context,

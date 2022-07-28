@@ -1203,12 +1203,12 @@ paths:
                   DebugPort:
                     Description: the debug port
                     Value: 1000
-  /apis/core/v1/clusters/{clusterID}/containers:
+  /apis/core/v1/clusters/{clusterID}/pod?podName=xxx:
     get:
       tags:
         - cluster
-      operationId: getClusterContainers
-      summary: get cluster containers
+      operationId: getClusterPod
+      summary: get cluster Pod with complete info from k8s
       responses:
         "200":
           description: Success
@@ -1216,209 +1216,60 @@ paths:
             application/yaml:
               schema:
                 example: |
-                  {
-                      "data": [
-                          {
-                              "name": "sph-do-not-delete",
-                              "image": "harbor.mock.org/cloudnative-template/javaapp:v1.2.0",
-                              "env": [
-                                  {
-                                      "name": "OPCONFIG_OS_TYPE",
-                                      "value": "docker"
-                                  },
-                                  {
-                                      "name": "POD_NAME",
-                                      "value": "sph-do-not-delete-76899cbd69-zfkx5"
-                                  },
-                                  {
-                                      "name": "POD_NAMESPACE",
-                                      "value": "test-1"
-                                  },
-                                  {
-                                      "name": "POD_IP"
-                                  },
-                                  {
-                                      "name": "NODE_NAME"
-                                  },
-                                  {
-                                      "name": "MEM_REQUEST",
-                                      "value": "806354944"
-                                  },
-                                  {
-                                      "name": "MEM_LIMIT",
-                                      "value": "1073741824"
-                                  },
-                                  {
-                                      "name": "MUSIC_CICD_APPLICATION",
-                                      "value": "sph"
-                                  },
-                                  {
-                                      "name": "MUSIC_CICD_CLUSTER",
-                                      "value": "sph-do-not-delete"
-                                  },
-                                  {
-                                      "name": "MUSIC_CICD_ENVIRONMENT",
-                                      "value": "test"
-                                  },
-                                  {
-                                      "name": "mainClassName",
-                                      "value": "org.springframework.boot.loader.JarLauncher"
-                                  },
-                                  {
-                                      "name": "xmx",
-                                      "value": "513"
-                                  },
-                                  {
-                                      "name": "xms",
-                                      "value": "513"
-                                  },
-                                  {
-                                      "name": "jvmExtra",
-                                      "value": "-Dserver.port=8888 -Dcom.cmdb.appname=sph -Dcom.cmdb.clustername=sph-do-not-delete -Denv=test"
-                                  },
-                                  {
-                                      "name": "NAGENT_CLUSTER_NAME",
-                                      "value": "sph-do-not-delete"
-                                  },
-                                  {
-                                      "name": "NAGENT_MONITOR",
-                                      "value": "1"
-                                  },
-                                  {
-                                      "name": "NAGENT_POD_VERSION",
-                                      "value": "helloworld-11f99b36-20220210102531"
-                                  }
-                              ],
-                              "commands": null,
-                              "args": null,
-                              "volumeMounts": [
-                                  {
-                                      "name": "artifacts",
-                                      "readOnly": false,
-                                      "mountPath": "/artifacts",
-                                      "subPath": "",
-                                      "volume": {
-                                          "name": "artifacts",
-                                          "emptyDir": {}
-                                      }
-                                  },
-                                  {
-                                      "name": "test",
-                                      "readOnly": false,
-                                      "mountPath": "/home/appops/music",
-                                      "subPath": "",
-                                      "volume": {
-                                          "name": "test",
-                                          "emptyDir": {}
-                                      }
-                                  },
-                                  {
-                                      "name": "home-log",
-                                      "readOnly": false,
-                                      "mountPath": "/home/appops/logs",
-                                      "subPath": "",
-                                      "volume": {
-                                          "name": "home-log",
-                                          "emptyDir": {}
-                                      }
-                                  },
-                                  {
-                                      "name": "probe",
-                                      "readOnly": false,
-                                      "mountPath": "/home/appops/.probe",
-                                      "subPath": "",
-                                      "volume": {
-                                          "name": "probe",
-                                          "downwardAPI": {
-                                              "items": [
-                                                  {
-                                                      "path": "http-probe.sh",
-                                                      "fieldRef": {
-                                                          "apiVersion": "v1",
-                                                          "fieldPath": "metadata.annotations['cloudnative.music.netease.com/http-probe.sh']"
-                                                      },
-                                                      "mode": 511
-                                                  }
-                                              ],
-                                              "defaultMode": 420
-                                          }
-                                      }
-                                  },
-                                  {
-                                      "name": "nagent",
-                                      "readOnly": true,
-                                      "mountPath": "/usr/local/nagent",
-                                      "subPath": "",
-                                      "volume": {
-                                          "name": "nagent",
-                                          "hostPath": {
-                                              "path": "/usr/local/nagent4docker",
-                                              "type": ""
-                                          }
-                                      }
-                                  },
-                                  {
-                                      "name": "jacoco",
-                                      "readOnly": true,
-                                      "mountPath": "/home/appops/jacoco-agent.jar",
-                                      "subPath": "",
-                                      "volume": {
-                                          "name": "jacoco",
-                                          "hostPath": {
-                                              "path": "/cicd-data/jars/jacoco-agent.jar",
-                                              "type": ""
-                                          }
-                                      }
-                                  },
-                                  {
-                                      "name": "pinpoint",
-                                      "readOnly": true,
-                                      "mountPath": "/home/appops/pinpoint-agent",
-                                      "subPath": "",
-                                      "volume": {
-                                          "name": "pinpoint",
-                                          "hostPath": {
-                                              "path": "/cicd-data/jars/pinpoint-agent",
-                                              "type": ""
-                                          }
-                                      }
-                                  },
-                                  {
-                                      "name": "default-token-xlf9l",
-                                      "readOnly": true,
-                                      "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
-                                      "subPath": "",
-                                      "volume": {
-                                          "name": "default-token-xlf9l",
-                                          "secret": {
-                                              "secretName": "default-token-xlf9l",
-                                              "defaultMode": 420
-                                          }
-                                      }
-                                  }
-                              ],
-                              "securityContext": {
-                                  "runAsUser": 10001,
-                                  "runAsGroup": 10001
-                              },
-                              "status": {
-                                  "name": "sph-do-not-delete",
-                                  "state": {
-                                      "running": {
-                                          "startedAt": "2022-02-10T02:26:27Z"
-                                      }
-                                  },
-                                  "lastState": {},
-                                  "ready": true,
-                                  "restartCount": 0,
-                                  "image": "harbor.mock.org/cloudnative-template/javaapp:v1.2.0",
-                                  "imageID": "docker-pullable://harbor.mock.org/cloudnative-template/javaapp@sha256:df00c232c4034430f85589620afa930141fcd9c704490950317cfc068fcc66af",
-                                  "containerID": "docker://5478c3a7ce334cee5559e8d13c96b602d1440791f44c72f6d48343e6805664b0",
-                                  "started": true
-                              },
-                              "livenessProbe": null,
-                              "readinessProbe": null,
-                              "startupProbe": null
-                          }
-                      ]
-                  }
+{
+    "data": {
+        "metadata": {
+            "name": "sph-test-6f94ff78bb-g6xr6",
+            "generateName": "sph-test-6f94ff78bb-",
+            "namespace": "dev-1",
+            "selfLink": "/api/v1/namespaces/dev-1/pods/sph-test-6f94ff78bb-g6xr6",
+            "uid": "61c18122-a49c-47bc-ad6f-8ae2152adc4a",
+            "resourceVersion": "476600208",
+            "creationTimestamp": "2022-07-27T09:46:38Z",
+            "labels": {
+                "cloudnative.music.netease.com/application": "sph",
+                "cloudnative.music.netease.com/cluster": "clustername",
+                "cloudnative.music.netease.com/environment": "dev",
+                "rollouts-pod-template-hash": "6f94ff78bb"
+            },
+        },
+        "spec": {
+            "volumes": [],
+            "initContainers": [],
+            "containers": [
+                {
+                    "name": "sph-test",
+                    "image": "harbor.mock.org/cloudnative-template/javaapp:v1.2.0",
+                    "env": [],
+                    "resources": {
+                        "limits": {
+                            "cpu": "1",
+                            "ephemeral-storage": "60Gi",
+                            "memory": "2Gi"
+                        },
+                        "requests": {
+                            "cpu": "250m",
+                            "ephemeral-storage": "128Mi",
+                            "memory": "769Mi"
+                        }
+                    },
+                    "volumeMounts": [],
+                    "terminationMessagePath": "/dev/termination-log",
+                    "terminationMessagePolicy": "File",
+                    "imagePullPolicy": "IfNotPresent",
+                    "securityContext": {
+                        "capabilities": {
+                            "add": [
+                                "SYS_PTRACE"
+                            ]
+                        },
+                        "runAsUser": 10001,
+                        "runAsGroup": 10001
+                    }
+                }
+            ],
+        }
+    }
+}
+
+

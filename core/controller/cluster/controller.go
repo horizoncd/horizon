@@ -45,9 +45,9 @@ type Controller interface {
 	ListUserClusterByNameFuzzily(ctx context.Context, environment,
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
 	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
-		request *CreateClusterRequest) (*GetClusterResponse, error)
+		request *CreateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
 	UpdateCluster(ctx context.Context, clusterID uint,
-		request *UpdateClusterRequest) (*GetClusterResponse, error)
+		request *UpdateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
 	DeleteCluster(ctx context.Context, clusterID uint, hard bool) error
 	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
 	GetClusterByName(ctx context.Context,
@@ -73,6 +73,8 @@ type Controller interface {
 	Pause(ctx context.Context, clusterID uint) error
 	Resume(ctx context.Context, clusterID uint) error
 	GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error)
+	GetClusterPod(ctx context.Context, clusterID uint, podName string) (
+		*GetClusterPodResponse, error)
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)

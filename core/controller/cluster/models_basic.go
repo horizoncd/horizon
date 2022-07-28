@@ -124,18 +124,11 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 	if r.Git != nil {
 		gitURL, gitSubfolder, gitRefType, gitRef = r.Git.URL,
 			r.Git.Subfolder, r.Git.RefType(), r.Git.Ref()
-		if gitURL == "" {
-			gitURL = cluster.GitURL
-		}
-		if gitSubfolder == "" {
-			gitSubfolder = cluster.GitSubfolder
-		}
-		if gitRefType == "" {
-			gitRefType = cluster.GitRefType
-		}
-		if gitRef == "" {
-			gitRef = cluster.GitRef
-		}
+	} else {
+		gitURL = cluster.GitURL
+		gitSubfolder = cluster.GitSubfolder
+		gitRefType = cluster.GitRefType
+		gitRef = cluster.GitRef
 	}
 
 	return &models.Cluster{

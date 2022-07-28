@@ -22,6 +22,8 @@ type Manager interface {
 	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint, action,
 		status string) (*models.Pipelinerun, error)
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
+	UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error
+	// UpdateResultByID  update the pipelinerun restore result
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 }
 
@@ -62,6 +64,10 @@ func (m *manager) GetLatestByClusterIDAndAction(ctx context.Context,
 
 func (m *manager) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error) {
 	return m.dao.GetLatestSuccessByClusterID(ctx, clusterID)
+}
+
+func (m *manager) UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error {
+	return m.dao.UpdateStatusByID(ctx, pipelinerunID, result)
 }
 
 func (m *manager) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {

@@ -266,7 +266,7 @@ func (c *controller) ofPipelineBasic(ctx context.Context,
 		if firstCanRollbackPipelinerun != nil && pr.ID == firstCanRollbackPipelinerun.ID {
 			return false
 		}
-		return pr.Action != prmodels.ActionRestart && pr.Status == prmodels.ResultOK
+		return pr.Action != prmodels.ActionRestart && pr.Status == string(prmodels.StatusOK)
 	}()
 
 	prBasic := &PipelineBasic{
@@ -281,6 +281,7 @@ func (c *controller) ofPipelineBasic(ctx context.Context,
 		LastConfigCommit: pr.LastConfigCommit,
 		ConfigCommit:     pr.ConfigCommit,
 		CreatedAt:        pr.CreatedAt,
+		UpdatedAt:        pr.UpdatedAt,
 		StartedAt:        pr.StartedAt,
 		FinishedAt:       pr.FinishedAt,
 		CanRollback:      canRollback,
@@ -319,7 +320,7 @@ func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (e
 	if err != nil {
 		return errors.E(op, err)
 	}
-	if pipelinerun.Status != prmodels.ResultCreated {
+	if pipelinerun.Status != string(prmodels.StatusCreated) {
 		return errors.E(op, http.StatusBadRequest, errors.ErrorCode("BadRequest"), "pipelinerun is already completed")
 	}
 	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)
@@ -346,7 +347,7 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 	pipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
 
 	// if pipelinerun.Status is not created, ignore, and return success
-	if pipelinerun.Status != prmodels.ResultCreated {
+	if pipelinerun.Status != string(prmodels.StatusCreated) {
 		return nil
 	}
 	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)

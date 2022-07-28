@@ -1,14 +1,17 @@
 package cluster
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/config"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
+	applicationgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	applicationmanangermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
 	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
 	commitmock "g.hz.netease.com/horizon/mock/pkg/cluster/code"
@@ -36,6 +39,7 @@ import (
 	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -48,6 +52,8 @@ import (
 	tagmodel "g.hz.netease.com/horizon/pkg/templateschematag/models"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/go-yaml/yaml"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -447,10 +453,32 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestAll(t *testing.T) {
+	t.Run("Test", test)
+	t.Run("TestGetClusterOutPut", testGetClusterOutPut)
+	t.Run("TestRenderOutPutObject", testRenderOutPutObject)
+	t.Run("TestRenderOutPutObjectMissingKey", testRenderOutPutObjectMissingKey)
+	t.Run("TestIsClusterActuallyHealthy", testIsClusterActuallyHealthy)
+	t.Run("TestImageURL", testImageURL)
+	t.Run("TestPinyin", testPinyin)
+	t.Run("TestListClusterByNameFuzzily", testListClusterByNameFuzzily)
+	t.Run("TestListUserClustersByNameFuzzily", testListUserClustersByNameFuzzily)
+	t.Run("TestControllerFreeOrDeleteClusterFailed", testControllerFreeOrDeleteClusterFailed)
+}
+
 // nolint
-func Test(t *testing.T) {
+func test(t *testing.T) {
+	// for test
+	conf := config.Config{}
+	param := param.Param{
+		Manager: managerparam.InitManager(nil),
+	}
+	NewController(&conf, &param)
+
+	// test
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockFactory(mockCtl)
@@ -562,13 +590,21 @@ func Test(t *testing.T) {
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		tagMgr:               tagManager,
+		applicationGitRepo:   applicationGitRepo,
 	}
 
 	tagManager.EXPECT().ListByResourceTypeIDs(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
-	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplicationEnvTemplate(ctx, gomock.Any(), gomock.Any()).
+		Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
+	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(2)
+	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
 		"app-cluster", "javaapp").Return(&gitrepo.ClusterFiles{
+		PipelineJSONBlob:    pipelineJSONBlob,
+		ApplicationJSONBlob: applicationJSONBlob,
+	}, nil).AnyTimes()
+	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
+		"app-cluster-mergepatch", "javaapp").Return(&gitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 	}, nil).AnyTimes()
@@ -590,6 +626,7 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().Pause(ctx, gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().Resume(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().Promote(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
@@ -606,10 +643,10 @@ func Test(t *testing.T) {
 		Name: "app-cluster",
 	}
 
-	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest)
+	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
 	createClusterRequest.Name = "app-cluster-new"
-	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest)
+	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
 	b, _ := json.MarshalIndent(resp, "", "  ")
 	t.Logf("%v", string(b))
@@ -646,7 +683,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, newTr)
 
-	resp, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest)
+	resp, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest, false)
 	assert.Nil(t, err)
 	assert.Equal(t, resp.Git.URL, UpdateGitURL)
 	assert.Equal(t, resp.Git.Branch, "new")
@@ -694,7 +731,7 @@ func Test(t *testing.T) {
 	tekton := tektonmock.NewMockInterface(mockCtl)
 	tektonFty.EXPECT().GetTekton(gomock.Any()).Return(tekton, nil).AnyTimes()
 	tekton.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("abc", nil)
-	tekton.EXPECT().GetPipelineRunByID(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(pr, nil)
+	tekton.EXPECT().GetPipelineRunByID(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(pr, nil).AnyTimes()
 
 	registry := registrymock.NewMockRegistry(mockCtl)
 	registry.EXPECT().CreateProject(ctx, gomock.Any()).Return(1, nil)
@@ -718,7 +755,8 @@ func Test(t *testing.T) {
 
 	clusterGitRepo.EXPECT().GetRestartTime(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("", nil).AnyTimes()
-	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
+	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any(),
+		gomock.Any()).Return("newest-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
 		GitRepoSSHURL: "ssh://xxxx.git",
 		ValueFiles:    []string{"file1", "file2"},
@@ -788,6 +826,9 @@ func Test(t *testing.T) {
 	err = c.Pause(ctx, resp.ID)
 	assert.Nil(t, err)
 
+	err = c.Resume(ctx, resp.ID)
+	assert.Nil(t, err)
+
 	err = c.Promote(ctx, resp.ID)
 	assert.Nil(t, err)
 
@@ -854,7 +895,7 @@ func Test(t *testing.T) {
 		Return("rollback-commit", nil).AnyTimes()
 	// update status to 'ok'
 	err = manager.PipelinerunMgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
-		Result: prmodels.ResultOK,
+		Result: string(prmodels.StatusOK),
 	})
 	assert.Nil(t, err)
 	rollbackResp, err := c.Rollback(ctx, resp.ID, &RollbackRequest{
@@ -875,9 +916,186 @@ func Test(t *testing.T) {
 	value, ok := result["pod1"]
 	assert.Equal(t, true, ok)
 	assert.Equal(t, true, value.Result)
+
+	// test GetDashboard
+	grafanaResponse, err := c.GetDashboard(ctx, resp.ID)
+	assert.NotNil(t, err)
+	assert.Nil(t, grafanaResponse)
+
+	_, err = c.GetClusterPods(ctx, resp.ID, 0, 19)
+	assert.NotNil(t, err)
+
+	podExist := "exist"
+	podNotExist := "notexist"
+	cd.EXPECT().GetPod(ctx, gomock.Any()).DoAndReturn(
+		func(_ context.Context, param *clustercd.GetPodParams) (*v1.Pod, error) {
+			if param.Pod == podExist {
+				return &v1.Pod{}, nil
+			} else {
+				return nil, herrors.NewErrNotFound(herrors.PodsInK8S, "")
+			}
+		},
+	).Times(2)
+	_, err = c.GetClusterPod(ctx, resp.ID, podExist)
+	assert.Nil(t, err)
+
+	_, err = c.GetClusterPod(ctx, resp.ID, podNotExist)
+	assert.NotNil(t, err)
+	_, ok = perror.Cause(err).(*herrors.HorizonErrNotFound)
+	assert.Equal(t, true, ok)
+
+	patchJSONStr := `{
+		"app": {
+		  "params": {
+			"xmx": "1024",
+			"jvmExtra": "-Dserver.port=8181"
+		  }
+		}
+	  }`
+
+	mergedJSONStr := `{
+		"app": {
+		  "spec": {
+			"replicas": 1,
+			"resource": "small"
+		  },
+		  "strategy": {
+			"stepsTotal": 1,
+			"pauseType": "first"
+		  },
+		  "params": {
+			"xmx": "1024",
+			"xms": "512",
+			"maxPerm": "128",
+			"mainClassName": "com.netease.horizon.WebApplication",
+			"jvmExtra": "-Dserver.port=8181"
+		  },
+		  "health": {
+			"check": "/api/test",
+			"status": "/health/status",
+			"online": "/health/online",
+			"offline": "/health/offline",
+			"port": 8080
+		  }
+		}
+	  }`
+
+	patchJsonBlob := map[string]interface{}{}
+	err = json.Unmarshal([]byte(patchJSONStr), &patchJsonBlob)
+	assert.Nil(t, err)
+	createClusterRequest = &CreateClusterRequest{
+		Base: &Base{
+			Description: "cluster description",
+			Git: &codemodels.Git{
+				Branch: "develop",
+			},
+			TemplateInput: &TemplateInput{
+				Application: patchJsonBlob,
+				Pipeline:    pipelineJSONBlob,
+			},
+		},
+		Name: "app-cluster-mergepatch",
+	}
+
+	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).DoAndReturn(
+		func(_ context.Context, params *gitrepo.CreateClusterParams) error {
+			blob := map[string]interface{}{}
+			err := json.Unmarshal([]byte(mergedJSONStr), &blob)
+			assert.Nil(t, err)
+			assertMapEqual(t, blob, params.ApplicationJSONBlob)
+			return nil
+		},
+	).Times(1)
+	resp, err = c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest, true)
+	assert.Nil(t, err)
+
+	patchJSONStr = `{
+		"app": {
+		  "params": {
+			"xmx": "2048",
+			"jvmExtra": "-Dserver.port=8282"
+		  }
+		}
+	  }`
+	mergedJSONStr = `{
+		"app": {
+		  "spec": {
+			"replicas": 1,
+			"resource": "small"
+		  },
+		  "strategy": {
+			"stepsTotal": 1,
+			"pauseType": "first"
+		  },
+		  "params": {
+			"xmx": "2048",
+			"xms": "512",
+			"maxPerm": "128",
+			"mainClassName": "com.netease.horizon.WebApplication",
+			"jvmExtra": "-Dserver.port=8282"
+		  },
+		  "health": {
+			"check": "/api/test",
+			"status": "/health/status",
+			"online": "/health/online",
+			"offline": "/health/offline",
+			"port": 8080
+		  }
+		}
+	  }`
+
+	patchJsonBlob = map[string]interface{}{}
+	err = json.Unmarshal([]byte(patchJSONStr), &patchJsonBlob)
+	assert.Nil(t, err)
+	updateClusterRequest = &UpdateClusterRequest{
+		Base: &Base{
+			Description: "new description",
+			Git: &codemodels.Git{
+				URL:       UpdateGitURL,
+				Subfolder: "/new",
+				Branch:    "new",
+			},
+			TemplateInput: &TemplateInput{
+				Application: patchJsonBlob,
+				Pipeline:    pipelineJSONBlob,
+			},
+			Template: &Template{
+				Name:    "tomcat7_jdk8",
+				Release: "v1.0.1",
+			},
+		},
+	}
+	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).DoAndReturn(
+		func(_ context.Context, params *gitrepo.UpdateClusterParams) error {
+			blob := map[string]interface{}{}
+			err := json.Unmarshal([]byte(mergedJSONStr), &blob)
+			assert.Nil(t, err)
+			assertMapEqual(t, blob, params.ApplicationJSONBlob)
+			return nil
+		},
+	).Times(1)
+	_, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest, true)
+	assert.Nil(t, err)
 }
 
-func TestGetClusterOutPut(t *testing.T) {
+func assertMapEqual(t *testing.T, expected, got map[string]interface{}) {
+	expectedBuf, err := json.Marshal(expected)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	gotBuf, err := json.Marshal(got)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if !bytes.Equal(expectedBuf, gotBuf) {
+		t.Errorf("expected %s,\n got %s", string(expectedBuf), string(gotBuf))
+		return
+	}
+}
+
+func testGetClusterOutPut(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	appManagerMock := applicationmanangermock.NewMockManager(mockCtl)
 	clusterManagerMock := clustermanagermock.NewMockManager(mockCtl)
@@ -986,7 +1204,7 @@ javaapp:
       resource: large
 `
 
-func TestRenderOutPutObject(t *testing.T) {
+func testRenderOutPutObject(t *testing.T) {
 	var envValueFile, horizonValueFile, applicationValueFile gitrepo.ClusterValueFile
 	err := yaml.Unmarshal([]byte(envValue), &(envValueFile.Content))
 	assert.Nil(t, err)
@@ -1013,7 +1231,7 @@ func TestRenderOutPutObject(t *testing.T) {
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }
 
-func TestRenderOutPutObject_missingKey(t *testing.T) {
+func testRenderOutPutObjectMissingKey(t *testing.T) {
 	var envValueFile, horizonValueFile, applicationValueFile gitrepo.ClusterValueFile
 	var envValue = `
 javaapp:
@@ -1056,7 +1274,7 @@ javaapp:
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }
 
-func TestIsClusterActuallyHealthy(t *testing.T) {
+func testIsClusterActuallyHealthy(t *testing.T) {
 	t1 := "1"
 	t2 := "2"
 	imageV1 := "v1"
