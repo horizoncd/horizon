@@ -73,6 +73,8 @@ type Controller interface {
 	Pause(ctx context.Context, clusterID uint) error
 	Resume(ctx context.Context, clusterID uint) error
 	GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error)
+	GetClusterPod(ctx context.Context, clusterID uint, podName string) (
+		*GetClusterPodResponse, error)
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)

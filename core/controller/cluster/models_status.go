@@ -1,5 +1,9 @@
 package cluster
 
+import (
+	v1 "k8s.io/api/core/v1"
+)
+
 type GetClusterStatusResponse struct {
 	RunningTask       *RunningTask       `json:"runningTask" yaml:"runningTask"`
 	LatestPipelinerun *LatestPipelinerun `json:"latestPipelinerun,omitempty"`
@@ -29,6 +33,10 @@ type GetDashboardResponse struct {
 
 type GetClusterPodsResponse struct {
 	Pods []KubePodInfo `json:"pods" yaml:"pods"`
+}
+
+type GetClusterPodResponse struct {
+	v1.Pod
 }
 
 type KubePodInfo struct {

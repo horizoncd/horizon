@@ -391,11 +391,46 @@ func (c *controller) GetContainers(ctx context.Context, clusterID uint, podName 
 		return nil, err
 	}
 
-	param := cd.GetPodContainersParams{
+	param := cd.GetPodParams{
 		Namespace:    envValue.Namespace,
 		Cluster:      cluster.Name,
 		Pod:          podName,
 		RegionEntity: regionEntity,
 	}
 	return c.cd.GetPodContainers(ctx, &param)
+}
+
+func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName string) (
+	*GetClusterPodResponse, error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	if err != nil {
+		return nil, err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	param := cd.GetPodParams{
+		Namespace:    envValue.Namespace,
+		Cluster:      cluster.Name,
+		Pod:          podName,
+		RegionEntity: regionEntity,
+	}
+	pod, err := c.cd.GetPod(ctx, &param)
+	if err != nil {
+		return nil, err
+	}
+	return &GetClusterPodResponse{Pod: *pod}, nil
 }
