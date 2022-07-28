@@ -52,6 +52,8 @@ import (
 	tagmodel "g.hz.netease.com/horizon/pkg/templateschematag/models"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/go-yaml/yaml"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -922,6 +924,26 @@ func test(t *testing.T) {
 
 	_, err = c.GetClusterPods(ctx, resp.ID, 0, 19)
 	assert.NotNil(t, err)
+
+	podExist := "exist"
+	podNotExist := "notexist"
+	cd.EXPECT().GetPod(ctx, gomock.Any()).DoAndReturn(
+		func(_ context.Context, param *clustercd.GetPodParams) (*v1.Pod, error) {
+			if param.Pod == podExist {
+				return &v1.Pod{}, nil
+			} else {
+				return nil, herrors.NewErrNotFound(herrors.PodsInK8S, "")
+			}
+		},
+	).Times(2)
+	_, err = c.GetClusterPod(ctx, resp.ID, podExist)
+	assert.Nil(t, err)
+
+	_, err = c.GetClusterPod(ctx, resp.ID, podNotExist)
+	assert.NotNil(t, err)
+	_, ok = perror.Cause(err).(*herrors.HorizonErrNotFound)
+	assert.Equal(t, true, ok)
+
 	patchJSONStr := `{
 		"app": {
 		  "params": {

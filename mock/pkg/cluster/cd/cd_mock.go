@@ -10,6 +10,7 @@ import (
 
 	cd "g.hz.netease.com/horizon/pkg/cluster/cd"
 	gomock "github.com/golang/mock/gomock"
+	v1 "k8s.io/api/core/v1"
 )
 
 // MockCD is a mock of CD interface.
@@ -122,8 +123,23 @@ func (mr *MockCDMockRecorder) GetContainerLog(ctx, params interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContainerLog", reflect.TypeOf((*MockCD)(nil).GetContainerLog), ctx, params)
 }
 
+// GetPod mocks base method.
+func (m *MockCD) GetPod(ctx context.Context, params *cd.GetPodParams) (*v1.Pod, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPod", ctx, params)
+	ret0, _ := ret[0].(*v1.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPod indicates an expected call of GetPod.
+func (mr *MockCDMockRecorder) GetPod(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPod", reflect.TypeOf((*MockCD)(nil).GetPod), ctx, params)
+}
+
 // GetPodContainers mocks base method.
-func (m *MockCD) GetPodContainers(ctx context.Context, params *cd.GetPodContainersParams) ([]cd.ContainerDetail, error) {
+func (m *MockCD) GetPodContainers(ctx context.Context, params *cd.GetPodParams) ([]cd.ContainerDetail, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPodContainers", ctx, params)
 	ret0, _ := ret[0].([]cd.ContainerDetail)

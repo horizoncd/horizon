@@ -415,6 +415,35 @@ func (a *API) GetContainers(c *gin.Context) {
 	response.SuccessWithData(c, outPut)
 }
 
+func (a *API) GetClusterPod(c *gin.Context) {
+	op := "cluster: get cluster pod"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	podName := c.Query(_podName)
+	if podName == "" {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("podName should not be empty"))
+		return
+	}
+
+	resp, err := a.clusterCtl.GetClusterPod(c, uint(clusterID), podName)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
 func (a *API) GetByName(c *gin.Context) {
 	op := "cluster: get by name"
 	clusterName := c.Param(common.ParamClusterName)
