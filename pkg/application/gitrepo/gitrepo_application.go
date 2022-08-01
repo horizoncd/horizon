@@ -11,7 +11,6 @@ import (
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
@@ -21,8 +20,6 @@ import (
 )
 
 const (
-	_gitlabName = "compute"
-
 	_branchMaster = "master"
 
 	_filePathApplication = "application.yaml"
@@ -61,11 +58,7 @@ type applicationGitlabRepo struct {
 }
 
 func NewApplicationGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig,
-	gitlabFactory gitlabfty.Factory) (ApplicationGitRepo, error) {
-	gitlabLib, err := gitlabFactory.GetByName(ctx, _gitlabName)
-	if err != nil {
-		return nil, err
-	}
+	gitlabLib gitlablib.Interface) (ApplicationGitRepo, error) {
 	return &applicationGitlabRepo{
 		gitlabLib:           gitlabLib,
 		applicationRepoConf: gitlabRepoConfig.Application,

@@ -376,7 +376,7 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, tr.ChartName, tr.Name, nil)
+	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, tr.ChartName, tr.ChartVersion, nil)
 	if err != nil {
 		return err
 	}

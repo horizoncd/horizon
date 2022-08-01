@@ -80,7 +80,7 @@ func Test(t *testing.T) {
 	_, err = templateReleaseMgr.Create(ctx, &trmodels.TemplateRelease{
 		Template:     1,
 		TemplateName: "javaapp",
-		Name:         "v1.2.0",
+		ChartVersion: "v1.2.0",
 		ChartName:    "0-javaapp",
 	})
 	assert.Nil(t, err)

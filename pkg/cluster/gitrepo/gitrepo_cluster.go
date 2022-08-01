@@ -14,7 +14,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
@@ -55,7 +54,6 @@ music-cloud-native
 */
 
 const (
-	_gitlabName = "compute"
 	// _branchMaster is the main branch
 	_branchMaster = "master"
 	// _branchGitops is the gitops branch, values updated in this branch, then merge into the _branchMaster
@@ -158,11 +156,7 @@ type clusterGitRepo struct {
 }
 
 func NewClusterGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig,
-	templateRepo templaterepo.TemplateRepo, gitlabFactory gitlabfty.Factory) (ClusterGitRepo, error) {
-	gitlabLib, err := gitlabFactory.GetByName(ctx, _gitlabName)
-	if err != nil {
-		return nil, err
-	}
+	templateRepo templaterepo.TemplateRepo, gitlabLib gitlablib.Interface) (ClusterGitRepo, error) {
 	return &clusterGitRepo{
 		gitlabLib:       gitlabLib,
 		clusterRepoConf: gitlabRepoConfig.Cluster,
@@ -1066,7 +1060,7 @@ func (g *clusterGitRepo) assembleBaseValue(params *BaseParams) map[string]map[st
 		Cluster:     params.Cluster,
 		Template: &BaseValueTemplate{
 			Name:    params.TemplateRelease.TemplateName,
-			Release: params.TemplateRelease.Name,
+			Release: params.TemplateRelease.ChartVersion,
 		},
 		Priority: string(params.Application.Priority),
 	}
@@ -1099,7 +1093,7 @@ func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
 			{
 				Repository: templateRepo,
 				Name:       renameTemplateName(params.TemplateRelease.ChartName),
-				Version:    params.TemplateRelease.Name,
+				Version:    params.TemplateRelease.ChartVersion,
 			},
 		},
 	}, nil

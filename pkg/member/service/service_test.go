@@ -727,7 +727,6 @@ func TestListTemplateMember(t *testing.T) {
 
 	template := &templatemodels.Template{
 		Name:       "javaapp",
-		Token:      "token",
 		Repository: "repo",
 		GroupID:    group2.ID,
 	}

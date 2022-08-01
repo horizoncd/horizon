@@ -145,7 +145,7 @@ func Test(t *testing.T) {
 		TemplateRelease: &trmodels.TemplateRelease{
 			TemplateName: templateName,
 			ChartName:    templateName,
-			Name:         "v1.0.0",
+			ChartVersion: "v1.0.0",
 		},
 		Application: &appmodels.Application{
 			GroupID:  10,
@@ -259,7 +259,7 @@ func TestHardDeleteCluster(t *testing.T) {
 		ApplicationJSONBlob: applicationJSONBlob,
 		TemplateRelease: &trmodels.TemplateRelease{
 			TemplateName: templateName,
-			Name:         "v1.0.0",
+			ChartVersion: "v1.0.0",
 		},
 		Application: &appmodels.Application{
 			GroupID:  10,

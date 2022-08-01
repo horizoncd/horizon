@@ -1,6 +1,7 @@
 package template
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -8,6 +9,7 @@ import (
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
 	templateschematagctl "g.hz.netease.com/horizon/core/controller/templateschematag"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	tplctx "g.hz.netease.com/horizon/pkg/context"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 
@@ -25,6 +27,7 @@ const (
 	// query
 	_resourceTypeQuery = "resourceType"
 	_clusterIDQuery    = "clusterID"
+	_withFullPath      = "fullpath"
 )
 
 type API struct {
@@ -40,7 +43,13 @@ func NewAPI(ctl templatectl.Controller, tagCtl templateschematagctl.Controller) 
 }
 
 func (a *API) ListTemplate(c *gin.Context) {
-	templates, err := a.templateCtl.ListTemplate(c)
+	withFullPathStr := c.Query(_withFullPath)
+	withFullPath, err := strconv.ParseBool(withFullPathStr)
+	var ctx context.Context = c
+	if err == nil {
+		ctx = context.WithValue(ctx, tplctx.TemplateWithFullPath, withFullPath)
+	}
+	templates, err := a.templateCtl.ListTemplate(ctx)
 	if err != nil {
 		response.AbortWithInternalError(c, err.Error())
 		return
@@ -176,10 +185,15 @@ func (a *API) GetTemplates(c *gin.Context) {
 	op := "template: get templates"
 
 	g := c.Param(_groupParam)
-	var (
-		groupID uint64
-		err     error
-	)
+
+	withFullPathStr := c.Query(_withFullPath)
+	withFullPath, err := strconv.ParseBool(withFullPathStr)
+	var ctx context.Context = c
+	if err == nil {
+		ctx = context.WithValue(ctx, tplctx.TemplateWithFullPath, withFullPath)
+	}
+
+	var groupID uint64
 	if groupID, err = strconv.ParseUint(g, 10, 64); err != nil {
 		log.WithFiled(c, "op", op).Info("clusterID not found or invalid")
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("clusterID not found or invalid"))
@@ -187,7 +201,7 @@ func (a *API) GetTemplates(c *gin.Context) {
 	}
 
 	var templates templatectl.Templates
-	if templates, err = a.templateCtl.ListTemplateByGroupID(c, uint(groupID)); err != nil {
+	if templates, err = a.templateCtl.ListTemplateByGroupID(ctx, uint(groupID)); err != nil {
 		if perror.Cause(err) == herrors.ErrNoPrivilege {
 			log.WithFiled(c, "op", op).Info("non-admin user try to access root group")
 			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(fmt.Sprintf("no privilege: %s", err.Error())))
@@ -320,7 +334,8 @@ func (a *API) CreateRelease(c *gin.Context) {
 		return
 	}
 
-	if _, err := a.templateCtl.CreateRelease(c, uint(templateID), createRequest); err != nil {
+	var release *templatectl.Release
+	if release, err = a.templateCtl.CreateRelease(c, uint(templateID), createRequest); err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
 			log.WithFiled(c, "op", op).Infof("could not parse gitlab url: %s", err)
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("failed parsing gitlab URL: %s", err)))
@@ -335,7 +350,7 @@ func (a *API) CreateRelease(c *gin.Context) {
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(fmt.Sprintf("%s", err)))
 		return
 	}
-	response.Success(c)
+	response.SuccessWithData(c, release)
 }
 
 func (a *API) GetReleases(c *gin.Context) {

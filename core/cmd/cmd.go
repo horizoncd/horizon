@@ -208,7 +208,18 @@ func Run(flags *Flags) {
 	// init service
 	ctx := context.Background()
 	gitlabFactory := gitlabfty.NewFactory(coreConfig.GitlabMapper)
-	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, coreConfig.GitlabRepoConfig, gitlabFactory)
+
+	gitlabCompute, err := gitlabFactory.GetByName(ctx, common.GitlabCompute)
+	if err != nil {
+		panic(err)
+	}
+
+	gitlabControl, err := gitlabFactory.GetByName(ctx, common.GitlabControl)
+	if err != nil {
+		panic(err)
+	}
+
+	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, coreConfig.GitlabRepoConfig, gitlabCompute)
 	if err != nil {
 		panic(err)
 	}
@@ -217,7 +228,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, coreConfig.GitlabRepoConfig,
-		templateRepo, gitlabFactory)
+		templateRepo, gitlabCompute)
 	if err != nil {
 		panic(err)
 	}
@@ -228,7 +239,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	gitGetter, err := code.NewGitGetter(ctx, gitlabFactory)
+	gitGetter, err := code.NewGitGetter(ctx, gitlabControl)
 	if err != nil {
 		panic(err)
 	}
@@ -314,7 +325,7 @@ func Run(flags *Flags) {
 		envTemplateCtl       = envtemplatectl.NewController(parameter)
 		clusterCtl           = clusterctl.NewController(coreConfig, parameter)
 		prCtl                = prctl.NewController(parameter)
-		templateCtl          = templatectl.NewController(parameter, templateRepo)
+		templateCtl          = templatectl.NewController(parameter, gitlabControl, templateRepo)
 		roleCtl              = roltctl.NewController(parameter)
 		terminalCtl          = terminalctl.NewController(parameter)
 		sloCtl               = sloctl.NewController(coreConfig.GrafanaSLO)

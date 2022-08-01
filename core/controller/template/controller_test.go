@@ -2,14 +2,19 @@ package template
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/lib/orm"
+	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	tmock "g.hz.netease.com/horizon/mock/pkg/template/manager"
 	releasemanagermock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
 	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
@@ -32,6 +37,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterepo/harbor"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	gitlabapi "github.com/xanzy/go-gitlab"
 	"gorm.io/gorm"
 )
 
@@ -68,6 +74,22 @@ func TestList(t *testing.T) {
 
 	recommends := []bool{false, true, false}
 
+	templateMgr.EXPECT().GetByName(gomock.Any(), "javaapp").Return(
+		&tmodels.Template{
+			Name:       "javaapp",
+			ChartName:  "7-javaapp_test3",
+			Repository: "https://g.hz.netease.com/music-cloud-native/horizon/horizon.git",
+		}, nil,
+	)
+	templateMgr.EXPECT().GetByName(gomock.Any(), "javaapp").Return(
+		&tmodels.Template{
+			Name:       "javaapp",
+			ChartName:  "7-javaapp_test3",
+			Repository: "https://g.hz.netease.com/music-cloud-native/horizon/horizon",
+		}, nil,
+	)
+
+	tags := []string{"v1.0.0", "v1.0.1", "v1.0.2"}
 	templateReleaseMgr.EXPECT().ListByTemplateName(gomock.Any(), "javaapp").
 		Return([]*trmodels.TemplateRelease{
 			{
@@ -76,6 +98,9 @@ func TestList(t *testing.T) {
 				},
 				Template:    1,
 				Name:        "v1.0.0",
+				CommitID:    "test",
+				SyncStatus:  trmodels.StatusSucceed,
+				Tag:         tags[0],
 				Recommended: &recommends[0],
 				OnlyAdmin:   &onlyAdminTrue,
 			}, {
@@ -84,6 +109,9 @@ func TestList(t *testing.T) {
 				},
 				Template:    1,
 				Name:        "v1.0.1",
+				CommitID:    "test",
+				SyncStatus:  trmodels.StatusSucceed,
+				Tag:         tags[1],
 				Recommended: &recommends[1],
 				OnlyAdmin:   &onlyAdminFalse,
 			}, {
@@ -92,14 +120,49 @@ func TestList(t *testing.T) {
 				},
 				Template:    1,
 				Name:        "v1.0.2",
+				CommitID:    "test3",
+				SyncStatus:  trmodels.StatusSucceed,
+				Tag:         tags[2],
 				Recommended: &recommends[2],
 				OnlyAdmin:   &onlyAdminFalse,
 			},
 		}, nil).Times(2)
 
+	templateReleaseMgr.EXPECT().UpdateByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	gitlabLib := gitlablibmock.NewMockInterface(mockCtl)
+
+	gitlabLib.EXPECT().
+		GetRepositoryArchive(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).Times(6)
+
+	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[0]).
+		Return(&gitlabapi.Tag{
+			Commit: &gitlabapi.Commit{ShortID: "test"},
+		}, nil)
+	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[1]).
+		Return(&gitlabapi.Tag{
+			Commit: &gitlabapi.Commit{ShortID: "test"},
+		}, nil)
+	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[2]).
+		Return(&gitlabapi.Tag{
+			Commit: &gitlabapi.Commit{ShortID: "test3"},
+		}, nil).Times(1)
+
+	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[0]).
+		Return(&gitlabapi.Tag{
+			Commit: &gitlabapi.Commit{ShortID: "test"},
+		}, nil)
+	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[1]).
+		Return(&gitlabapi.Tag{
+			Commit: &gitlabapi.Commit{ShortID: "test"},
+		}, nil)
+	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[2]).
+		Return(nil, errors.New("test")).Times(1)
+
 	ctl := &controller{
 		templateMgr:        templateMgr,
 		templateReleaseMgr: templateReleaseMgr,
+		gitlabLib:          gitlabLib,
 	}
 
 	templates, err := ctl.ListTemplate(ctx)
@@ -114,6 +177,9 @@ func TestList(t *testing.T) {
 	assert.Equal(t, "v1.0.1", templateReleases[0].Name)
 	assert.Equal(t, "v1.0.2", templateReleases[1].Name)
 	assert.Equal(t, "v1.0.0", templateReleases[2].Name)
+	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[0].SyncStatusCode)
+	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[1].SyncStatusCode)
+	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[2].SyncStatusCode)
 
 	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
 		Name:  "Jerry",
@@ -131,6 +197,8 @@ func TestList(t *testing.T) {
 	assert.Equal(t, 2, len(templateReleases))
 	assert.Equal(t, "v1.0.1", templateReleases[0].Name)
 	assert.Equal(t, "v1.0.2", templateReleases[1].Name)
+	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[0].SyncStatusCode)
+	assert.Equal(t, uint8(trmodels.StatusUnknown), templateReleases[1].SyncStatusCode)
 }
 
 func TestGetSchema(t *testing.T) {
@@ -156,8 +224,8 @@ func TestGetSchema(t *testing.T) {
 		},
 	}
 	release := &trmodels.TemplateRelease{
-		Name:      releaseName,
-		ChartName: charName,
+		ChartVersion: releaseName,
+		ChartName:    charName,
 	}
 	templateReleaseMgr.EXPECT().GetByID(gomock.Any(), uint(1)).Return(release, nil)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, charName, releaseName, nil).Return(schemas, nil)
@@ -198,7 +266,7 @@ func TestCreateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, templateName, template.Name)
 	assert.Equal(t, templateRepo, template.Repository)
-	assert.Equal(t, uint(0), template.InGroup)
+	assert.Equal(t, uint(0), template.GroupID)
 
 	tpl, err := mgr.TemplateMgr.GetByID(ctx, 1)
 	assert.Nil(t, err)
@@ -209,6 +277,8 @@ func TestCreateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(releases))
 	assert.Equal(t, releaseName, releases[0].Name)
+	versionPattern := regexp.MustCompile(`^v(\d\.){2}\d-(.+)$`)
+	assert.True(t, versionPattern.MatchString(releases[0].ChartVersion))
 
 	err = ctl.SyncReleaseToRepo(ctx, 1)
 	assert.Nil(t, err)
@@ -228,7 +298,7 @@ func TestCreateTemplateInNonRootGroup(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, templateName, template.Name)
 	assert.Equal(t, templateRepo, template.Repository)
-	assert.Equal(t, uint(1), template.InGroup)
+	assert.Equal(t, uint(1), template.GroupID)
 
 	tpl, err := mgr.TemplateMgr.GetByID(ctx, 1)
 	assert.Nil(t, err)
@@ -237,6 +307,7 @@ func TestCreateTemplateInNonRootGroup(t *testing.T) {
 
 	release, err := mgr.TemplateReleaseManager.GetByID(ctx, 1)
 	assert.Nil(t, err)
+	assert.Equal(t, releaseName, release.Tag)
 	assert.Equal(t, releaseName, release.Name)
 	assert.Equal(t, templateName, release.TemplateName)
 	assert.Equal(t, tpl.ID, release.Template)
@@ -304,8 +375,8 @@ func TestUpdateTemplate(t *testing.T) {
 	onlyAdminTrue := true
 
 	tplRequest := UpdateTemplateRequest{
+		Name:        "javaapp",
 		Description: "hello, world",
-		Token:       "token",
 		Repository:  "repo",
 		OnlyAdmin:   &onlyAdminTrue,
 	}
@@ -320,7 +391,6 @@ func TestUpdateTemplate(t *testing.T) {
 
 	oldDescription := tplRequest.Description
 	tplRequest.Description = ""
-	tplRequest.Token = "token2"
 
 	err = ctl.UpdateTemplate(ctx, 1, tplRequest)
 	assert.Nil(t, err)
@@ -484,7 +554,14 @@ func createController(t *testing.T) Controller {
 
 	getter := reposchema.NewSchemaGetter(context.Background(), repo)
 
+	URL, err := url.Parse(templateRepo)
+	assert.Nil(t, err)
+	gitlabLib, err := gitlab.New(templateRepoToken,
+		fmt.Sprintf("%s://%s", URL.Scheme, URL.Host), "")
+	assert.Nil(t, err)
+
 	ctl := &controller{
+		gitlabLib:            gitlabLib,
 		templateRepo:         repo,
 		groupMgr:             mgr.GroupManager,
 		templateMgr:          mgr.TemplateMgr,
@@ -507,12 +584,12 @@ func createChart(t *testing.T, ctl Controller, groupID uint) {
 	}
 	request := CreateTemplateRequest{
 		CreateReleaseRequest: CreateReleaseRequest{
-			RepoTag: releaseName,
+			Name: releaseName,
+			Tag:  releaseName,
 		},
 		Name:        templateName,
 		Description: "",
 		Repository:  templateRepo,
-		Token:       templateRepoToken,
 	}
 	template, err := ctl.CreateTemplate(ctx, groupID, request)
 	assert.Nil(t, err)

@@ -136,28 +136,8 @@ func (d dao) GetRefOfCluster(ctx context.Context, id uint) ([]*cmodel.Cluster, u
 
 func (d dao) UpdateByID(ctx context.Context, releaseID uint, release *models.TemplateRelease) error {
 	return d.db.Transaction(func(tx *gorm.DB) error {
-		var oldRelease models.TemplateRelease
-		res := tx.Raw(common.TemplateReleaseQueryByID, releaseID).Scan(&oldRelease)
-		if res.Error != nil {
-			return res.Error
-		}
-		if res.RowsAffected != 1 {
-			return perror.Wrap(herrors.NewErrNotFound(herrors.TemplateInDB,
-				"not found"),
-				fmt.Sprintf("not found template with releaseID = %d", releaseID))
-		}
-
-		oldRelease.UpdatedBy = release.UpdatedBy
-		if release.Description != "" {
-			oldRelease.Description = release.Description
-		}
-		if release.Recommended != nil {
-			oldRelease.Recommended = release.Recommended
-		}
-		if release.OnlyAdmin != nil {
-			oldRelease.OnlyAdmin = release.OnlyAdmin
-		}
-		return tx.Model(&oldRelease).Updates(oldRelease).Error
+		release.ID = releaseID
+		return tx.Model(&release).Updates(release).Error
 	})
 }
 

@@ -99,8 +99,10 @@ Roles:
           - templates/releases
           - templates
           - templates/members
+          - releases/members
           - releases
           - releases/sync
+          - releases/schema
         verbs:
           - "*"
         scopes:
@@ -198,10 +200,21 @@ Roles:
           - groups/oauthapps
           - oauthapps
           - oauthapps/clientsecret
-          - groups/templates
           - templates/releases
+          - releases/schema
         verbs:
           - get
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - groups/templates
+        verbs:
+          - get
+          - create
         scopes:
           - "*"
         nonResourceURLs:
@@ -219,11 +232,12 @@ Roles:
       - apiGroups:
           - core
         resources:
-          - templates
-          - releases
+          - templates/members
+          - releases/members
         verbs:
           - get
           - update
+          - create
         scopes:
           - "*"
         nonResourceURLs:
@@ -231,10 +245,11 @@ Roles:
       - apiGroups:
           - core
         resources:
-          - templates/members
+          - releases
+          - templates
         verbs:
           - get
-          - create
+          - update
         scopes:
           - "*"
         nonResourceURLs:
@@ -277,17 +292,6 @@ Roles:
       - apiGroups:
           - core
         resources:
-          - templates
-          - releases
-        verbs:
-          - get
-          - delete
-          - update
-        scopes:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
           - releases/sync
         verbs:
           - create
@@ -296,8 +300,8 @@ Roles:
       - apiGroups:
           - core
         resources:
-          - groups/templates
           - templates/releases
+          - releases/schema
         verbs:
           - get
         scopes:
@@ -305,10 +309,20 @@ Roles:
       - apiGroups:
           - core
         resources:
-          - templates/members
+          - groups/templates
         verbs:
           - get
           - create
+        scopes:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templates
+          - releases
+        verbs:
+          - get
+          - update
         scopes:
           - "*"
       - apiGroups:
@@ -344,6 +358,8 @@ Roles:
           - clusters/pause
           - clusters/resume
           - clusters/containers
+          - templates/members
+          - releases/members
         verbs:
           - create
           - get
@@ -382,6 +398,13 @@ Roles:
           - groups/members
           - groups/groups
           - groups/oauthapps
+          - groups/templates
+          - templates
+          - releases
+          - releases/schema
+          - templates/releases
+          - templates/members
+          - releases/members
           - oauthapps
           - oauthapps/clientsecret
           - applications

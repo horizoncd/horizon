@@ -70,7 +70,7 @@ func (g *getter) GetTemplateSchema(ctx context.Context,
 	wgReadFile.Add(4)
 	readFile := func(b *[]byte, err *error, filePath string) {
 		defer wgReadFile.Done()
-		bts, e := g.gitlabLib.GetFile(ctx, t.Repository, tr.Name, filePath)
+		bts, e := g.gitlabLib.GetFile(ctx, t.Repository, tr.ChartVersion, filePath)
 		*b = bts
 		*err = e
 	}

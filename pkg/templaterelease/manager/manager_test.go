@@ -33,7 +33,7 @@ func Test(t *testing.T) {
 	var (
 		templateName = "javaapp"
 		name         = "v1.0.0"
-		token        = "token"
+		chartVersion = "v1.0.0-test"
 		repo         = "repo"
 		description  = "javaapp template v1.0.0"
 		groupID      = uint(0)
@@ -44,7 +44,6 @@ func Test(t *testing.T) {
 	template := &tmodels.Template{
 		Name:        templateName,
 		Description: description,
-		Token:       token,
 		Repository:  repo,
 		GroupID:     groupID,
 		CreatedBy:   createdBy,
@@ -59,6 +58,7 @@ func Test(t *testing.T) {
 		Template:     template.ID,
 		TemplateName: templateName,
 		Name:         name,
+		ChartVersion: chartVersion,
 		Description:  description,
 		Recommended:  &recommend,
 		CreatedBy:    createdBy,
@@ -79,6 +79,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(releases))
 	assert.Equal(t, name, releases[0].Name)
+	assert.Equal(t, chartVersion, releases[0].ChartVersion)
 	assert.Equal(t, description, releases[0].Description)
 	assert.Equal(t, 1, int(releases[0].ID))
 
@@ -86,6 +87,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(releases))
 	assert.Equal(t, name, releases[0].Name)
+	assert.Equal(t, chartVersion, releases[0].ChartVersion)
 	assert.Equal(t, description, releases[0].Description)
 	assert.Equal(t, 1, int(releases[0].ID))
 
@@ -99,6 +101,7 @@ func Test(t *testing.T) {
 	templateRelease, err = templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, name)
 	assert.Nil(t, err)
 	assert.NotNil(t, templateRelease)
+	assert.Equal(t, chartVersion, templateRelease.ChartVersion)
 	assert.Equal(t, name, templateRelease.Name)
 
 	app := &applicationmodel.Application{

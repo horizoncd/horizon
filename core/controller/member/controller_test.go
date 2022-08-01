@@ -273,7 +273,7 @@ func TestTemplateMember(t *testing.T) {
 		Model:        global.Model{},
 		Template:     1,
 		TemplateName: "javaapp",
-		Name:         "v1.0.0",
+		ChartVersion: "v1.0.0",
 		ChartName:    "javaapp",
 		Recommended:  &recommended,
 		OnlyAdmin:    &onlyAdmin,

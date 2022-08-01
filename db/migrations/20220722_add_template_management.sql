@@ -10,3 +10,11 @@ update tb_template_release a, tb_template b set a.template = b.id where a.templa
 update tb_template_release a, tb_template b set a.chart_name = b.chart_name where a.template = b.id;
 alter table tb_template add column only_admin bool not null default false after group_id;
 alter table tb_template_release add column only_admin bool not null default false after recommended;
+alter table tb_template_release add column tag varchar(64) not null default '' comment 'related tag' after `name`;
+update tb_template_release set `tag` = `name`;
+alter table tb_template_release add column chart_version varchar(256) not null default '' comment 'chart version on template repository' after `tag`;
+alter table tb_template_release add column sync_status varchar(64) not null default 'status_unknown' comment 'shows sync status' after `chart_version`;
+alter table tb_template_release add column failed_reason varchar(2048) not null default '' comment 'failed reason at last time' after `sync_status`;
+alter table tb_template_release add column commit_id varchar(256) not null default '' comment 'commit id at last sync' after `failed_reason`;
+alter table tb_template_release add column last_sync_at datetime not null default current_timestamp after sync_status;
+update tb_template_release set `chart_version` = `name` where `chart_version` = '';

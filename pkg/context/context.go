@@ -9,5 +9,6 @@ var MemberDirectMemberOnly = &contextKey{}
 
 var TemplateWithRelease = &contextKey{}
 var TemplateOnlyRefCount = &contextKey{}
+var TemplateWithFullPath = &contextKey{}
 
 var ReleaseSyncToRepo = &contextKey{}

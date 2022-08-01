@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 	"sort"
-	"strings"
+	"time"
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -14,17 +14,14 @@ import (
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 )
 
-const gitSuffix = ".git"
-
 type CreateTemplateRequest struct {
 	// when creating template, user must create a release,
 	// otherwise, it's a useless template.
-	Name string `json:"name"`
-	CreateReleaseRequest
-	Description string `json:"description"`
-	Repository  string `json:"repository"`
-	Token       string `json:"token"`
-	OnlyAdmin   *bool  `json:"onlyAdmin"`
+	CreateReleaseRequest `json:"release"`
+	Name                 string `json:"name"`
+	Description          string `json:"description"`
+	Repository           string `json:"repository"`
+	OnlyAdmin            *bool  `json:"onlyAdmin"`
 }
 
 func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.Template, error) {
@@ -33,15 +30,10 @@ func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		return nil, err
 	}
 
-	if c.Token == "" {
-		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
-			"Token is empty")
-	}
 	if c.Repository == "" {
 		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
 			"Repository is empty")
 	}
-	c.Repository = strings.TrimSuffix(c.Repository, gitSuffix)
 	if !checkIfNameValid(c.Name) {
 		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
 			"Name starts with a letter and consists of an "+
@@ -51,16 +43,19 @@ func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		Name:        c.Name,
 		Description: c.Description,
 		Repository:  c.Repository,
-		Token:       c.Token,
 	}
+	onlyAdminFalse := false
 	if user.IsAdmin() {
 		t.OnlyAdmin = c.OnlyAdmin
+	} else {
+		t.OnlyAdmin = &onlyAdminFalse
 	}
 	return t, nil
 }
 
 type CreateReleaseRequest struct {
-	RepoTag     string `json:"repoTag"`
+	Name        string `json:"name"`
+	Tag         string `json:"tag"`
 	Recommended bool   `json:"recommended"`
 	Description string `json:"description"`
 	OnlyAdmin   *bool  `json:"onlyAdmin"`
@@ -74,23 +69,27 @@ func (c *CreateReleaseRequest) toReleaseModel(ctx context.Context,
 	}
 
 	t := &trmodels.TemplateRelease{
-		Name:         c.RepoTag,
+		Name:         c.Name,
+		Tag:          c.Tag,
 		TemplateName: template.Name,
 		ChartName:    template.ChartName,
 		Description:  c.Description,
 		Recommended:  &c.Recommended,
 	}
 
+	onlyAdminFalse := false
 	if user.IsAdmin() {
 		t.OnlyAdmin = c.OnlyAdmin
+	} else {
+		t.OnlyAdmin = &onlyAdminFalse
 	}
 	return t, nil
 }
 
 type UpdateTemplateRequest struct {
+	Name        string `json:"name"`
 	Description string `json:"description"`
 	Repository  string `json:"repository"`
-	Token       string `json:"token"`
 	OnlyAdmin   *bool  `json:"onlyAdmin"`
 }
 
@@ -104,11 +103,16 @@ func (c *UpdateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
 			"Repository is empty")
 	}
-	c.Repository = strings.TrimSuffix(c.Repository, gitSuffix)
+	if !checkIfNameValid(c.Name) {
+		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
+			"Name starts with a letter and consists of an "+
+				"alphanumeric underscore with a maximum of 63 characters")
+	}
+
 	t := &tmodels.Template{
+		Name:        c.Name,
 		Description: c.Description,
 		Repository:  c.Repository,
-		Token:       c.Token,
 	}
 	if user.IsAdmin() {
 		t.OnlyAdmin = c.OnlyAdmin
@@ -117,6 +121,7 @@ func (c *UpdateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 }
 
 type UpdateReleaseRequest struct {
+	Name        string `json:"name"`
 	Recommended *bool  `json:"recommended,omitempty"`
 	Description string `json:"description"`
 	OnlyAdmin   *bool  `json:"onlyAdmin"`
@@ -128,6 +133,7 @@ func (c *UpdateReleaseRequest) toReleaseModel(ctx context.Context) (*trmodels.Te
 		return nil, err
 	}
 	tr := &trmodels.TemplateRelease{
+		Name:        c.Name,
 		Description: c.Description,
 		Recommended: c.Recommended,
 	}
@@ -138,16 +144,19 @@ func (c *UpdateReleaseRequest) toReleaseModel(ctx context.Context) (*trmodels.Te
 }
 
 type Template struct {
-	ID          uint     `json:"id"`
-	Name        string   `json:"name"`
-	ChartName   string   `json:"chartName"`
-	Description string   `json:"description"`
-	Repository  string   `json:"repository"`
-	Releases    Releases `json:"releases,omitempty"`
-	InGroup     uint     `json:"group"`
-	OnlyAdmin   bool     `json:"onlyAdmin"`
-	CreatedBy   uint     `json:"createBy"`
-	UpdatedBy   uint     `json:"updateBy"`
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	ChartName   string    `json:"chartName"`
+	Description string    `json:"description"`
+	Repository  string    `json:"repository"`
+	Releases    Releases  `json:"releases,omitempty"`
+	FullPath    string    `json:"fullpath,omitempty"`
+	GroupID     uint      `json:"group"`
+	OnlyAdmin   bool      `json:"onlyAdmin"`
+	CreateAt    time.Time `json:"createAt"`
+	UpdateAt    time.Time `json:"updateAt"`
+	CreatedBy   uint      `json:"createBy"`
+	UpdatedBy   uint      `json:"updateBy"`
 }
 
 func toTemplate(m *tmodels.Template) *Template {
@@ -160,7 +169,9 @@ func toTemplate(m *tmodels.Template) *Template {
 		ChartName:   m.ChartName,
 		Description: m.Description,
 		Repository:  m.Repository,
-		InGroup:     m.GroupID,
+		GroupID:     m.GroupID,
+		CreateAt:    m.Model.CreatedAt,
+		UpdateAt:    m.Model.UpdatedAt,
 		CreatedBy:   m.CreatedBy,
 		UpdatedBy:   m.UpdatedBy,
 	}
@@ -184,13 +195,23 @@ func toTemplates(mts []*tmodels.Template) Templates {
 }
 
 type Release struct {
-	ID          uint   `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Recommended bool   `json:"recommended"`
-	OnlyAdmin   bool   `json:"onlyAdmin"`
-	CreatedBy   uint   `json:"createBy"`
-	UpdatedBy   uint   `json:"updateBy"`
+	ID             uint      `json:"id"`
+	Name           string    `json:"name"`
+	Tag            string    `json:"tag"`
+	TemplateID     uint      `json:"templateID"`
+	ChartVersion   string    `json:"chartVersion"`
+	Description    string    `json:"description"`
+	Recommended    bool      `json:"recommended"`
+	OnlyAdmin      bool      `json:"onlyAdmin"`
+	CommitID       string    `json:"commitID"`
+	SyncStatusCode uint8     `json:"syncStatusCode"`
+	SyncStatus     string    `json:"syncStatus"`
+	LastSyncAt     time.Time `json:"lastSyncAt"`
+	FailedReason   string    `json:"failedReason"`
+	CreateAt       time.Time `json:"createAt"`
+	UpdateAt       time.Time `json:"updateAt"`
+	CreatedBy      uint      `json:"createBy"`
+	UpdatedBy      uint      `json:"updateBy"`
 }
 
 type Releases []Release
@@ -219,11 +240,30 @@ func toRelease(m *trmodels.TemplateRelease) *Release {
 		return nil
 	}
 	tr := &Release{
-		ID:          m.ID,
-		Name:        m.Name,
-		Description: m.Description,
-		CreatedBy:   m.CreatedBy,
-		UpdatedBy:   m.UpdatedBy,
+		ID:             m.ID,
+		Name:           m.Name,
+		Tag:            m.Tag,
+		ChartVersion:   m.ChartVersion,
+		Description:    m.Description,
+		TemplateID:     m.Template,
+		SyncStatusCode: uint8(m.SyncStatus),
+		LastSyncAt:     m.LastSyncAt,
+		CommitID:       m.CommitID,
+		FailedReason:   m.FailedReason,
+		CreateAt:       m.Model.CreatedAt,
+		UpdateAt:       m.Model.UpdatedAt,
+		CreatedBy:      m.CreatedBy,
+		UpdatedBy:      m.UpdatedBy,
+	}
+	switch trmodels.SyncStatus(tr.SyncStatusCode) {
+	case trmodels.StatusSucceed:
+		tr.SyncStatus = "Succeed"
+	case trmodels.StatusUnknown:
+		tr.SyncStatus = "Unknown"
+	case trmodels.StatusFailed:
+		tr.SyncStatus = "Failed"
+	case trmodels.StatusOutOfSync:
+		tr.SyncStatus = "OutOfSync"
 	}
 	if m.Recommended != nil {
 		tr.Recommended = *m.Recommended
@@ -286,6 +326,6 @@ func checkIfNameValid(name string) bool {
 		return false
 	}
 
-	pattern := regexp.MustCompile("^(([a-z][-a-z0-9]*)?[a-z0-9])?$")
+	pattern := regexp.MustCompile("^(([a-z][-a-z0-9_]*)?[a-z0-9])?$")
 	return pattern.MatchString(name)
 }

@@ -10,7 +10,6 @@ type Template struct {
 	Name        string
 	ChartName   string
 	Description string
-	Token       string
 	Repository  string
 	GroupID     uint
 	OnlyAdmin   *bool

@@ -7,12 +7,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"github.com/xanzy/go-gitlab"
-)
-
-const (
-	_gitlabName = "control"
 )
 
 // TODO: git connector (support all kinds of git code repo)
@@ -33,18 +28,14 @@ type gitGetter struct {
 }
 
 // NewGitGetter new a GitGetter instance
-func NewGitGetter(ctx context.Context, gitlabFactory gitlabfty.Factory) (GitGetter, error) {
-	gitlabLib, err := gitlabFactory.GetByName(ctx, _gitlabName)
-	if err != nil {
-		return nil, err
-	}
+func NewGitGetter(ctx context.Context, gitlabLib gitlablib.Interface) (GitGetter, error) {
 	return &gitGetter{
 		gitlabLib: gitlabLib,
 	}, nil
 }
 
 func (g *gitGetter) ListBranch(ctx context.Context, gitURL string, params *SearchParams) ([]string, error) {
-	pid, err := extractProjectPathFromSSHURL(gitURL)
+	pid, err := extractProjectPathFromURL(gitURL)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +58,7 @@ func (g *gitGetter) ListBranch(ctx context.Context, gitURL string, params *Searc
 }
 
 func (g *gitGetter) ListTag(ctx context.Context, gitURL string, params *SearchParams) ([]string, error) {
-	pid, err := extractProjectPathFromSSHURL(gitURL)
+	pid, err := extractProjectPathFromURL(gitURL)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +81,7 @@ func (g *gitGetter) ListTag(ctx context.Context, gitURL string, params *SearchPa
 }
 
 func (g *gitGetter) GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*Commit, error) {
-	pid, err := extractProjectPathFromSSHURL(gitURL)
+	pid, err := extractProjectPathFromURL(gitURL)
 	if err != nil {
 		return nil, err
 	}
@@ -128,10 +119,10 @@ func (g *gitGetter) GetCommit(ctx context.Context, gitURL string, refType string
 	}
 }
 
-// extractProjectPathFromSSHURL extract gitlab project path from ssh url.
+// extractProjectPathFromURL extract gitlab project path from ssh url.
 // ssh url looks like: ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git
-func extractProjectPathFromSSHURL(gitURL string) (string, error) {
-	pattern := regexp.MustCompile(`ssh://.+?/(.+).git`)
+func extractProjectPathFromURL(gitURL string) (string, error) {
+	pattern := regexp.MustCompile(`^(?:http(?:s?)|ssh)://.+?/(.+?)(?:.git)?$`)
 	matches := pattern.FindStringSubmatch(gitURL)
 	if len(matches) != 2 {
 		return "", perror.Wrapf(herrors.ErrParamInvalid, "error to extract project path from git ssh url: %v", gitURL)

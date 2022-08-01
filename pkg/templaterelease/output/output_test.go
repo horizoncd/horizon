@@ -42,7 +42,7 @@ func TestGeTemplateOutPut(t *testing.T) {
 
 	tr := &trm.TemplateRelease{
 		TemplateName: templateName,
-		Name:         releaseName,
+		ChartVersion: releaseName,
 		ChartName:    templateName,
 	}
 

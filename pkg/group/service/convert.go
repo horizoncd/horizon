@@ -7,6 +7,8 @@ import (
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/group/models"
+	tmodels "g.hz.netease.com/horizon/pkg/template/models"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 )
 
 // GenerateFullFromGroups generate fullPath which looks like /a/b/c, and fullName which looks like 1 / 2
@@ -59,6 +61,32 @@ func ConvertGroupOrApplicationToChild(groupOrApplication *models.GroupOrApplicat
 		FullName:    full.FullName,
 		FullPath:    full.FullPath,
 		Type:        groupOrApplication.Type,
+	}
+}
+
+func ConvertTemplateToChild(template *tmodels.Template, full *Full) *Child {
+	return &Child{
+		ID:          template.ID,
+		Name:        template.Name,
+		Path:        template.Name,
+		Description: template.Description,
+		ParentID:    template.GroupID,
+		FullName:    full.FullName,
+		FullPath:    full.FullPath,
+		Type:        ChildTypeTemplate,
+	}
+}
+
+func ConvertReleaseToChild(release *trmodels.TemplateRelease, full *Full) *Child {
+	return &Child{
+		ID:          release.ID,
+		Name:        release.Name,
+		Path:        release.Name,
+		Description: release.Description,
+		ParentID:    release.Template,
+		FullName:    full.FullName,
+		FullPath:    full.FullPath,
+		Type:        ChildTypeRelease,
 	}
 }
 

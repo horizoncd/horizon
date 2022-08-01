@@ -72,6 +72,27 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 	}, skippers...)
 }
 
+func constructRBACParam(c *gin.Context) (*auth.AttributesRecord, error) {
+	requestInfo, err := RequestInfoFty.NewRequestInfo(c.Request)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. construct record
+	authRecord := auth.AttributesRecord{
+		Verb:            requestInfo.Verb,
+		APIGroup:        requestInfo.APIGroup,
+		APIVersion:      requestInfo.APIVersion,
+		Resource:        requestInfo.Resource,
+		SubResource:     requestInfo.Subresource,
+		Name:            requestInfo.Name,
+		Scope:           requestInfo.Scope,
+		ResourceRequest: requestInfo.IsResourceRequest,
+		Path:            requestInfo.Path,
+	}
+	return &authRecord, nil
+}
+
 func handleApplication(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
 	app, err := mgr.ApplicationManager.GetByName(c, authRecord.Name)
@@ -89,6 +110,12 @@ func handleApplication(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 			}
 		}
 	}
+	authRecordPtr, err := constructRBACParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
+		return
+	}
+	c.Set(common.ContextAuthRecord, *authRecordPtr)
 	c.Next()
 }
 
@@ -109,6 +136,12 @@ func handleCluster(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 			}
 		}
 	}
+	authRecordPtr, err := constructRBACParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
+		return
+	}
+	c.Set(common.ContextAuthRecord, *authRecordPtr)
 	c.Next()
 }
 
@@ -146,6 +179,12 @@ func handleGetSchema(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 			c.Params[i].Value = fmt.Sprintf("%d", release.ID)
 		}
 	}
+	authRecordPtr, err := constructRBACParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
+		return
+	}
+	c.Set(common.ContextAuthRecord, *authRecordPtr)
 	c.Next()
 }
 
@@ -166,5 +205,11 @@ func handleTemplate(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 			}
 		}
 	}
+	authRecordPtr, err := constructRBACParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.RequestInfoError, err.Error())
+		return
+	}
+	c.Set(common.ContextAuthRecord, *authRecordPtr)
 	c.Next()
 }

@@ -81,3 +81,12 @@ const (
 	ParamTemplateID    = "templateID"
 	ParamReleaseID     = "releaseID"
 )
+
+const (
+	GitlabControl = "control"
+	GitlabCompute = "compute"
+)
+
+const (
+	ChartVersionFormat = "%s-%s"
+)

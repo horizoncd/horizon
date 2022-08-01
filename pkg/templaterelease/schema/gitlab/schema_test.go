@@ -228,7 +228,7 @@ func TestNoTag(t *testing.T) {
 			ID: 1,
 		},
 		TemplateName: templateName,
-		Name:         releaseName,
+		ChartVersion: releaseName,
 	}, nil)
 
 	templateMgr.EXPECT().GetByName(ctx, templateName).

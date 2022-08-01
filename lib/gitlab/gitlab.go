@@ -339,7 +339,7 @@ func (h *helper) GetCommit(ctx context.Context, pid interface{}, commit string) 
 }
 
 func (h *helper) GetTag(ctx context.Context, pid interface{}, tag string) (_ *gitlab.Tag, err error) {
-	const op = "gitlab: get commit"
+	const op = "gitlab: get tag"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	c, rsp, err := h.client.Tags.GetTag(pid, tag, gitlab.WithContext(ctx))
@@ -547,6 +547,9 @@ func (h *helper) Compare(ctx context.Context, pid interface{}, from, to string,
 	return compare, nil
 }
 func (h *helper) GetRepositoryArchive(ctx context.Context, pid interface{}, sha string) ([]byte, error) {
+	const op = "gitlab: get repository archive"
+	defer wlog.Start(ctx, op).StopPrint()
+
 	format := "tar.gz"
 	archive, resp, err := h.client.Repositories.Archive(pid, &gitlab.ArchiveOptions{
 		Format: &format,

@@ -313,6 +313,7 @@ func Test(t *testing.T) {
 
 	tr := &trmodels.TemplateRelease{
 		TemplateName: "javaapp",
+		ChartVersion: "v1.0.0",
 		Name:         "v1.0.0",
 		ChartName:    "javaapp",
 	}
