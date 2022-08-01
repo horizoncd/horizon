@@ -50,7 +50,6 @@ CREATE TABLE `tb_template`
     `chart_name`  varchar(256)        NOT NULL DEFAULT '' COMMENT 'chart name of template',
     `description` varchar(256)        NULL COMMENT 'the template description',
     `repository`  varchar(256)        NOT NULL DEFAULT '' COMMENT 'template gitlab repository url',
-    `token`       varchar(256)        NOT NULL DEFAULT '' COMMENT 'token to access gitlab repo',
     `group_id`    bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'which group template belongs to',
     `only_admin`  tinyint(1)          NOT NULL DEFAULT 0,
     `created_at`  datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
