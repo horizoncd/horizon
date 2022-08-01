@@ -15,7 +15,6 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/gitlab"
 	hctx "g.hz.netease.com/horizon/pkg/context"
-	tplctx "g.hz.netease.com/horizon/pkg/context"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	gmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupModels "g.hz.netease.com/horizon/pkg/group/models"
@@ -122,7 +121,7 @@ func (c *controller) ListTemplate(ctx context.Context) (_ Templates, err error) 
 		tpls = toTemplates(filteredModels)
 	}
 
-	if withFullpath, ok := ctx.Value(tplctx.TemplateWithFullPath).(bool); ok && withFullpath {
+	if withFullpath, ok := ctx.Value(hctx.TemplateWithFullPath).(bool); ok && withFullpath {
 		tpls, err = c.addFullPath(ctx, tpls)
 		if err != nil {
 			return nil, err
@@ -133,7 +132,7 @@ func (c *controller) ListTemplate(ctx context.Context) (_ Templates, err error) 
 }
 
 func (c *controller) addFullPath(ctx context.Context, tpls Templates) (Templates, error) {
-	if withFullPath, ok := ctx.Value(tplctx.TemplateWithFullPath).(bool); ok && withFullPath {
+	if withFullPath, ok := ctx.Value(hctx.TemplateWithFullPath).(bool); ok && withFullPath {
 		for i, tpl := range tpls {
 			if tpl.GroupID == service.RootGroupID {
 				tpls[i].FullPath = "/" + tpl.Name
@@ -271,7 +270,7 @@ func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint) (T
 		tpls = toTemplates(filteredModels)
 	}
 
-	if withFullpath, ok := ctx.Value(tplctx.TemplateWithFullPath).(bool); ok && withFullpath {
+	if withFullpath, ok := ctx.Value(hctx.TemplateWithFullPath).(bool); ok && withFullpath {
 		tpls, err = c.addFullPath(ctx, tpls)
 		if err != nil {
 			return nil, err

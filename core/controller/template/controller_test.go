@@ -15,6 +15,7 @@ import (
 	"g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/lib/orm"
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
+	groupmanagermock "g.hz.netease.com/horizon/mock/pkg/group/manager"
 	tmock "g.hz.netease.com/horizon/mock/pkg/template/manager"
 	releasemanagermock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
 	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
@@ -53,6 +54,7 @@ func TestList(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	templateMgr := tmock.NewMockManager(mockCtl)
 	templateReleaseMgr := trmock.NewMockManager(mockCtl)
+	groupMgr := groupmanagermock.NewMockManager(mockCtl)
 
 	onlyAdminTrue := true
 	onlyAdminFalse := false
@@ -61,16 +63,25 @@ func TestList(t *testing.T) {
 			Model: global.Model{
 				ID: 1,
 			},
+			GroupID:   0,
 			Name:      "javaapp",
 			OnlyAdmin: &onlyAdminTrue,
 		}, {
 			Model: global.Model{
 				ID: 2,
 			},
+			GroupID:   1,
 			Name:      "tomcat",
 			OnlyAdmin: &onlyAdminFalse,
 		},
 	}, nil).Times(2)
+	group1 := &groupmodels.Group{
+		Model:        global.Model{ID: 1},
+		Name:         "group1",
+		TraversalIDs: "1",
+	}
+	groupMgr.EXPECT().GetByID(gomock.Any(), uint(1)).Return(group1, nil)
+	groupMgr.EXPECT().GetByIDs(gomock.Any(), []uint{1}).Return([]*groupmodels.Group{group1}, nil)
 
 	recommends := []bool{false, true, false}
 
@@ -162,14 +173,18 @@ func TestList(t *testing.T) {
 	ctl := &controller{
 		templateMgr:        templateMgr,
 		templateReleaseMgr: templateReleaseMgr,
+		groupMgr:           groupMgr,
 		gitlabLib:          gitlabLib,
 	}
 
-	templates, err := ctl.ListTemplate(ctx)
+	c := context.WithValue(ctx, hctx.TemplateWithFullPath, true)
+	templates, err := ctl.ListTemplate(c)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(templates))
 	assert.Equal(t, "javaapp", templates[0].Name)
+	assert.Equal(t, "/javaapp", templates[0].FullPath)
 	assert.Equal(t, "tomcat", templates[1].Name)
+	assert.Equal(t, "/group1/tomcat", templates[1].FullPath)
 
 	templateReleases, err := ctl.ListTemplateRelease(ctx, "javaapp")
 	assert.Nil(t, err)
