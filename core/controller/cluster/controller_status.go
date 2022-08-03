@@ -123,8 +123,13 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 				}
 			}
 
+			replicas := 0
+			if clusterState.DesiredReplicas != nil {
+				replicas = *clusterState.DesiredReplicas
+			}
+
 			if !isClusterActuallyHealthy(clusterState, po, restartTime, latestPipelinerun,
-				*clusterState.DesiredReplicas) {
+				replicas) {
 				clusterState.Status = health.HealthStatusProgressing
 			}
 		}
@@ -152,11 +157,8 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 func isClusterActuallyHealthy(clusterState *cd.ClusterState, po *gitrepo.PipelineOutput,
 	restartTime string, lastPipelineRun *prmodels.Pipelinerun, replicas int) bool {
 	checkReplicas := func(clusterVersion *cd.ClusterVersion) bool {
-		if replicas == 0 {
-			return true
-		}
-
-		if po == nil || po.Image == nil || len(clusterVersion.Pods) == 0 {
+		if replicas == 0 || po == nil ||
+			po.Image == nil || len(clusterVersion.Pods) == 0 {
 			return true
 		}
 
