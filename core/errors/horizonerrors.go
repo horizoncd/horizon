@@ -38,6 +38,7 @@ var (
 	TemplateSchemaTagInDB     = sourceType{name: "TemplateSchemaTagInDB"}
 	TemplateInDB              = sourceType{name: "TemplateInDB"}
 	TemplateReleaseInDB       = sourceType{name: "TemplateReleaseInDB"}
+	TemplateReleaseInRepo     = sourceType{name: "TempalteReleaseInRepo"}
 	ApplicationManifestInArgo = sourceType{name: "ApplicationManifestInArgo"}
 	PodsInK8S                 = sourceType{name: "PodsInK8S"}
 	ReplicasSetInK8S          = sourceType{name: "ReplicasSetInK8S"}

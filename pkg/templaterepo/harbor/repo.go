@@ -200,10 +200,15 @@ func (h *TemplateRepo) GetChart(name string, version string, lastSyncAt time.Tim
 	}()
 
 	b, err := ioutil.ReadAll(resp.Body)
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		if err != nil {
 			return nil, perror.Wrap(herrors.ErrReadFailed,
 				fmt.Sprintf("failed to read response: %v", err))
+		}
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, perror.Wrap(herrors.NewErrNotFound(herrors.TemplateReleaseInRepo,
+				fmt.Sprintf("%s: %s", resp.Status, string(b))),
+				"not found")
 		}
 		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
 			fmt.Sprintf("%s: %s", resp.Status, string(b)))
