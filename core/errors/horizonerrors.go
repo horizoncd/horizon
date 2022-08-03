@@ -44,6 +44,7 @@ var (
 	DeploymentInK8S           = sourceType{name: "DeploymentInK8S"}
 	PodEventInK8S             = sourceType{name: "PodEventInK8S"}
 	KubeConfigInK8S           = sourceType{name: "KubeConfigK8S"}
+	GroupFullPath             = sourceType{name: "GroupFullPath"}
 
 	// S3
 	PipelinerunLog = sourceType{name: "PipelinerunLog"}

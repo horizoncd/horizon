@@ -133,7 +133,11 @@ func (a *API) GetGroupByFullPath(c *gin.Context) {
 
 	child, err := a.groupCtl.GetByFullPath(c, path, resourceType)
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+		} else {
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(e.Error()))
+		}
 		return
 	}
 

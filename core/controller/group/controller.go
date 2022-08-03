@@ -13,6 +13,7 @@ import (
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/group/service"
@@ -22,6 +23,7 @@ import (
 	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/go-yaml/yaml"
 )
 
@@ -325,17 +327,19 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 	return group.ID, err
 }
 
-// TODO: 根据功能重构
+// GetByFullPath TODO: 根据功能重构
 // GetByFullPath get a group by the URLPath
 func (c *controller) GetByFullPath(ctx context.Context,
 	resourcePath string, resourceType string) (*service.Child, error) {
 	const op = "get record by fullPath"
+	defer wlog.Start(ctx, op).StopPrint()
 
-	var errNotMatch = errors.E(op, http.StatusNotFound, ErrCodeNotFound,
-		fmt.Sprintf("no resource matching the resourcePath: %s", resourcePath))
+	errMsg := fmt.Sprintf("no resource matching the resourcePath: %s, resourceType: %s",
+		resourcePath, resourceType)
+	errNotMatch := herrors.NewErrNotFound(herrors.GroupFullPath, errMsg)
 
 	if len(resourcePath) == 0 {
-		return nil, errNotMatch
+		return nil, perror.Wrap(errNotMatch, errMsg)
 	}
 
 	if resourceType == "" {
@@ -364,7 +368,7 @@ func (c *controller) GetByFullPath(ctx context.Context,
 
 		// 2. match application
 		if len(paths) < 2 {
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 		app, err := c.applicationManager.GetByName(ctx, paths[len(paths)-1])
 		if app != nil && err == nil {
@@ -379,15 +383,15 @@ func (c *controller) GetByFullPath(ctx context.Context,
 
 		// 3. match cluster
 		if len(paths) < 3 {
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 		cluster, err := c.clusterManager.GetByName(ctx, paths[len(paths)-1])
 		if err != nil || cluster == nil {
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 		app, err = c.applicationManager.GetByID(ctx, cluster.ApplicationID)
 		if err != nil {
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 		appParentFull, ok := idToFull[app.GroupID]
 		if ok && fmt.Sprintf("%s/%s/%s", appParentFull.FullPath, app.Name, cluster.Name) == resourcePath {
@@ -397,19 +401,19 @@ func (c *controller) GetByFullPath(ctx context.Context,
 			}), nil
 		}
 
-		return nil, errNotMatch
+		return nil, perror.Wrap(errNotMatch, errMsg)
 	}
 
 	pathArr := strings.Split(strings.TrimPrefix(resourcePath, "/"), "/")
 	// for /group1/group2/group3/template1
 	if resourceType == common.ResourceTemplate {
 		if len(pathArr) < 1 {
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 		templateName := pathArr[len(pathArr)-1]
 		template, err := c.templateMgr.GetByName(ctx, templateName)
 		if err != nil {
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 
 		if template.GroupID == service.RootGroupID {
@@ -419,7 +423,7 @@ func (c *controller) GetByFullPath(ctx context.Context,
 					FullPath: fmt.Sprintf("/%s", template.Name),
 				}), nil
 			}
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 
 		groups, err := c.groupManager.GetByPaths(ctx, pathArr[:len(pathArr)-1])
@@ -439,7 +443,7 @@ func (c *controller) GetByFullPath(ctx context.Context,
 	} else if resourceType == common.ResourceTemplateRelease {
 		// for /template1/release1
 		if len(pathArr) < 2 {
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 
 		templateName := pathArr[len(pathArr)-2]
@@ -451,7 +455,7 @@ func (c *controller) GetByFullPath(ctx context.Context,
 		releaseName := pathArr[len(pathArr)-1]
 		release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, releaseName)
 		if err != nil {
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 
 		if template.GroupID == service.RootGroupID {
@@ -461,7 +465,7 @@ func (c *controller) GetByFullPath(ctx context.Context,
 					FullPath: fmt.Sprintf("/%s/%s", template.Name, releaseName),
 				}), nil
 			}
-			return nil, errNotMatch
+			return nil, perror.Wrap(errNotMatch, errMsg)
 		}
 
 		groups, err := c.groupManager.GetByPaths(ctx, pathArr[:len(pathArr)-2])
@@ -479,7 +483,7 @@ func (c *controller) GetByFullPath(ctx context.Context,
 			}), nil
 		}
 	}
-	return nil, errNotMatch
+	return nil, perror.Wrap(errNotMatch, errMsg)
 }
 
 func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
