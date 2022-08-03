@@ -17,7 +17,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.ListTemplate,
 		},
 		{
-			Method:      http.MethodGet,
+			Method: http.MethodGet,
+			// TODO: remove this api
 			Pattern:     fmt.Sprintf("/:%v/releases/:%v/schema", _templateParam, _releaseParam),
 			HandlerFunc: api.GetTemplateSchema,
 		},

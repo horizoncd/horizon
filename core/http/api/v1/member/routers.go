@@ -54,11 +54,6 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.CreateTemplateMember,
 		},
 		{
-			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/releases/:%v/members", _paramReleaseID),
-			HandlerFunc: api.ListReleasesMember,
-		},
-		{
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/members/:%v", _paramMemberID),
 			HandlerFunc: api.UpdateMember,

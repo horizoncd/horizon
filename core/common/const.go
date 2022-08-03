@@ -65,7 +65,7 @@ const (
 
 	ResourceTemplate = "templates"
 
-	ResourceTemplateRelease = "releases"
+	ResourceTemplateRelease = "templatereleases"
 )
 
 const (

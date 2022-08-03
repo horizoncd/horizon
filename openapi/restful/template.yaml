@@ -577,7 +577,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/releases/{release}:
+  /apis/core/v1/templatereleases/{release}:
     parameters:
       - name: release
         in: path
@@ -677,7 +677,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/releases/{release}/sync:
+  /apis/core/v1/templatereleases/{release}/sync:
     parameters:
       - name: release
         in: path

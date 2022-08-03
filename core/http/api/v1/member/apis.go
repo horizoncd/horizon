@@ -20,7 +20,6 @@ const (
 	_paramApplicationID        = "applicationID"
 	_paramApplicationClusterID = "clusterID"
 	_paramTemplateID           = "templateID"
-	_paramReleaseID            = "releaseID"
 	_paramMemberID             = "memberID"
 	_querySelf                 = "self"
 	_queryEmail                = "email"
@@ -273,18 +272,6 @@ func (a *API) ListTemplateMember(c *gin.Context) {
 		return
 	}
 	a.listMember(c, resourceID, membermodels.TypeTemplate)
-}
-
-func (a *API) ListReleasesMember(c *gin.Context) {
-	resourceIDStr := c.Param(_paramReleaseID)
-
-	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam,
-			fmt.Sprintf("%v", err))
-		return
-	}
-	a.listMember(c, resourceID, membermodels.TypeTemplateRelease)
 }
 
 func (a *API) listMember(c *gin.Context, resourceID uint64, resourceType membermodels.ResourceType) {

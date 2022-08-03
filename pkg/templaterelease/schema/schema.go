@@ -22,19 +22,6 @@ type Schema struct {
 	UISchema   map[string]interface{}
 }
 
-const (
-	// json schema file path
-	// nolint
-	_pipelineSchemaPath = "schema/pipeline.schema.json"
-	// nolint
-	_applicationSchemaPath = "schema/application.schema.json"
-	// ui schema file path
-	// nolint
-	_pipelineUISchemaPath = "schema/pipeline.ui.schema.json"
-	// nolint
-	_applicationUISchemaPath = "schema/application.ui.schema.json"
-)
-
 // params
 const (
 	ClusterIDKey    string = "clusterID"
