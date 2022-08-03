@@ -620,9 +620,6 @@ func test(t *testing.T) {
 		ValueFiles:    []string{},
 	}).AnyTimes()
 	imageName := "image"
-	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{
-		Image: &imageName,
-	}, nil).Times(1)
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().Pause(ctx, gomock.Any()).Return(nil).AnyTimes()
@@ -1283,7 +1280,7 @@ func testIsClusterActuallyHealthy(t *testing.T) {
 		Image: &imageV1,
 	}
 	cs := &clustercd.ClusterState{}
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, "", nil))
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, "", nil, 0))
 
 	containerV1 := &clustercd.Container{
 		Image: imageV1,
@@ -1312,14 +1309,20 @@ func testIsClusterActuallyHealthy(t *testing.T) {
 	cs.Versions[cs.PodTemplateHash] = &clustercd.ClusterVersion{
 		Pods: map[string]*clustercd.ClusterPod{"Pod3": Pod3},
 	}
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, "", nil))
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, "", nil, 0))
 
 	cs.Versions[cs.PodTemplateHash].Pods["Pod2"] = Pod2
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, "", nil))
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, "", nil, 0))
 
 	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1, nil))
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1, nil, 0))
 
 	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t2, nil))
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t2, nil, 0))
+
+	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
+	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1, nil, 2))
+
+	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
+	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t1, nil, 3))
 }
