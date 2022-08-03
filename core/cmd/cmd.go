@@ -232,7 +232,7 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
-	templateSchemaGetter := templateschemarepo.NewSchemaGetter(ctx, templateRepo)
+	templateSchemaGetter := templateschemarepo.NewSchemaGetter(ctx, templateRepo, manager)
 
 	outputGetter, err := output.NewOutPutGetter(ctx, templateRepo, manager)
 	if err != nil {

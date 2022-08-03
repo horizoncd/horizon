@@ -108,10 +108,9 @@ func TestList(t *testing.T) {
 					ID: 1,
 				},
 				Template:    1,
-				Name:        "v1.0.0",
+				Name:        tags[0],
 				CommitID:    "test",
 				SyncStatus:  trmodels.StatusSucceed,
-				Tag:         tags[0],
 				Recommended: &recommends[0],
 				OnlyAdmin:   &onlyAdminTrue,
 			}, {
@@ -119,10 +118,9 @@ func TestList(t *testing.T) {
 					ID: 1,
 				},
 				Template:    1,
-				Name:        "v1.0.1",
+				Name:        tags[1],
 				CommitID:    "test",
 				SyncStatus:  trmodels.StatusSucceed,
-				Tag:         tags[1],
 				Recommended: &recommends[1],
 				OnlyAdmin:   &onlyAdminFalse,
 			}, {
@@ -130,10 +128,9 @@ func TestList(t *testing.T) {
 					ID: 1,
 				},
 				Template:    1,
-				Name:        "v1.0.2",
+				Name:        tags[2],
 				CommitID:    "test3",
 				SyncStatus:  trmodels.StatusSucceed,
-				Tag:         tags[2],
 				Recommended: &recommends[2],
 				OnlyAdmin:   &onlyAdminFalse,
 			},
@@ -239,11 +236,13 @@ func TestGetSchema(t *testing.T) {
 		},
 	}
 	release := &trmodels.TemplateRelease{
+		Name:         releaseName,
+		TemplateName: templateName,
 		ChartVersion: releaseName,
 		ChartName:    charName,
 	}
 	templateReleaseMgr.EXPECT().GetByID(gomock.Any(), uint(1)).Return(release, nil)
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, charName, releaseName, nil).Return(schemas, nil)
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, templateName, releaseName, nil).Return(schemas, nil)
 
 	ctl := &controller{
 		templateSchemaGetter: templateSchemaGetter,
@@ -322,7 +321,6 @@ func TestCreateTemplateInNonRootGroup(t *testing.T) {
 
 	release, err := mgr.TemplateReleaseManager.GetByID(ctx, 1)
 	assert.Nil(t, err)
-	assert.Equal(t, releaseName, release.Tag)
 	assert.Equal(t, releaseName, release.Name)
 	assert.Equal(t, templateName, release.TemplateName)
 	assert.Equal(t, tpl.ID, release.Template)
@@ -567,7 +565,7 @@ func createController(t *testing.T) Controller {
 	})
 	assert.Nil(t, err)
 
-	getter := reposchema.NewSchemaGetter(context.Background(), repo)
+	getter := reposchema.NewSchemaGetter(context.Background(), repo, mgr)
 
 	URL, err := url.Parse(templateRepo)
 	assert.Nil(t, err)
@@ -600,7 +598,6 @@ func createChart(t *testing.T, ctl Controller, groupID uint) {
 	request := CreateTemplateRequest{
 		CreateReleaseRequest: CreateReleaseRequest{
 			Name: releaseName,
-			Tag:  releaseName,
 		},
 		Name:        templateName,
 		Description: "",

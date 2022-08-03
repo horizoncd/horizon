@@ -15,7 +15,6 @@ type TemplateRelease struct {
 
 	// v1.0.0
 	Name string
-	Tag  string
 	// v1.0.0-33da3204
 	ChartVersion string
 

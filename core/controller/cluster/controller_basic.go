@@ -958,7 +958,7 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 		return err
 	}
 	templateSchemaRenderVal["resourceType"] = "cluster"
-	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, tr.ChartName, tr.ChartVersion, templateSchemaRenderVal)
+	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, tr.TemplateName, tr.Name, templateSchemaRenderVal)
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ package mock_repo
 
 import (
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	chart "helm.sh/helm/v3/pkg/chart"
@@ -64,18 +65,18 @@ func (mr *MockTemplateRepoMockRecorder) ExistChart(name, version interface{}) *g
 }
 
 // GetChart mocks base method.
-func (m *MockTemplateRepo) GetChart(name, version string) (*chart.Chart, error) {
+func (m *MockTemplateRepo) GetChart(name, version string, lastSyncAt time.Time) (*chart.Chart, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetChart", name, version)
+	ret := m.ctrl.Call(m, "GetChart", name, version, lastSyncAt)
 	ret0, _ := ret[0].(*chart.Chart)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetChart indicates an expected call of GetChart.
-func (mr *MockTemplateRepoMockRecorder) GetChart(name, version interface{}) *gomock.Call {
+func (mr *MockTemplateRepoMockRecorder) GetChart(name, version, lastSyncAt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChart", reflect.TypeOf((*MockTemplateRepo)(nil).GetChart), name, version)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChart", reflect.TypeOf((*MockTemplateRepo)(nil).GetChart), name, version, lastSyncAt)
 }
 
 // GetLoc mocks base method.

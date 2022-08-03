@@ -10,7 +10,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -27,9 +26,6 @@ const (
 	HarborDeletePath   = "/api/chartrepo/%s/charts/%s/%s"
 	HarborStatPath     = "/api/chartrepo/%s/charts/%s/%s"
 	HarborDownloadPath = "/chartrepo/%s/%s"
-
-	defaultCacheLifeTime = 1000 * time.Second
-	cacheKeyFormat       = "%s-%s"
 )
 
 type Metadata struct {
@@ -53,10 +49,9 @@ type TemplateRepo struct {
 	password string
 	repoName string
 	client   *http.Client
-	cache    *cache
 }
 
-func NewTemplateRepo(config config.Repo) (*TemplateRepo, error) {
+func NewTemplateRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
 	host, err := url.Parse(config.Host)
 	if err != nil {
 		return nil, perror.Wrap(herrors.ErrParamInvalid,
@@ -77,14 +72,13 @@ func NewTemplateRepo(config config.Repo) (*TemplateRepo, error) {
 	client := &http.Client{}
 	client.Transport = transport
 
-	return &TemplateRepo{
+	return templaterepo.NewRepoWithCache(&TemplateRepo{
 		repoName: config.RepoName,
 		url:      host,
 		username: config.Username,
 		password: config.Password,
 		client:   client,
-		cache:    &cache{},
-	}, nil
+	}), nil
 }
 
 func (h *TemplateRepo) GetLoc() string {
@@ -96,12 +90,6 @@ func (h *TemplateRepo) UploadChart(chart *chart.Chart) error {
 		err error
 		req *http.Request
 	)
-	defer func() {
-		if err == nil {
-			key := fmt.Sprintf(cacheKeyFormat, chart.Metadata.Name, chart.Metadata.Version)
-			h.cache.setWithExpiration(key, chart, defaultCacheLifeTime)
-		}
-	}()
 
 	h.url.Path = fmt.Sprintf(HarborUploadPath, h.repoName)
 	req, err = http.NewRequest("POST", h.url.String(), nil)
@@ -143,12 +131,6 @@ func (h *TemplateRepo) DeleteChart(name string, version string) error {
 		err error
 		req *http.Request
 	)
-	defer func() {
-		if err == nil {
-			key := fmt.Sprintf(cacheKeyFormat, name, version)
-			h.cache.remove(key)
-		}
-	}()
 	h.url.Path = fmt.Sprintf(HarborDeletePath, h.repoName, name, version)
 	req, err = http.NewRequest("DELETE", h.url.String(), nil)
 	if err != nil {
@@ -188,24 +170,7 @@ func (h *TemplateRepo) ExistChart(name string, version string) (bool, error) {
 	return true, nil
 }
 
-func (h *TemplateRepo) GetChart(name string, version string) (*chart.Chart, error) {
-	key := fmt.Sprintf(cacheKeyFormat, name, version)
-	value, getOK := h.cache.get(key)
-	if c, ok := value.(*chart.Chart); getOK && ok {
-		return c, nil
-	}
-	var (
-		err          error
-		chartPackage *chart.Chart
-	)
-
-	defer func() {
-		if err == nil {
-			key := fmt.Sprintf(cacheKeyFormat, name, version)
-			h.cache.setWithExpiration(key, chartPackage, defaultCacheLifeTime)
-		}
-	}()
-
+func (h *TemplateRepo) GetChart(name string, version string, lastSyncAt time.Time) (*chart.Chart, error) {
 	meta, err := h.statChart(name, version)
 	if err != nil {
 		return nil, err
@@ -243,7 +208,7 @@ func (h *TemplateRepo) GetChart(name string, version string) (*chart.Chart, erro
 		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
 			fmt.Sprintf("%s: %s", resp.Status, string(b)))
 	}
-	chartPackage, err = loader.LoadArchive(bytes.NewReader(b))
+	chartPackage, err := loader.LoadArchive(bytes.NewReader(b))
 	if err != nil {
 		return nil, perror.Wrap(herrors.ErrLoadChartArchive,
 			fmt.Sprintf("failed to load archive: %v", err))
@@ -314,27 +279,4 @@ func writeChartToBody(req *http.Request, c *chart.Chart) error {
 	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 	req.Body = ioutil.NopCloser(&buf)
 	return nil
-}
-
-type cache struct {
-	m sync.Map
-}
-
-func (c *cache) get(k interface{}) (interface{}, bool) {
-	return c.m.Load(k)
-}
-
-func (c *cache) set(k, v interface{}) {
-	c.m.Store(k, v)
-}
-
-func (c *cache) remove(k interface{}) {
-	c.m.Delete(k)
-}
-
-func (c *cache) setWithExpiration(k, v interface{}, duration time.Duration) {
-	c.set(k, v)
-	time.AfterFunc(duration, func() {
-		c.remove(k)
-	})
 }

@@ -53,7 +53,7 @@ func (g *getter) GetTemplateOutPut(ctx context.Context,
 		return "", err
 	}
 
-	chart, err := g.templateRepo.GetChart(tr.ChartName, releaseName)
+	chart, err := g.templateRepo.GetChart(tr.ChartName, releaseName, tr.LastSyncAt)
 	if err != nil {
 		return "", err
 	}

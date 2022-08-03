@@ -489,7 +489,7 @@ func test(t *testing.T) {
 	expectparams := make(map[string]string)
 	expectparams[gitlabschema.ClusterIDKey] = "1"
 
-	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.0-test", gomock.Any()).
+	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.0", gomock.Any()).
 		Return(&trschema.Schemas{
 			Application: &trschema.Schema{
 				JSONSchema: applicationSchema,
@@ -498,7 +498,7 @@ func test(t *testing.T) {
 				JSONSchema: pipelineSchema,
 			},
 		}, nil).AnyTimes()
-	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.1-test", gomock.Any()).
+	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.1", gomock.Any()).
 		Return(&trschema.Schemas{
 			Application: &trschema.Schema{
 				JSONSchema: applicationSchema,
@@ -682,7 +682,7 @@ func test(t *testing.T) {
 		TemplateName: templateName,
 		ChartName:    templateName,
 		Name:         "v1.0.1",
-		ChartVersion: "v1.0.1-test",
+		ChartVersion: "v1.0.1",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, newTr)

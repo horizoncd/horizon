@@ -62,7 +62,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	}
 	route.RegisterRoutes(apiGroup, routes)
 
-	apiGroup = engine.Group(fmt.Sprintf("/apis/core/v1/releases/:%s", _releaseParam))
+	apiGroup = engine.Group(fmt.Sprintf("/apis/core/v1/templatereleases/:%s", _releaseParam))
 	routes = route.Routes{
 		{
 			Method:      http.MethodGet,

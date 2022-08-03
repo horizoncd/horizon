@@ -3,6 +3,7 @@ package output
 import (
 	"errors"
 	"testing"
+	"time"
 
 	templatemock "g.hz.netease.com/horizon/mock/pkg/template/manager"
 	templatereleasemock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
@@ -40,17 +41,19 @@ func TestGeTemplateOutPut(t *testing.T) {
 	assert.Equal(t, err, retErr)
 	assert.Equal(t, outputstr, "")
 
+	tm := time.Now()
 	tr := &trm.TemplateRelease{
 		TemplateName: templateName,
 		ChartVersion: releaseName,
 		ChartName:    templateName,
+		LastSyncAt:   tm,
 	}
 
 	// 2. test gitlab get file ok
 	outputSchemaStr := "domain: s3.mockserver.org"
 	templatereleaseMockMgr.EXPECT().GetByTemplateNameAndRelease(gomock.Any(),
 		templateName, releaseName).Return(tr, nil)
-	repoMock.EXPECT().GetChart(templateName, releaseName).
+	repoMock.EXPECT().GetChart(templateName, releaseName, tm).
 		Return(&chart.Chart{Files: []*chart.File{{Name: _outputsPath, Data: []byte(outputSchemaStr)}}}, nil).Times(1)
 
 	outputstr, err = outputGetter.GetTemplateOutPut(context.TODO(), templateName, releaseName)

@@ -1,11 +1,12 @@
 package harbor
 
 import (
-	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	config "g.hz.netease.com/horizon/pkg/config/templaterepo"
+	"g.hz.netease.com/horizon/pkg/templaterepo"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/chart"
 )
@@ -45,7 +46,7 @@ func checkSkip(t *testing.T) {
 	}
 }
 
-func createHarbor(t *testing.T) *TemplateRepo {
+func createHarbor(t *testing.T) templaterepo.TemplateRepo {
 	repo, err := NewTemplateRepo(config.Repo{
 		Host:     harborHost,
 		Username: harborAdmin,
@@ -74,17 +75,13 @@ func TestHarbor(t *testing.T) {
 	err := harbor.UploadChart(c)
 	assert.Nil(t, err)
 
-	metadata, err := harbor.statChart(templateName, releaseName)
-	assert.Nil(t, err)
-	assert.NotNil(t, metadata)
-
-	c, err = harbor.GetChart(templateName, releaseName)
+	tm := time.Now()
+	c, err = harbor.GetChart(templateName, releaseName, tm)
 	assert.Nil(t, err)
 	assert.NotNil(t, c)
 
-	harbor.cache.remove(fmt.Sprintf(cacheKeyFormat, templateName, releaseName))
-
-	c, err = harbor.GetChart(templateName, releaseName)
+	// use cache
+	c, err = harbor.GetChart(templateName, releaseName, tm)
 	assert.Nil(t, err)
 	assert.NotNil(t, c)
 
@@ -95,6 +92,6 @@ func TestHarbor(t *testing.T) {
 	err = harbor.DeleteChart(templateName, releaseName)
 	assert.Nil(t, err)
 
-	_, err = harbor.GetChart(templateName, releaseName)
+	_, err = harbor.GetChart(templateName, releaseName, time.Now())
 	assert.NotNil(t, err)
 }

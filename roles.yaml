@@ -99,10 +99,10 @@ Roles:
           - templates/releases
           - templates
           - templates/members
-          - releases/members
-          - releases
-          - releases/sync
-          - releases/schema
+          - templatereleases/members
+          - templatereleases
+          - templatereleases/sync
+          - templatereleases/schema
         verbs:
           - "*"
         scopes:
@@ -201,7 +201,7 @@ Roles:
           - oauthapps
           - oauthapps/clientsecret
           - templates/releases
-          - releases/schema
+          - templatereleases/schema
         verbs:
           - get
         scopes:
@@ -222,7 +222,7 @@ Roles:
       - apiGroups:
           - core
         resources:
-          - releases/sync
+          - templatereleases/sync
         verbs:
           - create
         scopes:
@@ -233,7 +233,7 @@ Roles:
           - core
         resources:
           - templates/members
-          - releases/members
+          - templatereleases/members
         verbs:
           - get
           - update
@@ -245,7 +245,7 @@ Roles:
       - apiGroups:
           - core
         resources:
-          - releases
+          - templatereleases
           - templates
         verbs:
           - get
@@ -292,7 +292,7 @@ Roles:
       - apiGroups:
           - core
         resources:
-          - releases/sync
+          - templatereleases/sync
         verbs:
           - create
         scopes:
@@ -301,7 +301,7 @@ Roles:
           - core
         resources:
           - templates/releases
-          - releases/schema
+          - templatereleases/schema
         verbs:
           - get
         scopes:
@@ -319,7 +319,7 @@ Roles:
           - core
         resources:
           - templates
-          - releases
+          - templatereleases
         verbs:
           - get
           - update
@@ -359,7 +359,7 @@ Roles:
           - clusters/resume
           - clusters/containers
           - templates/members
-          - releases/members
+          - templatereleases/members
         verbs:
           - create
           - get
@@ -400,11 +400,11 @@ Roles:
           - groups/oauthapps
           - groups/templates
           - templates
-          - releases
-          - releases/schema
+          - templatereleases
+          - templatereleases/schema
           - templates/releases
           - templates/members
-          - releases/members
+          - templatereleases/members
           - oauthapps
           - oauthapps/clientsecret
           - applications

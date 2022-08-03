@@ -229,7 +229,7 @@ func (c *controller) GetTemplateSchema(ctx context.Context, releaseID uint,
 		return nil, err
 	}
 
-	schemas, err := c.templateSchemaGetter.GetTemplateSchema(ctx, release.ChartName, release.ChartVersion, param)
+	schemas, err := c.templateSchemaGetter.GetTemplateSchema(ctx, release.TemplateName, release.Name, param)
 	if err != nil {
 		return nil, err
 	}
@@ -378,11 +378,11 @@ func (c *controller) CreateRelease(ctx context.Context,
 	}
 
 	if syncToRepo, ok := ctx.Value(hctx.ReleaseSyncToRepo).(bool); !ok || (ok && syncToRepo) {
-		tag, chartBytes, err := c.getTag(ctx, template.Repository, template.ChartName, release.Tag)
+		tag, chartBytes, err := c.getTag(ctx, template.Repository, template.ChartName, release.Name)
 		if err != nil {
 			return nil, err
 		}
-		chartVersion := fmt.Sprintf(common.ChartVersionFormat, release.Tag, tag.Commit.ShortID)
+		chartVersion := fmt.Sprintf(common.ChartVersionFormat, release.Name, tag.Commit.ShortID)
 		err = c.syncReleaseToRepo(chartBytes, template.ChartName, chartVersion)
 		if err != nil {
 			return nil, err
@@ -587,11 +587,11 @@ func (c *controller) SyncReleaseToRepo(ctx context.Context, releaseID uint) erro
 		return err
 	}
 
-	tag, chartBytes, err := c.getTag(ctx, template.Repository, template.ChartName, release.Tag)
+	tag, chartBytes, err := c.getTag(ctx, template.Repository, template.ChartName, release.Name)
 	if err != nil {
 		return err
 	}
-	chartVersion := fmt.Sprintf(common.ChartVersionFormat, release.Tag, tag.Commit.ShortID)
+	chartVersion := fmt.Sprintf(common.ChartVersionFormat, release.Name, tag.Commit.ShortID)
 	err = c.syncReleaseToRepo(chartBytes, template.ChartName, chartVersion)
 	if err != nil {
 		_ = c.handleReleaseSyncStatus(ctx, release, tag.Commit.ShortID, err.Error())
@@ -606,7 +606,7 @@ func (c *controller) handleReleaseSyncStatus(ctx context.Context,
 	if failedReason == "" {
 		release.SyncStatus = trmodels.StatusSucceed
 		release.FailedReason = ""
-		release.ChartVersion = fmt.Sprintf(common.ChartVersionFormat, release.Tag, commitID)
+		release.ChartVersion = fmt.Sprintf(common.ChartVersionFormat, release.Name, commitID)
 	} else {
 		release.FailedReason = failedReason
 		release.SyncStatus = trmodels.StatusFailed
@@ -650,13 +650,11 @@ func (c *controller) checkStatusForReleases(ctx context.Context,
 	var wg sync.WaitGroup
 
 	for i, release := range releases {
-		if release.SyncStatus == trmodels.StatusSucceed {
-			wg.Add(1)
-			go func(index int, r *trmodels.TemplateRelease) {
-				releases[index], _ = c.checkStatusForRelease(ctx, template, r)
-				wg.Done()
-			}(i, release)
-		}
+		wg.Add(1)
+		go func(index int, r *trmodels.TemplateRelease) {
+			releases[index], _ = c.checkStatusForRelease(ctx, template, r)
+			wg.Done()
+		}(i, release)
 	}
 	wg.Wait()
 
@@ -669,7 +667,7 @@ func (c *controller) checkStatusForRelease(ctx context.Context,
 		return release, nil
 	}
 
-	tag, _, err := c.getTag(ctx, template.Repository, release.ChartName, release.Tag)
+	tag, _, err := c.getTag(ctx, template.Repository, release.ChartName, release.Name)
 	if err != nil {
 		release.SyncStatus = trmodels.StatusUnknown
 		return release, err

@@ -55,7 +55,6 @@ func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 
 type CreateReleaseRequest struct {
 	Name        string `json:"name"`
-	Tag         string `json:"tag"`
 	Recommended bool   `json:"recommended"`
 	Description string `json:"description"`
 	OnlyAdmin   *bool  `json:"onlyAdmin"`
@@ -70,7 +69,6 @@ func (c *CreateReleaseRequest) toReleaseModel(ctx context.Context,
 
 	t := &trmodels.TemplateRelease{
 		Name:         c.Name,
-		Tag:          c.Tag,
 		TemplateName: template.Name,
 		ChartName:    template.ChartName,
 		Description:  c.Description,
@@ -197,7 +195,6 @@ func toTemplates(mts []*tmodels.Template) Templates {
 type Release struct {
 	ID             uint      `json:"id"`
 	Name           string    `json:"name"`
-	Tag            string    `json:"tag"`
 	TemplateID     uint      `json:"templateID"`
 	ChartVersion   string    `json:"chartVersion"`
 	Description    string    `json:"description"`
@@ -242,7 +239,6 @@ func toRelease(m *trmodels.TemplateRelease) *Release {
 	tr := &Release{
 		ID:             m.ID,
 		Name:           m.Name,
-		Tag:            m.Tag,
 		ChartVersion:   m.ChartVersion,
 		Description:    m.Description,
 		TemplateID:     m.Template,

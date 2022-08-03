@@ -6,6 +6,8 @@ import (
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/templaterepo"
 )
@@ -20,18 +22,25 @@ const (
 )
 
 type Getter struct {
-	repo templaterepo.TemplateRepo
+	repo               templaterepo.TemplateRepo
+	templateReleaseMgr trmanager.Manager
 }
 
-func NewSchemaGetter(_ context.Context, repo templaterepo.TemplateRepo) *Getter {
+func NewSchemaGetter(_ context.Context, repo templaterepo.TemplateRepo,
+	manager *managerparam.Manager) *Getter {
 	return &Getter{
-		repo: repo,
+		repo:               repo,
+		templateReleaseMgr: manager.TemplateReleaseManager,
 	}
 }
 
-func (g *Getter) GetTemplateSchema(_ context.Context,
+func (g *Getter) GetTemplateSchema(ctx context.Context,
 	templateName, releaseName string, params map[string]string) (*schema.Schemas, error) {
-	chartPkg, err := g.repo.GetChart(templateName, releaseName)
+	release, err := g.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, releaseName)
+	if err != nil {
+		return nil, err
+	}
+	chartPkg, err := g.repo.GetChart(release.ChartName, release.ChartVersion, release.LastSyncAt)
 	if err != nil {
 		return nil, err
 	}

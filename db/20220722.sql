@@ -70,7 +70,6 @@ CREATE TABLE `tb_template_release`
     `template_name`  varchar(64)         NOT NULL COMMENT 'the name of template',
     `template`       bigint(20) unsigned NOT NULL COMMENT 'the template id release belongs to',
     `name`           varchar(64)         NOT NULL DEFAULT '' COMMENT 'the name of template release',
-    `tag`            varchar(64)         NOT NULL DEFAULT '' COMMENT 'related tag',
     `chart_version`  varchar(256)        NOT NULL DEFAULT '' COMMENT 'chart version on template repository',
     `chart_name`     varchar(256)        NOT NULL DEFAULT '' COMMENT 'chart name of template',
     `sync_status`    varchar(64)         NOT NULL DEFAULT 'status_unknown' COMMENT 'show sync status',
