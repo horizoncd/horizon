@@ -374,8 +374,7 @@ func (a *API) GetOutput(c *gin.Context) {
 
 	outPut, err := a.clusterCtl.GetClusterOutput(c, uint(clusterID))
 	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok &&
-			(e.Source == herrors.ClusterInDB || e.Source == herrors.TemplateReleaseInRepo) {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}

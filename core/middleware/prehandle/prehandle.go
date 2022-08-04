@@ -60,7 +60,7 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 				handleCluster(c, mgr, r, authRecord, requestInfo)
 				return
 			} else if authRecord.Resource == common.ResourceTemplate {
-				if authRecord.SubResource == common.ResourceTemplateRelease &&
+				if authRecord.SubResource == common.AliasTemplateRelease &&
 					len(requestInfo.Parts) == 5 && requestInfo.Parts[4] == pathReleaseSchema {
 					handleGetSchema(c, mgr, r, authRecord, requestInfo)
 					return
