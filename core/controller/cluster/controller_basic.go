@@ -204,9 +204,13 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 
 	// 4. get files in git repo
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
 	clusterFiles := &gitrepo.ClusterFiles{}
 	if !isClusterStatusUnstable(cluster.Status) {
-		clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+		clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, tr.ChartName)
 		if err != nil {
 			return nil, err
 		}
@@ -222,7 +226,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	// 6. get namespace
 	envValue := &gitrepo.EnvValue{}
 	if !isClusterStatusUnstable(cluster.Status) {
-		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 		if err != nil {
 			return nil, err
 		}
@@ -468,7 +472,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	// 10. get namespace
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}
@@ -542,6 +546,10 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		templateRelease = r.Template.Release
 	}
 
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, templateRelease)
+	if err != nil {
+		return nil, err
+	}
 	// 4. if templateInput is not empty, validate templateInput and update templateInput in git repo
 	if r.TemplateInput != nil {
 		// merge cluster config and request config
@@ -567,10 +575,6 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		}
 
 		// validate template input
-		tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, templateRelease)
-		if err != nil {
-			return nil, err
-		}
 		renderValues, err := c.getRenderValueFromTag(ctx, clusterID)
 		if err != nil {
 			return nil, err
@@ -597,7 +601,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 			return nil, err
 		}
 	} else {
-		files, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+		files, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, tr.ChartName)
 		if err != nil {
 			return nil, err
 		}
@@ -949,8 +953,12 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 		templateSchemaRenderVal = make(map[string]string)
 	}
 	// TODO (remove it, currently some template need it)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, template, release)
+	if err != nil {
+		return err
+	}
 	templateSchemaRenderVal["resourceType"] = "cluster"
-	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release, templateSchemaRenderVal)
+	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, tr.TemplateName, tr.Name, templateSchemaRenderVal)
 	if err != nil {
 		return err
 	}

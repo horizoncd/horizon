@@ -12,6 +12,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/member/models"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/param"
+	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
@@ -86,6 +88,8 @@ type converter struct {
 	groupSvc       groupservice.Service
 	applicationSvc applicationservice.Service
 	clusterSvc     clusterservice.Service
+	templateMgr    tmanager.Manager
+	releaseMgr     trmanager.Manager
 }
 
 func New(param *param.Param) ConvertMemberHelp {
@@ -94,6 +98,8 @@ func New(param *param.Param) ConvertMemberHelp {
 		groupSvc:       param.GroupSvc,
 		applicationSvc: param.ApplicationSvc,
 		clusterSvc:     param.ClusterSvc,
+		templateMgr:    param.TemplateMgr,
+		releaseMgr:     param.TemplateReleaseManager,
 	}
 }
 
@@ -170,6 +176,24 @@ func (c *converter) ConvertMembers(ctx context.Context, members []models.Member)
 			}
 			resourceName = cluster.Name
 			resourcePath = cluster.FullPath
+		case models.TypeTemplate:
+			template, err := c.templateMgr.GetByID(ctx, member.ResourceID)
+			if err != nil {
+				return nil, err
+			}
+			resourceName = template.Name
+			resourcePath = fmt.Sprintf("%d", template.ID)
+		case models.TypeTemplateRelease:
+			release, err := c.releaseMgr.GetByID(ctx, member.ResourceID)
+			if err != nil {
+				return nil, err
+			}
+			template, err := c.templateMgr.GetByID(ctx, release.Template)
+			if err != nil {
+				return nil, err
+			}
+			resourceName = template.Name
+			resourcePath = fmt.Sprintf("%d", template.ID)
 		default:
 			return nil, fmt.Errorf("%s is not support now", member.ResourceType)
 		}

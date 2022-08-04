@@ -7,7 +7,7 @@ import (
 
 	common2 "g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/common"
-	memberctx "g.hz.netease.com/horizon/pkg/member/context"
+	memberctx "g.hz.netease.com/horizon/pkg/context"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"gorm.io/gorm"
@@ -121,7 +121,7 @@ func (d *dao) ListDirectMember(ctx context.Context, resourceType models.Resource
 func (d *dao) ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
 	resourceID uint) ([]models.Member, error) {
 	var members []models.Member
-	if emails, ok := ctx.Value(memberctx.ContextEmails).([]string); ok {
+	if emails, ok := ctx.Value(memberctx.MemberEmails).([]string); ok {
 		result := d.db.WithContext(ctx).Raw(common.MemberSelectByUserEmails, resourceType, resourceID, emails).Scan(&members)
 		if result.Error != nil {
 			return nil, result.Error

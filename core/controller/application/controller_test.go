@@ -20,8 +20,9 @@ import (
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	tmodels "g.hz.netease.com/horizon/pkg/template/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
 
 	"github.com/golang/mock/gomock"
@@ -259,6 +260,9 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&tmodels.Template{}); err != nil {
+		panic(err)
+	}
 	if err := db.AutoMigrate(&trmodels.TemplateRelease{}); err != nil {
 		panic(err)
 	}
@@ -298,14 +302,23 @@ func Test(t *testing.T) {
 
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", nil).
-		Return(&templatesvc.Schemas{
-			Application: &templatesvc.Schema{
+		Return(&trschema.Schemas{
+			Application: &trschema.Schema{
 				JSONSchema: applicationSchema,
 			},
-			Pipeline: &templatesvc.Schema{
+			Pipeline: &trschema.Schema{
 				JSONSchema: pipelineSchema,
 			},
 		}, nil).AnyTimes()
+
+	tr := &trmodels.TemplateRelease{
+		TemplateName: "javaapp",
+		ChartVersion: "v1.0.0",
+		Name:         "v1.0.0",
+		ChartName:    "javaapp",
+	}
+	_, err := manager.TemplateReleaseManager.Create(ctx, tr)
+	assert.Nil(t, err)
 
 	c = &controller{
 		applicationGitRepo:   applicationGitRepo,

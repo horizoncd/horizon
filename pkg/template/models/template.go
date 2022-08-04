@@ -8,7 +8,11 @@ type Template struct {
 	global.Model
 
 	Name        string
+	ChartName   string
 	Description string
+	Repository  string
+	GroupID     uint
+	OnlyAdmin   *bool
 	CreatedBy   uint
 	UpdatedBy   uint
 }

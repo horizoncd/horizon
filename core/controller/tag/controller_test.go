@@ -16,6 +16,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +32,8 @@ func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
-		&tagmodels.Tag{}, &membermodels.Member{}); err != nil {
+		&tagmodels.Tag{}, &membermodels.Member{},
+		&trmodels.TemplateRelease{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -52,6 +54,7 @@ func Test(t *testing.T) {
 
 	appMgr := manager.ApplicationManager
 	clusterMgr := manager.ClusterMgr
+	templateReleaseMgr := manager.TemplateReleaseManager
 
 	// init data
 	application, err := appMgr.Create(ctx, &appmodels.Application{
@@ -67,9 +70,19 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 
 	cluster, err := clusterMgr.Create(ctx, &models.Cluster{
-		ApplicationID: application.ID,
-		Name:          "cluster",
+		ApplicationID:   application.ID,
+		Name:            "cluster",
+		Template:        "javaapp",
+		TemplateRelease: "v1.2.0",
 	}, nil, nil)
+	assert.Nil(t, err)
+
+	_, err = templateReleaseMgr.Create(ctx, &trmodels.TemplateRelease{
+		Template:     1,
+		TemplateName: "javaapp",
+		ChartVersion: "v1.2.0",
+		ChartName:    "0-javaapp",
+	})
 	assert.Nil(t, err)
 
 	c = &controller{

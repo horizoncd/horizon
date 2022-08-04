@@ -47,8 +47,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tmodel "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	templatesvc "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	gitlabschema "g.hz.netease.com/horizon/pkg/templaterelease/schema/gitlab"
 	tagmodel "g.hz.netease.com/horizon/pkg/templateschematag/models"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
@@ -475,7 +475,7 @@ func test(t *testing.T) {
 	}
 	NewController(&conf, &param)
 
-	// test
+	templateName := "javaapp"
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo(mockCtl)
@@ -487,23 +487,23 @@ func test(t *testing.T) {
 
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	expectparams := make(map[string]string)
-	expectparams[trschema.ClusterIDKey] = "1"
+	expectparams[gitlabschema.ClusterIDKey] = "1"
 
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", gomock.Any()).
-		Return(&templatesvc.Schemas{
-			Application: &templatesvc.Schema{
+	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.0", gomock.Any()).
+		Return(&trschema.Schemas{
+			Application: &trschema.Schema{
 				JSONSchema: applicationSchema,
 			},
-			Pipeline: &templatesvc.Schema{
+			Pipeline: &trschema.Schema{
 				JSONSchema: pipelineSchema,
 			},
 		}, nil).AnyTimes()
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.1", gomock.Any()).
-		Return(&templatesvc.Schemas{
-			Application: &templatesvc.Schema{
+	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.1", gomock.Any()).
+		Return(&trschema.Schemas{
+			Application: &trschema.Schema{
 				JSONSchema: applicationSchema,
 			},
-			Pipeline: &templatesvc.Schema{
+			Pipeline: &trschema.Schema{
 				JSONSchema: pipelineSchema,
 			},
 		}, nil).AnyTimes()
@@ -538,8 +538,10 @@ func test(t *testing.T) {
 	}, nil)
 
 	tr, err := trMgr.Create(ctx, &trmodels.TemplateRelease{
-		TemplateName: "javaapp",
+		TemplateName: templateName,
 		Name:         "v1.0.0",
+		ChartVersion: "v1.0.0-test",
+		ChartName:    templateName,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
@@ -599,7 +601,7 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(2)
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
-		"app-cluster", "javaapp").Return(&gitrepo.ClusterFiles{
+		"app-cluster", templateName).Return(&gitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 	}, nil).AnyTimes()
@@ -674,8 +676,10 @@ func test(t *testing.T) {
 	}
 
 	newTr, err := trMgr.Create(ctx, &trmodels.TemplateRelease{
-		TemplateName: "javaapp",
+		TemplateName: templateName,
+		ChartName:    templateName,
 		Name:         "v1.0.1",
+		ChartVersion: "v1.0.1",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, newTr)

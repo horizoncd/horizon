@@ -11,13 +11,26 @@ type ResourceType string
 
 const (
 	// TypeGroup represent the group member entry.
-	TypeGroup = (ResourceType)(common.ResourceGroup)
+	TypeGroup = ResourceType(common.ResourceGroup)
 
 	// TypeApplication represent the application  member entry.
-	TypeApplication = (ResourceType)(common.ResourceApplication)
+	TypeApplication = ResourceType(common.ResourceApplication)
 
 	// TypeApplicationCluster represent the application instance member entry
-	TypeApplicationCluster = (ResourceType)(common.ResourceCluster)
+	TypeApplicationCluster = ResourceType(common.ResourceCluster)
+	// TypePipelinerunStr currently pipelineruns do not have direct member info, will
+	// use the pipeline's cluster's member info
+	TypePipelinerun = ResourceType(common.ResourcePipelinerun)
+
+	// TypeOauthAppsStr urrently oauthapp do not have direct member info, will
+	// use the oauthapp's groups member info
+	TypeOauthApps = ResourceType(common.ResourceOauthApps)
+
+	TypeTemplate = ResourceType(common.ResourceTemplate)
+
+	TypeTemplateRelease = ResourceType(common.ResourceTemplateRelease)
+
+	TypeRegion = ResourceType(common.ResourceRegion)
 )
 
 type MemberType uint8
@@ -52,6 +65,6 @@ type Member struct {
 }
 
 func (m *Member) BaseInfo() string {
-	return fmt.Sprintf("resource(%s/%d)-memberInfo(%d/%d)",
-		m.ResourceType, m.ResourceID, m.MemberType, m.MemberNameID)
+	return fmt.Sprintf("resource(%s/%d)-memberInfo(%d/%d)-ruleID(%d)",
+		m.ResourceType, m.ResourceID, m.MemberType, m.MemberNameID, m.ID)
 }

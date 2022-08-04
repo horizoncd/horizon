@@ -7,7 +7,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/member"
-	memberctx "g.hz.netease.com/horizon/pkg/member/context"
+	memberctx "g.hz.netease.com/horizon/pkg/context"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -19,6 +19,7 @@ const (
 	_paramGroupID              = "groupID"
 	_paramApplicationID        = "applicationID"
 	_paramApplicationClusterID = "clusterID"
+	_paramTemplateID           = "templateID"
 	_paramMemberID             = "memberID"
 	_querySelf                 = "self"
 	_queryEmail                = "email"
@@ -140,6 +141,40 @@ func (a *API) CreateApplicationClusterMember(c *gin.Context) {
 	response.SuccessWithData(c, retMember)
 }
 
+func (a *API) CreateTemplateMember(c *gin.Context) {
+	resourceIDStr := c.Param(_paramTemplateID)
+	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("%v", err))
+		return
+	}
+
+	var postMember *member.PostMember
+	err = c.ShouldBindJSON(&postMember)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody,
+			fmt.Sprintf("%v", err))
+		return
+	}
+
+	postMember.ResourceType = string(membermodels.TypeTemplate)
+	postMember.ResourceID = uint(uintID)
+
+	if err := a.validatePostMember(c, postMember); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			err.Error())
+		return
+	}
+
+	retMember, err := a.memberCtrl.CreateMember(c, postMember)
+	if err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, retMember)
+}
+
 func (a *API) UpdateMember(c *gin.Context) {
 	memberIDStr := c.Param(_paramMemberID)
 	uintID, err := strconv.ParseUint(memberIDStr, 10, 0)
@@ -227,6 +262,18 @@ func (a *API) ListApplicationClusterMember(c *gin.Context) {
 	a.listMember(c, resourceID, membermodels.TypeApplicationCluster)
 }
 
+func (a *API) ListTemplateMember(c *gin.Context) {
+	resourceIDStr := c.Param(_paramTemplateID)
+
+	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam,
+			fmt.Sprintf("%v", err))
+		return
+	}
+	a.listMember(c, resourceID, membermodels.TypeTemplate)
+}
+
 func (a *API) listMember(c *gin.Context, resourceID uint64, resourceType membermodels.ResourceType) {
 	querySelf, err := strconv.ParseBool(c.DefaultQuery(_querySelf, "false"))
 	if err != nil {
@@ -256,10 +303,10 @@ func (a *API) listMember(c *gin.Context, resourceID uint64, resourceType memberm
 		}
 	} else {
 		var ctx context.Context
-		ctx = context.WithValue(c, memberctx.ContextDirectMemberOnly, directMemberOnly)
+		ctx = context.WithValue(c, memberctx.MemberDirectMemberOnly, directMemberOnly)
 		if emailOK {
-			ctx = context.WithValue(ctx, memberctx.ContextQueryOnCondition, true)
-			ctx = context.WithValue(ctx, memberctx.ContextEmails, emails)
+			ctx = context.WithValue(ctx, memberctx.MemberQueryOnCondition, true)
+			ctx = context.WithValue(ctx, memberctx.MemberEmails, emails)
 		}
 		members, err := a.memberCtrl.ListMember(ctx, string(resourceType), uint(resourceID))
 		if err != nil {

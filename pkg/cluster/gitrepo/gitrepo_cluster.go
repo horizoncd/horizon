@@ -13,12 +13,11 @@ import (
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
-	"g.hz.netease.com/horizon/pkg/config/helmrepo"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
+	"g.hz.netease.com/horizon/pkg/templaterepo"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -55,7 +54,6 @@ music-cloud-native
 */
 
 const (
-	_gitlabName = "compute"
 	// _branchMaster is the main branch
 	_branchMaster = "master"
 	// _branchGitops is the gitops branch, values updated in this branch, then merge into the _branchMaster
@@ -154,19 +152,15 @@ type ClusterGitRepo interface {
 type clusterGitRepo struct {
 	gitlabLib       gitlablib.Interface
 	clusterRepoConf *gitlabconf.Repo
-	helmRepoMapper  helmrepo.Mapper
+	templateRepo    templaterepo.TemplateRepo
 }
 
-func NewClusterGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig, helmRepoMapper helmrepo.Mapper,
-	gitlabFactory gitlabfty.Factory) (ClusterGitRepo, error) {
-	gitlabLib, err := gitlabFactory.GetByName(ctx, _gitlabName)
-	if err != nil {
-		return nil, err
-	}
+func NewClusterGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig,
+	templateRepo templaterepo.TemplateRepo, gitlabLib gitlablib.Interface) (ClusterGitRepo, error) {
 	return &clusterGitRepo{
 		gitlabLib:       gitlabLib,
 		clusterRepoConf: gitlabRepoConfig.Cluster,
-		helmRepoMapper:  helmRepoMapper,
+		templateRepo:    templateRepo,
 	}, nil
 }
 
@@ -355,8 +349,8 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		return err
 	}
 	marshal(&chartYAML, &err6, chart)
-	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.TemplateName))
-	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.TemplateName, params.Tags))
+	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.ChartName))
+	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.ChartName, params.Tags))
 
 	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8} {
 		if err != nil {
@@ -367,7 +361,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	pipelineOutPut := ""
 	if params.Image != "" {
 		// if params.Image is not empty, write image to git repo
-		pipelineOutPutMap := assemblePipelineOutput(params.TemplateRelease.TemplateName, params.Image)
+		pipelineOutPutMap := assemblePipelineOutput(params.TemplateRelease.ChartName, params.Image)
 		pipelineOutPutYAML, err := yaml.Marshal(pipelineOutPutMap)
 		if err != nil {
 			return perror.Wrap(herrors.ErrParamInvalid, err.Error())
@@ -982,21 +976,21 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 // assembleApplicationValue assemble application.yaml data
 func (g *clusterGitRepo) assembleApplicationValue(params *BaseParams) map[string]map[string]interface{} {
 	ret := make(map[string]map[string]interface{})
-	ret[params.TemplateRelease.TemplateName] = params.ApplicationJSONBlob
+	ret[params.TemplateRelease.ChartName] = params.ApplicationJSONBlob
 	return ret
 }
 
 // assembleApplicationValue assemble pipeline.yaml data
 func (g *clusterGitRepo) assemblePipelineValue(params *BaseParams) map[string]map[string]interface{} {
 	ret := make(map[string]map[string]interface{})
-	ret[params.TemplateRelease.TemplateName] = params.PipelineJSONBlob
+	ret[params.TemplateRelease.ChartName] = params.PipelineJSONBlob
 	return ret
 }
 
 // assembleSreValue assemble sre value data
 func (g *clusterGitRepo) assembleSREValue(params *CreateClusterParams) map[string]interface{} {
 	ret := make(map[string]interface{})
-	ret[params.TemplateRelease.TemplateName] = make(map[string]string)
+	ret[params.TemplateRelease.ChartName] = make(map[string]string)
 	return ret
 }
 
@@ -1027,7 +1021,7 @@ func (g *clusterGitRepo) assembleEnvValue(params *BaseParams) map[string]map[str
 	}
 
 	ret := make(map[string]map[string]*EnvValue)
-	ret[params.TemplateRelease.TemplateName] = envMap
+	ret[params.TemplateRelease.ChartName] = envMap
 	return ret
 }
 
@@ -1066,13 +1060,13 @@ func (g *clusterGitRepo) assembleBaseValue(params *BaseParams) map[string]map[st
 		Cluster:     params.Cluster,
 		Template: &BaseValueTemplate{
 			Name:    params.TemplateRelease.TemplateName,
-			Release: params.TemplateRelease.Name,
+			Release: params.TemplateRelease.ChartVersion,
 		},
 		Priority: string(params.Application.Priority),
 	}
 
 	ret := make(map[string]map[string]*BaseValue)
-	ret[params.TemplateRelease.TemplateName] = baseMap
+	ret[params.TemplateRelease.ChartName] = baseMap
 	return ret
 }
 
@@ -1090,20 +1084,16 @@ type Dependency struct {
 }
 
 func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
-	helmRepo, ok := g.helmRepoMapper[params.Environment]
-	if !ok {
-		return nil, herrors.NewErrNotFound(herrors.HelmRepo,
-			fmt.Sprintf("helm repo for environment %v not found", params.Environment))
-	}
+	templateRepo := g.templateRepo.GetLoc()
 	return &Chart{
 		APIVersion: "v2",
 		Name:       params.Cluster,
 		Version:    "1.0.0",
 		Dependencies: []Dependency{
 			{
-				Repository: helmRepo,
-				Name:       renameTemplateName(params.TemplateRelease.TemplateName),
-				Version:    params.TemplateRelease.Name,
+				Repository: templateRepo,
+				Name:       renameTemplateName(params.TemplateRelease.ChartName),
+				Version:    params.TemplateRelease.ChartVersion,
 			},
 		},
 	}, nil

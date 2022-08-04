@@ -92,6 +92,23 @@ Roles:
           - "*"
         nonResourceURLs:
           - "*"
+      - apiGroups:
+          - core
+        resources:
+          - groups/templates
+          - templates/releases
+          - templates
+          - templates/members
+          - templatereleases/members
+          - templatereleases
+          - templatereleases/sync
+          - templatereleases/schema
+        verbs:
+          - "*"
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
   - name: maintainer
     desc: maintainer为组/应用/集群的管理者，拥有除删除资源之外的其他权限，并且也可以进行成员管理
     rules:
@@ -183,8 +200,56 @@ Roles:
           - groups/oauthapps
           - oauthapps
           - oauthapps/clientsecret
+          - templates/releases
+          - templatereleases/schema
         verbs:
           - get
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - groups/templates
+        verbs:
+          - get
+          - create
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templatereleases/sync
+        verbs:
+          - create
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templates/members
+          - templatereleases/members
+        verbs:
+          - get
+          - update
+          - create
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templatereleases
+          - templates
+        verbs:
+          - get
+          - update
         scopes:
           - "*"
         nonResourceURLs:
@@ -227,6 +292,42 @@ Roles:
       - apiGroups:
           - core
         resources:
+          - templatereleases/sync
+        verbs:
+          - create
+        scopes:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templates/releases
+          - templatereleases/schema
+        verbs:
+          - get
+        scopes:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - groups/templates
+        verbs:
+          - get
+          - create
+        scopes:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - templates
+          - templatereleases
+        verbs:
+          - get
+          - update
+        scopes:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
           - applications/clusters
           - clusters/builddeploy
           - clusters/deploy
@@ -257,6 +358,8 @@ Roles:
           - clusters/pause
           - clusters/resume
           - clusters/containers
+          - templates/members
+          - templatereleases/members
         verbs:
           - create
           - get
@@ -295,6 +398,13 @@ Roles:
           - groups/members
           - groups/groups
           - groups/oauthapps
+          - groups/templates
+          - templates
+          - templatereleases
+          - templatereleases/schema
+          - templates/releases
+          - templates/members
+          - templatereleases/members
           - oauthapps
           - oauthapps/clientsecret
           - applications
@@ -337,3 +447,5 @@ Roles:
           - "reg/*"
           - "perf/*"
           - "pre/*"
+        nonResourceURLs:
+          - "*"

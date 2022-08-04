@@ -18,6 +18,7 @@ import (
 const (
 	_paramGroupID  = "groupID"
 	_paramFullPath = "fullPath"
+	_paramType     = "type"
 )
 
 type API struct {
@@ -128,10 +129,15 @@ func (a *API) ListAuthedGroup(c *gin.Context) {
 // GetGroupByFullPath get a group child by fullPath
 func (a *API) GetGroupByFullPath(c *gin.Context) {
 	path := c.Query(_paramFullPath)
+	resourceType := c.Query(_paramType)
 
-	child, err := a.groupCtl.GetByFullPath(c, path)
+	child, err := a.groupCtl.GetByFullPath(c, path, resourceType)
 	if err != nil {
-		response.AbortWithError(c, err)
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+		} else {
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(e.Error()))
+		}
 		return
 	}
 

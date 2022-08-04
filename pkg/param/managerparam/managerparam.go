@@ -16,6 +16,7 @@ import (
 	templatemanager "g.hz.netease.com/horizon/pkg/template/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschematagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
+	trtmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"gorm.io/gorm"
 )
@@ -24,6 +25,7 @@ type Manager struct {
 	UserManager              usermanager.Manager
 	ApplicationManager       applicationmanager.Manager
 	TemplateReleaseManager   trmanager.Manager
+	TemplateSchemaTagManager trtmanager.Manager
 	ClusterMgr               clustermanager.Manager
 	MemberManager            membermanager.Manager
 	ClusterSchemaTagMgr      templateschematagmanager.Manager
@@ -45,6 +47,7 @@ func InitManager(db *gorm.DB) *Manager {
 		UserManager:              usermanager.New(db),
 		ApplicationManager:       applicationmanager.New(db),
 		TemplateReleaseManager:   trmanager.New(db),
+		TemplateSchemaTagManager: trtmanager.New(db),
 		ClusterMgr:               clustermanager.New(db),
 		MemberManager:            membermanager.New(db),
 		ClusterSchemaTagMgr:      templateschematagmanager.New(db),
