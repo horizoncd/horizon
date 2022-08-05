@@ -506,17 +506,8 @@ func (c *controller) DeleteRelease(ctx context.Context, releaseID uint) error {
 		return perror.Wrap(herrors.ErrSubResourceExist, "release template has been used by cluster")
 	}
 
-	release, err := c.templateReleaseMgr.GetByID(ctx, releaseID)
+	_, err = c.templateReleaseMgr.GetByID(ctx, releaseID)
 	if err != nil {
-		return err
-	}
-
-	template, err := c.templateMgr.GetByID(ctx, release.Template)
-	if err != nil {
-		return err
-	}
-
-	if err := c.templateRepo.DeleteChart(template.ChartName, release.ChartVersion); err != nil {
 		return err
 	}
 

@@ -304,6 +304,9 @@ func (a *API) DeleteTemplate(c *gin.Context) {
 			log.WithFiled(c, "op", op).Infof("template with ID %d not found", templateID)
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(fmt.Sprintf("not found: %s", err)))
 			return
+		} else if e := perror.Cause(err); e == herrors.ErrSubResourceExist {
+			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(err.Error()))
+			return
 		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(fmt.Sprintf("%s", err)))
@@ -410,6 +413,9 @@ func (a *API) DeleteRelease(c *gin.Context) {
 		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(fmt.Sprintf("%s", err)))
+		return
+	} else if e := perror.Cause(err); e == herrors.ErrSubResourceExist {
+		response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(err.Error()))
 		return
 	}
 	response.Success(c)
