@@ -3,8 +3,6 @@ package output
 import (
 	"errors"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
@@ -64,6 +62,5 @@ func (g *getter) GetTemplateOutPut(ctx context.Context,
 		}
 	}
 
-	return "", perror.Wrap(herrors.NewErrNotFound(herrors.ChartFile, _outputsPath+" not found"),
-		_outputsPath+" not found")
+	return "", nil
 }
