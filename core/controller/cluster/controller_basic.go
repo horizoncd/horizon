@@ -272,14 +272,8 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ in
 		return nil, err
 	}
 
-	// 3. get template release
-	release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return nil, err
-	}
-
-	// 4. get output in template
-	outputStr, err := c.outputGetter.GetTemplateOutPut(ctx, release.ChartName, release.ChartVersion)
+	// 3. get output in template
+	outputStr, err := c.outputGetter.GetTemplateOutPut(ctx, cluster.Template, cluster.TemplateRelease)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +281,7 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ in
 		return nil, nil
 	}
 
-	// 5. get files in  git repo
+	// 4. get files in  git repo
 	clusterFiles, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return nil, err
@@ -298,7 +292,7 @@ func (c *controller) GetClusterOutput(ctx context.Context, clusterID uint) (_ in
 
 	log.Debugf(ctx, "clusterFiles = %+v, outputStr = %+v", clusterFiles, outputStr)
 
-	// 6. reader output in template and return
+	// 5. reader output in template and return
 	outputRenderJSONObject, err := RenderOutputObject(outputStr, cluster.Template, clusterFiles...)
 	if err != nil {
 		return nil, err
