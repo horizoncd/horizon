@@ -22,7 +22,6 @@ import (
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
 	tagmock "g.hz.netease.com/horizon/mock/pkg/tag/manager"
-	templatereleasemock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
 	outputmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/output"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -1103,19 +1102,16 @@ func testGetClusterOutPut(t *testing.T) {
 	clusterManagerMock := clustermanagermock.NewMockManager(mockCtl)
 	outputMock := outputmock.NewMockGetter(mockCtl)
 	clusterGitRepoMock := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
-	trmanagerMock := templatereleasemock.NewMockManager(mockCtl)
 	c := controller{
-		clusterMgr:         clusterManagerMock,
-		applicationMgr:     appManagerMock,
-		outputGetter:       outputMock,
-		clusterGitRepo:     clusterGitRepoMock,
-		templateReleaseMgr: trmanagerMock,
+		clusterMgr:     clusterManagerMock,
+		applicationMgr: appManagerMock,
+		outputGetter:   outputMock,
+		clusterGitRepo: clusterGitRepoMock,
 	}
 
 	var applicationID uint = 102
 	template := "javaapp"
 	templateRelease := "v1.0.0"
-	chartVersion := "v1.0.0-test"
 	clusterName := "app-cluster-demo"
 	clusterManagerMock.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(&models.Cluster{
 		Model:           global.Model{},
@@ -1124,9 +1120,6 @@ func testGetClusterOutPut(t *testing.T) {
 		TemplateRelease: templateRelease,
 		Name:            clusterName,
 	}, nil).Times(1)
-
-	trmanagerMock.EXPECT().GetByTemplateNameAndRelease(gomock.Any(), template, templateRelease).
-		Return(&trmodels.TemplateRelease{ChartName: template, ChartVersion: chartVersion}, nil)
 
 	applicationName := "app-demo"
 	appManagerMock.EXPECT().GetByID(gomock.Any(), applicationID).Return(&appmodels.Application{
@@ -1160,7 +1153,7 @@ javaapp:
 syncDomainName:
   Description: sync domain name
   Value: {{ .Values.horizon.cluster}}.{{ .Values.env.ingressDomain}}`
-	outputMock.EXPECT().GetTemplateOutPut(gomock.Any(), template, chartVersion).Return(outPutStr, nil).Times(1)
+	outputMock.EXPECT().GetTemplateOutPut(gomock.Any(), template, templateRelease).Return(outPutStr, nil).Times(1)
 
 	renderObect, err := c.GetClusterOutput(context.TODO(), 123)
 	assert.Nil(t, err)
