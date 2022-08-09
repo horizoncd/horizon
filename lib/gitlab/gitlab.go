@@ -15,6 +15,8 @@ import (
 )
 
 // Interface to interact with gitlab
+// nolint
+//go:generate mockgen -source=$GOFILE -destination=../../mock/lib/gitlab/mock_gitlab.go -package=mock_gitlab
 type Interface interface {
 	// GetGroup gets a group's detail with the given gid.
 	// The gid can be the group's ID or relative path such as first/second/third.
@@ -132,6 +134,10 @@ type Interface interface {
 	// The pid can be the project's ID or relative path such as fist/second.
 	// See https://docs.gitlab.com/ee/api/repositories.html#compare-branches-tags-or-commits for more information.
 	Compare(ctx context.Context, pid interface{}, from, to string, straight *bool) (*gitlab.Compare, error)
+
+	// GetRepositoryArchive gets an archive of the repository.
+	// GitLab API docs: https://docs.gitlab.com/ce/api/repositories.html#get-file-archive
+	GetRepositoryArchive(ctx context.Context, pid interface{}, sha string) ([]byte, error)
 
 	GetSSHURL(ctx context.Context) string
 }
@@ -333,7 +339,7 @@ func (h *helper) GetCommit(ctx context.Context, pid interface{}, commit string) 
 }
 
 func (h *helper) GetTag(ctx context.Context, pid interface{}, tag string) (_ *gitlab.Tag, err error) {
-	const op = "gitlab: get commit"
+	const op = "gitlab: get tag"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	c, rsp, err := h.client.Tags.GetTag(pid, tag, gitlab.WithContext(ctx))
@@ -539,6 +545,21 @@ func (h *helper) Compare(ctx context.Context, pid interface{}, from, to string,
 	}
 
 	return compare, nil
+}
+func (h *helper) GetRepositoryArchive(ctx context.Context, pid interface{}, sha string) ([]byte, error) {
+	const op = "gitlab: get repository archive"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	format := "tar.gz"
+	archive, resp, err := h.client.Repositories.Archive(pid, &gitlab.ArchiveOptions{
+		Format: &format,
+		SHA:    &sha,
+	})
+
+	if err != nil {
+		return nil, parseError(resp, err)
+	}
+	return archive, nil
 }
 
 func (h *helper) GetSSHURL(ctx context.Context) string {

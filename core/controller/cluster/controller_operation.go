@@ -51,12 +51,14 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		LastConfigCommit: lastConfigCommit.Master,
 		ConfigCommit:     lastConfigCommit.Master,
 	})
+	// 2. update restartTime in git repo, and return the newest commit
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
 	if err != nil {
 		return nil, err
 	}
 
 	// 3. update restartTime in git repo, and return the newest commit
-	commit, err := c.clusterGitRepo.UpdateRestartTime(ctx, application.Name, cluster.Name, cluster.Template)
+	commit, err := c.clusterGitRepo.UpdateRestartTime(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +184,11 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 
 	// 5. create cluster in cd system
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}
@@ -390,7 +396,11 @@ func (c *controller) Promote(ctx context.Context, clusterID uint) (err error) {
 		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return perror.WithMessage(err, "failed to get env value")
 	}
@@ -420,7 +430,11 @@ func (c *controller) Pause(ctx context.Context, clusterID uint) (err error) {
 		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return perror.WithMessage(err, "failed to get env value")
 	}
@@ -450,7 +464,11 @@ func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
 		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return perror.WithMessage(err, "failed to get env value")
 	}
@@ -500,7 +518,11 @@ func (c *controller) exec(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}
@@ -529,7 +551,11 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 		return nil, err
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}
@@ -552,7 +578,7 @@ func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDash
 	}
 
 	// get memcached dashboard
-	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}
@@ -590,7 +616,11 @@ func (c *controller) GetClusterPods(ctx context.Context, clusterID uint, start, 
 		return nil, err
 	}
 
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, err
 	}

@@ -99,8 +99,10 @@ import (
 	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
-	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	templateschemarepo "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
+	templaterepoharbor "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -206,26 +208,38 @@ func Run(flags *Flags) {
 	// init service
 	ctx := context.Background()
 	gitlabFactory := gitlabfty.NewFactory(coreConfig.GitlabMapper)
-	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, coreConfig.GitlabRepoConfig, gitlabFactory)
+
+	gitlabCompute, err := gitlabFactory.GetByName(ctx, common.GitlabCompute)
+	if err != nil {
+		panic(err)
+	}
+
+	gitlabControl, err := gitlabFactory.GetByName(ctx, common.GitlabControl)
+	if err != nil {
+		panic(err)
+	}
+
+	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, coreConfig.GitlabRepoConfig, gitlabCompute)
+	if err != nil {
+		panic(err)
+	}
+	templateRepo, err := templaterepoharbor.NewTemplateRepo(coreConfig.TemplateRepo)
 	if err != nil {
 		panic(err)
 	}
 	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, coreConfig.GitlabRepoConfig,
-		coreConfig.HelmRepoMapper, gitlabFactory)
+		templateRepo, gitlabCompute)
 	if err != nil {
 		panic(err)
 	}
-	templateSchemaGetter, err := templateschema.NewSchemaGetter(ctx, gitlabFactory, manager)
+	templateSchemaGetter := templateschemarepo.NewSchemaGetter(ctx, templateRepo, manager)
+
+	outputGetter, err := output.NewOutPutGetter(ctx, templateRepo, manager)
 	if err != nil {
 		panic(err)
 	}
 
-	outputGetter, err := output.NewOutPutGetter(ctx, gitlabFactory, manager)
-	if err != nil {
-		panic(err)
-	}
-
-	gitGetter, err := code.NewGitGetter(ctx, gitlabFactory)
+	gitGetter, err := code.NewGitGetter(ctx, gitlabControl)
 	if err != nil {
 		panic(err)
 	}
@@ -311,7 +325,7 @@ func Run(flags *Flags) {
 		envTemplateCtl       = envtemplatectl.NewController(parameter)
 		clusterCtl           = clusterctl.NewController(coreConfig, parameter)
 		prCtl                = prctl.NewController(parameter)
-		templateCtl          = templatectl.NewController(parameter)
+		templateCtl          = templatectl.NewController(parameter, gitlabControl, templateRepo)
 		roleCtl              = roltctl.NewController(parameter)
 		terminalCtl          = terminalctl.NewController(parameter)
 		sloCtl               = sloctl.NewController(coreConfig.GrafanaSLO)

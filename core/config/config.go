@@ -10,11 +10,11 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/db"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/grafana"
-	"g.hz.netease.com/horizon/pkg/config/helmrepo"
 	"g.hz.netease.com/horizon/pkg/config/oauth"
 	"g.hz.netease.com/horizon/pkg/config/oidc"
 	"g.hz.netease.com/horizon/pkg/config/server"
 	"g.hz.netease.com/horizon/pkg/config/tekton"
+	"g.hz.netease.com/horizon/pkg/config/templaterepo"
 
 	"gopkg.in/yaml.v3"
 )
@@ -28,7 +28,7 @@ type Config struct {
 	GitlabRepoConfig       gitlab.RepoConfig       `yaml:"gitlabRepoConfig"`
 	ArgoCDMapper           argocd.Mapper           `yaml:"argoCDMapper"`
 	TektonMapper           tekton.Mapper           `yaml:"tektonMapper"`
-	HelmRepoMapper         helmrepo.Mapper         `yaml:"helmRepoMapper"`
+	TemplateRepo           templaterepo.Repo       `yaml:"templateRepo"`
 	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
 	GrafanaMapper          grafana.Mapper          `yaml:"grafanaMapper"`
@@ -64,15 +64,6 @@ func LoadConfig(configFilePath string) (*Config, error) {
 		}
 	}
 	config.TektonMapper = newTektonMapper
-
-	newHelmRepoMapper := helmrepo.Mapper{}
-	for key, v := range config.HelmRepoMapper {
-		ks := strings.Split(key, ",")
-		for i := 0; i < len(ks); i++ {
-			newHelmRepoMapper[ks[i]] = v
-		}
-	}
-	config.HelmRepoMapper = newHelmRepoMapper
 
 	newGrafanaMapper := grafana.Mapper{}
 	for key, v := range config.GrafanaMapper {

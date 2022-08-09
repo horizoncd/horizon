@@ -279,6 +279,34 @@ func (mr *MockManagerMockRecorder) GetSubGroupsUnderParentIDs(ctx, parentIDs int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubGroupsUnderParentIDs", reflect.TypeOf((*MockManager)(nil).GetSubGroupsUnderParentIDs), ctx, parentIDs)
 }
 
+// GroupExist mocks base method.
+func (m *MockManager) GroupExist(ctx context.Context, groupID uint) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GroupExist", ctx, groupID)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// GroupExist indicates an expected call of GroupExist.
+func (mr *MockManagerMockRecorder) GroupExist(ctx, groupID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GroupExist", reflect.TypeOf((*MockManager)(nil).GroupExist), ctx, groupID)
+}
+
+// IsRootGroup mocks base method.
+func (m *MockManager) IsRootGroup(ctx context.Context, groupID uint) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsRootGroup", ctx, groupID)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsRootGroup indicates an expected call of IsRootGroup.
+func (mr *MockManagerMockRecorder) IsRootGroup(ctx, groupID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsRootGroup", reflect.TypeOf((*MockManager)(nil).IsRootGroup), ctx, groupID)
+}
+
 // Transfer mocks base method.
 func (m *MockManager) Transfer(ctx context.Context, id, newParentID uint) error {
 	m.ctrl.T.Helper()

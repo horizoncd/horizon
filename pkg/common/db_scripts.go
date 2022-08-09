@@ -2,11 +2,55 @@ package common
 
 /* sql about template */
 const (
-	TemplateQuery                      = "select * from tb_template where deleted_ts = 0"
-	TemplateReleaseQueryByTemplateName = "select * from tb_template_release " +
-		"where template_name = ? and deleted_ts = 0"
+	TemplateList                  = "select * from tb_template"
+	TemplateListByGroup           = "select * from tb_template where group_id = ?"
+	TemplateQueryByID             = "select * from tb_template where ID = ?"
+	TemplateQueryByName           = "select * from tb_template where name = ?"
+	TemplateDelete                = "delete from tb_template where ID = ?"
+	TemplateRefCountOfApplication = "select count(*) from tb_template join tb_application " +
+		"on tb_template.name = tb_application.template " +
+		"where tb_template.id = ? and tb_application.deleted_ts = 0"
+
+	TemplateRefOfApplication = "select tb_application.* from tb_template join tb_application " +
+		"on tb_template.name = tb_application.template " +
+		"where tb_template.id = ? and tb_application.deleted_ts = 0"
+
+	TemplateRefCountOfCluster = "select count(*) from tb_template join tb_cluster " +
+		"on tb_template.name = tb_cluster.template " +
+		"where tb_template.id = ? and tb_cluster.deleted_ts = 0"
+
+	TemplateRefOfCluster = "select tb_cluster.* from tb_template join tb_cluster " +
+		"on tb_template.name = tb_cluster.template " +
+		"where tb_template.id = ? and tb_cluster.deleted_ts = 0"
+
+	TemplateReleaseDelete = "delete from tb_template_release where ID = ?"
+
+	TemplateReleaseQueryByTemplateName = "select tb_template_release.* from tb_template_release join tb_template " +
+		"on tb_template_release.template = tb_template.id where tb_template.name = ?"
+	TemplateReleaseListByTemplateID           = "select * from tb_template_release where tb_template_release.template = ?"
 	TemplateReleaseQueryByTemplateNameAndName = "select * from tb_template_release " +
-		"where template_name = ? and name = ? and deleted_ts = 0"
+		"where template_name = ? and name = ?"
+	TemplateReleaseQueryByID = "select * from tb_template_release where id = ?"
+
+	TemplateReleaseRefCountOfApplication = "select count(*) from tb_template_release join tb_application " +
+		"on tb_template_release.name = tb_application.template_release " +
+		"and tb_template_release.template_name = tb_application.template " +
+		"where tb_template_release.id = ? and tb_application.deleted_ts = 0"
+
+	TemplateReleaseRefOfApplication = "select tb_application.* from tb_template_release join tb_application " +
+		"on tb_template_release.name = tb_application.template_release " +
+		"and tb_template_release.template_name = tb_application.template " +
+		"where tb_template_release.id = ? and tb_application.deleted_ts = 0"
+
+	TemplateReleaseRefCountOfCluster = "select count(*) from tb_template_release join tb_cluster " +
+		"on tb_template_release.name = tb_cluster.template_release " +
+		"and tb_template_release.template_name = tb_cluster.template " +
+		"where tb_template_release.id = ? and tb_cluster.deleted_ts = 0"
+
+	TemplateReleaseRefOfCluster = "select tb_cluster.* from tb_template_release join tb_cluster " +
+		"on tb_template_release.name = tb_cluster.template_release " +
+		"and tb_template_release.template_name = tb_cluster.template " +
+		"where tb_template_release.id = ? and tb_cluster.deleted_ts = 0"
 )
 
 /* sql about user */

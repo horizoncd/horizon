@@ -20,6 +20,8 @@ import (
 )
 
 const (
+	rootGroupID = 0
+
 	// _updateAt one of the field of the group table
 	_updateAt = "updated_at"
 
@@ -27,6 +29,7 @@ const (
 	_parentID = "parent_id"
 )
 
+// nolint
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/group/manager/manager_mock.go -package=mock_manager
 type Manager interface {
 	// Create a group
@@ -67,6 +70,10 @@ type Manager interface {
 	GetSelectableRegions(ctx context.Context, id uint) (regionmodels.RegionParts, error)
 	// GetDefaultRegions return default region the group
 	GetDefaultRegions(ctx context.Context, id uint) ([]*envregionmodels.EnvironmentRegion, error)
+	// IsRootGroup returns whether it is the root group(groupID equals 0)
+	IsRootGroup(ctx context.Context, groupID uint) bool
+	// GroupExist returns whether the group exists in db
+	GroupExist(ctx context.Context, groupID uint) bool
 }
 
 type manager struct {
@@ -343,4 +350,21 @@ func (m manager) GetDefaultRegions(ctx context.Context, id uint) ([]*envregionmo
 	}
 
 	return res, nil
+}
+
+// IsRootGroup return whether it is the root group(groupID equals 0)
+func (m manager) IsRootGroup(ctx context.Context, groupID uint) bool {
+	return groupID == rootGroupID
+}
+
+// GroupExist returns whether the group exists in db
+func (m manager) GroupExist(ctx context.Context, groupID uint) bool {
+	if m.IsRootGroup(ctx, groupID) {
+		return true
+	}
+
+	if _, err := m.GetByID(ctx, groupID); err != nil {
+		return false
+	}
+	return true
 }

@@ -44,6 +44,16 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.CreateApplicationClusterMember,
 		},
 		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/templates/:%v/members", _paramTemplateID),
+			HandlerFunc: api.ListTemplateMember,
+		},
+		{
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/templates/:%v/members", _paramTemplateID),
+			HandlerFunc: api.CreateTemplateMember,
+		},
+		{
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/members/:%v", _paramMemberID),
 			HandlerFunc: api.UpdateMember,

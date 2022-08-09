@@ -62,6 +62,11 @@ const (
 	// ResourceOauthApps urrently oauthapp do not have direct member info, will
 	// use the oauthapp's groups member info
 	ResourceOauthApps = "oauthapps"
+
+	ResourceTemplate = "templates"
+
+	ResourceTemplateRelease = "templatereleases"
+	AliasTemplateRelease    = "releases"
 )
 
 const (
@@ -74,4 +79,15 @@ const (
 	ParamGroupID       = "groupID"
 	ParamClusterID     = "clusterID"
 	ParamClusterName   = "cluster"
+	ParamTemplateID    = "templateID"
+	ParamReleaseID     = "releaseID"
+)
+
+const (
+	GitlabControl = "control"
+	GitlabCompute = "compute"
+)
+
+const (
+	ChartVersionFormat = "%s-%s"
 )

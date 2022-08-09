@@ -66,6 +66,8 @@ func ConvertResourceType(resourceTypeStr string) (models.ResourceType, bool) {
 		resourceType = models.TypeApplication
 	case common.ResourceCluster:
 		resourceType = models.TypeApplicationCluster
+	case common.ResourceTemplate:
+		resourceType = models.TypeTemplate
 	default:
 		convertOk = false
 	}

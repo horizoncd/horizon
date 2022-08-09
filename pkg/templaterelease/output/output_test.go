@@ -3,31 +3,36 @@ package output
 import (
 	"errors"
 	"testing"
+	"time"
 
-	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
+	templatemock "g.hz.netease.com/horizon/mock/pkg/template/manager"
 	templatereleasemock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
+	repomock "g.hz.netease.com/horizon/mock/pkg/templaterepo"
 	trm "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
+	"helm.sh/helm/v3/pkg/chart"
 )
 
 func TestGeTemplateOutPut(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	gitlabmockLib := gitlablibmock.NewMockInterface(mockCtrl)
-	templatereleasemock := templatereleasemock.NewMockManager(mockCtrl)
+	repoMock := repomock.NewMockTemplateRepo(mockCtrl)
+	templateMockMgr := templatemock.NewMockManager(mockCtrl)
+	templatereleaseMockMgr := templatereleasemock.NewMockManager(mockCtrl)
 
 	var outputGetter Getter = &getter{
-		gitlabLib:          gitlabmockLib,
-		templateReleaseMgr: templatereleasemock,
+		templateRepo:       repoMock,
+		templateMgr:        templateMockMgr,
+		templateReleaseMgr: templatereleaseMockMgr,
 	}
 
 	templateName := "java"
 	releaseName := "v1.0.0"
 	retErr := errors.New("get template release error")
-	templatereleasemock.EXPECT().GetByTemplateNameAndRelease(gomock.Any(),
+	templatereleaseMockMgr.EXPECT().GetByTemplateNameAndRelease(gomock.Any(),
 		templateName, releaseName).Return(nil, retErr)
 
 	// 1. test GetByTemplateNameAndRelease error
@@ -36,20 +41,22 @@ func TestGeTemplateOutPut(t *testing.T) {
 	assert.Equal(t, err, retErr)
 	assert.Equal(t, outputstr, "")
 
-	gitProject := "horizon.github.com"
+	tm := time.Now()
 	tr := &trm.TemplateRelease{
-		Name:          templateName,
-		GitlabProject: gitProject,
+		TemplateName: templateName,
+		ChartVersion: releaseName,
+		ChartName:    templateName,
+		LastSyncAt:   tm,
 	}
 
 	// 2. test gitlab get file ok
 	outputSchemaStr := "domain: s3.mockserver.org"
-	templatereleasemock.EXPECT().GetByTemplateNameAndRelease(gomock.Any(),
+	templatereleaseMockMgr.EXPECT().GetByTemplateNameAndRelease(gomock.Any(),
 		templateName, releaseName).Return(tr, nil)
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(),
-		gitProject, templateName, _outputsPath).Return([]byte(outputSchemaStr), nil).Times(1)
+	repoMock.EXPECT().GetChart(templateName, releaseName, tm).
+		Return(&chart.Chart{Files: []*chart.File{{Name: _outputsPath, Data: []byte(outputSchemaStr)}}}, nil).Times(1)
 
 	outputstr, err = outputGetter.GetTemplateOutPut(context.TODO(), templateName, releaseName)
 	assert.Nil(t, err)
-	assert.Equal(t, outputstr, outputSchemaStr)
+	assert.Equal(t, outputSchemaStr, outputstr)
 }

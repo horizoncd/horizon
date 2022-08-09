@@ -118,8 +118,8 @@ func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodel
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetApplicationResponse {
 	var recommendedRelease string
 	for _, tr := range trs {
-		if tr.Recommended {
-			recommendedRelease = tr.Name
+		if *tr.Recommended {
+			recommendedRelease = tr.ChartVersion
 		}
 	}
 

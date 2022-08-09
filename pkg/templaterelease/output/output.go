@@ -3,18 +3,13 @@ package output
 import (
 	"errors"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
 	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	"g.hz.netease.com/horizon/pkg/templaterepo"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"golang.org/x/net/context"
 )
-
-const _gitlabName = "control"
 
 // Getter provides som functions for output
 type Getter interface {
@@ -23,7 +18,8 @@ type Getter interface {
 }
 
 type getter struct {
-	gitlabLib          gitlablib.Interface
+	templateRepo       templaterepo.TemplateRepo
+	templateMgr        tmanager.Manager
 	templateReleaseMgr manager.Manager
 }
 
@@ -37,13 +33,10 @@ var (
 	ErrFormat = errors.New("FileFormatError")
 )
 
-func NewOutPutGetter(ctx context.Context, gitlabFty gitlabfty.Factory, m *managerparam.Manager) (Getter, error) {
-	gitlabLib, err := gitlabFty.GetByName(ctx, _gitlabName)
-	if err != nil {
-		return nil, err
-	}
+func NewOutPutGetter(ctx context.Context, repo templaterepo.TemplateRepo, m *managerparam.Manager) (Getter, error) {
 	return &getter{
-		gitlabLib:          gitlabLib,
+		templateRepo:       repo,
+		templateMgr:        m.TemplateMgr,
 		templateReleaseMgr: m.TemplateReleaseManager,
 	}, nil
 }
@@ -58,12 +51,16 @@ func (g *getter) GetTemplateOutPut(ctx context.Context,
 		return "", err
 	}
 
-	bytes, err := g.gitlabLib.GetFile(ctx, tr.GitlabProject, tr.Name, _outputsPath)
+	chart, err := g.templateRepo.GetChart(tr.ChartName, tr.ChartVersion, tr.LastSyncAt)
 	if err != nil {
-		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
-			log.Errorf(ctx, "Get Output file error, err = %s", err.Error())
-			return "", err
+		return "", err
+	}
+
+	for _, file := range chart.Files {
+		if file.Name == _outputsPath {
+			return string(file.Data), nil
 		}
 	}
-	return string(bytes), nil
+
+	return "", nil
 }

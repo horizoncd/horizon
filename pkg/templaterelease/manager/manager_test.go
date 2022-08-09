@@ -3,42 +3,68 @@ package manager
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/pkg/templaterelease/models"
-	"g.hz.netease.com/horizon/pkg/util/errors"
-
+	amanager "g.hz.netease.com/horizon/pkg/application/manager"
+	applicationmodel "g.hz.netease.com/horizon/pkg/application/models"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	perror "g.hz.netease.com/horizon/pkg/errors"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
+	tmodels "g.hz.netease.com/horizon/pkg/template/models"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 )
 
 var (
-	db, _ = orm.NewSqliteDB("")
-	ctx   context.Context
-	mgr   = New(db)
+	db                 *gorm.DB
+	ctx                context.Context
+	templateMgr        tmanager.Manager
+	templateReleaseMgr Manager
+	applicationMgr     amanager.Manager
 )
 
 func Test(t *testing.T) {
 	var (
-		templateName  = "javaapp"
-		name          = "v1.0.0"
-		description   = "javaapp template v1.0.0"
-		gitlabProject = "helm-template/javaapp"
-		createdBy     = uint(1)
-		updatedBy     = uint(1)
+		templateName = "javaapp"
+		name         = "v1.0.0"
+		chartVersion = "v1.0.0-test"
+		repo         = "repo"
+		description  = "javaapp template v1.0.0"
+		groupID      = uint(0)
+		createdBy    = uint(1)
+		updatedBy    = uint(1)
+		err          error
 	)
-	templateRelease := &models.TemplateRelease{
-		TemplateName:  templateName,
-		Name:          name,
-		Description:   description,
-		GitlabProject: gitlabProject,
-		Recommended:   true,
-		CreatedBy:     createdBy,
-		UpdatedBy:     updatedBy,
+	template := &tmodels.Template{
+		Name:        templateName,
+		Description: description,
+		Repository:  repo,
+		GroupID:     groupID,
+		CreatedBy:   createdBy,
+		UpdatedBy:   updatedBy,
 	}
-	templateRelease, err := mgr.Create(ctx, templateRelease)
+	template, err = templateMgr.Create(ctx, template)
+	assert.Nil(t, err)
+
+	recommend := true
+
+	templateRelease := &trmodels.TemplateRelease{
+		Template:     template.ID,
+		TemplateName: templateName,
+		Name:         name,
+		ChartVersion: chartVersion,
+		Description:  description,
+		Recommended:  &recommend,
+		CreatedBy:    createdBy,
+		UpdatedBy:    updatedBy,
+	}
+	templateRelease, err = templateReleaseMgr.Create(ctx, templateRelease)
 	assert.Nil(t, err)
 
 	assert.Equal(t, name, templateRelease.Name)
@@ -49,29 +75,73 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf(string(b))
 
-	templates, err := mgr.ListByTemplateName(ctx, templateName)
+	releases, err := templateReleaseMgr.ListByTemplateName(ctx, templateName)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(templates))
-	assert.Equal(t, name, templates[0].Name)
-	assert.Equal(t, description, templates[0].Description)
-	assert.Equal(t, 1, int(templates[0].ID))
+	assert.Equal(t, 1, len(releases))
+	assert.Equal(t, name, releases[0].Name)
+	assert.Equal(t, chartVersion, releases[0].ChartVersion)
+	assert.Equal(t, description, releases[0].Description)
+	assert.Equal(t, 1, int(releases[0].ID))
 
-	template, err := mgr.GetByTemplateNameAndRelease(ctx, templateName, name)
+	releases, err = templateReleaseMgr.ListByTemplateID(ctx, template.ID)
 	assert.Nil(t, err)
-	assert.NotNil(t, template)
-	assert.Equal(t, name, templateRelease.Name)
+	assert.Equal(t, 1, len(releases))
+	assert.Equal(t, name, releases[0].Name)
+	assert.Equal(t, chartVersion, releases[0].ChartVersion)
+	assert.Equal(t, description, releases[0].Description)
+	assert.Equal(t, 1, int(releases[0].ID))
 
 	// template release not exists
-	template, err = mgr.GetByTemplateNameAndRelease(ctx, templateName, "not-exist")
+	templateRelease, err = templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, "not-exist")
 	assert.NotNil(t, err)
-	assert.Equal(t, http.StatusNotFound, errors.Status(err))
-	assert.Nil(t, template)
+	_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
+	assert.True(t, ok)
+	assert.Nil(t, templateRelease)
+
+	templateRelease, err = templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, name)
+	assert.Nil(t, err)
+	assert.NotNil(t, templateRelease)
+	assert.Equal(t, chartVersion, templateRelease.ChartVersion)
+	assert.Equal(t, name, templateRelease.Name)
+
+	app := &applicationmodel.Application{
+		Template:        templateName,
+		TemplateRelease: templateRelease.Name,
+		Name:            "test",
+	}
+	_, err = applicationMgr.Create(ctx, app, map[string]string{})
+	assert.Nil(t, err)
+
+	apps, _, err := templateReleaseMgr.GetRefOfApplication(ctx, 1)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(apps))
+	assert.Equal(t, app.Name, apps[0].Name)
+
+	err = templateReleaseMgr.DeleteByID(ctx, templateRelease.ID)
+	assert.Nil(t, err)
+
+	templateRelease, err = templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, name)
+	assert.NotNil(t, err)
+	assert.Nil(t, templateRelease)
 }
 
 func TestMain(m *testing.M) {
-	if err := db.AutoMigrate(&models.TemplateRelease{}); err != nil {
+	db, _ = orm.NewSqliteDB("")
+	if err := db.AutoMigrate(&trmodels.TemplateRelease{},
+		&applicationmodel.Application{}, &tmodels.Template{},
+		&membermodels.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
+	// nolint
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		ID:   1,
+		Name: "Jerry",
+	})
+
+	templateMgr = tmanager.New(db)
+	templateReleaseMgr = New(db)
+	applicationMgr = amanager.New(db)
+
 	os.Exit(m.Run())
 }

@@ -10,7 +10,10 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
+	groupmanagermock "g.hz.netease.com/horizon/mock/pkg/group/manager"
 	membermock "g.hz.netease.com/horizon/mock/pkg/member/service"
+	templatemock "g.hz.netease.com/horizon/mock/pkg/template/manager"
+	releasemanagermock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
 	applicationdao "g.hz.netease.com/horizon/pkg/application/dao"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
@@ -21,6 +24,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
+	tmodels "g.hz.netease.com/horizon/pkg/template/models"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -218,6 +223,115 @@ func TestGetAuthedGroups(t *testing.T) {
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
 }
 
+func TestGetByFullPath(t *testing.T) {
+	mockCtl := gomock.NewController(t)
+
+	groupMgr := groupmanagermock.NewMockManager(mockCtl)
+	templateMgr := templatemock.NewMockManager(mockCtl)
+	releaseMgr := releasemanagermock.NewMockManager(mockCtl)
+
+	groupCtl := &controller{
+		groupManager:       groupMgr,
+		templateMgr:        templateMgr,
+		templateReleaseMgr: releaseMgr,
+	}
+
+	// for /group1/group2/template1
+
+	path := "/group1/group2/template1"
+	group1 := &models.Group{
+		Model: global.Model{
+			ID: 1,
+		},
+		Name:         "group1",
+		Path:         "group1",
+		TraversalIDs: "1",
+	}
+	group2 := &models.Group{
+		Model: global.Model{
+			ID: 2,
+		},
+		Name:         "group2",
+		Path:         "group2",
+		ParentID:     group1.ID,
+		TraversalIDs: "1,2",
+	}
+	template1 := &tmodels.Template{
+		Model: global.Model{
+			ID: 1,
+		},
+		Name:    "template1",
+		GroupID: 2,
+	}
+
+	templateMgr.EXPECT().GetByName(gomock.Any(), "template1").Return(template1, nil)
+	groupMgr.EXPECT().GetByPaths(gomock.Any(), []string{"group1", "group2"}).
+		Return([]*models.Group{group1, group2}, nil)
+
+	child, err := groupCtl.GetByFullPath(ctx, path, common.ResourceTemplate)
+	assert.Nil(t, err)
+	assert.NotNil(t, child)
+	assert.Equal(t, template1.Name, child.Name)
+	assert.Equal(t, path, child.FullPath)
+	assert.Equal(t, service.ChildTypeTemplate, child.Type)
+	assert.Equal(t, group2.ID, child.ParentID)
+
+	// for /template1
+	path = "/template1"
+	template1.GroupID = 0
+	templateMgr.EXPECT().GetByName(gomock.Any(), "template1").Return(template1, nil)
+
+	child, err = groupCtl.GetByFullPath(ctx, path, common.ResourceTemplate)
+	assert.Nil(t, err)
+	assert.NotNil(t, child)
+	assert.Equal(t, template1.Name, child.Name)
+	assert.Equal(t, path, child.FullPath)
+	assert.Equal(t, template1.Name, child.FullName)
+	assert.Equal(t, service.ChildTypeTemplate, child.Type)
+	assert.Equal(t, uint(0), child.ParentID)
+
+	// for /group1/group2/template1/release1
+
+	path = "/group1/group2/template1/release1"
+	release1 := &trmodels.TemplateRelease{
+		Model:    global.Model{ID: 1},
+		Template: template1.ID,
+		Name:     "release1",
+	}
+
+	template1.GroupID = group2.ID
+
+	templateMgr.EXPECT().GetByName(gomock.Any(), "template1").Return(template1, nil)
+	groupMgr.EXPECT().GetByPaths(gomock.Any(), []string{"group1", "group2"}).
+		Return([]*models.Group{group1, group2}, nil)
+	releaseMgr.EXPECT().GetByTemplateNameAndRelease(gomock.Any(), template1.Name, release1.Name).
+		Return(release1, nil)
+
+	child, err = groupCtl.GetByFullPath(ctx, path, common.ResourceTemplateRelease)
+	assert.Nil(t, err)
+	assert.NotNil(t, child)
+	assert.Equal(t, release1.Name, child.Name)
+	assert.Equal(t, path, child.FullPath)
+	assert.Equal(t, service.ChildTypeRelease, child.Type)
+	assert.Equal(t, template1.ID, child.ParentID)
+
+	// for /template1/release1
+	path = "/template1/release1"
+	template1.GroupID = 0
+
+	templateMgr.EXPECT().GetByName(gomock.Any(), "template1").Return(template1, nil)
+	releaseMgr.EXPECT().GetByTemplateNameAndRelease(gomock.Any(), template1.Name, release1.Name).
+		Return(release1, nil)
+
+	child, err = groupCtl.GetByFullPath(ctx, path, common.ResourceTemplateRelease)
+	assert.Nil(t, err)
+	assert.NotNil(t, child)
+	assert.Equal(t, release1.Name, child.Name)
+	assert.Equal(t, path, child.FullPath)
+	assert.Equal(t, service.ChildTypeRelease, child.Type)
+	assert.Equal(t, template1.ID, child.ParentID)
+}
+
 func TestControllerCreateGroup(t *testing.T) {
 	type args struct {
 		ctx      context.Context
@@ -297,7 +411,7 @@ func TestControllerCreateGroup(t *testing.T) {
 		})
 	}
 
-	rootGroup, err := groupCtl.GetByFullPath(ctx, "/a")
+	rootGroup, err := groupCtl.GetByFullPath(ctx, "/a", "")
 	assert.Nil(t, err)
 	creatSubCase := []struct {
 		name    string
@@ -494,8 +608,9 @@ func TestControllerGetByPath(t *testing.T) {
 	assert.Nil(t, err)
 
 	type args struct {
-		ctx  context.Context
-		path string
+		ctx          context.Context
+		path         string
+		resourceType string
 	}
 	tests := []struct {
 		name    string
@@ -556,7 +671,7 @@ func TestControllerGetByPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := groupCtl.GetByFullPath(tt.args.ctx, tt.args.path)
+			got, err := groupCtl.GetByFullPath(tt.args.ctx, tt.args.path, tt.args.resourceType)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetByFullPath() error = %v, wantErr %v", err, tt.wantErr)
 				return

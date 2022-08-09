@@ -13,13 +13,17 @@ import (
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/group/service"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
+	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
+	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/go-yaml/yaml"
 )
 
@@ -38,7 +42,7 @@ type Controller interface {
 	// GetByID get a group by the id
 	GetByID(ctx context.Context, id uint) (*StructuredGroup, error)
 	// GetByFullPath get a group by the URLPath
-	GetByFullPath(ctx context.Context, path string) (*service.Child, error)
+	GetByFullPath(ctx context.Context, resourcePath string, resourceType string) (*service.Child, error)
 	// Transfer put a group under another parent group
 	Transfer(ctx context.Context, id, newParentID uint) error
 	// UpdateBasic update basic info of a group, including name, path, description and visibilityLevel
@@ -62,6 +66,8 @@ type controller struct {
 	applicationManager appmanager.Manager
 	clusterManager     clustermanager.Manager
 	memberSvc          memberservice.Service
+	templateMgr        tmanager.Manager
+	templateReleaseMgr trmanager.Manager
 }
 
 // NewController initializes a new group controller
@@ -71,6 +77,8 @@ func NewController(param *param.Param) Controller {
 		applicationManager: param.ApplicationManager,
 		clusterManager:     param.ClusterMgr,
 		memberSvc:          param.MemberService,
+		templateMgr:        param.TemplateMgr,
+		templateReleaseMgr: param.TemplateReleaseManager,
 	}
 }
 
@@ -319,76 +327,163 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 	return group.ID, err
 }
 
+// GetByFullPath TODO: 根据功能重构
 // GetByFullPath get a group by the URLPath
-func (c *controller) GetByFullPath(ctx context.Context, path string) (*service.Child, error) {
+func (c *controller) GetByFullPath(ctx context.Context,
+	resourcePath string, resourceType string) (*service.Child, error) {
 	const op = "get record by fullPath"
+	defer wlog.Start(ctx, op).StopPrint()
 
-	var errNotMatch = errors.E(op, http.StatusNotFound, ErrCodeNotFound,
-		fmt.Sprintf("no resource matching the path: %s", path))
+	errMsg := fmt.Sprintf("no resource matching the resourcePath: %s, resourceType: %s",
+		resourcePath, resourceType)
+	errNotMatch := herrors.NewErrNotFound(herrors.GroupFullPath, errMsg)
 
-	if len(path) == 0 {
-		return nil, errNotMatch
+	if len(resourcePath) == 0 {
+		return nil, perror.Wrap(errNotMatch, errMsg)
 	}
 
-	// path: /a/b => {a, b}
-	paths := strings.Split(path[1:], "/")
-	groups, err := c.groupManager.GetByPaths(ctx, paths)
-	if err != nil {
-		return nil, err
-	}
-
-	// get mapping between id and group
-	idToGroup := service.GenerateIDToGroup(groups)
-
-	// get mapping between id and full
-	idToFull := service.GenerateIDToFull(groups)
-
-	// 1. match group
-	for k, v := range idToFull {
-		// path pointing to a group
-		if v.FullPath == path {
-			g := idToGroup[k]
-			child := service.ConvertGroupToChild(g, v)
-			return child, nil
+	if resourceType == "" {
+		// resourcePath: /a/b => {a, b}
+		paths := strings.Split(resourcePath[1:], "/")
+		groups, err := c.groupManager.GetByPaths(ctx, paths)
+		if err != nil {
+			return nil, err
 		}
+
+		// get mapping between id and group
+		idToGroup := service.GenerateIDToGroup(groups)
+
+		// get mapping between id and full
+		idToFull := service.GenerateIDToFull(groups)
+
+		// 1. match group
+		for k, v := range idToFull {
+			// resourcePath pointing to a group
+			if v.FullPath == resourcePath {
+				g := idToGroup[k]
+				child := service.ConvertGroupToChild(g, v)
+				return child, nil
+			}
+		}
+
+		// 2. match application
+		if len(paths) < 2 {
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+		app, err := c.applicationManager.GetByName(ctx, paths[len(paths)-1])
+		if app != nil && err == nil {
+			appParentFull, ok := idToFull[app.GroupID]
+			if ok && fmt.Sprintf("%s/%s", appParentFull.FullPath, app.Name) == resourcePath {
+				return service.ConvertApplicationToChild(app, &service.Full{
+					FullName: fmt.Sprintf("%s/%s", appParentFull.FullName, app.Name),
+					FullPath: fmt.Sprintf("%s/%s", appParentFull.FullPath, app.Name),
+				}), nil
+			}
+		}
+
+		// 3. match cluster
+		if len(paths) < 3 {
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+		cluster, err := c.clusterManager.GetByName(ctx, paths[len(paths)-1])
+		if err != nil || cluster == nil {
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+		app, err = c.applicationManager.GetByID(ctx, cluster.ApplicationID)
+		if err != nil {
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+		appParentFull, ok := idToFull[app.GroupID]
+		if ok && fmt.Sprintf("%s/%s/%s", appParentFull.FullPath, app.Name, cluster.Name) == resourcePath {
+			return service.ConvertClusterToChild(cluster, &service.Full{
+				FullName: fmt.Sprintf("%s/%s/%s", appParentFull.FullName, app.Name, cluster.Name),
+				FullPath: fmt.Sprintf("%s/%s/%s", appParentFull.FullPath, app.Name, cluster.Name),
+			}), nil
+		}
+
+		return nil, perror.Wrap(errNotMatch, errMsg)
 	}
 
-	// 2. match application
-	if len(paths) < 2 {
-		return nil, errNotMatch
-	}
-	app, err := c.applicationManager.GetByName(ctx, paths[len(paths)-1])
-	if app != nil && err == nil {
-		appParentFull, ok := idToFull[app.GroupID]
-		if ok && fmt.Sprintf("%s/%s", appParentFull.FullPath, app.Name) == path {
-			return service.ConvertApplicationToChild(app, &service.Full{
-				FullName: fmt.Sprintf("%s/%s", appParentFull.FullName, app.Name),
-				FullPath: fmt.Sprintf("%s/%s", appParentFull.FullPath, app.Name),
+	pathArr := strings.Split(strings.TrimPrefix(resourcePath, "/"), "/")
+	// for /group1/group2/group3/template1
+	if resourceType == common.ResourceTemplate {
+		if len(pathArr) < 1 {
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+		templateName := pathArr[len(pathArr)-1]
+		template, err := c.templateMgr.GetByName(ctx, templateName)
+		if err != nil {
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+
+		if template.GroupID == service.RootGroupID {
+			if len(pathArr) == 1 {
+				return service.ConvertTemplateToChild(template, &service.Full{
+					FullName: template.Name,
+					FullPath: fmt.Sprintf("/%s", template.Name),
+				}), nil
+			}
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+
+		groups, err := c.groupManager.GetByPaths(ctx, pathArr[:len(pathArr)-1])
+		if err != nil {
+			return nil, err
+		}
+
+		// get mapping between id and full
+		idToFull := service.GenerateIDToFull(groups)
+		full, ok := idToFull[template.GroupID]
+		if ok && fmt.Sprintf("%s/%s", full.FullPath, template.Name) == resourcePath {
+			return service.ConvertTemplateToChild(template, &service.Full{
+				FullName: fmt.Sprintf("%s/%s", full.FullName, template.Name),
+				FullPath: fmt.Sprintf("%s/%s", full.FullPath, template.Name),
+			}), nil
+		}
+	} else if resourceType == common.ResourceTemplateRelease {
+		// for /template1/release1
+		if len(pathArr) < 2 {
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+
+		templateName := pathArr[len(pathArr)-2]
+		template, err := c.templateMgr.GetByName(ctx, templateName)
+		if err != nil {
+			return nil, err
+		}
+
+		releaseName := pathArr[len(pathArr)-1]
+		release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, releaseName)
+		if err != nil {
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+
+		if template.GroupID == service.RootGroupID {
+			if len(pathArr) == 2 {
+				return service.ConvertReleaseToChild(release, &service.Full{
+					FullName: fmt.Sprintf("%s/%s", template.Name, releaseName),
+					FullPath: fmt.Sprintf("/%s/%s", template.Name, releaseName),
+				}), nil
+			}
+			return nil, perror.Wrap(errNotMatch, errMsg)
+		}
+
+		groups, err := c.groupManager.GetByPaths(ctx, pathArr[:len(pathArr)-2])
+		if err != nil {
+			return nil, err
+		}
+
+		// get mapping between id and full
+		idToFull := service.GenerateIDToFull(groups)
+		full, ok := idToFull[template.GroupID]
+		if ok && fmt.Sprintf("%s/%s/%s", full.FullPath, template.Name, releaseName) == resourcePath {
+			return service.ConvertReleaseToChild(release, &service.Full{
+				FullName: fmt.Sprintf("%s/%s/%s", full.FullName, template.Name, releaseName),
+				FullPath: fmt.Sprintf("%s/%s/%s", full.FullPath, template.Name, releaseName),
 			}), nil
 		}
 	}
-
-	// 3. match cluster
-	if len(paths) < 3 {
-		return nil, errNotMatch
-	}
-	cluster, err := c.clusterManager.GetByName(ctx, paths[len(paths)-1])
-	if err != nil || cluster == nil {
-		return nil, errNotMatch
-	}
-	app, err = c.applicationManager.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, errNotMatch
-	}
-	appParentFull, ok := idToFull[app.GroupID]
-	if ok && fmt.Sprintf("%s/%s/%s", appParentFull.FullPath, app.Name, cluster.Name) == path {
-		return service.ConvertClusterToChild(cluster, &service.Full{
-			FullName: fmt.Sprintf("%s/%s/%s", appParentFull.FullName, app.Name, cluster.Name),
-			FullPath: fmt.Sprintf("%s/%s/%s", appParentFull.FullPath, app.Name, cluster.Name),
-		}), nil
-	}
-
-	return nil, errNotMatch
+	return nil, perror.Wrap(errNotMatch, errMsg)
 }
 
 func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
