@@ -9,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
 )
@@ -20,7 +21,8 @@ const (
 
 // Middleware check user is exists in db. If not, add user into db.
 // Then attach a User object into context.
-func Middleware(param *param.Param, store sessions.Store, skippers ...middleware.Skipper) gin.HandlerFunc {
+func Middleware(param *param.Param, store sessions.Store,
+	skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		mgr := param.UserManager
 		operator := c.Request.Header.Get(HTTPHeaderOperator)
@@ -68,6 +70,16 @@ func Middleware(param *param.Param, store sessions.Store, skippers ...middleware
 
 		u := session.Values[common.SessionKeyAuthUser]
 		if user, ok := u.(*userauth.DefaultInfo); ok && user != nil {
+			muser, err := param.UserManager.GetUserByID(c, user.GetID())
+			if err != nil {
+				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsgf(
+					"user with id = %v not found", user.GetID()))
+				return
+			}
+			user.Name = muser.Name
+			user.FullName = muser.FullName
+			user.Email = muser.Email
+			user.Admin = muser.Admin
 			// attach user to context
 			common.SetUser(c, user)
 			c.Next()

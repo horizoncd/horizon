@@ -16,6 +16,7 @@ import (
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	cmodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	emvregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -72,32 +73,12 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 		return 0, nil, err
 	}
 
-	// 2. get applications
-	var applicationIDs []uint
-	for _, cluster := range clustersWithEnvAndRegion {
-		applicationIDs = append(applicationIDs, cluster.ApplicationID)
-	}
-	applicationMap, err := c.applicationSvc.GetByIDs(ctx, applicationIDs)
+	responses, err := c.getFullResponsesWithRegion(ctx, clustersWithEnvAndRegion)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	// 3. convert and add full path, full name
-	for _, cluster := range clustersWithEnvAndRegion {
-		application, exist := applicationMap[cluster.ApplicationID]
-		if !exist {
-			continue
-		}
-		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
-		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
-		listClusterWithFullResp = append(listClusterWithFullResp, &ListClusterWithFullResponse{
-			ofClusterWithEnvAndRegion(cluster),
-			fullName,
-			fullPath,
-		})
-	}
-
-	return count, listClusterWithFullResp, nil
+	return count, responses, nil
 }
 
 func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environment,
@@ -157,18 +138,28 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 			perror.WithMessage(err, "failed to list user clusters")
 	}
 
-	// 2. get applications
-	clusterApplicationIDs := make([]uint, 0)
-	for _, cluster := range clusters {
-		clusterApplicationIDs = append(clusterApplicationIDs, cluster.ApplicationID)
-	}
-	applicationMap, err := c.applicationSvc.GetByIDs(ctx, clusterApplicationIDs)
+	responses, err := c.getFullResponsesWithRegion(ctx, clusters)
 	if err != nil {
-		return 0, nil,
-			perror.WithMessage(err, "failed to list application for clusters")
+		return 0, nil, err
 	}
 
-	resp = make([]*ListClusterWithFullResponse, 0)
+	return count, responses, nil
+}
+
+func (c *controller) getFullResponses(ctx context.Context,
+	clusters []*cmodels.Cluster) ([]*ListClusterWithFullResponse, error) {
+	// get applications
+	var applicationIDs []uint
+	for _, cluster := range clusters {
+		applicationIDs = append(applicationIDs, cluster.ApplicationID)
+	}
+	applicationMap, err := c.applicationSvc.GetByIDs(ctx, applicationIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []*ListClusterWithFullResponse
+
 	// 3. convert and add full path, full name
 	for _, cluster := range clusters {
 		application, exist := applicationMap[cluster.ApplicationID]
@@ -177,14 +168,31 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 		}
 		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
 		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
-		resp = append(resp, &ListClusterWithFullResponse{
-			ofClusterWithEnvAndRegion(cluster),
+		responses = append(responses, &ListClusterWithFullResponse{
+			ofCluster(cluster),
 			fullName,
 			fullPath,
 		})
 	}
+	return responses, nil
+}
 
-	return count, resp, nil
+func (c *controller) getFullResponsesWithRegion(ctx context.Context,
+	clustersWithRegion []*cmodels.ClusterWithRegion) ([]*ListClusterWithFullResponse, error) {
+	clusters := make([]*cmodels.Cluster, 0, len(clustersWithRegion))
+	for _, clusterWithRegion := range clustersWithRegion {
+		clusters = append(clusters, clusterWithRegion.Cluster)
+	}
+
+	responses, err := c.getFullResponses(ctx, clusters)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range responses {
+		responses[i].Scope.RegionDisplayName = clustersWithRegion[i].RegionDisplayName
+	}
+	return responses, nil
 }
 
 func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClusterResponse, err error) {

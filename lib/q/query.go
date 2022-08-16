@@ -1,5 +1,7 @@
 package q
 
+import "g.hz.netease.com/horizon/core/common"
+
 // KeyWords ...
 type KeyWords = map[string]interface{}
 
@@ -13,6 +15,22 @@ type Query struct {
 	PageNumber int
 	// Page size
 	PageSize int
+}
+
+func NewQuery(PageNumber, PageSize int, keywords KeyWords, sorts []*Sort) *Query {
+	q := &Query{}
+	if PageNumber < 1 {
+		PageNumber = common.DefaultPageNumber
+	}
+	if PageSize < 1 {
+		PageSize = common.DefaultPageSize
+	}
+
+	q.PageNumber = PageNumber
+	q.PageSize = PageSize
+	q.Keywords = keywords
+	q.Sorts = sorts
+	return q
 }
 
 // First make the query only fetch the first one record in the sorting order

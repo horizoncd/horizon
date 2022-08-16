@@ -216,29 +216,11 @@ Roles:
           - oauthapps/clientsecret
           - templates/releases
           - templatereleases/schema
-        verbs:
-          - get
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
           - groups/templates
+          - templatereleases
+          - templates
         verbs:
           - get
-          - create
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - templatereleases/sync
-        verbs:
-          - create
         scopes:
           - "*"
         nonResourceURLs:
@@ -252,18 +234,6 @@ Roles:
           - get
           - update
           - create
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - templatereleases
-          - templates
-        verbs:
-          - get
-          - update
         scopes:
           - "*"
         nonResourceURLs:
@@ -306,37 +276,13 @@ Roles:
       - apiGroups:
           - core
         resources:
-          - templatereleases/sync
-        verbs:
-          - create
-        scopes:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
           - templates/releases
           - templatereleases/schema
-        verbs:
-          - get
-        scopes:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
           - groups/templates
-        verbs:
-          - get
-          - create
-        scopes:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
           - templates
           - templatereleases
         verbs:
           - get
-          - update
         scopes:
           - "*"
       - apiGroups:

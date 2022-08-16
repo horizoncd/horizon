@@ -158,6 +158,36 @@ func (mr *MockManagerMockRecorder) ListByGroupID(ctx, groupID interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByGroupID", reflect.TypeOf((*MockManager)(nil).ListByGroupID), ctx, groupID)
 }
 
+// ListByGroupIDs mocks base method.
+func (m *MockManager) ListByGroupIDs(ctx context.Context, ids []uint) ([]*models1.Template, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByGroupIDs", ctx, ids)
+	ret0, _ := ret[0].([]*models1.Template)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByGroupIDs indicates an expected call of ListByGroupIDs.
+func (mr *MockManagerMockRecorder) ListByGroupIDs(ctx, ids interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByGroupIDs", reflect.TypeOf((*MockManager)(nil).ListByGroupIDs), ctx, ids)
+}
+
+// ListByIDs mocks base method.
+func (m *MockManager) ListByIDs(ctx context.Context, ids []uint) ([]*models1.Template, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByIDs", ctx, ids)
+	ret0, _ := ret[0].([]*models1.Template)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByIDs indicates an expected call of ListByIDs.
+func (mr *MockManagerMockRecorder) ListByIDs(ctx, ids interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByIDs", reflect.TypeOf((*MockManager)(nil).ListByIDs), ctx, ids)
+}
+
 // UpdateByID mocks base method.
 func (m *MockManager) UpdateByID(ctx context.Context, id uint, template *models1.Template) error {
 	m.ctrl.T.Helper()

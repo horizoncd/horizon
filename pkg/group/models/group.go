@@ -56,3 +56,8 @@ type RegionSelector struct {
 }
 
 type RegionSelectors []*RegionSelector
+
+type GroupWithChildren struct {
+	Group    *Group
+	Children []*Group
+}

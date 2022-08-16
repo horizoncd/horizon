@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -241,9 +242,11 @@ func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
 
 // GetSubGroupsByGroupIDs get groups and its subGroups by specified groupIDs
 func (m manager) GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Group, error) {
-	groupIDSet := make(map[uint]bool)
+	groupIDSet := make(map[uint]struct{})
 	for _, groupID := range groupIDs {
-		groupIDSet[groupID] = true
+		if _, ok := groupIDSet[groupID]; !ok {
+			groupIDSet[groupID] = struct{}{}
+		}
 	}
 
 	groups, err := m.groupDAO.ListByTraversalIDsContains(ctx, groupIDs)
@@ -252,11 +255,15 @@ func (m manager) GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([
 	}
 	retGroupIDs := make([]uint, 0)
 	for _, group := range groups {
-		traversalIDs := FormatIDsFromTraversalIDs(group.TraversalIDs)
-		for index, traversalID := range traversalIDs {
-			if _, ok := groupIDSet[traversalID]; ok {
-				retGroupIDs = append(retGroupIDs, traversalIDs[index:]...)
-				break
+		retGroupIDs = append(retGroupIDs, group.Group.ID)
+		prefix := fmt.Sprintf("%s,", group.Group.TraversalIDs)
+		for _, child := range group.Children {
+			traversalIDs := FormatIDsFromTraversalIDs(strings.TrimPrefix(child.TraversalIDs, prefix))
+			for _, traversalID := range traversalIDs {
+				if _, ok := groupIDSet[traversalID]; !ok {
+					retGroupIDs = append(retGroupIDs, traversalID)
+					groupIDSet[traversalID] = struct{}{}
+				}
 			}
 		}
 	}

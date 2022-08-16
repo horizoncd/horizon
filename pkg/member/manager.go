@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../mock/pkg/member/manager/mock_manager.go -package=mock_manager
 type Manager interface {
 	// Create a new member
 	Create(ctx context.Context, member *models.Member) (*models.Member, error)
@@ -39,6 +40,9 @@ type Manager interface {
 	// ListResourceOfMemberInfo list the resource id of the specified resourceType and memberInfo
 	ListResourceOfMemberInfo(ctx context.Context,
 		resourceType models.ResourceType, memberInfo uint) ([]uint, error)
+
+	ListResourceOfMemberInfoByRole(ctx context.Context,
+		resourceType models.ResourceType, memberInfo uint, role string) ([]uint, error)
 }
 
 type manager struct {
@@ -88,4 +92,8 @@ func (m *manager) ListDirectMemberOnCondition(ctx context.Context, resourceType 
 func (m *manager) ListResourceOfMemberInfo(ctx context.Context,
 	resourceType models.ResourceType, memberInfo uint) ([]uint, error) {
 	return m.dao.ListResourceOfMemberInfo(ctx, resourceType, memberInfo)
+}
+func (m *manager) ListResourceOfMemberInfoByRole(ctx context.Context,
+	resourceType models.ResourceType, memberInfo uint, role string) ([]uint, error) {
+	return m.dao.ListResourceOfMemberInfoByRole(ctx, resourceType, memberInfo, role)
 }

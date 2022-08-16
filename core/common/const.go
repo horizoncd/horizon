@@ -70,8 +70,7 @@ const (
 )
 
 const (
-	GroupCore  = "core"
-	GroupFront = "front"
+	GroupCore = "core"
 )
 
 const (
@@ -96,6 +95,4 @@ const (
 	CookieKeyAuth = "horizon|session"
 
 	SessionKeyAuthUser = "user"
-
-	IDPSigningAlgsSeperator = " "
 )

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -55,7 +54,7 @@ type DAO interface {
 	Transfer(ctx context.Context, id, newParentID uint) error
 	// GetByNameOrPathUnderParent get by name or path under a specified parent
 	GetByNameOrPathUnderParent(ctx context.Context, name, path string, parentID uint) ([]*models.Group, error)
-	ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*models.Group, error)
+	ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*models.GroupWithChildren, error)
 	UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error
 }
 
@@ -415,24 +414,35 @@ func (d *dao) GetByNameOrPathUnderParent(ctx context.Context,
 	return groups, result.Error
 }
 
-func (d *dao) ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*models.Group, error) {
+func (d *dao) ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*models.GroupWithChildren, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-
-	idsStr := make([]string, 0)
-	for _, id := range ids {
-		idsStr = append(idsStr, "'%"+strconv.Itoa(int(id))+"%'")
-	}
-	traversalIDLike := strings.Join(idsStr, ` or traversal_ids like `)
-	traversalIDLike = "traversal_ids like " + traversalIDLike
-
 	var groups []*models.Group
-	result := d.db.WithContext(ctx).Raw(fmt.Sprintf(dbcommon.GroupQueryByTraversalID, traversalIDLike)).Scan(&groups)
+	groupWithChildrens := make([]*models.GroupWithChildren, 0)
+	err := d.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.WithContext(ctx).
+			Where("id in ?", ids).Find(&groups)
+		if result.Error != nil {
+			return herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())
+		}
 
-	if result.Error != nil {
-		return nil, herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())
+		for _, group := range groups {
+			var tgroups []*models.Group
+			result = tx.WithContext(ctx).
+				Where("traversal_ids like ?", fmt.Sprintf("%s,%%", group.TraversalIDs)).
+				Find(&tgroups)
+			if result.Error != nil {
+				return herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())
+			}
+			groupWithChildrens = append(groupWithChildrens, &models.GroupWithChildren{Group: group, Children: tgroups})
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
-
-	return groups, result.Error
+	return groupWithChildrens, nil
 }
