@@ -2,22 +2,23 @@ package cloudevent
 
 import (
 	"context"
-	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
-	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"net/http"
 	"strconv"
 	"strings"
 
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
+
 	"g.hz.netease.com/horizon/pkg/cluster/common"
+	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"g.hz.netease.com/horizon/pkg/param"
-	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
-	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -130,7 +131,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults) {
 	clusterID, err := strconv.ParseUint(result.BusinessData.ClusterID, 10, 0)
 	if err != nil {
-		log.Errorf(ctx, "failed to parse clusterID to uint from string: %s", clusterID)
+		log.Errorf(ctx, "failed to parse clusterID to uint from string: %d", clusterID)
 		return
 	}
 	cluster, err := c.clusterMgr.GetByID(ctx, uint(clusterID))
@@ -144,17 +145,16 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 		log.Errorf(ctx, "failed to get templateRelease from db by id: %d, err: %+v", cluster.ApplicationID, err)
 		return
 	}
-	clusterFiles := &gitrepo.ClusterFiles{}
-	clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, result.BusinessData.Application, cluster.Name, tr.ChartName)
+	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, result.BusinessData.Application, cluster.Name, tr.ChartName)
 	if err != nil {
-		log.Errorf(ctx, "failed to get files from gitlab, cluster: %s, err: %+v", cluster.ApplicationID, cluster.Name, err)
+		log.Errorf(ctx, "failed to get files from gitlab, cluster: %s, err: %+v", cluster.Name, err)
 		return
 	}
 
 	// 5. check if buildxml key exist in pipeline
-	if buildXml, ok := clusterFiles.PipelineJSONBlob["buildxml"]; ok {
+	if buildXML, ok := clusterFiles.PipelineJSONBlob["buildxml"]; ok {
 		// 判断buildxml包含jib的内容，则进行替换操作
-		if strings.Contains(buildXml.(string), "jib-maven-plugin") {
+		if strings.Contains(buildXML.(string), "jib-maven-plugin") {
 			// change taskrun name
 			for _, trResult := range result.TrResults {
 				if trResult.Name == "build" {
