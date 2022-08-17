@@ -2,8 +2,13 @@ package cloudevent
 
 import (
 	"context"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
@@ -23,16 +28,24 @@ type Controller interface {
 }
 
 type controller struct {
-	tektonFty      factory.Factory
-	pipelinerunMgr prmanager.Manager
-	pipelineMgr    pipelinemanager.Manager
+	tektonFty          factory.Factory
+	pipelinerunMgr     prmanager.Manager
+	pipelineMgr        pipelinemanager.Manager
+	clusterMgr         clustermanager.Manager
+	clusterGitRepo     gitrepo.ClusterGitRepo
+	templateReleaseMgr trmanager.Manager
+	applicationMgr     applicationmanager.Manager
 }
 
 func NewController(tektonFty factory.Factory, parameter *param.Param) Controller {
 	return &controller{
-		tektonFty:      tektonFty,
-		pipelinerunMgr: parameter.PipelinerunMgr,
-		pipelineMgr:    parameter.PipelineMgr,
+		tektonFty:          tektonFty,
+		pipelinerunMgr:     parameter.PipelinerunMgr,
+		pipelineMgr:        parameter.PipelineMgr,
+		clusterMgr:         parameter.ClusterMgr,
+		clusterGitRepo:     parameter.ClusterGitRepo,
+		templateReleaseMgr: parameter.TemplateReleaseManager,
+		applicationMgr:     parameter.ApplicationManager,
 	}
 }
 
@@ -95,6 +108,9 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	// format Pipeline results
 	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun)
 
+	// 判断集群是否是JIB构建，动态修改Task和Step的值
+	c.handleJibBuild(ctx, pipelineResult)
+
 	// 4. observe metrics
 	// 最后指标上报，保证同一条pipelineRun，只上报一条指标
 	metrics.Observe(pipelineResult)
@@ -107,4 +123,53 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	return nil
+}
+
+// TODO remove this function in the future
+// 判断集群是否是JIB构建，动态修改Task和Step的值
+func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults) {
+	clusterID, err := strconv.ParseUint(result.BusinessData.ClusterID, 10, 0)
+	if err != nil {
+		log.Errorf(ctx, "failed to parse clusterID to uint from string: %s", clusterID)
+		return
+	}
+	cluster, err := c.clusterMgr.GetByID(ctx, uint(clusterID))
+	if err != nil {
+		log.Errorf(ctx, "failed to get cluster from db by id: %d, err: %+v", clusterID, err)
+		return
+	}
+
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		log.Errorf(ctx, "failed to get templateRelease from db by id: %d, err: %+v", cluster.ApplicationID, err)
+		return
+	}
+	clusterFiles := &gitrepo.ClusterFiles{}
+	clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, result.BusinessData.Application, cluster.Name, tr.ChartName)
+	if err != nil {
+		log.Errorf(ctx, "failed to get files from gitlab, cluster: %s, err: %+v", cluster.ApplicationID, cluster.Name, err)
+		return
+	}
+
+	// 5. check if buildxml key exist in pipeline
+	if buildXml, ok := clusterFiles.PipelineJSONBlob["buildxml"]; ok {
+		// 判断buildxml包含jib的内容，则进行替换操作
+		if strings.Contains(buildXml.(string), "jib-maven-plugin") {
+			// change taskrun name
+			for _, trResult := range result.TrResults {
+				if trResult.Name == "build" {
+					trResult.Name = "jib-build"
+				}
+			}
+			// change step name
+			for _, stepResult := range result.StepResults {
+				if stepResult.Step == "compile" {
+					stepResult.Step = "jib-compile"
+				}
+				if stepResult.Step == "image" {
+					stepResult.Step = "jib-image"
+				}
+			}
+		}
+	}
 }
