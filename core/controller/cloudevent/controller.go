@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
@@ -35,7 +34,6 @@ type controller struct {
 	clusterMgr         clustermanager.Manager
 	clusterGitRepo     gitrepo.ClusterGitRepo
 	templateReleaseMgr trmanager.Manager
-	applicationMgr     applicationmanager.Manager
 }
 
 func NewController(tektonFty factory.Factory, parameter *param.Param) Controller {
@@ -46,7 +44,6 @@ func NewController(tektonFty factory.Factory, parameter *param.Param) Controller
 		clusterMgr:         parameter.ClusterMgr,
 		clusterGitRepo:     parameter.ClusterGitRepo,
 		templateReleaseMgr: parameter.TemplateReleaseManager,
-		applicationMgr:     parameter.ApplicationManager,
 	}
 }
 
@@ -151,7 +148,7 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 		return
 	}
 
-	// 5. check if buildxml key exist in pipeline
+	// check if buildxml key exist in pipeline
 	if buildXML, ok := clusterFiles.PipelineJSONBlob["buildxml"]; ok {
 		// 判断buildxml包含jib的内容，则进行替换操作
 		if strings.Contains(buildXML.(string), "jib-maven-plugin") {
