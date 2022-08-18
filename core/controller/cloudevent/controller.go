@@ -154,8 +154,8 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 		if strings.Contains(buildXML.(string), "jib-maven-plugin") {
 			// change taskrun name
 			for _, trResult := range result.TrResults {
-				if trResult.Name == "build" {
-					trResult.Name = "jib-build"
+				if trResult.Task == "build" {
+					trResult.Task = "jib-build"
 				}
 			}
 			// change step name
