@@ -399,7 +399,6 @@ func (c *controller) CreateRelease(ctx context.Context,
 
 	var newRelease *trmodels.TemplateRelease
 	if newRelease, err = c.templateReleaseMgr.Create(ctx, release); err != nil {
-		_ = c.templateRepo.DeleteChart(template.ChartName, release.ChartVersion)
 		return nil, err
 	}
 	return toRelease(newRelease), nil
