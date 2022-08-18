@@ -151,19 +151,22 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 	// check if buildxml key exist in pipeline
 	if buildXML, ok := clusterFiles.PipelineJSONBlob["buildxml"]; ok {
 		// 判断buildxml包含jib的内容，则进行替换操作
+		const jibBuild = "jib-build"
 		if strings.Contains(buildXML.(string), "jib-maven-plugin") {
 			// change taskrun name
 			for _, trResult := range result.TrResults {
 				if trResult.Task == "build" {
-					trResult.Task = "jib-build"
+					trResult.Task = jibBuild
 				}
 			}
 			// change step name
 			for _, stepResult := range result.StepResults {
 				if stepResult.Step == "compile" {
+					stepResult.Task = jibBuild
 					stepResult.Step = "jib-compile"
 				}
 				if stepResult.Step == "image" {
+					stepResult.Task = jibBuild
 					stepResult.Step = "jib-image"
 				}
 			}
