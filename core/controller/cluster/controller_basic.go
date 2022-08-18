@@ -375,16 +375,6 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 		return nil, err
 	}
 
-	users := make([]string, 0, len(r.ExtraMembers))
-	for member := range r.ExtraMembers {
-		users = append(users, member)
-	}
-
-	err = c.userSvc.CheckUsersExists(ctx, users)
-	if err != nil {
-		return nil, err
-	}
-
 	if err := c.customizeTemplateInfo(ctx, r, application, environment, mergePatch); err != nil {
 		return nil, err
 	}
