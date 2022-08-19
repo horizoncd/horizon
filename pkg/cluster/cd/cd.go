@@ -539,11 +539,17 @@ func (c *cd) GetClusterState(ctx context.Context,
 		if err != nil {
 			return nil, err
 		}
+		var latestDeployment *appsv1.Deployment
 		for i := range deploymentList {
-			deployment := &deploymentList[i]
-			// Borrowed at kubernetes/kubectl/rollout_status.go
-			if deployment.Generation <= deployment.Status.ObservedGeneration {
-				cond := getDeploymentCondition(deployment.Status, appsv1.DeploymentProgressing)
+			if latestDeployment == nil ||
+				deploymentList[i].CreationTimestamp.After(latestDeployment.CreationTimestamp.Time) {
+				latestDeployment = &deploymentList[i]
+			}
+		}
+		// Borrowed at kubernetes/kubectl/rollout_status.go
+		if latestDeployment != nil {
+			if latestDeployment.Generation <= latestDeployment.Status.ObservedGeneration {
+				cond := getDeploymentCondition(latestDeployment.Status, appsv1.DeploymentProgressing)
 				if cond != nil && cond.Reason == "ProgressDeadlineExceeded" {
 					// 默认情况下，如果 Deployment 在十分钟之内，未能完成滚动更新，
 					// 则 Deployment 的健康状态是 HealthStatusDegraded.
