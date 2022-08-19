@@ -130,19 +130,6 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	const op = "application controller: create application"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	extraMembers := request.ExtraMembers
-
-	users := make([]string, 0, len(extraMembers))
-	for member := range extraMembers {
-		users = append(users, member)
-	}
-
-	// 1. validate
-	err = c.userSvc.CheckUsersExists(ctx, users)
-	if err != nil {
-		return nil, err
-	}
-
 	if err := validateApplicationName(request.Name); err != nil {
 		return nil, err
 	}
@@ -190,7 +177,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 
 	// 4. create application in db
 	applicationModel := request.toApplicationModel(groupID)
-	applicationModel, err = c.applicationMgr.Create(ctx, applicationModel, extraMembers)
+	applicationModel, err = c.applicationMgr.Create(ctx, applicationModel, request.ExtraMembers)
 	if err != nil {
 		return nil, err
 	}
