@@ -43,8 +43,8 @@ gitlabRepoConfig:
 templateRepo:
   host: "https://harbor.mock.org"
   repoName: "horizon-template"
-  username: admin
-  password: harborAdmin12345
+  username: username
+  password: password
   insecure: true
   certFile: ""
   keyFile: ""
@@ -59,7 +59,7 @@ tektonMapper:
     namespace: tekton-resources
     # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
     # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
-    kubeconfig: "/Users/wurongjun/.kube/config-bak"
+    kubeconfig: ""
     s3:
       accessKey: 
       secretKey: 
