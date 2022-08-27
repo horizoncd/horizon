@@ -6,20 +6,14 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v2/applications/{applicationID}/clusters:
+  /apis/core/v2/applications/{applicationNameID}/clusters:
     parameters:
-      - name: applicationID
+      - name: applicationNameID
         in: path
         description: application id
+        schema:
+          type: string
         required: true
-      - name: scope
-        in: query
-        description: scope is environment/region, this value can not be edited after created.
-        required: true
-      - name: extraOwner
-        in: query
-        description: extra owner's email
-        required: false
     post:
       tags:
         - cluster
@@ -31,7 +25,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateCluster'
-
       responses:
         "200":
           description: Success
@@ -41,6 +34,22 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterNameID}/pipeline:
+    description:  edit the cluster's pipeline(in pipeline mode)
+    parameters:
+      - name: clusterNameID
+        in: path
+        description: cluster id or cluster name
+        schema:
+          type: string
+        required: true
+    post:
+      tags:
+        - cluster
+      operationId: updateCluster
+      requestBody:
+      responses:
 
 components:
   schemas:
@@ -73,7 +82,7 @@ components:
             - dockerfile
             - image
         strategy:
-          description: diffrent strategys supported(internal/dockerfile/jib/buildpack)
+          description: diffrent strategys supported(internal/dockerfile/jib/buildpack/pipeline)
           type: string
         pipelineBlob:
           description: the params of the ci pipeline
