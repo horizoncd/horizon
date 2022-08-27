@@ -1,0 +1,133 @@
+openapi: 3.0.3
+info:
+  title: Horizon-Cluster-Restful-V2
+  description: Title
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/applications/{applicationID}/clusters:
+    parameters:
+      - name: applicationID
+        in: path
+        description: application id
+        required: true
+      - name: scope
+        in: query
+        description: scope is environment/region, this value can not be edited after created.
+        required: true
+      - name: extraOwner
+        in: query
+        description: extra owner's email
+        required: false
+    post:
+      tags:
+        - cluster
+      operationId: createCluster
+      summary: Create a cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCluster'
+
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    CreateCluster:
+      type: object
+      required:
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        description:
+          $ref: '#/components/schemas/Description'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        sourceConfigure:
+          $ref: '#/components/schemas/SourceBuildConfig'
+        templateConfig:
+          $ref: '#/components/schemas/TemplateConfig'
+
+    SourceBuildConfig:
+      type: object
+      required:
+        - sourcetype
+      properties:
+        sourcetype:
+          type: string
+          enum:
+            - git
+            - dockerfile
+            - image
+        strategy:
+          description: diffrent strategys supported(internal/dockerfile/jib/buildpack)
+          type: string
+        pipelineBlob:
+          description: the params of the ci pipeline
+          type: string
+          example: |
+            language: java
+            version: tomcat7-jdk8
+            buildStragegy: ant
+            build.xml:dasdasdas
+    TemplateConfig:
+      type: object
+      required:
+      properties:
+        template:
+          $ref: '#/components/schemas/Template'
+        templateInput:
+          description: the template params
+          type: string
+
+
+    Template:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - template
+            - helm
+        name:
+          description: the template name
+          type: string
+        release:
+          description: the release version of template
+          type: string
+
+
+    Name:
+      type: string
+      maxLength: 64
+      description: the group Name
+
+
+
+    Description:
+      type: string
+      maxLength: 1024
+      description: the group description
+
+    Tag:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
