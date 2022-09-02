@@ -91,3 +91,11 @@ const (
 const (
 	ChartVersionFormat = "%s-%s"
 )
+
+const (
+	CookieKeyAuth = "horizon|session"
+
+	SessionKeyAuthUser = "user"
+
+	IDPSigningAlgsSeperator = " "
+)

@@ -30,6 +30,7 @@ const (
 )
 
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/group/manager/manager_mock.go -package=mock_manager
 type Manager interface {
 	// Create a group

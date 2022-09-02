@@ -30,6 +30,7 @@ const (
 
 // Getter provides some functions for template schema
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/templaterelease/schema/mock_schema.go -package=mock_schema
 type Getter interface {
 	// GetTemplateSchema get schema for specified template release. todo(gjq) add cache

@@ -11,6 +11,7 @@ import (
 )
 
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/template/manager/manager_mock.go -package=mock_manager
 type Manager interface {
 	// Create template

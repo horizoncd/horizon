@@ -14,6 +14,7 @@ import (
 )
 
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/manager/manager.go -package=mock_manager
 type Manager interface {
 	Create(ctx context.Context, cluster *models.Cluster,

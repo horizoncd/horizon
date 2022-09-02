@@ -16,6 +16,7 @@ import (
 
 // Interface to interact with gitlab
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../mock/lib/gitlab/mock_gitlab.go -package=mock_gitlab
 type Interface interface {
 	// GetGroup gets a group's detail with the given gid.

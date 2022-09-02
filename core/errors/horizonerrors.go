@@ -46,6 +46,7 @@ var (
 	PodEventInK8S             = sourceType{name: "PodEventInK8S"}
 	KubeConfigInK8S           = sourceType{name: "KubeConfigK8S"}
 	GroupFullPath             = sourceType{name: "GroupFullPath"}
+	IdentityProviderInDB      = sourceType{name: "IdentityProviderInDB"}
 
 	// S3
 	PipelinerunLog = sourceType{name: "PipelinerunLog"}
@@ -62,6 +63,10 @@ var (
 	TokenInDB      = sourceType{name: "TokenInDB"}
 	HarborChartURL = sourceType{name: "HarborChartURL"}
 	ChartFile      = sourceType{name: "ChartFile"}
+
+	// identity provider
+	Oauth2Token           = sourceType{name: "Oauth2Token"}
+	ProviderFromDiscovery = sourceType{name: "ProviderFromDiscovery"}
 )
 
 type HorizonErrNotFound struct {

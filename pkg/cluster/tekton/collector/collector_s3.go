@@ -300,7 +300,8 @@ func (c *S3Collector) getPathForPrLog(metadata *ObjectMeta) string {
 		metadata.PipelineRun.Name)
 }
 
-/**
+/*
+*
 *  @brief 从开始至结束位置的Byte数组截断。
 *
 *  @param data 要处理的数组
