@@ -425,6 +425,7 @@ create table `tb_identity_provider`
     `revocation_endpoint`           varchar(256) NOT NULL DEFAULT '' COMMENT 'revocation endpoint of idp',
     `issuer`                        varchar(256) NOT NULL DEFAULT '' COMMENT 'issuer of idp, generating discovery endpoint',
     `scopes`                        varchar(256) NOT NULL DEFAULT '' COMMENT 'scopes when asking for authorization',
+    `signing_algs`                  varchar(256) NOT NULL DEFAULT '' COMMENT 'algs for verifying signing',
     `token_endpoint_auth_method`    varchar(256) NOT NULL DEFAULT 'client_secret_sent_as_post' COMMENT 'how to carry client secret',
     `jwks`                          varchar(256) NOT NULL DEFAULT '' COMMENT 'jwks endpoint, describe how to identify a token',
     `client_id`                     varchar(256) NOT NULL DEFAULT '' COMMENT 'client id issued by idp',
