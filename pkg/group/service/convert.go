@@ -123,20 +123,21 @@ group two: {id: 2, name: "b", path: "r"}
 group three: {id: 3, name: "c", path: "j"}
 
 after the function executed, we get a map:
-{
-  1: {
-    fullName: "a",
-    fullPath: "/w"
-  },
-  2: {
-    fullName: "a/b",
-    fullPath: "/w/r"
-  },
-  3: {
-    fullName: "a/b/c",
-    fullPath: "/w/r/j"
-  },
-}
+
+	{
+	  1: {
+	    fullName: "a",
+	    fullPath: "/w"
+	  },
+	  2: {
+	    fullName: "a/b",
+	    fullPath: "/w/r"
+	  },
+	  3: {
+	    fullName: "a/b/c",
+	    fullPath: "/w/r/j"
+	  },
+	}
 */
 func GenerateIDToFull(groups []*models.Group) map[uint]*Full {
 	// sort groups by the size of the traversalIDs array after split by ','

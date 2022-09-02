@@ -24,7 +24,7 @@ func (g *AuthorizeGenerate) GenCode(info *CodeGenerateInfo) (code string) {
 	return code
 }
 
-//ref: https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
+// ref: https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
 const (
 	HorizonAppUserToServerAccessTokenPrefix = "hu_"
 	OauthAPPAccessTokenPrefix               = "ho_"

@@ -14,6 +14,7 @@ Roles:
           - applications/defaultregions
           - applications/transfer
           - applications/selectableregions
+          - applications/subresourcetags
         verbs:
           - "*"
         scopes:
@@ -68,6 +69,7 @@ Roles:
           - pipelineruns/diffs
           - clusters/dashboards
           - clusters/pods
+          - clusters/pod
           - clusters/free
           - clusters/events
           - clusters/outputs
@@ -122,6 +124,7 @@ Roles:
           - applications/defaultregions
           - applications/transfer
           - applications/selectableregions
+          - applications/subresourcetags
         verbs:
           - create
           - get
@@ -168,6 +171,7 @@ Roles:
           - pipelineruns/diffs
           - clusters/dashboards
           - clusters/pods
+          - clusters/pod
           - clusters/free
           - clusters/events
           - clusters/outputs
@@ -190,6 +194,16 @@ Roles:
           - clusters/templateschematags
         verbs:
           - get
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+      - apiGroups:
+          - core
+        resources:
+          - clusters/pods
+        verbs:
+          - delete
         scopes:
           - "*"
         nonResourceURLs:
