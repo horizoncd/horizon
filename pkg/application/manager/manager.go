@@ -13,6 +13,7 @@ import (
 )
 
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/application/manager/manager.go -package=mock_manager
 type Manager interface {
 	GetByID(ctx context.Context, id uint) (*models.Application, error)

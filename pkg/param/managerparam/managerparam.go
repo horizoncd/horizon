@@ -8,6 +8,7 @@ import (
 	environmentregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	harbormanager "g.hz.netease.com/horizon/pkg/harbor/manager"
+	idpmanager "g.hz.netease.com/horizon/pkg/idp/manager"
 	membermanager "g.hz.netease.com/horizon/pkg/member"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
@@ -40,6 +41,7 @@ type Manager struct {
 	EnvMgr                   envmanager.Manager
 	GroupManager             groupmanager.Manager
 	HarborManager            harbormanager.Manager
+	IdpManager               idpmanager.Manager
 }
 
 func InitManager(db *gorm.DB) *Manager {
@@ -62,5 +64,6 @@ func InitManager(db *gorm.DB) *Manager {
 		EnvMgr:                   envmanager.New(db),
 		GroupManager:             groupmanager.New(db),
 		HarborManager:            harbormanager.New(db),
+		IdpManager:               idpmanager.NewManager(db),
 	}
 }
