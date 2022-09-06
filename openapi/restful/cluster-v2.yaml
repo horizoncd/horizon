@@ -56,21 +56,51 @@ components:
     CreateCluster:
       type: object
       required:
+        - name
+        - description
       properties:
         name:
           $ref: '#/components/schemas/Name'
         description:
           $ref: '#/components/schemas/Description'
+        git:
+          oneOf:
+            - $ref: '#/components/schemas/GitBranch'
+            - $ref: '#/components/schemas/GitCommit'
+            - $ref: '#/components/schemas/GitTag'
         tags:
           type: array
           items:
             $ref: '#/components/schemas/Tag'
-        sourceConfigure:
-          $ref: '#/components/schemas/SourceBuildConfig'
+        buildConfig:
+          $ref: '#/components/schemas/buildConfig'
         templateConfig:
           $ref: '#/components/schemas/TemplateConfig'
 
-    SourceBuildConfig:
+    buildConfig:
+      type: object
+
+    GitBranch:
+      type: object
+      properties:
+        branch:
+          type: string
+
+    GitCommit:
+      type: object
+      properties:
+        commit:
+          type: string
+
+    GitTag:
+      type: object
+      properties:
+        tag:
+          type: string
+
+
+
+    SourceBuildConfig:  ## cuurrent is stale
       type: object
       required:
         - sourcetype
@@ -81,6 +111,8 @@ components:
             - git
             - dockerfile
             - image
+        git:
+          $ref: '#/components/schemas/Git'
         strategy:
           description: diffrent strategys supported(internal/dockerfile/jib/buildpack/pipeline)
           type: string
@@ -140,3 +172,16 @@ components:
           type: string
         value:
           type: string
+
+    Git:
+      type: object
+      properties:
+        gitURL:
+          type: string
+        gitBranch:
+          type: string
+        gitCommit:
+          type: string
+        gitpullSecret:
+          type: string
+
