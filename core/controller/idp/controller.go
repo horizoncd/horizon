@@ -25,8 +25,13 @@ var (
 
 type Controller interface {
 	ListAuthEndpoints(ctx context.Context, redirectURL string) ([]*AuthInfo, error)
-	ListIDPs(ctx context.Context) ([]*IdentityProvider, error)
+	List(ctx context.Context) ([]*IdentityProvider, error)
+	GetByID(ctx context.Context, id uint) (*IdentityProvider, error)
 	Login(ctx context.Context, code string, state string) (*usermodel.User, error)
+	Create(c context.Context, createParam *CreateIDPRequest) (*IdentityProvider, error)
+	Delete(c context.Context, idpID uint) error
+	Update(c context.Context, u uint, updateParam *UpdateIDPRequest) (*IdentityProvider, error)
+	GetDiscovery(ctx context.Context, s *Discovery) (*DiscoveryConfig, error)
 }
 
 type controller struct {
@@ -42,7 +47,7 @@ func NewController(param *param.Param) Controller {
 }
 
 func (c *controller) ListAuthEndpoints(ctx context.Context, redirectURL string) ([]*AuthInfo, error) {
-	idps, err := c.idpManager.ListIDP(ctx)
+	idps, err := c.idpManager.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +72,8 @@ func (c *controller) ListAuthEndpoints(ctx context.Context, redirectURL string) 
 	return res, nil
 }
 
-func (c *controller) ListIDPs(ctx context.Context) ([]*IdentityProvider, error) {
-	idps, err := c.idpManager.ListIDP(ctx)
+func (c *controller) List(ctx context.Context) ([]*IdentityProvider, error) {
+	idps, err := c.idpManager.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -128,4 +133,60 @@ func (c *controller) Login(ctx context.Context, code string, state string) (*use
 		}
 	}
 	return user, nil
+}
+
+func (c *controller) GetByID(ctx context.Context, id uint) (*IdentityProvider, error) {
+	idp, err := c.idpManager.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return ConvertIDP(idp), nil
+}
+
+func (c *controller) Create(ctx context.Context,
+	createParam *CreateIDPRequest) (*IdentityProvider, error) {
+	idp := createParam.toModel()
+	idp, err := c.idpManager.Create(ctx, idp)
+	if err != nil {
+		return nil, err
+	}
+	return ConvertIDP(idp), err
+}
+
+func (c *controller) Delete(ctx context.Context, idpID uint) error {
+	if _, err := c.idpManager.GetByID(ctx, idpID); err != nil {
+		return err
+	}
+	return c.idpManager.Delete(ctx, idpID)
+}
+
+func (c *controller) Update(ctx context.Context,
+	id uint, updateParam *UpdateIDPRequest) (*IdentityProvider, error) {
+	updateIDP := updateParam.toModel()
+	idp, err := c.idpManager.Update(ctx, id, updateIDP)
+	if err != nil {
+		return nil, err
+	}
+	return ConvertIDP(idp), nil
+}
+
+func (c *controller) GetDiscovery(ctx context.Context, s *Discovery) (*DiscoveryConfig, error) {
+	issuer := strings.TrimSuffix(
+		strings.TrimSuffix(s.FromURL, "/"),
+		"/.well-known/openid-configuration",
+	)
+	provider, err := oidc.NewProvider(ctx, issuer)
+	if err != nil {
+		return nil, perror.Wrapf(
+			herrors.ErrHTTPRequestFailed,
+			"failed to get discovery:\n"+
+				"url = %s\nerr = %v", s.FromURL, err)
+	}
+
+	endpoint := provider.Endpoint()
+	return &DiscoveryConfig{
+		AuthorizationEndpoint: endpoint.AuthURL,
+		TokenEndpoint:         endpoint.TokenURL,
+		Issuer:                issuer,
+	}, nil
 }

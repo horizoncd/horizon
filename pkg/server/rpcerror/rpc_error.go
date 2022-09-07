@@ -34,6 +34,10 @@ var (
 		HTTPCode:  http.StatusForbidden,
 		ErrorCode: "AccessDeny",
 	}
+	Unauthorized = RPCError{
+		HTTPCode:  http.StatusUnauthorized,
+		ErrorCode: "Unauthorized",
+	}
 	InternalError = RPCError{
 		HTTPCode:  http.StatusInternalServerError,
 		ErrorCode: "InternalError",

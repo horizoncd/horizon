@@ -17,7 +17,6 @@ type IdentityProvider struct {
 	Name                    string                         `json:"name,omitempty"`
 	Avatar                  string                         `json:"avatar,omitempty"`
 	AuthorizationEndpoint   string                         `json:"authorizationEndpoint,omitempty"`
-	AuthURL                 string                         `json:"authURL,omitempty"`
 	TokenEndpoint           string                         `json:"tokenEndpoint,omitempty"`
 	UserinfoEndpoint        string                         `json:"userinfoEndpoint,omitempty"`
 	RevocationEndpoint      string                         `json:"revocationEndpoint,omitempty"`
@@ -26,7 +25,7 @@ type IdentityProvider struct {
 	TokenEndpointAuthMethod models.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty"`
 	Jwks                    string                         `json:"jwks,omitempty"`
 	ClientID                string                         `json:"clientID,omitempty"`
-	ClientSecret            string                         `json:"-"`
+	ClientSecret            string                         `json:"clientSecret,omitempty"`
 	CreatedAt               time.Time                      `json:"createdAt"`
 	UpdatedAt               time.Time                      `json:"updatedAt"`
 }
@@ -43,7 +42,7 @@ func ConvertIDP(idp *models.IdentityProvider) *IdentityProvider {
 		RevocationEndpoint:      idp.RevocationEndpoint,
 		Issuer:                  idp.Issuer,
 		Scopes:                  idp.Scopes,
-		TokenEndpointAuthMethod: idp.TokenEndpointAuthMethod,
+		TokenEndpointAuthMethod: *idp.TokenEndpointAuthMethod,
 		Jwks:                    idp.Jwks,
 		ClientID:                idp.ClientID,
 		ClientSecret:            idp.ClientSecret,
@@ -58,4 +57,75 @@ func ConvertIDPs(idps []*models.IdentityProvider) []*IdentityProvider {
 		res = append(res, ConvertIDP(idp))
 	}
 	return res
+}
+
+type CreateIDPRequest struct {
+	UpdateIDPRequest
+}
+
+func (r *CreateIDPRequest) toModel() *models.IdentityProvider {
+	idp := &models.IdentityProvider{
+		DisplayName:             r.DisplayName,
+		Name:                    r.Name,
+		Avatar:                  r.Avatar,
+		AuthorizationEndpoint:   r.AuthorizationEndpoint,
+		TokenEndpoint:           r.TokenEndpoint,
+		UserinfoEndpoint:        r.UserinfoEndpoint,
+		RevocationEndpoint:      r.RevocationEndpoint,
+		Issuer:                  r.Issuer,
+		Scopes:                  r.Scopes,
+		SigningAlgs:             r.SigningAlgs,
+		TokenEndpointAuthMethod: &r.TokenEndpointAuthMethod,
+		Jwks:                    r.Jwks,
+		ClientID:                r.ClientID,
+		ClientSecret:            r.ClientSecret,
+	}
+	return idp
+}
+
+type UpdateIDPRequest struct {
+	DisplayName             string                         `json:"displayName"`
+	Name                    string                         `json:"name"`
+	Avatar                  string                         `json:"avatar,omitempty"`
+	AuthorizationEndpoint   string                         `json:"authorizationEndpoint"`
+	TokenEndpoint           string                         `json:"tokenEndpoint"`
+	UserinfoEndpoint        string                         `json:"userinfoEndpoint,omitempty"`
+	RevocationEndpoint      string                         `json:"revocationEndpoint,omitempty"`
+	Issuer                  string                         `json:"issuer"`
+	Scopes                  string                         `json:"scopes"`
+	SigningAlgs             string                         `json:"signingAlgs,omitempty"`
+	TokenEndpointAuthMethod models.TokenEndpointAuthMethod `json:"tokenEndpointAuthMethod,omitempty"`
+	Jwks                    string                         `json:"jwks,omitempty"`
+	ClientID                string                         `json:"clientID"`
+	ClientSecret            string                         `json:"clientSecret"`
+}
+
+func (r *UpdateIDPRequest) toModel() *models.IdentityProvider {
+	idp := &models.IdentityProvider{
+		DisplayName:             r.DisplayName,
+		Name:                    r.Name,
+		Avatar:                  r.Avatar,
+		AuthorizationEndpoint:   r.AuthorizationEndpoint,
+		TokenEndpoint:           r.TokenEndpoint,
+		UserinfoEndpoint:        r.UserinfoEndpoint,
+		RevocationEndpoint:      r.RevocationEndpoint,
+		Issuer:                  r.Issuer,
+		Scopes:                  r.Scopes,
+		SigningAlgs:             r.SigningAlgs,
+		TokenEndpointAuthMethod: &r.TokenEndpointAuthMethod,
+		Jwks:                    r.Jwks,
+		ClientID:                r.ClientID,
+		ClientSecret:            r.ClientSecret,
+	}
+	return idp
+}
+
+type Discovery struct {
+	FromURL string `json:"fromUrl"`
+}
+
+type DiscoveryConfig struct {
+	AuthorizationEndpoint string `json:"authorizationEndpoint"`
+	TokenEndpoint         string `json:"tokenEndpoint"`
+	Issuer                string `json:"issuer"`
 }
