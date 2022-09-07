@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: Horizon-Cluster-Restful-V2
+  description: Title
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/groupID/{groupID}/applications:
+    parameters:
+      - name: groupID
+        in: path
+        description: group id
+        schema:
+          type: string
+        required: true
+    post:
+      tags:
+        - application
+      operationId: createApplication
+      summary: Create a application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'cluster-v2.yaml#/components/schemas/CreateCluster'
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

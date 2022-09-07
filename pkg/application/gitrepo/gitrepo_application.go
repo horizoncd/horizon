@@ -28,6 +28,11 @@ const (
 	_default = "default"
 )
 
+/*
+1. just ci  or just cd
+2. version
+3. env(default, env)
+*/
 // ApplicationGitRepo interface to provide the management functions with git repo for applications
 type ApplicationGitRepo interface {
 	// CreateApplication create an application, with the pipeline jsonBlob and application jsonBlob
@@ -48,7 +53,7 @@ type ApplicationGitRepo interface {
 		applicationJSONBlob map[string]interface{}, err error)
 	// DeleteApplication soft delete an application by the specified application name
 	DeleteApplication(ctx context.Context, application string, applicationID uint) error
-	// DeleteApplication hard delete an application by the specified application name
+	// HardDeleteApplication hard delete an application by the specified application name
 	HardDeleteApplication(ctx context.Context, application string) error
 }
 

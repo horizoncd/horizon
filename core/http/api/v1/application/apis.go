@@ -310,3 +310,36 @@ func (a *API) GetSelectableRegionsByEnv(c *gin.Context) {
 
 	response.SuccessWithData(c, regionParts)
 }
+
+func (a *API) CreateV2(c *gin.Context) {
+	const op = "application: create"
+	groupIDStr := c.Param(common.ParamGroupID)
+	groupID, err := strconv.ParseUint(groupIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid groupID: %s, err: %s",
+			groupIDStr, err.Error())))
+		return
+	}
+	var request *application.CreateApplicationRequestV2
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid request body, err: %s",
+			err.Error())))
+		return
+	}
+
+	extraOwners := c.QueryArray(_extraOwner)
+	if request.ExtraMembers == nil {
+		request.ExtraMembers = make(map[string]string)
+	}
+	for _, roleOfMember := range request.ExtraMembers {
+		if !role.CheckRoleIfValid(roleOfMember) {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("extra member is invalid"))
+			return
+		}
+	}
+	for _, owner := range extraOwners {
+		request.ExtraMembers[owner] = role.Owner
+	}
+
+	resp, err := a.applicationCtl.CreateApplicationV2(c, uint(groupID), request)
+}

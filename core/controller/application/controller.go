@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"time"
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -48,6 +49,10 @@ type Controller interface {
 	// Transfer  try transfer application to another group
 	Transfer(ctx context.Context, id uint, groupID uint) error
 	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
+
+	// CreateApplicationV2  create an application
+	CreateApplicationV2(ctx context.Context, groupID uint,
+		request *CreateApplicationRequestV2) (*CreateApplicationResponseV2, error)
 }
 
 type controller struct {
@@ -200,6 +205,82 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	return ret, nil
 }
 
+func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
+	request *CreateApplicationRequestV2) (*CreateApplicationResponseV2, error) {
+	const op = "application controller: create application v2"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	if err := validateApplicationName(request.Name); err != nil {
+		return nil, err
+	}
+	if request.Priority != nil {
+		if err := validatePriority(*request.Priority); err != nil {
+			return nil, err
+		}
+	}
+	if request.Git != nil {
+		if err := validateGitURL(request.Git.URL); err != nil {
+			return nil, err
+		}
+	}
+	if request.TemplateConfig != nil {
+		if err := c.validateTemplateConfigInput(ctx, *request.TemplateConfig); err != nil {
+			return nil, err
+		}
+	}
+
+	// check groups or applications with the same name exists
+	groups, err := c.groupMgr.GetByNameOrPathUnderParent(ctx, request.Name, request.Name, groupID)
+	if err != nil {
+		return nil, err
+	}
+	if len(groups) > 0 {
+		return nil, perror.Wrap(herrors.ErrNameConflict, "an group with the same name already exists")
+	}
+
+	appExistsInDB, err := c.applicationMgr.GetByName(ctx, request.Name)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return nil, err
+		}
+	}
+	if appExistsInDB != nil {
+		return nil, perror.Wrap(herrors.ErrNameConflict, "an application with the same name already exists, "+
+			"please do not create it again")
+	}
+
+	// create v2
+	if err := c.applicationGitRepo.CreateApplication(ctx, request.Name,
+		nil, *request.TemplateConfig.TemplateInput); err != nil {
+		return nil, err
+	}
+
+	applicationDBModel := request.toApplicationModel(groupID)
+	applicationDBModel, err = c.applicationMgr.Create(ctx, applicationDBModel, request.ExtraMembers)
+	if err != nil {
+		return nil, err
+	}
+
+	fullPath, err := func() (string, error) {
+		group, err := c.groupSvc.GetChildByID(ctx, groupID)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%v/%v", group.FullPath, request.Name), nil
+	}()
+	if err != nil {
+		return nil, err
+	}
+
+	ret := CreateApplicationResponseV2{
+		ID:        applicationDBModel.ID,
+		FullPath:  fullPath,
+		CreatedAt: time.Time{},
+		UpdatedAt: time.Time{},
+	}
+	return &ret, nil
+}
+
 func (c *controller) UpdateApplication(ctx context.Context, id uint,
 	request *UpdateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: update application"
@@ -346,12 +427,17 @@ func (c *controller) validateUpdate(b Base) error {
 
 func validateGit(b Base) error {
 	if b.Git != nil && b.Git.URL != "" {
-		re := `^ssh://.+[.]git$`
-		pattern := regexp.MustCompile(re)
-		if !pattern.MatchString(b.Git.URL) {
-			return perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("invalid git url, should satisfies the pattern %v", re))
-		}
+		return validateGitURL(b.Git.URL)
+	}
+	return nil
+}
+
+func validateGitURL(gitURL string) error {
+	re := `^ssh://.+[.]git$`
+	pattern := regexp.MustCompile(re)
+	if !pattern.MatchString(gitURL) {
+		return perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("invalid git url, should satisfies the pattern %v", re))
 	}
 	return nil
 }
@@ -371,6 +457,10 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 		return err
 	}
 	return jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline, true)
+}
+
+func (c *controller) validateTemplateConfigInput(ctx context.Context, config TemplateConfig) error {
+	return nil
 }
 
 // validatePriority validate priority
