@@ -219,7 +219,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, coreConfig.GitlabRepoConfig, gitlabCompute)
+	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo2(ctx, coreConfig.GitlabRepoConfig, gitlabCompute)
 	if err != nil {
 		panic(err)
 	}

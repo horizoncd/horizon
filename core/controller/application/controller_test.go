@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	appgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
@@ -294,11 +295,19 @@ func TestMain(m *testing.M) {
 // nolint
 func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo(mockCtl)
-	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(2).Return(nil)
-	applicationGitRepo.EXPECT().UpdateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Return(nil).AnyTimes()
+	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo2(mockCtl)
+	applicationGitRepo.EXPECT().CreateOrUpdateApplication(ctx, appName, gitrepo.CreateOrUpdateRequest{
+		Version:      "",
+		Environment:  "",
+		BuildConf:    pipelineJSONBlob,
+		TemplateConf: applicationJSONBlob,
+	}).Return(nil).AnyTimes()
 	applicationGitRepo.EXPECT().DeleteApplication(ctx, appName, uint(1)).Return(nil).AnyTimes()
-	applicationGitRepo.EXPECT().GetApplication(ctx, appName).Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, appName, "").Return(&gitrepo.GetResponse{
+		Manifest:     nil,
+		BuildConf:    pipelineJSONBlob,
+		TemplateConf: applicationJSONBlob,
+	}, nil).AnyTimes()
 
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", nil).
@@ -361,10 +370,10 @@ func Test(t *testing.T) {
 	// create application
 	resp, err := c.CreateApplication(ctx, group.ID, createRequest)
 	if err != nil {
-		t.Logf("%v", err)
+		t.Logf("%+v", err)
 		t.Fatal(err)
 	}
-	t.Logf("%v", resp)
+	t.Logf("%+v", resp)
 
 	// create application again, end with error
 	_, err = c.CreateApplication(ctx, group.ID, createRequest)
@@ -393,14 +402,14 @@ func Test(t *testing.T) {
 
 	resp, err = c.UpdateApplication(ctx, resp.ID, updateRequest)
 	assert.Nil(t, err)
-	t.Logf("%v", resp)
+	t.Logf("%+v", resp)
 
 	updateRequest.Priority = "no-exists"
 	_, err = c.UpdateApplication(ctx, resp.ID, updateRequest)
 	assert.NotNil(t, err)
 
 	resp, err = c.GetApplication(ctx, resp.ID)
-	t.Logf("resp: %v", resp)
+	t.Logf("resp: %+v", resp)
 	assert.Nil(t, err)
 
 	assert.Equal(t, resp.Description, updatedDescription)

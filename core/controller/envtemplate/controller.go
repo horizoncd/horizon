@@ -21,7 +21,7 @@ type Controller interface {
 }
 
 type controller struct {
-	applicationGitRepo   gitrepo.ApplicationGitRepo
+	applicationGitRepo   gitrepo.ApplicationGitRepo2
 	templateSchemaGetter templateschema.Getter
 	applicationMgr       applicationmanager.Manager
 	envMgr               envmanager.Manager
@@ -59,9 +59,13 @@ func (c *controller) UpdateEnvTemplate(ctx context.Context,
 	}
 
 	// 3.1 update application's git repo if env is empty
+	updateReq := gitrepo.CreateOrUpdateRequest{
+		Environment:  env,
+		BuildConf:    r.Pipeline,
+		TemplateConf: r.Application,
+	}
 	if env == "" {
-		if err := c.applicationGitRepo.UpdateApplication(ctx, application.Name,
-			r.Pipeline, r.Application); err != nil {
+		if err := c.applicationGitRepo.CreateOrUpdateApplication(ctx, application.Name, updateReq); err != nil {
 			return errors.E(op, err)
 		}
 		return nil
@@ -72,7 +76,7 @@ func (c *controller) UpdateEnvTemplate(ctx context.Context,
 		return errors.E(op, err)
 	}
 	// 4. update application env template in git repo
-	return c.applicationGitRepo.UpdateApplicationEnvTemplate(ctx, application.Name, env, r.Pipeline, r.Application)
+	return c.applicationGitRepo.CreateOrUpdateApplication(ctx, application.Name, updateReq)
 }
 
 func (c *controller) GetEnvTemplate(ctx context.Context,
@@ -87,16 +91,24 @@ func (c *controller) GetEnvTemplate(ctx context.Context,
 
 	var pipelineJSONBlob, applicationJSONBlob map[string]interface{}
 	// 2.1 get application's git repo if env is empty
+	var repoFile *gitrepo.GetResponse
 	if env == "" {
-		pipelineJSONBlob, applicationJSONBlob, err = c.applicationGitRepo.GetApplication(ctx, application.Name)
+		repoFile, err = c.applicationGitRepo.GetApplication(ctx, application.Name, env)
+		if repoFile != nil {
+			pipelineJSONBlob = repoFile.BuildConf
+			applicationJSONBlob = repoFile.TemplateConf
+		}
 	} else {
 		// 2.2 check env exists
 		if err := c.checkEnvExists(ctx, env); err != nil {
 			return nil, errors.E(op, err)
 		}
 		// 3. get application env template
-		pipelineJSONBlob, applicationJSONBlob, err = c.applicationGitRepo.GetApplicationEnvTemplate(ctx,
-			application.Name, env)
+		repoFile, err = c.applicationGitRepo.GetApplication(ctx, application.Name, env)
+		if repoFile != nil {
+			pipelineJSONBlob = repoFile.BuildConf
+			applicationJSONBlob = repoFile.TemplateConf
+		}
 	}
 
 	if err != nil {

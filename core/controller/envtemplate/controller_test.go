@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	appgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
@@ -274,11 +275,15 @@ func TestMain(m *testing.M) {
 // nolint
 func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo(mockCtl)
-	applicationGitRepo.EXPECT().UpdateApplicationEnvTemplate(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo2(mockCtl)
+	applicationGitRepo.EXPECT().CreateOrUpdateApplication(ctx, gomock.Any(), gomock.Any()).
 		Return(nil).AnyTimes()
-	applicationGitRepo.EXPECT().GetApplicationEnvTemplate(ctx, gomock.Any(), gomock.Any()).
-		Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, gomock.Any(), gomock.Any()).
+		Return(&gitrepo.GetResponse{
+			Manifest:     nil,
+			BuildConf:    pipelineJSONBlob,
+			TemplateConf: applicationJSONBlob,
+		}, nil).AnyTimes()
 
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", nil).

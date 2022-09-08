@@ -9,12 +9,13 @@ import (
 
 // CreateApplicationRequestV2 holds the parameters required to create an application
 type CreateApplicationRequestV2 struct {
-	Name           string                  `json:"name"`
-	Description    string                  `json:"description"`
-	Priority       *string                 `json:"priority"`
-	Git            *codemodels.Git         `json:"git"`
-	BuildConfig    *map[string]interface{} `json:"buildConfig"`
-	TemplateConfig *TemplateConfig         `json:"templateConfig"`
+	Name           string                   `json:"name"`
+	Description    string                   `json:"description"`
+	Priority       *string                  `json:"priority"`
+	Git            *codemodels.Git          `json:"git"`
+	BuildConfig    map[string]interface{}   `json:"buildConfig"`
+	TemplateInfo   *codemodels.TemplateInfo `json:"templateInfo"`
+	TemplateConfig map[string]interface{}   `json:"templateConfig"`
 
 	// TODO(remove it): only for internal usage
 	ExtraMembers map[string]string `json:"extraMembers"`
@@ -55,16 +56,19 @@ func (m *CreateApplicationRequestV2) toApplicationModel(groupID uint) *models.Ap
 			}
 			return ""
 		}(),
-		Template:        m.TemplateConfig.Name,
-		TemplateRelease: m.TemplateConfig.Release,
+		Template: func() string {
+			if m.TemplateInfo != nil {
+				return m.TemplateInfo.Name
+			}
+			return ""
+		}(),
+		TemplateRelease: func() string {
+			if m.TemplateInfo != nil {
+				return m.TemplateInfo.Release
+			}
+			return ""
+		}(),
 	}
-}
-
-type TemplateConfig struct {
-	TemplateType  string                  `json:"type"`
-	Name          string                  `json:"name"`
-	Release       string                  `json:"release"`
-	TemplateInput *map[string]interface{} `json:"templateInput"`
 }
 
 type CreateApplicationResponseV2 struct {

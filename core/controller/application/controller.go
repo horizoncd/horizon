@@ -55,8 +55,12 @@ type Controller interface {
 		request *CreateApplicationRequestV2) (*CreateApplicationResponseV2, error)
 }
 
+const (
+	_v2Version = "0.0.2"
+)
+
 type controller struct {
-	applicationGitRepo   gitrepo.ApplicationGitRepo
+	applicationGitRepo   gitrepo.ApplicationGitRepo2
 	templateSchemaGetter templateschema.Getter
 	applicationMgr       applicationmanager.Manager
 	applicationSvc       applicationservice.Service
@@ -100,10 +104,12 @@ func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplica
 	}
 
 	// 2. get application jsonBlob in git repo
-	pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.GetApplication(ctx, app.Name)
+	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, "")
 	if err != nil {
 		return nil, err
 	}
+	pipelineJSONBlob := applicationRepo.BuildConf
+	applicationJSONBlob := applicationRepo.TemplateConf
 
 	// 3. list template releases
 	trs, err := c.templateReleaseMgr.ListByTemplateName(ctx, app.Template)
@@ -175,8 +181,13 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	}
 
 	// 3. create application in git repo
-	if err := c.applicationGitRepo.CreateApplication(ctx, request.Name,
-		request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
+	createRepoReq := gitrepo.CreateOrUpdateRequest{
+		Version:      "",
+		Environment:  "",
+		BuildConf:    request.TemplateInput.Pipeline,
+		TemplateConf: request.TemplateInput.Application,
+	}
+	if err := c.applicationGitRepo.CreateOrUpdateApplication(ctx, request.Name, createRepoReq); err != nil {
 		return nil, err
 	}
 
@@ -223,8 +234,11 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 			return nil, err
 		}
 	}
-	if request.TemplateConfig != nil {
-		if err := c.validateTemplateConfigInput(ctx, *request.TemplateConfig); err != nil {
+	if request.TemplateConfig != nil && request.TemplateInfo != nil {
+		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release, &TemplateInput{
+			Application: request.TemplateConfig,
+			Pipeline:    request.BuildConfig,
+		}); err != nil {
 			return nil, err
 		}
 	}
@@ -250,8 +264,13 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	}
 
 	// create v2
-	if err := c.applicationGitRepo.CreateApplication(ctx, request.Name,
-		nil, *request.TemplateConfig.TemplateInput); err != nil {
+	createRepoReq := gitrepo.CreateOrUpdateRequest{
+		Version:      _v2Version,
+		Environment:  "",
+		BuildConf:    request.BuildConfig,
+		TemplateConf: request.TemplateConfig,
+	}
+	if err := c.applicationGitRepo.CreateOrUpdateApplication(ctx, request.Name, createRepoReq); err != nil {
 		return nil, err
 	}
 
@@ -278,6 +297,7 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		CreatedAt: time.Time{},
 		UpdatedAt: time.Time{},
 	}
+
 	return &ret, nil
 }
 
@@ -310,8 +330,14 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 		if err := c.validateTemplateInput(ctx, template, templateRelease, request.TemplateInput); err != nil {
 			return nil, err
 		}
-		if err := c.applicationGitRepo.UpdateApplication(ctx, appExistsInDB.Name,
-			request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
+
+		updateRepoReq := gitrepo.CreateOrUpdateRequest{
+			Version:      "",
+			Environment:  "",
+			BuildConf:    request.TemplateInput.Pipeline,
+			TemplateConf: request.TemplateInput.Application,
+		}
+		if err := c.applicationGitRepo.CreateOrUpdateApplication(ctx, appExistsInDB.Name, updateRepoReq); err != nil {
 			return nil, errors.E(op, err)
 		}
 	}
@@ -453,13 +479,18 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if err := jsonschema.Validate(schema.Application.JSONSchema, templateInput.Application, false); err != nil {
-		return err
+	if schema.Application.JSONSchema != nil {
+		if err := jsonschema.Validate(schema.Application.JSONSchema,
+			templateInput.Application, false); err != nil {
+			return err
+		}
 	}
-	return jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline, true)
-}
-
-func (c *controller) validateTemplateConfigInput(ctx context.Context, config TemplateConfig) error {
+	if schema.Pipeline.JSONSchema != nil {
+		if err := jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline,
+			true); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

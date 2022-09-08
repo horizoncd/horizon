@@ -342,4 +342,17 @@ func (a *API) CreateV2(c *gin.Context) {
 	}
 
 	resp, err := a.applicationCtl.CreateApplicationV2(c, uint(groupID), request)
+	if err != nil {
+		if perror.Cause(err) == herrors.ErrNameConflict {
+			response.AbortWithRPCError(c, rpcerror.ConflictError.WithErrMsg(err.Error()))
+			return
+		} else if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.SuccessWithDataV2(c, resp)
 }
