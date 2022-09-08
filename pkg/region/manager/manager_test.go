@@ -56,6 +56,7 @@ func Test(t *testing.T) {
 		DisplayName:   "HZ",
 		Certificate:   "hz-cert",
 		IngressDomain: "hz.com",
+		PrometheusURL: "hz",
 		HarborID:      id,
 	})
 	assert.Nil(t, err)
@@ -66,6 +67,7 @@ func Test(t *testing.T) {
 		DisplayName:   "JD",
 		Certificate:   "jd-cert",
 		IngressDomain: "jd.com",
+		PrometheusURL: "jd",
 		HarborID:      id,
 	})
 	assert.Nil(t, err)
@@ -94,6 +96,7 @@ func Test(t *testing.T) {
 		Server:        "",
 		Certificate:   "",
 		IngressDomain: "",
+		PrometheusURL: "",
 		HarborID:      harbor.ID,
 		Disabled:      true,
 	})
