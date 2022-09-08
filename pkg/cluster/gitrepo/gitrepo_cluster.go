@@ -851,10 +851,10 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 
 	// 1. get cluster files of the specified commit
 	// the files contains: _filePathPipeline, _filePathApplication, _filePathBase, _filePathPipelineOutput
-	var err1, err2, err3, err4, err5 error
-	var applicationBytes, pipelineBytes, baseValueBytes, pipelineOutPutBytes, tagsBytes []byte
+	var err1, err2, err3, err4, err5, err6 error
+	var applicationBytes, pipelineBytes, baseValueBytes, pipelineOutPutBytes, tagsBytes, chartBytes []byte
 	var wgReadFile sync.WaitGroup
-	wgReadFile.Add(5)
+	wgReadFile.Add(6)
 	readFile := func(b *[]byte, err *error, filePath string) {
 		defer wgReadFile.Done()
 		bytes, e := g.gitlabLib.GetFile(ctx, pid, commit, filePath)
@@ -866,9 +866,10 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	go readFile(&baseValueBytes, &err3, _filePathBase)
 	go readFile(&pipelineOutPutBytes, &err4, _filePathPipelineOutput)
 	go readFile(&tagsBytes, &err5, _filePathTags)
+	go readFile(&chartBytes, &err6, _filePathChart)
 	wgReadFile.Wait()
 
-	for _, err := range []error{err1, err2, err3, err4} {
+	for _, err := range []error{err1, err2, err3, err4, err6} {
 		if err != nil {
 			return "", err
 		}
@@ -895,6 +896,10 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathTags,
 			Content:  string(tagsBytes),
+		}, {
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathChart,
+			Content:  string(chartBytes),
 		},
 	}
 
