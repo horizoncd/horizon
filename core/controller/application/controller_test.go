@@ -447,6 +447,7 @@ func Test(t *testing.T) {
 }
 
 func TestV2(t *testing.T) {
+	appName = "appName2"
 	mockCtl := gomock.NewController(t)
 	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	applicationGitRepo.EXPECT().CreateOrUpdateApplication(ctx, appName, gitrepo.CreateOrUpdateRequest{
