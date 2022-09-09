@@ -2,17 +2,10 @@ package region
 
 import (
 	"context"
-	"fmt"
 
-	"g.hz.netease.com/horizon/pkg/grafana"
 	"g.hz.netease.com/horizon/pkg/param"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/region/models"
-)
-
-const (
-	GrafanaDatasourceCMNamePrefix = "grafana-datasource"
-	PrometheusDatasourceType      = "prometheus"
 )
 
 type Controller interface {
@@ -25,14 +18,12 @@ type Controller interface {
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		regionMgr:  param.RegionMgr,
-		grafanaSvc: param.GrafanaService,
+		regionMgr: param.RegionMgr,
 	}
 }
 
 type controller struct {
-	regionMgr  regionmanager.Manager
-	grafanaSvc grafana.Service
+	regionMgr regionmanager.Manager
 }
 
 func (c controller) GetByID(ctx context.Context, id uint) (*Region, error) {
@@ -44,31 +35,11 @@ func (c controller) GetByID(ctx context.Context, id uint) (*Region, error) {
 }
 
 func (c controller) DeleteByID(ctx context.Context, id uint) error {
-	region, err := c.GetByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	err = c.grafanaSvc.DeletePrometheusDatasourceConfigMap(ctx, formatGrafanaDatasourceCMName(region.Name))
-	if err != nil {
-		return err
-	}
-
 	return c.regionMgr.DeleteByID(ctx, id)
 }
 
 func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegionRequest) error {
-	err := c.grafanaSvc.UpdatePrometheusDatasourceConfigMap(ctx, formatGrafanaDatasourceCMName(request.Name),
-		formatGrafanaDatasourceCMLabels(),
-		&grafana.DataSource{
-			Name: request.Name,
-			Type: PrometheusDatasourceType,
-			URL:  request.PrometheusURL,
-		})
-	if err != nil {
-		return err
-	}
-
-	err = c.regionMgr.UpdateByID(ctx, id, &models.Region{
+	err := c.regionMgr.UpdateByID(ctx, id, &models.Region{
 		DisplayName:   request.DisplayName,
 		Server:        request.Server,
 		Certificate:   request.Certificate,
@@ -78,10 +49,6 @@ func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegi
 		Disabled:      request.Disabled,
 	})
 	if err != nil {
-		err := c.grafanaSvc.DeletePrometheusDatasourceConfigMap(ctx, formatGrafanaDatasourceCMName(request.Name))
-		if err != nil {
-			return err
-		}
 		return err
 	}
 
@@ -89,17 +56,6 @@ func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegi
 }
 
 func (c controller) Create(ctx context.Context, request *CreateRegionRequest) (uint, error) {
-	err := c.grafanaSvc.CreatePrometheusDatasourceConfigMap(ctx, formatGrafanaDatasourceCMName(request.Name),
-		formatGrafanaDatasourceCMLabels(),
-		&grafana.DataSource{
-			Name: request.Name,
-			Type: PrometheusDatasourceType,
-			URL:  request.PrometheusURL,
-		})
-	if err != nil {
-		return 0, err
-	}
-
 	create, err := c.regionMgr.Create(ctx, &models.Region{
 		Name:          request.Name,
 		DisplayName:   request.DisplayName,
@@ -110,10 +66,6 @@ func (c controller) Create(ctx context.Context, request *CreateRegionRequest) (u
 		HarborID:      request.HarborID,
 	})
 	if err != nil {
-		err := c.grafanaSvc.DeletePrometheusDatasourceConfigMap(ctx, formatGrafanaDatasourceCMName(request.Name))
-		if err != nil {
-			return 0, err
-		}
 		return 0, err
 	}
 
@@ -126,12 +78,4 @@ func (c controller) ListRegions(ctx context.Context) ([]*Region, error) {
 		return nil, err
 	}
 	return ofRegionEntities(entities), nil
-}
-
-func formatGrafanaDatasourceCMName(name string) string {
-	return fmt.Sprintf("%s-%s", GrafanaDatasourceCMNamePrefix, name)
-}
-func formatGrafanaDatasourceCMLabels() map[string]string {
-	// todo read from config
-	return map[string]string{}
 }

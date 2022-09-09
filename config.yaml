@@ -14,9 +14,9 @@ sessionConfig:
   maxAge: 43200
 redisConfig:
   protocol: tcp
-  address: hostname:port
-  password: password
-  db: 0
+  address: dev.redis:6379
+  password: redis
+  db: 1
 oidcConfig:
   userHeader: X-HORIZON-OIDC-USER
   fullNameHeader: X-HORIZON-OIDC-FULLNAME
@@ -66,7 +66,7 @@ tektonMapper:
     namespace: tekton-resources
     # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
     # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
-    kubeconfig: ""
+    kubeconfig: "/Users/wurongjun/.kube/config"
     s3:
       accessKey: 
       secretKey: 
@@ -84,6 +84,14 @@ grafanaSLO:
   overviewDashboard: "http://grafana.yf-dev2.netease.com/d/Wz3GSBank/slo-gai-lan?orgId=1&kiosk&theme=light&var-env=%s"
   apiDashboard: "http://grafana.yf-dev2.netease.com/d/tKjaD1-nk/horizon-api-slo?orgId=1&kiosk&theme=light"
   pipelineDashboard: "http://grafana.yf-dev2.netease.com/d/g40XAtbnk/horizon-pipeline-slo?orgId=1&kiosk&theme=light&var-env=%s"
+grafanaConfig:
+  datasourceConfigMapNamespace: horizon
+  syncDatasourcePeriod: 1m
+  datasources:
+    # label that the configmaps with datasources are marked with
+    label: grafana_datasource
+    # value of label that the configmaps with datasources are set to
+    labelValue: "1"
 
 oauth:
   # if you run horizon on local machine, you need to set this to the absolute path of your auth.html

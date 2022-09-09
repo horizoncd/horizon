@@ -323,11 +323,16 @@ func Run(flags *Flags) {
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
 
+	// sync grafana datasource
 	_, client, err := kube.BuildClient("")
 	if err != nil {
 		panic(err)
 	}
-	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, client)
+	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client, redisClient)
+	go func() {
+		grafanaService.SyncDatasource(ctx)
+	}()
+	defer grafanaService.Stop()
 
 	parameter := &param.Param{
 		Manager:              manager,
@@ -347,7 +352,6 @@ func Run(flags *Flags) {
 		TektonFty:            tektonFty,
 		ClusterGitRepo:       clusterGitRepo,
 		GitGetter:            gitGetter,
-		GrafanaService:       grafanaService,
 	}
 
 	var (

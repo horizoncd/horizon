@@ -10,15 +10,12 @@ import (
 	"g.hz.netease.com/horizon/core/controller/region"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	grafanaConfig "g.hz.netease.com/horizon/pkg/config/grafana"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	"g.hz.netease.com/horizon/pkg/environmentregion/models"
-	"g.hz.netease.com/horizon/pkg/grafana"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"github.com/stretchr/testify/assert"
-	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
 var (
@@ -49,10 +46,6 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) {
 	regionCtl := region.NewController(&param.Param{
 		Manager: manager,
-		GrafanaService: grafana.NewService(grafanaConfig.Config{
-			GrafanaURL:                   "",
-			DatasourceConfigMapNamespace: "horizon",
-		}, testclient.NewSimpleClientset()),
 	})
 	_, err := regionCtl.Create(ctx, &region.CreateRegionRequest{
 		Name:        "hz",
