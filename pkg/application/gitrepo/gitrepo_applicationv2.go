@@ -39,6 +39,15 @@ type GetResponse struct {
 	TemplateConf map[string]interface{}
 }
 
+const (
+	_branchMaster = "master"
+
+	_filePathApplication = "application.yaml"
+	_filePathPipeline    = "pipeline.yaml"
+
+	_default = "default"
+)
+
 type ApplicationGitRepo2 interface {
 	CreateOrUpdateApplication(ctx context.Context, application string, request CreateOrUpdateRequest) error
 	GetApplication(ctx context.Context, application, environment string) (*GetResponse, error)
@@ -84,11 +93,17 @@ func (g gitRepo2) CreateOrUpdateApplication(ctx context.Context, application str
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
-		// if not found, create this repo first
+		// if not found, test application group exist
 		gid := fmt.Sprintf("%v/%v", g.repoConf.Parent.Path, application)
 		parentGroup, err := g.gitlabLib.GetGroup(ctx, gid)
 		if err != nil {
-			return err
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+				return err
+			}
+			parentGroup, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.repoConf.Parent.ID)
+			if err != nil {
+				return err
+			}
 		}
 		_, err = g.gitlabLib.CreateProject(ctx, environmentRepoName, parentGroup.ID)
 		if err != nil {
@@ -123,8 +138,10 @@ func (g gitRepo2) CreateOrUpdateApplication(ctx context.Context, application str
 	if req.Version != "" {
 		manifest := Manifest{Version: req.Version}
 		manifestYaml, err = yaml.Marshal(manifest)
-		log.Warningf(ctx, "Manifest marshal error, %+v", manifest)
-		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
+		if err != nil {
+			log.Warningf(ctx, "Manifest marshal error, %+v", manifest)
+			return perror.Wrap(herrors.ErrParamInvalid, err.Error())
+		}
 	}
 
 	actions := func() []gitlablib.CommitAction {

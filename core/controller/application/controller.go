@@ -161,7 +161,7 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 			if app.GitURL == "" {
 				return nil
 			}
-			return codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRef, app.GitRefType)
+			return codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRefType, app.GitRef)
 		}(),
 		BuildConfig: applicationRepo.BuildConf,
 		TemplateInfo: func() *codemodels.TemplateInfo {
@@ -351,6 +351,7 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 
 	ret := CreateApplicationResponseV2{
 		ID:        applicationDBModel.ID,
+		GroupID:   groupID,
 		FullPath:  fullPath,
 		CreatedAt: time.Time{},
 		UpdatedAt: time.Time{},

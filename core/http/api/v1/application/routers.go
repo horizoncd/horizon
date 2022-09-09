@@ -58,17 +58,6 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.SearchMyApplication,
 		},
 	}
-
-	apiV2Group := engine.Group("/apis/core/v2")
-	apiV2Routes := route.Routes{
-		{
-			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/groups/:%v/applications", common.ParamGroupID),
-			HandlerFunc: api.CreateV2,
-		},
-	}
-
 	route.RegisterRoutes(apiGroup, routes)
-	route.RegisterRoutes(apiV2Group, apiV2Routes)
 	route.RegisterRoutes(frontGroup, frontRoutes)
 }
