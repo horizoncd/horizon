@@ -180,9 +180,8 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 	pid := fmt.Sprintf("%v/%v", gid, func() string {
 		if environment == "" {
 			return _default
-		} else {
-			return environment
 		}
+		return environment
 	}())
 	manifestbytes, err1 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathManifest)
 	buildConfBytes, err2 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)

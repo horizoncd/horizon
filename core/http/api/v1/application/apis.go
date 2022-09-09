@@ -320,7 +320,7 @@ func (a *API) CreateV2(c *gin.Context) {
 			groupIDStr, err.Error())))
 		return
 	}
-	var request *application.CreateApplicationRequestV2
+	var request *application.CreateOrUpdateApplicationRequestV2
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid request body, err: %s",
 			err.Error())))

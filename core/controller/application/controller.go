@@ -14,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	applicationregionmanager "g.hz.netease.com/horizon/pkg/applicationregion/manager"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
@@ -50,9 +51,12 @@ type Controller interface {
 	Transfer(ctx context.Context, id uint, groupID uint) error
 	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
 
-	// CreateApplicationV2  create an application
 	CreateApplicationV2(ctx context.Context, groupID uint,
-		request *CreateApplicationRequestV2) (*CreateApplicationResponseV2, error)
+		request *CreateOrUpdateApplicationRequestV2) (*CreateApplicationResponseV2, error)
+	UpdateApplicationV2(ctx context.Context, id uint,
+		request *CreateOrUpdateApplicationRequestV2) (err error)
+	// GetApplicationV2 it can also be used to read v1 repo
+	GetApplicationV2(ctx context.Context, id uint) (*GetApplicationResponseV2, error)
 }
 
 const (
@@ -124,6 +128,60 @@ func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplica
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, app.Name)
 	return ofApplicationModel(app, fullPath, trs, pipelineJSONBlob, applicationJSONBlob), nil
+}
+
+func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetApplicationResponseV2, err error) {
+	const op = "application controller: get application v2"
+	defer wlog.Start(ctx, op).StopPrint()
+	// 1. get application in db
+	app, err := c.applicationMgr.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. get repo file
+	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. get group full path
+	group, err := c.groupSvc.GetChildByID(ctx, app.GroupID)
+	if err != nil {
+		return nil, err
+	}
+	fullPath := fmt.Sprintf("%v/%v", group.FullPath, app.Name)
+
+	resp := &GetApplicationResponseV2{
+		ID:          id,
+		Name:        app.Name,
+		Description: app.Description,
+		Priority:    string(app.Priority),
+		Git: func() *codemodels.Git {
+			if app.GitURL == "" {
+				return nil
+			}
+			return codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRef, app.GitRefType)
+		}(),
+		BuildConfig: applicationRepo.BuildConf,
+		TemplateInfo: func() *codemodels.TemplateInfo {
+			if app.Template == "" {
+				return nil
+			}
+			return &codemodels.TemplateInfo{
+				Name:    app.Template,
+				Release: app.TemplateRelease,
+			}
+		}(),
+		TemplateConfig: applicationRepo.TemplateConf,
+		Manifest:       applicationRepo.Manifest,
+		FullPath:       fullPath,
+		GroupID:        group.ID,
+		CreatedAt:      app.CreatedAt,
+		UpdatedAt:      app.UpdatedAt,
+	}
+
+	return resp, err
 }
 
 func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
@@ -217,7 +275,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 }
 
 func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
-	request *CreateApplicationRequestV2) (*CreateApplicationResponseV2, error) {
+	request *CreateOrUpdateApplicationRequestV2) (*CreateApplicationResponseV2, error) {
 	const op = "application controller: create application v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -274,7 +332,7 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		return nil, err
 	}
 
-	applicationDBModel := request.toApplicationModel(groupID)
+	applicationDBModel := request.CreateToApplicationModel(groupID)
 	applicationDBModel, err = c.applicationMgr.Create(ctx, applicationDBModel, request.ExtraMembers)
 	if err != nil {
 		return nil, err
@@ -364,6 +422,52 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 
 	return ofApplicationModel(applicationModel, fullPath, trs,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application), nil
+}
+
+func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
+	request *CreateOrUpdateApplicationRequestV2) (err error) {
+	const op = "application controller: update application v2"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	// 1. get application in db
+	appExistsInDB, err := c.applicationMgr.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if request.Priority != nil {
+		if err := validatePriority(*request.Priority); err != nil {
+			return err
+		}
+	}
+	if request.Git != nil {
+		if err := validateGitURL(request.Git.URL); err != nil {
+			return err
+		}
+	}
+	if request.TemplateConfig != nil && request.TemplateInfo != nil {
+		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release,
+			&TemplateInput{
+				Application: request.TemplateConfig,
+				Pipeline:    request.BuildConfig,
+			}); err != nil {
+			return err
+		}
+		updateRepoReq := gitrepo.CreateOrUpdateRequest{
+			Version:      _v2Version,
+			Environment:  "",
+			BuildConf:    request.BuildConfig,
+			TemplateConf: request.TemplateConfig,
+		}
+		if err := c.applicationGitRepo.CreateOrUpdateApplication(ctx, appExistsInDB.Name, updateRepoReq); err != nil {
+			return errors.E(op, err)
+		}
+	}
+
+	// 4. update application in db
+	applicationModel := request.UpdateToApplicationModel(appExistsInDB)
+	_, err = c.applicationMgr.UpdateByID(ctx, id, applicationModel)
+	return err
 }
 
 func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) (err error) {
