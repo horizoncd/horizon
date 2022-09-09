@@ -14,3 +14,8 @@ type SLO struct {
 	OverviewDashboard string `yaml:"overviewDashboard"`
 	HistoryDashboard  string `yaml:"historyDashboard"`
 }
+
+type Config struct {
+	GrafanaURL                   string `yaml:"grafanaUrl"`
+	DatasourceConfigMapNamespace string `yaml:"datasourceConfigMapNamespace"`
+}

@@ -256,4 +256,6 @@ var (
 
 	ErrTemplateParamInvalid        = errors.New("parameters of template are invalid")
 	ErrTemplateReleaseParamInvalid = errors.New("parameters of release are invalid")
+
+	ErrGrafanaDatasourceFormat = errors.New("grafana datasource format error")
 )
