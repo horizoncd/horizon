@@ -18,9 +18,6 @@ import (
 const (
 	// param
 	_extraOwner = "extraOwner"
-	_groupIDStr = "groupID"
-	_envQuery   = "env"
-	_hard       = "hard"
 )
 
 type API struct {
