@@ -19,7 +19,6 @@ import (
 
 const (
 	_filePathManifest = "manifest.yaml"
-	_versionKey       = "version"
 )
 
 type Manifest struct {

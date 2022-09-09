@@ -74,6 +74,8 @@ components:
             $ref: '#/components/schemas/Tag'
         buildConfig:
           $ref: '#/components/schemas/buildConfig'
+        templateInfo:
+          $ref: '#/components/schemas/TemplateInfo'
         templateConfig:
           $ref: '#/components/schemas/TemplateConfig'
 
@@ -99,43 +101,10 @@ components:
           type: string
 
 
-
-    SourceBuildConfig:  ## cuurrent is stale
-      type: object
-      required:
-        - sourcetype
-      properties:
-        sourcetype:
-          type: string
-          enum:
-            - git
-            - dockerfile
-            - image
-        git:
-          $ref: '#/components/schemas/Git'
-        strategy:
-          description: diffrent strategys supported(internal/dockerfile/jib/buildpack/pipeline)
-          type: string
-        pipelineBlob:
-          description: the params of the ci pipeline
-          type: string
-          example: |
-            language: java
-            version: tomcat7-jdk8
-            buildStragegy: ant
-            build.xml:dasdasdas
     TemplateConfig:
       type: object
-      required:
-      properties:
-        template:
-          $ref: '#/components/schemas/Template'
-        templateInput:
-          description: the template params
-          type: string
 
-
-    Template:
+    TemplateInfo:
       type: object
       required:
         - type
