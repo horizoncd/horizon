@@ -79,6 +79,48 @@ components:
         templateConfig:
           $ref: '#/components/schemas/TemplateConfig'
 
+
+    GetApplicationResponse:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/Name'
+        description:
+          $ref: '#/components/schemas/Description'
+        priority:
+          $ref: '#/components/schemas/priority'
+        git:
+          oneOf:
+            - $ref: '#/components/schemas/GitBranch'
+            - $ref: '#/components/schemas/GitCommit'
+            - $ref: '#/components/schemas/GitTag'
+        buildConfig:
+          $ref: '#/components/schemas/buildConfig'
+        templateInfo:
+          $ref: '#/components/schemas/TemplateInfo'
+        templateConfig:
+          $ref: '#/components/schemas/TemplateConfig'
+        manifest:
+          $ref: '#/components/schemas/Manifest'
+        fullPath:
+          type: string
+        groupID:
+          $ref: "common.yaml#/components/schemas/GroupID"
+        createdAt:
+          type: string
+          format: DateTime
+        updatedAt:
+          type: string
+          format: DateTime
+
+    priority:
+      type: string
+      enum:
+        - P0
+        - P1
+        - P2
+        - P3
+
     buildConfig:
       type: object
 
@@ -100,6 +142,8 @@ components:
         tag:
           type: string
 
+    Manifest:
+      type: object
 
     TemplateConfig:
       type: object

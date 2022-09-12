@@ -28,9 +28,79 @@ paths:
       responses:
         "200":
           description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateApplicationResponseV2"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/applications/{applicationID}:
+    parameters:
+      - name: applicationID
+        in: path
+        description: application id
+        schema:
+          type: string
+        required: true
+    put:
+      tags:
+        - application
+      operationId: updateApplication
+      summary: update a application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'cluster-v2.yaml#/components/schemas/CreateCluster'
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - application
+      operationId: getApplication
+      summary: get a application
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "cluster-v2.yaml#/components/schemas/GetApplicationResponse"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    CreateApplicationResponseV2:
+      type: object
+      properties:
+        ID:
+          $ref: "common.yaml#/components/schemas/ID"
+        fullPath:
+          type: string
+        groupID:
+          $ref: "common.yaml#/components/schemas/ID"
+        createdAt:
+          type: string
+          format: DateTime
+        updatedAt:
+          type: string
+          format: DateTime
+
