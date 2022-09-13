@@ -21,6 +21,7 @@ type Config struct {
 	GrafanaURL                   string        `yaml:"grafanaUrl"`
 	DatasourceConfigMapNamespace string        `yaml:"datasourceConfigMapNamespace"`
 	SyncDatasourcePeriod         time.Duration `yaml:"syncDatasourcePeriod"`
+	SyncLockTTL                  time.Duration `yaml:"syncLockTTL"`
 	Datasources                  Datasources   `yaml:"datasources"`
 }
 

@@ -323,16 +323,17 @@ func Run(flags *Flags) {
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
 
-	// sync grafana datasource
-	_, client, err := kube.BuildClient("")
+	// sync grafana datasource periodically
+	_, client, err := kube.BuildClient("/Users/wurongjun/.kube/config")
 	if err != nil {
 		panic(err)
 	}
 	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client, redisClient)
+	cancellableCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	go func() {
-		grafanaService.SyncDatasource(ctx)
+		grafanaService.SyncDatasource(cancellableCtx)
 	}()
-	defer grafanaService.Stop()
 
 	parameter := &param.Param{
 		Manager:              manager,

@@ -86,7 +86,8 @@ grafanaSLO:
   pipelineDashboard: "http://grafana.yf-dev2.netease.com/d/g40XAtbnk/horizon-pipeline-slo?orgId=1&kiosk&theme=light&var-env=%s"
 grafanaConfig:
   datasourceConfigMapNamespace: horizon
-  syncDatasourcePeriod: 1m
+  syncDatasourcePeriod: 5m
+  syncLockTTL: 2m
   datasources:
     # label that the configmaps with datasources are marked with
     label: grafana_datasource

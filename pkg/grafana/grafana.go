@@ -29,14 +29,12 @@ const (
 
 type Service interface {
 	SyncDatasource(ctx context.Context)
-	Stop()
 }
 
 type service struct {
 	config      grafana.Config
 	kubeClient  kubernetes.Interface
 	regionMgr   regionmanager.Manager
-	done        chan struct{}
 	redisClient *redis.Client
 }
 
@@ -45,7 +43,6 @@ func NewService(config grafana.Config, manager *managerparam.Manager, client kub
 	return &service{
 		config:      config,
 		kubeClient:  client,
-		done:        make(chan struct{}),
 		regionMgr:   manager.RegionMgr,
 		redisClient: redisClient,
 	}
@@ -81,83 +78,85 @@ func (s *service) SyncDatasource(ctx context.Context) {
 
 	for {
 		select {
-		case <-s.done:
+		case <-ctx.Done():
+			log.Debug(ctx, "get done signal from context")
 			return
 		case <-ticker.C:
 		}
 
-		resp := s.redisClient.SetNX(ctx, SyncDatasourceLockKey, 1, 2*time.Minute)
-		lockSuccess, err := resp.Result()
-
-		if err != nil {
-			log.Errorf(ctx, "sync datasource error: %+v", err)
-			continue
-		}
-
-		if !lockSuccess {
-			continue
-		}
-
-		log.Info(ctx, "get lock succeed")
-		regions, err := s.regionMgr.ListAll(ctx)
-		if err != nil {
-			log.Errorf(ctx, "sync datasource error: %+v", err)
-			continue
-		}
-
-		rMap := map[string]int{}
-		// iterate regions, create or update configmap
-		for _, region := range regions {
-			configMapName := formatDatasourceConfigMapName(region.Name)
-			datasourceURL := region.PrometheusURL
-			ds := &DataSource{
-				Name: region.Name,
-				Type: PrometheusDatasourceType,
-				URL:  datasourceURL,
-			}
-			err := s.getPrometheusDatasourceConfigMap(ctx, configMapName)
-			if err != nil {
-				// configmap not found, just create it
-				if statusError, ok := err.(*k8serrors.StatusError); ok && statusError.ErrStatus.Code == http.StatusNotFound {
-					err := s.createPrometheusDatasourceConfigMap(ctx, configMapName, ds)
-					if err != nil {
-						log.Errorf(ctx, "sync datasource error: %+v", err)
-					}
-				} else {
-					log.Errorf(ctx, "sync datasource error: %+v", err)
-				}
-			} else {
-				// just update it
-				err := s.updatePrometheusDatasourceConfigMap(ctx, configMapName, ds)
-				if err != nil {
-					log.Errorf(ctx, "sync datasource error: %+v", err)
-				}
-			}
-
-			rMap[configMapName] = 1
-		}
-
-		// iterate configmaps, delete unused ones
-		configMaps, err := s.getPrometheusDatasourceConfigMaps(ctx)
-		if err != nil {
-			log.Errorf(ctx, "sync datasource error: %+v", err)
-			continue
-		}
-
-		for _, item := range configMaps.Items {
-			if _, ok := rMap[item.Name]; !ok {
-				// delete unused ones
-				err = s.deletePrometheusDatasourceConfigMap(ctx, item.Name)
-				if err != nil {
-					log.Errorf(ctx, "sync datasource error: %+v", err)
-				}
-			}
-		}
+		s.sync(ctx)
 	}
 }
 
-func (s *service) Stop() {
-	close(s.done)
+func (s *service) sync(ctx context.Context) {
+	resp := s.redisClient.SetNX(ctx, SyncDatasourceLockKey, 1, s.config.SyncLockTTL)
+	lockSuccess, err := resp.Result()
+
+	if err != nil {
+		log.Errorf(ctx, "sync datasource error: %+v", err)
+		return
+	}
+
+	if !lockSuccess {
+		log.Debug(ctx, "get lock failed")
+		return
+	}
+
+	log.Debug(ctx, "get lock succeed")
+	regions, err := s.regionMgr.ListAll(ctx)
+	if err != nil {
+		log.Errorf(ctx, "sync datasource error: %+v", err)
+		return
+	}
+
+	rMap := map[string]int{}
+	// iterate regions, create or update configmap
+	for _, region := range regions {
+		configMapName := formatDatasourceConfigMapName(region.Name)
+		datasourceURL := region.PrometheusURL
+		ds := &DataSource{
+			Name: region.Name,
+			Type: PrometheusDatasourceType,
+			URL:  datasourceURL,
+		}
+		err = s.getPrometheusDatasourceConfigMap(ctx, configMapName)
+		if err != nil {
+			// configmap not found, just create it
+			if statusError, ok := err.(*k8serrors.StatusError); ok && statusError.ErrStatus.Code == http.StatusNotFound {
+				err := s.createPrometheusDatasourceConfigMap(ctx, configMapName, ds)
+				if err != nil {
+					log.Errorf(ctx, "sync datasource error: %+v", err)
+				}
+			} else {
+				log.Errorf(ctx, "sync datasource error: %+v", err)
+			}
+		} else {
+			// found, just update it
+			err := s.updatePrometheusDatasourceConfigMap(ctx, configMapName, ds)
+			if err != nil {
+				log.Errorf(ctx, "sync datasource error: %+v", err)
+			}
+		}
+
+		rMap[configMapName] = 1
+	}
+
+	// iterate configmaps, delete unused ones
+	configMaps, err := s.getPrometheusDatasourceConfigMaps(ctx)
+	if err != nil {
+		log.Errorf(ctx, "sync datasource error: %+v", err)
+		return
+	}
+
+	for _, item := range configMaps.Items {
+		if _, ok := rMap[item.Name]; !ok {
+			// delete unused ones
+			err = s.deletePrometheusDatasourceConfigMap(ctx, item.Name)
+			if err != nil {
+				log.Errorf(ctx, "sync datasource error: %+v", err)
+			}
+		}
+	}
 }
 
 // createPrometheusDatasourceConfigMap create a prometheus datasource for the grafana
