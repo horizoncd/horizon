@@ -36,7 +36,15 @@ import (
 )
 
 type Controller interface {
+	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
+		request *CreateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
+	UpdateCluster(ctx context.Context, clusterID uint,
+		request *UpdateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
+	DeleteCluster(ctx context.Context, clusterID uint, hard bool) error
+
 	GetCluster(ctx context.Context, clusterID uint) (*GetClusterResponse, error)
+	GetClusterByName(ctx context.Context,
+		clusterName string) (*GetClusterByNameResponse, error)
 	GetClusterOutput(ctx context.Context, clusterID uint) (interface{}, error)
 	ListCluster(ctx context.Context, applicationID uint, environments []string,
 		filter string, query *q.Query, ts []tagmodels.TagSelector) (int, []*ListClusterResponse, error)
@@ -44,40 +52,36 @@ type Controller interface {
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
 	ListUserClusterByNameFuzzily(ctx context.Context, environment,
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
-	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
-		request *CreateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
-	UpdateCluster(ctx context.Context, clusterID uint,
-		request *UpdateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
-	DeleteCluster(ctx context.Context, clusterID uint, hard bool) error
-	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
-	GetClusterByName(ctx context.Context,
-		clusterName string) (*GetClusterByNameResponse, error)
 
 	BuildDeploy(ctx context.Context, clusterID uint,
 		request *BuildDeployRequest) (*BuildDeployResponse, error)
-	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)
-	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
 	Restart(ctx context.Context, clusterID uint) (*PipelinerunIDResponse, error)
 	Deploy(ctx context.Context, clusterID uint, request *DeployRequest) (*PipelinerunIDResponse, error)
 	Rollback(ctx context.Context, clusterID uint, request *RollbackRequest) (*PipelinerunIDResponse, error)
-	Next(ctx context.Context, clusterID uint) error
-	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
-		<-chan string, error)
-	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
-	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
-	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
-	GetClusterPods(ctx context.Context, clusterID uint, start, end int64) (*GetClusterPodsResponse, error)
 	FreeCluster(ctx context.Context, clusterID uint) error
-	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
-	Promote(ctx context.Context, clusterID uint) error
-	Pause(ctx context.Context, clusterID uint) error
-	Resume(ctx context.Context, clusterID uint) error
-	GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error)
-	GetClusterPod(ctx context.Context, clusterID uint, podName string) (
-		*GetClusterPodResponse, error)
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
+
+	Promote(ctx context.Context, clusterID uint) error
+	Pause(ctx context.Context, clusterID uint) error
+	Resume(ctx context.Context, clusterID uint) error
+	Next(ctx context.Context, clusterID uint) error
+
+	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
+	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
+	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
+
+	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)
+	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
+		<-chan string, error)
+	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
+	GetClusterPods(ctx context.Context, clusterID uint, start, end int64) (*GetClusterPodsResponse, error)
+	GetClusterPod(ctx context.Context, clusterID uint, podName string) (
+		*GetClusterPodResponse, error)
+	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
+	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
+	GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error)
 }
 
 type controller struct {

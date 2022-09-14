@@ -35,22 +35,47 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v2/clusters/{clusterNameID}/pipeline:
-    description:  edit the cluster's pipeline(in pipeline mode)
+  /apis/core/v2/clusters/{clusterNameID}:
     parameters:
       - name: clusterNameID
         in: path
-        description: cluster id or cluster name
+        description: cluster name or cluster id
         schema:
           type: string
         required: true
-    post:
+    get:
+      tags:
+        - cluster
+      operationId: getCluster
+      summary: get a cluster
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetClusterResponse"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+    put:
       tags:
         - cluster
       operationId: updateCluster
-      requestBody:
+      summary: update a cluster
       responses:
-
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
 components:
   schemas:
     CreateCluster:
@@ -79,6 +104,55 @@ components:
         templateConfig:
           $ref: '#/components/schemas/TemplateConfig'
 
+    GetClusterResponse:
+      type: object
+      properties:
+        id:
+          $ref: "common.yaml#/components/schemas/ID"
+        name:
+          $ref: '#/components/schemas/Name'
+        description:
+          $ref: '#/components/schemas/Description'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        scope:
+          $ref: '#/components/schemas/Scope'
+        fullPath:
+          type: string
+        applicationName:
+          $ref: '#/components/schemas/Name'
+        applicationID:
+          $ref: "common.yaml#/components/schemas/ID"
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        git:
+          oneOf:
+            - $ref: '#/components/schemas/GitBranch'
+            - $ref: '#/components/schemas/GitCommit'
+            - $ref: '#/components/schemas/GitTag'
+        buildConfig:
+          $ref: '#/components/schemas/buildConfig'
+        templateInfo:
+          $ref: '#/components/schemas/TemplateInfo'
+        templateConfig:
+          $ref: '#/components/schemas/TemplateConfig'
+        manifest:
+          $ref: '#/components/schemas/Manifest'
+        status:
+          $ref: '#/components/schemas/ClusterStatus'
+        createdAt:
+          type: string
+          format: DateTime
+        updatedAt:
+          type: string
+          format: DateTime
+        createdBy:
+          $ref: '#/components/schemas/User'
+        updatedBy:
+          $ref: '#/components/schemas/User'
+
 
     GetApplicationResponse:
       type: object
@@ -88,7 +162,7 @@ components:
         description:
           $ref: '#/components/schemas/Description'
         priority:
-          $ref: '#/components/schemas/priority'
+          $ref: '#/components/schemas/Priority'
         git:
           oneOf:
             - $ref: '#/components/schemas/GitBranch'
@@ -113,7 +187,7 @@ components:
           type: string
           format: DateTime
 
-    priority:
+    Priority:
       type: string
       enum:
         - P0
@@ -135,6 +209,25 @@ components:
       properties:
         commit:
           type: string
+
+    Scope:
+      type: object
+      properties:
+        environment:
+          type: string
+        region:
+          type: string
+        regionDisplayName:
+          type: string
+
+    ClusterStatus:
+      type: string
+      enum:
+        - ""
+        - "Freeing"
+        - "Freed"
+        - "Deleting"
+        - "Creating"
 
     GitTag:
       type: object
@@ -169,7 +262,7 @@ components:
     Name:
       type: string
       maxLength: 64
-      description: the group Name
+      description: the Name
 
 
 
@@ -186,15 +279,13 @@ components:
         value:
           type: string
 
-    Git:
+    User:
       type: object
       properties:
-        gitURL:
+        id:
+          $ref: "common.yaml#/components/schemas/ID"
+        name:
           type: string
-        gitBranch:
-          type: string
-        gitCommit:
-          type: string
-        gitpullSecret:
+        email:
           type: string
 
