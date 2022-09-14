@@ -21,7 +21,6 @@ import (
 )
 
 const (
-	DatasourceKey                 = "datasource.yaml"
 	DatasourceConfigMapNamePrefix = "grafana-datasource"
 	PrometheusDatasourceType      = "prometheus"
 	SyncDatasourceLockKey         = "sync_datasource_lock"
@@ -174,7 +173,7 @@ func (s *service) createPrometheusDatasourceConfigMap(ctx context.Context, name 
 			},
 		},
 		Data: map[string]string{
-			DatasourceKey: string(dsBytes),
+			formatDatasourceDataKey(datasource): string(dsBytes),
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
@@ -199,7 +198,7 @@ func (s *service) updatePrometheusDatasourceConfigMap(ctx context.Context, name 
 			},
 		},
 		Data: map[string]string{
-			DatasourceKey: string(dsBytes),
+			formatDatasourceDataKey(datasource): string(dsBytes),
 		},
 	}, metav1.UpdateOptions{})
 	if err != nil {
@@ -246,4 +245,8 @@ func (s *service) getPrometheusDatasourceConfigMaps(ctx context.Context) (*v1.Co
 
 func formatDatasourceConfigMapName(name string) string {
 	return fmt.Sprintf("%s-%s", DatasourceConfigMapNamePrefix, name)
+}
+
+func formatDatasourceDataKey(datasource *DataSource) string {
+	return fmt.Sprintf("%s.yaml", datasource.Name)
 }
