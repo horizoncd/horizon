@@ -26,8 +26,9 @@ type Manifest struct {
 }
 
 type CreateOrUpdateRequest struct {
+	// TODO(encode the template info into manifest),currently only the Version
 	Version string
-	// TODO(encode the template info into manifest)
+
 	Environment  string
 	BuildConf    map[string]interface{}
 	TemplateConf map[string]interface{}

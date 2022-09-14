@@ -28,6 +28,10 @@ paths:
       responses:
         "200":
           description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateClusterResponse'
         default:
           description: Unexpected error
           content:
@@ -103,6 +107,20 @@ components:
           $ref: '#/components/schemas/TemplateInfo'
         templateConfig:
           $ref: '#/components/schemas/TemplateConfig'
+
+    CreateClusterResponse:
+      type: object
+      properties:
+        id:
+          $ref: "common.yaml#/components/schemas/ID"
+        fullPath:
+          type: string
+        createdAt:
+          type: string
+          format: DateTime
+        updatedAt:
+          type: string
+          format: DateTime
 
     GetClusterResponse:
       type: object

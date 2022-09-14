@@ -22,6 +22,14 @@ type CreateClusterRequestV2 struct {
 	ExtraMembers map[string]string `json:"extraMembers"`
 }
 
+type CreateClusterResponseV2 struct {
+	ID            uint      `json:"id"`
+	FullPath      string    `json:"fullPath"`
+	ApplicationID uint      `json:"applicationID"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
 type UpdateClusterRequestV2 struct {
 	// basic infos
 	Description string               `json:"description"`

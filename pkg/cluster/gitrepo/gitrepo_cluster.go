@@ -89,6 +89,9 @@ type BaseParams struct {
 	Environment         string
 	RegionEntity        *regionmodels.RegionEntity
 	Namespace           string
+
+	// TODO(encode the template info into manifest),currently only the Version
+	version string
 }
 
 type CreateClusterParams struct {
@@ -107,7 +110,9 @@ type RepoInfo struct {
 }
 
 type ClusterFiles struct {
-	PipelineJSONBlob, ApplicationJSONBlob map[string]interface{}
+	PipelineJSONBlob    map[string]interface{}
+	ApplicationJSONBlob map[string]interface{}
+	Manifest            map[string]interface{}
 }
 
 type ClusterValueFile struct {
