@@ -18,6 +18,8 @@ import (
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
+	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -27,11 +29,13 @@ import (
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/permission"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -77,6 +81,7 @@ type controller struct {
 	hook                 hook.Hook
 	userSvc              usersvc.Service
 	memberManager        member.Manager
+	eventMgr             eventmanager.Manager
 	applicationRegionMgr applicationregionmanager.Manager
 	pipelinemanager      pipelinemanager.Manager
 	buildSchema          *build.Schema
@@ -97,6 +102,7 @@ func NewController(param *param.Param) Controller {
 		hook:                 param.Hook,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
+		eventMgr:             param.EventManager,
 		applicationRegionMgr: param.ApplicationRegionManager,
 		pipelinemanager:      param.PipelineMgr,
 		buildSchema:          param.BuildSchema,
@@ -190,6 +196,7 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 	return resp, err
 }
 
+//nolint may be used in the future
 func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
 	if c.hook != nil {
 		event := hook.Event{
@@ -274,8 +281,19 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	ret := ofApplicationModel(applicationModel, fullPath, trs,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application)
 
-	// 7. post hook
-	c.postHook(ctx, hook.CreateApplication, ret)
+	// 7. record event
+	// c.postHook(ctx, hook.CreateApplication, ret)
+	rid, _ := requestid.FromContext(ctx)
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: eventmodels.Application,
+			Action:       eventmodels.Created,
+			ResourceID:   ret.ID,
+		},
+		ReqID: rid,
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 
 	return ret, nil
 }
@@ -543,8 +561,19 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 		return err
 	}
 
-	// 4. post hook
-	c.postHook(ctx, hook.DeleteApplication, app.Name)
+	// 4. delete application
+	// c.postHook(ctx, hook.DeleteApplication, app.Name)
+	rid, _ := requestid.FromContext(ctx)
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: eventmodels.Application,
+			Action:       eventmodels.Deleted,
+			ResourceID:   id,
+		},
+		ReqID: rid,
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 
 	return nil
 }

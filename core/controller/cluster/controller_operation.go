@@ -10,7 +10,9 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	cmodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -203,6 +205,19 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
+	// 8. record event
+	rid, _ := requestid.FromContext(ctx)
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: eventmodels.Cluster,
+			Action:       eventmodels.Deployed,
+			ResourceID:   cluster.ID,
+		},
+		ReqID: rid,
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
+
 	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,
 	}, nil
@@ -333,6 +348,19 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 	if err := c.updatePRStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusOK, masterRevision); err != nil {
 		return nil, err
+	}
+
+	// 11. record event
+	rid, _ := requestid.FromContext(ctx)
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: eventmodels.Cluster,
+			Action:       eventmodels.Rollbacked,
+			ResourceID:   cluster.ID,
+		},
+		ReqID: rid,
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
 	return &PipelinerunIDResponse{

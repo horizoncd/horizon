@@ -64,7 +64,7 @@ const (
 	// use the pipeline's cluster's member info
 	ResourcePipelinerun = "pipelineruns"
 
-	// ResourceOauthApps urrently oauthapp do not have direct member info, will
+	// ResourceOauthApps currently oauthapp do not have direct member info, will
 	// use the oauthapp's groups member info
 	ResourceOauthApps = "oauthapps"
 
@@ -72,6 +72,8 @@ const (
 
 	ResourceTemplateRelease = "templatereleases"
 	AliasTemplateRelease    = "releases"
+
+	ResourceWebhook = "webhooks"
 )
 
 const (

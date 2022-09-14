@@ -4,10 +4,12 @@ import (
 	"context"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+
 	herror "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/authentication/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	"github.com/gin-gonic/gin"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
 
 const (
@@ -21,6 +23,23 @@ const (
 	AuthorizationHeaderKey = "Authorization"
 	TokenHeaderValuePrefix = "Bearer"
 )
+
+type User struct {
+	ID    uint   `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+func ToUser(user *usermodels.User) *User {
+	if user == nil {
+		return nil
+	}
+	return &User{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
+}
 
 func UserContextKey() string {
 	return contextUserKey

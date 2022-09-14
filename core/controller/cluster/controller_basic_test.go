@@ -86,6 +86,7 @@ func testListClusterByNameFuzzily(t *testing.T) {
 		applicationSvc: applicationservice.NewService(groupservice.NewService(manager), manager),
 		groupManager:   manager.GroupManager,
 		memberManager:  manager.MemberManager,
+		eventMgr:       manager.EventManager,
 	}
 
 	resps, count, err := c.List(ctx, &q.Query{Keywords: q.KeyWords{common.ClusterQueryName: "fuzzilyCluster"}})
@@ -201,6 +202,7 @@ func testListUserClustersByNameFuzzily(t *testing.T) {
 		applicationSvc: applicationservice.NewService(groupservice.NewService(manager), manager),
 		groupManager:   manager.GroupManager,
 		memberManager:  manager.MemberManager,
+		eventMgr:       manager.EventManager,
 	}
 
 	resps, count, err := c.List(ctx,
@@ -287,6 +289,7 @@ func testControllerFreeOrDeleteClusterFailed(t *testing.T) {
 		groupManager:   manager.GroupManager,
 		envMgr:         manager.EnvMgr,
 		regionMgr:      manager.RegionMgr,
+		eventMgr:       manager.EventManager,
 	}
 
 	id, err := registrydao.NewDAO(db).Create(ctx, &registrymodels.Registry{

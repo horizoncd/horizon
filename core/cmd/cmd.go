@@ -40,6 +40,7 @@ import (
 	templateschematagctl "g.hz.netease.com/horizon/core/controller/templateschematag"
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
 	userctl "g.hz.netease.com/horizon/core/controller/user"
+	webhookctl "g.hz.netease.com/horizon/core/controller/webhook"
 	accessapi "g.hz.netease.com/horizon/core/http/api/v1/access"
 	"g.hz.netease.com/horizon/core/http/api/v1/accesstoken"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
@@ -70,6 +71,7 @@ import (
 	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
+	"g.hz.netease.com/horizon/core/http/api/v1/webhook"
 	appv2 "g.hz.netease.com/horizon/core/http/api/v2/application"
 	buildAPI "g.hz.netease.com/horizon/core/http/api/v2/build"
 	envtemplatev2 "g.hz.netease.com/horizon/core/http/api/v2/envtemplate"
@@ -463,6 +465,7 @@ func Run(flags *Flags) {
 		buildSchemaCtrl      = build.NewController(buildSchema)
 		accessTokenCtl       = accesstokenctl.NewController(parameter)
 		scopeCtl             = scopectl.NewController(parameter)
+		webhookCtl           = webhookctl.NewController(parameter)
 	)
 
 	var (
@@ -497,6 +500,7 @@ func Run(flags *Flags) {
 		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl)
 		accessTokenAPI   = accesstoken.NewAPI(accessTokenCtl, roleService, scopeService)
 		scopeAPI         = scope.NewAPI(scopeCtl)
+		webhookAPI       = webhook.NewAPI(webhookCtl)
 	)
 
 	// init server
@@ -562,6 +566,7 @@ func Run(flags *Flags) {
 	templatev2.RegisterRoutes(r, templateAPIV2)
 	accesstoken.RegisterRoutes(r, accessTokenAPI)
 	scope.RegisterRoutes(r, scopeAPI)
+	webhook.RegisterRoutes(r, webhookAPI)
 
 	// start cloud event server
 	go runCloudEventServer(
