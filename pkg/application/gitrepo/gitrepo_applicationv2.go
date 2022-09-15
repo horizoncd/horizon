@@ -22,11 +22,11 @@ const (
 )
 
 type Manifest struct {
+	// TODO(encode the template info into manifest),currently only the Version
 	Version string `yaml:"version"`
 }
 
 type CreateOrUpdateRequest struct {
-	// TODO(encode the template info into manifest),currently only the Version
 	Version string
 
 	Environment  string
@@ -200,7 +200,7 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 		}
 		return environment
 	}())
-	manifestbytes, err1 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathManifest)
+	manifestBytes, err1 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathManifest)
 	buildConfBytes, err2 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
 	templateConfBytes, err3 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
 	for _, err := range []error{err1, err2, err3} {
@@ -226,8 +226,8 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 		return entity, nil
 	}
 
-	if manifestbytes != nil {
-		entity, err := TransformData(manifestbytes)
+	if manifestBytes != nil {
+		entity, err := TransformData(manifestBytes)
 		if err != nil {
 			return nil, err
 		}

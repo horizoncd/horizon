@@ -4,7 +4,12 @@ import (
 	"time"
 
 	controllertag "g.hz.netease.com/horizon/core/controller/tag"
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
+	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
+	"g.hz.netease.com/horizon/pkg/cluster/models"
+	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 )
 
 type CreateClusterRequestV2 struct {
@@ -20,6 +25,58 @@ type CreateClusterRequestV2 struct {
 
 	// TODO(tom): just for internal usage
 	ExtraMembers map[string]string `json:"extraMembers"`
+}
+
+func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Application,
+	er *envregionmodels.EnvironmentRegion, info *BuildTemplateInfo) (*models.Cluster, []*tagmodels.Tag) {
+
+	cluster := &models.Cluster{
+		ApplicationID:   application.ID,
+		Name:            r.Name,
+		EnvironmentName: er.EnvironmentName,
+		RegionName:      er.RegionName,
+		Description:     r.Description,
+		// cluster provide git info or just use the application's git info
+		GitURL: func() string {
+			if r.Git == nil {
+				return application.GitURL
+			}
+			if r.Git != nil && r.Git.URL == "" && application.GitURL != "" {
+				return r.Git.URL
+			}
+			// if URL is empty string, this means this cluster not depends on build from git
+			return r.Git.URL
+		}(),
+		GitSubfolder: func() string {
+			if r.Git == nil {
+				return application.GitSubfolder
+			}
+			return r.Git.Subfolder
+		}(),
+		GitRef: func() string {
+			if r.Git == nil {
+				return application.GitRef
+			}
+			return r.Git.Ref()
+		}(),
+		GitRefType: func() string {
+			if r.Git == nil {
+				return application.GitRefType
+			}
+			return r.Git.RefType()
+		}(),
+		Template:        info.TemplateInfo.Name,
+		TemplateRelease: info.TemplateInfo.Release,
+		Status:          clustercommon.StatusCreating,
+	}
+	tags := make([]*tagmodels.Tag, 0)
+	for _, tag := range r.Tags {
+		tags = append(tags, &tagmodels.Tag{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+	return cluster, tags
 }
 
 type CreateClusterResponseV2 struct {
@@ -51,15 +108,15 @@ type UpdateClusterRequestV2 struct {
 
 type GetClusterResponseV2 struct {
 	// basic infos
-	ID              uint                 `json:"id"`
-	Name            string               `json:"name"`
-	Description     string               `json:"description"`
-	Priority        string               `json:"priority"`
-	Scope           *Scope               `json:"scope"`
-	FullPath        string               `json:"fullPath"`
-	ApplicationName string               `json:"applicationName"`
-	ApplicationID   string               `json:"applicationID"`
-	Tags            []*controllertag.Tag `json:"tags"`
+	ID              uint                `json:"id"`
+	Name            string              `json:"name"`
+	Description     string              `json:"description"`
+	Priority        string              `json:"priority"`
+	Scope           *Scope              `json:"scope"`
+	FullPath        string              `json:"fullPath"`
+	ApplicationName string              `json:"applicationName"`
+	ApplicationID   uint                `json:"applicationID"`
+	Tags            []controllertag.Tag `json:"tags"`
 
 	// source info
 	Git *codemodels.Git `json:"git"`
