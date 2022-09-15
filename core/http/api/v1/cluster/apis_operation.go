@@ -190,7 +190,7 @@ func (a *API) Restart(c *gin.Context) {
 
 	resp, err := a.clusterCtl.Restart(c, uint(clusterID))
 	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok || e.Source == herrors.ClusterInDB {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
