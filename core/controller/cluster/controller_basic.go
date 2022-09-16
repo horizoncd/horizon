@@ -758,10 +758,6 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 			if err := c.pipelinerunMgr.DeleteByClusterID(ctx, clusterID); err != nil {
 				log.Errorf(newctx, "failed to delete pipelineruns of cluster: %v, err: %v", cluster.Name, err)
 			}
-			// delete pipeline
-			if err := c.pipelineMgr.DeleteByClusterName(ctx, cluster.Name); err != nil {
-				log.Errorf(newctx, "failed to delete pipelineruns of cluster: %v, err: %v", cluster.Name, err)
-			}
 			// delete tag
 			if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, nil); err != nil {
 				log.Errorf(newctx, "failed to delete tags of cluster: %v, err: %v", cluster.Name, err)
