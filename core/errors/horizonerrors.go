@@ -249,6 +249,8 @@ var (
 	// ErrRegionUsedByClusters used when deleting a region that is still used by clusters
 	ErrRegionUsedByClusters = errors.New("cannot delete a region when used by clusters")
 
+	ErrPipelineOutPut = errors.New("pipeline output is not valid")
+
 	ErrTemplateParamInvalid        = errors.New("parameters of template are invalid")
 	ErrTemplateReleaseParamInvalid = errors.New("parameters of release are invalid")
 )

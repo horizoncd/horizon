@@ -203,6 +203,7 @@ func Test(t *testing.T) {
 	t.Logf("\n%v\n", diff)
 
 	imageName := "newImage"
+
 	updateImageCommit, err := r.UpdatePipelineOutput(ctx, application, cluster, templateName, PipelineOutput{
 		Image: &imageName,
 	})
@@ -399,11 +400,11 @@ java:
 	}
 
 	expectedOutput := `java:
-  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
   git:
-    url: aaa
-    commitID: ccc
     branch: bbb
+    commitID: ccc
+    url: aaa
+  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
 `
 	url := "aaa"
 	branch := "bbb"

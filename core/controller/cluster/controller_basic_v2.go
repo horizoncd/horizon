@@ -45,7 +45,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	}
 
 	// 4. customize buildTemplateInfo and do validate
-	buildTemplateInfo, err := c.customizeBuildTemplateInfo(ctx, r, application, environment, mergePatch)
+	buildTemplateInfo, err := c.customizeCreateReqBuildTemplateInfo(ctx, r, application, environment, mergePatch)
 	if err != nil {
 		return nil, err
 	}
@@ -61,11 +61,10 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, region)
 	if err != nil {
 		return nil, err
-	} else {
-		if regionEntity.Disabled {
-			return nil, perror.Wrap(herrors.ErrDisabled,
-				"the region which is disabled cannot be used to create a cluster")
-		}
+	}
+	if regionEntity.Disabled {
+		return nil, perror.Wrap(herrors.ErrDisabled,
+			"the region which is disabled cannot be used to create a cluster")
 	}
 
 	// 6 get templateRelease
@@ -154,12 +153,17 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 		return nil, err
 	}
 
-	// 4. gen fullpath
-	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
+	// 4. gen fullPath
+	fullPath, err := func() (string, error) {
+		group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name), nil
+	}()
 	if err != nil {
 		return nil, err
 	}
-	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	// 5. get tags
 	tags, err := c.tagMgr.ListByResourceTypeID(ctx, common.ResourceCluster, cluster.ID)
@@ -173,9 +177,11 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 		return nil, err
 	}
 
-	// 9. get createdBy and updatedBy users
+	// 7. get createdBy and updatedBy users
 	userMap, err := c.userManager.GetUserMapByIDs(ctx, []uint{cluster.CreatedBy, cluster.UpdatedBy})
-
+	if err != nil {
+		return nil, err
+	}
 	getResp := &GetClusterResponseV2{
 		ID:          cluster.ID,
 		Name:        cluster.Name,
@@ -201,7 +207,7 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 			return retTags
 		}(),
 		Git: func() *codemodels.Git {
-			if cluster.GitURL != "" {
+			if cluster.GitURL == "" {
 				return nil
 			}
 			return codemodels.NewGit(cluster.GitURL, cluster.GitSubfolder,
@@ -234,14 +240,12 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 }
 
 type BuildTemplateInfo struct {
-	BuildConfig    map[string]interface{}   `json:"buildConfig"`
-	TemplateInfo   *codemodels.TemplateInfo `json:"templateInfo"`
-	TemplateConfig map[string]interface{}   `json:"templateConfig"`
-	// Manifest       map[string]interface{}   `json:"manifest"`
+	BuildConfig    map[string]interface{}
+	TemplateInfo   *codemodels.TemplateInfo
+	TemplateConfig map[string]interface{}
 }
 
 func (info *BuildTemplateInfo) Validate(ctx context.Context, trGetter templateschema.Getter) error {
-	// templateSchemaRenderVal := make(map[string]string)
 	templateSchemaRenderVal := make(map[string]string)
 	// TODO (remove it, currently some template need it)
 	templateSchemaRenderVal["resourceType"] = "cluster"
@@ -253,25 +257,24 @@ func (info *BuildTemplateInfo) Validate(ctx context.Context, trGetter templatesc
 	return jsonschema.Validate(schema.Application.JSONSchema, info.TemplateConfig, false)
 }
 
-func (c *controller) customizeBuildTemplateInfo(ctx context.Context, r *CreateClusterRequestV2,
+func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r *CreateClusterRequestV2,
 	application *appmodels.Application, environment string, mergePatch bool) (*BuildTemplateInfo, error) {
-
 	buildTemplateInfo := &BuildTemplateInfo{}
 	appGitRepo, err := c.applicationGitRepo.GetApplication(ctx, application.Name, environment)
 	if err != nil {
 		return nil, err
 	}
-	if r.BuildConfig == nil {
-		if !mergePatch {
-			buildTemplateInfo.BuildConfig = appGitRepo.BuildConf
-		} else {
+	if r.BuildConfig != nil {
+		if mergePatch {
 			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepo.BuildConf, r.BuildConfig)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			buildTemplateInfo.BuildConfig = r.BuildConfig
 		}
 	} else {
-		buildTemplateInfo.BuildConfig = r.BuildConfig
+		buildTemplateInfo.BuildConfig = appGitRepo.BuildConf
 	}
 
 	if r.TemplateInfo == nil && r.TemplateConfig == nil {
@@ -279,17 +282,18 @@ func (c *controller) customizeBuildTemplateInfo(ctx context.Context, r *CreateCl
 			Name:    application.Template,
 			Release: application.TemplateRelease,
 		}
-		if !mergePatch {
-			buildTemplateInfo.TemplateConfig = appGitRepo.TemplateConf
-		} else {
-			buildTemplateInfo.TemplateConfig, err = mergemap.Merge(appGitRepo.BuildConf, r.BuildConfig)
+		buildTemplateInfo.TemplateConfig = appGitRepo.TemplateConf
+	} else if r.TemplateInfo != nil && r.TemplateConfig != nil {
+		// here do not support merge patch
+		buildTemplateInfo.TemplateInfo = r.TemplateInfo
+		if mergePatch {
+			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepo.TemplateConf, r.TemplateConfig)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			buildTemplateInfo.TemplateConfig = r.TemplateConfig
 		}
-	} else if r.TemplateInfo != nil && r.TemplateConfig != nil {
-		buildTemplateInfo.TemplateInfo = r.TemplateInfo
-		buildTemplateInfo.TemplateConfig = r.TemplateConfig
 	} else {
 		return nil, perror.Wrap(herrors.ErrParamInvalid, "TemplateInfo or TemplateConfig nil")
 	}

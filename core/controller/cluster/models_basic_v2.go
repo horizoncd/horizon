@@ -29,7 +29,6 @@ type CreateClusterRequestV2 struct {
 
 func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Application,
 	er *envregionmodels.EnvironmentRegion, info *BuildTemplateInfo) (*models.Cluster, []*tagmodels.Tag) {
-
 	cluster := &models.Cluster{
 		ApplicationID:   application.ID,
 		Name:            r.Name,
