@@ -18,14 +18,13 @@ type SLO struct {
 }
 
 type Config struct {
-	GrafanaURL                   string        `yaml:"grafanaUrl"`
-	DatasourceConfigMapNamespace string        `yaml:"datasourceConfigMapNamespace"`
-	SyncDatasourcePeriod         time.Duration `yaml:"syncDatasourcePeriod"`
-	SyncLockTTL                  time.Duration `yaml:"syncLockTTL"`
-	Datasources                  Datasources   `yaml:"datasources"`
+	URL                  string               `yaml:"url"`
+	SyncDatasourceConfig SyncDatasourceConfig `yaml:"syncDatasourceConfig"`
 }
 
-type Datasources struct {
-	Label      string `yaml:"label"`
-	LabelValue string `yaml:"labelValue"`
+type SyncDatasourceConfig struct {
+	Namespace  string        `yaml:"namespace"`
+	Period     time.Duration `yaml:"period"`
+	LabelKey   string        `yaml:"labelKey"`
+	LabelValue string        `yaml:"labelValue"`
 }

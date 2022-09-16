@@ -12,7 +12,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
-	"github.com/go-redis/redis/v8"
+	"github.com/google/go-cmp/cmp"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,9 +21,8 @@ import (
 )
 
 const (
-	DatasourceConfigMapNamePrefix = "grafana-datasource"
-	PrometheusDatasourceType      = "prometheus"
-	SyncDatasourceLockKey         = "sync_datasource_lock"
+	_datasourceConfigMapNamePrefix = "grafana-datasource"
+	_prometheusDatasourceType      = "prometheus"
 )
 
 type Service interface {
@@ -31,19 +30,16 @@ type Service interface {
 }
 
 type service struct {
-	config      grafana.Config
-	kubeClient  kubernetes.Interface
-	regionMgr   regionmanager.Manager
-	redisClient *redis.Client
+	config     grafana.Config
+	kubeClient kubernetes.Interface
+	regionMgr  regionmanager.Manager
 }
 
-func NewService(config grafana.Config, manager *managerparam.Manager, client kubernetes.Interface,
-	redisClient *redis.Client) Service {
+func NewService(config grafana.Config, manager *managerparam.Manager, client kubernetes.Interface) Service {
 	return &service{
-		config:      config,
-		kubeClient:  client,
-		regionMgr:   manager.RegionMgr,
-		redisClient: redisClient,
+		config:     config,
+		kubeClient: client,
+		regionMgr:  manager.RegionMgr,
 	}
 }
 
@@ -69,10 +65,10 @@ type DataSource struct {
 }
 
 func (s *service) SyncDatasource(ctx context.Context) {
-	log.Infof(ctx, "Starting syncing grafana datasource every %v", s.config.SyncDatasourcePeriod)
+	log.Infof(ctx, "Starting syncing grafana datasource every %v", s.config.SyncDatasourceConfig.Period)
 	defer log.Infof(ctx, "Stopping syncing grafana datasource")
 
-	ticker := time.NewTicker(s.config.SyncDatasourcePeriod)
+	ticker := time.NewTicker(s.config.SyncDatasourceConfig.Period)
 	defer ticker.Stop()
 
 	for {
@@ -88,20 +84,6 @@ func (s *service) SyncDatasource(ctx context.Context) {
 }
 
 func (s *service) sync(ctx context.Context) {
-	resp := s.redisClient.SetNX(ctx, SyncDatasourceLockKey, 1, s.config.SyncLockTTL)
-	lockSuccess, err := resp.Result()
-
-	if err != nil {
-		log.Errorf(ctx, "sync datasource error: %+v", err)
-		return
-	}
-
-	if !lockSuccess {
-		log.Debug(ctx, "get lock failed")
-		return
-	}
-
-	log.Debug(ctx, "get lock succeed")
 	regions, err := s.regionMgr.ListAll(ctx)
 	if err != nil {
 		log.Errorf(ctx, "sync datasource error: %+v", err)
@@ -115,10 +97,10 @@ func (s *service) sync(ctx context.Context) {
 		datasourceURL := region.PrometheusURL
 		ds := &DataSource{
 			Name: region.Name,
-			Type: PrometheusDatasourceType,
+			Type: _prometheusDatasourceType,
 			URL:  datasourceURL,
 		}
-		err = s.getPrometheusDatasourceConfigMap(ctx, configMapName)
+		datasource, err := s.getPrometheusDatasourceConfigMap(ctx, configMapName)
 		if err != nil {
 			// configmap not found, just create it
 			if statusError, ok := err.(*k8serrors.StatusError); ok && statusError.ErrStatus.Code == http.StatusNotFound {
@@ -130,7 +112,10 @@ func (s *service) sync(ctx context.Context) {
 				log.Errorf(ctx, "sync datasource error: %+v", err)
 			}
 		} else {
-			// found, just update it
+			// found, compare and update if necessary
+			if cmp.Equal(ds, datasource) {
+				continue
+			}
 			err := s.updatePrometheusDatasourceConfigMap(ctx, configMapName, ds)
 			if err != nil {
 				log.Errorf(ctx, "sync datasource error: %+v", err)
@@ -165,15 +150,15 @@ func (s *service) createPrometheusDatasourceConfigMap(ctx context.Context, name 
 		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
-	_, err = s.kubeClient.CoreV1().ConfigMaps(s.config.DatasourceConfigMapNamespace).Create(ctx, &v1.ConfigMap{
+	_, err = s.kubeClient.CoreV1().ConfigMaps(s.config.SyncDatasourceConfig.Namespace).Create(ctx, &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
-				s.config.Datasources.Label: s.config.Datasources.LabelValue,
+				s.config.SyncDatasourceConfig.LabelKey: s.config.SyncDatasourceConfig.LabelValue,
 			},
 		},
 		Data: map[string]string{
-			formatDatasourceDataKey(datasource): string(dsBytes),
+			formatDatasourceDataKey(name): string(dsBytes),
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
@@ -190,15 +175,15 @@ func (s *service) updatePrometheusDatasourceConfigMap(ctx context.Context, name 
 		return perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
-	_, err = s.kubeClient.CoreV1().ConfigMaps(s.config.DatasourceConfigMapNamespace).Update(ctx, &v1.ConfigMap{
+	_, err = s.kubeClient.CoreV1().ConfigMaps(s.config.SyncDatasourceConfig.Namespace).Update(ctx, &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
-				s.config.Datasources.Label: s.config.Datasources.LabelValue,
+				s.config.SyncDatasourceConfig.LabelKey: s.config.SyncDatasourceConfig.LabelValue,
 			},
 		},
 		Data: map[string]string{
-			formatDatasourceDataKey(datasource): string(dsBytes),
+			formatDatasourceDataKey(name): string(dsBytes),
 		},
 	}, metav1.UpdateOptions{})
 	if err != nil {
@@ -210,7 +195,7 @@ func (s *service) updatePrometheusDatasourceConfigMap(ctx context.Context, name 
 
 // deletePrometheusDatasourceConfigMap delete a prometheus datasource for the grafana
 func (s *service) deletePrometheusDatasourceConfigMap(ctx context.Context, name string) error {
-	err := s.kubeClient.CoreV1().ConfigMaps(s.config.DatasourceConfigMapNamespace).Delete(ctx, name,
+	err := s.kubeClient.CoreV1().ConfigMaps(s.config.SyncDatasourceConfig.Namespace).Delete(ctx, name,
 		metav1.DeleteOptions{})
 	if err != nil {
 		return perror.Wrap(herrors.ErrAPIServerResponseNotOK, err.Error())
@@ -220,21 +205,31 @@ func (s *service) deletePrometheusDatasourceConfigMap(ctx context.Context, name 
 }
 
 // GetPrometheusDatasourceConfigMap get a prometheus datasource for the grafana
-func (s *service) getPrometheusDatasourceConfigMap(ctx context.Context, name string) error {
-	_, err := s.kubeClient.CoreV1().ConfigMaps(s.config.DatasourceConfigMapNamespace).Get(ctx, name,
+func (s *service) getPrometheusDatasourceConfigMap(ctx context.Context, name string) (*DataSource, error) {
+	configmap, err := s.kubeClient.CoreV1().ConfigMaps(s.config.SyncDatasourceConfig.Namespace).Get(ctx, name,
 		metav1.GetOptions{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	data, ok := configmap.Data[formatDatasourceDataKey(name)]
+	if ok {
+		var ds DataSource
+		err = yaml.Unmarshal([]byte(data), &ds)
+		if err != nil {
+			return nil, perror.WithMessage(herrors.ErrGrafanaDatasourceFormat, err.Error())
+		}
+		return &ds, nil
+	}
+	return nil, herrors.ErrGrafanaDatasourceFormat
 }
 
 // getPrometheusDatasourceConfigMaps get prometheus datasource for the grafana
 func (s *service) getPrometheusDatasourceConfigMaps(ctx context.Context) (*v1.ConfigMapList, error) {
-	datasources, err := s.kubeClient.CoreV1().ConfigMaps(s.config.DatasourceConfigMapNamespace).List(ctx,
+	datasources, err := s.kubeClient.CoreV1().ConfigMaps(s.config.SyncDatasourceConfig.Namespace).List(ctx,
 		metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%v=%v", s.config.Datasources.Label, s.config.Datasources.LabelValue),
+			LabelSelector: fmt.Sprintf("%v=%v", s.config.SyncDatasourceConfig.LabelKey,
+				s.config.SyncDatasourceConfig.LabelValue),
 		})
 	if err != nil {
 		return nil, err
@@ -244,9 +239,9 @@ func (s *service) getPrometheusDatasourceConfigMaps(ctx context.Context) (*v1.Co
 }
 
 func formatDatasourceConfigMapName(name string) string {
-	return fmt.Sprintf("%s-%s", DatasourceConfigMapNamePrefix, name)
+	return fmt.Sprintf("%s-%s", _datasourceConfigMapNamePrefix, name)
 }
 
-func formatDatasourceDataKey(datasource *DataSource) string {
-	return fmt.Sprintf("%s.yaml", datasource.Name)
+func formatDatasourceDataKey(name string) string {
+	return fmt.Sprintf("%s.yaml", name)
 }
