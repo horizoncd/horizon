@@ -95,10 +95,9 @@ type BaseParams struct {
 	Application         *models.Application
 	Environment         string
 	RegionEntity        *regionmodels.RegionEntity
+	Namespace           string
 
-	// Namespace for internal usage
-	Namespace string
-	Version   string
+	Version string
 }
 
 type Manifest struct {
@@ -528,51 +527,65 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 	// 1. write files to repo
 	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
 	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, chartYAML []byte
-	var err1, err2, err3, err4 error
-
-	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
-	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
+	var err1, err2, err3, err4, err5 error
+	if params.Application != nil {
+		marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
+	}
+	if params.PipelineJSONBlob != nil {
+		marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
+	}
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
 	chart, err := g.assembleChart(params.BaseParams)
 	if err != nil {
 		return err
 	}
 	marshal(&chartYAML, &err4, chart)
+	if params.RegionEntity != nil {
+		marshal(&envValueYAML, &err5, g.assembleEnvValue(params.BaseParams))
+	}
+	// TODO currently not support update manifest
 
-	for _, err := range []error{err1, err2, err3, err4} {
+	for _, err := range []error{err1, err2, err3, err4, err5} {
 		if err != nil {
 			return err
 		}
 	}
 
-	actions := []gitlablib.CommitAction{
-		{
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathApplication,
-			Content:  string(applicationYAML),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathPipeline,
-			Content:  string(pipelineYAML),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathBase,
-			Content:  string(baseValueYAML),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathChart,
-			Content:  string(chartYAML),
-		},
-	}
-
-	if params.RegionEntity != nil {
-		marshal(&envValueYAML, &err4, g.assembleEnvValue(params.BaseParams))
-		actions = append(actions, gitlablib.CommitAction{
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathEnv,
-			Content:  string(envValueYAML),
-		})
-	}
+	actions := func() []gitlablib.CommitAction {
+		gitActions := []gitlablib.CommitAction{
+			{
+				Action:   gitlablib.FileUpdate,
+				FilePath: _filePathBase,
+				Content:  string(baseValueYAML),
+			}, {
+				Action:   gitlablib.FileUpdate,
+				FilePath: _filePathChart,
+				Content:  string(chartYAML),
+			},
+		}
+		if applicationYAML != nil {
+			gitActions = append(gitActions, gitlablib.CommitAction{
+				Action:   gitlablib.FileUpdate,
+				FilePath: _filePathApplication,
+				Content:  string(applicationYAML),
+			})
+		}
+		if pipelineYAML != nil {
+			gitActions = append(gitActions, gitlablib.CommitAction{
+				Action:   gitlablib.FileUpdate,
+				FilePath: _filePathPipeline,
+				Content:  string(pipelineYAML),
+			})
+		}
+		if envValueYAML != nil {
+			gitActions = append(gitActions, gitlablib.CommitAction{
+				Action:   gitlablib.FileUpdate,
+				FilePath: _filePathEnv,
+				Content:  string(envValueYAML),
+			})
+		}
+		return gitActions
+	}()
 
 	commitMsg := angular.CommitMessage("cluster", angular.Subject{
 		Operator: currentUser.GetName(),
@@ -585,7 +598,6 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 		Application: params.ApplicationJSONBlob,
 		Pipeline:    params.PipelineJSONBlob,
 	})
-
 	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions); err != nil {
 		return err
 	}

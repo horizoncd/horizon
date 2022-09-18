@@ -8,13 +8,17 @@ import (
 	controllertag "g.hz.netease.com/horizon/core/controller/tag"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
+	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	"g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/mergemap"
 
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -49,7 +53,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	if err != nil {
 		return nil, err
 	}
-	if err := buildTemplateInfo.Validate(ctx, c.templateSchemaGetter); err != nil {
+	if err := buildTemplateInfo.Validate(ctx, c.templateSchemaGetter, nil); err != nil {
 		return nil, err
 	}
 
@@ -235,7 +239,140 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 }
 
 func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
-	r *UpdateClusterRequest, mergePatch bool) error {
+	r *UpdateClusterRequestV2, mergePatch bool) error {
+	const op = "cluster controller: update cluster v2"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	// 1. get cluster and application from db
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return err
+	}
+
+	// 2. check if we should update region and env
+	var regionEntity *regionmodels.RegionEntity
+	environmentName := cluster.EnvironmentName
+	regionName := cluster.RegionName
+	if cluster.Status == clustercommon.StatusFreed &&
+		(r.Environment != nil && *r.Environment != environmentName) ||
+		(r.Region != nil && *r.Region != regionName) {
+		if r.Environment != nil {
+			environmentName = *r.Environment
+		}
+		if r.Region != nil {
+			regionName = *r.Region
+		}
+		regionEntity, err = c.regionMgr.GetRegionEntity(ctx, regionName)
+		if err != nil {
+			return err
+		}
+		_, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, environmentName, regionName)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 3. customize template\build\template infos
+	templateInfo, templateRelease, err := func() (*codemodels.TemplateInfo, *models.TemplateRelease, error) {
+		var templateInfo *codemodels.TemplateInfo
+		if r.TemplateInfo == nil {
+			templateInfo = &codemodels.TemplateInfo{
+				Name:    cluster.Template,
+				Release: cluster.TemplateRelease,
+			}
+		} else {
+			templateInfo = r.TemplateInfo
+		}
+		tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
+			templateInfo.Name, templateInfo.Release)
+		if err != nil {
+			return nil, nil, err
+		}
+		return templateInfo, tr, nil
+	}()
+	if err != nil {
+		return err
+	}
+
+	buildConfig, templateConfig, err := func() (map[string]interface{}, map[string]interface{}, error) {
+		if r.BuildConfig == nil && r.TemplateConfig == nil {
+			return nil, nil, nil
+		}
+		files, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
+			return nil, nil, err
+		}
+		if files.Manifest == nil {
+			return nil, nil, perror.Wrapf(herrors.ErrParamInvalid, "git repo  %s not support v2 interface",
+				cluster.Name)
+		}
+
+		buildConfig := r.BuildConfig
+		templateConfig := r.TemplateConfig
+		if r.BuildConfig != nil && mergePatch {
+			buildConfig, err = mergemap.Merge(files.PipelineJSONBlob, r.BuildConfig)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+		if r.TemplateInfo != nil && mergePatch {
+			templateConfig, err = mergemap.Merge(files.ApplicationJSONBlob, r.TemplateConfig)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+		return buildConfig, templateConfig, nil
+	}()
+	if err != nil {
+		return err
+	}
+
+	// 4. validate update Request
+	err = func() error {
+		renderValues, err := c.getRenderValueFromTag(ctx, clusterID)
+		if err != nil {
+			return err
+		}
+		info := BuildTemplateInfo{
+			BuildConfig:    buildConfig,
+			TemplateInfo:   templateInfo,
+			TemplateConfig: templateConfig,
+		}
+		if err := info.Validate(ctx, c.templateSchemaGetter, renderValues); err != nil {
+			return err
+		}
+		return nil
+	}()
+	if err != nil {
+		return nil
+	}
+
+	// 5. update in git repo
+	if err = c.clusterGitRepo.UpdateCluster(ctx, &gitrepo.UpdateClusterParams{
+		BaseParams: &gitrepo.BaseParams{
+			ClusterID:           cluster.ID,
+			Cluster:             cluster.Name,
+			PipelineJSONBlob:    buildConfig,
+			ApplicationJSONBlob: templateConfig,
+			TemplateRelease:     templateRelease,
+			Application:         application,
+			Environment:         environmentName,
+			RegionEntity:        regionEntity,
+			Version:             gitrepo.VersionV2,
+		}}); err != nil {
+		return err
+	}
+
+	// 6. update cluster in db
+	clusterModel := r.toClusterModel(cluster, environmentName, regionName, templateInfo.Name, templateInfo.Release)
+	_, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -245,8 +382,11 @@ type BuildTemplateInfo struct {
 	TemplateConfig map[string]interface{}
 }
 
-func (info *BuildTemplateInfo) Validate(ctx context.Context, trGetter templateschema.Getter) error {
-	templateSchemaRenderVal := make(map[string]string)
+func (info *BuildTemplateInfo) Validate(ctx context.Context,
+	trGetter templateschema.Getter, templateSchemaRenderVal map[string]string) error {
+	if templateSchemaRenderVal == nil {
+		templateSchemaRenderVal = make(map[string]string)
+	}
 	// TODO (remove it, currently some template need it)
 	templateSchemaRenderVal["resourceType"] = "cluster"
 	schema, err := trGetter.GetTemplateSchema(ctx, info.TemplateInfo.Name,

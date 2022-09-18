@@ -41,7 +41,7 @@ func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Applicati
 				return application.GitURL
 			}
 			if r.Git != nil && r.Git.URL == "" && application.GitURL != "" {
-				return r.Git.URL
+				return application.GitURL
 			}
 			// if URL is empty string, this means this cluster not depends on build from git
 			return r.Git.URL
@@ -88,13 +88,12 @@ type CreateClusterResponseV2 struct {
 
 type UpdateClusterRequestV2 struct {
 	// basic infos
-	Description string               `json:"description"`
-	Priority    string               `json:"priority"`
-	Tags        []*controllertag.Tag `json:"tags"`
+	Description string `json:"description"`
+	Priority    string `json:"priority"`
 
 	// env and region info (can only be modified after cluster freed)
-	Environment string `json:"environment"`
-	Region      string `json:"region"`
+	Environment *string `json:"environment"`
+	Region      *string `json:"region"`
 
 	// source info
 	Git *codemodels.Git `json:"git"`
@@ -103,6 +102,31 @@ type UpdateClusterRequestV2 struct {
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`
 	TemplateInfo   *codemodels.TemplateInfo `json:"templateInfo"`
 	TemplateConfig map[string]interface{}   `json:"templateConfig"`
+}
+
+func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster,
+	environmentName, regionName, templateName, templateRelease string) *models.Cluster {
+	var gitURL, gitSubFolder, gitRef, gitRefType string
+	if r.Git != nil {
+		gitURL, gitSubFolder, gitRefType, gitRef = r.Git.URL,
+			r.Git.Subfolder, r.Git.RefType(), r.Git.Ref()
+	} else {
+		gitURL = cluster.GitURL
+		gitSubFolder = cluster.GitSubfolder
+		gitRefType = cluster.GitRefType
+		gitRef = cluster.GitRef
+	}
+	return &models.Cluster{
+		EnvironmentName: environmentName,
+		RegionName:      regionName,
+		Description:     r.Description,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubFolder,
+		GitRef:          gitRef,
+		GitRefType:      gitRefType,
+		Template:        templateName,
+		TemplateRelease: templateRelease,
+	}
 }
 
 type GetClusterResponseV2 struct {
