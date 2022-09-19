@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"g.hz.netease.com/horizon/core/config"
+	"g.hz.netease.com/horizon/core/http/health"
 	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/grafana"
@@ -112,5 +113,9 @@ func Run(flags *Flags) {
 	r.Use(middlewares...)
 
 	gin.ForceConsoleColor()
+
+	health.RegisterRoutes(r)
+
+	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
 }
