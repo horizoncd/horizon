@@ -141,7 +141,7 @@ func (s *service) sync(ctx context.Context) {
 		if err != nil {
 			logErr(err)
 		} else {
-			log.Debug(ctx, "Create grafana datasource successfully")
+			log.Infof(ctx, "Create grafana datasource successfully, content: %s", string(dsBytes))
 		}
 		return
 	}
@@ -152,7 +152,7 @@ func (s *service) sync(ctx context.Context) {
 		if err != nil {
 			logErr(err)
 		} else {
-			log.Debug(ctx, "Update grafana datasource successfully")
+			log.Infof(ctx, "Update grafana datasource successfully, content: %s", string(dsBytes))
 		}
 		return
 	}
