@@ -229,7 +229,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 
 	for _, err := range []error{err1, err2, err3} {
 		if err != nil {
-			if _, ok := perror.Cause(err3).(*herrors.HorizonErrNotFound); !ok {
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 				return nil, err
 			}
 		}
@@ -255,6 +255,9 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	}
 
 	pipelineJSONBlob, err := func() (map[string]interface{}, error) {
+		if pipelineBytes == nil {
+			return nil, nil
+		}
 		var pipelineValueParentName string
 		if manifest.Version == "" {
 			pipelineValueParentName = templateName
@@ -272,10 +275,19 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 		return nil, err
 	}
 
-	applicationJSONBlob, ok := applicationJSONBlobWithTemplate[templateName]
-	if !ok {
-		return nil, perror.Wrapf(herrors.ErrParamInvalid,
-			"template value parent prefix not found, prefix = %s ", templateName)
+	applicationJSONBlob, err := func() (map[string]interface{}, error) {
+		if applicationBytes == nil {
+			return nil, nil
+		}
+		jsonBlob, ok := applicationJSONBlobWithTemplate[templateName]
+		if !ok {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"template value parent prefix not found, prefix = %s ", templateName)
+		}
+		return jsonBlob, nil
+	}()
+	if err != nil {
+		return nil, err
 	}
 
 	manifestJSONBlob, err := func() (map[string]interface{}, error) {
@@ -490,7 +502,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 			gitActions = append(gitActions, gitlablib.CommitAction{
 				Action:   gitlablib.FileCreate,
 				FilePath: _filePathManifest,
-				Content:  "",
+				Content:  string(manifestValueYAML),
 			})
 		}
 		return gitActions
@@ -515,7 +527,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	return nil
 }
 
-func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateClusterParams) (err error) {
+func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateClusterParams) error {
 	const op = "cluster git repo: update cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -551,7 +563,7 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 		}
 	}
 
-	actions := func() []gitlablib.CommitAction {
+	actions, err := func() ([]gitlablib.CommitAction, error) {
 		gitActions := []gitlablib.CommitAction{
 			{
 				Action:   gitlablib.FileUpdate,
@@ -563,16 +575,38 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 				Content:  string(chartYAML),
 			},
 		}
+
+		templateUpdate, pipelineUpdate, err := func() (gitlablib.FileAction, gitlablib.FileAction, error) {
+			applicationUpdate, pipelineUpdate := gitlablib.FileCreate, gitlablib.FileCreate
+			if applicationYAML != nil || pipelineYAML != nil {
+				files, err := g.GetCluster(ctx, params.Application.Name, params.Cluster,
+					params.TemplateRelease.TemplateName)
+				if err != nil {
+					return applicationUpdate, pipelineUpdate, err
+				}
+				if files.ApplicationJSONBlob != nil {
+					applicationUpdate = gitlablib.FileUpdate
+				}
+				if files.PipelineJSONBlob != nil {
+					pipelineUpdate = gitlablib.FileUpdate
+				}
+			}
+			return applicationUpdate, pipelineUpdate, nil
+		}()
+		if err != nil {
+			return nil, err
+		}
+
 		if applicationYAML != nil {
 			gitActions = append(gitActions, gitlablib.CommitAction{
-				Action:   gitlablib.FileUpdate,
+				Action:   templateUpdate,
 				FilePath: _filePathApplication,
 				Content:  string(applicationYAML),
 			})
 		}
 		if pipelineYAML != nil {
 			gitActions = append(gitActions, gitlablib.CommitAction{
-				Action:   gitlablib.FileUpdate,
+				Action:   pipelineUpdate,
 				FilePath: _filePathPipeline,
 				Content:  string(pipelineYAML),
 			})
@@ -584,8 +618,11 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 				Content:  string(envValueYAML),
 			})
 		}
-		return gitActions
+		return gitActions, nil
 	}()
+	if err != nil {
+		return err
+	}
 
 	commitMsg := angular.CommitMessage("cluster", angular.Subject{
 		Operator: currentUser.GetName(),

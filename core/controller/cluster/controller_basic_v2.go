@@ -342,10 +342,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 			TemplateInfo:   templateInfo,
 			TemplateConfig: templateConfig,
 		}
-		if err := info.Validate(ctx, c.templateSchemaGetter, renderValues); err != nil {
-			return err
-		}
-		return nil
+		return info.Validate(ctx, c.templateSchemaGetter, renderValues)
 	}()
 	if err != nil {
 		return nil
