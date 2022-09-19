@@ -1,5 +1,7 @@
 package grafana
 
+import "time"
+
 type Mapper map[string]*Grafana
 
 type Grafana struct {
@@ -13,4 +15,16 @@ type Grafana struct {
 type SLO struct {
 	OverviewDashboard string `yaml:"overviewDashboard"`
 	HistoryDashboard  string `yaml:"historyDashboard"`
+}
+
+type Config struct {
+	URL                  string               `yaml:"url"`
+	SyncDatasourceConfig SyncDatasourceConfig `yaml:"syncDatasourceConfig"`
+}
+
+type SyncDatasourceConfig struct {
+	Namespace  string        `yaml:"namespace"`
+	Period     time.Duration `yaml:"period"`
+	LabelKey   string        `yaml:"labelKey"`
+	LabelValue string        `yaml:"labelValue"`
 }

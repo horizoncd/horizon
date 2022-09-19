@@ -320,6 +320,7 @@ func Run(flags *Flags) {
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
+
 	parameter := &param.Param{
 		Manager:              manager,
 		OauthManager:         oauthManager,

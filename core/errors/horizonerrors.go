@@ -254,6 +254,9 @@ var (
 	// ErrRegionUsedByClusters used when deleting a region that is still used by clusters
 	ErrRegionUsedByClusters = errors.New("cannot delete a region when used by clusters")
 
-	ErrTemplateParamInvalid        = errors.New("parameters of template are invalid")
-	ErrTemplateReleaseParamInvalid = errors.New("parameters of release are invalid")
+	ErrTemplateParamInvalid = errors.New("parameters of template are invalid")
+
+	ErrAPIServerResponseNotOK = errors.New("response for api-server is not 200 OK")
+
+	ErrGrafanaDatasourceFormat = errors.New("datasource of grafana is not valid")
 )

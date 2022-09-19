@@ -121,6 +121,7 @@ components:
         - server
         - certificate
         - ingressDomain
+        - prometheusURL
         - disabled
         - harborID
         - harbor
@@ -141,6 +142,8 @@ components:
           type: string
         ingressDomain:
           type: string
+        prometheusURL:
+          $ref: "common.yaml#/components/schemas/URL"
         disabled:
           type: boolean
         harborID:
@@ -155,8 +158,10 @@ components:
           items:
             type: object
             properties:
-              key: string
-              value: string
+              key:
+                type: string
+              value:
+                type: string
         createdAt:
           $ref: "common.yaml#/components/schemas/Date"
         updatedAt:
