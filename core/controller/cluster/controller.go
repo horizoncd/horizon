@@ -82,6 +82,11 @@ type Controller interface {
 	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
 	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
 	GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error)
+
+	CreateClusterV2(ctx context.Context, applicationID uint, environment,
+		region string, r *CreateClusterRequestV2, mergePatch bool) (*CreateClusterResponseV2, error)
+	GetClusterV2(ctx context.Context, clusterID uint) (*GetClusterResponseV2, error)
+	UpdateClusterV2(ctx context.Context, clusterID uint, r *UpdateClusterRequestV2, mergePatch bool) error
 }
 
 type controller struct {

@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	controllertag "g.hz.netease.com/horizon/core/controller/tag"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
@@ -113,6 +114,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 		}
 		return nil, err
 	}
+	cluster.Status = clustercommon.StatusEmpty
 	updateClusterResp, err := c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
 		return nil, err
@@ -397,13 +399,18 @@ func (info *BuildTemplateInfo) Validate(ctx context.Context,
 func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r *CreateClusterRequestV2,
 	application *appmodels.Application, environment string, mergePatch bool) (*BuildTemplateInfo, error) {
 	buildTemplateInfo := &BuildTemplateInfo{}
-	appGitRepo, err := c.applicationGitRepo.GetApplication(ctx, application.Name, environment)
-	if err != nil {
-		return nil, err
+
+	var appGitRepoFile *appgitrepo.GetResponse
+	var err error
+	if (r.BuildConfig != nil || r.TemplateInfo != nil) && mergePatch {
+		appGitRepoFile, err = c.applicationGitRepo.GetApplication(ctx, application.Name, environment)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if r.BuildConfig != nil {
 		if mergePatch {
-			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepo.BuildConf, r.BuildConfig)
+			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepoFile.BuildConf, r.BuildConfig)
 			if err != nil {
 				return nil, err
 			}
@@ -411,7 +418,7 @@ func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r 
 			buildTemplateInfo.BuildConfig = r.BuildConfig
 		}
 	} else {
-		buildTemplateInfo.BuildConfig = appGitRepo.BuildConf
+		buildTemplateInfo.BuildConfig = appGitRepoFile.BuildConf
 	}
 
 	if r.TemplateInfo == nil && r.TemplateConfig == nil {
@@ -419,12 +426,11 @@ func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r 
 			Name:    application.Template,
 			Release: application.TemplateRelease,
 		}
-		buildTemplateInfo.TemplateConfig = appGitRepo.TemplateConf
+		buildTemplateInfo.TemplateConfig = appGitRepoFile.TemplateConf
 	} else if r.TemplateInfo != nil && r.TemplateConfig != nil {
-		// here do not support merge patch
 		buildTemplateInfo.TemplateInfo = r.TemplateInfo
 		if mergePatch {
-			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepo.TemplateConf, r.TemplateConfig)
+			buildTemplateInfo.TemplateConfig, err = mergemap.Merge(appGitRepoFile.TemplateConf, r.TemplateConfig)
 			if err != nil {
 				return nil, err
 			}

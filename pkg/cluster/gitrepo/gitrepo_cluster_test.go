@@ -299,9 +299,6 @@ func TestV2(t *testing.T) {
 	createParams := &CreateClusterParams{
 		BaseParams: baseParams,
 	}
-	// updateParams := &UpdateClusterParams{
-	// 	BaseParams: baseParams,
-	// }
 
 	defer func() {
 		_ = r.DeleteCluster(ctx, application, cluster, 1)
