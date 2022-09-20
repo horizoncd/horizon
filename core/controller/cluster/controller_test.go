@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/config"
@@ -1276,15 +1277,18 @@ javaapp:
 }
 
 func testIsClusterActuallyHealthy(t *testing.T) {
-	t1 := "1"
-	t2 := "2"
+	layout := "2006-01-02 15:04:05"
+	var t0 time.Time
+	t1, err := time.Parse(layout, "2022-09-17 17:50:00")
+	assert.Nil(t, err)
+	t2, err := time.Parse(layout, "2022-09-15 17:50:00")
+	assert.Nil(t, err)
+	tActual, err := time.Parse(layout, "2022-09-16 17:50:00")
+	assert.Nil(t, err)
 	imageV1 := "v1"
 	imageV2 := "v2"
-	po1 := &gitrepo.PipelineOutput{
-		Image: &imageV1,
-	}
 	cs := &clustercd.ClusterState{}
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, "", nil, 0))
+	assert.Equal(t, false, isClusterActuallyHealthy(ctx, cs, imageV1, t0, 0))
 
 	containerV1 := &clustercd.Container{
 		Image: imageV1,
@@ -1296,37 +1300,42 @@ func testIsClusterActuallyHealthy(t *testing.T) {
 	Pod2 := &clustercd.ClusterPod{}
 	Pod3 := &clustercd.ClusterPod{}
 
+	// pod1: t1, imagev1, imagev2
 	Pod1.Metadata.Annotations = map[string]string{
-		clustercommon.RestartTimeKey: t1,
+		clustercommon.RestartTimeKey: t1.Format(layout),
 	}
 	Pod1.Spec.Containers = []*clustercd.Container{containerV1, containerV2}
 
+	// pod2: t2, imagev1, imagev2
 	Pod2.Metadata.Annotations = map[string]string{
-		clustercommon.RestartTimeKey: t1,
+		clustercommon.RestartTimeKey: t2.Format(layout),
 	}
 	Pod2.Spec.InitContainers = []*clustercd.Container{containerV1, containerV2}
 
+	// pod2: imagev2
 	Pod3.Spec.InitContainers = []*clustercd.Container{containerV2}
 
 	cs.PodTemplateHash = "test"
 	cs.Versions = map[string]*clustercd.ClusterVersion{}
+
+	// none replicas is expected
 	cs.Versions[cs.PodTemplateHash] = &clustercd.ClusterVersion{
 		Pods: map[string]*clustercd.ClusterPod{"Pod3": Pod3},
 	}
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, "", nil, 0))
+	assert.Equal(t, true, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 0))
 
+	// one imagev1 pod is expected
+	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
+	assert.Equal(t, true, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 1))
+
+	// two imagev1 pods is expected
+	cs.Versions[cs.PodTemplateHash].Pods["Pod1-copy"] = Pod1
+	assert.Equal(t, true, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 2))
+
+	// t2 pod is unexpected
 	cs.Versions[cs.PodTemplateHash].Pods["Pod2"] = Pod2
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, "", nil, 0))
+	assert.Equal(t, false, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 2))
 
-	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1, nil, 0))
-
-	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t2, nil, 0))
-
-	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1, nil, 2))
-
-	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t1, nil, 3))
+	// three t1 pods is not expected
+	assert.Equal(t, false, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 3))
 }

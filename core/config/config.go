@@ -34,6 +34,7 @@ type Config struct {
 	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
 	GrafanaMapper          grafana.Mapper          `yaml:"grafanaMapper"`
+	GrafanaConfig          grafana.Config          `yaml:"grafanaConfig"`
 	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
 }
