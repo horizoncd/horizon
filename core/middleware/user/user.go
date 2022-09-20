@@ -84,7 +84,6 @@ func Middleware(param *param.Param, store sessions.Store, skippers ...middleware
 		}
 
 		c.Header(NotAuthHeader, "NotAuth")
-		c.AbortWithStatus(http.StatusUnauthorized)
 		response.AbortWithRPCError(c, rpcerror.Unauthorized.WithErrMsg("please login"))
 	}, skippers...)
 }
