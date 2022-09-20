@@ -147,7 +147,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 func isClusterActuallyHealthy(ctx context.Context, clusterState *cd.ClusterState, image string,
 	restartTime time.Time, replicas int) bool {
 	checkReplicas := func(clusterVersion *cd.ClusterVersion) bool {
-		if replicas == 0 || len(clusterVersion.Pods) == 0 {
+		if replicas == 0 || len(clusterVersion.Pods) == 0 || image == "" {
 			return true
 		}
 
