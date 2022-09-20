@@ -103,6 +103,8 @@ import (
 	templaterepoharbor "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 
+	appv2 "g.hz.netease.com/horizon/core/http/api/v2/application"
+	clusterv2 "g.hz.netease.com/horizon/core/http/api/v2/cluster"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -350,9 +352,11 @@ func Run(flags *Flags) {
 		groupAPI             = group.NewAPI(groupCtl)
 		userAPI              = user.NewAPI(userCtl)
 		applicationAPI       = application.NewAPI(applicationCtl)
+		applicationAPIV2     = appv2.NewAPI(applicationCtl)
 		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
 		memberAPI            = member.NewAPI(memberCtl, roleService)
 		clusterAPI           = cluster.NewAPI(clusterCtl)
+		clusterAPIV2         = clusterv2.NewAPI(clusterCtl)
 		prAPI                = pipelinerun.NewAPI(prCtl)
 		environmentAPI       = environment.NewAPI(environmentCtl)
 		regionAPI            = region.NewAPI(regionCtl, tagCtl)
@@ -410,8 +414,10 @@ func Run(flags *Flags) {
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
 	application.RegisterRoutes(r, applicationAPI)
+	appv2.RegisterRoutes(r, applicationAPIV2)
 	envtemplate.RegisterRoutes(r, envTemplateAPI)
 	cluster.RegisterRoutes(r, clusterAPI)
+	clusterv2.RegisterRoutes(r, clusterAPIV2)
 	pipelinerun.RegisterRoutes(r, prAPI)
 	environment.RegisterRoutes(r, environmentAPI)
 	region.RegisterRoutes(r, regionAPI)

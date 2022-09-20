@@ -84,6 +84,11 @@ const (
 )
 
 const (
+	ParamScope      = "scope"
+	ParamMergePatch = "mergePatch"
+	ParamExtraOwner = "extraOwner"
+)
+const (
 	GitlabControl = "control"
 	GitlabCompute = "compute"
 )
