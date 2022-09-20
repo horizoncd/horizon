@@ -16,7 +16,7 @@ before_script:
 golint:
   stage: lint
   script:
-    - golangci-lint run --new-from-rev=develop
+    - golangci-lint run
   only:
     refs:
       - merge_requests

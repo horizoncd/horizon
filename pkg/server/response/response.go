@@ -81,8 +81,6 @@ func AbortWithRPCError(c *gin.Context, rpcError rpcerror.RPCError) {
 }
 
 // AbortWithError TODO: remove this function after all error changed to rpcerror.RPCError
-//
-// Deprecated: AbortWithError is not recommend to use, please use AbortWithRPCError instead.
 func AbortWithError(c *gin.Context, err error) {
 	Abort(c, errors.Status(err), errors.Code(err), err.Error())
 }

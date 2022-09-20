@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"g.hz.netease.com/horizon/core/common/idp"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/lib/q"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/idp/models"
 	"gorm.io/gorm"
@@ -17,6 +19,7 @@ type DAO interface {
 	Delete(ctx context.Context, id uint) error
 	GetByID(ctx context.Context, id uint) (*models.IdentityProvider, error)
 	Update(ctx context.Context, id uint, param *models.IdentityProvider) (*models.IdentityProvider, error)
+	GetByCondition(ctx context.Context, condition q.Query) (*models.IdentityProvider, error)
 }
 
 type dao struct {
@@ -89,6 +92,30 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.IdentityProvider, e
 			err)
 	}
 	return res, nil
+}
+
+func (d *dao) GetByCondition(ctx context.Context,
+	condition q.Query) (*models.IdentityProvider, error) {
+	tx := d.db.Model(&model)
+	for k, v := range condition.Keywords {
+		switch k {
+		case idp.QueryName:
+			tx.Where("name = ?", v)
+		}
+	}
+	provider := models.IdentityProvider{}
+	err := tx.First(&provider).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, perror.Wrapf(herrors.NewErrNotFound(herrors.IdentityProviderInDB, ""),
+				"idp not found:\n"+
+					"condition = %#v\n err = %v", condition, err)
+		}
+		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.IdentityProviderInDB, ""),
+			"idp get failed: \n"+
+				"condition = %#v\n err = %v", condition, err)
+	}
+	return &provider, nil
 }
 
 func (d *dao) Update(ctx context.Context,

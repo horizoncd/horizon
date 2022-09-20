@@ -6,7 +6,9 @@ import (
 	"net/url"
 	"strings"
 
+	idpconst "g.hz.netease.com/horizon/core/common/idp"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/lib/q"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/idp/manager"
 	"g.hz.netease.com/horizon/pkg/idp/utils"
@@ -30,8 +32,8 @@ type Controller interface {
 	Login(ctx context.Context, code string, state string) (*usermodel.User, error)
 	Create(c context.Context, createParam *CreateIDPRequest) (*IdentityProvider, error)
 	Delete(c context.Context, idpID uint) error
-	Update(c context.Context, u uint, updateParam *UpdateIDPRequest) (*IdentityProvider, error)
-	GetDiscovery(ctx context.Context, s *Discovery) (*DiscoveryConfig, error)
+	Update(c context.Context, id uint, updateParam *UpdateIDPRequest) (*IdentityProvider, error)
+	GetDiscovery(ctx context.Context, s Discovery) (*DiscoveryConfig, error)
 }
 
 type controller struct {
@@ -78,7 +80,7 @@ func (c *controller) List(ctx context.Context) ([]*IdentityProvider, error) {
 		return nil, err
 	}
 
-	return ConvertIDPs(idps), nil
+	return ofIDPModels(idps), nil
 }
 
 func (c *controller) Login(ctx context.Context, code string, state string) (*usermodel.User, error) {
@@ -140,17 +142,27 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*IdentityProvider, e
 	if err != nil {
 		return nil, err
 	}
-	return ConvertIDP(idp), nil
+	return ofIDPModel(idp), nil
 }
 
 func (c *controller) Create(ctx context.Context,
 	createParam *CreateIDPRequest) (*IdentityProvider, error) {
 	idp := createParam.toModel()
-	idp, err := c.idpManager.Create(ctx, idp)
+
+	_, err := c.idpManager.GetByCondition(ctx,
+		q.Query{Keywords: map[string]interface{}{idpconst.QueryName: idp.Name}})
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return nil, err
+		}
+	} else {
+		return nil, perror.Wrapf(herrors.ErrNameConflict, "name = %v", idp.Name)
+	}
+	idp, err = c.idpManager.Create(ctx, idp)
 	if err != nil {
 		return nil, err
 	}
-	return ConvertIDP(idp), err
+	return ofIDPModel(idp), err
 }
 
 func (c *controller) Delete(ctx context.Context, idpID uint) error {
@@ -167,10 +179,10 @@ func (c *controller) Update(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	return ConvertIDP(idp), nil
+	return ofIDPModel(idp), nil
 }
 
-func (c *controller) GetDiscovery(ctx context.Context, s *Discovery) (*DiscoveryConfig, error) {
+func (c *controller) GetDiscovery(ctx context.Context, s Discovery) (*DiscoveryConfig, error) {
 	issuer := strings.TrimSuffix(
 		strings.TrimSuffix(s.FromURL, "/"),
 		"/.well-known/openid-configuration",

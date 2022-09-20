@@ -251,7 +251,7 @@ func (a *API) GetDiscovery(ctx *gin.Context) {
 		return
 	}
 
-	config, err := a.idpCtrl.GetDiscovery(ctx, &discovery)
+	config, err := a.idpCtrl.GetDiscovery(ctx, discovery)
 	if err != nil {
 		response.AbortWithRPCError(ctx,
 			rpcerror.ParamError.WithErrMsgf(

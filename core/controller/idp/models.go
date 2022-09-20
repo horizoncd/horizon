@@ -30,7 +30,7 @@ type IdentityProvider struct {
 	UpdatedAt               time.Time                      `json:"updatedAt"`
 }
 
-func ConvertIDP(idp *models.IdentityProvider) *IdentityProvider {
+func ofIDPModel(idp *models.IdentityProvider) *IdentityProvider {
 	return &IdentityProvider{
 		ID:                      idp.ID,
 		DisplayName:             idp.DisplayName,
@@ -51,10 +51,10 @@ func ConvertIDP(idp *models.IdentityProvider) *IdentityProvider {
 	}
 }
 
-func ConvertIDPs(idps []*models.IdentityProvider) []*IdentityProvider {
+func ofIDPModels(idps []*models.IdentityProvider) []*IdentityProvider {
 	res := make([]*IdentityProvider, 0, len(idps))
 	for _, idp := range idps {
-		res = append(res, ConvertIDP(idp))
+		res = append(res, ofIDPModel(idp))
 	}
 	return res
 }

@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/idp/dao"
 	"g.hz.netease.com/horizon/pkg/idp/models"
 	"gorm.io/gorm"
@@ -14,6 +15,7 @@ type Manager interface {
 	Create(ctx context.Context, idp *models.IdentityProvider) (*models.IdentityProvider, error)
 	Delete(ctx context.Context, id uint) error
 	GetByID(ctx context.Context, id uint) (*models.IdentityProvider, error)
+	GetByCondition(ctx context.Context, condition q.Query) (*models.IdentityProvider, error)
 	Update(ctx context.Context, id uint, param *models.IdentityProvider) (*models.IdentityProvider, error)
 }
 
@@ -46,6 +48,11 @@ func (m *manager) Delete(ctx context.Context, id uint) error {
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.IdentityProvider, error) {
 	return m.dao.GetByID(ctx, id)
+}
+
+func (m *manager) GetByCondition(ctx context.Context,
+	condition q.Query) (*models.IdentityProvider, error) {
+	return m.dao.GetByCondition(ctx, condition)
 }
 
 func (m *manager) Update(ctx context.Context,
