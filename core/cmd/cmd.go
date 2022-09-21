@@ -469,7 +469,13 @@ func Run(flags *Flags) {
 	idp.RegisterRoutes(r, idpAPI)
 
 	// start cloud event server
-	go runCloudEventServer(tektonFty, coreConfig.CloudEventServerConfig, parameter)
+	go runCloudEventServer(
+		tektonFty,
+		coreConfig.CloudEventServerConfig,
+		parameter,
+		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
+		requestid.Middleware(),
+	)
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
