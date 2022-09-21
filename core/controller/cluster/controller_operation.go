@@ -16,6 +16,7 @@ import (
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -701,6 +702,45 @@ func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podN
 	}
 
 	return ofBatchResp(result), nil
+}
+
+func (c *controller) GetGrafanaDashBoard(ctx *gin.Context, clusterID uint) ([]*GrafanaDashboard, error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
+	if err != nil {
+		return nil, err
+	}
+
+	dashboards, err := c.grafanaService.ListDashboards(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var grafanaDashboards []*GrafanaDashboard
+	for _, dashboard := range dashboards {
+		grafanaDashboards = append(grafanaDashboards, &GrafanaDashboard{
+			URL: fmt.Sprintf("%s/d/%s?kiosk=full&theme=light"+
+				"&var-datasource=%s&var-namespace=%s&var-application=%s&var-cluster=%s",
+				c.grafanaConfig.URL, dashboard.UID,
+				cluster.RegionName, envValue.Namespace, application.Name, cluster.Name),
+			Title: dashboard.Title,
+		})
+	}
+
+	return grafanaDashboards, nil
 }
 
 func removeDuplicatePods(pods []KubePodInfo) []KubePodInfo {

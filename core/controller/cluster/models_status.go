@@ -31,6 +31,11 @@ type GetDashboardResponse struct {
 	Memcached  string `json:"memcached,omitempty" yaml:"memcached,omitempty"`
 }
 
+type GrafanaDashboard struct {
+	URL   string `json:"url"`
+	Title string `json:"title"`
+}
+
 type GetClusterPodsResponse struct {
 	Pods []KubePodInfo `json:"pods" yaml:"pods"`
 }

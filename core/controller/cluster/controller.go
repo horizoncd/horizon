@@ -17,6 +17,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	environmentregionmapper "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	grafanaservice "g.hz.netease.com/horizon/pkg/grafana"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -33,6 +34,7 @@ import (
 	templateschematagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
+	"github.com/gin-gonic/gin"
 )
 
 type Controller interface {
@@ -78,6 +80,7 @@ type Controller interface {
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
+	GetGrafanaDashBoard(c *gin.Context, clusterID uint) ([]*GrafanaDashboard, error)
 }
 
 type controller struct {
@@ -107,6 +110,8 @@ type controller struct {
 	groupManager         groupmanager.Manager
 	schemaTagManager     templateschematagmanager.Manager
 	tagMgr               tagmanager.Manager
+	grafanaService       grafanaservice.Service
+	grafanaConfig        grafana.Config
 }
 
 var _ Controller = (*controller)(nil)
@@ -139,6 +144,8 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		groupManager:         param.GroupManager,
 		schemaTagManager:     param.ClusterSchemaTagMgr,
 		tagMgr:               param.TagManager,
+		grafanaService:       param.GrafanaService,
+		grafanaConfig:        config.GrafanaConfig,
 	}
 }
 
