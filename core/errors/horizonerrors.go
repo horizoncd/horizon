@@ -191,7 +191,6 @@ var (
 	// cluster
 	ErrClusterNoChange        = errors.New("no change to cluster")
 	ErrShouldBuildDeployFirst = errors.New("clusters with build config should build and deploy first")
-	ErrFailedToFreeCluster    = errors.New("cannot to free cluster")
 
 	// pipelinerun
 

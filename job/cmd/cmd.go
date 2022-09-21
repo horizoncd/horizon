@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"time"
 
 	"g.hz.netease.com/horizon/core/config"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
@@ -28,10 +30,13 @@ import (
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile         string
-	Environment        string
-	LogLevel           string
-	AutoReleaseAccount string
+	ConfigFile    string
+	Environment   string
+	LogLevel      string
+	Account       string
+	JobInterval   string
+	BatchInterval string
+	BatchSize     string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -48,7 +53,16 @@ func ParseFlags() *Flags {
 		&flags.LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
 
 	flag.StringVar(
-		&flags.AutoReleaseAccount, "autoreleaseaccount", "", "auto release cluster account")
+		&flags.Account, "autoreleaseaccount", "grp.cloudnative@mail.com", "auto release cluster account")
+
+	flag.StringVar(
+		&flags.JobInterval, "autoreleaseinterval", "2h", "auto release job interval")
+
+	flag.StringVar(
+		&flags.BatchInterval, "releasebatchinterval", "20s", "auto release batch interval")
+
+	flag.StringVar(
+		&flags.BatchSize, "releasebatchsize", "20", "auto release batch size")
 
 	flag.Parse()
 	return &flags
@@ -128,9 +142,35 @@ func Run(flags *Flags) {
 		grafanaService.SyncDatasource(cancellableCtx)
 	}()
 
+	// verify auto release config
+	jobConfig, err := func() (*autofree.Config, error) {
+		var err error
+		jobInterval, err := time.ParseDuration(flags.JobInterval)
+		if err != nil {
+			return nil, err
+		}
+		batchInterval, err := time.ParseDuration(flags.BatchInterval)
+		if err != nil {
+			return nil, err
+		}
+		batchSize, err := strconv.Atoi(flags.BatchSize)
+		if err != nil {
+			return nil, err
+		}
+		return &autofree.Config{
+			Account:       flags.Account,
+			JobInterval:   jobInterval,
+			BatchInterval: batchInterval,
+			BatchSize:     batchSize,
+		}, nil
+	}()
+	if err != nil {
+		panic(err)
+	}
+
 	// automatically release expired clusters
 	go func() {
-		autofree.AutoReleaseExpiredClusterJob(cancellableCtx, flags.AutoReleaseAccount,
+		autofree.AutoReleaseExpiredClusterJob(cancellableCtx, jobConfig,
 			userCtl, clusterCtl, prCtl, environmentCtl)
 	}()
 

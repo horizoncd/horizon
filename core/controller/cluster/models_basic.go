@@ -170,7 +170,7 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetClusterResponse {
 	expireTime := ""
 	if cluster.ExpireSeconds > 0 {
-		expireTime = time.Duration(cluster.ExpireSeconds * 1000 * 1000 * 1000).String()
+		expireTime = time.Duration(cluster.ExpireSeconds * 1e9).String()
 	}
 	return &GetClusterResponse{
 		CreateClusterRequest: &CreateClusterRequest{

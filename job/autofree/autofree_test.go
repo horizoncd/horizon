@@ -8,7 +8,7 @@ import (
 	"time"
 
 	usercommon "g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/config"
+	coreconfig "g.hz.netease.com/horizon/core/config"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 func TestAutoFreeExpiredCluster(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	cd := cdmock.NewMockCD(mockCtl)
-	conf := &config.Config{}
+	conf := &coreconfig.Config{}
 	parameter := &param.Param{
 		Manager: manager,
 		Cd:      cd,
@@ -172,5 +172,10 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		t.Logf("%v", pipelineBasics)
 	}
 	cd.EXPECT().DeleteCluster(gomock.Any(), gomock.Any()).Return(errors.New("test")).AnyTimes()
-	process(ctx, clrCtl, prCtl, envCtl)
+	process(ctx, &Config{
+		Account:       "",
+		JobInterval:   2 * time.Hour,
+		BatchInterval: 1 * time.Second,
+		BatchSize:     20,
+	}, clrCtl, prCtl, envCtl)
 }

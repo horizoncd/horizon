@@ -198,7 +198,7 @@ func (c *controller) getFullResponsesWithRegion(ctx context.Context,
 
 func (c *controller) ListClusterWithExpiry(ctx context.Context,
 	query *q.Query) ([]*ListClusterWithExpiryResponse, error) {
-	const op = "cron job: autoFree expired cluster"
+	const op = "cluster controller: list clusters with expiry"
 	defer wlog.Start(ctx, op).StopPrint()
 	clusterList, err := c.clusterMgr.ListClusterWithExpiry(ctx, query)
 	return ofClusterWithExpiry(clusterList), err
@@ -841,10 +841,9 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	if err != nil {
 		return err
 	}
-	if cluster.Status != "" {
+	if cluster.Status != clustercommon.StatusFreeing {
 		log.Warningf(ctx, "failed to free cluster: %v, cluster status: %v", cluster.Name, cluster.Status)
-		return perror.Wrapf(herrors.ErrFailedToFreeCluster,
-			"failed to free cluster: %v, cluster status: %v", cluster.Name, cluster.Status)
+		return nil
 	}
 
 	// 1. set cluster status

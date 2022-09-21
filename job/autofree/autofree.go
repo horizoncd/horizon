@@ -15,40 +15,41 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-const (
-	autoFreeInterval  = 2 * time.Hour
-	batchFreeInterval = 15 * time.Second
-)
+type Config struct {
+	Account       string
+	JobInterval   time.Duration
+	BatchInterval time.Duration
+	BatchSize     int
+}
 
-func AutoReleaseExpiredClusterJob(ctx context.Context, operator string, userCtr userctl.Controller,
+func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *Config, userCtr userctl.Controller,
 	clusterCtr clusterctl.Controller, prCtr prctl.Controller, envCtr environmentctl.Controller) {
-	// verify operator
-	user, err := userCtr.GetUserByEmail(ctx, operator)
+	// verify account
+	user, err := userCtr.GetUserByEmail(ctx, jobConfig.Account)
 	if err != nil {
 		log.Errorf(ctx, "failed to verify operator, err: %v", err.Error())
 		panic(err)
 	}
-	// nolint
-	ctx = context.WithValue(ctx, common.UserContextKey(), user)
+	ctx = common.WithContext(ctx, user)
 	rid := uuid.NewV4().String()
 	// nolint
 	ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
 	// start job
-	ticker := time.NewTicker(autoFreeInterval)
+	ticker := time.NewTicker(jobConfig.JobInterval)
 	defer ticker.Stop()
 	for range ticker.C {
-		process(ctx, clusterCtr, prCtr, envCtr)
+		process(ctx, jobConfig, clusterCtr, prCtr, envCtr)
 	}
 }
 
-func process(ctx context.Context, clusterCtr clusterctl.Controller,
+func process(ctx context.Context, jobConfig *Config, clusterCtr clusterctl.Controller,
 	prCtr prctl.Controller, envCtr environmentctl.Controller) {
 	op := "job: cluster auto-free"
 	query := &q.Query{
 		PageNumber: common.DefaultPageNumber,
-		PageSize:   common.DefaultPageSize,
+		PageSize:   jobConfig.BatchSize,
+		Keywords:   make(map[string]interface{}),
 	}
-	query.Keywords = make(map[string]interface{})
 	for {
 		// 1. fetch a batch of clusters with expiry
 		clusterWithExpiry, err := clusterCtr.ListClusterWithExpiry(ctx, query)
@@ -98,7 +99,7 @@ func process(ctx context.Context, clusterCtr clusterctl.Controller,
 			break
 		}
 		query.Keywords[common.IDThan] = clusterWithExpiry[len(clusterWithExpiry)-1].ID
-		time.Sleep(batchFreeInterval)
+		time.Sleep(jobConfig.BatchInterval)
 	}
 }
 
