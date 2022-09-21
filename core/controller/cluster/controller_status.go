@@ -98,6 +98,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 
 		// there is a possibility that healthy cluster is not reconciled by operator yet
 		if clusterState.Status == health.HealthStatusHealthy &&
+			latestPipelinerun != nil &&
 			latestPipelinerun.Status != string(prmodels.StatusFailed) &&
 			latestPipelinerun.Status != string(prmodels.StatusCancelled) {
 			var (
