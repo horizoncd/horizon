@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"regexp"
+	"time"
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -193,6 +194,14 @@ func (c *controller) getFullResponsesWithRegion(ctx context.Context,
 		responses[i].Scope.RegionDisplayName = clustersWithRegion[i].RegionDisplayName
 	}
 	return responses, nil
+}
+
+func (c *controller) ListClusterWithExpiry(ctx context.Context,
+	query *q.Query) ([]*ListClusterWithExpiryResponse, error) {
+	const op = "cron job: autoFree expired cluster"
+	defer wlog.Start(ctx, op).StopPrint()
+	clusterList, err := c.clusterMgr.ListClusterWithExpiry(ctx, query)
+	return ofClusterWithExpiry(clusterList), err
 }
 
 func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClusterResponse, err error) {
@@ -407,6 +416,33 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 			"the region which is disabled cannot be used to create a cluster")
 	}
 
+	// transfer expireTime to expireSeconds and verify environment.
+	// expireTime's format is e.g. "300ms", "-1.5h" or "2h45m".
+	expireSeconds, err := func() (uint, error) {
+		expireSeconds := uint(0)
+		if r.ExpireTime != "" {
+			duration, err := time.ParseDuration(r.ExpireTime)
+			if err != nil {
+				log.Errorf(ctx, "failed to parse expireTime, err: %v", err.Error())
+				return 0, err
+			}
+			expireSeconds = uint(duration.Seconds())
+		}
+		envEntity, err := c.envMgr.GetByName(ctx, environment)
+		if err != nil {
+			return 0, err
+		}
+		if !envEntity.AutoFree && expireSeconds > 0 {
+			log.Warningf(ctx, "%v environment dose not support auto-free, but expireSeconds are %v",
+				environment, expireSeconds)
+			expireSeconds = 0
+		}
+		return expireSeconds, nil
+	}()
+	if err != nil {
+		return nil, err
+	}
+
 	// 5. get templateRelease
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, r.Template.Name, r.Template.Release)
 	if err != nil {
@@ -414,7 +450,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 	}
 
 	// 6. create cluster, after created, params.Cluster is the newest cluster
-	cluster, tags := r.toClusterModel(application, er)
+	cluster, tags := r.toClusterModel(application, er, expireSeconds)
 	cluster.Status = clustercommon.StatusCreating
 
 	if err := tagmanager.ValidateUpsert(tags); err != nil {
@@ -805,6 +841,11 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	if err != nil {
 		return err
 	}
+	if cluster.Status != "" {
+		log.Warningf(ctx, "failed to free cluster: %v, cluster status: %v", cluster.Name, cluster.Status)
+		return perror.Wrapf(herrors.ErrFailedToFreeCluster,
+			"failed to free cluster: %v, cluster status: %v", cluster.Name, cluster.Status)
+	}
 
 	// 1. set cluster status
 	cluster.Status = clustercommon.StatusFreeing
@@ -828,14 +869,12 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	go func() {
 		var err error
 		defer func() {
-			cluster.Status = clustercommon.StatusFreed
 			if err != nil {
 				cluster.Status = ""
-			}
-			_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
-			if err != nil {
-				log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
-				return
+				_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
+				if err != nil {
+					log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+				}
 			}
 		}()
 

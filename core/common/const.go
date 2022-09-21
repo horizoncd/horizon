@@ -96,3 +96,7 @@ const (
 
 	SessionKeyAuthUser = "user"
 )
+
+const (
+	IDThan = "idThan"
+)

@@ -43,6 +43,7 @@ type DAO interface {
 	ListByNameFuzzily(context.Context, string, string, *q.Query) (int, []*models.ClusterWithRegion, error)
 	ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error)
+	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*models.Cluster, error)
 }
 
 type dao struct {
@@ -386,4 +387,24 @@ func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 	}
 
 	return count, clusters, nil
+}
+
+func (d *dao) ListClusterWithExpiry(ctx context.Context,
+	query *q.Query) ([]*models.Cluster, error) {
+	var clusters []*models.Cluster
+	tx := d.db.WithContext(ctx)
+	offset := (query.PageNumber - 1) * query.PageSize
+	limit := query.PageSize
+	idThan, ok := query.Keywords[common.IDThan]
+	if ok {
+		if id, ok := idThan.(uint); ok && id > 0 {
+			tx = tx.Where("id > ?", id)
+		}
+	}
+	result := tx.Where("deleted_ts = ?", 0).Where("status = ?", "").
+		Where("expire_seconds > ?", 0).Order("name").Limit(limit).Offset(offset).Find(&clusters)
+	if result.Error != nil {
+		return nil, herrors.NewErrListFailed(herrors.ClusterInDB, result.Error.Error())
+	}
+	return clusters, nil
 }

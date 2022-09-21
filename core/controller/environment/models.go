@@ -10,6 +10,7 @@ type Environment struct {
 	ID          uint      `json:"id"`
 	Name        string    `json:"name"`
 	DisplayName string    `json:"displayName"`
+	AutoFree    bool      `json:"autoFree"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -30,6 +31,7 @@ func ofEnvironmentModel(env *models.Environment) *Environment {
 		ID:          env.ID,
 		Name:        env.Name,
 		DisplayName: env.DisplayName,
+		AutoFree:    env.AutoFree,
 		CreatedAt:   env.CreatedAt,
 		UpdatedAt:   env.UpdatedAt,
 	}
@@ -38,8 +40,10 @@ func ofEnvironmentModel(env *models.Environment) *Environment {
 type CreateEnvironmentRequest struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
+	AutoFree    bool   `json:"autoFree"`
 }
 
 type UpdateEnvironmentRequest struct {
 	DisplayName string `json:"displayName"`
+	AutoFree    bool   `json:"autoFree"`
 }

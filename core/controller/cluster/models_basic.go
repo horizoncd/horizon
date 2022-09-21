@@ -29,8 +29,9 @@ type TemplateInput struct {
 type CreateClusterRequest struct {
 	*Base
 
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
+	Name       string `json:"name"`
+	Namespace  string `json:"namespace"`
+	ExpireTime string `json:"expireTime"`
 	// TODO(gjq): remove these two params after migration
 	Image        string            `json:"image"`
 	ExtraMembers map[string]string `json:"extraMembers"`
@@ -82,7 +83,7 @@ type Scope struct {
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
-	er *envregionmodels.EnvironmentRegion) (*models.Cluster, []*tagmodels.Tag) {
+	er *envregionmodels.EnvironmentRegion, expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
 	var (
 		// r.Git cannot be nil
 		gitURL       = r.Git.URL
@@ -101,6 +102,7 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		EnvironmentName: er.EnvironmentName,
 		RegionName:      er.RegionName,
 		Description:     r.Description,
+		ExpireSeconds:   expireSeconds,
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubfolder,
 		GitRef:          r.Git.Ref(),
@@ -141,6 +143,7 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		GitRefType:      gitRefType,
 		TemplateRelease: templateRelease,
 		Status:          cluster.Status,
+		ExpireSeconds:   cluster.ExpireSeconds,
 	}
 }
 
@@ -165,6 +168,10 @@ func toUser(user *usermodels.User) *User {
 
 func ofClusterModel(application *appmodels.Application, cluster *models.Cluster, fullPath, namespace string,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetClusterResponse {
+	expireTime := ""
+	if cluster.ExpireSeconds > 0 {
+		expireTime = time.Duration(cluster.ExpireSeconds * 1000 * 1000 * 1000).String()
+	}
 	return &GetClusterResponse{
 		CreateClusterRequest: &CreateClusterRequest{
 			Base: &Base{
@@ -176,8 +183,9 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 					Pipeline:    pipelineJSONBlob,
 				},
 			},
-			Name:      cluster.Name,
-			Namespace: namespace,
+			Name:       cluster.Name,
+			Namespace:  namespace,
+			ExpireTime: expireTime,
 		},
 		ID:       cluster.ID,
 		FullPath: fullPath,
@@ -279,4 +287,28 @@ type ListClusterWithFullResponse struct {
 	*ListClusterResponse
 	FullName string `json:"fullName"`
 	FullPath string `json:"fullPath"`
+}
+
+type ListClusterWithExpiryResponse struct {
+	ID              uint      `json:"id"`
+	Name            string    `json:"name"`
+	EnvironmentName string    `json:"environmentName"`
+	Status          string    `json:"status"`
+	ExpireSeconds   uint      `json:"expireSeconds"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func ofClusterWithExpiry(clusters []*models.Cluster) []*ListClusterWithExpiryResponse {
+	resList := make([]*ListClusterWithExpiryResponse, 0, len(clusters))
+	for _, c := range clusters {
+		resList = append(resList, &ListClusterWithExpiryResponse{
+			ID:              c.ID,
+			Name:            c.Name,
+			EnvironmentName: c.EnvironmentName,
+			Status:          c.Status,
+			ExpireSeconds:   c.ExpireSeconds,
+			UpdatedAt:       c.UpdatedAt,
+		})
+	}
+	return resList
 }

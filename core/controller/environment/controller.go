@@ -17,6 +17,7 @@ type Controller interface {
 	ListEnvironments(ctx context.Context) (Environments, error)
 	DeleteByID(ctx context.Context, id uint) error
 	GetByID(ctx context.Context, id uint) (*Environment, error)
+	GetByName(ctx context.Context, name string) (*Environment, error)
 	// ListEnabledRegionsByEnvironment deprecated, will be removed later. list regions by the environment that are enabled
 	ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (regionmodels.RegionParts, error)
 }
@@ -46,10 +47,19 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*Environment, error)
 	return ofEnvironmentModel(environment), nil
 }
 
+func (c *controller) GetByName(ctx context.Context, name string) (*Environment, error) {
+	environment, err := c.envMgr.GetByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	return ofEnvironmentModel(environment), nil
+}
+
 func (c *controller) Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error) {
 	environment, err := c.envMgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        request.Name,
 		DisplayName: request.DisplayName,
+		AutoFree:    request.AutoFree,
 	})
 	if err != nil {
 		return 0, err
@@ -60,6 +70,7 @@ func (c *controller) Create(ctx context.Context, request *CreateEnvironmentReque
 func (c *controller) UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error {
 	return c.envMgr.UpdateByID(ctx, id, &models.Environment{
 		DisplayName: request.DisplayName,
+		AutoFree:    request.AutoFree,
 	})
 }
 

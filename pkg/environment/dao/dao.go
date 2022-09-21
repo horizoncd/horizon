@@ -23,6 +23,8 @@ type DAO interface {
 	DeleteByID(ctx context.Context, id uint) error
 	// GetByID get environment by id
 	GetByID(ctx context.Context, id uint) (*models.Environment, error)
+	// GetByName get environment by name
+	GetByName(ctx context.Context, name string) (*models.Environment, error)
 }
 
 type dao struct{ db *gorm.DB }
@@ -38,8 +40,9 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 		return err
 	}
 
-	// set displayName
+	// set displayName and autoFree
 	environmentInDB.DisplayName = environment.DisplayName
+	environmentInDB.AutoFree = environment.AutoFree
 	res := d.db.WithContext(ctx).Save(&environmentInDB)
 	if res.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.EnvironmentInDB, res.Error.Error())
@@ -105,6 +108,20 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Environment, error) {
 	var environment models.Environment
 	result := d.db.WithContext(ctx).Raw(common.EnvironmentGetByID, id).First(&environment)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.EnvironmentInDB, result.Error.Error())
+		}
+		return nil, herrors.NewErrGetFailed(herrors.EnvironmentInDB, result.Error.Error())
+	}
+
+	return &environment, nil
+}
+
+func (d *dao) GetByName(ctx context.Context, name string) (*models.Environment, error) {
+	var environment models.Environment
+	result := d.db.WithContext(ctx).Raw(common.EnvironmentGetByName, name).First(&environment)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {

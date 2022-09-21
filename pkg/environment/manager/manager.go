@@ -27,6 +27,8 @@ type Manager interface {
 	DeleteByID(ctx context.Context, id uint) error
 	// GetByID get environment by id
 	GetByID(ctx context.Context, id uint) (*models.Environment, error)
+	// GetByName get environment by name
+	GetByName(ctx context.Context, name string) (*models.Environment, error)
 }
 
 type manager struct {
@@ -36,6 +38,10 @@ type manager struct {
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Environment, error) {
 	return m.envDAO.GetByID(ctx, id)
+}
+
+func (m *manager) GetByName(ctx context.Context, name string) (*models.Environment, error) {
+	return m.envDAO.GetByName(ctx, name)
 }
 
 func (m *manager) DeleteByID(ctx context.Context, id uint) error {

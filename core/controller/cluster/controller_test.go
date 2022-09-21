@@ -33,6 +33,7 @@ import (
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
+	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
@@ -419,13 +420,15 @@ var (
 	manager = managerparam.InitManager(db)
 )
 
+const secondsInOneDay = 24 * 3600
+
 // nolint
 func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&harbormodels.Harbor{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
-		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}); err != nil {
+		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &envmodels.Environment{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -464,6 +467,7 @@ func TestAll(t *testing.T) {
 	t.Run("TestPinyin", testPinyin)
 	t.Run("TestListClusterByNameFuzzily", testListClusterByNameFuzzily)
 	t.Run("TestListUserClustersByNameFuzzily", testListUserClustersByNameFuzzily)
+	t.Run("TestListClusterWithExpiry", testListClusterWithExpiry)
 	t.Run("TestControllerFreeOrDeleteClusterFailed", testControllerFreeOrDeleteClusterFailed)
 }
 
@@ -574,6 +578,19 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
 
+	env, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+		Name:        "dev",
+		DisplayName: "开发",
+		AutoFree:    true,
+	})
+	env, err = envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+		Name:        "test",
+		DisplayName: "开发",
+		AutoFree:    true,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, env)
+
 	c = &controller{
 		clusterMgr:           manager.ClusterMgr,
 		clusterGitRepo:       clusterGitRepo,
@@ -640,11 +657,14 @@ func test(t *testing.T) {
 				Pipeline:    pipelineJSONBlob,
 			},
 		},
-		Name: "app-cluster",
+		Name:       "app-cluster",
+		ExpireTime: "24h",
 	}
 
 	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
+	t.Logf("%v", resp.ExpireTime)
+
 	createClusterRequest.Name = "app-cluster-new"
 	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
@@ -655,6 +675,7 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.Git.Branch, "develop")
 	assert.Equal(t, resp.Git.Subfolder, "/test")
 	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
+	t.Logf("%v", resp.ExpireTime)
 
 	UpdateGitURL := "git@github.com:demo/demo.git"
 	updateClusterRequest := &UpdateClusterRequest{
@@ -766,7 +787,6 @@ func test(t *testing.T) {
 
 	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, herrors.NewErrNotFound(herrors.PodsInK8S, "test"))
-
 	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
 		PipelinerunID: buildDeployResp.PipelinerunID,
 	})
