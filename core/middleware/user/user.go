@@ -9,7 +9,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
 )
@@ -70,16 +69,6 @@ func Middleware(param *param.Param, store sessions.Store,
 
 		u := session.Values[common.SessionKeyAuthUser]
 		if user, ok := u.(*userauth.DefaultInfo); ok && user != nil {
-			muser, err := param.UserManager.GetUserByID(c, user.GetID())
-			if err != nil {
-				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsgf(
-					"user with id = %v not found", user.GetID()))
-				return
-			}
-			user.Name = muser.Name
-			user.FullName = muser.FullName
-			user.Email = muser.Email
-			user.Admin = muser.Admin
 			// attach user to context
 			common.SetUser(c, user)
 			c.Next()
