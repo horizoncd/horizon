@@ -58,7 +58,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 		{
 			Method:      http.MethodGet,
-			HandlerFunc: api.GetTemplates,
+			HandlerFunc: api.ListTemplatesByGroupID,
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)

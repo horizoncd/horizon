@@ -221,9 +221,12 @@ func (a *API) SearchApplication(c *gin.Context) {
 		return
 	}
 
+	keywords := request.GetFilterParam(c)
+
 	filter := c.Query(common.Filter)
 
 	total, applications, err := a.applicationCtl.ListApplication(c, filter, q.Query{
+		Keywords:   keywords,
 		PageSize:   pageSize,
 		PageNumber: pageNumber,
 	})

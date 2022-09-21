@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,6 +22,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/group/service"
 	membermanager "g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
@@ -76,6 +78,7 @@ type controller struct {
 	templateMgr          tmanager.Manager
 	templateReleaseMgr   trmanager.Manager
 	memberMgr            membermanager.Manager
+	memberSvc            memberservice.Service
 	templateSchemaGetter schema.Getter
 }
 
@@ -90,35 +93,36 @@ func NewController(param *param.Param, gitlabLib gitlab.Interface, repo template
 		templateSchemaGetter: param.TemplateSchemaGetter,
 		templateRepo:         repo,
 		memberMgr:            param.MemberManager,
+		memberSvc:            param.MemberService,
 		groupMgr:             param.GroupManager,
 	}
 }
 
-func (c *controller) ListTemplate(ctx context.Context) (_ Templates, err error) {
+func (c *controller) ListTemplate(ctx context.Context) (Templates, error) {
 	const op = "template controller: listTemplate"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	user, err := common.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
+	var (
+		tpls Templates
+		err  error
+	)
 
-	templateModels, err := c.templateMgr.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var tpls Templates
-	if user.IsAdmin() {
-		tpls = toTemplates(templateModels)
+	if selfOnly, ok := ctx.Value(hctx.TemplateListSelfOnly).(bool); ok && selfOnly {
+		tpls, err = c.listTemplateByUser(ctx)
+		if err != nil {
+			return nil, err
+		}
 	} else {
-		var filteredModels []*models.Template
+		templateModels, err := c.templateMgr.List(ctx)
+		if err != nil {
+			return nil, err
+		}
+
 		for _, template := range templateModels {
-			if template.OnlyAdmin != nil && !*template.OnlyAdmin {
-				filteredModels = append(filteredModels, template)
+			if c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
+				tpls = append(tpls, toTemplate(template))
 			}
 		}
-		tpls = toTemplates(filteredModels)
 	}
 
 	if withFullpath, ok := ctx.Value(hctx.TemplateWithFullPath).(bool); ok && withFullpath {
@@ -129,6 +133,82 @@ func (c *controller) ListTemplate(ctx context.Context) (_ Templates, err error) 
 	}
 
 	return tpls, nil
+}
+
+// listTemplateByUser returns all templates a user obtaining, that means has owner permission
+func (c *controller) listTemplateByUser(ctx context.Context) (Templates, error) {
+	// get current user
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, perror.WithMessage(err, "no user in context")
+	}
+
+	// get groups authorized to current user
+	groupIDs, err := c.memberMgr.ListResourceOfMemberInfoByRole(
+		ctx, membermodels.TypeGroup, currentUser.GetID(), role.Owner)
+	if err != nil {
+		return nil, perror.WithMessage(err, "failed to list group resource of current user")
+	}
+
+	// get these groups' subGroups
+	subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
+	if err != nil {
+		return nil, perror.WithMessage(err, "failed to get groups")
+	}
+
+	groupIDs = nil
+	for _, group := range subGroups {
+		var member *membermodels.Member
+		if member, err = c.memberMgr.Get(ctx, membermodels.TypeGroup,
+			group.ID, membermodels.MemberUser, currentUser.GetID()); err != nil {
+			return nil, err
+		}
+		if member == nil || member.Role == role.Owner {
+			groupIDs = append(groupIDs, group.ID)
+		}
+	}
+
+	// list templates of these subGroups
+	templates, err := c.templateMgr.ListByGroupIDs(ctx, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// get templates authorized to current user
+	authorizedTemplateIDs, err := c.memberMgr.ListResourceOfMemberInfoByRole(ctx,
+		membermodels.TypeTemplate, currentUser.GetID(), role.Owner)
+	if err != nil {
+		return nil, err
+	}
+
+	// all applicationIDs, including:
+	// (1) templates under the authorized groups
+	// (2) authorized templates directly
+	authorizedTemplates, err := c.templateMgr.ListByIDs(ctx, authorizedTemplateIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	set := make(map[uint]struct{})
+	for _, template := range templates {
+		set[template.ID] = struct{}{}
+	}
+
+	filter := func(t *models.Template) bool {
+		if _, ok := set[t.ID]; !ok {
+			set[t.ID] = struct{}{}
+			return true
+		}
+		return false
+	}
+
+	for _, t := range authorizedTemplates {
+		if filter(t) {
+			templates = append(templates, t)
+		}
+	}
+
+	return toTemplates(templates), nil
 }
 
 func (c *controller) addFullPath(ctx context.Context, tpls Templates) (Templates, error) {
@@ -162,7 +242,7 @@ func (c *controller) addFullPath(ctx context.Context, tpls Templates) (Templates
 			fullpath := strings.Builder{}
 			for _, groupID := range groupIDArr {
 				fullpath.WriteString("/")
-				fullpath.WriteString(groupMap[groupID].Name)
+				fullpath.WriteString(groupMap[groupID].Path)
 			}
 			fullpath.WriteString("/")
 			fullpath.WriteString(tpl.Name)
@@ -176,19 +256,15 @@ func (c *controller) ListTemplateRelease(ctx context.Context, templateName strin
 	const op = "template controller: listTemplateRelease"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	user, err := common.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	template, err := c.templateMgr.GetByName(ctx, templateName)
 	if err != nil {
 		return nil, err
 	}
 
-	if template.OnlyAdmin != nil &&
-		!(!*template.OnlyAdmin && user.IsAdmin()) {
-		return make(Releases, 0), nil
+	if !c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
+		return nil, perror.Wrapf(herrors.ErrForbidden,
+			"you have no permission to access this resource\n"+
+				"template name = %s", templateName)
 	}
 
 	templateReleaseModels, err := c.templateReleaseMgr.ListByTemplateName(ctx, templateName)
@@ -202,27 +278,20 @@ func (c *controller) ListTemplateRelease(ctx context.Context, templateName strin
 		_ = c.templateReleaseMgr.UpdateByID(ctx, release.ID, release)
 	}
 
-	if user.IsAdmin() {
-		return toReleases(templateReleaseModels), nil
-	}
-
-	var filteredModels []*trmodels.TemplateRelease
+	var releases Releases
 	for _, release := range templateReleaseModels {
-		if release.OnlyAdmin != nil && !*release.OnlyAdmin {
-			filteredModels = append(filteredModels, release)
+		if c.checkHasOnlyOwnerPermissionForRelease(ctx, release) {
+			releases = append(releases, toRelease(release))
 		}
 	}
-	return toReleases(filteredModels), nil
+	sort.Sort(releases)
+	return releases, nil
 }
 
 func (c *controller) GetTemplateSchema(ctx context.Context, releaseID uint,
 	param map[string]string) (_ *Schemas, err error) {
 	const op = "template controller: getTemplateSchema"
 	defer wlog.Start(ctx, op).StopPrint()
-
-	if err := checkPermission(ctx, c, common.ResourceTemplateRelease, releaseID); err != nil {
-		return nil, err
-	}
 
 	release, err := c.templateReleaseMgr.GetByID(ctx, releaseID)
 	if err != nil {
@@ -242,14 +311,13 @@ func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint) (T
 	const op = "template controller: listTemplateByGroupID"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	user, err := common.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	if !c.groupMgr.GroupExist(ctx, groupID) {
 		reason := fmt.Sprintf("group not found: %d", groupID)
 		return nil, perror.Wrap(herrors.NewErrNotFound(herrors.GroupInDB, reason), reason)
+	}
+
+	if listRecursively, ok := ctx.Value(hctx.TemplateListRecursively).(bool); ok && listRecursively {
+		return c.listTemplateByGroupIDRecursively(ctx, groupID)
 	}
 
 	templates, err := c.templateMgr.ListByGroupID(ctx, groupID)
@@ -258,16 +326,58 @@ func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint) (T
 	}
 
 	var tpls Templates
-	if user.IsAdmin() {
-		tpls = toTemplates(templates)
-	} else {
-		var filteredModels []*models.Template
-		for _, template := range templates {
-			if template.OnlyAdmin != nil && !*template.OnlyAdmin {
-				filteredModels = append(filteredModels, template)
-			}
+	for _, template := range templates {
+		if c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
+			tpls = append(tpls, toTemplate(template))
 		}
-		tpls = toTemplates(filteredModels)
+	}
+
+	if withFullpath, ok := ctx.Value(hctx.TemplateWithFullPath).(bool); ok && withFullpath {
+		tpls, err = c.addFullPath(ctx, tpls)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return tpls, err
+}
+
+func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context, groupID uint) (Templates, error) {
+	if !c.groupMgr.GroupExist(ctx, groupID) {
+		reason := fmt.Sprintf("group not found: %d", groupID)
+		return nil, perror.Wrap(herrors.NewErrNotFound(herrors.GroupInDB, reason), reason)
+	}
+
+	groupIDs := make([]uint, 0)
+
+	if c.groupMgr.IsRootGroup(ctx, groupID) {
+		return c.ListTemplate(ctx)
+	}
+	group, err := c.groupMgr.GetByID(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	idStrs := strings.Split(group.TraversalIDs, ",")
+	for _, idStr := range idStrs {
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"failed to parse traversal ID:\n"+
+					"traversal ID = %s", group.TraversalIDs)
+		}
+		groupIDs = append(groupIDs, uint(id))
+	}
+
+	templates, err := c.templateMgr.ListByGroupIDs(ctx, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var tpls Templates
+	for _, template := range templates {
+		if c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
+			tpls = append(tpls, toTemplate(template))
+		}
 	}
 
 	if withFullpath, ok := ctx.Value(hctx.TemplateWithFullPath).(bool); ok && withFullpath {
@@ -294,6 +404,12 @@ func (c *controller) ListTemplateReleaseByTemplateID(ctx context.Context, templa
 		return nil, err
 	}
 
+	if !c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
+		return nil, perror.Wrapf(herrors.ErrForbidden,
+			"you have no permission to access this resource:\n"+
+				"template id = %d", templateID)
+	}
+
 	releases, err := c.templateReleaseMgr.ListByTemplateID(ctx, templateID)
 	if err != nil {
 		return nil, err
@@ -309,13 +425,13 @@ func (c *controller) ListTemplateReleaseByTemplateID(ctx context.Context, templa
 		return toReleases(releases), nil
 	}
 
-	var filteredModels []*trmodels.TemplateRelease
+	var releaseModels Releases
 	for _, release := range releases {
-		if release.OnlyAdmin != nil && !*release.OnlyAdmin {
-			filteredModels = append(filteredModels, release)
+		if c.checkHasOnlyOwnerPermissionForRelease(ctx, release) {
+			releaseModels = append(releaseModels, toRelease(release))
 		}
 	}
-	return toReleases(filteredModels), nil
+	return releaseModels, nil
 }
 
 func (c *controller) CreateTemplate(ctx context.Context,
@@ -409,22 +525,27 @@ func (c *controller) GetTemplate(ctx context.Context, templateID uint) (*Templat
 	const op = "template controller: getTemplate"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	if err := checkPermission(ctx, c, common.ResourceTemplate, templateID); err != nil {
-		return nil, err
-	}
-
 	template, err := c.templateMgr.GetByID(ctx, templateID)
 	if err != nil {
 		return nil, err
 	}
-	tpl := toTemplate(template)
 
+	if !c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
+		return nil, perror.Wrapf(herrors.ErrForbidden,
+			"you have no permission to access this resource:\n"+
+				"template id = %d", templateID)
+	}
+
+	tpl := toTemplate(template)
 	withRelease, ok := ctx.Value(hctx.TemplateWithRelease).(bool)
 	if ok && withRelease {
 		if templateReleases, err := c.templateReleaseMgr.
-			ListByTemplateName(ctx, template.Name); err != nil {
-			releases := toReleases(templateReleases)
-			tpl.Releases = releases
+			ListByTemplateID(ctx, template.ID); err == nil {
+			for _, release := range templateReleases {
+				if c.checkHasOnlyOwnerPermissionForRelease(ctx, release) {
+					tpl.Releases = append(tpl.Releases, toRelease(release))
+				}
+			}
 		}
 	}
 	return tpl, nil
@@ -434,39 +555,52 @@ func (c *controller) GetRelease(ctx context.Context, releaseID uint) (*Release, 
 	const op = "template controller: getRelease"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	if err := checkPermission(ctx, c, common.ResourceTemplateRelease, releaseID); err != nil {
-		return nil, err
-	}
-
-	templateRelease, err := c.templateReleaseMgr.GetByID(ctx, releaseID)
+	release, err := c.templateReleaseMgr.GetByID(ctx, releaseID)
 	if err != nil {
 		return nil, err
 	}
-	return toRelease(templateRelease), nil
+
+	if !c.checkHasOnlyOwnerPermissionForRelease(ctx, release) {
+		return nil, perror.Wrapf(herrors.ErrForbidden,
+			"you have no permission to access this resource:\n"+
+				"release id = %d", releaseID)
+	}
+
+	template, err := c.templateMgr.GetByID(ctx, release.Template)
+	if err != nil {
+		return nil, err
+	}
+
+	if !c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
+		return nil, perror.Wrapf(herrors.ErrForbidden,
+			"you have no permission to access this resource:\n"+
+				"template id = %d, release id = %d", release.Template, releaseID)
+	}
+
+	return toRelease(release), nil
 }
 
 func (c *controller) DeleteTemplate(ctx context.Context, templateID uint) error {
 	const op = "template controller: deleteTemplate"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	if err := checkPermission(ctx, c, common.ResourceTemplate, templateID); err != nil {
-		return err
-	}
-
 	releases, err := c.templateReleaseMgr.ListByTemplateID(ctx, templateID)
 	if err != nil {
 		return err
 	}
 	if len(releases) != 0 {
-		return perror.Wrap(herrors.ErrSubResourceExist, "template still has release")
+		return perror.Wrap(herrors.ErrSubResourceExist,
+			"this template cannot be deleted because there are releases under this template.")
 	}
+
 	ctx = context.WithValue(ctx, hctx.TemplateOnlyRefCount, true)
 	_, count, err := c.templateMgr.GetRefOfApplication(ctx, templateID)
 	if err != nil {
 		return err
 	}
 	if count != 0 {
-		return perror.Wrap(herrors.ErrSubResourceExist, "template has been used by application")
+		return perror.Wrap(herrors.ErrSubResourceExist,
+			"this template cannot be deleted because it was used by applications.")
 	}
 
 	_, count, err = c.templateMgr.GetRefOfCluster(ctx, templateID)
@@ -474,7 +608,7 @@ func (c *controller) DeleteTemplate(ctx context.Context, templateID uint) error 
 		return err
 	}
 	if count != 0 {
-		return perror.Wrap(herrors.ErrSubResourceExist, "template has been used by cluster")
+		return perror.Wrap(herrors.ErrSubResourceExist, "this template cannot be deleted because it was used by clusters.")
 	}
 
 	return c.templateMgr.DeleteByID(ctx, templateID)
@@ -484,17 +618,13 @@ func (c *controller) DeleteRelease(ctx context.Context, releaseID uint) error {
 	const op = "template controller: deleteRelease"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	if err := checkPermission(ctx, c, common.ResourceTemplateRelease, releaseID); err != nil {
-		return err
-	}
-
 	ctx = context.WithValue(ctx, hctx.TemplateOnlyRefCount, true)
 	_, count, err := c.templateReleaseMgr.GetRefOfApplication(ctx, releaseID)
 	if err != nil {
 		return err
 	}
 	if count != 0 {
-		return perror.Wrap(herrors.ErrSubResourceExist, "release has been used by application")
+		return perror.Wrap(herrors.ErrSubResourceExist, "this release cannot be deleted because it was used by applications.")
 	}
 
 	_, count, err = c.templateReleaseMgr.GetRefOfCluster(ctx, releaseID)
@@ -502,12 +632,7 @@ func (c *controller) DeleteRelease(ctx context.Context, releaseID uint) error {
 		return err
 	}
 	if count != 0 {
-		return perror.Wrap(herrors.ErrSubResourceExist, "release template has been used by cluster")
-	}
-
-	_, err = c.templateReleaseMgr.GetByID(ctx, releaseID)
-	if err != nil {
-		return err
+		return perror.Wrap(herrors.ErrSubResourceExist, "this release cannot be deleted because it was used by clusters.")
 	}
 
 	return c.templateReleaseMgr.DeleteByID(ctx, releaseID)
@@ -518,16 +643,25 @@ func (c *controller) UpdateTemplate(ctx context.Context, templateID uint, reques
 	const op = "template controller: updateTemplate"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	if err := checkPermission(ctx, c, common.ResourceTemplate, templateID); err != nil {
-		return err
-	}
-
-	tplUpdate, err := request.toTemplateModel(ctx)
+	template, err := c.templateMgr.GetByID(ctx, templateID)
 	if err != nil {
 		return err
 	}
 
-	if _, err := c.templateMgr.GetByID(ctx, templateID); err != nil {
+	releases, err := c.templateReleaseMgr.ListByTemplateID(ctx, template.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(releases) != 0 && request.Repository != "" &&
+		request.Repository != template.Repository {
+		return perror.Wrapf(herrors.ErrForbidden,
+			"can not modify template repository while releases existing:\n"+
+				"releases numbers: %d", len(releases))
+	}
+
+	tplUpdate, err := request.toTemplateModel(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -539,16 +673,8 @@ func (c *controller) UpdateRelease(ctx context.Context, releaseID uint, request 
 	const op = "template controller: updateRelease"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	if err := checkPermission(ctx, c, common.ResourceTemplateRelease, releaseID); err != nil {
-		return err
-	}
-
 	trUpdate, err := request.toReleaseModel(ctx)
 	if err != nil {
-		return err
-	}
-
-	if _, err := c.templateReleaseMgr.GetByID(ctx, releaseID); err != nil {
 		return err
 	}
 
@@ -559,17 +685,9 @@ func (c *controller) SyncReleaseToRepo(ctx context.Context, releaseID uint) erro
 	const op = "template controller: syncReleaseToRepo"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	if err := checkPermission(ctx, c, common.ResourceTemplateRelease, releaseID); err != nil {
-		return err
-	}
-
 	release, err := c.templateReleaseMgr.GetByID(ctx, releaseID)
 	if err != nil {
 		return err
-	}
-
-	if release.SyncStatus == trmodels.StatusSucceed {
-		return nil
 	}
 
 	template, err := c.templateMgr.GetByID(ctx, release.Template)
@@ -679,33 +797,58 @@ func (c *controller) syncReleaseToRepo(chartBytes []byte, name, tag string) erro
 	return c.templateRepo.UploadChart(chart)
 }
 
-func checkPermission(ctx context.Context, c *controller, resource string, id uint) error {
+func (c *controller) checkHasOnlyOwnerPermissionForTemplate(ctx context.Context,
+	template *models.Template) bool {
 	user, err := common.UserFromContext(ctx)
 	if err != nil {
-		return err
+		return false
 	}
-
 	if user.IsAdmin() {
-		return nil
+		return true
 	}
 
-	switch resource {
-	case common.ResourceTemplate:
-		template, err := c.templateMgr.GetByID(ctx, id)
-		if err != nil {
-			return err
-		}
-		if template.OnlyAdmin != nil && *template.OnlyAdmin {
-			return perror.Wrap(herrors.ErrForbidden, "you can not access it")
-		}
-	case common.ResourceTemplateRelease:
-		release, err := c.templateReleaseMgr.GetByID(ctx, id)
-		if err != nil {
-			return err
-		}
-		if release.OnlyAdmin != nil && *release.OnlyAdmin {
-			return perror.Wrap(herrors.ErrForbidden, "you can not access it")
-		}
+	if template == nil || template.OnlyOwner == nil {
+		return false
 	}
-	return nil
+
+	if !*template.OnlyOwner {
+		return true
+	}
+
+	member, err := c.memberSvc.GetMemberOfResource(ctx, common.ResourceTemplate, strconv.Itoa(int(template.ID)))
+	if err != nil || member == nil {
+		return false
+	}
+	if member.Role == role.Owner {
+		return true
+	}
+	return false
+}
+
+func (c *controller) checkHasOnlyOwnerPermissionForRelease(ctx context.Context,
+	release *trmodels.TemplateRelease) bool {
+	user, err := common.UserFromContext(ctx)
+	if err != nil {
+		return false
+	}
+	if user.IsAdmin() {
+		return true
+	}
+
+	if release == nil || release.OnlyOwner == nil {
+		return false
+	}
+
+	if !*release.OnlyOwner {
+		return true
+	}
+
+	member, err := c.memberSvc.GetMemberOfResource(ctx, common.ResourceTemplate, strconv.Itoa(int(release.ID)))
+	if err != nil || member == nil {
+		return false
+	}
+	if member.Role == role.Owner {
+		return true
+	}
+	return false
 }

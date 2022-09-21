@@ -24,6 +24,8 @@ type DAO interface {
 	GetRefOfApplication(ctx context.Context, id uint) ([]*amodels.Application, uint, error)
 	GetRefOfCluster(ctx context.Context, id uint) ([]*cmodel.Cluster, uint, error)
 	UpdateByID(ctx context.Context, id uint, template *models.Template) error
+	ListByGroupIDs(ctx context.Context, ids []uint) ([]*models.Template, error)
+	ListByIDs(ctx context.Context, ids []uint) ([]*models.Template, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -155,9 +157,31 @@ func (d dao) UpdateByID(ctx context.Context, templateID uint, template *models.T
 		if template.Description != "" {
 			oldTemplate.Description = template.Description
 		}
-		if template.OnlyAdmin != nil {
-			oldTemplate.OnlyAdmin = template.OnlyAdmin
+		if template.OnlyOwner != nil {
+			oldTemplate.OnlyOwner = template.OnlyOwner
 		}
 		return tx.Model(&oldTemplate).Updates(oldTemplate).Error
 	})
+}
+
+func (d dao) ListByGroupIDs(ctx context.Context, ids []uint) ([]*models.Template, error) {
+	templates := make([]*models.Template, 0)
+	res := d.db.Where("group_id in ?", ids).Find(&templates)
+	if res.Error != nil {
+		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
+			"failed to get template:\n"+
+				"template ids = %v\n err = %v", ids, res.Error)
+	}
+	return templates, nil
+}
+
+func (d dao) ListByIDs(ctx context.Context, ids []uint) ([]*models.Template, error) {
+	templates := make([]*models.Template, 0)
+	res := d.db.Where("id in ?", ids).Find(&templates)
+	if res.Error != nil {
+		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
+			"failed to get template:\n"+
+				"template ids = %v\n err = %v", ids, res.Error)
+	}
+	return templates, nil
 }

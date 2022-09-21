@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
+	"g.hz.netease.com/horizon/pkg/application/models"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 )
@@ -50,28 +51,41 @@ func (s service) GetByIDs(ctx context.Context, ids []uint) (map[uint]*Applicatio
 		return nil, err
 	}
 
-	// 2. get groups for full path, full name
+	appDetails, err := s.GetAppsDetails(ctx, applications)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, appDetail := range appDetails {
+		applicationMap[appDetail.ID] = appDetail
+	}
+
+	return applicationMap, nil
+}
+
+func (s service) GetAppsDetails(ctx context.Context, apps []*models.Application) ([]*ApplicationDetail, error) {
 	var groupIDs []uint
-	for _, application := range applications {
+	for _, application := range apps {
 		groupIDs = append(groupIDs, application.GroupID)
 	}
 	groupMap, err := s.groupService.GetChildrenByIDs(ctx, groupIDs)
 	if err != nil {
 		return nil, err
 	}
+	appDetails := make([]*ApplicationDetail, 0, len(apps))
 
 	// 3. add full path and full name
-	for i, application := range applications {
+	for i, application := range apps {
 		fullPath := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullPath, application.Name)
 		fullName := fmt.Sprintf("%v/%v", groupMap[application.GroupID].FullName, application.Name)
-		applicationMap[application.ID] = &ApplicationDetail{
-			*applications[i],
-			fullPath,
-			fullName,
-		}
+		appDetails = append(appDetails, &ApplicationDetail{
+			Application: *apps[i],
+			FullPath:    fullPath,
+			FullName:    fullName,
+		})
 	}
 
-	return applicationMap, nil
+	return appDetails, nil
 }
 
 func NewService(groupSvc groupservice.Service, manager *managerparam.Manager) Service {

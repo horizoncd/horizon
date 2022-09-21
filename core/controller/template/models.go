@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	tmodels "g.hz.netease.com/horizon/pkg/template/models"
@@ -21,15 +20,10 @@ type CreateTemplateRequest struct {
 	Name                 string `json:"name"`
 	Description          string `json:"description"`
 	Repository           string `json:"repository"`
-	OnlyAdmin            *bool  `json:"onlyAdmin"`
+	OnlyOwner            bool   `json:"onlyOwner"`
 }
 
 func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.Template, error) {
-	user, err := common.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	if c.Repository == "" {
 		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
 			"Repository is empty")
@@ -43,12 +37,7 @@ func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		Name:        c.Name,
 		Description: c.Description,
 		Repository:  c.Repository,
-	}
-	onlyAdminFalse := false
-	if user.IsAdmin() {
-		t.OnlyAdmin = c.OnlyAdmin
-	} else {
-		t.OnlyAdmin = &onlyAdminFalse
+		OnlyOwner:   &c.OnlyOwner,
 	}
 	return t, nil
 }
@@ -57,30 +46,20 @@ type CreateReleaseRequest struct {
 	Name        string `json:"name"`
 	Recommended bool   `json:"recommended"`
 	Description string `json:"description"`
-	OnlyAdmin   *bool  `json:"onlyAdmin"`
+	OnlyOwner   bool   `json:"onlyOwner"`
 }
 
 func (c *CreateReleaseRequest) toReleaseModel(ctx context.Context,
 	template *tmodels.Template) (*trmodels.TemplateRelease, error) {
-	user, err := common.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	t := &trmodels.TemplateRelease{
 		Name:         c.Name,
 		TemplateName: template.Name,
 		ChartName:    template.ChartName,
 		Description:  c.Description,
 		Recommended:  &c.Recommended,
+		OnlyOwner:    &c.OnlyOwner,
 	}
 
-	onlyAdminFalse := false
-	if user.IsAdmin() {
-		t.OnlyAdmin = c.OnlyAdmin
-	} else {
-		t.OnlyAdmin = &onlyAdminFalse
-	}
 	return t, nil
 }
 
@@ -88,15 +67,10 @@ type UpdateTemplateRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Repository  string `json:"repository"`
-	OnlyAdmin   *bool  `json:"onlyAdmin"`
+	OnlyOwner   bool   `json:"onlyOwner"`
 }
 
 func (c *UpdateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.Template, error) {
-	user, err := common.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	if c.Repository == "" {
 		return nil, perror.Wrap(herrors.ErrTemplateParamInvalid,
 			"Repository is empty")
@@ -111,9 +85,7 @@ func (c *UpdateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		Name:        c.Name,
 		Description: c.Description,
 		Repository:  c.Repository,
-	}
-	if user.IsAdmin() {
-		t.OnlyAdmin = c.OnlyAdmin
+		OnlyOwner:   &c.OnlyOwner,
 	}
 	return t, nil
 }
@@ -122,21 +94,15 @@ type UpdateReleaseRequest struct {
 	Name        string `json:"name"`
 	Recommended *bool  `json:"recommended,omitempty"`
 	Description string `json:"description"`
-	OnlyAdmin   *bool  `json:"onlyAdmin"`
+	OnlyOwner   bool   `json:"onlyOwner"`
 }
 
 func (c *UpdateReleaseRequest) toReleaseModel(ctx context.Context) (*trmodels.TemplateRelease, error) {
-	user, err := common.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 	tr := &trmodels.TemplateRelease{
 		Name:        c.Name,
 		Description: c.Description,
 		Recommended: c.Recommended,
-	}
-	if user.IsAdmin() {
-		tr.OnlyAdmin = c.OnlyAdmin
+		OnlyOwner:   &c.OnlyOwner,
 	}
 	return tr, nil
 }
@@ -148,13 +114,13 @@ type Template struct {
 	Description string    `json:"description"`
 	Repository  string    `json:"repository"`
 	Releases    Releases  `json:"releases,omitempty"`
-	FullPath    string    `json:"fullpath,omitempty"`
+	FullPath    string    `json:"fullPath,omitempty"`
 	GroupID     uint      `json:"group"`
-	OnlyAdmin   bool      `json:"onlyAdmin"`
-	CreateAt    time.Time `json:"createAt"`
-	UpdateAt    time.Time `json:"updateAt"`
-	CreatedBy   uint      `json:"createBy"`
-	UpdatedBy   uint      `json:"updateBy"`
+	OnlyOwner   bool      `json:"onlyOwner"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	CreatedBy   uint      `json:"createdBy"`
+	UpdatedBy   uint      `json:"updatedBy"`
 }
 
 func toTemplate(m *tmodels.Template) *Template {
@@ -168,25 +134,27 @@ func toTemplate(m *tmodels.Template) *Template {
 		Description: m.Description,
 		Repository:  m.Repository,
 		GroupID:     m.GroupID,
-		CreateAt:    m.Model.CreatedAt,
-		UpdateAt:    m.Model.UpdatedAt,
+		CreatedAt:   m.Model.CreatedAt,
+		UpdatedAt:   m.Model.UpdatedAt,
 		CreatedBy:   m.CreatedBy,
 		UpdatedBy:   m.UpdatedBy,
 	}
-	if m.OnlyAdmin != nil {
-		t.OnlyAdmin = *m.OnlyAdmin
+	if m.OnlyOwner != nil {
+		t.OnlyOwner = *m.OnlyOwner
+	} else {
+		t.OnlyOwner = false
 	}
 	return t
 }
 
-type Templates []Template
+type Templates []*Template
 
 func toTemplates(mts []*tmodels.Template) Templates {
 	templates := make(Templates, 0)
 	for _, mt := range mts {
 		t := toTemplate(mt)
 		if t != nil {
-			templates = append(templates, *t)
+			templates = append(templates, t)
 		}
 	}
 	return templates
@@ -196,22 +164,23 @@ type Release struct {
 	ID             uint      `json:"id"`
 	Name           string    `json:"name"`
 	TemplateID     uint      `json:"templateID"`
+	TemplateName   string    `json:"templateName"`
 	ChartVersion   string    `json:"chartVersion"`
 	Description    string    `json:"description"`
 	Recommended    bool      `json:"recommended"`
-	OnlyAdmin      bool      `json:"onlyAdmin"`
+	OnlyOwner      bool      `json:"onlyOwner"`
 	CommitID       string    `json:"commitID"`
 	SyncStatusCode uint8     `json:"syncStatusCode"`
 	SyncStatus     string    `json:"syncStatus"`
 	LastSyncAt     time.Time `json:"lastSyncAt"`
 	FailedReason   string    `json:"failedReason"`
-	CreateAt       time.Time `json:"createAt"`
-	UpdateAt       time.Time `json:"updateAt"`
-	CreatedBy      uint      `json:"createBy"`
-	UpdatedBy      uint      `json:"updateBy"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+	CreatedBy      uint      `json:"createdBy"`
+	UpdatedBy      uint      `json:"updatedBy"`
 }
 
-type Releases []Release
+type Releases []*Release
 
 func (r Releases) Len() int {
 	return len(r)
@@ -242,12 +211,13 @@ func toRelease(m *trmodels.TemplateRelease) *Release {
 		ChartVersion:   m.ChartVersion,
 		Description:    m.Description,
 		TemplateID:     m.Template,
+		TemplateName:   m.TemplateName,
 		SyncStatusCode: uint8(m.SyncStatus),
 		LastSyncAt:     m.LastSyncAt,
 		CommitID:       m.CommitID,
 		FailedReason:   m.FailedReason,
-		CreateAt:       m.Model.CreatedAt,
-		UpdateAt:       m.Model.UpdatedAt,
+		CreatedAt:      m.Model.CreatedAt,
+		UpdatedAt:      m.Model.UpdatedAt,
 		CreatedBy:      m.CreatedBy,
 		UpdatedBy:      m.UpdatedBy,
 	}
@@ -264,8 +234,10 @@ func toRelease(m *trmodels.TemplateRelease) *Release {
 	if m.Recommended != nil {
 		tr.Recommended = *m.Recommended
 	}
-	if m.OnlyAdmin != nil {
-		tr.OnlyAdmin = *m.OnlyAdmin
+	if m.OnlyOwner != nil {
+		tr.OnlyOwner = *m.OnlyOwner
+	} else {
+		tr.OnlyOwner = false
 	}
 	return tr
 }
@@ -275,7 +247,7 @@ func toReleases(trs []*trmodels.TemplateRelease) Releases {
 	for _, tr := range trs {
 		t := toRelease(tr)
 		if t != nil {
-			releases = append(releases, *t)
+			releases = append(releases, t)
 		}
 	}
 	sort.Sort(releases)

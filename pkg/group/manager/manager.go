@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -241,26 +242,50 @@ func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
 
 // GetSubGroupsByGroupIDs get groups and its subGroups by specified groupIDs
 func (m manager) GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Group, error) {
-	groupIDSet := make(map[uint]bool)
+	IDs := make([]uint, 0)
+	groupIDSet := make(map[uint]struct{})
 	for _, groupID := range groupIDs {
-		groupIDSet[groupID] = true
+		if _, ok := groupIDSet[groupID]; !ok {
+			groupIDSet[groupID] = struct{}{}
+			IDs = append(IDs, groupID)
+		}
 	}
 
-	groups, err := m.groupDAO.ListByTraversalIDsContains(ctx, groupIDs)
+	parents, err := m.groupDAO.GetByIDs(ctx, groupIDs)
 	if err != nil {
 		return nil, err
 	}
-	retGroupIDs := make([]uint, 0)
-	for _, group := range groups {
-		traversalIDs := FormatIDsFromTraversalIDs(group.TraversalIDs)
-		for index, traversalID := range traversalIDs {
-			if _, ok := groupIDSet[traversalID]; ok {
-				retGroupIDs = append(retGroupIDs, traversalIDs[index:]...)
-				break
+	parentsMap := make(map[uint]*models.Group, len(parents))
+	for _, parent := range parents {
+		parentsMap[parent.ID] = parent
+	}
+
+	children, err := m.groupDAO.ListByTraversalIDsContains(ctx, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, child := range children {
+		if _, ok := groupIDSet[child.ID]; !ok {
+			IDs = append(IDs, child.ID)
+			groupIDSet[child.ID] = struct{}{}
+		}
+		parent := parentsMap[child.ParentID]
+		if parent == nil {
+			continue
+		}
+		traversalIDs := FormatIDsFromTraversalIDs(
+			strings.TrimPrefix(
+				child.TraversalIDs, fmt.Sprintf("%s,", parent.TraversalIDs),
+			),
+		)
+		for _, traversalID := range traversalIDs {
+			if _, ok := groupIDSet[traversalID]; !ok {
+				IDs = append(IDs, traversalID)
+				groupIDSet[traversalID] = struct{}{}
 			}
 		}
 	}
-	return m.groupDAO.GetByIDs(ctx, retGroupIDs)
+	return m.groupDAO.GetByIDs(ctx, IDs)
 }
 
 func (m manager) UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error {
