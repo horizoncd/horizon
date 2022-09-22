@@ -41,6 +41,7 @@ type UpdateClusterRequest struct {
 	*Base
 	Environment string `json:"environment"`
 	Region      string `json:"region"`
+	ExpireTime  string `json:"expireTime"`
 }
 
 type GetClusterResponse struct {

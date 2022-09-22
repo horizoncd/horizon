@@ -418,27 +418,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 
 	// transfer expireTime to expireSeconds and verify environment.
 	// expireTime's format is e.g. "300ms", "-1.5h" or "2h45m".
-	expireSeconds, err := func() (uint, error) {
-		expireSeconds := uint(0)
-		if r.ExpireTime != "" {
-			duration, err := time.ParseDuration(r.ExpireTime)
-			if err != nil {
-				log.Errorf(ctx, "failed to parse expireTime, err: %v", err.Error())
-				return 0, err
-			}
-			expireSeconds = uint(duration.Seconds())
-		}
-		envEntity, err := c.envMgr.GetByName(ctx, environment)
-		if err != nil {
-			return 0, err
-		}
-		if !envEntity.AutoFree && expireSeconds > 0 {
-			log.Warningf(ctx, "%v environment dose not support auto-free, but expireSeconds are %v",
-				environment, expireSeconds)
-			expireSeconds = 0
-		}
-		return expireSeconds, nil
-	}()
+	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, environment)
 	if err != nil {
 		return nil, err
 	}
@@ -643,6 +623,12 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		r.TemplateInput.Pipeline = files.PipelineJSONBlob
 	}
 
+	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, r.Environment)
+	if err != nil {
+		return nil, err
+	}
+	cluster.ExpireSeconds = expireSeconds
+
 	// 5. update cluster in db
 	clusterModel := r.toClusterModel(cluster, templateRelease, er)
 	// todo: atomicity
@@ -841,7 +827,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	if err != nil {
 		return err
 	}
-	if cluster.Status != clustercommon.StatusFreeing {
+	if cluster.Status == clustercommon.StatusFreeing {
 		log.Warningf(ctx, "failed to free cluster: %v, cluster status: %v", cluster.Name, cluster.Status)
 		return nil
 	}
@@ -896,6 +882,28 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	}()
 
 	return nil
+}
+
+func (c *controller) toExpireSeconds(ctx context.Context, expireTime string, environment string) (uint, error) {
+	expireSeconds := uint(0)
+	if expireTime != "" {
+		duration, err := time.ParseDuration(expireTime)
+		if err != nil {
+			log.Errorf(ctx, "failed to parse expireTime, err: %v", err.Error())
+			return 0, err
+		}
+		expireSeconds = uint(duration.Seconds())
+		envEntity, err := c.envMgr.GetByName(ctx, environment)
+		if err != nil {
+			return 0, err
+		}
+		if !envEntity.AutoFree && expireSeconds > 0 {
+			log.Warningf(ctx, "%v environment dose not support auto-free, but expireSeconds are %v",
+				environment, expireSeconds)
+			expireSeconds = 0
+		}
+	}
+	return expireSeconds, nil
 }
 
 func (c *controller) customizeTemplateInfo(ctx context.Context, r *CreateClusterRequest,

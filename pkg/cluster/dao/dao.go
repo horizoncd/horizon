@@ -170,6 +170,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 		clusterInDB.Status = cluster.Status
 		clusterInDB.EnvironmentName = cluster.EnvironmentName
 		clusterInDB.RegionName = cluster.RegionName
+		clusterInDB.ExpireSeconds = cluster.ExpireSeconds
 
 		// 3. save cluster after updated
 		if err := tx.Save(&clusterInDB).Error; err != nil {

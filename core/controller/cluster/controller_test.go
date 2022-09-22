@@ -658,7 +658,7 @@ func test(t *testing.T) {
 			},
 		},
 		Name:       "app-cluster",
-		ExpireTime: "24h",
+		ExpireTime: "24h0m0s",
 	}
 
 	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest, false)

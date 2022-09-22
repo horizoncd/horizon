@@ -274,7 +274,7 @@ func testListClusterWithExpiry(t *testing.T) {
 	}
 	clusterWithExpiry, err := c.ListClusterWithExpiry(ctx, nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 5, len(clusterWithExpiry))
+	assert.Equal(t, 4, len(clusterWithExpiry))
 	for _, clr := range clusterWithExpiry {
 		t.Logf("%+v", clr)
 	}

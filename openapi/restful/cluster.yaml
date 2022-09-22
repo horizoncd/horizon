@@ -93,7 +93,7 @@ paths:
                     "//name":"name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
                     "name":"cluster",
                     "description":"xxxxxxxxxxxx",
-                    "expireTime":"48h",
+                    "expireTime":"48h0m0s",
                     "git":{
                         "//branch":"branch can be edited",
                         "//tag":"tag can be edited",
@@ -170,6 +170,7 @@ paths:
               example: |
                 {
                     "description":"xxxxxxxxxxxx",
+                    "expireTime":"24h0m0s",
                     "template":{
                         "//release": "template release can be edited",
                         "release":"v1.1.0"
@@ -243,7 +244,7 @@ paths:
                           "name":"cluster",
                           "fullPath": "/a/b/c",
                           "description":"xxxxxxxxxxxx",
-                          "expireTime":"48h",
+                          "expireTime":"48h0m0s",
                           "priority":"P0",
                           "template":{
                               "name":"javaapp",

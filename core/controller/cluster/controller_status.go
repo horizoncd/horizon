@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"math"
 	"strings"
 	"time"
 
@@ -442,7 +443,7 @@ func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName 
 }
 
 func calculateClusterTimeToLive(expireSeconds uint, clusterUpdatedAt time.Time,
-	runUpdatedAt time.Time) *float64 {
+	runUpdatedAt time.Time) *uint {
 	if expireSeconds == 0 {
 		return nil
 	}
@@ -460,5 +461,6 @@ func calculateClusterTimeToLive(expireSeconds uint, clusterUpdatedAt time.Time,
 		return nil
 	}
 	ttlSeconds := time.Until(expireDate).Seconds()
-	return &ttlSeconds
+	ttlUint := uint(math.Ceil(ttlSeconds))
+	return &ttlUint
 }
