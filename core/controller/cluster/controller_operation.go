@@ -737,6 +737,7 @@ func (c *controller) GetGrafanaDashBoard(ctx *gin.Context, clusterID uint) ([]*G
 				c.grafanaConfig.URL, dashboard.UID,
 				cluster.RegionName, envValue.Namespace, application.Name, cluster.Name),
 			Title: dashboard.Title,
+			UID:   dashboard.UID,
 		})
 	}
 

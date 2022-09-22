@@ -34,6 +34,7 @@ type GetDashboardResponse struct {
 type GrafanaDashboard struct {
 	URL   string `json:"url"`
 	Title string `json:"title"`
+	UID   string `json:"uid"`
 }
 
 type GetClusterPodsResponse struct {
