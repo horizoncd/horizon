@@ -403,7 +403,7 @@ func (d *dao) ListClusterWithExpiry(ctx context.Context,
 		}
 	}
 	result := tx.Where("deleted_ts = ?", 0).Where("status = ?", "").
-		Where("expire_seconds > ?", 0).Order("name").Limit(limit).Offset(offset).Find(&clusters)
+		Where("expire_seconds > ?", 0).Order("id asc").Limit(limit).Offset(offset).Find(&clusters)
 	if result.Error != nil {
 		return nil, herrors.NewErrListFailed(herrors.ClusterInDB, result.Error.Error())
 	}

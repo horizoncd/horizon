@@ -56,7 +56,7 @@ func ParseFlags() *Flags {
 		&flags.Account, "autoreleaseaccount", "grp.cloudnative@mail.com", "auto release cluster account")
 
 	flag.StringVar(
-		&flags.JobInterval, "autoreleaseinterval", "2h", "auto release job interval")
+		&flags.JobInterval, "autoreleaseinterval", "1h", "auto release job interval")
 
 	flag.StringVar(
 		&flags.BatchInterval, "releasebatchinterval", "20s", "auto release batch interval")
@@ -120,6 +120,8 @@ func Run(flags *Flags) {
 		Cd:      cd.NewCD(coreConfig.ArgoCDMapper),
 	}
 
+	log.Printf("ArgoCD Config: %+v", coreConfig.ArgoCDMapper)
+
 	// init controller
 	var (
 		userCtl        = userctl.NewController(parameter)
@@ -167,6 +169,7 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+	log.Printf("auto-free job Config: %+v", jobConfig)
 
 	// automatically release expired clusters
 	go func() {

@@ -31,13 +31,17 @@ func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *Config, userCt
 		panic(err)
 	}
 	ctx = common.WithContext(ctx, user)
-	rid := uuid.NewV4().String()
-	// nolint
-	ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
+
 	// start job
+	log.Infof(ctx, "Starting releasing expired cluster automatically every %v", jobConfig.JobInterval)
+	defer log.Infof(ctx, "Stopping releasing expired cluster automatically")
 	ticker := time.NewTicker(jobConfig.JobInterval)
 	defer ticker.Stop()
 	for range ticker.C {
+		rid := uuid.NewV4().String()
+		// nolint
+		ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
+		log.Infof(ctx, "auto-free job starts to execute, rid: %v", rid)
 		process(ctx, jobConfig, clusterCtr, prCtr, envCtr)
 	}
 }
@@ -89,6 +93,7 @@ func process(ctx context.Context, jobConfig *Config, clusterCtr clusterctl.Contr
 
 			// 3. free expired cluster
 			if isNeedFree {
+				log.WithFiled(ctx, "op", op).Infof("cluster %v is expired, releasing automaticlly started", clr.Name)
 				err = clusterCtr.FreeCluster(ctx, clr.ID)
 				if err != nil {
 					log.WithFiled(ctx, "op", op).Errorf("failed to free cluster: %v, err: %v", clr.Name, err.Error())
