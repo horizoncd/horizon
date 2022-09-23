@@ -158,7 +158,7 @@ func (c *controller) getFullResponses(ctx context.Context,
 		return nil, err
 	}
 
-	var responses []*ListClusterWithFullResponse
+	responses := make([]*ListClusterWithFullResponse, 0)
 
 	// 3. convert and add full path, full name
 	for _, cluster := range clusters {
