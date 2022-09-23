@@ -22,19 +22,12 @@ type Manager interface {
 	GetByName(ctx context.Context, name string) (*models.Application, error)
 	// GetByNameFuzzily get applications that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
-	// GetByNameFuzzilyByPagination get applications that fuzzily matching the given name
-	GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int, []*models.Application, error)
 	Create(ctx context.Context, application *models.Application,
 		extraMembers map[string]string) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
 	Transfer(ctx context.Context, id uint, groupID uint) error
-	// ListUserAuthorizedByNameFuzzily list application which is authorized to the specified user.
-	// 1. name is the application's fuzzily name.
-	// 2. groupIDs is the groups' id which are authorized to the specified user.
-	// 3. userInfo is the user id
-	ListUserAuthorizedByNameFuzzily(ctx context.Context,
-		name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error)
+	List(ctx context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error)
 }
 
 func New(db *gorm.DB) Manager {
@@ -53,11 +46,6 @@ type manager struct {
 
 func (m *manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error) {
 	return m.applicationDAO.GetByNameFuzzily(ctx, name)
-}
-
-func (m *manager) GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int,
-	[]*models.Application, error) {
-	return m.applicationDAO.GetByNameFuzzilyByPagination(ctx, name, query)
 }
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Application, error) {
@@ -121,7 +109,6 @@ func (m *manager) Transfer(ctx context.Context, id uint, groupID uint) error {
 	return m.applicationDAO.TransferByID(ctx, id, groupID)
 }
 
-func (m *manager) ListUserAuthorizedByNameFuzzily(ctx context.Context,
-	name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error) {
-	return m.applicationDAO.ListUserAuthorizedByNameFuzzily(ctx, name, groupIDs, userInfo, query)
+func (m *manager) List(ctx context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error) {
+	return m.applicationDAO.List(ctx, groupIDs, query)
 }

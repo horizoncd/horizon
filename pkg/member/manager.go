@@ -29,11 +29,11 @@ type Manager interface {
 	// DeleteMemberByResourceTypeID Delete a member by memberID
 	HardDeleteMemberByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) error
 
-	// ListDirectMember List the direct member of the resource
+	// ListDirectMember ListByApplication the direct member of the resource
 	ListDirectMember(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
 
-	// ListDirectMemberOnCondition List the direct member of the resource on condition
+	// ListDirectMemberOnCondition ListByApplication the direct member of the resource on condition
 	ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
 

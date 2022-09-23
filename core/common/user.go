@@ -11,6 +11,10 @@ import (
 )
 
 const (
+	UserQueryName = "filter"
+)
+
+const (
 	contextUserKey = "contextUser"
 
 	AuthorizationHeaderKey = "Authorization"

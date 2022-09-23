@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -151,7 +150,7 @@ func (t *Tekton) DeletePipelineRun(ctx context.Context, pr *v1beta1.PipelineRun)
 func (t *Tekton) getPipelineRunByID(ctx context.Context, clusterID, pipelinerunID uint) (_ *v1beta1.PipelineRun,
 	err error) {
 	selector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v,%v=%v",
-		clustercommon.PipelinerunIDLabelKey, pipelinerunID, clustercommon.ClusterIDLabelKey, clusterID))
+		common.ClusterPipelinerunIDLabelKey, pipelinerunID, common.ClusterClusterIDLabelKey, clusterID))
 	prs, err := t.client.Tekton.TektonV1beta1().PipelineRuns(t.namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector.String(),
 	})

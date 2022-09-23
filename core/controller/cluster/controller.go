@@ -28,7 +28,6 @@ import (
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -48,12 +47,8 @@ type Controller interface {
 	GetClusterByName(ctx context.Context,
 		clusterName string) (*GetClusterByNameResponse, error)
 	GetClusterOutput(ctx context.Context, clusterID uint) (interface{}, error)
-	ListCluster(ctx context.Context, applicationID uint, environments []string,
-		filter string, query *q.Query, ts []tagmodels.TagSelector) (int, []*ListClusterResponse, error)
-	ListClusterByNameFuzzily(ctx context.Context, environment,
-		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
-	ListUserClusterByNameFuzzily(ctx context.Context, environment,
-		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
+	List(ctx context.Context, query *q.Query) (int, []*ListClusterWithFullResponse, error)
+	ListByApplication(ctx context.Context, query *q.Query) (int, []*ListClusterResponse, error)
 	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*ListClusterWithExpiryResponse, error)
 
 	BuildDeploy(ctx context.Context, clusterID uint,

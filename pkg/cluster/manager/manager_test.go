@@ -9,7 +9,6 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	membermanager "g.hz.netease.com/horizon/pkg/member"
@@ -140,8 +139,11 @@ func Test(t *testing.T) {
 	assert.Equal(t, clusterGetByID.Name, cluster.Name)
 	t.Logf("%v", clusterGetByID)
 
-	count, clustersWithEnvAndRegion, err := mgr.ListByApplicationEnvsTags(ctx, applicationID,
-		[]string{environmentName}, "", nil, nil)
+	count, clustersWithEnvAndRegion, err := mgr.List(ctx,
+		q.New(q.KeyWords{
+			common.ParamApplicationID:      applicationID,
+			common.ClusterQueryEnvironment: []string{environmentName},
+		}))
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
@@ -149,49 +151,84 @@ func Test(t *testing.T) {
 	assert.Equal(t, environmentName, clustersWithEnvAndRegion[0].EnvironmentName)
 	assert.Equal(t, region.Name, clustersWithEnvAndRegion[0].RegionName)
 
-	clusters, err := mgr.ListByApplicationID(ctx, applicationID)
+	_, clusters, err := mgr.ListByApplicationID(ctx, applicationID)
 	assert.Nil(t, err)
 	assert.NotNil(t, clusters)
 	assert.Equal(t, 1, len(clusters))
 
-	count, clustersWithEnvAndRegion, err = mgr.ListByNameFuzzily(ctx, environmentName, "clu",
-		&q.Query{PageNumber: 1, PageSize: 1})
+	query := q.New(q.KeyWords{
+		common.ClusterQueryName:        "clu",
+		common.ClusterQueryEnvironment: environmentName,
+	})
+	query.PageSize = 1
+	query.PageNumber = 1
+	count, clustersWithEnvAndRegion, err = mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 
-	count, clustersWithEnvAndRegion, err = mgr.ListByNameFuzzily(ctx, environmentName, "clu",
-		&q.Query{Keywords: q.KeyWords{"template": "javaapp", "templateRelease": "v1.1.0"}, PageNumber: 1, PageSize: 1})
+	query = q.New(q.KeyWords{
+		common.ClusterQueryName:        "clu",
+		common.ClusterQueryEnvironment: environmentName,
+		common.ClusterQueryByTemplate:  "javaapp",
+		common.ClusterQueryByRelease:   "v1.1.0",
+	})
+	query.PageSize = 1
+	query.PageNumber = 1
+	count, clustersWithEnvAndRegion, err = mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, 1, len(clustersWithEnvAndRegion))
 
-	count, clustersWithEnvAndRegion, err = mgr.ListByNameFuzzily(ctx, environmentName, "clu",
-		&q.Query{Keywords: q.KeyWords{"template": "node"}, PageNumber: 1, PageSize: 1})
+	query = q.New(q.KeyWords{
+		common.ClusterQueryName:        "clu",
+		common.ClusterQueryEnvironment: environmentName,
+		common.ClusterQueryByTemplate:  "node",
+	})
+	query.PageSize = 1
+	query.PageNumber = 1
+	count, clustersWithEnvAndRegion, err = mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, count)
 	assert.Equal(t, 0, len(clustersWithEnvAndRegion))
 
-	clusterCountForUser, clustersForUser, err := mgr.ListUserAuthorizedByNameFuzzily(ctx,
-		environmentName, "clu", []uint{applicationID}, user2.ID, nil)
+	query = q.New(q.KeyWords{
+		common.ClusterQueryName:        "clu",
+		common.ParamApplicationID:      applicationID,
+		common.ClusterQueryByUser:      user2.ID,
+		common.ClusterQueryEnvironment: environmentName,
+	})
+	clusterCountForUser, clustersForUser, err := mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, clusterCountForUser)
 	for _, cluster := range clustersForUser {
 		t.Logf("%v", cluster)
 	}
 
-	clusterCountForUser, clustersForUser, err = mgr.ListUserAuthorizedByNameFuzzily(ctx,
-		environmentName, "clu", []uint{applicationID}, user2.ID,
-		&q.Query{Keywords: q.KeyWords{"template": "javaapp", "templateRelease": "v1.1.0"}})
+	query = q.New(q.KeyWords{
+		common.ClusterQueryName:        "clu",
+		common.ParamApplicationID:      applicationID,
+		common.ClusterQueryByUser:      user2.ID,
+		common.ClusterQueryEnvironment: environmentName,
+		common.ClusterQueryByTemplate:  "javaapp",
+		common.ClusterQueryByRelease:   "v1.1.0",
+	})
+	clusterCountForUser, clustersForUser, err = mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, clusterCountForUser)
 	for _, cluster := range clustersForUser {
 		t.Logf("%v", cluster)
 	}
 
-	clusterCountForUser, _, err = mgr.ListUserAuthorizedByNameFuzzily(ctx,
-		environmentName, "clu", []uint{applicationID}, user2.ID,
-		&q.Query{Keywords: q.KeyWords{"template": "node"}})
+	query = q.New(q.KeyWords{
+		common.ClusterQueryName:        "clu",
+		common.ParamApplicationID:      applicationID,
+		common.ClusterQueryByUser:      user2.ID,
+		common.ClusterQueryEnvironment: environmentName,
+		common.ClusterQueryByTemplate:  "node",
+		common.ClusterQueryByRelease:   "v1.1.0",
+	})
+	clusterCountForUser, _, err = mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, clusterCountForUser)
 
@@ -237,21 +274,24 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	t.Logf("%v", cluster)
 
-	total, cs, err := mgr.ListByApplicationEnvsTags(ctx, applicationID, nil, "", &q.Query{
-		PageNumber: 1,
-		PageSize:   10,
-	}, []tagmodels.TagSelector{
-		{
-			Key:      "k1",
-			Operator: tagmodels.In,
-			Values:   sets.NewString("v1", "v3"),
-		},
-		{
-			Key:      "k3",
-			Operator: tagmodels.In,
-			Values:   sets.NewString("v3"),
+	query = q.New(q.KeyWords{
+		common.ParamApplicationID: applicationID,
+		common.ClusterQueryTagSelector: []tagmodels.TagSelector{
+			{
+				Key:      "k1",
+				Operator: tagmodels.In,
+				Values:   sets.NewString("v1", "v3"),
+			},
+			{
+				Key:      "k3",
+				Operator: tagmodels.In,
+				Values:   sets.NewString("v3"),
+			},
 		},
 	})
+	query.PageSize = 10
+	query.PageNumber = 1
+	total, cs, err := mgr.List(ctx, query)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, total)
 	assert.Equal(t, 1, len(cs))
@@ -326,7 +366,7 @@ func Test(t *testing.T) {
 		TemplateRelease: templateRelease,
 		CreatedBy:       createdBy,
 		UpdatedBy:       updatedBy,
-		Status:          clustercommon.StatusFreeing,
+		Status:          common.ClusterStatusFreeing,
 		ExpireSeconds:   5 * secondsInOneDay,
 	}
 	_, err = mgr.Create(ctx, cluster, []*tagmodels.Tag{
@@ -341,7 +381,7 @@ func Test(t *testing.T) {
 	}, map[string]string{user2.Email: role.Owner})
 	assert.Nil(t, err)
 
-	count, clustersWithEnvAndRegion, err = mgr.ListByNameFuzzily(ctx, "", "",
+	count, clustersWithEnvAndRegion, err = mgr.List(ctx,
 		&q.Query{PageNumber: 1, PageSize: 10})
 	assert.Nil(t, err)
 	assert.Equal(t, 4, count)

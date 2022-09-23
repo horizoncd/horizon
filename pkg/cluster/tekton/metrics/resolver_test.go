@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/cluster/common"
+	"g.hz.netease.com/horizon/core/common"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +31,7 @@ func TestWrappedPipelineRun_ResolveBusinessData(t *testing.T) {
 				PipelineRun: &v1beta1.PipelineRun{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							common.ApplicationLabelKey: "app",
+							common.ClusterApplicationLabelKey: "app",
 						},
 					},
 				},
@@ -48,9 +48,9 @@ func TestWrappedPipelineRun_ResolveBusinessData(t *testing.T) {
 				PipelineRun: &v1beta1.PipelineRun{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
-							common.ApplicationLabelKey: "app",
-							common.ClusterLabelKey:     "cluster",
-							common.EnvironmentLabelKey: "environment",
+							common.ClusterApplicationLabelKey: "app",
+							common.ClusterClusterLabelKey:     "cluster",
+							common.ClusterEnvironmentLabelKey: "environment",
 						},
 					},
 				},

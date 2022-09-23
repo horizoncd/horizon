@@ -11,24 +11,11 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
-	"g.hz.netease.com/horizon/pkg/server/request"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	"g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
+	tagutil "g.hz.netease.com/horizon/pkg/util/tag"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	// param
-	_environment   = "environment"
-	_targetBranch  = "targetBranch"
-	_targetCommit  = "targetCommit"
-	_targetTag     = "targetTag"
-	_containerName = "containerName"
-	_podName       = "podName"
-	_tailLines     = "tailLines"
-	_hard          = "hard"
 )
 
 type API struct {
@@ -41,57 +28,110 @@ func NewAPI(clusterCtl cluster.Controller) *API {
 	}
 }
 
+func parseContext(c *gin.Context) *q.Query {
+	keywords := make(map[string]interface{})
+
+	userIDStr := c.Query(common.ClusterQueryByUser)
+	if userIDStr != "" {
+		userID, err := strconv.ParseUint(userIDStr, 10, 0)
+		if err != nil {
+			response.AbortWithRPCError(c,
+				rpcerror.ParamError.WithErrMsgf(
+					"failed to parse userID\n"+
+						"userID = %s\nerr = %v", userIDStr, err))
+			return nil
+		}
+		keywords[common.ClusterQueryByUser] = uint(userID)
+	}
+
+	applicationIDStr := c.Param(common.ParamApplicationID)
+	if applicationIDStr != "" {
+		applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+			return nil
+		}
+		keywords[common.ParamApplicationID] = applicationID
+	}
+
+	filter := c.Query(common.ClusterQueryName)
+	if filter != "" {
+		keywords[common.ClusterQueryName] = filter
+	}
+
+	environments := c.QueryArray(common.ClusterQueryEnvironment)
+	if len(environments) == 1 && environments[0] != "" {
+		keywords[common.ClusterQueryEnvironment] = environments[0]
+	} else if len(environments) > 1 {
+		keywords[common.ClusterQueryEnvironment] = environments
+	}
+
+	tagSelectorStr := c.Query(common.ClusterQueryTagSelector)
+	if tagSelectorStr != "" {
+		tagSelectors, err := tagutil.ParseTagSelector(tagSelectorStr)
+		if err != nil {
+			response.AbortWithRPCError(c,
+				rpcerror.ParamError.WithErrMsgf(
+					"failed to parse tagSelector\n"+
+						"selector = %s\nerr = %v", tagSelectorStr, err))
+			return nil
+		}
+		keywords[common.ClusterQueryTagSelector] = tagSelectors
+	}
+
+	template := c.Query(common.ClusterQueryByTemplate)
+	if template != "" {
+		keywords[common.ClusterQueryByTemplate] = template
+	}
+
+	release := c.Query(common.ClusterQueryByRelease)
+	if release != "" {
+		keywords[common.ClusterQueryByRelease] = release
+	}
+
+	query := q.New(keywords).WithPagination(c)
+	return query
+}
+
 func (a *API) List(c *gin.Context) {
 	const op = "cluster: list"
-	applicationIDStr := c.Param(common.ParamApplicationID)
-	applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+
+	query := parseContext(c)
+	if query == nil {
 		return
 	}
 
-	filter := c.Query(common.Filter)
-	environments := c.QueryArray(_environment)
-
-	var (
-		pageNumber, pageSize int
-	)
-	pageNumberStr := c.Query(common.PageNumber)
-	if pageNumberStr == "" {
-		pageNumber = common.DefaultPageNumber
-	} else {
-		pageNumber, err = strconv.Atoi(pageNumberStr)
+	// for /searchmyclusters
+	if strings.HasSuffix(c.Request.URL.Path, "/searchmyclusters") {
+		currentUser, err := common.UserFromContext(c)
 		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam, "invalid pageNumber")
+			response.AbortWithRPCError(c,
+				rpcerror.InternalError.WithErrMsgf(
+					"current user not found\n"+
+						"err = %v", err))
 			return
 		}
+		query.Keywords[common.ClusterQueryByUser] = currentUser.GetID()
 	}
 
-	pageSizeStr := c.Query(common.PageSize)
-	if pageSizeStr == "" {
-		pageSize = common.DefaultPageSize
-	} else {
-		pageSize, err = strconv.Atoi(pageSizeStr)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam, "invalid pageSize")
-			return
-		}
+	count, respList, err := a.clusterCtl.List(c, query)
+	if err != nil {
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
 	}
 
-	var tagSelectors []models.TagSelector
-	tsFromCtx, ok := c.Get(common.TagSelector)
-	if ok {
-		tagSelectors, ok = tsFromCtx.([]models.TagSelector)
-		if !ok {
-			log.WithFiled(c, "op", op).Errorf("%+v",
-				perror.WithMessagef(herrors.ErrParamInvalid, "invalid tag selector: %v", tagSelectors))
-		}
-	}
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: int64(count),
+		Items: respList,
+	})
+}
 
-	count, respList, err := a.clusterCtl.ListCluster(c, uint(applicationID), environments, filter, &q.Query{
-		PageNumber: pageNumber,
-		PageSize:   pageSize,
-	}, tagSelectors)
+func (a *API) ListByApplication(c *gin.Context) {
+	const op = "cluster: list"
+	query := parseContext(c)
+
+	count, respList, err := a.clusterCtl.ListByApplication(c, query)
 	if err != nil {
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
@@ -113,7 +153,7 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 
-	scope := c.Request.URL.Query().Get(common.ParamScope)
+	scope := c.Request.URL.Query().Get(common.ClusterQueryScope)
 	log.Infof(c, "scope: %v", scope)
 	scopeArray := strings.Split(scope, "/")
 	if len(scopeArray) != 2 {
@@ -124,7 +164,7 @@ func (a *API) Create(c *gin.Context) {
 	region := scopeArray[1]
 
 	mergePatch := false
-	mergepatchStr := c.Request.URL.Query().Get(common.ParamMergePatch)
+	mergepatchStr := c.Request.URL.Query().Get(common.ClusterQueryMergePatch)
 	if mergepatchStr != "" {
 		mergePatch, err = strconv.ParseBool(mergepatchStr)
 		if err != nil {
@@ -134,7 +174,7 @@ func (a *API) Create(c *gin.Context) {
 		}
 	}
 
-	extraOwners := c.QueryArray(common.ParamExtraOwner)
+	extraOwners := c.QueryArray(common.ClusterQueryExtraOwner)
 
 	var request *cluster.CreateClusterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -189,7 +229,7 @@ func (a *API) Update(c *gin.Context) {
 	}
 
 	mergePatch := false
-	mergepatchStr := c.Request.URL.Query().Get(common.ParamMergePatch)
+	mergepatchStr := c.Request.URL.Query().Get(common.ClusterQueryMergePatch)
 	if mergepatchStr != "" {
 		mergePatch, err = strconv.ParseBool(mergepatchStr)
 		if err != nil {
@@ -255,7 +295,7 @@ func (a *API) Delete(c *gin.Context) {
 		return
 	}
 	hard := false
-	hardStr, ok := c.GetQuery(_hard)
+	hardStr, ok := c.GetQuery(common.ClusterQueryHard)
 	if ok {
 		hard, err = strconv.ParseBool(hardStr)
 		if err != nil {
@@ -274,66 +314,6 @@ func (a *API) Delete(c *gin.Context) {
 		return
 	}
 	response.Success(c)
-}
-
-func (a *API) ListByNameFuzzily(c *gin.Context) {
-	op := "cluster: list by name fuzzily"
-	filter := c.Query(common.Filter)
-	environment := c.Query(_environment)
-
-	pageNumber, pageSize, err := request.GetPageParam(c)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-
-	keywords := request.GetFilterParam(c)
-
-	count, respList, err := a.clusterCtl.ListClusterByNameFuzzily(c, environment, filter, &q.Query{
-		Keywords:   keywords,
-		PageNumber: pageNumber,
-		PageSize:   pageSize,
-	})
-	if err != nil {
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-
-	response.SuccessWithData(c, response.DataWithTotal{
-		Total: int64(count),
-		Items: respList,
-	})
-}
-
-func (a *API) ListUserClusterByNameFuzzily(c *gin.Context) {
-	op := "cluster: list user cluster by name fizzily"
-	filter := c.Query(common.Filter)
-	environment := c.Query(_environment)
-
-	pageNumber, pageSize, err := request.GetPageParam(c)
-	if err != nil {
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
-		return
-	}
-
-	keywords := request.GetFilterParam(c)
-
-	count, respList, err := a.clusterCtl.ListUserClusterByNameFuzzily(c, environment, filter, &q.Query{
-		PageNumber: pageNumber,
-		PageSize:   pageSize,
-		Keywords:   keywords,
-	})
-	if err != nil {
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-
-	response.SuccessWithData(c, response.DataWithTotal{
-		Total: int64(count),
-		Items: respList,
-	})
 }
 
 func (a *API) Free(c *gin.Context) {
@@ -389,7 +369,7 @@ func (a *API) GetContainers(c *gin.Context) {
 		return
 	}
 
-	podName := c.Query(_podName)
+	podName := c.Query(common.ClusterQueryPodName)
 	if podName == "" {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("podName should not be empty"))
 		return
@@ -419,7 +399,7 @@ func (a *API) GetClusterPod(c *gin.Context) {
 		return
 	}
 
-	podName := c.Query(_podName)
+	podName := c.Query(common.ClusterQueryPodName)
 	if podName == "" {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("podName should not be empty"))
 		return

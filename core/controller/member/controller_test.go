@@ -288,8 +288,6 @@ func TestTemplateMember(t *testing.T) {
 		FullName: "Jerry",
 		Email:    "Jerry@mail.com",
 		Phone:    "12390821",
-		OIDCId:   "HZ32131",
-		OIDCType: "netease",
 		Admin:    false,
 	}
 	jerry, err = manager.UserManager.Create(ctx, jerry)

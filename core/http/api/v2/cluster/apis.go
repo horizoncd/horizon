@@ -35,7 +35,7 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 
-	scope := c.Request.URL.Query().Get(common.ParamScope)
+	scope := c.Request.URL.Query().Get(common.ClusterQueryScope)
 	log.Infof(c, "scope: %v", scope)
 	scopeArray := strings.Split(scope, "/")
 	if len(scopeArray) != 2 {
@@ -46,7 +46,7 @@ func (a *API) Create(c *gin.Context) {
 	region := scopeArray[1]
 
 	mergePatch := false
-	mergePatchStr := c.Request.URL.Query().Get(common.ParamMergePatch)
+	mergePatchStr := c.Request.URL.Query().Get(common.ClusterQueryMergePatch)
 	if mergePatchStr != "" {
 		mergePatch, err = strconv.ParseBool(mergePatchStr)
 		if err != nil {
@@ -56,7 +56,7 @@ func (a *API) Create(c *gin.Context) {
 		}
 	}
 
-	extraOwners := c.QueryArray(common.ParamExtraOwner)
+	extraOwners := c.QueryArray(common.ClusterQueryExtraOwner)
 
 	var request *cluster.CreateClusterRequestV2
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -113,7 +113,7 @@ func (a *API) Update(c *gin.Context) {
 	}
 
 	mergePatch := false
-	mergepatchStr := c.Request.URL.Query().Get(common.ParamMergePatch)
+	mergepatchStr := c.Request.URL.Query().Get(common.ClusterQueryMergePatch)
 	if mergepatchStr != "" {
 		mergePatch, err = strconv.ParseBool(mergepatchStr)
 		if err != nil {

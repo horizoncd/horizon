@@ -19,8 +19,12 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.Create,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/applications/:%v/clusters", common.ParamApplicationID),
+			Pattern:     "clusters",
 			HandlerFunc: api.List,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/applications/:%v/clusters", common.ParamApplicationID),
+			HandlerFunc: api.ListByApplication,
 		}, {
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/clusters/:%v", common.ParamClusterID),
@@ -121,12 +125,12 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		{
 			Method:      http.MethodGet,
 			Pattern:     "/searchclusters",
-			HandlerFunc: api.ListByNameFuzzily,
+			HandlerFunc: api.List,
 		},
 		{
 			Method:      http.MethodGet,
 			Pattern:     "/searchmyclusters",
-			HandlerFunc: api.ListUserClusterByNameFuzzily,
+			HandlerFunc: api.List,
 		},
 		{
 			Method:      http.MethodGet,

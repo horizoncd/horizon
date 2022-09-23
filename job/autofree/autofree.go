@@ -10,6 +10,7 @@ import (
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	userctl "g.hz.netease.com/horizon/core/controller/user"
 	"g.hz.netease.com/horizon/lib/q"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/autofree"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -24,7 +25,13 @@ func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Confi
 		log.Errorf(ctx, "failed to verify operator, err: %v", err.Error())
 		panic(err)
 	}
-	ctx = common.WithContext(ctx, user)
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:     user.Name,
+		FullName: user.FullName,
+		ID:       user.ID,
+		Email:    user.Email,
+		Admin:    user.IsAdmin,
+	})
 
 	// start job
 	log.Infof(ctx, "Starting releasing expired cluster automatically every %v", jobConfig.JobInterval)

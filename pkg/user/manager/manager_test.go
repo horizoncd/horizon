@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/user/models"
@@ -24,16 +24,12 @@ var (
 
 func Test(t *testing.T) {
 	var (
-		name     = "Tony"
-		email    = "tony@163.com"
-		oidcID   = "H12323"
-		oidcType = "ne"
+		name  = "Tony"
+		email = "tony@163.com"
 	)
 	u, err := mgr.Create(ctx, &models.User{
-		Name:     name,
-		Email:    email,
-		OIDCId:   oidcID,
-		OIDCType: oidcType,
+		Name:  name,
+		Email: email,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -43,18 +39,6 @@ func Test(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf(string(b))
-
-	u2, err := mgr.GetByOIDCMeta(ctx, oidcType, email)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, name, u2.Name)
-	assert.Equal(t, email, u2.Email)
-
-	// user not exits
-	u3, err := mgr.GetByOIDCMeta(ctx, "not-exist", "not-exist")
-	assert.Nil(t, err)
-	assert.Nil(t, u3)
 
 	u4, err := mgr.GetUserByEmail(ctx, email)
 	assert.Nil(t, err)
@@ -86,8 +70,6 @@ func TestSearchUser(t *testing.T) {
 			Name:     fmt.Sprintf("%s%d", name1, i),
 			Email:    fmt.Sprintf("%s%d@163.com", name1, i),
 			FullName: fmt.Sprintf("%s%d", strings.ToUpper(name1), i),
-			OIDCId:   strconv.Itoa(i),
-			OIDCType: "netease",
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -97,66 +79,70 @@ func TestSearchUser(t *testing.T) {
 			Name:     fmt.Sprintf("%s%d", name2, i),
 			Email:    fmt.Sprintf("%s%d@163.com", name2, i),
 			FullName: fmt.Sprintf("%s%d", strings.ToUpper(name2), i),
-			OIDCId:   strconv.Itoa(i),
-			OIDCType: "netease",
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	count, users, err := mgr.SearchUser(ctx, name1, &q.Query{
+	count, users, err := mgr.List(ctx, &q.Query{
+		Keywords:   q.KeyWords{common.UserQueryName: name1},
 		PageNumber: 1,
 		PageSize:   5,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(users))
-	assert.Equal(t, 10, count)
+	assert.Equal(t, int64(10), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = mgr.SearchUser(ctx, name1, &q.Query{
+	count, users, err = mgr.List(ctx, &q.Query{
+		Keywords:   q.KeyWords{common.UserQueryName: name1},
 		PageNumber: 2,
 		PageSize:   5,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(users))
-	assert.Equal(t, 10, count)
+	assert.Equal(t, int64(10), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = mgr.SearchUser(ctx, name2, &q.Query{
+	count, users, err = mgr.List(ctx, &q.Query{
+		Keywords:   q.KeyWords{common.UserQueryName: name2},
 		PageNumber: 0,
 		PageSize:   3,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(users))
-	assert.Equal(t, 10, count)
+	assert.Equal(t, int64(10), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = mgr.SearchUser(ctx, "5", &q.Query{
+	count, users, err = mgr.List(ctx, &q.Query{
+		Keywords:   q.KeyWords{common.UserQueryName: "5"},
 		PageNumber: 0,
 		PageSize:   3,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(users))
-	assert.Equal(t, 2, count)
+	assert.Equal(t, int64(2), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = mgr.SearchUser(ctx, "e", nil)
+	count, users, err = mgr.List(ctx, &q.Query{
+		Keywords: q.KeyWords{common.UserQueryName: "e"},
+	})
 	assert.Nil(t, err)
 	assert.Equal(t, 20, len(users))
-	assert.Equal(t, 20, count)
+	assert.Equal(t, int64(20), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))

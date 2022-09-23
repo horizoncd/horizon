@@ -8,7 +8,7 @@ package metrics
 import (
 	"sort"
 
-	"g.hz.netease.com/horizon/pkg/cluster/common"
+	common "g.hz.netease.com/horizon/core/common"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -159,18 +159,18 @@ func (wpr *WrappedPipelineRun) ResolveMetadata() *PrMetadata {
 // ResolveBusinessData 解析pipelineRun所包含的业务数据，主要包含application、cluster、environment、PipelinerunID
 func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
 	labels := wpr.PipelineRun.Labels
-	application := labels[common.ApplicationLabelKey]
-	cluster := labels[common.ClusterLabelKey]
-	environment := labels[common.EnvironmentLabelKey]
-	applicationIDStr := labels[common.ApplicationIDLabelKey]
-	clusterIDStr := labels[common.ClusterIDLabelKey]
-	pipelinerunID := labels[common.PipelinerunIDLabelKey]
-	region := labels[common.RegionLabelKey]
-	regionID := labels[common.RegionIDLabelKey]
-	template := labels[common.TemplateKey]
+	application := labels[common.ClusterApplicationLabelKey]
+	cluster := labels[common.ClusterClusterLabelKey]
+	environment := labels[common.ClusterEnvironmentLabelKey]
+	applicationIDStr := labels[common.ClusterApplicationIDLabelKey]
+	clusterIDStr := labels[common.ClusterClusterIDLabelKey]
+	pipelinerunID := labels[common.ClusterPipelinerunIDLabelKey]
+	region := labels[common.ClusterRegionLabelKey]
+	regionID := labels[common.ClusterRegionIDLabelKey]
+	template := labels[common.ClusterTemplateKey]
 
 	annotations := wpr.PipelineRun.Annotations
-	operator := annotations[common.OperatorAnnotationKey]
+	operator := annotations[common.ClusterOperatorAnnotationKey]
 	return &PrBusinessData{
 		Application:   application,
 		Cluster:       cluster,

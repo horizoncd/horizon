@@ -21,6 +21,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 		{
 			Method:      http.MethodGet,
+			Pattern:     "/applications",
+			HandlerFunc: api.List,
+		},
+		{
+			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/applications/:%v", common.ParamApplicationID),
 			HandlerFunc: api.Get,
 		},
@@ -54,7 +59,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		{
 			Method:      http.MethodGet,
 			Pattern:     "/applications/searchapplications",
-			HandlerFunc: api.SearchApplication,
+			HandlerFunc: api.List,
 		},
 		{
 			Method:      http.MethodGet,

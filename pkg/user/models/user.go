@@ -11,7 +11,20 @@ type User struct {
 	FullName string
 	Email    string
 	Phone    string
-	OIDCId   string `gorm:"column:oidc_id"`
-	OIDCType string `gorm:"column:oidc_type"`
 	Admin    bool
+	Banned   bool
+}
+
+type IDPUserRelationship struct {
+	global.Model
+
+	Sub    string
+	IdpID  string
+	UserID string
+	Name   string
+	Email  string
+}
+
+func (IDPUserRelationship) TableName() string {
+	return "tb_idp_user"
 }

@@ -128,7 +128,6 @@ func (c *controller) Login(ctx context.Context, code string, state string) (*use
 			Name:     strings.SplitN(claims.Email, "@", 2)[0],
 			FullName: claims.Name,
 			Email:    claims.Email,
-			OIDCType: idp.Name,
 		})
 		if err != nil {
 			return nil, err

@@ -21,6 +21,7 @@ import (
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	tmodels "g.hz.netease.com/horizon/pkg/template/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -255,7 +256,7 @@ var (
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	manager = managerparam.InitManager(db)
-	if err := db.AutoMigrate(&models.Application{}, &clustermodels.Cluster{}); err != nil {
+	if err := db.AutoMigrate(&models.Application{}, &clustermodels.Cluster{}, &regionmodels.Region{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
@@ -654,7 +655,11 @@ func TestListUserApplication(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	count, resps, err := c.ListUserApplication(ctx, "appFu", &q.Query{
+	count, resps, err := c.List(ctx, &q.Query{
+		Keywords: q.KeyWords{
+			common.ClusterQueryByUser: uint(2),
+			common.ClusterQueryName:   "appFu",
+		},
 		PageNumber: 0,
 		PageSize:   common.DefaultPageSize,
 	})
@@ -674,7 +679,11 @@ func TestListUserApplication(t *testing.T) {
 		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
-	count, resps, err = c.ListUserApplication(ctx, "appFu", &q.Query{
+	count, resps, err = c.List(ctx, &q.Query{
+		Keywords: q.KeyWords{
+			common.ClusterQueryByUser: uint(2),
+			common.ClusterQueryName:   "appFu",
+		},
 		PageNumber: 0,
 		PageSize:   common.DefaultPageSize,
 	})

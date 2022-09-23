@@ -2,33 +2,30 @@ package dao
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
+	corecommon "g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/common"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/user/models"
 	"gorm.io/gorm"
 )
 
-// _defaultQuery default query params
-var _defaultQuery = &q.Query{
-	// PageNumber start with 1
-	PageNumber: 1,
-	// PageSize default pageSize is 20
-	PageSize: 20,
-}
-
 type DAO interface {
 	// Create user
 	Create(ctx context.Context, user *models.User) (*models.User, error)
-	// GetByOIDCMeta get user by oidcType and email
-	GetByOIDCMeta(ctx context.Context, oidcType, email string) (*models.User, error)
-	// SearchUser search user with a given filter, search for name/full_name/email.
-	SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	ListByEmail(ctx context.Context, emails []string) ([]*models.User, error)
 	GetByIDs(ctx context.Context, userID []uint) ([]models.User, error)
+	List(ctx context.Context, query *q.Query) (int64, []*models.User, error)
+	GetByID(ctx context.Context, id uint) (*models.User, error)
+	UpdateByID(ctx context.Context, id uint, newUser *models.User) (*models.User, error)
 }
+
+var model = &models.User{}
 
 // NewDAO returns an instance of the default DAO
 func NewDAO(db *gorm.DB) DAO {
@@ -45,6 +42,39 @@ func (d *dao) Create(ctx context.Context, user *models.User) (*models.User, erro
 	}
 
 	return user, result.Error
+}
+
+func (d *dao) List(ctx context.Context, query *q.Query) (int64, []*models.User, error) {
+	var users []*models.User
+	tx := d.db.Model(model)
+	if query != nil {
+		for k, v := range query.Keywords {
+			switch k {
+			case corecommon.UserQueryName:
+				tx = tx.Where("name like ?", fmt.Sprintf("%%%v%%", v))
+			}
+		}
+	}
+
+	var total int64
+	tx.Count(&total)
+
+	if query != nil {
+		tx = tx.Limit(query.Limit()).Offset(query.Offset())
+	}
+	res := tx.Scan(&users)
+
+	err := res.Error
+	if err != nil {
+		return 0, nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.UserInDB, "get user failed"),
+			"get user failed:\n"+
+				"query = %v\n err = %v", query, err)
+	}
+
+	if res.RowsAffected == 0 {
+		return 0, make([]*models.User, 0), nil
+	}
+	return total, users, nil
 }
 
 func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]models.User, error) {
@@ -99,34 +129,53 @@ func (d *dao) ListByEmail(ctx context.Context, emails []string) ([]*models.User,
 	return users, nil
 }
 
-func (d *dao) SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error) {
-	if query == nil {
-		query = _defaultQuery
+func (d *dao) GetByID(ctx context.Context, id uint) (*models.User, error) {
+	var user models.User
+	res := d.db.Where("id = ?", id).First(&user)
+
+	err := res.Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, perror.Wrapf(herrors.NewErrNotFound(herrors.UserInDB, "user not found"),
+				"user not found:\n"+
+					"id = %v\nerr = %v", id, err)
+		}
+		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.UserInDB, "failed to get user"),
+			"failed to get user\n"+
+				"id = %v\nerr = %v", id, err)
 	}
 
-	if query.PageNumber < 1 {
-		query.PageNumber = _defaultQuery.PageNumber
+	return &user, nil
+}
+
+func (d *dao) UpdateByID(ctx context.Context, id uint, newUser *models.User) (*models.User, error) {
+	var user *models.User
+	err := d.db.
+		Transaction(
+			func(tx *gorm.DB) error {
+				res := tx.Where("id = ?", id).Select("admin", "banned").Updates(newUser)
+				if res.Error != nil {
+					return perror.Wrapf(herrors.NewErrUpdateFailed(herrors.UserInDB, "failed to update user"),
+						"failed to update user\n"+
+							"id = %v\nerr = %v", id, res.Error)
+				}
+
+				res = tx.Where("id = ?", id).First(&user)
+				if err := res.Error; err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						return perror.Wrapf(herrors.NewErrNotFound(herrors.UserInDB, "user not found"),
+							"user not found:\n"+
+								"id = %v\nerr = %v", id, err)
+					}
+					return perror.Wrapf(herrors.NewErrGetFailed(herrors.UserInDB, "failed to get user"),
+						"failed to get user\n"+
+							"id = %v\nerr = %v", id, err)
+				}
+				fmt.Println(user)
+				return nil
+			})
+	if err != nil {
+		return nil, err
 	}
-
-	if query.PageSize == 0 {
-		query.PageSize = _defaultQuery.PageSize
-	}
-
-	offset := (query.PageNumber - 1) * query.PageSize
-	limit := query.PageSize
-
-	like := "%" + filter + "%"
-	var users []models.User
-	result := d.db.WithContext(ctx).Raw(common.UserSearch, like, like, like, limit, offset).Scan(&users)
-	if result.Error != nil {
-		return 0, nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
-	}
-
-	var count int
-	result = d.db.WithContext(ctx).Raw(common.UserSearchCount, like, like, like).Scan(&count)
-	if result.Error != nil {
-		return 0, nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
-	}
-
-	return count, users, nil
+	return user, nil
 }

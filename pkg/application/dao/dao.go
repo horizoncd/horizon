@@ -7,7 +7,6 @@ import (
 
 	corecommon "g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -23,10 +22,6 @@ const (
 	KeyTemplateRelease = "templateRelease"
 )
 
-var (
-	model = &models.Application{}
-)
-
 type DAO interface {
 	GetByID(ctx context.Context, id uint) (*models.Application, error)
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
@@ -35,8 +30,6 @@ type DAO interface {
 	GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error)
 	// GetByNameFuzzily get applications that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
-	// GetByNameFuzzilyByPagination get applications that fuzzily matching the given name
-	GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int, []*models.Application, error)
 	// CountByGroupID get the count of the records matching the given groupID
 	CountByGroupID(ctx context.Context, groupID uint) (int64, error)
 	Create(ctx context.Context, application *models.Application,
@@ -44,8 +37,7 @@ type DAO interface {
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
 	TransferByID(ctx context.Context, id uint, groupID uint) error
-	ListUserAuthorizedByNameFuzzily(ctx context.Context,
-		name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error)
+	List(c context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -81,52 +73,6 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Appl
 	}
 
 	return applications, result.Error
-}
-
-func (d *dao) GetByNameFuzzilyByPagination(ctx context.Context, name string, query q.Query) (int,
-	[]*models.Application, error) {
-	var (
-		applications []*models.Application
-		total        int
-	)
-
-	offset := (query.PageNumber - 1) * query.PageSize
-	limit := query.PageSize
-
-	condition := orm.ValidateQuery(query, map[string]string{
-		KeyTemplate:        "template",
-		KeyTemplateRelease: "template_release",
-	})
-
-	prehandle := func() *gorm.DB {
-		db := d.db.WithContext(ctx)
-		for k, v := range condition {
-			db = db.Where(fmt.Sprintf("%s = ?", k), v)
-		}
-		return db
-	}
-
-	db := prehandle()
-	result := db.Where("name like ?", fmt.Sprintf("%%%s%%", name)).
-		Offset(offset).Limit(limit).Find(&applications)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return total, applications, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
-		}
-		return total, applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
-	}
-
-	db = prehandle()
-	result = db.Select("count(*) as total").Model(model).
-		Where("name like ?", fmt.Sprintf("%%%s%%", name)).Find(&total)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return total, applications, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
-		}
-		return total, applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
-	}
-
-	return total, applications, nil
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error) {
@@ -328,35 +274,66 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 	return err
 }
 
-func (d *dao) ListUserAuthorizedByNameFuzzily(ctx context.Context,
-	name string, groupIDs []uint, userInfo uint, query *q.Query) (int, []*models.Application, error) {
+func (d *dao) List(c context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error) {
 	var (
 		applications []*models.Application
-		total        int
+		total        int64
 	)
 
-	offset := (query.PageNumber - 1) * query.PageSize
-	limit := query.PageSize
-	like := "%" + name + "%"
+	statement := d.db.WithContext(c).Table("tb_application as a")
 
-	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByUserAndNameFuzzily,
-		userInfo, like, groupIDs, like, limit, offset).
-		Scan(&applications)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return 0, nil, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
+	if query != nil {
+		for k, v := range query.Keywords {
+			switch k {
+			case corecommon.ApplicationQueryName:
+				statement = statement.Where("a.name like ?", fmt.Sprintf("%%%v%%", v))
+			case corecommon.ApplicationQueryByUser:
+				statement = statement.
+					Select("a.*").
+					Joins("join tb_member as m on m.resource_id = a.id").
+					Where("m.resource_type = 'applications'").
+					Where("m.member_type = '0'").
+					Where("m.membername_id = ?", v)
+			case corecommon.ApplicationQueryByTemplate:
+				statement = statement.Where("a.template = ?", v)
+			case corecommon.ApplicationQueryByRelease:
+				statement = statement.Where("a.template_release = ?", v)
+			}
 		}
-		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
+
+		statement = statement.Where("a.deleted_ts = 0")
+
+		if len(groupIDs) > 0 &&
+			query.Keywords != nil &&
+			query.Keywords[corecommon.ApplicationQueryByUser] != nil {
+			statementGroup := d.db.WithContext(c).Table("tb_application as a")
+			for k, v := range query.Keywords {
+				switch k {
+				case corecommon.ApplicationQueryName:
+					statementGroup = statementGroup.Where("a.name like ?", fmt.Sprintf("%%%v%%", v))
+				case corecommon.ApplicationQueryByTemplate:
+					statementGroup = statementGroup.Where("a.template = ?", v)
+				case corecommon.ApplicationQueryByRelease:
+					statementGroup = statementGroup.Where("a.template_release = ?", v)
+				}
+			}
+			statementGroup = statementGroup.Where("group_id in ?", groupIDs).Where("a.deleted_ts = 0")
+			statement = d.db.Raw("? union ?", statement, statementGroup)
+		}
 	}
 
-	result = d.db.WithContext(ctx).Raw(common.ApplicationCountByUserAndNameFuzzily, userInfo,
-		like, groupIDs, like).Scan(&total)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return 0, nil, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
-		}
-		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
+	res := d.db.Raw("select count(distinct id) from (?) as apps", statement).Debug().Scan(&total)
+
+	if res.Error != nil {
+		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, res.Error.Error())
 	}
 
-	return total, applications, nil
+	statement = d.db.Raw("select distinct * from (?) as apps order by updated_at desc limit ? offset ?",
+		statement, query.Limit(), query.Offset())
+	res = statement.Debug().Scan(&applications)
+	if res.Error != nil {
+		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, res.Error.Error())
+	}
+
+	return int(total), applications, nil
 }

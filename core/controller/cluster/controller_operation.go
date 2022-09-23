@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
-	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -121,7 +121,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-	if diff == "" && cluster.Status != clustercommon.StatusFreed {
+	if diff == "" && cluster.Status != common.ClusterStatusFreed {
 		return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
 	}
 
@@ -180,8 +180,8 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 
 	// 6. reset cluster status
-	if cluster.Status == clustercommon.StatusFreed {
-		cluster.Status = clustercommon.StatusEmpty
+	if cluster.Status == common.ClusterStatusFreed {
+		cluster.Status = common.ClusterStatusEmpty
 		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 		if err != nil {
 			return nil, err
@@ -308,8 +308,8 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 
 	// 9. reset cluster status
-	if cluster.Status == clustercommon.StatusFreed {
-		cluster.Status = clustercommon.StatusEmpty
+	if cluster.Status == common.ClusterStatusFreed {
+		cluster.Status = common.ClusterStatusEmpty
 		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 		if err != nil {
 			return nil, err

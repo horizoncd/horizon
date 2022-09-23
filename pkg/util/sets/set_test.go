@@ -94,7 +94,7 @@ func TestNewStringSet(t *testing.T) {
 func TestStringSetList(t *testing.T) {
 	s := NewString("z", "y", "x", "a")
 	if !reflect.DeepEqual(s.List(), []string{"a", "x", "y", "z"}) {
-		t.Errorf("List gave unexpected result: %#v", s.List())
+		t.Errorf("ListByApplication gave unexpected result: %#v", s.List())
 	}
 }
 
