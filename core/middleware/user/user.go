@@ -6,26 +6,24 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/config/oidc"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/user/models"
-
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/sessions"
 )
 
 const (
-	HTTPHeaderOperator     = "Operator"
-	AuthorizationHeaderKey = "Authorization"
+	HTTPHeaderOperator = "Operator"
+	NotAuthHeader      = "X-OIDC-Redirect-To"
 )
 
 // Middleware check user is exists in db. If not, add user into db.
 // Then attach a User object into context.
-func Middleware(param *param.Param, config oidc.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
+func Middleware(param *param.Param, store sessions.Store,
+	skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		mgr := param.UserManager
-
 		operator := c.Request.Header.Get(HTTPHeaderOperator)
 		// TODO(gjq): remove this later
 		// 1. get user by operator if operator is not empty
@@ -60,48 +58,33 @@ func Middleware(param *param.Param, config oidc.Config, skippers ...middleware.S
 			return
 		}
 
-		// 3. else, get by oidc
-		oidcID := c.Request.Header.Get(config.OIDCIDHeader)
-		oidcType := c.Request.Header.Get(config.OIDCTypeHeader)
-		userName := c.Request.Header.Get(config.UserHeader)
-		fullName := c.Request.Header.Get(config.FullNameHeader)
-		email := c.Request.Header.Get(config.EmailHeader)
-
-		// if one of the fields is empty, return 401 Unauthorized
-		// the oidcID will be empty for the common account, such as grp.cloudnative
-		if len(oidcType) == 0 || len(userName) == 0 ||
-			len(email) == 0 || len(fullName) == 0 {
-			response.Abort(c, http.StatusUnauthorized,
-				http.StatusText(http.StatusUnauthorized), http.StatusText(http.StatusUnauthorized))
-			return
-		}
-
-		u, err := mgr.GetByOIDCMeta(c, oidcType, email)
+		session, err := store.Get(c.Request, common.CookieKeyAuth)
 		if err != nil {
-			response.AbortWithInternalError(c, fmt.Sprintf("error to find user: %v", err))
+			response.Abort(c, http.StatusUnauthorized,
+				http.StatusText(http.StatusUnauthorized),
+				fmt.Sprintf("session is not found\n"+
+					"session name = %s\n, err = %v", common.CookieKeyAuth, err))
 			return
 		}
-		if u == nil {
-			u, err = mgr.Create(c, &models.User{
-				Name:     userName,
-				FullName: fullName,
-				Email:    email,
-				OIDCId:   oidcID,
-				OIDCType: oidcType,
-			})
-			if err != nil {
-				response.AbortWithInternalError(c, fmt.Sprintf("error to create user: %v", err))
-				return
-			}
+
+		u := session.Values[common.SessionKeyAuthUser]
+		if user, ok := u.(*userauth.DefaultInfo); ok && user != nil {
+			// attach user to context
+			common.SetUser(c, user)
+			c.Next()
+			return
 		}
-		// attach user to context
-		common.SetUser(c, &userauth.DefaultInfo{
-			Name:     u.Name,
-			FullName: u.FullName,
-			ID:       u.ID,
-			Email:    u.Email,
-			Admin:    u.Admin,
-		})
-		c.Next()
+
+		// default status code of response is 200,
+		// if status is not 200, that means it has been handled by other middleware,
+		// so just omit it.
+		if c.Writer.Status() != http.StatusOK {
+			c.Next()
+			return
+		}
+
+		c.Header(NotAuthHeader, "NotAuth")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		_, _ = c.Writer.WriteString("Unauthorized")
 	}, skippers...)
 }

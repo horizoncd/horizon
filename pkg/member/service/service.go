@@ -211,32 +211,34 @@ func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
 		return err
 	}
 
-	// 1. get member
-	memberItem, err := s.memberManager.GetByID(ctx, memberID)
-	if err != nil {
-		return err
-	}
-	if memberItem == nil {
-		return ErrMemberNotExist
-	}
+	if !currentUser.IsAdmin() {
+		// 1. get member
+		memberItem, err := s.memberManager.GetByID(ctx, memberID)
+		if err != nil {
+			return err
+		}
+		if memberItem == nil {
+			return ErrMemberNotExist
+		}
 
-	// 2. check if the grant current user can remove the member
-	var userMemberInfo *models.Member
-	userMemberInfo, err = s.getMember(ctx, string(memberItem.ResourceType),
-		memberItem.ResourceID, models.MemberUser, currentUser.GetID())
-	if err != nil {
-		return err
-	}
-	if userMemberInfo == nil {
-		return ErrNotPermitted
-	}
+		// 2. check if the grant current user can remove the member
+		var userMemberInfo *models.Member
+		userMemberInfo, err = s.getMember(ctx, string(memberItem.ResourceType),
+			memberItem.ResourceID, models.MemberUser, currentUser.GetID())
+		if err != nil {
+			return err
+		}
+		if userMemberInfo == nil {
+			return ErrNotPermitted
+		}
 
-	comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, memberItem.Role)
-	if err != nil {
-		return err
-	}
-	if comResult == roleservice.RoleSmaller {
-		return ErrRemoveHighRole
+		comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, memberItem.Role)
+		if err != nil {
+			return err
+		}
+		if comResult == roleservice.RoleSmaller {
+			return ErrRemoveHighRole
+		}
 	}
 
 	return s.memberManager.DeleteMember(ctx, memberID)

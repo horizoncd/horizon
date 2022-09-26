@@ -8,6 +8,7 @@ import (
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
+	"g.hz.netease.com/horizon/pkg/grafana"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
@@ -34,6 +35,7 @@ type Param struct {
 	UserSvc        userservice.Service
 	RoleService    role.Service
 	ScopeService   scope.Service
+	GrafanaService grafana.Service
 
 	// others
 	Hook                 hook.Hook

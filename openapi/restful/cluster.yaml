@@ -95,6 +95,8 @@ paths:
                     "description":"xxxxxxxxxxxx",
                     "git":{
                         "//branch":"branch can be edited",
+                        "//tag":"tag can be edited",
+                        "//commit":"commit can be edited",
                         "branch":"develop"
                     },
                     "//tags": "tags is an array constructed by key-value pairs, key and value are must be string, and must be 63 characters or less, beginning and ending with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between. ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$ ",
@@ -1216,60 +1218,58 @@ paths:
             application/yaml:
               schema:
                 example: |
-{
-    "data": {
-        "metadata": {
-            "name": "sph-test-6f94ff78bb-g6xr6",
-            "generateName": "sph-test-6f94ff78bb-",
-            "namespace": "dev-1",
-            "selfLink": "/api/v1/namespaces/dev-1/pods/sph-test-6f94ff78bb-g6xr6",
-            "uid": "61c18122-a49c-47bc-ad6f-8ae2152adc4a",
-            "resourceVersion": "476600208",
-            "creationTimestamp": "2022-07-27T09:46:38Z",
-            "labels": {
-                "cloudnative.music.netease.com/application": "sph",
-                "cloudnative.music.netease.com/cluster": "clustername",
-                "cloudnative.music.netease.com/environment": "dev",
-                "rollouts-pod-template-hash": "6f94ff78bb"
-            },
-        },
-        "spec": {
-            "volumes": [],
-            "initContainers": [],
-            "containers": [
-                {
-                    "name": "sph-test",
-                    "image": "harbor.mock.org/cloudnative-template/javaapp:v1.2.0",
-                    "env": [],
-                    "resources": {
-                        "limits": {
-                            "cpu": "1",
-                            "ephemeral-storage": "60Gi",
-                            "memory": "2Gi"
-                        },
-                        "requests": {
-                            "cpu": "250m",
-                            "ephemeral-storage": "128Mi",
-                            "memory": "769Mi"
-                        }
-                    },
-                    "volumeMounts": [],
-                    "terminationMessagePath": "/dev/termination-log",
-                    "terminationMessagePolicy": "File",
-                    "imagePullPolicy": "IfNotPresent",
-                    "securityContext": {
-                        "capabilities": {
-                            "add": [
-                                "SYS_PTRACE"
-                            ]
-                        },
-                        "runAsUser": 10001,
-                        "runAsGroup": 10001
-                    }
-                }
-            ],
-        }
-    }
-}
-
-
+                  {
+                      "data": {
+                          "metadata": {
+                              "name": "sph-test-6f94ff78bb-g6xr6",
+                              "generateName": "sph-test-6f94ff78bb-",
+                              "namespace": "dev-1",
+                              "selfLink": "/api/v1/namespaces/dev-1/pods/sph-test-6f94ff78bb-g6xr6",
+                              "uid": "61c18122-a49c-47bc-ad6f-8ae2152adc4a",
+                              "resourceVersion": "476600208",
+                              "creationTimestamp": "2022-07-27T09:46:38Z",
+                              "labels": {
+                                  "cloudnative.music.netease.com/application": "sph",
+                                  "cloudnative.music.netease.com/cluster": "clustername",
+                                  "cloudnative.music.netease.com/environment": "dev",
+                                  "rollouts-pod-template-hash": "6f94ff78bb"
+                              },
+                          },
+                          "spec": {
+                              "volumes": [],
+                              "initContainers": [],
+                              "containers": [
+                                  {
+                                      "name": "sph-test",
+                                      "image": "harbor.mock.org/cloudnative-template/javaapp:v1.2.0",
+                                      "env": [],
+                                      "resources": {
+                                          "limits": {
+                                              "cpu": "1",
+                                              "ephemeral-storage": "60Gi",
+                                              "memory": "2Gi"
+                                          },
+                                          "requests": {
+                                              "cpu": "250m",
+                                              "ephemeral-storage": "128Mi",
+                                              "memory": "769Mi"
+                                          }
+                                      },
+                                      "volumeMounts": [],
+                                      "terminationMessagePath": "/dev/termination-log",
+                                      "terminationMessagePolicy": "File",
+                                      "imagePullPolicy": "IfNotPresent",
+                                      "securityContext": {
+                                          "capabilities": {
+                                              "add": [
+                                                  "SYS_PTRACE"
+                                              ]
+                                          },
+                                          "runAsUser": 10001,
+                                          "runAsGroup": 10001
+                                      }
+                                  }
+                              ],
+                          }
+                      }
+                  }

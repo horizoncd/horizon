@@ -88,7 +88,6 @@ const (
 type GetClusterStateParams struct {
 	Environment  string
 	Cluster      string
-	Namespace    string
 	RegionEntity *regionmodels.RegionEntity
 }
 
@@ -423,6 +422,8 @@ func (c *cd) GetClusterState(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+	namespace := argoApp.Spec.Destination.Namespace
+
 	// namespace = argoApp.Spec.Destination.Namespace
 	clusterState.Status = argoApp.Status.Health.Status
 	if clusterState.Status == "" {
@@ -456,7 +457,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 			}
 			// application with deployment may be serverless
 			if !resourceTreeContains(resourceTree, kube2.DeploymentKind) {
-				allPods, err := kube.GetPods(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
+				allPods, err := kube.GetPods(ctx, kubeClient.Basic, namespace, labelSelector.String())
 				if err != nil {
 					return nil, err
 				}
@@ -501,7 +502,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	}
 
 	var latestReplicaSet *appsv1.ReplicaSet
-	rss, err := kube.GetReplicaSets(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
+	rss, err := kube.GetReplicaSets(ctx, kubeClient.Basic, namespace, labelSelector.String())
 	if err != nil {
 		return nil, err
 	} else if len(rss) == 0 {
@@ -535,7 +536,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		labelSelector := fields.ParseSelectorOrDie(
 			fmt.Sprintf("%v=%v", common.ClusterLabelKey, params.Cluster))
 		// serverless 应用会有多个 Deployment 对象
-		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
+		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient.Basic, namespace, labelSelector.String())
 		if err != nil {
 			return nil, err
 		}
@@ -563,7 +564,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		}
 	}
 
-	if err := c.paddingPodAndEventInfo(ctx, params.Cluster, params.Namespace,
+	if err := c.paddingPodAndEventInfo(ctx, params.Cluster, namespace,
 		kubeClient.Basic, clusterState); err != nil {
 		return nil, err
 	}

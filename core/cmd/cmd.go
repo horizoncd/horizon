@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 
@@ -22,6 +24,7 @@ import (
 	envtemplatectl "g.hz.netease.com/horizon/core/controller/envtemplate"
 	groupctl "g.hz.netease.com/horizon/core/controller/group"
 	harborctl "g.hz.netease.com/horizon/core/controller/harbor"
+	idpctl "g.hz.netease.com/horizon/core/controller/idp"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	oauthservicectl "g.hz.netease.com/horizon/core/controller/oauth"
 	oauthappctl "g.hz.netease.com/horizon/core/controller/oauthapp"
@@ -45,6 +48,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/envtemplate"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/harbor"
+	"g.hz.netease.com/horizon/core/http/api/v1/idp"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthapp"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
@@ -65,26 +69,22 @@ import (
 	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
 	prehandlemiddle "g.hz.netease.com/horizon/core/middleware/prehandle"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
-	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
-	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
-	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	userservice "g.hz.netease.com/horizon/pkg/user/service"
-
 	tagmiddle "g.hz.netease.com/horizon/core/middleware/tag"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
+	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cmdb"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
-
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
+	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook"
 	"g.hz.netease.com/horizon/pkg/hook/handler"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
@@ -92,6 +92,8 @@ import (
 	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	oauthstore "g.hz.netease.com/horizon/pkg/oauth/store"
+	"g.hz.netease.com/horizon/pkg/param"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
@@ -101,9 +103,13 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschemarepo "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
 	templaterepoharbor "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
+	userservice "g.hz.netease.com/horizon/pkg/user/service"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
+	"github.com/gorilla/sessions"
+	"github.com/rbcervilla/redisstore/v8"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -203,6 +209,26 @@ func Run(flags *Flags) {
 	}
 	callbacks.RegisterCustomCallbacks(mysqlDB)
 
+	redisClient := redis.NewClient(&redis.Options{
+		Network:  coreConfig.RedisConfig.Protocol,
+		Addr:     coreConfig.RedisConfig.Address,
+		Password: coreConfig.RedisConfig.Password,
+		DB:       int(coreConfig.RedisConfig.DB),
+	})
+
+	// session store
+	store, err := redisstore.NewRedisStore(context.Background(), redisClient)
+	if err != nil {
+		panic(err)
+	}
+
+	store.Options(sessions.Options{
+		Path:   "/",
+		MaxAge: int(coreConfig.SessionConfig.MaxAge),
+	})
+	// https://pkg.go.dev/github.com/gorilla/sessions#section-readme
+	gob.Register(&userauth.DefaultInfo{})
+
 	// init manager parameter
 	manager := managerparam.InitManager(mysqlDB)
 	// init service
@@ -294,6 +320,7 @@ func Run(flags *Flags) {
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
+
 	parameter := &param.Param{
 		Manager:              manager,
 		OauthManager:         oauthManager,
@@ -315,9 +342,15 @@ func Run(flags *Flags) {
 	}
 
 	var (
-		rbacSkippers = middleware.MethodAndPathSkipper("*",
-			regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
-				"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)"))
+		rbacSkippers = []middleware.Skipper{
+			middleware.MethodAndPathSkipper("*",
+				regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
+					"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)|"+
+					"(^/apis/core/v1/templates$)")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/logout")),
+		}
 
 		// init controller
 		memberCtl            = memberctl.NewController(parameter)
@@ -332,7 +365,7 @@ func Run(flags *Flags) {
 		codeGitCtl           = codectl.NewController(gitGetter)
 		tagCtl               = tagctl.NewController(parameter)
 		templateSchemaTagCtl = templateschematagctl.NewController(parameter)
-		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers)
+		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers...)
 		applicationRegionCtl = applicationregionctl.NewController(parameter)
 		groupCtl             = groupctl.NewController(parameter)
 		oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(parameter)
@@ -343,6 +376,7 @@ func Run(flags *Flags) {
 		environmentCtl       = environmentctl.NewController(parameter)
 		environmentregionCtl = environmentregionctl.NewController(parameter)
 		harborCtl            = harborctl.NewController(parameter)
+		idpCtrl              = idpctl.NewController(parameter)
 	)
 
 	var (
@@ -370,6 +404,7 @@ func Run(flags *Flags) {
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl,
 			coreConfig.Oauth.OauthHTMLLocation, scopeService)
+		idpAPI = idp.NewAPI(idpCtrl, store)
 	)
 
 	// init server
@@ -380,6 +415,7 @@ func Run(flags *Flags) {
 		gin.Recovery(),
 		requestid.Middleware(), // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
+
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
@@ -388,15 +424,17 @@ func Run(flags *Flags) {
 		authenticate.Middleware(coreConfig.AccessSecretKeys, // authenticate middleware, check authentication
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers),
+		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
 		//  user middleware, check user and attach current user to context.
-		usermiddle.Middleware(parameter, coreConfig.OIDCConfig,
+		usermiddle.Middleware(parameter, store,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token"))),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback"))),
 		prehandlemiddle.Middleware(r, manager),
-		auth.Middleware(rbacAuthorizer, rbacSkippers),
+		auth.Middleware(rbacAuthorizer, rbacSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}
 	r.Use(middlewares...)
@@ -428,9 +466,16 @@ func Run(flags *Flags) {
 	applicationregion.RegisterRoutes(r, applicationRegionAPI)
 	oauthapp.RegisterRoutes(r, oauthAppAPI)
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
+	idp.RegisterRoutes(r, idpAPI)
 
 	// start cloud event server
-	go runCloudEventServer(tektonFty, coreConfig.CloudEventServerConfig, parameter)
+	go runCloudEventServer(
+		tektonFty,
+		coreConfig.CloudEventServerConfig,
+		parameter,
+		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
+		requestid.Middleware(),
+	)
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))

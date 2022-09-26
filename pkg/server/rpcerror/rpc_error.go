@@ -1,6 +1,9 @@
 package rpcerror
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
 type ErrorCode string
 
@@ -15,6 +18,14 @@ func (e RPCError) WithErrMsg(errorMsg string) RPCError {
 		HTTPCode:     e.HTTPCode,
 		ErrorCode:    e.ErrorCode,
 		ErrorMessage: errorMsg,
+	}
+}
+
+func (e RPCError) WithErrMsgf(format string, params ...interface{}) RPCError {
+	return RPCError{
+		HTTPCode:     e.HTTPCode,
+		ErrorCode:    e.ErrorCode,
+		ErrorMessage: fmt.Sprintf(format, params...),
 	}
 }
 

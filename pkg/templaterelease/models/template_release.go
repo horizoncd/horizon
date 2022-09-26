@@ -20,7 +20,7 @@ type TemplateRelease struct {
 
 	Description  string
 	Recommended  *bool
-	OnlyAdmin    *bool
+	OnlyOwner    *bool
 	SyncStatus   SyncStatus
 	LastSyncAt   time.Time
 	FailedReason string

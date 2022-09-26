@@ -70,8 +70,7 @@ const (
 )
 
 const (
-	GroupCore  = "core"
-	GroupFront = "front"
+	GroupCore = "core"
 )
 
 const (
@@ -90,4 +89,10 @@ const (
 
 const (
 	ChartVersionFormat = "%s-%s"
+)
+
+const (
+	CookieKeyAuth = "horizon|session"
+
+	SessionKeyAuthUser = "user"
 )

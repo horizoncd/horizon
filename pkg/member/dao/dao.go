@@ -6,8 +6,10 @@ import (
 	"time"
 
 	common2 "g.hz.netease.com/horizon/core/common"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/common"
 	memberctx "g.hz.netease.com/horizon/pkg/context"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"gorm.io/gorm"
@@ -26,7 +28,13 @@ type DAO interface {
 	ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
 		resourceID uint) ([]models.Member, error)
 	ListResourceOfMemberInfo(ctx context.Context, resourceType models.ResourceType, memberInfo uint) ([]uint, error)
+	ListResourceOfMemberInfoByRole(ctx context.Context,
+		resourceType models.ResourceType, info uint, role string) ([]uint, error)
 }
+
+var (
+	model = &models.Member{}
+)
 
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
@@ -138,4 +146,20 @@ func (d *dao) ListResourceOfMemberInfo(ctx context.Context,
 		return nil, result.Error
 	}
 	return resources, nil
+}
+
+func (d *dao) ListResourceOfMemberInfoByRole(ctx context.Context,
+	resourceType models.ResourceType, info uint, role string) ([]uint, error) {
+	members := make([]uint, 0)
+	res := d.db.Model(model).WithContext(ctx).Select("resource_id").Where(&models.Member{
+		ResourceType: resourceType,
+		Role:         role,
+		MemberNameID: info,
+	}).Find(&members)
+	if res.Error != nil {
+		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.MemberInfoInDB, res.Error.Error()),
+			"failed to get members:\n"+
+				"resourceType = %v\n member id = %v\n role = %v", resourceType, info, role)
+	}
+	return members, nil
 }

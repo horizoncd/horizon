@@ -11,6 +11,7 @@ import (
 )
 
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/template/manager/manager_mock.go -package=mock_manager
 type Manager interface {
 	// Create template
@@ -28,6 +29,8 @@ type Manager interface {
 	GetRefOfApplication(ctx context.Context, id uint) ([]*amodels.Application, uint, error)
 	GetRefOfCluster(ctx context.Context, id uint) ([]*cmodels.Cluster, uint, error)
 	UpdateByID(ctx context.Context, id uint, template *models.Template) error
+	ListByGroupIDs(ctx context.Context, ids []uint) ([]*models.Template, error)
+	ListByIDs(ctx context.Context, ids []uint) ([]*models.Template, error)
 }
 
 func New(db *gorm.DB) Manager {
@@ -69,6 +72,15 @@ func (m *manager) GetRefOfApplication(ctx context.Context, id uint) ([]*amodels.
 func (m *manager) GetRefOfCluster(ctx context.Context, id uint) ([]*cmodels.Cluster, uint, error) {
 	return m.dao.GetRefOfCluster(ctx, id)
 }
+
 func (m *manager) UpdateByID(ctx context.Context, id uint, template *models.Template) error {
 	return m.dao.UpdateByID(ctx, id, template)
+}
+
+func (m *manager) ListByGroupIDs(ctx context.Context, ids []uint) ([]*models.Template, error) {
+	return m.dao.ListByGroupIDs(ctx, ids)
+}
+
+func (m *manager) ListByIDs(ctx context.Context, ids []uint) ([]*models.Template, error) {
+	return m.dao.ListByIDs(ctx, ids)
 }

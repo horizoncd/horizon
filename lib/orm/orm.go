@@ -126,3 +126,17 @@ func FormatFilterExp(query *q.Query, columnInTable map[string]string) (string, [
 	}
 	return exp.String(), values
 }
+
+func ValidateQuery(query q.Query, columnInTable map[string]string) map[string]interface{} {
+	if query.Keywords == nil || len(query.Keywords) == 0 {
+		return nil
+	}
+
+	res := make(map[string]interface{}, len(query.Keywords))
+	for filterKey, filterValue := range query.Keywords {
+		if mappingKey, ok := columnInTable[filterKey]; ok {
+			res[mappingKey] = filterValue
+		}
+	}
+	return res
+}

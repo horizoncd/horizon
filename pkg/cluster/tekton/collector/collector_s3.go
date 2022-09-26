@@ -25,7 +25,6 @@ import (
 
 	"g.hz.netease.com/horizon/lib/s3"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	logutil "g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -116,16 +115,17 @@ type CollectResult struct {
 
 func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*CollectResult, error) {
 	const op = "s3Collector: collect"
+	defer wlog.Start(ctx, op).StopPrint()
 	metadata := resolveObjMetadata(pr)
 	// 先收集日志，收集日志需要使用client-go访问k8s接口，
 	// 如果pipelineRun不存在，直接忽略即可
 	collectLogResult, err := c.collectLog(ctx, pr, metadata)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 	collectObjectResult, err := c.collectObject(ctx, metadata, pr)
 	if err != nil {
-		return nil, errors.E(op, err)
+		return nil, err
 	}
 
 	logStruct := NewLogStruct(collectObjectResult.PrURL,
@@ -133,7 +133,7 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*Co
 	b, err := json.Marshal(logStruct)
 	if err != nil {
 		logutil.Errorf(ctx, "failed to marshal log struct")
-		return nil, errors.E(op, err)
+		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	// 如果日志长度大于2.5mb，则只保留前1mb与后1mb日志数据。
 	b = cutByteInMiddle(b, _limitSize, _mb, len(b)-_mb)
@@ -300,7 +300,8 @@ func (c *S3Collector) getPathForPrLog(metadata *ObjectMeta) string {
 		metadata.PipelineRun.Name)
 }
 
-/**
+/*
+*
 *  @brief 从开始至结束位置的Byte数组截断。
 *
 *  @param data 要处理的数组
