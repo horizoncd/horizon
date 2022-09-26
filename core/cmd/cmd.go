@@ -329,13 +329,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	// sync grafana datasource periodically
 	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client)
-	cancellableCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	go func() {
-		grafanaService.SyncDatasource(cancellableCtx)
-	}()
 
 	parameter := &param.Param{
 		Manager:              manager,
