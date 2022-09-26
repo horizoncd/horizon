@@ -24,6 +24,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/util/kube"
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -53,7 +54,7 @@ func ParseFlags() *Flags {
 		&flags.LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
 
 	flag.StringVar(
-		&flags.Account, "autoreleaseaccount", "grp.cloudnative@mail.com", "auto release cluster account")
+		&flags.Account, "autoreleaseaccount", "", "auto release cluster account")
 
 	flag.StringVar(
 		&flags.JobInterval, "autoreleaseinterval", "1h", "auto release job interval")
@@ -109,6 +110,7 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+	callbacks.RegisterCustomCallbacks(mysqlDB)
 
 	// init manager parameter
 	manager := managerparam.InitManager(mysqlDB)

@@ -93,10 +93,11 @@ func process(ctx context.Context, jobConfig *Config, clusterCtr clusterctl.Contr
 
 			// 3. free expired cluster
 			if isNeedFree {
-				log.WithFiled(ctx, "op", op).Infof("cluster %v is expired, releasing automaticlly started", clr.Name)
 				err = clusterCtr.FreeCluster(ctx, clr.ID)
 				if err != nil {
-					log.WithFiled(ctx, "op", op).Errorf("failed to free cluster: %v, err: %v", clr.Name, err.Error())
+					log.WithFiled(ctx, "op", op).Errorf("failed to automaticlly release cluster: %v, err: %v", clr.Name, err.Error())
+				} else {
+					log.WithFiled(ctx, "op", op).Infof("cluster %v releasing automaticlly succeeded", clr.Name)
 				}
 			}
 		}
