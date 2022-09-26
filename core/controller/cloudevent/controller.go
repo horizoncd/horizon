@@ -2,7 +2,6 @@ package cloudevent
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -12,13 +11,14 @@ import (
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -55,24 +55,25 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	pipelinerunIDStr := wpr.PipelineRun.Labels[common.PipelinerunIDLabelKey]
 	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
 	if err != nil {
-		return errors.E(op, err)
+		return perror.Wrapf(herrors.ErrParamInvalid,
+			"invalid pipeline run id: %s", pipelinerunIDStr)
 	}
 
 	// 1. collect log & pipelinerun object
 	tektonCollector, err := c.tektonFty.GetTektonCollector(environment)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	var result *collector.CollectResult
 	if result, err = tektonCollector.Collect(ctx, wpr.PipelineRun); err != nil {
-		if errors.Status(err) == http.StatusNotFound {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			// 如果pipelineRun已经不存在，直接忽略。
 			// 这种情况一般是 tekton pipeline controller重复上报了同一个pipelineRun所致
 			log.Warningf(ctx, "received pipelineRun: %v is not found when collect", wpr.PipelineRun.Name)
 			return nil
 		}
-		return errors.E(op, err)
+		return err
 	}
 
 	// 2. update pipelinerun in db
@@ -84,7 +85,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		StartedAt:  &result.StartTime.Time,
 		FinishedAt: &result.CompletionTime.Time,
 	}); err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	// 3. delete pipelinerun in k8s
@@ -92,15 +93,15 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	// 这种情况一般也是 tekton pipeline controller重复上报了同一个pipelineRun所致
 	tekton, err := c.tektonFty.GetTekton(environment)
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	if err := tekton.DeletePipelineRun(ctx, wpr.PipelineRun); err != nil {
-		if errors.Status(err) == http.StatusNotFound {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			log.Warningf(ctx, "received pipelineRun: %v is not found when delete", wpr.PipelineRun.Name)
 			return nil
 		}
-		return errors.E(op, err)
+		return err
 	}
 
 	// format Pipeline results

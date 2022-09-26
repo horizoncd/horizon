@@ -1,9 +1,12 @@
 package template
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
 	"net/url"
 	"os"
 	"reflect"
@@ -16,6 +19,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	groupmanagermock "g.hz.netease.com/horizon/mock/pkg/group/manager"
+	membermock "g.hz.netease.com/horizon/mock/pkg/member/manager"
 	tmock "g.hz.netease.com/horizon/mock/pkg/template/manager"
 	releasemanagermock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
 	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
@@ -28,7 +32,9 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/template/models"
 	tmodels "g.hz.netease.com/horizon/pkg/template/models"
@@ -55,9 +61,28 @@ func TestList(t *testing.T) {
 	templateMgr := tmock.NewMockManager(mockCtl)
 	templateReleaseMgr := trmock.NewMockManager(mockCtl)
 	groupMgr := groupmanagermock.NewMockManager(mockCtl)
+	memberMgr := membermock.NewMockManager(mockCtl)
 
-	onlyAdminTrue := true
-	onlyAdminFalse := false
+	bts, err := ioutil.ReadFile("../../../roles.yaml")
+	if err != nil {
+		panic(err)
+	}
+	roleService, err := roleservice.NewFileRole(context.Background(), bytes.NewReader(bts))
+	if err != nil {
+		panic(err)
+	}
+	memberService := memberservice.NewService(roleService, nil, mgr)
+	if err != nil {
+		panic(err)
+	}
+
+	onlyOwnerTrue := true
+	onlyOwnerFalse := false
+	//        G0
+	//       /  \
+	//      G1   T1
+	//     /
+	//    T2
 	templateMgr.EXPECT().List(gomock.Any()).Return([]*models.Template{
 		{
 			Model: global.Model{
@@ -65,19 +90,20 @@ func TestList(t *testing.T) {
 			},
 			GroupID:   0,
 			Name:      "javaapp",
-			OnlyAdmin: &onlyAdminTrue,
+			OnlyOwner: &onlyOwnerTrue,
 		}, {
 			Model: global.Model{
 				ID: 2,
 			},
 			GroupID:   1,
 			Name:      "tomcat",
-			OnlyAdmin: &onlyAdminFalse,
+			OnlyOwner: &onlyOwnerFalse,
 		},
 	}, nil).Times(2)
 	group1 := &groupmodels.Group{
 		Model:        global.Model{ID: 1},
 		Name:         "group1",
+		Path:         "group1",
 		TraversalIDs: "1",
 	}
 	groupMgr.EXPECT().GetByID(gomock.Any(), uint(1)).Return(group1, nil)
@@ -94,7 +120,9 @@ func TestList(t *testing.T) {
 	)
 	templateMgr.EXPECT().GetByName(gomock.Any(), "javaapp").Return(
 		&tmodels.Template{
+			Model:      global.Model{ID: 1},
 			Name:       "javaapp",
+			OnlyOwner:  &onlyOwnerTrue,
 			ChartName:  "7-javaapp_test3",
 			Repository: "https://g.hz.netease.com/music-cloud-native/horizon/horizon",
 		}, nil,
@@ -112,7 +140,7 @@ func TestList(t *testing.T) {
 				CommitID:    "test",
 				SyncStatus:  trmodels.StatusSucceed,
 				Recommended: &recommends[0],
-				OnlyAdmin:   &onlyAdminTrue,
+				OnlyOwner:   &onlyOwnerTrue,
 			}, {
 				Model: global.Model{
 					ID: 1,
@@ -122,7 +150,7 @@ func TestList(t *testing.T) {
 				CommitID:    "test",
 				SyncStatus:  trmodels.StatusSucceed,
 				Recommended: &recommends[1],
-				OnlyAdmin:   &onlyAdminFalse,
+				OnlyOwner:   &onlyOwnerFalse,
 			}, {
 				Model: global.Model{
 					ID: 1,
@@ -132,7 +160,7 @@ func TestList(t *testing.T) {
 				CommitID:    "test3",
 				SyncStatus:  trmodels.StatusSucceed,
 				Recommended: &recommends[2],
-				OnlyAdmin:   &onlyAdminFalse,
+				OnlyOwner:   &onlyOwnerFalse,
 			},
 		}, nil).Times(2)
 
@@ -172,6 +200,8 @@ func TestList(t *testing.T) {
 		templateReleaseMgr: templateReleaseMgr,
 		groupMgr:           groupMgr,
 		gitlabLib:          gitlabLib,
+		memberSvc:          memberService,
+		memberMgr:          memberMgr,
 	}
 
 	c := context.WithValue(ctx, hctx.TemplateWithFullPath, true)
@@ -204,13 +234,92 @@ func TestList(t *testing.T) {
 	assert.Equal(t, 1, len(templates))
 	assert.Equal(t, "tomcat", templates[0].Name)
 
+	m, err := mgr.MemberManager.Create(ctx, &membermodels.Member{
+		ResourceType: common.ResourceTemplate,
+		ResourceID:   1,
+		Role:         roleservice.Owner,
+		MemberType:   membermodels.MemberUser,
+		MemberNameID: 1,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, m)
+
+	ctx = context.WithValue(ctx, hctx.MemberDirectMemberOnly, true)
 	templateReleases, err = ctl.ListTemplateRelease(ctx, "javaapp")
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(templateReleases))
-	assert.Equal(t, "v1.0.1", templateReleases[0].Name)
-	assert.Equal(t, "v1.0.2", templateReleases[1].Name)
-	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[0].SyncStatusCode)
-	assert.Equal(t, uint8(trmodels.StatusUnknown), templateReleases[1].SyncStatusCode)
+	assert.Equal(t, 3, len(templateReleases))
+}
+
+func TestListTemplates(t *testing.T) {
+	createContext()
+
+	mockCtl := gomock.NewController(t)
+	groupMgr := groupmanagermock.NewMockManager(mockCtl)
+	memberMgr := membermock.NewMockManager(mockCtl)
+	mgr.MemberManager = memberMgr
+	mgr.GroupManager = groupMgr
+
+	ctrl := &controller{
+		groupMgr:           groupMgr,
+		templateMgr:        mgr.TemplateMgr,
+		templateReleaseMgr: mgr.TemplateReleaseManager,
+		memberMgr:          memberMgr,
+	}
+
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:  "Jerry",
+		ID:    1,
+		Admin: false,
+	})
+
+	//        G0
+	//       /  \
+	//      G1   T1
+	//     /
+	//    T2
+	tpl1 := &models.Template{
+		Model: global.Model{
+			ID: 1,
+		},
+		GroupID: 0,
+		Name:    "javaapp",
+	}
+	tpl2 := &models.Template{
+		Model: global.Model{
+			ID: 2,
+		},
+		GroupID: 1,
+		Name:    "tomcat",
+	}
+	tpl1, err := mgr.TemplateMgr.Create(ctx, tpl1)
+	assert.Nil(t, err)
+	assert.NotNil(t, tpl1)
+	tpl2, err = mgr.TemplateMgr.Create(ctx, tpl2)
+	assert.Nil(t, err)
+	assert.NotNil(t, tpl2)
+
+	// for Jerry is owner of group 1,
+	// result should be "tpl2"
+	groupID := uint(1)
+	userID := uint(1)
+	memberMgr.EXPECT().
+		ListResourceOfMemberInfoByRole(gomock.Any(), membermodels.TypeGroup, userID, roleservice.Owner).
+		Return([]uint{1}, nil).Times(1)
+	groupMgr.EXPECT().GetSubGroupsByGroupIDs(gomock.Any(), []uint{1}).
+		Return([]*groupmodels.Group{{Model: global.Model{ID: 1}}}, nil).Times(1)
+	memberMgr.EXPECT().Get(gomock.Any(), membermodels.TypeGroup,
+		groupID, membermodels.MemberUser, userID).
+		Return(&membermodels.Member{Role: roleservice.Owner}, nil).Times(1)
+	memberMgr.EXPECT().
+		ListResourceOfMemberInfoByRole(gomock.Any(), membermodels.TypeTemplate, userID, roleservice.Owner).
+		Return([]uint{}, nil).Times(1)
+
+	ctx = context.WithValue(ctx, hctx.TemplateListSelfOnly, true)
+	templates, err := ctrl.ListTemplate(ctx)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(templates))
+	assert.Equal(t, tpl2.ID, templates[0].ID)
+	assert.Equal(t, tpl2.Name, templates[0].Name)
 }
 
 func TestGetSchema(t *testing.T) {
@@ -385,40 +494,44 @@ func TestUpdateTemplate(t *testing.T) {
 
 	defer func() { _ = ctl.DeleteRelease(ctx, 1) }()
 
-	onlyAdminTrue := true
+	onlyOwnerTrue := true
 
 	tplRequest := UpdateTemplateRequest{
 		Name:        "javaapp",
 		Description: "hello, world",
 		Repository:  "repo",
-		OnlyAdmin:   &onlyAdminTrue,
+		OnlyOwner:   onlyOwnerTrue,
 	}
 	err := ctl.UpdateTemplate(ctx, 1, tplRequest)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 
-	template, err := ctl.GetTemplate(ctx, 1)
+	tplRequest = UpdateTemplateRequest{
+		Name:        "javaapp",
+		Description: "hello, world",
+		Repository:  templateRepo,
+		OnlyOwner:   onlyOwnerTrue,
+	}
+	err = ctl.UpdateTemplate(ctx, 1, tplRequest)
 	assert.Nil(t, err)
-	assert.Equal(t, tplRequest.Description, template.Description)
-	assert.Equal(t, tplRequest.Repository, template.Repository)
-	assert.Equal(t, onlyAdminTrue, template.OnlyAdmin)
 
 	oldDescription := tplRequest.Description
 	tplRequest.Description = ""
+	tplRequest.Repository = templateRepo
 
 	err = ctl.UpdateTemplate(ctx, 1, tplRequest)
 	assert.Nil(t, err)
 
-	template, err = ctl.GetTemplate(ctx, 1)
+	template, err := ctl.GetTemplate(ctx, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, oldDescription, template.Description)
 	assert.Equal(t, tplRequest.Repository, template.Repository)
-	assert.Equal(t, onlyAdminTrue, template.OnlyAdmin)
+	assert.Equal(t, onlyOwnerTrue, template.OnlyOwner)
 
 	b := true
 	trRequest := UpdateReleaseRequest{
 		Description: "hello, world",
 		Recommended: &b,
-		OnlyAdmin:   &onlyAdminTrue,
+		OnlyOwner:   onlyOwnerTrue,
 	}
 	err = ctl.UpdateRelease(ctx, 1, trRequest)
 	assert.Nil(t, err)
@@ -427,7 +540,7 @@ func TestUpdateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, trRequest.Description, release.Description)
 	assert.Equal(t, *trRequest.Recommended, release.Recommended)
-	assert.Equal(t, onlyAdminTrue, release.OnlyAdmin)
+	assert.Equal(t, onlyOwnerTrue, release.OnlyOwner)
 
 	oldDescription = trRequest.Description
 	trRequest.Description = ""
@@ -440,19 +553,7 @@ func TestUpdateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, oldDescription, release.Description)
 	assert.Equal(t, b, release.Recommended)
-	assert.Equal(t, onlyAdminTrue, release.OnlyAdmin)
-
-	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
-		Name:  "Jerry",
-		ID:    1,
-		Admin: false,
-	})
-
-	err = ctl.UpdateTemplate(ctx, 1, tplRequest)
-	assert.NotNil(t, err)
-
-	err = ctl.UpdateRelease(ctx, 1, trRequest)
-	assert.NotNil(t, err)
+	assert.Equal(t, onlyOwnerTrue, release.OnlyOwner)
 }
 
 func TestListTemplate(t *testing.T) {
@@ -485,6 +586,28 @@ func TestListTemplate(t *testing.T) {
 	releases, err = ctl.ListTemplateReleaseByTemplateID(ctx, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(releases))
+
+	createChart(t, ctl, 1)
+
+	ctx = context.WithValue(ctx, hctx.TemplateListRecursively, true)
+	templates, err = ctl.ListTemplateByGroupID(ctx, 0)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(templates))
+
+	_, err = mgr.GroupManager.Create(ctx,
+		&groupmodels.Group{
+			Model:        global.Model{ID: 2},
+			Name:         "test2",
+			Path:         "test2",
+			ParentID:     1,
+			TraversalIDs: "1,2",
+		})
+	createChart(t, ctl, 2)
+
+	assert.Nil(t, err)
+	templates, err = ctl.ListTemplateByGroupID(ctx, 2)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(templates))
 }
 
 const (
@@ -539,7 +662,7 @@ func createContext() {
 	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&trmodels.TemplateRelease{},
 		&amodels.Application{}, &cmodels.Cluster{}, &membermodels.Member{},
-		&tmodels.Template{}, &groupmodels.Group{}); err != nil {
+		&tmodels.Template{}, &membermodels.Member{}, &groupmodels.Group{}); err != nil {
 		panic(err)
 	}
 	mgr = managerparam.InitManager(db)
@@ -587,13 +710,23 @@ func createController(t *testing.T) Controller {
 
 func createChart(t *testing.T, ctl Controller, groupID uint) {
 	if groupID != 0 {
-		_, err := mgr.GroupManager.Create(ctx, &groupmodels.Group{
-			Name:      "test",
-			Path:      "test",
-			CreatedBy: 0,
-			UpdatedBy: 0,
-		})
-		assert.Nil(t, err)
+		_, err := mgr.GroupManager.GetByID(ctx, groupID)
+		if err != nil {
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				name := fmt.Sprintf("test-%d", rand.Uint32())
+				_, err := mgr.GroupManager.Create(ctx, &groupmodels.Group{
+					Name:         name,
+					Path:         name,
+					ParentID:     0,
+					TraversalIDs: fmt.Sprintf("%d", groupID),
+					CreatedBy:    0,
+					UpdatedBy:    0,
+				})
+				assert.Nil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		}
 	}
 	request := CreateTemplateRequest{
 		CreateReleaseRequest: CreateReleaseRequest{

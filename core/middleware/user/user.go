@@ -20,7 +20,8 @@ const (
 
 // Middleware check user is exists in db. If not, add user into db.
 // Then attach a User object into context.
-func Middleware(param *param.Param, store sessions.Store, skippers ...middleware.Skipper) gin.HandlerFunc {
+func Middleware(param *param.Param, store sessions.Store,
+	skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		mgr := param.UserManager
 		operator := c.Request.Header.Get(HTTPHeaderOperator)

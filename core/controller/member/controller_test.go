@@ -257,13 +257,13 @@ func TestTemplateMember(t *testing.T) {
 		ClusterSvc:     clusterSvc,
 	})
 
-	onlyAdmin := false
+	onlyOwner := false
 	template := &tmodels.Template{
 		Model:     global.Model{},
 		Name:      "javaapp",
 		ChartName: "javaapp",
 		GroupID:   0,
-		OnlyAdmin: &onlyAdmin,
+		OnlyOwner: &onlyOwner,
 	}
 	template, err := manager.TemplateMgr.Create(ctx, template)
 	assert.Nil(t, err)
@@ -276,7 +276,7 @@ func TestTemplateMember(t *testing.T) {
 		ChartVersion: "v1.0.0",
 		ChartName:    "javaapp",
 		Recommended:  &recommended,
-		OnlyAdmin:    &onlyAdmin,
+		OnlyOwner:    &onlyOwner,
 	}
 
 	_, err = manager.TemplateReleaseManager.Create(ctx, release)

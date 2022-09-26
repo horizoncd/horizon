@@ -217,15 +217,14 @@ type ListClusterResponse struct {
 	Tags        []*tagmodels.TagBasic `json:"tags,omitempty"`
 }
 
-func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterResponse {
+func ofCluster(cluster *models.Cluster) *ListClusterResponse {
 	return &ListClusterResponse{
 		ID:          cluster.ID,
 		Name:        cluster.Name,
 		Description: cluster.Description,
 		Scope: &Scope{
-			Environment:       cluster.EnvironmentName,
-			Region:            cluster.RegionName,
-			RegionDisplayName: cluster.RegionDisplayName,
+			Environment: cluster.EnvironmentName,
+			Region:      cluster.RegionName,
 		},
 		Template: &Template{
 			Name:    cluster.Template,
@@ -238,6 +237,12 @@ func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterRe
 		CreatedAt: cluster.CreatedAt,
 		UpdatedAt: cluster.UpdatedAt,
 	}
+}
+
+func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterResponse {
+	resp := ofCluster(cluster.Cluster)
+	resp.Scope.RegionDisplayName = cluster.RegionDisplayName
+	return resp
 }
 
 func ofClustersWithEnvRegionTags(clusters []*models.ClusterWithRegion, tags []*tagmodels.Tag) []*ListClusterResponse {

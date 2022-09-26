@@ -345,7 +345,8 @@ func Run(flags *Flags) {
 		rbacSkippers = []middleware.Skipper{
 			middleware.MethodAndPathSkipper("*",
 				regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
-					"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)")),
+					"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)|"+
+					"(^/apis/core/v1/templates$)")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback")),
 			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/logout")),
@@ -468,7 +469,13 @@ func Run(flags *Flags) {
 	idp.RegisterRoutes(r, idpAPI)
 
 	// start cloud event server
-	go runCloudEventServer(tektonFty, coreConfig.CloudEventServerConfig, parameter)
+	go runCloudEventServer(
+		tektonFty,
+		coreConfig.CloudEventServerConfig,
+		parameter,
+		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
+		requestid.Middleware(),
+	)
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
