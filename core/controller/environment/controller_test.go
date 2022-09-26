@@ -88,10 +88,24 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
+	devID, err = ctl.Create(ctx, &CreateEnvironmentRequest{
+		Name:        "online",
+		DisplayName: "线上",
+		AutoFree:    false,
+	})
+	assert.Nil(t, err)
+	err = ctl.UpdateByID(ctx, devID, &UpdateEnvironmentRequest{
+		DisplayName: "线上—online",
+		AutoFree:    true,
+	})
+	assert.NotNil(t, err)
+	t.Log(err)
+
 	envs, err = ctl.ListEnvironments(ctx)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(envs))
+	assert.Equal(t, 2, len(envs))
 	assert.Equal(t, "dev", envs[0].Name)
 	assert.Equal(t, "DEV-update", envs[0].DisplayName)
 	assert.Equal(t, true, envs[0].AutoFree)
+	assert.Equal(t, false, envs[1].AutoFree)
 }

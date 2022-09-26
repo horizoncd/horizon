@@ -81,7 +81,7 @@ func process(ctx context.Context, jobConfig *Config, clusterCtr clusterctl.Contr
 				}
 
 				environment, err := envCtr.GetByName(ctx, clr.EnvironmentName)
-				if err != nil || !environment.AutoFree {
+				if err != nil || !environment.AutoFree || environment.Name == common.OnlineEnv {
 					return false, err
 				}
 				return true, nil

@@ -260,4 +260,6 @@ var (
 	ErrAPIServerResponseNotOK = errors.New("response for api-server is not 200 OK")
 
 	ErrGrafanaDatasourceFormat = errors.New("datasource of grafana is not valid")
+
+	ErrEnvironmentUpdateInvalid = errors.New("environment updating is invalid")
 )
