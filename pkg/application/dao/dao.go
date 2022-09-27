@@ -7,6 +7,7 @@ import (
 
 	corecommon "g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/common"
@@ -15,6 +16,15 @@ import (
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"gorm.io/gorm"
+)
+
+const (
+	KeyTemplate        = "template"
+	KeyTemplateRelease = "templateRelease"
+)
+
+var (
+	model = &models.Application{}
 )
 
 type DAO interface {
@@ -83,9 +93,22 @@ func (d *dao) GetByNameFuzzilyByPagination(ctx context.Context, name string, que
 	offset := (query.PageNumber - 1) * query.PageSize
 	limit := query.PageSize
 
-	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByFuzzilyAndPagination,
-		fmt.Sprintf("%%%s%%", name), limit, offset).
-		Scan(&applications)
+	condition := orm.ValidateQuery(query, map[string]string{
+		KeyTemplate:        "template",
+		KeyTemplateRelease: "template_release",
+	})
+
+	prehandle := func() *gorm.DB {
+		db := d.db.WithContext(ctx)
+		for k, v := range condition {
+			db = db.Where(fmt.Sprintf("%s = ?", k), v)
+		}
+		return db
+	}
+
+	db := prehandle()
+	result := db.Where("name like ?", fmt.Sprintf("%%%s%%", name)).
+		Offset(offset).Limit(limit).Find(&applications)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return total, applications, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
@@ -93,9 +116,17 @@ func (d *dao) GetByNameFuzzilyByPagination(ctx context.Context, name string, que
 		return total, applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
 	}
 
-	result = d.db.WithContext(ctx).Raw(common.ApplicationQueryByFuzzilyCount, fmt.Sprintf("%%%s%%", name)).Scan(&total)
+	db = prehandle()
+	result = db.Select("count(*) as total").Model(model).
+		Where("name like ?", fmt.Sprintf("%%%s%%", name)).Find(&total)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return total, applications, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
+		}
+		return total, applications, herrors.NewErrGetFailed(herrors.ApplicationInDB, result.Error.Error())
+	}
 
-	return total, applications, result.Error
+	return total, applications, nil
 }
 
 func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error) {

@@ -119,7 +119,7 @@ func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodel
 	var recommendedRelease string
 	for _, tr := range trs {
 		if *tr.Recommended {
-			recommendedRelease = tr.ChartVersion
+			recommendedRelease = tr.Name
 		}
 	}
 
