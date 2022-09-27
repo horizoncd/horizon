@@ -2,12 +2,6 @@ package cluster
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strconv"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
@@ -16,10 +10,7 @@ import (
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-)
-
-const (
-	QueryPodsMetric = "kube_pod_container_info{namespace=\"%s\",pod=~\"%s.*\"}"
+	"github.com/gin-gonic/gin"
 )
 
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
@@ -540,136 +531,6 @@ func (c *controller) exec(ctx context.Context, clusterID uint,
 	return ofExecResp(execResp), nil
 }
 
-func (c *controller) GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error) {
-	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
-	if err != nil {
-		return nil, err
-	}
-
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, err
-	}
-
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return nil, err
-	}
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
-	if err != nil {
-		return nil, err
-	}
-
-	grafanaURL, ok := c.grafanaMapper[envValue.Region]
-	if !ok {
-		return nil, perror.Wrap(herrors.ErrGrafanaNotSupport,
-			"grafana does not support this region")
-	}
-
-	getDashboardResp := &GetDashboardResponse{
-		Basic:     fmt.Sprintf(grafanaURL.BasicDashboard, envValue.Namespace, cluster.Name),
-		Container: fmt.Sprintf(grafanaURL.ContainerDashboard, envValue.Namespace, cluster.Name),
-	}
-
-	// TODO(tom): special dashboard about same template should be placed in the horizon template
-	// get serverless dashboard
-	if cluster.Template == ServerlessTemplateName {
-		getDashboardResp.Serverless = fmt.Sprintf(grafanaURL.ServerlessDashboard, cluster.Name)
-	}
-
-	// get memcached dashboard
-	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, tr.ChartName)
-	if err != nil {
-		return nil, err
-	}
-	if memcached, ok := clusterFiles.ApplicationJSONBlob["memcached"]; ok {
-		blob, err := json.Marshal(memcached)
-		if err != nil {
-			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
-		}
-
-		type MemcachedSchema struct {
-			Enabled bool `json:"enabled"`
-		}
-		var memcachedVal MemcachedSchema
-		err = json.Unmarshal(blob, &memcachedVal)
-		if err != nil {
-			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
-		}
-
-		if memcachedVal.Enabled {
-			getDashboardResp.Memcached = fmt.Sprintf(grafanaURL.MemcachedDashboard, envValue.Namespace, cluster.Name)
-		}
-	}
-	return getDashboardResp, nil
-}
-
-func (c *controller) GetClusterPods(ctx context.Context, clusterID uint, start, end int64) (
-	*GetClusterPodsResponse, error) {
-	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
-	if err != nil {
-		return nil, err
-	}
-
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, err
-	}
-
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return nil, err
-	}
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
-	if err != nil {
-		return nil, err
-	}
-
-	grafanaURL, ok := c.grafanaMapper[envValue.Region]
-	if !ok {
-		return nil, perror.Wrap(herrors.ErrGrafanaNotSupport,
-			"grafana does not support this region")
-	}
-
-	u := url.Values{}
-	match := fmt.Sprintf(QueryPodsMetric, envValue.Namespace, cluster.Name)
-	u.Set("match[]", match)
-	u.Set("start", strconv.FormatInt(start, 10))
-	u.Set("end", strconv.FormatInt(end, 10))
-
-	queryURL := grafanaURL.QuerySeries + "?" + u.Encode()
-
-	resp, err := http.Get(queryURL)
-	if err != nil {
-		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed, err.Error())
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
-			"grafana query series interface return fail")
-	}
-
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, perror.Wrap(herrors.ErrReadFailed,
-			"failed to read http response body")
-	}
-
-	var result *QueryPodsSeriesResult
-	err = json.Unmarshal(data, &result)
-	if err != nil {
-		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
-	}
-	if result.Status != "success" {
-		return nil, perror.Wrap(herrors.ErrHTTPRespNotAsExpected,
-			"grafana query series interface return fail")
-	}
-
-	return &GetClusterPodsResponse{
-		Pods: removeDuplicatePods(result.Data),
-	}, nil
-}
-
 func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
@@ -703,19 +564,41 @@ func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podN
 	return ofBatchResp(result), nil
 }
 
-func removeDuplicatePods(pods []KubePodInfo) []KubePodInfo {
-	set := make(map[string]struct{}, len(pods))
-	j := 0
-	for _, v := range pods {
-		key := v.Pod + v.Container
-		_, ok := set[key]
-		if ok {
-			continue
-		}
-		set[key] = struct{}{}
-		pods[j] = v
-		j++
+func (c *controller) GetGrafanaDashBoard(ctx *gin.Context, clusterID uint) (*GetGrafanaDashboardsResponse, error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
 	}
 
-	return pods[:j]
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
+	if err != nil {
+		return nil, err
+	}
+
+	dashboards, err := c.grafanaService.ListDashboards(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetGrafanaDashboardsResponse{
+		Host: c.grafanaConfig.Host,
+		Params: map[string]string{
+			"kiosk":           "iframe",
+			"theme":           "light",
+			"var-datasource":  cluster.RegionName,
+			"var-namespace":   envValue.Namespace,
+			"var-application": application.Name,
+			"var-cluster":     cluster.Name,
+		},
+		Dashboards: dashboards,
+	}, nil
 }

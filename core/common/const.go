@@ -96,3 +96,8 @@ const (
 
 	SessionKeyAuthUser = "user"
 )
+
+const (
+	// IDThan query parameter, used for "id > IDThan"
+	IDThan = "idThan"
+)

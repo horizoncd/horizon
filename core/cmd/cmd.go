@@ -84,6 +84,7 @@ import (
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
+	"g.hz.netease.com/horizon/pkg/grafana"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook"
 	"g.hz.netease.com/horizon/pkg/hook/handler"
@@ -104,6 +105,7 @@ import (
 	templateschemarepo "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
 	templaterepoharbor "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
+	"g.hz.netease.com/horizon/pkg/util/kube"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gorilla/sessions"
 	"github.com/rbcervilla/redisstore/v8"
@@ -321,6 +323,14 @@ func Run(flags *Flags) {
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
 
+	// init kube client
+	_, client, err := kube.BuildClient("")
+	if err != nil {
+		panic(err)
+	}
+
+	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client)
+
 	parameter := &param.Param{
 		Manager:              manager,
 		OauthManager:         oauthManager,
@@ -339,6 +349,7 @@ func Run(flags *Flags) {
 		TektonFty:            tektonFty,
 		ClusterGitRepo:       clusterGitRepo,
 		GitGetter:            gitGetter,
+		GrafanaService:       grafanaService,
 	}
 
 	var (
