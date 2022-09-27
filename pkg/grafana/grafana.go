@@ -62,8 +62,9 @@ type DataSource struct {
 
 // Dashboard used to unmarshal grafana dashboard's content
 type Dashboard struct {
-	Title string `json:"title"`
-	UID   string `json:"uid"`
+	Title string   `json:"title"`
+	UID   string   `json:"uid"`
+	Tags  []string `json:"tags"`
 }
 
 func (s *service) SyncDatasource(ctx context.Context) {

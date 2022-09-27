@@ -80,7 +80,7 @@ type Controller interface {
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
-	GetGrafanaDashBoard(c *gin.Context, clusterID uint) ([]*GrafanaDashboard, error)
+	GetGrafanaDashBoard(c *gin.Context, clusterID uint) (*GetGrafanaDashboardsResponse, error)
 }
 
 type controller struct {

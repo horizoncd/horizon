@@ -18,7 +18,7 @@ type SLO struct {
 }
 
 type Config struct {
-	URL                  string               `yaml:"url"`
+	Host                 string               `yaml:"host"`
 	Namespace            string               `yaml:"namespace"`
 	SyncDatasourceConfig SyncDatasourceConfig `yaml:"syncDatasourceConfig"`
 	Dashboards           Dashboards           `yaml:"dashboards"`

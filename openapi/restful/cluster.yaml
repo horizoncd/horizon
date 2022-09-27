@@ -1287,11 +1287,15 @@ paths:
               schema:
                 example: |
                   {
-                      "data": [
-                          {
+                      "data": {
+                          "host:": "",
+                          "params": {
+                              "kiosk": "iframe"
+                          },
+                          dashboards: [{
                               url: "",
                               title: "",
                               uid: ""
-                          }
-                      ]
+                          }]
+                      }
                   }

@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"g.hz.netease.com/horizon/pkg/grafana"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -31,10 +32,10 @@ type GetDashboardResponse struct {
 	Memcached  string `json:"memcached,omitempty" yaml:"memcached,omitempty"`
 }
 
-type GrafanaDashboard struct {
-	URL   string `json:"url"`
-	Title string `json:"title"`
-	UID   string `json:"uid"`
+type GetGrafanaDashboardsResponse struct {
+	Host       string               `json:"host"`
+	Params     map[string]string    `json:"params"`
+	Dashboards []*grafana.Dashboard `json:"dashboards"`
 }
 
 type GetClusterPodsResponse struct {

@@ -704,7 +704,7 @@ func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podN
 	return ofBatchResp(result), nil
 }
 
-func (c *controller) GetGrafanaDashBoard(ctx *gin.Context, clusterID uint) ([]*GrafanaDashboard, error) {
+func (c *controller) GetGrafanaDashBoard(ctx *gin.Context, clusterID uint) (*GetGrafanaDashboardsResponse, error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -729,19 +729,18 @@ func (c *controller) GetGrafanaDashBoard(ctx *gin.Context, clusterID uint) ([]*G
 		return nil, err
 	}
 
-	var grafanaDashboards []*GrafanaDashboard
-	for _, dashboard := range dashboards {
-		grafanaDashboards = append(grafanaDashboards, &GrafanaDashboard{
-			URL: fmt.Sprintf("%s/d/%s?kiosk=full&theme=light"+
-				"&var-datasource=%s&var-namespace=%s&var-application=%s&var-cluster=%s",
-				c.grafanaConfig.URL, dashboard.UID,
-				cluster.RegionName, envValue.Namespace, application.Name, cluster.Name),
-			Title: dashboard.Title,
-			UID:   dashboard.UID,
-		})
-	}
-
-	return grafanaDashboards, nil
+	return &GetGrafanaDashboardsResponse{
+		Host: c.grafanaConfig.Host,
+		Params: map[string]string{
+			"kiosk":           "iframe",
+			"theme":           "light",
+			"var-datasource":  cluster.RegionName,
+			"var-namespace":   envValue.Namespace,
+			"var-application": application.Name,
+			"var-cluster":     cluster.Name,
+		},
+		Dashboards: dashboards,
+	}, nil
 }
 
 func removeDuplicatePods(pods []KubePodInfo) []KubePodInfo {
