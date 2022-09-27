@@ -939,14 +939,6 @@ func test(t *testing.T) {
 	assert.Equal(t, true, ok)
 	assert.Equal(t, true, value.Result)
 
-	// test GetDashboard
-	grafanaResponse, err := c.GetDashboard(ctx, resp.ID)
-	assert.NotNil(t, err)
-	assert.Nil(t, grafanaResponse)
-
-	_, err = c.GetClusterPods(ctx, resp.ID, 0, 19)
-	assert.NotNil(t, err)
-
 	podExist := "exist"
 	podNotExist := "notexist"
 	cd.EXPECT().GetPod(ctx, gomock.Any()).DoAndReturn(
