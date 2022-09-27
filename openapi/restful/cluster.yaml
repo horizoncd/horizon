@@ -1293,9 +1293,11 @@ paths:
                               "kiosk": "iframe"
                           },
                           dashboards: [{
-                              url: "",
                               title: "",
-                              uid: ""
+                              uid: "",
+                              tags: [
+                                  "default"
+                              ]
                           }]
                       }
                   }
