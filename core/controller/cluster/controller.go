@@ -17,6 +17,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	environmentregionmapper "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	grafanaservice "g.hz.netease.com/horizon/pkg/grafana"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -33,6 +34,7 @@ import (
 	templateschematagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
+	"github.com/gin-gonic/gin"
 )
 
 type Controller interface {
@@ -66,8 +68,6 @@ type Controller interface {
 		<-chan string, error)
 	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
-	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
-	GetClusterPods(ctx context.Context, clusterID uint, start, end int64) (*GetClusterPodsResponse, error)
 	FreeCluster(ctx context.Context, clusterID uint) error
 	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
 	Promote(ctx context.Context, clusterID uint) error
@@ -79,6 +79,7 @@ type Controller interface {
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
+	GetGrafanaDashBoard(c *gin.Context, clusterID uint) (*GetGrafanaDashboardsResponse, error)
 }
 
 type controller struct {
@@ -101,13 +102,14 @@ type controller struct {
 	pipelineMgr          pipelinemanager.Manager
 	tektonFty            factory.Factory
 	registryFty          registryfty.Factory
-	grafanaMapper        grafana.Mapper
 	userManager          usermanager.Manager
 	userSvc              usersvc.Service
 	memberManager        member.Manager
 	groupManager         groupmanager.Manager
 	schemaTagManager     templateschematagmanager.Manager
 	tagMgr               tagmanager.Manager
+	grafanaService       grafanaservice.Service
+	grafanaConfig        grafana.Config
 }
 
 var _ Controller = (*controller)(nil)
@@ -133,13 +135,14 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		tektonFty:            param.TektonFty,
 		registryFty:          registryfty.Fty,
 		hook:                 param.Hook,
-		grafanaMapper:        config.GrafanaMapper,
 		userManager:          param.UserManager,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
 		groupManager:         param.GroupManager,
 		schemaTagManager:     param.ClusterSchemaTagMgr,
 		tagMgr:               param.TagManager,
+		grafanaService:       param.GrafanaService,
+		grafanaConfig:        config.GrafanaConfig,
 	}
 }
 

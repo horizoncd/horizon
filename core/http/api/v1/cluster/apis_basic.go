@@ -30,8 +30,6 @@ const (
 	_containerName = "containerName"
 	_podName       = "podName"
 	_tailLines     = "tailLines"
-	_start         = "start"
-	_end           = "end"
 	_extraOwner    = "extraOwner"
 	_hard          = "hard"
 )

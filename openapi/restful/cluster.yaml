@@ -25,7 +25,7 @@ paths:
       - name: tagSelector
         in: query
         description: |
-          filter clusters by tags, support operators: =, in, the comma separator acts as a logical AND (&&) operator. For example, if we want to filter clusters by tags(a equals to A and b equals to c or d), the tagSelector is "a=b,b in (c,d)"  
+          filter clusters by tags, support operators: =, in, the comma separator acts as a logical AND (&&) operator. For example, if we want to filter clusters by tags(a equals to A and b equals to c or d), the tagSelector is "a=b,b in (c,d)"
     get:
       tags:
         - cluster
@@ -1276,5 +1276,33 @@ paths:
                                   }
                               ],
                           }
+                      }
+                  }
+  /apis/core/v1/clusters/{clusterID}/grafanadashboards:
+    get:
+      tags:
+        - cluster
+      operationId: getGrafanaDashboards
+      summary: get cluster's grafana dashboards
+      responses:
+        "200":
+          description: Success
+          content:
+            application/yaml:
+              schema:
+                example: |
+                  {
+                      "data": {
+                          "host:": "",
+                          "params": {
+                              "kiosk": "iframe"
+                          },
+                          dashboards: [{
+                              title: "",
+                              uid: "",
+                              tags: [
+                                  "default"
+                              ]
+                          }]
                       }
                   }
