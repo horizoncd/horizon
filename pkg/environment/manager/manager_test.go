@@ -42,17 +42,26 @@ func Test(t *testing.T) {
 	onlineEnv, err := mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "online",
 		DisplayName: "线上",
+		AutoFree:    false,
 	})
 	assert.Nil(t, err)
+	assert.Equal(t, false, onlineEnv.AutoFree)
 	t.Logf("%v", onlineEnv)
 	err = mgr.UpdateByID(ctx, onlineEnv.ID, &models.Environment{
 		Name:        "online-update",
 		DisplayName: "线上-update",
+		AutoFree:    true,
 	})
 	assert.Nil(t, err)
 	env, err := mgr.GetByID(ctx, onlineEnv.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, env.DisplayName, "线上-update")
+	assert.Equal(t, true, env.AutoFree)
+
+	env, err = mgr.GetByName(ctx, onlineEnv.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, env.DisplayName, "线上-update")
+	assert.Equal(t, true, env.AutoFree)
 
 	preEnv, err := mgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "pre",

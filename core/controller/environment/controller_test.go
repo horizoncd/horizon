@@ -63,17 +63,28 @@ func Test(t *testing.T) {
 	devID, err := ctl.Create(ctx, &CreateEnvironmentRequest{
 		Name:        "dev",
 		DisplayName: "DEV",
+		AutoFree:    false,
 	})
 	assert.Nil(t, err)
+	env, err := ctl.GetByID(ctx, devID)
+	assert.Nil(t, err)
+	assert.Equal(t, "dev", env.Name)
+	assert.Equal(t, false, env.AutoFree)
+
+	envByName, err := ctl.GetByName(ctx, env.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, env, envByName)
 
 	envs, err = ctl.ListEnvironments(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(envs))
 	assert.Equal(t, "dev", envs[0].Name)
 	assert.Equal(t, "DEV", envs[0].DisplayName)
+	assert.Equal(t, false, envs[0].AutoFree)
 
 	err = ctl.UpdateByID(ctx, devID, &UpdateEnvironmentRequest{
 		DisplayName: "DEV-update",
+		AutoFree:    true,
 	})
 	assert.Nil(t, err)
 
@@ -82,4 +93,5 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(envs))
 	assert.Equal(t, "dev", envs[0].Name)
 	assert.Equal(t, "DEV-update", envs[0].DisplayName)
+	assert.Equal(t, true, envs[0].AutoFree)
 }

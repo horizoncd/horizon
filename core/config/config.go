@@ -6,6 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/config/argocd"
 	"g.hz.netease.com/horizon/pkg/config/authenticate"
+	"g.hz.netease.com/horizon/pkg/config/autofree"
 	"g.hz.netease.com/horizon/pkg/config/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/db"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
@@ -36,6 +37,7 @@ type Config struct {
 	GrafanaConfig          grafana.Config          `yaml:"grafanaConfig"`
 	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
+	AutoFreeConfig         autofree.Config         `yaml:"autoFree"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {

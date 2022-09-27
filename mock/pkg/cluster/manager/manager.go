@@ -158,6 +158,21 @@ func (mr *MockManagerMockRecorder) ListByNameFuzzily(ctx, environment, name, que
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByNameFuzzily", reflect.TypeOf((*MockManager)(nil).ListByNameFuzzily), ctx, environment, name, query)
 }
 
+// ListClusterWithExpiry mocks base method.
+func (m *MockManager) ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*models.Cluster, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListClusterWithExpiry", ctx, query)
+	ret0, _ := ret[0].([]*models.Cluster)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListClusterWithExpiry indicates an expected call of ListClusterWithExpiry.
+func (mr *MockManagerMockRecorder) ListClusterWithExpiry(ctx, query interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterWithExpiry", reflect.TypeOf((*MockManager)(nil).ListClusterWithExpiry), ctx, query)
+}
+
 // ListUserAuthorizedByNameFuzzily mocks base method.
 func (m *MockManager) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment, name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error) {
 	m.ctrl.T.Helper()

@@ -14,6 +14,7 @@ import (
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
@@ -224,6 +225,70 @@ func testListUserClustersByNameFuzzily(t *testing.T) {
 	for _, resp := range resps {
 		b, _ := json.Marshal(resp)
 		t.Logf("%v", string(b))
+	}
+}
+
+func testListClusterWithExpiry(t *testing.T) {
+	// init data
+	for i := 0; i < 3; i++ {
+		name := "clusterWithExpiry" + strconv.Itoa(i)
+		cluster, err := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
+			ApplicationID:   uint(1),
+			Name:            name,
+			EnvironmentName: "testListClusterWithExpiry",
+			RegionName:      "hzListClusterWithExpiry",
+			GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+			Status:          "",
+			ExpireSeconds:   uint((i + 1) * secondsInOneDay),
+		}, nil, nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, cluster)
+	}
+	for i := 3; i < 5; i++ {
+		name := "clusterWithExpiry" + strconv.Itoa(i)
+		cluster, err := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
+			ApplicationID:   uint(1),
+			Name:            name,
+			EnvironmentName: "testListClusterWithExpiry",
+			RegionName:      "hzListClusterWithExpiry",
+			GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+			Status:          clustercommon.StatusFreeing,
+			ExpireSeconds:   uint((i + 1) * secondsInOneDay),
+		}, nil, nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, cluster)
+	}
+	for i := 5; i < 7; i++ {
+		name := "clusterWithExpiry" + strconv.Itoa(i)
+		cluster, err := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
+			ApplicationID:   uint(1),
+			Name:            name,
+			EnvironmentName: "testListClusterWithExpiry",
+			RegionName:      "hzListClusterWithExpiry",
+			GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+			Status:          "",
+			ExpireSeconds:   0,
+		}, nil, nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, cluster)
+	}
+	clusterWithExpiry, err := c.ListClusterWithExpiry(ctx, nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(clusterWithExpiry))
+	for _, clr := range clusterWithExpiry {
+		t.Logf("%+v", clr)
+	}
+	q2 := &q.Query{
+		Keywords:   q.KeyWords{common.IDThan: uint(15)},
+		Sorts:      nil,
+		PageNumber: 1,
+		PageSize:   20,
+	}
+	clusterWithExpiry, err = c.ListClusterWithExpiry(ctx, q2)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(clusterWithExpiry))
+	for _, clr := range clusterWithExpiry {
+		t.Logf("%+v", clr)
 	}
 }
 

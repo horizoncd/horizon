@@ -9,6 +9,7 @@ type GetClusterStatusResponse struct {
 	RunningTask       *RunningTask       `json:"runningTask" yaml:"runningTask"`
 	LatestPipelinerun *LatestPipelinerun `json:"latestPipelinerun,omitempty"`
 	ClusterStatus     interface{}        `json:"clusterStatus,omitempty" yaml:"clusterStatus,omitempty"`
+	TTLSeconds        *uint              `json:"ttlSeconds,omitempty" yaml:"ttlSeconds,omitempty"`
 }
 
 // RunningTask 最近一次在执行中的Task
