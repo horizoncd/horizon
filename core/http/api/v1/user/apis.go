@@ -1,6 +1,7 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -18,6 +19,7 @@ import (
 // path variable
 const (
 	_userIDParam = "userID"
+	_linkIDParam = "linkID"
 )
 
 type API struct {
@@ -132,6 +134,12 @@ func (a *API) Update(c *gin.Context) {
 				rpcerror.NotFoundError.WithErrMsgf("user not found: id = %v, err =  %v", userID, err))
 			return
 		}
+		if err = perror.Cause(err); errors.Is(err, herrors.ErrNoPrivilege) {
+			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsgf(
+				"can not update user:\n"+
+					"id = %v\nerr = %v", userID, err))
+			return
+		}
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsgf(
 			"failed to update user:\n"+
 				"id = %v\nerr = %v", userID, err))
@@ -139,4 +147,64 @@ func (a *API) Update(c *gin.Context) {
 	}
 
 	response.SuccessWithData(c, updatedUser)
+}
+
+func (a *API) GetLinksByUser(c *gin.Context) {
+	op := "user links: get links by user"
+	uid := c.Param(_userIDParam)
+	var (
+		userID uint64
+		err    error
+	)
+
+	if userID, err = strconv.ParseUint(uid, 10, 64); err != nil {
+		log.WithFiled(c, "op", op).Info("user ID not found or invalid")
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("userID not found or invalid"))
+		return
+	}
+
+	links, err := a.userCtl.ListUserLinks(c, uint(userID))
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c,
+				rpcerror.NotFoundError.WithErrMsgf("user not found: id = %v, err =  %v", userID, err))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsgf(
+			"failed to list links:\n"+
+				"id = %v\nerr = %v", userID, err))
+		return
+	}
+
+	response.SuccessWithData(c, links)
+}
+
+func (a *API) DeleteLink(c *gin.Context) {
+	op := "user links: delete user"
+	idStr := c.Param(_linkIDParam)
+	var (
+		linkID uint64
+		err    error
+	)
+
+	if linkID, err = strconv.ParseUint(idStr, 10, 64); err != nil {
+		log.WithFiled(c, "op", op).Info("user ID not found or invalid")
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("userID not found or invalid"))
+		return
+	}
+
+	err = a.userCtl.DeleteLinksByID(c, uint(linkID))
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c,
+				rpcerror.NotFoundError.WithErrMsgf("link not found: id = %v, err =  %v", linkID, err))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsgf(
+			"failed to delete link:\n"+
+				"id = %v\nerr = %v", linkID, err))
+		return
+	}
+
+	response.Success(c)
 }

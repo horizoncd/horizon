@@ -212,49 +212,6 @@ func (a *API) Delete(c *gin.Context) {
 	response.Success(c)
 }
 
-// SearchMyApplication search all applications that authorized to current user
-func (a *API) SearchMyApplication(c *gin.Context) {
-	const op = "application: search my application"
-
-	currentUser, err := common.UserFromContext(c)
-	if err != nil {
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsgf(err.Error()))
-		return
-	}
-
-	keywords := make(map[string]interface{})
-
-	filter := c.Query(common.Filter)
-	if filter != "" {
-		keywords[common.ApplicationQueryName] = filter
-	}
-
-	keywords[common.ApplicationQueryByUser] = currentUser.GetID()
-
-	query := q.New(keywords).WithPagination(c)
-
-	total, applications, err := a.applicationCtl.List(c, query)
-	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {
-				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-				return
-			}
-		} else if perror.Cause(err) == herrors.ErrParamInvalid {
-			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
-			return
-		}
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-
-	response.SuccessWithData(c, response.DataWithTotal{
-		Total: int64(total),
-		Items: applications,
-	})
-}
-
 // List search all applications that authorized to current user
 func (a *API) List(c *gin.Context) {
 	const op = "application: list application"

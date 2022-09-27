@@ -57,7 +57,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, template2.Description, template2InDB.Description)
 
-	templates, err := templateMgr.List(ctx)
+	templates, err := templateMgr.ListTemplate(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(templates))
 	assert.Equal(t, template1.Name, templates[0].Name)

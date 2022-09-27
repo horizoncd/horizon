@@ -101,19 +101,6 @@ func (a *API) List(c *gin.Context) {
 		return
 	}
 
-	// for /searchmyclusters
-	if strings.HasSuffix(c.Request.URL.Path, "/searchmyclusters") {
-		currentUser, err := common.UserFromContext(c)
-		if err != nil {
-			response.AbortWithRPCError(c,
-				rpcerror.InternalError.WithErrMsgf(
-					"current user not found\n"+
-						"err = %v", err))
-			return
-		}
-		query.Keywords[common.ClusterQueryByUser] = currentUser.GetID()
-	}
-
 	count, respList, err := a.clusterCtl.List(c, query)
 	if err != nil {
 		log.WithFiled(c, "op", op).Errorf("%+v", err)

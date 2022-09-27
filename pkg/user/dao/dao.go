@@ -25,8 +25,6 @@ type DAO interface {
 	UpdateByID(ctx context.Context, id uint, newUser *models.User) (*models.User, error)
 }
 
-var model = &models.User{}
-
 // NewDAO returns an instance of the default DAO
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
@@ -46,7 +44,7 @@ func (d *dao) Create(ctx context.Context, user *models.User) (*models.User, erro
 
 func (d *dao) List(ctx context.Context, query *q.Query) (int64, []*models.User, error) {
 	var users []*models.User
-	tx := d.db.Model(model)
+	tx := d.db.Table("tb_user")
 	if query != nil {
 		for k, v := range query.Keywords {
 			switch k {

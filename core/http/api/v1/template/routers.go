@@ -10,6 +10,15 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, api *API) {
+	apiV2Group := engine.Group("/apis/core/v2/templates")
+	var v2routes = route.Routes{
+		{
+			Method:      http.MethodGet,
+			HandlerFunc: api.ListV2,
+		},
+	}
+	route.RegisterRoutes(apiV2Group, v2routes)
+
 	apiGroup := engine.Group("/apis/core/v1/templates")
 	var routes = route.Routes{
 		{

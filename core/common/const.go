@@ -75,7 +75,8 @@ const (
 )
 
 const (
-	GroupCore = "core"
+	GroupCore  = "core"
+	GroupFront = "front"
 )
 
 const (

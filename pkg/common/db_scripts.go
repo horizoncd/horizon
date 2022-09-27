@@ -59,8 +59,6 @@ const (
 	UserQueryByOIDC  = "select * from tb_user where oidc_type = ? and email = ?"
 	UserQueryByEmail = "select * from tb_user where email = ? "
 	UserListByEmail  = "select * from tb_user where email in ? "
-	UserSearch       = "select * from tb_user where name like ? or full_name like ? or email like ? limit ? offset ?"
-	UserSearchCount  = "select count(1) from tb_user where name like ? or full_name like ? or email like ?"
 	UserGetByID      = "select * from tb_user where id in ?"
 )
 
@@ -115,19 +113,15 @@ const (
 		"union " +
 		"select a.id, a.name, a.name as path, description, updated_at, 'application' as type from tb_application a " +
 		"where a.group_id=? and a.deleted_ts = 0) ga"
-	GroupQueryByTraversalID = "select * from tb_group where %s and deleted_ts = 0"
 )
 
 /* sql about application */
 const (
-	ApplicationQueryByIDs                  = "select * from tb_application where id in ? and deleted_ts = 0"
-	ApplicationQueryByGroupIDs             = "select * from tb_application where group_id in ? and deleted_ts = 0"
-	ApplicationQueryByID                   = "select * from tb_application where id = ? and deleted_ts = 0"
-	ApplicationQueryByName                 = "select * from tb_application where name = ? and deleted_ts = 0"
-	ApplicationQueryByFuzzily              = "select * from tb_application where name like ? and deleted_ts = 0"
-	ApplicationQueryByFuzzilyCount         = "select count(1) from tb_application where name like ? and deleted_ts = 0"
-	ApplicationQueryByFuzzilyAndPagination = "select * from tb_application where name like ? and deleted_ts = 0 " +
-		"order by updated_at desc limit ? offset ?"
+	ApplicationQueryByIDs             = "select * from tb_application where id in ? and deleted_ts = 0"
+	ApplicationQueryByGroupIDs        = "select * from tb_application where group_id in ? and deleted_ts = 0"
+	ApplicationQueryByID              = "select * from tb_application where id = ? and deleted_ts = 0"
+	ApplicationQueryByName            = "select * from tb_application where name = ? and deleted_ts = 0"
+	ApplicationQueryByFuzzily         = "select * from tb_application where name like ? and deleted_ts = 0"
 	ApplicationQueryByNamesUnderGroup = "select * from tb_application where group_id = ? and name in ? " +
 		"and deleted_ts = 0"
 	ApplicationDeleteByID     = "update tb_application set deleted_ts = ?, updated_by = ? where id = ?"

@@ -14,9 +14,15 @@ sessionConfig:
   maxAge: 43200
 redisConfig:
   protocol: tcp
-  address: 10.124.135.25:6379
+  address: dev.redis:6379
   password: redis
   db: 1
+oidcConfig:
+  userHeader: X-HORIZON-OIDC-USER
+  fullNameHeader: X-HORIZON-OIDC-FULLNAME
+  emailHeader: X-HORIZON-OIDC-EMAIL
+  oidcIDHeader: X-HORIZON-OIDC-ID
+  oidcTypeHeader: X-HORIZON-OIDC-TYPE
 gitlabMapper:
   template:
     httpURL: https://g.hz.netease.com
@@ -37,8 +43,8 @@ templateRepo:
   kind: "harbor"
   host: "https://harbor.mock.org"
   repoName: "horizon-template"
-  username: "admin"
-  password: "harborAdmin12345"
+  username: username
+  password: password
   insecure: true
   certFile: ""
   keyFile: ""
@@ -54,25 +60,7 @@ tektonMapper:
     namespace: tekton-resources
     # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
     # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
-    kubeconfig: |
-      apiVersion: v1
-      clusters:
-      - cluster:
-          certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFVENDQWZtZ0F3SUJBZ0lVQVBxMGIvZDl1TUJWY1FyMWorMjJVWXRObk9Jd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0dERVdNQlFHQTFVRUF3d05hM1ZpWlhKdVpYUmxjeTFqWVRBZUZ3MHlNakF4TWpReE1qRXdNekphRncwegpOVEV3TURNeE1qRXdNekphTUJneEZqQVVCZ05WQkFNTURXdDFZbVZ5Ym1WMFpYTXRZMkV3Z2dFaU1BMEdDU3FHClNJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUUNyQlZsVWlocEJ0THdXOUp6b1gySWpSb0ZLbDBkM0IwZWIKa0thQjdDRHBhMEJYVUdSYUFPK3hiOWd5dDE0bFZ3VkxOc1BITEovMUNNUm5yTC9KSDI2UUdqYkhHUkRrcHUyQQovWHhzdkZ6K3NCZk5NTEFjeTRHaWNac1FnSnZPQUxrb21LVFk0TjZmSFZlWG5id3dLTmVWNUtIaE84bU4rTWl1ClZxMUttMzZtV0thZVBFMkZ6UEJDSWRSNlZ4NGx0VS9LeHRxTmFMcENTcDZOTFZEZXJsaC8rb1Fwb1hPb3BQSTAKSStBdVNoUkRyQWMvbXhSc0NERGlWNmJnK2hHMEpTc3VHVFhZRnhBakJiMVdGa0VTekZvN3hHWnNidmdqSnpxTwpudi9IU21xZVVyUkxqOEJnWnVjZjQwOENDR2FWaWdpRmo2cGhucjV6amZzVjdSZTBPMEIxQWdNQkFBR2pVekJSCk1CMEdBMVVkRGdRV0JCUVlsbnVwcUJUeGJLSGlrSVRaSkErM2dTMEJTVEFmQmdOVkhTTUVHREFXZ0JRWWxudXAKcUJUeGJLSGlrSVRaSkErM2dTMEJTVEFQQmdOVkhSTUJBZjhFQlRBREFRSC9NQTBHQ1NxR1NJYjNEUUVCQ3dVQQpBNElCQVFDaVFWUjZlY2ZyZHVoNEZYbW9KSEtjMHdhR3l1LzROSWJzUGlhMVliclp3Qktsc0FvQjFIK2tYNXEzCjBHVTlvYkFrVElWci9hMHBpWnI4R0ZYbFU0MGlGYjVRcng4aVBEYTRqczVpbmIxekdSdUJKMXFNWXUxOWhGZGwKVDhPZHROTkJXWEhpQkFXOGhZbEJISU1QeEh5UGJzN3VxcXRUN2N0WWZtRExtWlpRWkNnMTl4TFovN3dxNlQ2cQp0YVY5WVphTkZRUVhQRlRtUEQveCs4SUlmTHBhSlRrV1RQa3F0UXdyYk42cDVNb3FibDN0bVVNMi9aMnkwM2tYCmx4cWNVZEU5aE5pNTNQZUt2VXkvaU5iMWk3S3FNSWRzTVg3aW5GdFZnK3NxUzNPdktubXBBdGFZUDh3OExYY1EKSVdmanFQQjNpeldvUnAyOUtWZFhtZVBJdGIzOQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
-          server: https://10.124.131.23:6443
-        name: kubernetes
-      contexts:
-      - context:
-          cluster: kubernetes
-          user: kubernetes-admin
-        name: kubernetes-admin@kubernetes
-      current-context: kubernetes-admin@kubernetes
-      kind: Config
-      preferences: {}
-      users:
-      - name: kubernetes-admin
-        user:
-          token: eyJhbGciOiJSUzI1NiIsImtpZCI6IlRmQWplSm1kTzNXZ3ZTTDFrTTJhajdsYjBzaFdRQmdjcmhzaW1JSGxVMVkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJob3Jpem9uIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6Imhvcml6b24tYmFja2VuZC1jb3JlLXRva2VuLWduOTc5Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6Imhvcml6b24tYmFja2VuZC1jb3JlIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiNDYxMmE1MzMtMWIxZC00NTBkLWJlOTAtY2U0ZjgwZmY1MTdlIiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50Omhvcml6b246aG9yaXpvbi1iYWNrZW5kLWNvcmUifQ.GKCGKN4jhWEVqcx4--gTNH0sZrMRVsmk22j-7NJRCRT6aoF03t_Wc6hM0aWwKdM0Cn2szdDnfuSdP62VJMRyCyRx97D5hGZvZT1xm-08VHnXfHpYlbGbkP5oglbhhspMmK3DhGyH899U1PjKXJt-mrejSq9EjugctxAhQlMYIpZ9M3d7_1O0ME0LuaSYqMLs91tcAy5VnaXkG343pCso5KXJiqftJ0XqIUxkKN3qesPva03tCzbWgE9bLzZxOSLTVKp3PWSqdyToeonm7jRU5rB6Q0wasHe3alnZA7AJVmoPXIO8ICaYpS8TXXCPb5a7h_CxhtpuYEegWmm_YTmvvw
+    kubeconfig: "/Users/xxx/.kube/config"
     s3:
       accessKey: 
       secretKey: 
@@ -106,3 +94,4 @@ oauth:
   oauthHTMLLocation:
   authorizeCodeExpireIn: 10m
   accessTokenExpireIn: 24h
+

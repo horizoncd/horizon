@@ -520,8 +520,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback"))),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints"))),
 		prehandlemiddle.Middleware(r, manager),
 		auth.Middleware(rbacAuthorizer, rbacSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context

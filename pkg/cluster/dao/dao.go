@@ -279,14 +279,14 @@ func (d *dao) List(ctx context.Context,
 	res := d.db.Raw("select count(distinct id) from (?) as clusters", statement).Debug().Scan(&total)
 
 	if res.Error != nil {
-		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, res.Error.Error())
+		return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, res.Error.Error())
 	}
 
 	statement = d.db.Raw("select distinct * from (?) as apps order by updated_at desc limit ? offset ?",
 		statement, query.Limit(), query.Offset())
-	res = statement.Debug().Scan(&clusters)
+	res = statement.Scan(&clusters)
 	if res.Error != nil {
-		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, res.Error.Error())
+		return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, res.Error.Error())
 	}
 
 	return int(total), clusters, nil

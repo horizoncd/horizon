@@ -13,6 +13,7 @@ import (
 )
 
 type Claims struct {
+	Sub   string `json:"sub"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
@@ -115,7 +116,7 @@ func HandleOIDC(ctx context.Context, idp *models.IdentityProvider,
 	}
 
 	// exchange token with code
-	token, err := conf.Exchange(ctx, code)
+	token, err := conf.Exchange(ctx, code, oauth2.AccessTypeOnline)
 	if err != nil {
 		return nil, perror.Wrapf(
 			herrors.NewErrGetFailed(herrors.IdentityProviderInDB, err.Error()),

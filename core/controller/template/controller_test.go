@@ -84,7 +84,7 @@ func testList(t *testing.T) {
 	//      G1   T1
 	//     /
 	//    T2
-	templateMgr.EXPECT().List(gomock.Any()).Return([]*models.Template{
+	templateMgr.EXPECT().ListTemplate(gomock.Any()).Return([]*models.Template{
 		{
 			Model: global.Model{
 				ID: 1,

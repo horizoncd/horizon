@@ -19,11 +19,13 @@ import (
 	templateschematagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	trtmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	linkmanager "g.hz.netease.com/horizon/pkg/userlink/manager"
 	"gorm.io/gorm"
 )
 
 type Manager struct {
 	UserManager              usermanager.Manager
+	UserLinksManager         linkmanager.Manager
 	ApplicationManager       applicationmanager.Manager
 	TemplateReleaseManager   trmanager.Manager
 	TemplateSchemaTagManager trtmanager.Manager
@@ -47,6 +49,7 @@ type Manager struct {
 func InitManager(db *gorm.DB) *Manager {
 	return &Manager{
 		UserManager:              usermanager.New(db),
+		UserLinksManager:         linkmanager.New(db),
 		ApplicationManager:       applicationmanager.New(db),
 		TemplateReleaseManager:   trmanager.New(db),
 		TemplateSchemaTagManager: trtmanager.New(db),

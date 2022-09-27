@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 
+	"g.hz.netease.com/horizon/lib/q"
 	amodels "g.hz.netease.com/horizon/pkg/application/models"
 	cmodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/template/dao"
@@ -16,8 +17,9 @@ import (
 type Manager interface {
 	// Create template
 	Create(ctx context.Context, template *models.Template) (*models.Template, error)
-	// List all template
-	List(ctx context.Context) ([]*models.Template, error)
+	ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int, []*models.Template, error)
+	// ListTemplate returns all template
+	ListTemplate(ctx context.Context) ([]*models.Template, error)
 	// ListByGroupID lists all template by group ID
 	ListByGroupID(ctx context.Context, groupID uint) ([]*models.Template, error)
 	// DeleteByID deletes template by ID
@@ -45,8 +47,8 @@ func (m *manager) Create(ctx context.Context, template *models.Template) (*model
 	return m.dao.Create(ctx, template)
 }
 
-func (m *manager) List(ctx context.Context) ([]*models.Template, error) {
-	return m.dao.List(ctx)
+func (m *manager) ListTemplate(ctx context.Context) ([]*models.Template, error) {
+	return m.dao.ListTemplate(ctx)
 }
 
 func (m *manager) ListByGroupID(ctx context.Context, groupID uint) ([]*models.Template, error) {
@@ -83,4 +85,8 @@ func (m *manager) ListByGroupIDs(ctx context.Context, ids []uint) ([]*models.Tem
 
 func (m *manager) ListByIDs(ctx context.Context, ids []uint) ([]*models.Template, error) {
 	return m.dao.ListByIDs(ctx, ids)
+}
+
+func (m *manager) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int, []*models.Template, error) {
+	return m.dao.ListV2(ctx, query, groupIDs...)
 }

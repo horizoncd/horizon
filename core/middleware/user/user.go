@@ -79,7 +79,10 @@ func Middleware(param *param.Param, store sessions.Store,
 		// default status code of response is 200,
 		// if status is not 200, that means it has been handled by other middleware,
 		// so just omit it.
-		if c.Writer.Status() != http.StatusOK {
+		if c.Writer.Status() != http.StatusOK ||
+			// if not login, call this to login
+			// if signed in, call this to link other api
+			c.Request.URL.Path == "/apis/core/v1/login/callback" {
 			c.Next()
 			return
 		}

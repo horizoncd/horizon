@@ -32,8 +32,24 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/:%s", _userIDParam),
 			HandlerFunc: api.Update,
 		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%s/links", _userIDParam),
+			HandlerFunc: api.GetLinksByUser,
+		},
 	}
 	route.RegisterRoutes(coreGroup, coreRoutes)
+
+	linkGroup := engine.Group("/apis/core/v1/links")
+	var linkRoutes = route.Routes{
+		{
+			Method: http.MethodDelete,
+			// Deprecated: /apis/front/v1/users/search is not recommend, use /apis/core/v1/users instead
+			Pattern:     fmt.Sprintf("/:%v", _linkIDParam),
+			HandlerFunc: api.DeleteLink,
+		},
+	}
+	route.RegisterRoutes(linkGroup, linkRoutes)
 
 	frontGroup := engine.Group("/apis/front/v1/users")
 	var frontRoutes = route.Routes{

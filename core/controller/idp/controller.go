@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	idpconst "g.hz.netease.com/horizon/core/common/idp"
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -15,21 +16,21 @@ import (
 	"g.hz.netease.com/horizon/pkg/param"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodel "g.hz.netease.com/horizon/pkg/user/models"
+	linkmanager "g.hz.netease.com/horizon/pkg/userlink/manager"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
 
 var (
 	providerKey = "provider"
-
-	redirectKey = "redirect"
+	linkKey     = "link"
 )
 
 type Controller interface {
 	ListAuthEndpoints(ctx context.Context, redirectURL string) ([]*AuthInfo, error)
 	List(ctx context.Context) ([]*IdentityProvider, error)
 	GetByID(ctx context.Context, id uint) (*IdentityProvider, error)
-	Login(ctx context.Context, code string, state string) (*usermodel.User, error)
+	LoginOrLink(ctx context.Context, code string, state string, redirectURL string) (*usermodel.User, error)
 	Create(c context.Context, createParam *CreateIDPRequest) (*IdentityProvider, error)
 	Delete(c context.Context, idpID uint) error
 	Update(c context.Context, id uint, updateParam *UpdateIDPRequest) (*IdentityProvider, error)
@@ -39,12 +40,14 @@ type Controller interface {
 type controller struct {
 	idpManager  manager.Manager
 	userManager usermanager.Manager
+	linkManager linkmanager.Manager
 }
 
 func NewController(param *param.Param) Controller {
 	return &controller{
 		idpManager:  param.IdpManager,
 		userManager: param.UserManager,
+		linkManager: param.UserLinksManager,
 	}
 }
 
@@ -59,7 +62,7 @@ func (c *controller) ListAuthEndpoints(ctx context.Context, redirectURL string) 
 		res  = make([]*AuthInfo, 0)
 	)
 	for _, idp := range idps {
-		info := &AuthInfo{DisplayName: idp.DisplayName}
+		info := &AuthInfo{ID: idp.ID, Name: idp.Name, DisplayName: idp.DisplayName}
 		conf, err = utils.MakeOuath2Config(ctx, idp, oidc.ScopeOpenID)
 		if err != nil {
 			return nil, err
@@ -67,7 +70,9 @@ func (c *controller) ListAuthEndpoints(ctx context.Context, redirectURL string) 
 
 		state := url.Values{providerKey: []string{idp.Name}}
 		conf.RedirectURL = redirectURL
-		info.AuthURL = conf.AuthCodeURL(base64.StdEncoding.EncodeToString([]byte(state.Encode())))
+		info.AuthURL = conf.AuthCodeURL(
+			base64.StdEncoding.EncodeToString([]byte(state.Encode())),
+			oauth2.AccessTypeOnline)
 
 		res = append(res, info)
 	}
@@ -83,7 +88,8 @@ func (c *controller) List(ctx context.Context) ([]*IdentityProvider, error) {
 	return ofIDPModels(idps), nil
 }
 
-func (c *controller) Login(ctx context.Context, code string, state string) (*usermodel.User, error) {
+func (c *controller) LoginOrLink(ctx context.Context,
+	code string, state string, redirectURL string) (*usermodel.User, error) {
 	bts, err := base64.StdEncoding.DecodeString(state)
 	if err != nil {
 		return nil, perror.Wrapf(
@@ -114,23 +120,54 @@ func (c *controller) Login(ctx context.Context, code string, state string) (*use
 		return nil, err
 	}
 
-	redirect := stateMap[redirectKey]
-
 	var claims *utils.Claims
-	claims, err = utils.HandleOIDC(ctx, idp, code, redirect...)
+	claims, err = utils.HandleOIDC(ctx, idp, code, redirectURL)
 	if err != nil {
 		return nil, err
 	}
 
-	user, _ := c.userManager.GetUserByEmail(ctx, claims.Email)
-	if user == nil {
-		user, err = c.userManager.Create(ctx, &usermodel.User{
-			Name:     strings.SplitN(claims.Email, "@", 2)[0],
-			FullName: claims.Name,
-			Email:    claims.Email,
-		})
+	var user *usermodel.User
+	if v, ok := stateMap[linkKey]; ok && len(v) == 1 && v[0] == "true" {
+		// for linking
+		currentUser, err := common.UserFromContext(ctx)
 		if err != nil {
 			return nil, err
+		}
+		user, err = c.userManager.GetUserByID(ctx, currentUser.GetID())
+		if err != nil {
+			return nil, err
+		}
+		_, err = c.linkManager.CreateLink(ctx, user.ID, idp.ID, claims, true)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if link, err := c.linkManager.GetByIDPAndSub(ctx, idp.ID, claims.Sub); err != nil {
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+				return nil, err
+			}
+			// for signing on without link
+			user, err = c.userManager.Create(ctx, &usermodel.User{
+				Name:     strings.SplitN(claims.Email, "@", 2)[0],
+				FullName: claims.Name,
+				Email:    claims.Email,
+			})
+			if err != nil {
+				return nil, err
+			}
+			_, err = c.linkManager.CreateLink(ctx, user.ID, idp.ID, claims, false)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			// for signing in
+			user, _ = c.userManager.GetUserByID(ctx, link.UserID)
+			if user != nil {
+				if user.Banned {
+					return nil, perror.Wrapf(herrors.ErrForbidden,
+						"user is banned")
+				}
+			}
 		}
 	}
 	return user, nil

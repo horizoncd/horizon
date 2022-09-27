@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"g.hz.netease.com/horizon/pkg/user/models"
+	lmodels "g.hz.netease.com/horizon/pkg/userlink/models"
 )
 
 type User struct {
@@ -43,4 +44,34 @@ func ofUsers(users []*models.User) []*User {
 type UpdateUserRequest struct {
 	IsAdmin  *bool `json:"isAdmin"`
 	IsBanned *bool `json:"isBanned"`
+}
+
+type Link struct {
+	ID         uint   `json:"id"`
+	Sub        string `json:"sub"`
+	IdpID      uint   `json:"idpId"`
+	UserID     uint   `json:"userId"`
+	Name       string `json:"name"`
+	Email      string `json:"email"`
+	Unlinkable bool   `json:"unlinkable"`
+}
+
+func ofUserLink(link *lmodels.UserLink) *Link {
+	return &Link{
+		ID:         link.ID,
+		Sub:        link.Sub,
+		IdpID:      link.IdpID,
+		UserID:     link.UserID,
+		Name:       link.Name,
+		Email:      link.Email,
+		Unlinkable: link.Deletable,
+	}
+}
+
+func ofUserLinks(links []*lmodels.UserLink) []*Link {
+	resp := make([]*Link, 0, len(links))
+	for _, link := range links {
+		resp = append(resp, ofUserLink(link))
+	}
+	return resp
 }

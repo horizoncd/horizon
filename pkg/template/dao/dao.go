@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/lib/q"
 	amodels "g.hz.netease.com/horizon/pkg/application/models"
 	cmodel "g.hz.netease.com/horizon/pkg/cluster/models"
-	"g.hz.netease.com/horizon/pkg/common"
+	dbsql "g.hz.netease.com/horizon/pkg/common"
 	hctx "g.hz.netease.com/horizon/pkg/context"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/template/models"
@@ -16,7 +18,7 @@ import (
 
 type DAO interface {
 	Create(ctx context.Context, template *models.Template) (*models.Template, error)
-	List(ctx context.Context) ([]*models.Template, error)
+	ListTemplate(ctx context.Context) ([]*models.Template, error)
 	ListByGroupID(ctx context.Context, groupID uint) ([]*models.Template, error)
 	DeleteByID(ctx context.Context, id uint) error
 	GetByID(ctx context.Context, id uint) (*models.Template, error)
@@ -26,6 +28,7 @@ type DAO interface {
 	UpdateByID(ctx context.Context, id uint, template *models.Template) error
 	ListByGroupIDs(ctx context.Context, ids []uint) ([]*models.Template, error)
 	ListByIDs(ctx context.Context, ids []uint) ([]*models.Template, error)
+	ListV2(ctx context.Context, query *q.Query, gorupIDs ...uint) (int, []*models.Template, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -40,9 +43,9 @@ func (d dao) Create(ctx context.Context, template *models.Template) (*models.Tem
 	return template, result.Error
 }
 
-func (d dao) List(ctx context.Context) ([]*models.Template, error) {
+func (d dao) ListTemplate(ctx context.Context) ([]*models.Template, error) {
 	var templates []*models.Template
-	result := d.db.Raw(common.TemplateList).Scan(&templates)
+	result := d.db.Raw(dbsql.TemplateList).Scan(&templates)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -51,7 +54,7 @@ func (d dao) List(ctx context.Context) ([]*models.Template, error) {
 
 func (d dao) ListByGroupID(ctx context.Context, groupID uint) ([]*models.Template, error) {
 	var templates []*models.Template
-	result := d.db.Raw(common.TemplateListByGroup, groupID).Scan(&templates)
+	result := d.db.Raw(dbsql.TemplateListByGroup, groupID).Scan(&templates)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -59,7 +62,7 @@ func (d dao) ListByGroupID(ctx context.Context, groupID uint) ([]*models.Templat
 }
 
 func (d dao) DeleteByID(ctx context.Context, id uint) error {
-	if res := d.db.Exec(common.TemplateDelete, id); res.Error != nil {
+	if res := d.db.Exec(dbsql.TemplateDelete, id); res.Error != nil {
 		return perror.Wrap(herrors.NewErrDeleteFailed(herrors.TemplateInDB, res.Error.Error()),
 			fmt.Sprintf("failed to delete template, id = %d", id))
 	}
@@ -68,7 +71,7 @@ func (d dao) DeleteByID(ctx context.Context, id uint) error {
 
 func (d dao) GetByID(ctx context.Context, id uint) (*models.Template, error) {
 	var template models.Template
-	res := d.db.Raw(common.TemplateQueryByID, id).First(&template)
+	res := d.db.Raw(dbsql.TemplateQueryByID, id).First(&template)
 	if res.Error != nil {
 		if res.Error == gorm.ErrRecordNotFound {
 			return nil, perror.Wrap(herrors.NewErrNotFound(herrors.TemplateInDB, res.Error.Error()),
@@ -82,7 +85,7 @@ func (d dao) GetByID(ctx context.Context, id uint) (*models.Template, error) {
 
 func (d dao) GetByName(ctx context.Context, name string) (*models.Template, error) {
 	var template models.Template
-	res := d.db.Raw(common.TemplateQueryByName, name).First(&template)
+	res := d.db.Raw(dbsql.TemplateQueryByName, name).First(&template)
 	if res.Error != nil {
 		if res.Error == gorm.ErrRecordNotFound {
 			return nil, perror.Wrap(herrors.NewErrNotFound(herrors.TemplateInDB, res.Error.Error()),
@@ -100,14 +103,14 @@ func (d dao) GetRefOfApplication(ctx context.Context, id uint) ([]*amodels.Appli
 		applications []*amodels.Application
 		total        uint
 	)
-	res := d.db.Raw(common.TemplateRefCountOfApplication, id).Scan(&total)
+	res := d.db.Raw(dbsql.TemplateRefCountOfApplication, id).Scan(&total)
 	if res.Error != nil {
 		return nil, 0, perror.Wrap(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
 			fmt.Sprintf("failed to get ref count of application: %s", res.Error.Error()))
 	}
 
 	if !ok || !onlyRefCount {
-		res = d.db.Raw(common.TemplateRefOfApplication, id).Scan(&applications)
+		res = d.db.Raw(dbsql.TemplateRefOfApplication, id).Scan(&applications)
 		if res.Error != nil {
 			return nil, 0, perror.Wrap(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
 				fmt.Sprintf("failed to get ref of application: %s", res.Error.Error()))
@@ -122,14 +125,14 @@ func (d dao) GetRefOfCluster(ctx context.Context, id uint) ([]*cmodel.Cluster, u
 		clusters []*cmodel.Cluster
 		total    uint
 	)
-	res := d.db.Raw(common.TemplateRefCountOfCluster, id).Scan(&total)
+	res := d.db.Raw(dbsql.TemplateRefCountOfCluster, id).Scan(&total)
 	if res.Error != nil {
 		return nil, 0, perror.Wrap(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
 			fmt.Sprintf("failed to get ref count of cluster: %s", res.Error.Error()))
 	}
 
 	if !ok || !onlyRefCount {
-		res = d.db.Raw(common.TemplateRefOfCluster, id).Scan(&clusters)
+		res = d.db.Raw(dbsql.TemplateRefOfCluster, id).Scan(&clusters)
 		if res.Error != nil {
 			return nil, 0, perror.Wrap(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
 				fmt.Sprintf("failed to get ref of cluster: %s", res.Error.Error()))
@@ -141,7 +144,7 @@ func (d dao) GetRefOfCluster(ctx context.Context, id uint) ([]*cmodel.Cluster, u
 func (d dao) UpdateByID(ctx context.Context, templateID uint, template *models.Template) error {
 	return d.db.Transaction(func(tx *gorm.DB) error {
 		var oldTemplate models.Template
-		res := tx.Raw(common.TemplateQueryByID, templateID).Scan(&oldTemplate)
+		res := tx.Raw(dbsql.TemplateQueryByID, templateID).Scan(&oldTemplate)
 		if res.Error != nil {
 			return res.Error
 		}
@@ -184,4 +187,74 @@ func (d dao) ListByIDs(ctx context.Context, ids []uint) ([]*models.Template, err
 				"template ids = %v\n err = %v", ids, res.Error)
 	}
 	return templates, nil
+}
+
+func (d dao) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int, []*models.Template, error) {
+	var (
+		templates []*models.Template
+		total     int64
+	)
+
+	statement := d.db.WithContext(ctx).
+		Table("tb_template as t").
+		Select("t.*")
+
+	genSQL := func(statement *gorm.DB, query *q.Query) *gorm.DB {
+		for k, v := range query.Keywords {
+			switch k {
+			case common.ParamGroupID:
+				statement = statement.Where("t.group_id = ?", v)
+			case common.TemplateQueryName:
+				statement = statement.Where("t.name like ?", fmt.Sprintf("%%%v%%", v))
+			case common.TemplateQueryByGroup:
+				if _, ok := v.(uint); ok {
+					statement = statement.Where("t.group_id = ?", v)
+				} else if _, ok = v.([]uint); ok {
+					statement = statement.Where("t.group_id in ?", v)
+				}
+			case common.TemplateQueryByUser:
+				statement = statement.
+					Joins("join tb_member as m on m.resource_id = t.id").
+					Where("m.resource_type = 'templates'").
+					Where("m.member_type = '0'").
+					Where("m.deleted_ts = 0").
+					Where("m.membername_id = ?", v)
+			}
+		}
+		statement = statement.Where("t.deleted_ts = 0")
+		return statement
+	}
+
+	if query != nil {
+		statement = genSQL(statement, query)
+
+		if len(groupIDs) > 0 &&
+			query.Keywords != nil &&
+			query.Keywords[common.TemplateQueryByUser] != nil {
+			statementGroup := d.db.WithContext(ctx).
+				Table("tb_template as t").
+				Select("t.*")
+
+			delete(query.Keywords, common.TemplateQueryByUser)
+			statementGroup = genSQL(statementGroup, query)
+
+			statementGroup = statementGroup.Where("group_id in ?", groupIDs)
+			statement = d.db.Raw("? union ?", statement, statementGroup)
+		}
+	}
+
+	res := d.db.Raw("select count(distinct id) from (?) as templates", statement).Debug().Scan(&total)
+
+	if res.Error != nil {
+		return 0, nil, herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error())
+	}
+
+	statement = d.db.Raw("select distinct * from (?) as apps order by updated_at desc limit ? offset ?",
+		statement, query.Limit(), query.Offset())
+	res = statement.Scan(&templates)
+	if res.Error != nil {
+		return 0, nil, herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error())
+	}
+
+	return int(total), templates, nil
 }

@@ -34,6 +34,7 @@ var (
 	TaskInDB                  = sourceType{name: "TaskInDB"}
 	StepInDB                  = sourceType{name: "StepInDB"}
 	UserInDB                  = sourceType{name: "UserInDB"}
+	UserLinkInDB              = sourceType{name: "UserLinkInDB"}
 	TemplateSchemaTagInDB     = sourceType{name: "TemplateSchemaTagInDB"}
 	TemplateInDB              = sourceType{name: "TemplateInDB"}
 	TemplateReleaseInDB       = sourceType{name: "TemplateReleaseInDB"}
