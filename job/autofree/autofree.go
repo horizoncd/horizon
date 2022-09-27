@@ -10,19 +10,13 @@ import (
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	userctl "g.hz.netease.com/horizon/core/controller/user"
 	"g.hz.netease.com/horizon/lib/q"
+	"g.hz.netease.com/horizon/pkg/config/autofree"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	uuid "github.com/satori/go.uuid"
 )
 
-type Config struct {
-	Account       string
-	JobInterval   time.Duration
-	BatchInterval time.Duration
-	BatchSize     int
-}
-
-func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *Config, userCtr userctl.Controller,
+func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Config, userCtr userctl.Controller,
 	clusterCtr clusterctl.Controller, prCtr prctl.Controller, envCtr environmentctl.Controller) {
 	// verify account
 	user, err := userCtr.GetUserByEmail(ctx, jobConfig.Account)
@@ -46,7 +40,7 @@ func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *Config, userCt
 	}
 }
 
-func process(ctx context.Context, jobConfig *Config, clusterCtr clusterctl.Controller,
+func process(ctx context.Context, jobConfig *autofree.Config, clusterCtr clusterctl.Controller,
 	prCtr prctl.Controller, envCtr environmentctl.Controller) {
 	op := "job: cluster auto-free"
 	query := &q.Query{
@@ -79,9 +73,19 @@ func process(ctx context.Context, jobConfig *Config, clusterCtr clusterctl.Contr
 				if !expired(clr, prUpdatedAt) {
 					return false, nil
 				}
-
+				supported := func() bool {
+					for _, env := range jobConfig.SupportedEnvs {
+						if clr.EnvironmentName == env {
+							return true
+						}
+					}
+					log.WithFiled(ctx, "op", op).
+						Warningf("%v environment does not allow auto-free. cluster: %v, expire seconds: %v",
+							clr.EnvironmentName, clr.Name, clr.ExpireSeconds)
+					return false
+				}()
 				environment, err := envCtr.GetByName(ctx, clr.EnvironmentName)
-				if err != nil || !environment.AutoFree || environment.Name == common.OnlineEnv {
+				if !supported || err != nil || !environment.AutoFree {
 					return false, err
 				}
 				return true, nil
@@ -95,9 +99,9 @@ func process(ctx context.Context, jobConfig *Config, clusterCtr clusterctl.Contr
 			if isNeedFree {
 				err = clusterCtr.FreeCluster(ctx, clr.ID)
 				if err != nil {
-					log.WithFiled(ctx, "op", op).Errorf("failed to automaticlly release cluster: %v, err: %v", clr.Name, err.Error())
+					log.WithFiled(ctx, "op", op).Errorf("failed to automatically release cluster: %v, err: %v", clr.Name, err.Error())
 				} else {
-					log.WithFiled(ctx, "op", op).Infof("cluster %v releasing automaticlly succeeded", clr.Name)
+					log.WithFiled(ctx, "op", op).Infof("cluster %v automatic releasing succeeded", clr.Name)
 				}
 			}
 		}

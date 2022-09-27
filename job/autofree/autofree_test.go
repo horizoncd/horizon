@@ -20,6 +20,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
+	"g.hz.netease.com/horizon/pkg/config/autofree"
 	emodel "g.hz.netease.com/horizon/pkg/environment/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	"g.hz.netease.com/horizon/pkg/errors"
@@ -172,10 +173,11 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		t.Logf("%v", pipelineBasics)
 	}
 	cd.EXPECT().DeleteCluster(gomock.Any(), gomock.Any()).Return(errors.New("test")).AnyTimes()
-	process(ctx, &Config{
+	process(ctx, &autofree.Config{
 		Account:       "",
 		JobInterval:   2 * time.Hour,
 		BatchInterval: 1 * time.Second,
 		BatchSize:     20,
+		SupportedEnvs: []string{"dev"},
 	}, clrCtl, prCtl, envCtl)
 }

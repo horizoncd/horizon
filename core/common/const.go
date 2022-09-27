@@ -101,8 +101,3 @@ const (
 	// IDThan query parameter, used for "id > IDThan"
 	IDThan = "idThan"
 )
-
-// OnlineEnv online environments
-const (
-	OnlineEnv = "online"
-)

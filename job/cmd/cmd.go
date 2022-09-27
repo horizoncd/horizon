@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"time"
 
 	"g.hz.netease.com/horizon/core/config"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
@@ -31,13 +29,9 @@ import (
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile    string
-	Environment   string
-	LogLevel      string
-	Account       string
-	JobInterval   string
-	BatchInterval string
-	BatchSize     string
+	ConfigFile  string
+	Environment string
+	LogLevel    string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -52,18 +46,6 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
-
-	flag.StringVar(
-		&flags.Account, "autoreleaseaccount", "", "auto release cluster account")
-
-	flag.StringVar(
-		&flags.JobInterval, "autoreleaseinterval", "1h", "auto release job interval")
-
-	flag.StringVar(
-		&flags.BatchInterval, "releasebatchinterval", "20s", "auto release batch interval")
-
-	flag.StringVar(
-		&flags.BatchSize, "releasebatchsize", "20", "auto release batch size")
 
 	flag.Parse()
 	return &flags
@@ -117,12 +99,11 @@ func Run(flags *Flags) {
 	// init context
 	ctx := context.Background()
 
+	log.Printf("ArgoCD Config: %+v", coreConfig.ArgoCDMapper)
 	parameter := &param.Param{
 		Manager: manager,
 		Cd:      cd.NewCD(coreConfig.ArgoCDMapper),
 	}
-
-	log.Printf("ArgoCD Config: %+v", coreConfig.ArgoCDMapper)
 
 	// init controller
 	var (
@@ -146,36 +127,10 @@ func Run(flags *Flags) {
 		grafanaService.SyncDatasource(cancellableCtx)
 	}()
 
-	// verify auto release config
-	jobConfig, err := func() (*autofree.Config, error) {
-		var err error
-		jobInterval, err := time.ParseDuration(flags.JobInterval)
-		if err != nil {
-			return nil, err
-		}
-		batchInterval, err := time.ParseDuration(flags.BatchInterval)
-		if err != nil {
-			return nil, err
-		}
-		batchSize, err := strconv.Atoi(flags.BatchSize)
-		if err != nil {
-			return nil, err
-		}
-		return &autofree.Config{
-			Account:       flags.Account,
-			JobInterval:   jobInterval,
-			BatchInterval: batchInterval,
-			BatchSize:     batchSize,
-		}, nil
-	}()
-	if err != nil {
-		panic(err)
-	}
-	log.Printf("auto-free job Config: %+v", jobConfig)
-
+	log.Printf("auto-free job Config: %+v", coreConfig.AutoFreeConfig)
 	// automatically release expired clusters
 	go func() {
-		autofree.AutoReleaseExpiredClusterJob(cancellableCtx, jobConfig,
+		autofree.AutoReleaseExpiredClusterJob(cancellableCtx, &coreConfig.AutoFreeConfig,
 			userCtl, clusterCtl, prCtl, environmentCtl)
 	}()
 

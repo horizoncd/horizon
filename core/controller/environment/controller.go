@@ -3,12 +3,9 @@ package environment
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/common"
-	herror "g.hz.netease.com/horizon/core/errors"
 	environmentmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	"g.hz.netease.com/horizon/pkg/environment/models"
 	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
-	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -71,15 +68,6 @@ func (c *controller) Create(ctx context.Context, request *CreateEnvironmentReque
 }
 
 func (c *controller) UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error {
-	// online environment is not allowed to open auto-free
-	environment, err := c.envMgr.GetByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	if environment.Name == common.OnlineEnv && request.AutoFree {
-		return perror.Wrap(herror.ErrEnvironmentUpdateInvalid,
-			"online environment is not allowed to open auto-free")
-	}
 	return c.envMgr.UpdateByID(ctx, id, &models.Environment{
 		DisplayName: request.DisplayName,
 		AutoFree:    request.AutoFree,
