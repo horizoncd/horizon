@@ -33,7 +33,6 @@ type Config struct {
 	TemplateRepo           templaterepo.Repo       `yaml:"templateRepo"`
 	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
-	GrafanaMapper          grafana.Mapper          `yaml:"grafanaMapper"`
 	GrafanaConfig          grafana.Config          `yaml:"grafanaConfig"`
 	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
@@ -67,15 +66,6 @@ func LoadConfig(configFilePath string) (*Config, error) {
 		}
 	}
 	config.TektonMapper = newTektonMapper
-
-	newGrafanaMapper := grafana.Mapper{}
-	for key, v := range config.GrafanaMapper {
-		ks := strings.Split(key, ",")
-		for i := 0; i < len(ks); i++ {
-			newGrafanaMapper[ks[i]] = v
-		}
-	}
-	config.GrafanaMapper = newGrafanaMapper
 
 	return &config, nil
 }

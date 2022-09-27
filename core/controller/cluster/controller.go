@@ -101,7 +101,6 @@ type controller struct {
 	pipelineMgr          pipelinemanager.Manager
 	tektonFty            factory.Factory
 	registryFty          registryfty.Factory
-	grafanaMapper        grafana.Mapper
 	userManager          usermanager.Manager
 	userSvc              usersvc.Service
 	memberManager        member.Manager
@@ -135,7 +134,6 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		tektonFty:            param.TektonFty,
 		registryFty:          registryfty.Fty,
 		hook:                 param.Hook,
-		grafanaMapper:        config.GrafanaMapper,
 		userManager:          param.UserManager,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,

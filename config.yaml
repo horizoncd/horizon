@@ -75,11 +75,6 @@ tektonMapper:
       bucket: yufeng-collector-dev
       skipVerify: true
       s3ForcePathStyle: true
-grafanaMapper:
-  hz-dev2:
-    basicDashboard: "http://grafana.yf-dev2.netease.com/d/R3l8AsF7z/pod-resources?orgId=1&kiosk&theme=light&var-namespace=%s&var-datasource=Prometheus&var-cluster=%s"
-    serverlessDashboard: "http://grafana.yf-dev2.netease.com/d/mkwWamKnk/knative-user?orgId=1&kiosk&theme=light&var-datasource=Prometheus&var-cluster=%s"
-    querySeries: "http://grafana.yf-dev2.netease.com/api/datasources/proxy/1/api/v1/series"
 grafanaSLO:
   overviewDashboard: "http://grafana.yf-dev2.netease.com/d/Wz3GSBank/slo-gai-lan?orgId=1&kiosk&theme=light&var-env=%s"
   apiDashboard: "http://grafana.yf-dev2.netease.com/d/tKjaD1-nk/horizon-api-slo?orgId=1&kiosk&theme=light"
