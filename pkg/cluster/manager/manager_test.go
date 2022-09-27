@@ -9,10 +9,12 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	membermanager "g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	pipelinemodel "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -32,6 +34,8 @@ var (
 	regionMgr = regionmanager.New(db)
 )
 
+const secondsInOneDay = 24 * 3600
+
 func TestMain(m *testing.M) {
 	db = db.Debug()
 	// nolint
@@ -40,7 +44,8 @@ func TestMain(m *testing.M) {
 		ID:   110,
 	}))
 	if err := db.AutoMigrate(&models.Cluster{}, &tagmodels.Tag{}, &usermodels.User{},
-		&envregionmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{}); err != nil {
+		&envregionmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{},
+		&pipelinemodel.Pipelinerun{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -250,4 +255,114 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, total)
 	assert.Equal(t, 1, len(cs))
+
+	// test ListClusterWithExpiry
+	cluster = &models.Cluster{
+		ApplicationID:   applicationID,
+		Name:            "cluster3",
+		EnvironmentName: environmentName,
+		RegionName:      region.Name,
+		Description:     description,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubfolder,
+		GitRef:          gitBranch,
+		Template:        template,
+		TemplateRelease: templateRelease,
+		CreatedBy:       createdBy,
+		UpdatedBy:       updatedBy,
+		Status:          "",
+		ExpireSeconds:   1 * secondsInOneDay,
+	}
+	_, err = mgr.Create(ctx, cluster, []*tagmodels.Tag{
+		{
+			Key:   "k1",
+			Value: "v3",
+		},
+		{
+			Key:   "k3",
+			Value: "v3",
+		},
+	}, map[string]string{user2.Email: role.Owner})
+	assert.Nil(t, err)
+
+	cluster = &models.Cluster{
+		ApplicationID:   applicationID,
+		Name:            "cluster4",
+		EnvironmentName: environmentName,
+		RegionName:      region.Name,
+		Description:     description,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubfolder,
+		GitRef:          gitBranch,
+		Template:        template,
+		TemplateRelease: templateRelease,
+		CreatedBy:       createdBy,
+		UpdatedBy:       updatedBy,
+		Status:          "",
+		ExpireSeconds:   5 * secondsInOneDay,
+	}
+	_, err = mgr.Create(ctx, cluster, []*tagmodels.Tag{
+		{
+			Key:   "k1",
+			Value: "v3",
+		},
+		{
+			Key:   "k3",
+			Value: "v3",
+		},
+	}, map[string]string{user2.Email: role.Owner})
+	assert.Nil(t, err)
+
+	cluster = &models.Cluster{
+		ApplicationID:   applicationID,
+		Name:            "cluster5",
+		EnvironmentName: environmentName,
+		RegionName:      region.Name,
+		Description:     description,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubfolder,
+		GitRef:          gitBranch,
+		Template:        template,
+		TemplateRelease: templateRelease,
+		CreatedBy:       createdBy,
+		UpdatedBy:       updatedBy,
+		Status:          clustercommon.StatusFreeing,
+		ExpireSeconds:   5 * secondsInOneDay,
+	}
+	_, err = mgr.Create(ctx, cluster, []*tagmodels.Tag{
+		{
+			Key:   "k1",
+			Value: "v3",
+		},
+		{
+			Key:   "k3",
+			Value: "v3",
+		},
+	}, map[string]string{user2.Email: role.Owner})
+	assert.Nil(t, err)
+
+	count, clustersWithEnvAndRegion, err = mgr.ListByNameFuzzily(ctx, "", "",
+		&q.Query{PageNumber: 1, PageSize: 10})
+	assert.Nil(t, err)
+	assert.Equal(t, 4, count)
+	for _, item := range clustersWithEnvAndRegion {
+		t.Logf("%+v", item.Cluster)
+	}
+
+	clrs, err := mgr.ListClusterWithExpiry(ctx, nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(clrs))
+	for _, item := range clrs {
+		t.Logf("%+v", item)
+	}
+	q2 := &q.Query{
+		Keywords:   q.KeyWords{common.IDThan: uint(3)},
+		Sorts:      nil,
+		PageNumber: 1,
+		PageSize:   20,
+	}
+	clrs, err = mgr.ListClusterWithExpiry(ctx, q2)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(clrs))
+	assert.Equal(t, "cluster4", clrs[0].Name)
 }
