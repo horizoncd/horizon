@@ -25,34 +25,12 @@ type LatestPipelinerun struct {
 	Action string `json:"action"`
 }
 
-type GetDashboardResponse struct {
-	Basic      string `json:"basic" yaml:"basic"`
-	Container  string `json:"container" yaml:"container"`
-	Serverless string `json:"serverless,omitempty" yaml:"serverless,omitempty"`
-	Memcached  string `json:"memcached,omitempty" yaml:"memcached,omitempty"`
-}
-
 type GetGrafanaDashboardsResponse struct {
 	Host       string               `json:"host"`
 	Params     map[string]string    `json:"params"`
 	Dashboards []*grafana.Dashboard `json:"dashboards"`
 }
 
-type GetClusterPodsResponse struct {
-	Pods []KubePodInfo `json:"pods" yaml:"pods"`
-}
-
 type GetClusterPodResponse struct {
 	v1.Pod
-}
-
-type KubePodInfo struct {
-	Pod       string `json:"pod"`
-	Container string `json:"container"`
-	IP        string `json:"pod_ip"`
-}
-
-type QueryPodsSeriesResult struct {
-	Status string        `json:"status"`
-	Data   []KubePodInfo `json:"data"`
 }
