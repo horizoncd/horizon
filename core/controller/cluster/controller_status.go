@@ -142,7 +142,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 			}
 		}
 	}
-	if latestPipelinerun != nil {
+	if cluster.ExpireSeconds > 0 && latestPipelinerun != nil && cluster.Status == "" {
 		resp.TTLSeconds = calculateClusterTimeToLive(cluster.ExpireSeconds, cluster.UpdatedAt, latestPipelinerun.UpdatedAt)
 	}
 	return resp, nil
@@ -444,9 +444,6 @@ func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName 
 
 func calculateClusterTimeToLive(expireSeconds uint, clusterUpdatedAt time.Time,
 	runUpdatedAt time.Time) *uint {
-	if expireSeconds == 0 {
-		return nil
-	}
 	var (
 		latestUpdateAt time.Time
 		expireDate     time.Time
@@ -458,7 +455,8 @@ func calculateClusterTimeToLive(expireSeconds uint, clusterUpdatedAt time.Time,
 	}
 	expireDate = latestUpdateAt.Add(time.Duration(expireSeconds * 1e9))
 	if expireDate.Before(time.Now()) {
-		return nil
+		res := uint(0)
+		return &res
 	}
 	ttlSeconds := time.Until(expireDate).Seconds()
 	ttlUint := uint(math.Ceil(ttlSeconds))
