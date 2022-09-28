@@ -1278,7 +1278,7 @@ paths:
                           }
                       }
                   }
-  /apis/core/v1/clusters/{clusterID}/grafanadashboards:
+  /apis/core/v1/clusters/{clusterID}/dashboards:
     get:
       tags:
         - cluster
