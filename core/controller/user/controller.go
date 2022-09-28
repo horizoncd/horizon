@@ -77,16 +77,18 @@ func (c *controller) UpdateByID(ctx context.Context,
 		return nil, err
 	}
 
+	if u.IsAdmin == nil && u.IsBanned == nil {
+		return ofUser(userInDB), nil
+	}
 	if u.IsBanned != nil {
 		userInDB.Banned = *u.IsBanned
-	} else if u.IsAdmin != nil {
+	}
+	if u.IsAdmin != nil {
 		if !userInDB.Admin {
 			return nil, perror.Wrap(herrors.ErrNoPrivilege,
 				"you have no privilege to update user's admin permission")
 		}
 		userInDB.Admin = *u.IsAdmin
-	} else {
-		return ofUser(userInDB), nil
 	}
 
 	updatedUserInDB, err := c.userMgr.UpdateByID(ctx, id, userInDB)
@@ -106,6 +108,7 @@ func (c *controller) GetUserByEmail(ctx context.Context, email string) (*User, e
 	}
 	return ofUser(user), nil
 }
+
 func (c *controller) ListUserLinks(ctx context.Context, uid uint) ([]*Link, error) {
 	user, err := common.UserFromContext(ctx)
 	if err != nil {
@@ -130,6 +133,12 @@ func (c *controller) DeleteLinksByID(ctx context.Context, id uint) error {
 	link, err := c.linksMgr.GetByID(ctx, id)
 	if err != nil {
 		return err
+	}
+
+	if !link.Deletable {
+		return perror.Wrapf(
+			herrors.ErrForbidden,
+			"links with id = %d can not be deleted", id)
 	}
 
 	if !user.IsAdmin() && link.UserID != user.GetID() {

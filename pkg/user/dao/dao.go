@@ -101,12 +101,18 @@ func (d *dao) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*model
 
 func (d *dao) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	result := d.db.WithContext(ctx).Raw(common.UserQueryByEmail, email).Scan(&user)
-	if result.Error != nil {
-		return nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
-	}
-	if result.RowsAffected == 0 {
-		return nil, nil
+	err := d.db.WithContext(ctx).Raw(common.UserQueryByEmail, email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, perror.Wrapf(
+				herrors.NewErrNotFound(herrors.UserInDB, "user not found"),
+				"user not found:\n"+
+					"email = %s\nerr = %v", email, err)
+		}
+		return nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.UserInDB, "failed to get user"),
+			"failed to get user:\n"+
+				"email = %s\nerr = %v", email, err)
 	}
 	return &user, nil
 }
