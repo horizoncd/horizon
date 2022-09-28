@@ -134,7 +134,7 @@ func (a *API) Update(c *gin.Context) {
 				rpcerror.NotFoundError.WithErrMsgf("user not found: id = %v, err =  %v", userID, err))
 			return
 		}
-		if err = perror.Cause(err); errors.Is(err, herrors.ErrNoPrivilege) {
+		if err = perror.Cause(err); errors.Is(err, herrors.ErrForbidden) {
 			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsgf(
 				"can not update user:\n"+
 					"id = %v\nerr = %v", userID, err))

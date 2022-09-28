@@ -32,6 +32,7 @@ import (
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
+	"g.hz.netease.com/horizon/pkg/util/permission"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -660,9 +661,12 @@ func (c *controller) List(ctx context.Context, query *q.Query) (count int,
 
 	subGroupIDs := make([]uint, 0)
 	if query.Keywords != nil {
-		if id, ok := query.Keywords[common.ApplicationQueryByUser]; ok {
+		if userID, ok := query.Keywords[common.ApplicationQueryByUser].(uint); ok {
+			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
+				return 0, nil, err
+			}
 			// get groups authorized to current user
-			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, id.(uint))
+			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
 			if err != nil {
 				return 0, nil,
 					perror.WithMessage(err, "failed to list group resource of current user")

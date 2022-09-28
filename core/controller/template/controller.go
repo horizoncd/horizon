@@ -32,6 +32,7 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/templaterepo"
+	"g.hz.netease.com/horizon/pkg/util/permission"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	gitlabapi "github.com/xanzy/go-gitlab"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -107,6 +108,9 @@ func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bo
 		query.Keywords != nil {
 		if query.Keywords[common.TemplateQueryByUser] != nil {
 			if userID, ok := query.Keywords[common.TemplateQueryByUser].(uint); ok {
+				if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
+					return 0, nil, err
+				}
 				// get groups authorized to current user
 				groupIDs, err = c.memberMgr.ListResourceOfMemberInfoByRole(
 					ctx, membermodels.TypeGroup, userID, role.Owner)
@@ -934,7 +938,7 @@ func (c *controller) checkHasOnlyOwnerPermissionForRelease(ctx context.Context,
 		return true
 	}
 
-	member, err := c.memberSvc.GetMemberOfResource(ctx, common.ResourceTemplate, strconv.Itoa(int(release.ID)))
+	member, err := c.memberSvc.GetMemberOfResource(ctx, common.ResourceTemplate, strconv.Itoa(int(release.Template)))
 	if err != nil || member == nil {
 		return false
 	}

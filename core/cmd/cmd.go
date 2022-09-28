@@ -393,7 +393,7 @@ func Run(flags *Flags) {
 	userSvc := userservice.NewService(manager)
 
 	// init kube client
-	_, client, err := kube.BuildClient("")
+	_, client, err := kube.BuildClient(coreConfig.KubeConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -431,7 +431,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback")),
 			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/logout")),
-			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/users/self")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/users/self")),
 		}
 
 		// init controller

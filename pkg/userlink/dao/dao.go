@@ -29,6 +29,7 @@ type dao struct{ db *gorm.DB }
 func (d dao) ListByUserID(ctx context.Context, uid uint) ([]*models.UserLink, error) {
 	var links []*models.UserLink
 	res := d.db.WithContext(ctx).
+		Where("deleted_ts = 0").
 		Where("user_id = ?", uid).
 		Find(&links)
 	err := res.Error
@@ -43,7 +44,10 @@ func (d dao) ListByUserID(ctx context.Context, uid uint) ([]*models.UserLink, er
 
 func (d dao) GetByID(ctx context.Context, id uint) (*models.UserLink, error) {
 	var link *models.UserLink
-	err := d.db.Table("tb_idp_user").First(&link).Error
+	err := d.db.Table("tb_idp_user").
+		Where("id = ?", id).
+		Where("deleted_ts = 0").
+		First(&link).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, perror.Wrap(herrors.NewErrNotFound(herrors.TemplateInDB, err.Error()),

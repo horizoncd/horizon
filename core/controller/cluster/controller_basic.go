@@ -28,6 +28,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/mergemap"
+	"g.hz.netease.com/horizon/pkg/util/permission"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/Masterminds/sprig"
@@ -43,6 +44,9 @@ func (c *controller) List(ctx context.Context, query *q.Query) (int, []*ListClus
 		query.Keywords != nil &&
 		query.Keywords[common.ClusterQueryByUser] != nil {
 		if userID, ok := query.Keywords[common.ClusterQueryByUser].(uint); ok {
+			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
+				return 0, nil, err
+			}
 			// get groups authorized to current user
 			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
 			if err != nil {

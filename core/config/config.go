@@ -41,6 +41,7 @@ type Config struct {
 	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
 	AutoFreeConfig         autofree.Config         `yaml:"autoFree"`
+	KubeConfig             string                  `yaml:"kubeconfig"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {
