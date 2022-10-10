@@ -11,8 +11,8 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"github.com/stretchr/testify/assert"
+	"github.com/xanzy/go-gitlab"
 )
 
 /*
@@ -22,14 +22,11 @@ env name is GITLAB_PARAMS_FOR_TEST, and the value is a json string, look like:
 	"token": "xxx",
 	"baseURL": "http://cicd.mockserver.org",
 	"rootGroupName": "xxx",
-	"rootGroupID": xxx
 }
 
 1. token is used for auth, see https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html for more information.
 2. baseURL is the basic URL for gitlab.
 3. rootGroupName is a root group, our unit tests will do some operations under this group.
-4. rootGroupID is the ID for this root group.
-
 
 You can run this unit test just like this:
 
@@ -38,7 +35,6 @@ export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
 	"token": "xxx",
 	"baseURL": "http://cicd.mockserver.org",
 	"rootGroupName": "xxx",
-	"rootGroupID": xxx
 }
 EOF
 )"
@@ -51,9 +47,9 @@ NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this te
 var (
 	ctx context.Context
 	g   gitlablib.Interface
-	r   ApplicationGitRepo
 
 	rootGroupName string
+	rootGroup     *gitlab.Group
 	app           = "app"
 
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}
@@ -112,14 +108,16 @@ type Param struct {
 	Token         string `json:"token"`
 	BaseURL       string `json:"baseURL"`
 	RootGroupName string `json:"rootGroupName"`
-	RootGroupID   int    `json:"rootGroupId"`
 }
 
 // nolint
 func TestMain(m *testing.M) {
 	var err error
-	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
+		Name: "Tony",
+	})
 
+	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
 	if param == "" {
 		return
 	}
@@ -133,12 +131,15 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
+	rootGroup, err = g.GetGroup(ctx, p.RootGroupName)
+	if err != nil {
+		panic(err)
+	}
+	rootGroupName = p.RootGroupName
 
 	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 	})
-
-	rootGroupName = p.RootGroupName
 
 	if err := json.Unmarshal([]byte(pipelineJSONStr), &pipelineJSONBlob); err != nil {
 		panic(err)
@@ -151,26 +152,15 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	r = &applicationGitlabRepo{
-		gitlabLib: g,
-		applicationRepoConf: &gitlab.Repo{
-			Parent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "applications"),
-				ID:   4280,
-			},
-			RecyclingParent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-applications"),
-				ID:   4592,
-			},
-		},
-	}
+	r, err := NewApplicationGitlabRepo(ctx, rootGroup, g)
+	assert.Nil(t, err)
 
 	defer func() {
 		_ = r.DeleteApplication(ctx, app, 1)
 		_ = g.DeleteGroup(ctx, fmt.Sprintf("%v/%v/%v-%v", rootGroupName, "recycling-applications", app, 1))
 	}()
 
-	err := r.CreateApplication(ctx, app, pipelineJSONBlob, applicationJSONBlob)
+	err = r.CreateApplication(ctx, app, pipelineJSONBlob, applicationJSONBlob)
 	assert.Nil(t, err)
 
 	err = r.CreateApplication(ctx, app, pipelineJSONBlob, applicationJSONBlob)
