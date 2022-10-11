@@ -130,5 +130,5 @@ func (a *API) Get(c *gin.Context) {
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
-	response.SuccessWithDataV2(c, resp)
+	response.SuccessWithData(c, resp)
 }

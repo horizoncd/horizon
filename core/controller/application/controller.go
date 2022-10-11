@@ -292,10 +292,12 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 			return nil, err
 		}
 	}
+	// TODO: Validate Build Info
+
 	if request.TemplateConfig != nil && request.TemplateInfo != nil {
 		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release, &TemplateInput{
 			Application: request.TemplateConfig,
-			Pipeline:    request.BuildConfig,
+			Pipeline:    nil,
 		}); err != nil {
 			return nil, err
 		}
@@ -584,13 +586,13 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if schema.Application.JSONSchema != nil {
+	if schema.Application.JSONSchema != nil && templateInput.Application != nil {
 		if err := jsonschema.Validate(schema.Application.JSONSchema,
 			templateInput.Application, false); err != nil {
 			return err
 		}
 	}
-	if schema.Pipeline.JSONSchema != nil {
+	if schema.Pipeline.JSONSchema != nil && templateInput.Pipeline != nil {
 		if err := jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline,
 			true); err != nil {
 			return err

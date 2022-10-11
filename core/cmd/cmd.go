@@ -17,6 +17,7 @@ import (
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
+	"g.hz.netease.com/horizon/core/controller/build"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	codectl "g.hz.netease.com/horizon/core/controller/code"
 	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
@@ -61,6 +62,8 @@ import (
 	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
+	appv2 "g.hz.netease.com/horizon/core/http/api/v2/application"
+	buildAPI "g.hz.netease.com/horizon/core/http/api/v2/build"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	"g.hz.netease.com/horizon/core/middleware/authenticate"
@@ -105,23 +108,24 @@ import (
 	templaterepoharbor "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
-	"github.com/gorilla/sessions"
-	"github.com/rbcervilla/redisstore/v8"
-
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/sessions"
+	"github.com/rbcervilla/redisstore/v8"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile     string
-	RoleConfigFile string
-	ScopeRoleFile  string
-	Dev            bool
-	Environment    string
-	LogLevel       string
+	ConfigFile          string
+	RoleConfigFile      string
+	ScopeRoleFile       string
+	BuildJSONSchemaFile string
+	BuildUISchemaFile   string
+	Dev                 bool
+	Environment         string
+	LogLevel            string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -136,6 +140,12 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.ScopeRoleFile, "scopes", "", "configuration file path")
+
+	flag.StringVar(&flags.BuildJSONSchemaFile, "buildjsonschmea", "",
+		"build json schema file path")
+
+	flag.StringVar(&flags.BuildUISchemaFile, "builduischema", "",
+		"build ui schema file path")
 
 	flag.BoolVar(
 		&flags.Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
@@ -316,6 +326,30 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
+	// init build schema controller
+	readJSONFileFunc := func(filePath string) map[string]interface{} {
+		fileFd, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		fileContent, err := ioutil.ReadAll(fileFd)
+		if err != nil {
+			panic(err)
+		}
+		var schemaFile map[string]interface{}
+		err = json.Unmarshal(fileContent, &schemaFile)
+		if err != nil {
+			panic(err)
+		}
+		return schemaFile
+	}
+
+	buildSchema := &build.Schema{
+		JSONSchema: readJSONFileFunc(flags.BuildJSONSchemaFile),
+		UISchema:   readJSONFileFunc(flags.BuildUISchemaFile),
+	}
+	readJSONFileFunc(flags.BuildJSONSchemaFile)
+
 	groupSvc := groupservice.NewService(manager)
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
@@ -377,6 +411,7 @@ func Run(flags *Flags) {
 		environmentregionCtl = environmentregionctl.NewController(parameter)
 		harborCtl            = harborctl.NewController(parameter)
 		idpCtrl              = idpctl.NewController(parameter)
+		buildSchemaCtrl      = build.NewController(buildSchema)
 	)
 
 	var (
@@ -384,6 +419,7 @@ func Run(flags *Flags) {
 		groupAPI             = group.NewAPI(groupCtl)
 		userAPI              = user.NewAPI(userCtl)
 		applicationAPI       = application.NewAPI(applicationCtl)
+		applicationAPIV2     = appv2.NewAPI(applicationCtl)
 		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
 		memberAPI            = member.NewAPI(memberCtl, roleService)
 		clusterAPI           = cluster.NewAPI(clusterCtl)
@@ -404,7 +440,8 @@ func Run(flags *Flags) {
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl,
 			coreConfig.Oauth.OauthHTMLLocation, scopeService)
-		idpAPI = idp.NewAPI(idpCtrl, store)
+		idpAPI         = idp.NewAPI(idpCtrl, store)
+		buildSchemaAPI = buildAPI.NewAPI(buildSchemaCtrl)
 	)
 
 	// init server
@@ -430,6 +467,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback"))),
@@ -448,6 +486,7 @@ func Run(flags *Flags) {
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
 	application.RegisterRoutes(r, applicationAPI)
+	appv2.RegisterRoutes(r, applicationAPIV2)
 	envtemplate.RegisterRoutes(r, envTemplateAPI)
 	cluster.RegisterRoutes(r, clusterAPI)
 	pipelinerun.RegisterRoutes(r, prAPI)
@@ -467,6 +506,7 @@ func Run(flags *Flags) {
 	oauthapp.RegisterRoutes(r, oauthAppAPI)
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
 	idp.RegisterRoutes(r, idpAPI)
+	buildAPI.RegisterRoutes(r, buildSchemaAPI)
 
 	// start cloud event server
 	go runCloudEventServer(
