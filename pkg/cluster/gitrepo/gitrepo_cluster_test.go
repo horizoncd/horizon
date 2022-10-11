@@ -166,7 +166,7 @@ func Test(t *testing.T) {
 	defer func() {
 		_ = r.DeleteCluster(ctx, application, cluster, 1)
 		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v/%v-%v", rootGroupName,
-			"recycling-clusters", application, cluster, 1))
+			_recyclingClusters, application, cluster, 1))
 	}()
 	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
