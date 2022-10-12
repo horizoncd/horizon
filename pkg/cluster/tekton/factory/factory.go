@@ -41,6 +41,7 @@ func NewFactory(tektonMapper tektonconfig.Mapper) (Factory, error) {
 			Region:           tektonConfig.S3.Region,
 			Endpoint:         tektonConfig.S3.Endpoint,
 			Bucket:           tektonConfig.S3.Bucket,
+			DisableSSL:       tektonConfig.S3.DisableSSL,
 			SkipVerify:       tektonConfig.S3.SkipVerify,
 			S3ForcePathStyle: tektonConfig.S3.S3ForcePathStyle,
 			ContentType:      "text/plain",

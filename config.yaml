@@ -73,6 +73,7 @@ tektonMapper:
       region: us-east-1
       endpoint: nos-jd.service.163.org
       bucket: yufeng-collector-dev
+      disableSSL: false
       skipVerify: true
       s3ForcePathStyle: true
 grafanaSLO:
