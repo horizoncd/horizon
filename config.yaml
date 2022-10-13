@@ -48,11 +48,11 @@ templateRepo:
   keyFile: ""
   caFile: ""
 argoCDMapper:
-  default,dev,test,reg,perf,beta,pre,online:
+  dev,test,reg,perf,beta,pre,online:
     url: http://argocd.yf-dev2.netease.com
     token: ""
 tektonMapper:
-  default,dev,test,reg,perf,beta,pre,online:
+  dev,test,reg,perf,beta,pre,online:
     server: http://el-horizon-listener.tekton-resources:8080
     namespace: tekton-resources
     # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
