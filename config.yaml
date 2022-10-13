@@ -24,34 +24,25 @@ oidcConfig:
   oidcIDHeader: X-HORIZON-OIDC-ID
   oidcTypeHeader: X-HORIZON-OIDC-TYPE
 gitlabMapper:
-  control:
+  template:
     httpURL: https://g.hz.netease.com
     # token for grp.cloudnative
     token: ""
-  compute:
+  code:
+    httpURL: https://g.hz.netease.com
+    # token for grp.cloudnative
+    token: ""
+  gitops:
     httpURL: http://cicd.mockserver.org
     sshURL: ssh://git@music-cicd-gitlab-test.hz.netease.com:22222
     token: ""
-gitlabRepoConfig:
-  application:
-    parent:
-      path: music-cloud-native/applications
-      id: 4278
-    recyclingParent:
-      path: music-cloud-native/recycling-applications
-      id: 4586
-  cluster:
-    parent:
-      path: music-cloud-native/clusters
-      id: 4279
-    recyclingParent:
-      path: music-cloud-native/recycling-clusters
-      id: 4587
+gitopsRepoConfig:
+  rootGroupPath: music-cloud-native
 templateRepo:
   host: "https://harbor.mock.org"
   repoName: "horizon-template"
-  username: username
-  password: password
+  username: ""
+  password: ""
   insecure: true
   certFile: ""
   keyFile: ""
@@ -89,7 +80,6 @@ grafanaConfig:
     # value of label that the configmaps with dashboards are set to
     labelValue: "1"
   syncDatasourceConfig:
-    namespace: horizon
     period: 2m
     # label that the configmaps with datasources are marked with
     labelKey: grafana_datasource

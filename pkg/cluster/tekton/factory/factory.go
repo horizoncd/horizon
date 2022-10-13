@@ -1,7 +1,6 @@
 package factory
 
 import (
-	"fmt"
 	"sync"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -11,6 +10,8 @@ import (
 	tektonconfig "g.hz.netease.com/horizon/pkg/config/tekton"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 )
+
+const _default = "default"
 
 type Factory interface {
 	GetTekton(environment string) (tekton.Interface, error)
@@ -61,19 +62,29 @@ func NewFactory(tektonMapper tektonconfig.Mapper) (Factory, error) {
 }
 
 func (f factory) GetTekton(environment string) (tekton.Interface, error) {
-	var ret interface{}
-	var ok bool
-	if ret, ok = f.cache.Load(environment); !ok {
-		return nil, herrors.NewErrNotFound(herrors.Tekton, fmt.Sprintf("environment = %s", environment))
+	cache, err := f.GetFromCache(environment)
+	if err != nil {
+		return nil, err
 	}
-	return ret.(*tektonCache).tekton, nil
+	return cache.tekton, nil
 }
 
 func (f factory) GetTektonCollector(environment string) (collector.Interface, error) {
+	cache, err := f.GetFromCache(environment)
+	if err != nil {
+		return nil, err
+	}
+	return cache.tektonCollector, nil
+}
+
+func (f factory) GetFromCache(environment string) (*tektonCache, error) {
 	var ret interface{}
 	var ok bool
 	if ret, ok = f.cache.Load(environment); !ok {
-		return nil, herrors.NewErrNotFound(herrors.TektonCollector, fmt.Sprintf("environment = %s", environment))
+		// check and use default tekton
+		if ret, ok = f.cache.Load(_default); !ok {
+			return nil, herrors.NewErrNotFound(herrors.Tekton, "default tekton not found")
+		}
 	}
-	return ret.(*tektonCache).tektonCollector, nil
+	return ret.(*tektonCache), nil
 }

@@ -9,7 +9,6 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -26,6 +25,9 @@ const (
 	_filePathPipeline    = "pipeline.yaml"
 
 	_default = "default"
+
+	_applications          = "applications"
+	_recyclingApplications = "recycling-applications"
 )
 
 // ApplicationGitRepo interface to provide the management functions with git repo for applications
@@ -48,20 +50,31 @@ type ApplicationGitRepo interface {
 		applicationJSONBlob map[string]interface{}, err error)
 	// DeleteApplication soft delete an application by the specified application name
 	DeleteApplication(ctx context.Context, application string, applicationID uint) error
-	// DeleteApplication hard delete an application by the specified application name
+	// HardDeleteApplication hard delete an application by the specified application name
 	HardDeleteApplication(ctx context.Context, application string) error
 }
 
 type applicationGitlabRepo struct {
-	gitlabLib           gitlablib.Interface
-	applicationRepoConf *gitlabconf.Repo
+	gitlabLib                  gitlablib.Interface
+	applicationsGroup          *gitlab.Group
+	recyclingApplicationsGroup *gitlab.Group
 }
 
-func NewApplicationGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig,
+func NewApplicationGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 	gitlabLib gitlablib.Interface) (ApplicationGitRepo, error) {
+	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _applications)
+	if err != nil {
+		return nil, err
+	}
+	recyclingApplicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID,
+		rootGroup.FullPath, _recyclingApplications)
+	if err != nil {
+		return nil, err
+	}
 	return &applicationGitlabRepo{
-		gitlabLib:           gitlabLib,
-		applicationRepoConf: gitlabRepoConfig.Application,
+		gitlabLib:                  gitlabLib,
+		applicationsGroup:          applicationsGroup,
+		recyclingApplicationsGroup: recyclingApplicationsGroup,
 	}, nil
 }
 
@@ -71,7 +84,7 @@ func (g *applicationGitlabRepo) CreateApplication(ctx context.Context, applicati
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. create application group
-	group, err := g.gitlabLib.CreateGroup(ctx, application, application, &g.applicationRepoConf.Parent.ID)
+	group, err := g.gitlabLib.CreateGroup(ctx, application, application, &g.applicationsGroup.ID)
 	if err != nil {
 		return err
 	}
@@ -104,14 +117,14 @@ func (g *applicationGitlabRepo) UpdateApplicationEnvTemplate(ctx context.Context
 
 	// 1. check env template repo exists
 	var envProjectExists = false
-	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationsGroup.FullPath, application, env)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
 		// if not found, create this repo first
-		gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+		gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 		parentGroup, err := g.gitlabLib.GetGroup(ctx, gid)
 		if err != nil {
 			return err
@@ -137,7 +150,7 @@ func (g *applicationGitlabRepo) UpdateApplicationEnvTemplate(ctx context.Context
 func (g *applicationGitlabRepo) GetApplicationEnvTemplate(ctx context.Context,
 	application, env string) (pipelineJSONBlob, applicationJSONBlob map[string]interface{}, err error) {
 	// 1. check env template repo exists
-	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, env)
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationsGroup.FullPath, application, env)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
@@ -165,13 +178,13 @@ func (g *applicationGitlabRepo) DeleteApplication(ctx context.Context,
 		perPage = 8
 	)
 
-	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 
 	recyclingGroupName := fmt.Sprintf("%v-%d", application, applicationID)
 
 	// 1. create recyclingGroup
 	recyclingGroup, err := g.gitlabLib.CreateGroup(ctx, recyclingGroupName,
-		recyclingGroupName, &g.applicationRepoConf.RecyclingParent.ID)
+		recyclingGroupName, &g.recyclingApplicationsGroup.ID)
 	if err != nil {
 		return err
 	}
@@ -208,7 +221,7 @@ func (g *applicationGitlabRepo) HardDeleteApplication(ctx context.Context,
 	const op = "gitlab repo: hard delete application"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 	return g.gitlabLib.DeleteGroup(ctx, gid)
 }
 
@@ -220,7 +233,7 @@ func (g *applicationGitlabRepo) createOrUpdateApplication(ctx context.Context, a
 		return err
 	}
 
-	pid := fmt.Sprintf("%v/%v/%v", g.applicationRepoConf.Parent.Path, application, repo)
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationsGroup.FullPath, application, repo)
 
 	// 2. write files to gitlab
 	applicationYAML, err := yaml.Marshal(applicationJSONBlob)
@@ -268,7 +281,7 @@ func (g *applicationGitlabRepo) getApplication(ctx context.Context,
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get template and pipeline from gitlab
-	gid := fmt.Sprintf("%v/%v", g.applicationRepoConf.Parent.Path, application)
+	gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 	pid := fmt.Sprintf("%v/%v", gid, repo)
 
 	var applicationBytes, pipelineBytes []byte

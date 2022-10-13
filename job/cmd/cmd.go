@@ -99,7 +99,6 @@ func Run(flags *Flags) {
 	// init context
 	ctx := context.Background()
 
-	log.Printf("ArgoCD Config: %+v", coreConfig.ArgoCDMapper)
 	parameter := &param.Param{
 		Manager: manager,
 		Cd:      cd.NewCD(coreConfig.ArgoCDMapper),

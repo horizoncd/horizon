@@ -227,6 +227,21 @@ func (mr *MockInterfaceMockRecorder) GetCommit(ctx, pid, commit interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommit", reflect.TypeOf((*MockInterface)(nil).GetCommit), ctx, pid, commit)
 }
 
+// GetCreatedGroup mocks base method.
+func (m *MockInterface) GetCreatedGroup(ctx context.Context, parentID int, parentPath, name string) (*gitlab0.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCreatedGroup", ctx, parentID, parentPath, name)
+	ret0, _ := ret[0].(*gitlab0.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCreatedGroup indicates an expected call of GetCreatedGroup.
+func (mr *MockInterfaceMockRecorder) GetCreatedGroup(ctx, parentID, parentPath, name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCreatedGroup", reflect.TypeOf((*MockInterface)(nil).GetCreatedGroup), ctx, parentID, parentPath, name)
+}
+
 // GetFile mocks base method.
 func (m *MockInterface) GetFile(ctx context.Context, pid interface{}, ref, filepath string) ([]byte, error) {
 	m.ctrl.T.Helper()

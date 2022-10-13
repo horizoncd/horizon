@@ -237,29 +237,41 @@ func Run(flags *Flags) {
 	ctx := context.Background()
 	gitlabFactory := gitlabfty.NewFactory(coreConfig.GitlabMapper)
 
-	gitlabCompute, err := gitlabFactory.GetByName(ctx, common.GitlabCompute)
+	gitlabGitops, err := gitlabFactory.GetByName(ctx, common.GitlabGitops)
+	if err != nil {
+		panic(err)
+	}
+	// check existence of gitops root group
+	rootGroup, err := gitlabGitops.GetGroup(ctx, coreConfig.GitopsRepoConfig.RootGroupPath)
 	if err != nil {
 		panic(err)
 	}
 
-	gitlabControl, err := gitlabFactory.GetByName(ctx, common.GitlabControl)
+	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, rootGroup, gitlabGitops)
 	if err != nil {
 		panic(err)
 	}
 
-	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, coreConfig.GitlabRepoConfig, gitlabCompute)
-	if err != nil {
-		panic(err)
-	}
 	templateRepo, err := templaterepoharbor.NewTemplateRepo(coreConfig.TemplateRepo)
 	if err != nil {
 		panic(err)
 	}
-	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, coreConfig.GitlabRepoConfig,
-		templateRepo, gitlabCompute)
+
+	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops)
 	if err != nil {
 		panic(err)
 	}
+
+	gitlabCode, err := gitlabFactory.GetByName(ctx, common.GitlabCode)
+	if err != nil {
+		panic(err)
+	}
+
+	gitlabTemplate, err := gitlabFactory.GetByName(ctx, common.GitlabTemplate)
+	if err != nil {
+		panic(err)
+	}
+
 	templateSchemaGetter := templateschemarepo.NewSchemaGetter(ctx, templateRepo, manager)
 
 	outputGetter, err := output.NewOutPutGetter(ctx, templateRepo, manager)
@@ -267,7 +279,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	gitGetter, err := code.NewGitGetter(ctx, gitlabControl)
+	gitGetter, err := code.NewGitGetter(ctx, gitlabCode)
 	if err != nil {
 		panic(err)
 	}
@@ -369,7 +381,7 @@ func Run(flags *Flags) {
 		envTemplateCtl       = envtemplatectl.NewController(parameter)
 		clusterCtl           = clusterctl.NewController(coreConfig, parameter)
 		prCtl                = prctl.NewController(parameter)
-		templateCtl          = templatectl.NewController(parameter, gitlabControl, templateRepo)
+		templateCtl          = templatectl.NewController(parameter, gitlabTemplate, templateRepo)
 		roleCtl              = roltctl.NewController(parameter)
 		terminalCtl          = terminalctl.NewController(parameter)
 		sloCtl               = sloctl.NewController(coreConfig.GrafanaSLO)
