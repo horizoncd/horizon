@@ -27,7 +27,7 @@ type Config struct {
 	DBConfig               db.Config               `yaml:"dbConfig"`
 	SessionConfig          session.Config          `yaml:"sessionConfig"`
 	GitlabMapper           gitlab.Mapper           `yaml:"gitlabMapper"`
-	GitlabRepoConfig       gitlab.RepoConfig       `yaml:"gitlabRepoConfig"`
+	GitopsRepoConfig       gitlab.GitopsRepoConfig `yaml:"gitopsRepoConfig"`
 	ArgoCDMapper           argocd.Mapper           `yaml:"argoCDMapper"`
 	RedisConfig            redis.Redis             `yaml:"redisConfig"`
 	TektonMapper           tekton.Mapper           `yaml:"tektonMapper"`

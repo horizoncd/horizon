@@ -834,6 +834,10 @@ func test(t *testing.T) {
 	assert.NotNil(t, resp)
 	b, _ = json.Marshal(restartResp)
 	t.Logf("%s", string(b))
+	pr, err := manager.PipelinerunMgr.GetByID(ctx, restartResp.PipelinerunID)
+	assert.Nil(t, err)
+	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
+	assert.NotNil(t, pr.FinishedAt)
 
 	// test deploy
 	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, herrors.ErrPipelineOutputEmpty).Times(1)
@@ -877,6 +881,11 @@ func test(t *testing.T) {
 
 	b, _ = json.Marshal(deployResp)
 	t.Logf("%s", string(b))
+
+	pr, err = manager.PipelinerunMgr.GetByID(ctx, deployResp.PipelinerunID)
+	assert.Nil(t, err)
+	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
+	assert.NotNil(t, pr.FinishedAt)
 
 	// test next
 	cd.EXPECT().Next(ctx, gomock.Any()).Return(nil)
@@ -927,6 +936,10 @@ func test(t *testing.T) {
 	assert.NotNil(t, rollbackResp)
 	b, _ = json.Marshal(rollbackResp)
 	t.Logf("%s", string(b))
+	pr, err = manager.PipelinerunMgr.GetByID(ctx, rollbackResp.PipelinerunID)
+	assert.Nil(t, err)
+	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
+	assert.NotNil(t, pr.FinishedAt)
 
 	cd.EXPECT().DeletePods(ctx, gomock.Any()).Return(
 		map[string]clustercd.OperationResult{

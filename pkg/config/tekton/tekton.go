@@ -15,6 +15,7 @@ type S3 struct {
 	Region           string `yaml:"region"`
 	Endpoint         string `yaml:"endpoint"`
 	Bucket           string `yaml:"bucket"`
+	DisableSSL       bool   `yaml:"disableSSL"`
 	SkipVerify       bool   `yaml:"skipVerify"`
 	S3ForcePathStyle bool   `yaml:"s3ForcePathStyle"`
 }

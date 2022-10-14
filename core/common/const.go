@@ -83,8 +83,9 @@ const (
 )
 
 const (
-	GitlabControl = "control"
-	GitlabCompute = "compute"
+	GitlabCode     = "code"
+	GitlabGitops   = "gitops"
+	GitlabTemplate = "template"
 )
 
 const (
