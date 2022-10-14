@@ -13,13 +13,3 @@ type Gitlab struct {
 type GitopsRepoConfig struct {
 	RootGroupPath string `yaml:"rootGroupPath"`
 }
-
-type Repo struct {
-	Parent          *Parent
-	RecyclingParent *Parent
-}
-
-type Parent struct {
-	Path string
-	ID   int
-}
