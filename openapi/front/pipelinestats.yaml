@@ -35,7 +35,9 @@ paths:
                         "items":
                           [
                             {
-                              "pipelinerun_id": 159260,
+                              "application": "sph",
+                              "cluster": "sph-sphtesttt",
+                              "pipeline": "horizon-pipeline",
                               "result": "ok",
                               "duration": 38,
                               "tasks":
@@ -80,7 +82,9 @@ paths:
                               "startedAt": "2022-09-21T11:05:26+08:00"
                             },
                             {
-                              "pipelinerun_id": 159259,
+                              "application": "sph",
+                              "cluster": "sph-sphtesttt",
+                              "pipeline": "horizon-pipeline",
                               "result": "failed",
                               "duration": 8,
                               "tasks":
@@ -107,7 +111,9 @@ paths:
                               "startedAt": "2022-09-21T11:04:58+08:00"
                             },
                             {
-                              "pipelinerun_id": 159258,
+                              "application": "sph",
+                              "cluster": "sph-sphtesttt",
+                              "pipeline": "horizon-pipeline",
                               "result": "failed",
                               "duration": 7,
                               "tasks":

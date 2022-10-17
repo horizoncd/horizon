@@ -20,6 +20,7 @@ var (
 type DAO interface {
 	// Create create a pipeline
 	Create(ctx context.Context, results *metrics.PipelineResults) error
+	// ListPipelineStats list pipeline stats by query struct
 	ListPipelineStats(ctx context.Context, query *q.Query) ([]*models.PipelineStats, int64, error)
 }
 
@@ -178,11 +179,14 @@ func formatPipelineStats(pipelines []*models.Pipeline, tasks []*models.Task,
 	var stats []*models.PipelineStats
 	for _, pipeline := range pipelines {
 		stats = append(stats, &models.PipelineStats{
-			PipelinerunID: pipeline.PipelinerunID,
+			Application:   pipeline.Application,
+			Cluster:       pipeline.Cluster,
+			Pipeline:      pipeline.Pipeline,
 			Result:        pipeline.Result,
 			Duration:      pipeline.Duration,
 			Tasks:         taskMap[pipeline.PipelinerunID],
 			StartedAt:     pipeline.StartedAt,
+			PipelinerunID: pipeline.PipelinerunID,
 		})
 	}
 

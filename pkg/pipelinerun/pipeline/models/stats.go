@@ -17,6 +17,9 @@ type TaskStats struct {
 
 type PipelineStats struct {
 	PipelinerunID uint         `json:"pipelinerun_id"`
+	Application   string       `json:"application"`
+	Cluster       string       `json:"cluster"`
+	Pipeline      string       `json:"pipeline"`
 	Result        string       `json:"result"`
 	Duration      uint         `json:"duration"`
 	Tasks         []*TaskStats `json:"tasks"`
