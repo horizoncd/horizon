@@ -5,8 +5,9 @@ import (
 	"strconv"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	"g.hz.netease.com/horizon/pkg/common"
 	"g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
 	"gorm.io/gorm"
@@ -19,26 +20,10 @@ var (
 type DAO interface {
 	// Create create a pipeline
 	Create(ctx context.Context, results *metrics.PipelineResults) error
-	DeleteByClusterName(ctx context.Context, clusterName string) error
+	ListPipelineStats(ctx context.Context, query *q.Query) ([]*models.PipelineStats, int64, error)
 }
 
 type dao struct{ db *gorm.DB }
-
-func (d dao) DeleteByClusterName(ctx context.Context, clusterName string) error {
-	result := d.db.WithContext(ctx).Exec(common.PipelineDeleteByCluster, clusterName)
-	if result.Error != nil {
-		return herrors.NewErrDeleteFailed(herrors.PipelinerunInDB, result.Error.Error())
-	}
-	result = d.db.WithContext(ctx).Exec(common.TaskDeleteByCluster, clusterName)
-	if result.Error != nil {
-		return herrors.NewErrDeleteFailed(herrors.PipelinerunInDB, result.Error.Error())
-	}
-	result = d.db.WithContext(ctx).Exec(common.StepDeleteByCluster, clusterName)
-	if result.Error != nil {
-		return herrors.NewErrDeleteFailed(herrors.PipelinerunInDB, result.Error.Error())
-	}
-	return result.Error
-}
 
 func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error {
 	prMetadata := results.Metadata
@@ -120,6 +105,88 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 	})
 
 	return err
+}
+
+func (d *dao) ListPipelineStats(ctx context.Context, query *q.Query) ([]*models.PipelineStats, int64, error) {
+	var pipelines []*models.Pipeline
+
+	sort := orm.FormatSortExp(query)
+	offset := (query.PageNumber - 1) * query.PageSize
+	var count int64
+	result := d.db.Order(sort).Where(query.Keywords).Offset(offset).Limit(query.PageSize).Find(&pipelines).
+		Offset(-1).Count(&count)
+	if result.Error != nil {
+		return nil, 0, herrors.NewErrListFailed(herrors.PipelineInDB, result.Error.Error())
+	}
+
+	var pipelinerunIDs []uint
+	for _, pipeline := range pipelines {
+		pipelinerunIDs = append(pipelinerunIDs, pipeline.PipelinerunID)
+	}
+
+	var tasks []*models.Task
+	result = d.db.Where(map[string]interface{}{"pipelinerun_id": pipelinerunIDs}).Find(&tasks)
+	if result.Error != nil {
+		return nil, 0, herrors.NewErrListFailed(herrors.TaskInDB, result.Error.Error())
+	}
+
+	var steps []*models.Step
+	result = d.db.Where(map[string]interface{}{"pipelinerun_id": pipelinerunIDs}).Find(&steps)
+	if result.Error != nil {
+		return nil, 0, herrors.NewErrListFailed(herrors.StepInDB, result.Error.Error())
+	}
+
+	return formatPipelineStats(pipelines, tasks, steps), count, nil
+}
+
+func formatPipelineStats(pipelines []*models.Pipeline, tasks []*models.Task,
+	steps []*models.Step) []*models.PipelineStats {
+	stepMap := make(map[uint]map[string][]*models.StepStats)
+	for _, step := range steps {
+		if task2Step, ok := stepMap[step.PipelinerunID]; ok {
+			task2Step[step.Task] = append(task2Step[step.Task], &models.StepStats{
+				Step:     step.Step,
+				Result:   step.Result,
+				Duration: step.Duration,
+			})
+		} else {
+			stepMap[step.PipelinerunID] = make(map[string][]*models.StepStats)
+			stepMap[step.PipelinerunID][step.Task] = []*models.StepStats{
+				{
+					Step:     step.Step,
+					Result:   step.Result,
+					Duration: step.Duration,
+				},
+			}
+		}
+	}
+
+	taskMap := make(map[uint][]*models.TaskStats)
+	for _, task := range tasks {
+		taskStats := &models.TaskStats{
+			Task:     task.Task,
+			Result:   task.Result,
+			Duration: task.Duration,
+			Steps:    stepMap[task.PipelinerunID][task.Task],
+		}
+		if _, ok := taskMap[task.PipelinerunID]; !ok {
+			taskMap[task.PipelinerunID] = []*models.TaskStats{}
+		}
+		taskMap[task.PipelinerunID] = append(taskMap[task.PipelinerunID], taskStats)
+	}
+
+	var stats []*models.PipelineStats
+	for _, pipeline := range pipelines {
+		stats = append(stats, &models.PipelineStats{
+			PipelinerunID: pipeline.PipelinerunID,
+			Result:        pipeline.Result,
+			Duration:      pipeline.Duration,
+			Tasks:         taskMap[pipeline.PipelinerunID],
+			StartedAt:     pipeline.StartedAt,
+		})
+	}
+
+	return stats
 }
 
 func NewDAO(db *gorm.DB) DAO {

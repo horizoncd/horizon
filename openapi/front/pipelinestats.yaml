@@ -1,0 +1,139 @@
+openapi: 3.0.1
+info:
+  title: Horizon-PipelineStats-Front
+  description: Front API About SLO
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v1/pipelinestats:
+    get:
+      tags:
+        - pipelinestats
+      operationId: getPipelineStats
+      summary: get pipeline stats
+      parameters:
+        - name: application
+          in: query
+        - name: cluster
+          in: query
+        - name: pageNumber
+          in: query
+        - name: pageSize
+          in: query
+      responses:
+        '200':
+          description: Succuss
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data":
+                      {
+                        "total": 3,
+                        "items":
+                          [
+                            {
+                              "pipelinerun_id": 159260,
+                              "result": "ok",
+                              "duration": 38,
+                              "tasks":
+                                [
+                                  {
+                                    "task": "build",
+                                    "result": "ok",
+                                    "duration": 26,
+                                    "steps":
+                                      [
+                                        {
+                                          "step": "git",
+                                          "result": "ok",
+                                          "duration": 0
+                                        },
+                                        {
+                                          "step": "compile",
+                                          "result": "ok",
+                                          "duration": 6
+                                        },
+                                        {
+                                          "step": "image",
+                                          "result": "ok",
+                                          "duration": 14
+                                        }
+                                      ]
+                                  },
+                                  {
+                                    "task": "deploy",
+                                    "result": "ok",
+                                    "duration": 12,
+                                    "steps":
+                                      [
+                                        {
+                                          "step": "deploy",
+                                          "result": "ok",
+                                          "duration": 6
+                                        }
+                                      ]
+                                  }
+                                ],
+                              "startedAt": "2022-09-21T11:05:26+08:00"
+                            },
+                            {
+                              "pipelinerun_id": 159259,
+                              "result": "failed",
+                              "duration": 8,
+                              "tasks":
+                                [
+                                  {
+                                    "task": "build",
+                                    "result": "failed",
+                                    "duration": 8,
+                                    "steps":
+                                      [
+                                        {
+                                          "step": "git",
+                                          "result": "ok",
+                                          "duration": 0
+                                        },
+                                        {
+                                          "step": "compile",
+                                          "result": "failed",
+                                          "duration": 0
+                                        }
+                                      ]
+                                  }
+                                ],
+                              "startedAt": "2022-09-21T11:04:58+08:00"
+                            },
+                            {
+                              "pipelinerun_id": 159258,
+                              "result": "failed",
+                              "duration": 7,
+                              "tasks":
+                                [
+                                  {
+                                    "task": "jib-build",
+                                    "result": "failed",
+                                    "duration": 7,
+                                    "steps":
+                                      [
+                                        {
+                                          "step": "jib-compile",
+                                          "result": "failed",
+                                          "duration": 1
+                                        }
+                                      ]
+                                  }
+                                ],
+                              "startedAt": "2022-09-21T11:04:01+08:00"
+                            }
+                          ]
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"
