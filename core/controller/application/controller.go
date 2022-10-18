@@ -59,10 +59,6 @@ type Controller interface {
 	GetApplicationV2(ctx context.Context, id uint) (*GetApplicationResponseV2, error)
 }
 
-const (
-	_v2Version = "0.0.2"
-)
-
 type controller struct {
 	applicationGitRepo   gitrepo.ApplicationGitRepo2
 	templateSchemaGetter templateschema.Getter
@@ -325,7 +321,7 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 
 	// create v2
 	createRepoReq := gitrepo.CreateOrUpdateRequest{
-		Version:      _v2Version,
+		Version:      common.MetaVersion2,
 		Environment:  "",
 		BuildConf:    request.BuildConfig,
 		TemplateConf: request.TemplateConfig,
@@ -452,12 +448,12 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release,
 			&TemplateInput{
 				Application: request.TemplateConfig,
-				Pipeline:    request.BuildConfig,
+				Pipeline:    nil,
 			}); err != nil {
 			return err
 		}
 		updateRepoReq := gitrepo.CreateOrUpdateRequest{
-			Version:      _v2Version,
+			Version:      common.MetaVersion2,
 			Environment:  "",
 			BuildConf:    request.BuildConfig,
 			TemplateConf: request.TemplateConfig,

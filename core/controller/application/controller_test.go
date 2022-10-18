@@ -451,7 +451,7 @@ func TestV2(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	applicationGitRepo.EXPECT().CreateOrUpdateApplication(ctx, appName, gitrepo.CreateOrUpdateRequest{
-		Version:      _v2Version,
+		Version:      common.MetaVersion2,
 		Environment:  "",
 		BuildConf:    nil,
 		TemplateConf: applicationJSONBlob,

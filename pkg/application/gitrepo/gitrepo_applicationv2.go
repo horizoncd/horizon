@@ -199,6 +199,15 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 		}
 		return environment
 	}())
+
+	// if env template not exist, use the default one
+	_, err := g.gitlabLib.GetProject(ctx, pid)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			pid = fmt.Sprintf("%v/%v", gid, _default)
+		}
+	}
+
 	manifestbytes, err1 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathManifest)
 	buildConfBytes, err2 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
 	templateConfBytes, err3 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)

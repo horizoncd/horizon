@@ -15,6 +15,10 @@ const (
 )
 
 const (
+	MetaVersion2 = "0.0.2"
+)
+
+const (
 	// InternalError internal server error code
 	InternalError = "InternalError"
 

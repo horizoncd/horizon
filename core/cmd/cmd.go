@@ -64,6 +64,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	appv2 "g.hz.netease.com/horizon/core/http/api/v2/application"
 	buildAPI "g.hz.netease.com/horizon/core/http/api/v2/build"
+	envtemplatev2 "g.hz.netease.com/horizon/core/http/api/v2/envtemplate"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	"g.hz.netease.com/horizon/core/middleware/authenticate"
@@ -440,8 +441,9 @@ func Run(flags *Flags) {
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl,
 			coreConfig.Oauth.OauthHTMLLocation, scopeService)
-		idpAPI         = idp.NewAPI(idpCtrl, store)
-		buildSchemaAPI = buildAPI.NewAPI(buildSchemaCtrl)
+		idpAPI           = idp.NewAPI(idpCtrl, store)
+		buildSchemaAPI   = buildAPI.NewAPI(buildSchemaCtrl)
+		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl, buildSchemaCtrl)
 	)
 
 	// init server
@@ -507,6 +509,7 @@ func Run(flags *Flags) {
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
 	idp.RegisterRoutes(r, idpAPI)
 	buildAPI.RegisterRoutes(r, buildSchemaAPI)
+	envtemplatev2.RegisterRoutes(r, envtemplatev2API)
 
 	// start cloud event server
 	go runCloudEventServer(
