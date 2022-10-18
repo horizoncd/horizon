@@ -51,7 +51,7 @@ type Controller interface {
 	Transfer(ctx context.Context, id uint, groupID uint) error
 	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
 	// GetApplicationPipelineStats return pipeline stats about an application
-	GetApplicationPipelineStats(ctx context.Context, application uint, cluster string, pageNumber, pageSize int) (
+	GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string, pageNumber, pageSize int) (
 		[]*pipelinemodels.PipelineStats, int64, error)
 }
 
@@ -559,9 +559,9 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 	return selectableRegionsByEnv, nil
 }
 
-func (c controller) GetApplicationPipelineStats(ctx context.Context, application uint, cluster string,
+func (c controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
 	pageNumber, pageSize int) ([]*pipelinemodels.PipelineStats, int64, error) {
-	app, err := c.applicationMgr.GetByID(ctx, application)
+	app, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {
 		return nil, 0, err
 	}
