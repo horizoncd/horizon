@@ -336,7 +336,7 @@ func Run(flags *Flags) {
 	userSvc := userservice.NewService(manager)
 
 	// init kube client
-	_, client, err := kube.BuildClient("/Users/wurongjun/.kube/config")
+	_, client, err := kube.BuildClient("")
 	if err != nil {
 		panic(err)
 	}
