@@ -580,3 +580,138 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/applications/{applicationID}/pipelinestats:
+    get:
+      tags:
+        - pipelinestats
+      operationId: getPipelineStats
+      summary: get pipeline stats
+      parameters:
+        - name: cluster
+          in: query
+        - name: pageNumber
+          in: query
+        - name: pageSize
+          in: query
+      responses:
+        '200':
+          description: Succuss
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data":
+                      {
+                        "total": 3,
+                        "items":
+                          [
+                            {
+                              "application": "sph",
+                              "cluster": "sph-sphtesttt",
+                              "pipeline": "horizon-pipeline",
+                              "result": "ok",
+                              "duration": 38,
+                              "tasks":
+                                [
+                                  {
+                                    "task": "build",
+                                    "result": "ok",
+                                    "duration": 26,
+                                    "steps":
+                                      [
+                                        {
+                                          "step": "git",
+                                          "result": "ok",
+                                          "duration": 0
+                                        },
+                                        {
+                                          "step": "compile",
+                                          "result": "ok",
+                                          "duration": 6
+                                        },
+                                        {
+                                          "step": "image",
+                                          "result": "ok",
+                                          "duration": 14
+                                        }
+                                      ]
+                                  },
+                                  {
+                                    "task": "deploy",
+                                    "result": "ok",
+                                    "duration": 12,
+                                    "steps":
+                                      [
+                                        {
+                                          "step": "deploy",
+                                          "result": "ok",
+                                          "duration": 6
+                                        }
+                                      ]
+                                  }
+                                ],
+                              "startedAt": "2022-09-21T11:05:26+08:00"
+                            },
+                            {
+                              "application": "sph",
+                              "cluster": "sph-sphtesttt",
+                              "pipeline": "horizon-pipeline",
+                              "result": "failed",
+                              "duration": 8,
+                              "tasks":
+                                [
+                                  {
+                                    "task": "build",
+                                    "result": "failed",
+                                    "duration": 8,
+                                    "steps":
+                                      [
+                                        {
+                                          "step": "git",
+                                          "result": "ok",
+                                          "duration": 0
+                                        },
+                                        {
+                                          "step": "compile",
+                                          "result": "failed",
+                                          "duration": 0
+                                        }
+                                      ]
+                                  }
+                                ],
+                              "startedAt": "2022-09-21T11:04:58+08:00"
+                            },
+                            {
+                              "application": "sph",
+                              "cluster": "sph-sphtesttt",
+                              "pipeline": "horizon-pipeline",
+                              "result": "failed",
+                              "duration": 7,
+                              "tasks":
+                                [
+                                  {
+                                    "task": "jib-build",
+                                    "result": "failed",
+                                    "duration": 7,
+                                    "steps":
+                                      [
+                                        {
+                                          "step": "jib-compile",
+                                          "result": "failed",
+                                          "duration": 1
+                                        }
+                                      ]
+                                  }
+                                ],
+                              "startedAt": "2022-09-21T11:04:01+08:00"
+                            }
+                          ]
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "../core.yaml#/components/schemas/Error"

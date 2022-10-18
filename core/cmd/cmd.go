@@ -30,7 +30,6 @@ import (
 	oauthappctl "g.hz.netease.com/horizon/core/controller/oauthapp"
 	oauthcheckctl "g.hz.netease.com/horizon/core/controller/oauthcheck"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
-	pipelinestats "g.hz.netease.com/horizon/core/controller/pipelinestats"
 	regionctl "g.hz.netease.com/horizon/core/controller/region"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	sloctl "g.hz.netease.com/horizon/core/controller/slo"
@@ -54,7 +53,6 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthapp"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
-	pipelinestatsapi "g.hz.netease.com/horizon/core/http/api/v1/pipelinestats"
 	"g.hz.netease.com/horizon/core/http/api/v1/region"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
@@ -402,7 +400,6 @@ func Run(flags *Flags) {
 		environmentregionCtl = environmentregionctl.NewController(parameter)
 		harborCtl            = harborctl.NewController(parameter)
 		idpCtrl              = idpctl.NewController(parameter)
-		pipelineStatsCtl     = pipelinestats.NewController(parameter)
 	)
 
 	var (
@@ -430,8 +427,7 @@ func Run(flags *Flags) {
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl,
 			coreConfig.Oauth.OauthHTMLLocation, scopeService)
-		idpAPI           = idp.NewAPI(idpCtrl, store)
-		pipelineStatsAPI = pipelinestatsapi.NewAPI(pipelineStatsCtl)
+		idpAPI = idp.NewAPI(idpCtrl, store)
 	)
 
 	// init server
@@ -494,7 +490,6 @@ func Run(flags *Flags) {
 	oauthapp.RegisterRoutes(r, oauthAppAPI)
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
 	idp.RegisterRoutes(r, idpAPI)
-	pipelinestatsapi.RegisterRoutes(r, pipelineStatsAPI)
 
 	// start cloud event server
 	go runCloudEventServer(

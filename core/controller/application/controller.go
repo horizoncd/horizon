@@ -21,6 +21,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param"
+	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
+	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -48,6 +50,9 @@ type Controller interface {
 	// Transfer  try transfer application to another group
 	Transfer(ctx context.Context, id uint, groupID uint) error
 	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
+	// GetApplicationPipelineStats return pipeline stats about an application
+	GetApplicationPipelineStats(ctx context.Context, application uint, cluster string, pageNumber, pageSize int) (
+		[]*pipelinemodels.PipelineStats, int64, error)
 }
 
 type controller struct {
@@ -63,6 +68,7 @@ type controller struct {
 	userSvc              usersvc.Service
 	memberManager        member.Manager
 	applicationRegionMgr applicationregionmanager.Manager
+	pipelinemanager      pipelinemanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -81,6 +87,7 @@ func NewController(param *param.Param) Controller {
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
 		applicationRegionMgr: param.ApplicationRegionManager,
+		pipelinemanager:      param.PipelineMgr,
 	}
 }
 
@@ -550,4 +557,20 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 	}
 
 	return selectableRegionsByEnv, nil
+}
+
+func (c controller) GetApplicationPipelineStats(ctx context.Context, application uint, cluster string,
+	pageNumber, pageSize int) ([]*pipelinemodels.PipelineStats, int64, error) {
+	app, err := c.applicationMgr.GetByID(ctx, application)
+	if err != nil {
+		return nil, 0, err
+	}
+	if cluster != "" {
+		_, err := c.clusterMgr.GetByName(ctx, cluster)
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return c.pipelinemanager.ListPipelineStats(ctx, app.Name, cluster, pageNumber, pageSize)
 }

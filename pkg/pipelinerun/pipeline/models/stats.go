@@ -16,7 +16,7 @@ type TaskStats struct {
 }
 
 type PipelineStats struct {
-	PipelinerunID uint         `json:"pipelinerun_id"`
+	PipelinerunID uint         `json:"pipelinerunID"`
 	Application   string       `json:"application"`
 	Cluster       string       `json:"cluster"`
 	Pipeline      string       `json:"pipeline"`
