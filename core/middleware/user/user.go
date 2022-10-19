@@ -3,6 +3,7 @@ package user
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"g.hz.netease.com/horizon/core/common"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
@@ -89,7 +90,7 @@ func Middleware(param *param.Param, store sessions.Store,
 
 		if c.Request.URL.Path == common.URLOauthAuthorization {
 			c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?redirect=%s",
-				common.URLFrontLogin, c.Request.RequestURI))
+				common.URLFrontLogin, url.QueryEscape(c.Request.RequestURI)))
 			c.AbortWithStatus(http.StatusTemporaryRedirect)
 			return
 		}
