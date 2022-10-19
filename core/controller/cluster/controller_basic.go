@@ -524,6 +524,14 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		namespaceChanged bool
 	)
 
+	if r.ExpireTime != "" {
+		expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, cluster.EnvironmentName)
+		if err != nil {
+			return nil, err
+		}
+		cluster.ExpireSeconds = expireSeconds
+	}
+
 	// can only update environment/region when the cluster has been freed
 	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
 		er, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
@@ -619,15 +627,11 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, err
 		}
-		r.TemplateInput.Application = files.ApplicationJSONBlob
-		r.TemplateInput.Pipeline = files.PipelineJSONBlob
+		r.TemplateInput = &TemplateInput{
+			Application: files.ApplicationJSONBlob,
+			Pipeline:    files.PipelineJSONBlob,
+		}
 	}
-
-	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, r.Environment)
-	if err != nil {
-		return nil, err
-	}
-	cluster.ExpireSeconds = expireSeconds
 
 	// 5. update cluster in db
 	clusterModel := r.toClusterModel(cluster, templateRelease, er)
@@ -890,7 +894,7 @@ func (c *controller) toExpireSeconds(ctx context.Context, expireTime string, env
 		duration, err := time.ParseDuration(expireTime)
 		if err != nil {
 			log.Errorf(ctx, "failed to parse expireTime, err: %v", err.Error())
-			return 0, err
+			return 0, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 		expireSeconds = uint(duration.Seconds())
 		envEntity, err := c.envMgr.GetByName(ctx, environment)

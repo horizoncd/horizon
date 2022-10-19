@@ -718,6 +718,7 @@ func test(t *testing.T) {
 
 	resp, err = c.GetCluster(ctx, resp.ID)
 	assert.Nil(t, err)
+	assert.Equal(t, "24h0m0s", resp.ExpireTime)
 	assert.Equal(t, resp.Git.URL, UpdateGitURL)
 	assert.Equal(t, resp.Git.Branch, "new")
 	assert.Equal(t, resp.Git.Subfolder, "/new")
@@ -727,6 +728,15 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.Template.Release, "v1.0.1")
 	assert.Equal(t, resp.TemplateInput.Application, applicationJSONBlob)
 	assert.Equal(t, resp.TemplateInput.Pipeline, pipelineJSONBlob)
+
+	resp, err = c.UpdateCluster(ctx, resp.ID, &UpdateClusterRequest{
+		Base:       &Base{},
+		ExpireTime: "48h0m0s",
+	}, false)
+	assert.Nil(t, err)
+	resp, err = c.GetCluster(ctx, resp.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "48h0m0s", resp.ExpireTime)
 
 	count, respList, err := c.ListCluster(ctx, application.ID, []string{"test"}, "", nil, nil)
 	assert.Nil(t, err)
