@@ -175,7 +175,6 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, newUser *models.User) (*m
 						"failed to get user\n"+
 							"id = %v\nerr = %v", id, err)
 				}
-				fmt.Println(user)
 				return nil
 			})
 	if err != nil {

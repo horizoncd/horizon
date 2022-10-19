@@ -145,6 +145,20 @@ func Test(t *testing.T) {
 	assert.Equal(t, false, user.IsAdmin)
 	assert.Equal(t, true, user.IsBanned)
 
+	user, err = ctrl.UpdateByID(ctx, 2, &UpdateUserRequest{
+		IsAdmin:  &resF,
+		IsBanned: &resT,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, uint(2), user.ID)
+	assert.Equal(t, "name2", user.Name)
+	assert.Equal(t, false, user.IsAdmin)
+	assert.Equal(t, true, user.IsBanned)
+
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Admin: false,
+	})
+
 	_, err = ctrl.UpdateByID(ctx, 2, &UpdateUserRequest{
 		IsAdmin:  &resF,
 		IsBanned: &resT,
