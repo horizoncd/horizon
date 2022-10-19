@@ -42,6 +42,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/applications/:%v/transfer", common.ParamApplicationID),
 			HandlerFunc: api.Transfer,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/applications/:%v/pipelinestats", common.ParamApplicationID),
+			HandlerFunc: api.GetApplicationPipelineStats,
 		},
 	}
 

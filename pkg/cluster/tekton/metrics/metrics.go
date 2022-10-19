@@ -19,6 +19,8 @@ const (
 	_result      = "result"
 	_template    = "template"
 	_application = "application"
+	_namespace   = "horizon"
+	_subsystem   = ""
 )
 
 func init() {
@@ -26,19 +28,19 @@ func init() {
 		0, 5, 10, 20, 30, 40, 50, 60, 90, 120, 150, 180, 240, 300,
 	}
 	_prHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "horizon_pipelinerun_duration_seconds",
+		Name:    prometheus.BuildFQName(_namespace, _subsystem, "pipelinerun_duration_seconds"),
 		Help:    "PipelineRun duration info",
 		Buckets: buckets,
 	}, []string{_environment, _application, _template, _pipeline, _result})
 
 	_trHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "horizon_taskrun_duration_seconds",
+		Name:    prometheus.BuildFQName(_namespace, _subsystem, "taskrun_duration_seconds"),
 		Help:    "Taskrun duration info",
 		Buckets: buckets,
 	}, []string{_environment, _application, _template, _pipeline, _result, _task})
 
 	_stepHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "horizon_step_duration_seconds",
+		Name:    prometheus.BuildFQName(_namespace, _subsystem, "step_duration_seconds"),
 		Help:    "Step duration info",
 		Buckets: buckets,
 	}, []string{_environment, _application, _template, _pipeline, _result, _task, _step})
