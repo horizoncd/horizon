@@ -485,6 +485,8 @@ paths:
         in: path
         description: name or id of template
         required: true
+        schema:
+          type: string
     get:
       tags:
         - release
@@ -530,6 +532,8 @@ paths:
         in: path
         description: id of group
         required: true
+        schema:
+          type: number
     post:
       tags:
         - template
@@ -583,6 +587,8 @@ paths:
         in: path
         description: id of release
         required: true
+        schema:
+          type: number
     get:
       tags:
         - release
@@ -683,6 +689,8 @@ paths:
         in: path
         description: id of release
         required: true
+        schema:
+          type: number
     post:
       tags:
         - release
@@ -706,3 +714,55 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/templates:
+    get:
+      description: list templates
+      operationId: listTemplates
+      parameters:
+        - name: userID
+          in: query
+          schema:
+            type: number
+        - name: groupID
+          in: query
+          schema:
+            type: number
+        - name: filter
+          in: query
+          schema:
+            type: string
+        - name: pageNumber
+          in: query
+          schema:
+            type: number
+        - name: pageSize
+          in: query
+          schema:
+            type: number
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "total": 20,
+                      "items": [
+                        {
+                          "id": 120,
+                          "name": "sdfasd",
+                          "chartName": "61-sdfasd",
+                          "description": "",
+                          "repository": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon-template/helm-template/dockerfile.git",
+                          "group": 61,
+                          "onlyOwner": true,
+                          "createdAt": "2022-09-09T15:23:44+08:00",
+                          "updatedAt": "2022-09-09T15:31:07+08:00",
+                          "createdBy": 2,
+                          "updatedBy": 2
+                        }
+                      ]
+                    }
+                  }

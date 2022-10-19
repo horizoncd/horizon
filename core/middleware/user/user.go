@@ -82,8 +82,15 @@ func Middleware(param *param.Param, store sessions.Store,
 		if c.Writer.Status() != http.StatusOK ||
 			// if not login, call this to login
 			// if signed in, call this to link other api
-			c.Request.URL.Path == "/apis/core/v1/login/callback" {
+			c.Request.URL.Path == common.URLLoginCallback {
 			c.Next()
+			return
+		}
+
+		if c.Request.URL.Path == common.URLOauthAuthorization {
+			c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?redirect=%s",
+				common.URLFrontLogin, c.Request.RequestURI))
+			c.AbortWithStatus(http.StatusTemporaryRedirect)
 			return
 		}
 

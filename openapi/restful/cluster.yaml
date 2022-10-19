@@ -1306,3 +1306,73 @@ paths:
                           }]
                       }
                   }
+  /apis/core/v1/clusters:
+    get:
+      description: list cluster
+      operationId: listClusters
+      parameters:
+        - name: userID
+          in: query
+          schema:
+            type: number
+        - name: applicationID
+          in: query
+          schema:
+            type: number
+        - name: filter
+          in: query
+          schema:
+            type: string 
+        - name: environment
+          in: query
+          schema:
+            type: string
+        - name: tagSelector
+          in: query
+          schema:
+            type: string
+        - name: template
+          description: template name
+          in: query
+          schema:
+            type: string
+        - name: release
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: |
+                {
+                  "data": {
+                    "total": 140,
+                    "items": [
+                      {
+                        "id": 58694,
+                        "name": "sph-sphtesttt",
+                        "description": "",
+                        "scope": {
+                          "environment": "dev",
+                          "region": "hz-dev2",
+                          "regionDisplayName": "杭州开发"
+                        },
+                        "template": {
+                          "name": "javaapp",
+                          "release": "v0.0.0-sph-rc1"
+                        },
+                        "git": {
+                          "sshURL": "git@github.com:demo/demo.git",
+                          "httpURL": "https://github.com/demo/demo"
+                        },
+                        "createdAt": "2022-09-21T11:03:56+08:00",
+                        "updatedAt": "2022-10-18T19:40:06+08:00",
+                        "fullName": "gjq-test/sph/sph/sph-sphtesttt",
+                        "fullPath": "/gjq-test/sph/sph/sph-sphtesttt"
+                      }
+                    ]
+                  }
+                }
+

@@ -238,7 +238,7 @@ func (d *dao) List(ctx context.Context,
 			case common.ClusterQueryByUser:
 				statement = statement.
 					Joins("join tb_member as m on m.resource_id = c.id").
-					Where("m.resource_type = 'clusters'").
+					Where("m.resource_type = ?", common.ResourceCluster).
 					Where("m.member_type = '0'").
 					Where("m.deleted_ts = 0").
 					Where("m.membername_id = ?", v)
@@ -296,7 +296,7 @@ func GenSQLForTagSelector(tagSelectors []tagmodels.TagSelector, statement *gorm.
 	condition := statement.WithContext(context.Background())
 	statement = statement.Table("tb_tag as tg").
 		Select("tg.resource_id").
-		Where("tg.resource_type = 'clusters'").
+		Where("tg.resource_type = ?", common.ResourceCluster).
 		Group("tg.resource_id").
 		Having("count(tg.id) > ?", len(tagSelectors)-1)
 

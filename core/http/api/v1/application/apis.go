@@ -223,6 +223,16 @@ func (a *API) List(c *gin.Context) {
 		keywords[common.ApplicationQueryName] = filter
 	}
 
+	template := c.Query(common.ApplicationQueryByTemplate)
+	if template != "" {
+		keywords[common.ApplicationQueryByTemplate] = template
+	}
+
+	release := c.Query(common.ApplicationQueryByRelease)
+	if release != "" {
+		keywords[common.ApplicationQueryByRelease] = release
+	}
+
 	idStr := c.Query(common.ApplicationQueryByUser)
 	if idStr != "" {
 		id, err := strconv.Atoi(idStr)

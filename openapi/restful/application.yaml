@@ -721,3 +721,59 @@ paths:
             application/json:
               schema:
                 $ref: "../core.yaml#/components/schemas/Error"
+  /apis/core/v1/applications:
+    get:
+      description: list applications
+      operationId: listApps
+      parameters:
+        - name: filter
+          in: query
+          schema:
+            type: string
+        - name: userID
+          in: query
+          schema:
+            type: number
+        - name: pageNumber
+          in: query
+          schema:
+            type: number
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema: 
+            type: number
+            minimum: 0
+            default: 10
+        - name: template
+          in: query
+          schema:
+            type: string
+        - name: release
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "total": 69,
+                      "items": [
+                        {
+                          "fullPath": "/horizon/tomv2v2",
+                          "fullName": "horizon/tomv2v2",
+                          "name": "tomv2v2",
+                          "id": 193,
+                          "groupID": 59,
+                          "createdAt": "2022-10-14T11:51:24+08:00",
+                          "updatedAt": "2022-10-18T21:42:28+08:00"
+                        }
+                      ]
+                    }
+                  }

@@ -291,7 +291,7 @@ func (d *dao) List(c context.Context, groupIDs []uint, query *q.Query) (int, []*
 				statement = statement.
 					Select("a.*").
 					Joins("join tb_member as m on m.resource_id = a.id").
-					Where("m.resource_type = 'applications'").
+					Where("m.resource_type = ?", corecommon.ResourceApplication).
 					Where("m.member_type = '0'").
 					Where("m.membername_id = ?", v)
 			case corecommon.ApplicationQueryByTemplate:

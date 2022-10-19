@@ -215,7 +215,7 @@ func (d dao) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int,
 			case common.TemplateQueryByUser:
 				statement = statement.
 					Joins("join tb_member as m on m.resource_id = t.id").
-					Where("m.resource_type = 'templates'").
+					Where("m.resource_type = ?", common.ResourceTemplate).
 					Where("m.member_type = '0'").
 					Where("m.deleted_ts = 0").
 					Where("m.membername_id = ?", v)
