@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	usermock "g.hz.netease.com/horizon/mock/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/user/models"
@@ -32,6 +33,7 @@ func Test(t *testing.T) {
 			Name:     "name1",
 			FullName: "Name1",
 			Email:    "name1@example.com",
+			Admin:    true,
 		}, {
 			Model: global.Model{
 				ID: 2,
@@ -39,6 +41,7 @@ func Test(t *testing.T) {
 			Name:     "name2",
 			FullName: "Name2",
 			Email:    "name2@example.com",
+			Admin:    false,
 		},
 	}
 
@@ -60,5 +63,16 @@ func Test(t *testing.T) {
 	}
 
 	_, _, err = c.SearchUser(ctx, filter+"1", nil)
+	assert.NotNil(t, err)
+
+	// test GetUserByEmail
+	userMgr.EXPECT().GetUserByEmail(ctx, "name1@example.com").Return(&users[0], nil)
+	userMgr.EXPECT().GetUserByEmail(ctx, "name2@example.com").Return(
+		nil, herrors.NewErrGetFailed(herrors.UserInDB, ""))
+	user, err := c.GetUserByEmail(ctx, "name1@example.com")
+	assert.Nil(t, err)
+	assert.Equal(t, uint(1), user.GetID())
+	assert.Equal(t, "name1", user.GetName())
+	_, err = c.GetUserByEmail(ctx, "name2@example.com")
 	assert.NotNil(t, err)
 }

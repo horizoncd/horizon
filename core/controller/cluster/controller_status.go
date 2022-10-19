@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"math"
 	"strings"
 	"time"
 
@@ -140,6 +141,9 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 				resp.RunningTask.TaskStatus = string(v1beta1.TaskRunReasonRunning)
 			}
 		}
+	}
+	if cluster.ExpireSeconds > 0 && latestPipelinerun != nil && cluster.Status == "" {
+		resp.TTLSeconds = calculateClusterTimeToLive(cluster.ExpireSeconds, cluster.UpdatedAt, latestPipelinerun.UpdatedAt)
 	}
 	return resp, nil
 }
@@ -436,4 +440,25 @@ func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName 
 		return nil, err
 	}
 	return &GetClusterPodResponse{Pod: *pod}, nil
+}
+
+func calculateClusterTimeToLive(expireSeconds uint, clusterUpdatedAt time.Time,
+	runUpdatedAt time.Time) *uint {
+	var (
+		latestUpdateAt time.Time
+		expireDate     time.Time
+	)
+	if clusterUpdatedAt.After(runUpdatedAt) {
+		latestUpdateAt = clusterUpdatedAt
+	} else {
+		latestUpdateAt = runUpdatedAt
+	}
+	expireDate = latestUpdateAt.Add(time.Duration(expireSeconds * 1e9))
+	if expireDate.Before(time.Now()) {
+		res := uint(0)
+		return &res
+	}
+	ttlSeconds := time.Until(expireDate).Seconds()
+	ttlUint := uint(math.Ceil(ttlSeconds))
+	return &ttlUint
 }

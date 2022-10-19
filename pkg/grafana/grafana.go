@@ -4,10 +4,14 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/config/grafana"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -28,6 +32,7 @@ const (
 
 type Service interface {
 	SyncDatasource(ctx context.Context)
+	ListDashboards(ctx context.Context) ([]*Dashboard, error)
 }
 
 type service struct {
@@ -53,6 +58,13 @@ type DataSource struct {
 	Name string `yaml:"name"`
 	Type string `yaml:"type"` // only use prometheus currently
 	URL  string `yaml:"url"`
+}
+
+// Dashboard used to unmarshal grafana dashboard's content
+type Dashboard struct {
+	Title string   `json:"title"`
+	UID   string   `json:"uid"`
+	Tags  []string `json:"tags"`
 }
 
 func (s *service) SyncDatasource(ctx context.Context) {
@@ -87,7 +99,7 @@ func (s *service) sync(ctx context.Context) {
 		return
 	}
 
-	configMapOps := s.kubeClient.CoreV1().ConfigMaps(s.config.SyncDatasourceConfig.Namespace)
+	configMapOps := s.kubeClient.CoreV1().ConfigMaps(s.config.Namespace)
 	datasourceConfigMap, err := configMapOps.Get(ctx, _datasourceConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		if statusError, ok := err.(*k8serrors.StatusError); !ok || statusError.ErrStatus.Code != http.StatusNotFound {
@@ -158,4 +170,35 @@ func (s *service) sync(ctx context.Context) {
 	}
 
 	log.Debug(ctx, "Skip updating datasource because there are no changes")
+}
+
+func (s *service) ListDashboards(ctx context.Context) ([]*Dashboard, error) {
+	configMapOps := s.kubeClient.CoreV1().ConfigMaps(s.config.Namespace)
+
+	dashboardConfigMapList, err := configMapOps.List(ctx,
+		metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%v=%v", s.config.Dashboards.LabelKey,
+				s.config.Dashboards.LabelValue),
+		})
+	if err != nil {
+		if statusError, ok := err.(*k8serrors.StatusError); !ok || statusError.ErrStatus.Code != http.StatusNotFound {
+			return nil, perror.Wrap(herrors.ErrListGrafanaDashboard, err.Error())
+		}
+	}
+
+	var dashboards []*Dashboard
+	if dashboardConfigMapList != nil {
+		for _, item := range dashboardConfigMapList.Items {
+			for _, val := range item.Data {
+				var dashboard Dashboard
+				err = json.Unmarshal([]byte(val), &dashboard)
+				if err != nil {
+					return nil, perror.WithMessage(herrors.ErrListGrafanaDashboard, err.Error())
+				}
+				dashboards = append(dashboards, &dashboard)
+			}
+		}
+	}
+
+	return dashboards, nil
 }

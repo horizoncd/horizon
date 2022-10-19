@@ -160,6 +160,7 @@ components:
         - id
         - name
         - displayName
+        - autoFree
       properties:
         id:
           type: integer
@@ -167,3 +168,5 @@ components:
           type: string
         displayName:
           type: string
+        autoFree:
+          type: boolean

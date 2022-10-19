@@ -6,6 +6,7 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/config/argocd"
 	"g.hz.netease.com/horizon/pkg/config/authenticate"
+	"g.hz.netease.com/horizon/pkg/config/autofree"
 	"g.hz.netease.com/horizon/pkg/config/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/db"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
@@ -26,17 +27,17 @@ type Config struct {
 	DBConfig               db.Config               `yaml:"dbConfig"`
 	SessionConfig          session.Config          `yaml:"sessionConfig"`
 	GitlabMapper           gitlab.Mapper           `yaml:"gitlabMapper"`
-	GitlabRepoConfig       gitlab.RepoConfig       `yaml:"gitlabRepoConfig"`
+	GitopsRepoConfig       gitlab.GitopsRepoConfig `yaml:"gitopsRepoConfig"`
 	ArgoCDMapper           argocd.Mapper           `yaml:"argoCDMapper"`
 	RedisConfig            redis.Redis             `yaml:"redisConfig"`
 	TektonMapper           tekton.Mapper           `yaml:"tektonMapper"`
 	TemplateRepo           templaterepo.Repo       `yaml:"templateRepo"`
 	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
-	GrafanaMapper          grafana.Mapper          `yaml:"grafanaMapper"`
 	GrafanaConfig          grafana.Config          `yaml:"grafanaConfig"`
 	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
+	AutoFreeConfig         autofree.Config         `yaml:"autoFree"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {
@@ -67,15 +68,6 @@ func LoadConfig(configFilePath string) (*Config, error) {
 		}
 	}
 	config.TektonMapper = newTektonMapper
-
-	newGrafanaMapper := grafana.Mapper{}
-	for key, v := range config.GrafanaMapper {
-		ks := strings.Split(key, ",")
-		for i := 0; i < len(ks); i++ {
-			newGrafanaMapper[ks[i]] = v
-		}
-	}
-	config.GrafanaMapper = newGrafanaMapper
 
 	return &config, nil
 }

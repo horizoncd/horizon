@@ -88,6 +88,7 @@ import (
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
+	"g.hz.netease.com/horizon/pkg/grafana"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook"
 	"g.hz.netease.com/horizon/pkg/hook/handler"
@@ -108,6 +109,7 @@ import (
 	templateschemarepo "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
 	templaterepoharbor "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
+	"g.hz.netease.com/horizon/pkg/util/kube"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -246,29 +248,42 @@ func Run(flags *Flags) {
 	ctx := context.Background()
 	gitlabFactory := gitlabfty.NewFactory(coreConfig.GitlabMapper)
 
-	gitlabCompute, err := gitlabFactory.GetByName(ctx, common.GitlabCompute)
+	gitlabGitops, err := gitlabFactory.GetByName(ctx, common.GitlabGitops)
+	if err != nil {
+		panic(err)
+	}
+	// check existence of gitops root group
+	rootGroup, err := gitlabGitops.GetGroup(ctx, coreConfig.GitopsRepoConfig.RootGroupPath)
 	if err != nil {
 		panic(err)
 	}
 
-	gitlabControl, err := gitlabFactory.GetByName(ctx, common.GitlabControl)
+	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo2(ctx, rootGroup, gitlabGitops)
+
 	if err != nil {
 		panic(err)
 	}
 
-	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo2(ctx, coreConfig.GitlabRepoConfig, gitlabCompute)
-	if err != nil {
-		panic(err)
-	}
 	templateRepo, err := templaterepoharbor.NewTemplateRepo(coreConfig.TemplateRepo)
 	if err != nil {
 		panic(err)
 	}
-	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, coreConfig.GitlabRepoConfig,
-		templateRepo, gitlabCompute)
+
+	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops)
 	if err != nil {
 		panic(err)
 	}
+
+	gitlabCode, err := gitlabFactory.GetByName(ctx, common.GitlabCode)
+	if err != nil {
+		panic(err)
+	}
+
+	gitlabTemplate, err := gitlabFactory.GetByName(ctx, common.GitlabTemplate)
+	if err != nil {
+		panic(err)
+	}
+
 	templateSchemaGetter := templateschemarepo.NewSchemaGetter(ctx, templateRepo, manager)
 
 	outputGetter, err := output.NewOutPutGetter(ctx, templateRepo, manager)
@@ -276,7 +291,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	gitGetter, err := code.NewGitGetter(ctx, gitlabControl)
+	gitGetter, err := code.NewGitGetter(ctx, gitlabCode)
 	if err != nil {
 		panic(err)
 	}
@@ -349,12 +364,19 @@ func Run(flags *Flags) {
 		JSONSchema: readJSONFileFunc(flags.BuildJSONSchemaFile),
 		UISchema:   readJSONFileFunc(flags.BuildUISchemaFile),
 	}
-	readJSONFileFunc(flags.BuildJSONSchemaFile)
 
 	groupSvc := groupservice.NewService(manager)
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
+
+	// init kube client
+	_, client, err := kube.BuildClient("")
+	if err != nil {
+		panic(err)
+	}
+
+	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client)
 
 	parameter := &param.Param{
 		Manager:              manager,
@@ -374,6 +396,8 @@ func Run(flags *Flags) {
 		TektonFty:            tektonFty,
 		ClusterGitRepo:       clusterGitRepo,
 		GitGetter:            gitGetter,
+		GrafanaService:       grafanaService,
+		BuildSchema:          buildSchema,
 	}
 
 	var (
@@ -393,7 +417,7 @@ func Run(flags *Flags) {
 		envTemplateCtl       = envtemplatectl.NewController(parameter)
 		clusterCtl           = clusterctl.NewController(coreConfig, parameter)
 		prCtl                = prctl.NewController(parameter)
-		templateCtl          = templatectl.NewController(parameter, gitlabControl, templateRepo)
+		templateCtl          = templatectl.NewController(parameter, gitlabTemplate, templateRepo)
 		roleCtl              = roltctl.NewController(parameter)
 		terminalCtl          = terminalctl.NewController(parameter)
 		sloCtl               = sloctl.NewController(coreConfig.GrafanaSLO)
@@ -443,7 +467,7 @@ func Run(flags *Flags) {
 			coreConfig.Oauth.OauthHTMLLocation, scopeService)
 		idpAPI           = idp.NewAPI(idpCtrl, store)
 		buildSchemaAPI   = buildAPI.NewAPI(buildSchemaCtrl)
-		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl, buildSchemaCtrl)
+		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl)
 	)
 
 	// init server

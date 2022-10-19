@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/controller/build"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
@@ -27,6 +28,7 @@ type controller struct {
 	templateSchemaGetter templateschema.Getter
 	applicationMgr       applicationmanager.Manager
 	envMgr               envmanager.Manager
+	buildSchema          *build.Schema
 }
 
 func NewController(param *param.Param) Controller {
@@ -35,6 +37,7 @@ func NewController(param *param.Param) Controller {
 		templateSchemaGetter: param.TemplateSchemaGetter,
 		applicationMgr:       param.ApplicationManager,
 		envMgr:               param.EnvMgr,
+		buildSchema:          param.BuildSchema,
 	}
 }
 func (c *controller) UpdateEnvTemplateV2(ctx context.Context, applicationID uint, env string,
@@ -55,7 +58,11 @@ func (c *controller) UpdateEnvTemplateV2(ctx context.Context, applicationID uint
 	if err := jsonschema.Validate(schema.Application.JSONSchema, r.Application, false); err != nil {
 		return errors.E(op, http.StatusBadRequest, err)
 	}
-	// TODO (get the build schema and do validate)
+	if c.buildSchema != nil && c.buildSchema.JSONSchema != nil {
+		if err := jsonschema.Validate(c.buildSchema.JSONSchema, r.Pipeline, false); err != nil {
+			return errors.E(op, http.StatusBadRequest, err)
+		}
+	}
 
 	// 3.1 update application's git repo if env is empty
 	updateReq := gitrepo.CreateOrUpdateRequest{

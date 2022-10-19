@@ -10,8 +10,8 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"github.com/stretchr/testify/assert"
+	"github.com/xanzy/go-gitlab"
 )
 
 /*
@@ -37,7 +37,6 @@ export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
 	"token": "xxx",
 	"baseURL": "http://cicd.mockserver.org",
 	"rootGroupName": "xxx",
-	"rootGroupID": xxx
 }
 EOF
 )"
@@ -52,6 +51,7 @@ var (
 	g   gitlablib.Interface
 
 	rootGroupName string
+	rootGroup     *gitlab.Group
 	app           = "app"
 
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}
@@ -127,12 +127,16 @@ type Param struct {
 	Token         string `json:"token"`
 	BaseURL       string `json:"baseURL"`
 	RootGroupName string `json:"rootGroupName"`
-	RootGroupID   int    `json:"rootGroupId"`
 }
 
 // nolint
-func TestMain(m *testing.M) {
+func testInit() {
 	var err error
+
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
+		Name: "Tony",
+	})
+
 	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
 
 	if param == "" {
@@ -147,6 +151,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
+	rootGroup, err = g.GetGroup(ctx, p.RootGroupName)
+	if err != nil {
+		panic(err)
+	}
+	rootGroupName = p.RootGroupName
 
 	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -167,24 +176,12 @@ func TestMain(m *testing.M) {
 	if err := json.Unmarshal([]byte(applicationJSONStr2), &applicationJSONBlob2); err != nil {
 		panic(err)
 	}
-
-	os.Exit(m.Run())
 }
 
 func TestV2(t *testing.T) {
-	r := &gitRepo2{
-		gitlabLib: g,
-		repoConf: &gitlab.Repo{
-			Parent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "applications"),
-				ID:   4280,
-			},
-			RecyclingParent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-applications"),
-				ID:   4592,
-			},
-		},
-	}
+	testInit()
+	r, err := NewApplicationGitlabRepo2(ctx, rootGroup, g)
+	assert.Nil(t, err)
 
 	defer func() {
 		_ = r.DeleteApplication(ctx, app, 1)
@@ -199,7 +196,7 @@ func TestV2(t *testing.T) {
 		BuildConf:    pipelineJSONBlob,
 		TemplateConf: applicationJSONBlob,
 	}
-	err := r.CreateOrUpdateApplication(ctx, app, createReq)
+	err = r.CreateOrUpdateApplication(ctx, app, createReq)
 	assert.Nil(t, err)
 
 	err = r.CreateOrUpdateApplication(ctx, app, createReq)

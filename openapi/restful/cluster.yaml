@@ -25,7 +25,7 @@ paths:
       - name: tagSelector
         in: query
         description: |
-          filter clusters by tags, support operators: =, in, the comma separator acts as a logical AND (&&) operator. For example, if we want to filter clusters by tags(a equals to A and b equals to c or d), the tagSelector is "a=b,b in (c,d)"  
+          filter clusters by tags, support operators: =, in, the comma separator acts as a logical AND (&&) operator. For example, if we want to filter clusters by tags(a equals to A and b equals to c or d), the tagSelector is "a=b,b in (c,d)"
     get:
       tags:
         - cluster
@@ -93,6 +93,7 @@ paths:
                     "//name":"name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
                     "name":"cluster",
                     "description":"xxxxxxxxxxxx",
+                    "expireTime":"48h0m0s",
                     "git":{
                         "//branch":"branch can be edited",
                         "//tag":"tag can be edited",
@@ -169,6 +170,7 @@ paths:
               example: |
                 {
                     "description":"xxxxxxxxxxxx",
+                    "expireTime":"24h0m0s",
                     "template":{
                         "//release": "template release can be edited",
                         "release":"v1.1.0"
@@ -242,6 +244,7 @@ paths:
                           "name":"cluster",
                           "fullPath": "/a/b/c",
                           "description":"xxxxxxxxxxxx",
+                          "expireTime":"48h0m0s",
                           "priority":"P0",
                           "template":{
                               "name":"javaapp",
@@ -714,6 +717,8 @@ paths:
                         "//taskStatus":"Running, Pending, Succeeded, Cancelled, Failed. When task is none，this field is empty",
                         "taskStatus":"Running"
                       },
+                      "//ttlSeconds": "集群的剩余时间，单位：s",
+                      "ttlSeconds": "86400",
                       "//":"任何时候都会返回clusterStatus字段，该字段表示集群在k8s中的部署状态",
                       "clusterStatus":{
                         "//status":"Progressing(正在部署), Healthy(部署完成), Suspended(已暂停), Degraded(已降级/失败), NotFound(未部署)",
@@ -1271,5 +1276,33 @@ paths:
                                   }
                               ],
                           }
+                      }
+                  }
+  /apis/core/v1/clusters/{clusterID}/dashboards:
+    get:
+      tags:
+        - cluster
+      operationId: getGrafanaDashboards
+      summary: get cluster's grafana dashboards
+      responses:
+        "200":
+          description: Success
+          content:
+            application/yaml:
+              schema:
+                example: |
+                  {
+                      "data": {
+                          "host:": "",
+                          "params": {
+                              "kiosk": "iframe"
+                          },
+                          dashboards: [{
+                              title: "",
+                              uid: "",
+                              tags: [
+                                  "default"
+                              ]
+                          }]
                       }
                   }

@@ -87,8 +87,9 @@ const (
 )
 
 const (
-	GitlabControl = "control"
-	GitlabCompute = "compute"
+	GitlabCode     = "code"
+	GitlabGitops   = "gitops"
+	GitlabTemplate = "template"
 )
 
 const (
@@ -99,4 +100,9 @@ const (
 	CookieKeyAuth = "horizon|session"
 
 	SessionKeyAuthUser = "user"
+)
+
+const (
+	// IDThan query parameter, used for "id > IDThan"
+	IDThan = "idThan"
 )

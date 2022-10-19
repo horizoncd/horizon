@@ -162,12 +162,11 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 			}
 			// change step name
 			for _, stepResult := range result.StepResults {
+				stepResult.Task = jibBuild
 				if stepResult.Step == "compile" {
-					stepResult.Task = jibBuild
 					stepResult.Step = "jib-compile"
 				}
 				if stepResult.Step == "image" {
-					stepResult.Task = jibBuild
 					stepResult.Step = "jib-image"
 				}
 			}

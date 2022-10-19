@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/build"
 	"g.hz.netease.com/horizon/core/controller/envtemplate"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
@@ -17,14 +16,12 @@ const (
 )
 
 type API struct {
-	envTemplateCtl   envtemplate.Controller
-	buildTemplateCtl build.Controller
+	envTemplateCtl envtemplate.Controller
 }
 
-func NewAPI(envTemplateCtl envtemplate.Controller, buildController build.Controller) *API {
+func NewAPI(envTemplateCtl envtemplate.Controller) *API {
 	return &API{
-		envTemplateCtl:   envTemplateCtl,
-		buildTemplateCtl: buildController,
+		envTemplateCtl: envTemplateCtl,
 	}
 }
 

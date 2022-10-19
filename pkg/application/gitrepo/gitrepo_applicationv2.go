@@ -8,11 +8,11 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/xanzy/go-gitlab"
 	"sigs.k8s.io/yaml"
 	kyaml "sigs.k8s.io/yaml"
 )
@@ -45,7 +45,9 @@ const (
 	_filePathApplication = "application.yaml"
 	_filePathPipeline    = "pipeline.yaml"
 
-	_default = "default"
+	_default               = "default"
+	_applications          = "applications"
+	_recyclingApplications = "recycling-applications"
 )
 
 type ApplicationGitRepo2 interface {
@@ -58,17 +60,28 @@ type ApplicationGitRepo2 interface {
 }
 
 type gitRepo2 struct {
-	gitlabLib gitlablib.Interface
-	repoConf  *gitlabconf.Repo
+	gitlabLib                  gitlablib.Interface
+	applicationsGroup          *gitlab.Group
+	recyclingApplicationsGroup *gitlab.Group
 }
 
 var _ ApplicationGitRepo2 = &gitRepo2{}
 
-func NewApplicationGitlabRepo2(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig,
+func NewApplicationGitlabRepo2(ctx context.Context, rootGroup *gitlab.Group,
 	gitlabLib gitlablib.Interface) (ApplicationGitRepo2, error) {
+	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _applications)
+	if err != nil {
+		return nil, err
+	}
+	recyclingApplicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID,
+		rootGroup.FullPath, _recyclingApplications)
+	if err != nil {
+		return nil, err
+	}
 	return &gitRepo2{
-		gitlabLib: gitlabLib,
-		repoConf:  gitlabRepoConfig.Application,
+		gitlabLib:                  gitlabLib,
+		applicationsGroup:          applicationsGroup,
+		recyclingApplicationsGroup: recyclingApplicationsGroup,
 	}, nil
 }
 
@@ -87,20 +100,20 @@ func (g gitRepo2) CreateOrUpdateApplication(ctx context.Context, application str
 	}
 
 	var envProjectExists = false
-	pid := fmt.Sprintf("%v/%v/%v", g.repoConf.Parent.Path, application, environmentRepoName)
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationsGroup.FullPath, application, environmentRepoName)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
 		// if not found, test application group exist
-		gid := fmt.Sprintf("%v/%v", g.repoConf.Parent.Path, application)
+		gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 		parentGroup, err := g.gitlabLib.GetGroup(ctx, gid)
 		if err != nil {
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 				return err
 			}
-			parentGroup, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.repoConf.Parent.ID)
+			parentGroup, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.applicationsGroup.ID)
 			if err != nil {
 				return err
 			}
@@ -192,7 +205,7 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get data from gitlab
-	gid := fmt.Sprintf("%v/%v", g.repoConf.Parent.Path, application)
+	gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 	pid := fmt.Sprintf("%v/%v", gid, func() string {
 		if environment == "" {
 			return _default
@@ -264,7 +277,7 @@ func (g gitRepo2) DeleteApplication(ctx context.Context, application string, app
 	const op = "gitlab repo: hard delete application"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	gid := fmt.Sprintf("%v/%v", g.repoConf.Parent.Path, application)
+	gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 	return g.gitlabLib.DeleteGroup(ctx, gid)
 }
 
@@ -272,6 +285,6 @@ func (g gitRepo2) HardDeleteApplication(ctx context.Context, application string)
 	const op = "gitlab repo: hard delete application"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	gid := fmt.Sprintf("%v/%v", g.repoConf.Parent.Path, application)
+	gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 	return g.gitlabLib.DeleteGroup(ctx, gid)
 }

@@ -9,12 +9,20 @@ import (
 	"os"
 
 	"g.hz.netease.com/horizon/core/config"
+	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
+	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
+	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
+	userctl "g.hz.netease.com/horizon/core/controller/user"
 	"g.hz.netease.com/horizon/core/http/health"
 	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
+	"g.hz.netease.com/horizon/job/autofree"
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/grafana"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/util/kube"
+	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -84,11 +92,25 @@ func Run(flags *Flags) {
 	if err != nil {
 		panic(err)
 	}
+	callbacks.RegisterCustomCallbacks(mysqlDB)
 
 	// init manager parameter
 	manager := managerparam.InitManager(mysqlDB)
 	// init context
 	ctx := context.Background()
+
+	parameter := &param.Param{
+		Manager: manager,
+		Cd:      cd.NewCD(coreConfig.ArgoCDMapper),
+	}
+
+	// init controller
+	var (
+		userCtl        = userctl.NewController(parameter)
+		clusterCtl     = clusterctl.NewController(&config.Config{}, parameter)
+		prCtl          = prctl.NewController(parameter)
+		environmentCtl = environmentctl.NewController(parameter)
+	)
 
 	// init kube client
 	_, client, err := kube.BuildClient("")
@@ -102,6 +124,13 @@ func Run(flags *Flags) {
 	defer cancel()
 	go func() {
 		grafanaService.SyncDatasource(cancellableCtx)
+	}()
+
+	log.Printf("auto-free job Config: %+v", coreConfig.AutoFreeConfig)
+	// automatically release expired clusters
+	go func() {
+		autofree.AutoReleaseExpiredClusterJob(cancellableCtx, &coreConfig.AutoFreeConfig,
+			userCtl, clusterCtl, prCtl, environmentCtl)
 	}()
 
 	r := gin.New()
