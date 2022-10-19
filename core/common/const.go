@@ -15,7 +15,8 @@ const (
 )
 
 const (
-	MetaVersion2 = "0.0.2"
+	MetaVersion2              = "0.0.2"
+	ApplicationRepoDefaultEnv = "default"
 )
 
 const (

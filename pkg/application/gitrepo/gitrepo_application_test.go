@@ -184,7 +184,7 @@ func TestV2(t *testing.T) {
 	assert.Nil(t, err)
 
 	defer func() {
-		_ = r.DeleteApplication(ctx, app, 1)
+		_ = r.HardDeleteApplication(ctx, app)
 		_ = g.DeleteGroup(ctx, fmt.Sprintf("%v/%v/%v-%v", rootGroupName, "recycling-applications", app, 1))
 	}()
 

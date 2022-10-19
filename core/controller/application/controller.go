@@ -112,7 +112,7 @@ func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplica
 	}
 
 	// 2. get application jsonBlob in git repo
-	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, "")
+	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, common.ApplicationRepoDefaultEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 	}
 
 	// 2. get repo file
-	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, "")
+	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, common.ApplicationRepoDefaultEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	// 3. create application in git repo
 	createRepoReq := gitrepo.CreateOrUpdateRequest{
 		Version:      "",
-		Environment:  "",
+		Environment:  common.ApplicationRepoDefaultEnv,
 		BuildConf:    request.TemplateInput.Pipeline,
 		TemplateConf: request.TemplateInput.Application,
 	}
@@ -330,7 +330,7 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	// create v2
 	createRepoReq := gitrepo.CreateOrUpdateRequest{
 		Version:      common.MetaVersion2,
-		Environment:  "",
+		Environment:  common.ApplicationRepoDefaultEnv,
 		BuildConf:    request.BuildConfig,
 		TemplateConf: request.TemplateConfig,
 	}
@@ -398,7 +398,7 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 
 		updateRepoReq := gitrepo.CreateOrUpdateRequest{
 			Version:      "",
-			Environment:  "",
+			Environment:  common.ApplicationRepoDefaultEnv,
 			BuildConf:    request.TemplateInput.Pipeline,
 			TemplateConf: request.TemplateInput.Application,
 		}
@@ -462,7 +462,7 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 		}
 		updateRepoReq := gitrepo.CreateOrUpdateRequest{
 			Version:      common.MetaVersion2,
-			Environment:  "",
+			Environment:  common.ApplicationRepoDefaultEnv,
 			BuildConf:    request.BuildConfig,
 			TemplateConf: request.TemplateConfig,
 		}
@@ -515,7 +515,7 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 			}
 		}
 	} else {
-		if err := c.applicationGitRepo.DeleteApplication(ctx, app.Name, app.ID); err != nil {
+		if err := c.applicationGitRepo.HardDeleteApplication(ctx, app.Name); err != nil {
 			return err
 		}
 	}
