@@ -52,9 +52,6 @@ func (c *controller) List(ctx context.Context, query *q.Query) (int64, []*User, 
 }
 
 func (c *controller) GetByID(ctx context.Context, id uint) (*User, error) {
-	const op = "user controller: get user by id"
-	defer wlog.Start(ctx, op).StopPrint()
-
 	user, err := c.userMgr.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err
