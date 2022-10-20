@@ -37,7 +37,7 @@ type DAO interface {
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
 	TransferByID(ctx context.Context, id uint, groupID uint) error
-	List(c context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error)
+	List(ctx context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -274,13 +274,13 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 	return err
 }
 
-func (d *dao) List(c context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error) {
+func (d *dao) List(ctx context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error) {
 	var (
 		applications []*models.Application
 		total        int64
 	)
 
-	statement := d.db.WithContext(c).Table("tb_application as a")
+	statement := d.db.WithContext(ctx).Table("tb_application as a")
 
 	if query != nil {
 		for k, v := range query.Keywords {
@@ -306,7 +306,7 @@ func (d *dao) List(c context.Context, groupIDs []uint, query *q.Query) (int, []*
 		if len(groupIDs) > 0 &&
 			query.Keywords != nil &&
 			query.Keywords[corecommon.ApplicationQueryByUser] != nil {
-			statementGroup := d.db.WithContext(c).Table("tb_application as a")
+			statementGroup := d.db.WithContext(ctx).Table("tb_application as a")
 			for k, v := range query.Keywords {
 				switch k {
 				case corecommon.ApplicationQueryName:
