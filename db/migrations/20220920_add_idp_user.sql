@@ -25,3 +25,4 @@ alter table tb_user drop column `oidc_id`;
 alter table tb_user drop column `oidc_type`;
 
 alter table tb_user add column `banned` bool NOT NULL DEFAULT false COMMENT 'whether user is banned';
+insert into tb_idp_user( `sub`,`idp_id`,`user_id`,`name`,`email`,`deletable`,`created_at`,`updated_at`,`deleted_ts`,`created_by`,`updated_by`) select u.`name`,`idp`.`id`, `u`.`id`, `u`.`name`, `u`.`email`, false, now(), now(), 0, 0, 0 from tb_user as u join (select * from tb_identity_provider where `name` = "netease") as idp
