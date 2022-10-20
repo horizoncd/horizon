@@ -25,6 +25,7 @@ import (
 	tagmock "g.hz.netease.com/horizon/mock/pkg/tag/manager"
 	outputmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/output"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustercd "g.hz.netease.com/horizon/pkg/cluster/cd"
@@ -483,7 +484,7 @@ func test(t *testing.T) {
 	templateName := "javaapp"
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
-	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo(mockCtl)
+	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockFactory(mockCtl)
@@ -614,8 +615,12 @@ func test(t *testing.T) {
 	}
 
 	tagManager.EXPECT().ListByResourceTypeIDs(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	applicationGitRepo.EXPECT().GetApplicationEnvTemplate(ctx, gomock.Any(), gomock.Any()).
-		Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, gomock.Any(), gomock.Any()).
+		Return(&appgitrepo.GetResponse{
+			Manifest:     nil,
+			BuildConf:    pipelineJSONBlob,
+			TemplateConf: applicationJSONBlob,
+		}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(2)
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",

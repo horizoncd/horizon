@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/lib/q"
 	appgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	"g.hz.netease.com/horizon/pkg/application/gitrepo"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
@@ -294,11 +295,19 @@ func TestMain(m *testing.M) {
 // nolint
 func Test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo(mockCtl)
-	applicationGitRepo.EXPECT().CreateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Times(2).Return(nil)
-	applicationGitRepo.EXPECT().UpdateApplication(ctx, appName, pipelineJSONBlob, applicationJSONBlob).Return(nil).AnyTimes()
-	applicationGitRepo.EXPECT().DeleteApplication(ctx, appName, uint(1)).Return(nil).AnyTimes()
-	applicationGitRepo.EXPECT().GetApplication(ctx, appName).Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
+	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo2(mockCtl)
+	applicationGitRepo.EXPECT().CreateOrUpdateApplication(ctx, appName, gitrepo.CreateOrUpdateRequest{
+		Version:      "",
+		Environment:  common.ApplicationRepoDefaultEnv,
+		BuildConf:    pipelineJSONBlob,
+		TemplateConf: applicationJSONBlob,
+	}).Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().HardDeleteApplication(ctx, appName).Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, appName, common.ApplicationRepoDefaultEnv).Return(&gitrepo.GetResponse{
+		Manifest:     nil,
+		BuildConf:    pipelineJSONBlob,
+		TemplateConf: applicationJSONBlob,
+	}, nil).AnyTimes()
 
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", nil).
@@ -361,10 +370,10 @@ func Test(t *testing.T) {
 	// create application
 	resp, err := c.CreateApplication(ctx, group.ID, createRequest)
 	if err != nil {
-		t.Logf("%v", err)
+		t.Logf("%+v", err)
 		t.Fatal(err)
 	}
-	t.Logf("%v", resp)
+	t.Logf("%+v", resp)
 
 	// create application again, end with error
 	_, err = c.CreateApplication(ctx, group.ID, createRequest)
@@ -393,14 +402,14 @@ func Test(t *testing.T) {
 
 	resp, err = c.UpdateApplication(ctx, resp.ID, updateRequest)
 	assert.Nil(t, err)
-	t.Logf("%v", resp)
+	t.Logf("%+v", resp)
 
 	updateRequest.Priority = "no-exists"
 	_, err = c.UpdateApplication(ctx, resp.ID, updateRequest)
 	assert.NotNil(t, err)
 
 	resp, err = c.GetApplication(ctx, resp.ID)
-	t.Logf("resp: %v", resp)
+	t.Logf("resp: %+v", resp)
 	assert.Nil(t, err)
 
 	assert.Equal(t, resp.Description, updatedDescription)
@@ -415,8 +424,120 @@ func Test(t *testing.T) {
 	}
 	t.Logf("%v", resp)
 
+	getResponseV1, err := c.GetApplication(ctx, resp.ID)
+
+	// TODO(tom) user v2 to get
+	getReponsev2, err := c.GetApplicationV2(ctx, getResponseV1.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, getReponsev2.ID, getResponseV1.ID)
+	assert.Equal(t, getReponsev2.Name, getResponseV1.Name)
+	assert.Equal(t, getReponsev2.Description, getResponseV1.Description)
+	assert.Equal(t, getReponsev2.Priority, getResponseV1.Priority)
+	assert.Equal(t, getReponsev2.Git, getResponseV1.Git)
+	assert.Equal(t, getReponsev2.BuildConfig, getResponseV1.TemplateInput.Pipeline)
+	assert.Equal(t, getReponsev2.TemplateConfig, getResponseV1.TemplateInput.Application)
+	assert.Nil(t, getReponsev2.Manifest, nil)
+	assert.Equal(t, getReponsev2.FullPath, getResponseV1.FullPath)
+	assert.Equal(t, getReponsev2.GroupID, getResponseV1.GroupID)
+	assert.Equal(t, getReponsev2.CreatedAt, getResponseV1.CreatedAt)
+	assert.Equal(t, getReponsev2.UpdatedAt, getResponseV1.UpdatedAt)
+
 	err = c.DeleteApplication(ctx, resp.ID, true)
 	assert.Nil(t, err)
+}
+
+func TestV2(t *testing.T) {
+	appName = "appname2"
+	mockCtl := gomock.NewController(t)
+	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo2(mockCtl)
+	applicationGitRepo.EXPECT().CreateOrUpdateApplication(ctx, appName, gitrepo.CreateOrUpdateRequest{
+		Version:      common.MetaVersion2,
+		Environment:  common.ApplicationRepoDefaultEnv,
+		BuildConf:    nil,
+		TemplateConf: applicationJSONBlob,
+	}).Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().HardDeleteApplication(ctx, appName).Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, appName,
+		common.ApplicationRepoDefaultEnv).Return(&gitrepo.GetResponse{
+		Manifest:     nil,
+		BuildConf:    nil,
+		TemplateConf: applicationJSONBlob,
+	}, nil).AnyTimes()
+
+	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", nil).
+		Return(&trschema.Schemas{
+			Application: &trschema.Schema{
+				JSONSchema: applicationSchema,
+			},
+			Pipeline: &trschema.Schema{
+				JSONSchema: pipelineSchema,
+			},
+		}, nil).AnyTimes()
+
+	tr := &trmodels.TemplateRelease{
+		TemplateName: "javaapp",
+		ChartVersion: "v1.0.0",
+		Name:         "v1.0.0",
+		ChartName:    "javaapp",
+	}
+	_, err := manager.TemplateReleaseManager.Create(ctx, tr)
+	assert.Nil(t, err)
+	c := &controller{
+		applicationGitRepo:   applicationGitRepo,
+		templateSchemaGetter: templateSchemaGetter,
+		applicationMgr:       manager.ApplicationManager,
+		groupMgr:             manager.GroupManager,
+		groupSvc:             groupservice.NewService(manager),
+		templateReleaseMgr:   manager.TemplateReleaseManager,
+		clusterMgr:           manager.ClusterMgr,
+		userSvc:              userservice.NewService(manager),
+	}
+
+	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
+		Name: "cde",
+		Path: "cde",
+	})
+	assert.Nil(t, err)
+
+	P0 := "P0"
+	TemplateName := "javaapp"
+	TemplateVersion := "v1.0.0"
+	Description := "this is an v2 application interface"
+	createReq := &CreateOrUpdateApplicationRequestV2{
+		Name:        appName,
+		Description: Description,
+		Priority:    &P0,
+		Git: &codemodels.Git{
+			URL:       "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+			Subfolder: "/",
+			Branch:    "develop",
+		},
+		BuildConfig: nil,
+		TemplateInfo: &codemodels.TemplateInfo{
+			Name:    TemplateName,
+			Release: TemplateVersion,
+		},
+		TemplateConfig: applicationJSONBlob,
+		ExtraMembers:   nil,
+	}
+	resp, err := c.CreateApplicationV2(ctx, group.ID, createReq)
+	assert.Nil(t, err)
+	assert.Equal(t, resp.GroupID, group.ID)
+
+	// get application
+	getResponse, err := c.GetApplicationV2(ctx, resp.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, getResponse.ID, resp.ID)
+	assert.Equal(t, getResponse.Name, appName)
+	assert.Equal(t, getResponse.Description, Description)
+	assert.Equal(t, getResponse.Priority, P0)
+	assert.Equal(t, getResponse.Git, createReq.Git)
+	assert.Equal(t, getResponse.BuildConfig, createReq.BuildConfig)
+	assert.Equal(t, getResponse.TemplateInfo, createReq.TemplateInfo)
+	assert.Equal(t, getResponse.TemplateConfig, createReq.TemplateConfig)
+	assert.Nil(t, getResponse.Manifest)
+	t.Logf("%+v", getResponse.Manifest)
 }
 
 func Test_validateApplicationName(t *testing.T) {

@@ -924,28 +924,25 @@ func (c *controller) customizeTemplateInfo(ctx context.Context, r *CreateCluster
 	}
 
 	// 2. if templateInput is empty, set it with application's env template
+
+	appGitRepo, err := c.applicationGitRepo.GetApplication(ctx, application.Name, environment)
+	if err != nil {
+		return err
+	}
+	pipelineJSONBlob := appGitRepo.BuildConf
+	applicationJSONBlob := appGitRepo.TemplateConf
 	if r.TemplateInput == nil {
-		pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.
-			GetApplicationEnvTemplate(ctx, application.Name, environment)
-		if err != nil {
-			return err
-		}
 		r.TemplateInput = &TemplateInput{}
 		r.TemplateInput.Application = applicationJSONBlob
 		r.TemplateInput.Pipeline = pipelineJSONBlob
 	} else if mergePatch {
 		// merge patch allows users to pass only some fields
-		pipelineConfigOfApp, applicationConfigOfApp, err := c.applicationGitRepo.
-			GetApplicationEnvTemplate(ctx, application.Name, environment)
-		if err != nil {
-			return err
-		}
-		applicationJSONBlob, err := mergemap.Merge(applicationConfigOfApp,
+		applicationJSONBlob, err := mergemap.Merge(applicationJSONBlob,
 			r.TemplateInput.Application)
 		if err != nil {
 			return err
 		}
-		pipelineJSONBlob, err := mergemap.Merge(pipelineConfigOfApp,
+		pipelineJSONBlob, err := mergemap.Merge(pipelineJSONBlob,
 			r.TemplateInput.Pipeline)
 		if err != nil {
 			return err

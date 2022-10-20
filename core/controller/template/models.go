@@ -255,6 +255,7 @@ func toReleases(trs []*trmodels.TemplateRelease) Releases {
 }
 
 type Schemas struct {
+	//
 	Application *Schema `json:"application"`
 	Pipeline    *Schema `json:"pipeline"`
 }

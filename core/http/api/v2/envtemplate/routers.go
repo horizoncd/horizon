@@ -10,13 +10,8 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, api *API) {
-	apiGroup := engine.Group("/apis/core/v1")
+	apiGroup := engine.Group("/apis/core/v2")
 	var routes = route.Routes{
-		{
-			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/applications/:%v/envtemplates", _applicationIDParam),
-			HandlerFunc: api.Get,
-		},
 		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/applications/:%v/envtemplates", _applicationIDParam),

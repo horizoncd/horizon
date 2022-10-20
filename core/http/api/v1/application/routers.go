@@ -62,7 +62,6 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.SearchMyApplication,
 		},
 	}
-
 	route.RegisterRoutes(apiGroup, routes)
 	route.RegisterRoutes(frontGroup, frontRoutes)
 }

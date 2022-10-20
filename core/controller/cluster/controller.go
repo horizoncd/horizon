@@ -85,7 +85,7 @@ type Controller interface {
 type controller struct {
 	clusterMgr           clustermanager.Manager
 	clusterGitRepo       gitrepo.ClusterGitRepo
-	applicationGitRepo   appgitrepo.ApplicationGitRepo
+	applicationGitRepo   appgitrepo.ApplicationGitRepo2
 	commitGetter         code.GitGetter
 	cd                   cd.CD
 	applicationMgr       appmanager.Manager
