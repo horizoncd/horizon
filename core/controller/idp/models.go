@@ -31,6 +31,10 @@ type IdentityProvider struct {
 }
 
 func ofIDPModel(idp *models.IdentityProvider) *IdentityProvider {
+	var method = models.TokenEndpointAuthMethod(models.ClientSecretSentAsPost)
+	if idp.TokenEndpointAuthMethod != nil {
+		method = *idp.TokenEndpointAuthMethod
+	}
 	return &IdentityProvider{
 		ID:                      idp.ID,
 		DisplayName:             idp.DisplayName,
@@ -42,7 +46,7 @@ func ofIDPModel(idp *models.IdentityProvider) *IdentityProvider {
 		RevocationEndpoint:      idp.RevocationEndpoint,
 		Issuer:                  idp.Issuer,
 		Scopes:                  idp.Scopes,
-		TokenEndpointAuthMethod: *idp.TokenEndpointAuthMethod,
+		TokenEndpointAuthMethod: method,
 		Jwks:                    idp.Jwks,
 		ClientID:                idp.ClientID,
 		ClientSecret:            idp.ClientSecret,
