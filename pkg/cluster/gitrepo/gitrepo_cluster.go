@@ -451,7 +451,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	}
 	marshal(&chartYAML, &err6, chart)
 
-	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8} {
+	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8, err9} {
 		if err != nil {
 			return err
 		}

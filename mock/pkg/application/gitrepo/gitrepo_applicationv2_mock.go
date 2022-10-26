@@ -12,7 +12,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MockApplicationGitRepo2 is a mock of ApplicationGitRepo2 interface.
+// MockApplicationGitRepo2 is a mock of ApplicationGitRepo interface.
 type MockApplicationGitRepo2 struct {
 	ctrl     *gomock.Controller
 	recorder *MockApplicationGitRepo2MockRecorder

@@ -40,7 +40,7 @@ type Param struct {
 
 	// others
 	Hook                 hook.Hook
-	ApplicationGitRepo   applicationgitrepo.ApplicationGitRepo2
+	ApplicationGitRepo   applicationgitrepo.ApplicationGitRepo
 	TemplateSchemaGetter templateschema.Getter
 	Cd                   cd.CD
 	OutputGetter         output.Getter

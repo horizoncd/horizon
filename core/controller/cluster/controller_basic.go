@@ -388,7 +388,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 		return nil, perror.Wrap(herrors.ErrNameConflict,
 			"a cluster with the same name already exists, please do not create it again")
 	}
-	if err := c.validateCreateV1(r); err != nil {
+	if err := c.validateCreate(r); err != nil {
 		return nil, err
 	}
 
@@ -970,8 +970,8 @@ func (c *controller) getRenderValueFromTag(ctx context.Context, clusterID uint) 
 	return renderValues, nil
 }
 
-// validateCreateV1 validate for create cluster
-func (c *controller) validateCreateV1(r *CreateClusterRequest) error {
+// validateCreate validate for create cluster
+func (c *controller) validateCreate(r *CreateClusterRequest) error {
 	if err := validateClusterName(r.Name); err != nil {
 		return err
 	}
