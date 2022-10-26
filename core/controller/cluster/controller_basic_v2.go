@@ -98,7 +98,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 			Application:         application,
 			Environment:         environment,
 			RegionEntity:        regionEntity,
-			Version:             gitrepo.VersionV2,
+			Version:             common.MetaVersion2,
 		},
 		Tags: tags,
 	})
@@ -361,7 +361,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 			Application:         application,
 			Environment:         environmentName,
 			RegionEntity:        regionEntity,
-			Version:             gitrepo.VersionV2,
+			Version:             common.MetaVersion2,
 		}}); err != nil {
 		return err
 	}

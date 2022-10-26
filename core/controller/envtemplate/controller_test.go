@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/controller/build"
 	"g.hz.netease.com/horizon/lib/orm"
 	appgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
@@ -325,6 +326,75 @@ func Test(t *testing.T) {
 	}
 
 	err = c.UpdateEnvTemplate(ctx, app.ID, env, updateRequest)
+	assert.Nil(t, err)
+
+	resp, err := c.GetEnvTemplate(ctx, app.ID, env)
+	assert.Nil(t, err)
+	b, _ := json.Marshal(resp)
+	t.Logf("%v", string(b))
+}
+
+func TestV2(t *testing.T) {
+	mockCtl := gomock.NewController(t)
+	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo2(mockCtl)
+	applicationGitRepo.EXPECT().CreateOrUpdateApplication(ctx, gomock.Any(), gitrepo.CreateOrUpdateRequest{
+		Version:      common.MetaVersion2,
+		Environment:  env,
+		BuildConf:    pipelineJSONBlob,
+		TemplateConf: applicationJSONBlob,
+	}).
+		Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, gomock.Any(), gomock.Any()).
+		Return(&gitrepo.GetResponse{
+			Manifest:     nil,
+			BuildConf:    pipelineJSONBlob,
+			TemplateConf: applicationJSONBlob,
+		}, nil).AnyTimes()
+
+	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, "javaapp", "v1.0.0", nil).
+		Return(&templatesvc.Schemas{
+			Application: &templatesvc.Schema{
+				JSONSchema: applicationSchema,
+			},
+			Pipeline: &templatesvc.Schema{
+				JSONSchema: pipelineSchema,
+			},
+		}, nil).AnyTimes()
+
+	envMgr := manager.EnvMgr
+	applicationMgr := manager.ApplicationManager
+	c = &controller{
+		applicationGitRepo:   applicationGitRepo,
+		templateSchemaGetter: templateSchemaGetter,
+		applicationMgr:       applicationMgr,
+		envMgr:               envMgr,
+		buildSchema: &build.Schema{
+			JSONSchema: pipelineSchema,
+			UISchema:   nil,
+		},
+	}
+
+	_, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+		Name: env,
+	})
+	assert.Nil(t, err)
+
+	app, err := applicationMgr.Create(ctx, &models.Application{
+		Name:            appName,
+		Template:        "javaapp",
+		TemplateRelease: "v1.0.0",
+	}, nil)
+	assert.Nil(t, err)
+
+	updateRequest := &UpdateEnvTemplateRequest{
+		EnvTemplate: &EnvTemplate{
+			Application: applicationJSONBlob,
+			Pipeline:    pipelineJSONBlob,
+		},
+	}
+
+	err = c.UpdateEnvTemplateV2(ctx, app.ID, env, updateRequest)
 	assert.Nil(t, err)
 
 	resp, err := c.GetEnvTemplate(ctx, app.ID, env)

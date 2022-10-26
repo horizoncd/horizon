@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/lib/q"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/errors"
@@ -13,6 +14,8 @@ import (
 type Controller interface {
 	// SearchUser search for user
 	SearchUser(ctx context.Context, filter string, query *q.Query) (int, []*SearchUserResponse, error)
+	// GetUserByEmail get user by email
+	GetUserByEmail(ctx context.Context, email string) (userauth.User, error)
 }
 
 type controller struct {
@@ -37,4 +40,14 @@ func (c *controller) SearchUser(ctx context.Context,
 		return 0, nil, errors.E(op, err)
 	}
 	return count, ofUsers(users), nil
+}
+
+func (c *controller) GetUserByEmail(ctx context.Context, email string) (userauth.User, error) {
+	const op = "user controller: get user by email"
+	defer wlog.Start(ctx, op).StopPrint()
+	user, err := c.userMgr.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, errors.E(op, err)
+	}
+	return ofUser(user), nil
 }

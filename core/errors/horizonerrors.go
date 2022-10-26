@@ -39,6 +39,7 @@ var (
 	TemplateInDB              = sourceType{name: "TemplateInDB"}
 	TemplateReleaseInDB       = sourceType{name: "TemplateReleaseInDB"}
 	TemplateReleaseInRepo     = sourceType{name: "TempalteReleaseInRepo"}
+	MemberInfoInDB            = sourceType{name: "MemberInfoInDB"}
 	ApplicationManifestInArgo = sourceType{name: "ApplicationManifestInArgo"}
 	PodsInK8S                 = sourceType{name: "PodsInK8S"}
 	ReplicasSetInK8S          = sourceType{name: "ReplicasSetInK8S"}
@@ -46,6 +47,7 @@ var (
 	PodEventInK8S             = sourceType{name: "PodEventInK8S"}
 	KubeConfigInK8S           = sourceType{name: "KubeConfigK8S"}
 	GroupFullPath             = sourceType{name: "GroupFullPath"}
+	IdentityProviderInDB      = sourceType{name: "IdentityProviderInDB"}
 
 	// S3
 	PipelinerunLog = sourceType{name: "PipelinerunLog"}
@@ -62,6 +64,10 @@ var (
 	TokenInDB      = sourceType{name: "TokenInDB"}
 	HarborChartURL = sourceType{name: "HarborChartURL"}
 	ChartFile      = sourceType{name: "ChartFile"}
+
+	// identity provider
+	Oauth2Token           = sourceType{name: "Oauth2Token"}
+	ProviderFromDiscovery = sourceType{name: "ProviderFromDiscovery"}
 )
 
 type HorizonErrNotFound struct {
@@ -253,4 +259,8 @@ var (
 
 	ErrTemplateParamInvalid        = errors.New("parameters of template are invalid")
 	ErrTemplateReleaseParamInvalid = errors.New("parameters of release are invalid")
+
+	ErrAPIServerResponseNotOK = errors.New("response for api-server is not 200 OK")
+
+	ErrListGrafanaDashboard = errors.New("List grafana dashboards error")
 )

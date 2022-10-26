@@ -227,6 +227,42 @@ func testListUserClustersByNameFuzzily(t *testing.T) {
 	}
 }
 
+func testListClusterWithExpiry(t *testing.T) {
+	// init data
+	clusterInstance := &clustermodels.Cluster{
+		ApplicationID:   uint(1),
+		Name:            "clusterWithExpiry",
+		EnvironmentName: "testListClusterWithExpiry",
+		RegionName:      "hzListClusterWithExpiry",
+		GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+		Status:          "",
+		ExpireSeconds:   secondsInOneDay,
+	}
+
+	cluster, err := manager.ClusterMgr.Create(ctx, clusterInstance, nil, nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, cluster)
+	firstClusterID := cluster.ID
+
+	num := 4
+	for i := 1; i <= num; i++ {
+		clusterInstance.ID = 0
+		clusterInstance.Name = "clusterWithExpiry" + strconv.Itoa(i)
+		cluster, err := manager.ClusterMgr.Create(ctx, clusterInstance, nil, nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, cluster)
+	}
+
+	clusterWithExpiry, err := c.ListClusterWithExpiry(ctx, &q.Query{
+		Keywords: q.KeyWords{common.IDThan: int(firstClusterID)},
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, num, len(clusterWithExpiry))
+	for _, clr := range clusterWithExpiry {
+		t.Logf("%+v", clr)
+	}
+}
+
 func testControllerFreeOrDeleteClusterFailed(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	cd := mockcd.NewMockCD(mockCtl)

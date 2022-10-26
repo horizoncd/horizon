@@ -3,6 +3,7 @@ package gitlab
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 
 // Interface to interact with gitlab
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../mock/lib/gitlab/mock_gitlab.go -package=mock_gitlab
 type Interface interface {
 	// GetGroup gets a group's detail with the given gid.
@@ -140,6 +142,8 @@ type Interface interface {
 	GetRepositoryArchive(ctx context.Context, pid interface{}, sha string) ([]byte, error)
 
 	GetSSHURL(ctx context.Context) string
+
+	GetCreatedGroup(ctx context.Context, parentID int, parentPath string, name string) (*gitlab.Group, error)
 }
 
 var _ Interface = (*helper)(nil)
@@ -564,6 +568,20 @@ func (h *helper) GetRepositoryArchive(ctx context.Context, pid interface{}, sha 
 
 func (h *helper) GetSSHURL(ctx context.Context) string {
 	return h.sshURL
+}
+
+func (h *helper) GetCreatedGroup(ctx context.Context, parentID int,
+	parentFullPath string, name string) (*gitlab.Group, error) {
+	var group *gitlab.Group
+	group, err := h.GetGroup(ctx, fmt.Sprintf("%v/%v", parentFullPath, name))
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return nil, err
+		}
+		return h.CreateGroup(ctx, name, name, &parentID)
+	}
+
+	return group, nil
 }
 
 func parseError(resp *gitlab.Response, err error) error {

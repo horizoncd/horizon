@@ -159,8 +159,9 @@ const (
 /* sql about environment */
 const (
 	// EnvironmentListAll ...
-	EnvironmentListAll = "select * from tb_environment where deleted_ts = 0 order by updated_at desc"
-	EnvironmentGetByID = "select * from tb_environment where id = ? and deleted_ts = 0"
+	EnvironmentListAll   = "select * from tb_environment where deleted_ts = 0 order by updated_at desc"
+	EnvironmentGetByID   = "select * from tb_environment where id = ? and deleted_ts = 0"
+	EnvironmentGetByName = "select * from tb_environment where name = ? and deleted_ts = 0"
 )
 
 /* sql about environmentRegion */

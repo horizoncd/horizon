@@ -1,12 +1,13 @@
 package argocd
 
 import (
-	"fmt"
 	"sync"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/config/argocd"
 )
+
+const _default = "default"
 
 type Factory interface {
 	GetArgoCD(environment string) (ArgoCD, error)
@@ -31,7 +32,10 @@ func (f *factory) GetArgoCD(environment string) (ArgoCD, error) {
 	var ret interface{}
 	var ok bool
 	if ret, ok = f.cache.Load(environment); !ok {
-		return nil, herrors.NewErrNotFound(herrors.ArgoCD, fmt.Sprintf("argo cd not found for environment %s", environment))
+		// check and use default cd
+		if ret, ok = f.cache.Load(_default); !ok {
+			return nil, herrors.NewErrNotFound(herrors.ArgoCD, "default argo cd not found")
+		}
 	}
 	return ret.(ArgoCD), nil
 }

@@ -6,13 +6,15 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/config/argocd"
 	"g.hz.netease.com/horizon/pkg/config/authenticate"
+	"g.hz.netease.com/horizon/pkg/config/autofree"
 	"g.hz.netease.com/horizon/pkg/config/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/db"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	"g.hz.netease.com/horizon/pkg/config/oauth"
-	"g.hz.netease.com/horizon/pkg/config/oidc"
+	"g.hz.netease.com/horizon/pkg/config/redis"
 	"g.hz.netease.com/horizon/pkg/config/server"
+	"g.hz.netease.com/horizon/pkg/config/session"
 	"g.hz.netease.com/horizon/pkg/config/tekton"
 	"g.hz.netease.com/horizon/pkg/config/templaterepo"
 
@@ -23,17 +25,19 @@ type Config struct {
 	ServerConfig           server.Config           `yaml:"serverConfig"`
 	CloudEventServerConfig server.Config           `yaml:"cloudEventServerConfig"`
 	DBConfig               db.Config               `yaml:"dbConfig"`
-	OIDCConfig             oidc.Config             `yaml:"oidcConfig"`
+	SessionConfig          session.Config          `yaml:"sessionConfig"`
 	GitlabMapper           gitlab.Mapper           `yaml:"gitlabMapper"`
-	GitlabRepoConfig       gitlab.RepoConfig       `yaml:"gitlabRepoConfig"`
+	GitopsRepoConfig       gitlab.GitopsRepoConfig `yaml:"gitopsRepoConfig"`
 	ArgoCDMapper           argocd.Mapper           `yaml:"argoCDMapper"`
+	RedisConfig            redis.Redis             `yaml:"redisConfig"`
 	TektonMapper           tekton.Mapper           `yaml:"tektonMapper"`
 	TemplateRepo           templaterepo.Repo       `yaml:"templateRepo"`
 	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
-	GrafanaMapper          grafana.Mapper          `yaml:"grafanaMapper"`
+	GrafanaConfig          grafana.Config          `yaml:"grafanaConfig"`
 	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
+	AutoFreeConfig         autofree.Config         `yaml:"autoFree"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {
@@ -64,15 +68,6 @@ func LoadConfig(configFilePath string) (*Config, error) {
 		}
 	}
 	config.TektonMapper = newTektonMapper
-
-	newGrafanaMapper := grafana.Mapper{}
-	for key, v := range config.GrafanaMapper {
-		ks := strings.Split(key, ",")
-		for i := 0; i < len(ks); i++ {
-			newGrafanaMapper[ks[i]] = v
-		}
-	}
-	config.GrafanaMapper = newGrafanaMapper
 
 	return &config, nil
 }

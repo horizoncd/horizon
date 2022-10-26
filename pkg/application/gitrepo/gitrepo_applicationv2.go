@@ -2,23 +2,28 @@ package gitrepo
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/xanzy/go-gitlab"
 	"sigs.k8s.io/yaml"
-	kyaml "sigs.k8s.io/yaml"
 )
 
 const (
 	_filePathManifest = "manifest.yaml"
+	_branchMaster     = "master"
+
+	_filePathApplication = "application.yaml"
+	_filePathPipeline    = "pipeline.yaml"
+
+	_applications          = "applications"
+	_recyclingApplications = "recycling-applications"
 )
 
 type Manifest struct {
@@ -40,36 +45,36 @@ type GetResponse struct {
 	TemplateConf map[string]interface{}
 }
 
-const (
-	_branchMaster = "master"
-
-	_filePathApplication = "application.yaml"
-	_filePathPipeline    = "pipeline.yaml"
-
-	_default = "default"
-)
-
 type ApplicationGitRepo2 interface {
 	CreateOrUpdateApplication(ctx context.Context, application string, request CreateOrUpdateRequest) error
 	GetApplication(ctx context.Context, application, environment string) (*GetResponse, error)
-	// DeleteApplication soft delete an application by the specified application name
-	DeleteApplication(ctx context.Context, application string, applicationID uint) error
 	// HardDeleteApplication hard delete an application by the specified application name
 	HardDeleteApplication(ctx context.Context, application string) error
 }
 
 type gitRepo2 struct {
-	gitlabLib gitlablib.Interface
-	repoConf  *gitlabconf.Repo
+	gitlabLib                  gitlablib.Interface
+	applicationsGroup          *gitlab.Group
+	recyclingApplicationsGroup *gitlab.Group
 }
 
 var _ ApplicationGitRepo2 = &gitRepo2{}
 
-func NewApplicationGitlabRepo2(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig,
+func NewApplicationGitlabRepo2(ctx context.Context, rootGroup *gitlab.Group,
 	gitlabLib gitlablib.Interface) (ApplicationGitRepo2, error) {
+	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _applications)
+	if err != nil {
+		return nil, err
+	}
+	recyclingApplicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID,
+		rootGroup.FullPath, _recyclingApplications)
+	if err != nil {
+		return nil, err
+	}
 	return &gitRepo2{
-		gitlabLib: gitlabLib,
-		repoConf:  gitlabRepoConfig.Application,
+		gitlabLib:                  gitlabLib,
+		applicationsGroup:          applicationsGroup,
+		recyclingApplicationsGroup: recyclingApplicationsGroup,
 	}, nil
 }
 
@@ -82,26 +87,26 @@ func (g gitRepo2) CreateOrUpdateApplication(ctx context.Context, application str
 		return err
 	}
 
-	environmentRepoName := _default
+	environmentRepoName := common.ApplicationRepoDefaultEnv
 	if req.Environment != "" {
 		environmentRepoName = req.Environment
 	}
 
 	var envProjectExists = false
-	pid := fmt.Sprintf("%v/%v/%v", g.repoConf.Parent.Path, application, environmentRepoName)
+	pid := fmt.Sprintf("%v/%v/%v", g.applicationsGroup.FullPath, application, environmentRepoName)
 	_, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
 		// if not found, test application group exist
-		gid := fmt.Sprintf("%v/%v", g.repoConf.Parent.Path, application)
+		gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 		parentGroup, err := g.gitlabLib.GetGroup(ctx, gid)
 		if err != nil {
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 				return err
 			}
-			parentGroup, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.repoConf.Parent.ID)
+			parentGroup, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.applicationsGroup.ID)
 			if err != nil {
 				return err
 			}
@@ -193,13 +198,22 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get data from gitlab
-	gid := fmt.Sprintf("%v/%v", g.repoConf.Parent.Path, application)
+	gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 	pid := fmt.Sprintf("%v/%v", gid, func() string {
 		if environment == "" {
-			return _default
+			return common.ApplicationRepoDefaultEnv
 		}
 		return environment
 	}())
+
+	// if env template not exist, use the default one
+	_, err := g.gitlabLib.GetProject(ctx, pid)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			pid = fmt.Sprintf("%v/%v", gid, common.ApplicationRepoDefaultEnv)
+		}
+	}
+
 	manifestBytes, err1 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathManifest)
 	buildConfBytes, err2 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
 	templateConfBytes, err3 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
@@ -214,12 +228,8 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 	// 2. process data
 	res := GetResponse{}
 	TransformData := func(bytes []byte) (map[string]interface{}, error) {
-		jsonBytes, err := kyaml.YAMLToJSON(bytes)
-		if err != nil {
-			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
-		}
 		var entity map[string]interface{}
-		err = json.Unmarshal(jsonBytes, &entity)
+		err = yaml.Unmarshal(bytes, &entity)
 		if err != nil {
 			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
@@ -252,18 +262,10 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 	return &res, nil
 }
 
-func (g gitRepo2) DeleteApplication(ctx context.Context, application string, applicationID uint) error {
-	const op = "gitlab repo: hard delete application"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	gid := fmt.Sprintf("%v/%v", g.repoConf.Parent.Path, application)
-	return g.gitlabLib.DeleteGroup(ctx, gid)
-}
-
 func (g gitRepo2) HardDeleteApplication(ctx context.Context, application string) error {
 	const op = "gitlab repo: hard delete application"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	gid := fmt.Sprintf("%v/%v", g.repoConf.Parent.Path, application)
+	gid := fmt.Sprintf("%v/%v", g.applicationsGroup.FullPath, application)
 	return g.gitlabLib.DeleteGroup(ctx, gid)
 }

@@ -15,6 +15,11 @@ const (
 )
 
 const (
+	MetaVersion2              = "0.0.2"
+	ApplicationRepoDefaultEnv = "default"
+)
+
+const (
 	// InternalError internal server error code
 	InternalError = "InternalError"
 
@@ -70,8 +75,7 @@ const (
 )
 
 const (
-	GroupCore  = "core"
-	GroupFront = "front"
+	GroupCore = "core"
 )
 
 const (
@@ -89,10 +93,21 @@ const (
 	ParamExtraOwner = "extraOwner"
 )
 const (
-	GitlabControl = "control"
-	GitlabCompute = "compute"
+	GitlabCode     = "code"
+	GitlabGitops   = "gitops"
+	GitlabTemplate = "template"
 )
 
 const (
 	ChartVersionFormat = "%s-%s"
+)
+
+const (
+	CookieKeyAuth      = "horizon|session"
+	SessionKeyAuthUser = "user"
+)
+
+const (
+	// IDThan query parameter, used for "id > IDThan"
+	IDThan = "idThan"
 )

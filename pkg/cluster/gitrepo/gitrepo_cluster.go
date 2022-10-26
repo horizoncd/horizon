@@ -12,14 +12,12 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
-	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/templaterepo"
 	"g.hz.netease.com/horizon/pkg/util/angular"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/mergemap"
 	timeutil "g.hz.netease.com/horizon/pkg/util/time"
@@ -77,10 +75,12 @@ const (
 	_baseValueNamespace = "horizon"
 
 	_mergeRequestStateOpen = "opened"
+
+	_clusters          = "clusters"
+	_recyclingClusters = "recycling-clusters"
 )
 
 const (
-	VersionV2           = "0.0.2"
 	PipelineValueParent = "pipeline"
 )
 
@@ -166,17 +166,27 @@ type ClusterGitRepo interface {
 }
 
 type clusterGitRepo struct {
-	gitlabLib       gitlablib.Interface
-	clusterRepoConf *gitlabconf.Repo
-	templateRepo    templaterepo.TemplateRepo
+	gitlabLib              gitlablib.Interface
+	clustersGroup          *gitlab.Group
+	recyclingClustersGroup *gitlab.Group
+	templateRepo           templaterepo.TemplateRepo
 }
 
-func NewClusterGitlabRepo(ctx context.Context, gitlabRepoConfig gitlabconf.RepoConfig,
+func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 	templateRepo templaterepo.TemplateRepo, gitlabLib gitlablib.Interface) (ClusterGitRepo, error) {
+	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _clusters)
+	if err != nil {
+		return nil, err
+	}
+	recyclingClustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _recyclingClusters)
+	if err != nil {
+		return nil, err
+	}
 	return &clusterGitRepo{
-		gitlabLib:       gitlabLib,
-		clusterRepoConf: gitlabRepoConfig.Cluster,
-		templateRepo:    templateRepo,
+		gitlabLib:              gitlabLib,
+		clustersGroup:          clustersGroup,
+		recyclingClustersGroup: recyclingClustersGroup,
+		templateRepo:           templateRepo,
 	}, nil
 }
 
@@ -186,7 +196,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get template and pipeline from gitlab
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	var applicationBytes, pipelineBytes, manifestBytes []byte
 	var err1, err2, err3 error
 
@@ -319,7 +329,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get  value file from git
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	cases := []struct {
 		retBytes []byte
 		err      error
@@ -398,17 +408,10 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	}
 
 	// 1. create application group if necessary
-	var appGroup *gitlab.Group
-	appGroup, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name))
+	appGroup, err := g.gitlabLib.GetCreatedGroup(ctx, g.clustersGroup.ID,
+		g.clustersGroup.FullPath, params.Application.Name)
 	if err != nil {
-		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
-			return err
-		}
-		appGroup, err = g.gitlabLib.CreateGroup(ctx, params.Application.Name,
-			params.Application.Name, &g.clusterRepoConf.Parent.ID)
-		if err != nil {
-			return errors.E(op, err)
-		}
+		return err
 	}
 
 	// 3. create cluster repo under appGroup
@@ -417,7 +420,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	}
 
 	// 3. create gitops branch from master
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, params.Application.Name, params.Cluster)
 	if _, err := g.gitlabLib.CreateBranch(ctx, pid, _branchGitops, _branchMaster); err != nil {
 		return err
 	}
@@ -537,7 +540,7 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 	}
 
 	// 1. write files to repo
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, params.Application.Name, params.Cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, params.Application.Name, params.Cluster)
 	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, chartYAML []byte
 	var err1, err2, err3, err4, err5 error
 	if params.Application != nil {
@@ -647,19 +650,19 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. create application group if necessary
-	_, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
+	_, err = g.gitlabLib.GetGroup(ctx, fmt.Sprintf("%v/%v", g.recyclingClustersGroup.FullPath, application))
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
-		_, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.clusterRepoConf.RecyclingParent.ID)
+		_, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.recyclingClustersGroup.ID)
 		if err != nil {
 			return err
 		}
 	}
 
 	// 1. delete gitlab project
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	// 1.1 edit project's name and path to {cluster}-{clusterID}
 	newName := fmt.Sprintf("%v-%d", cluster, clusterID)
 	newPath := newName
@@ -668,9 +671,9 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 	}
 
 	// 1.2 transfer project to RecyclingParent
-	newPid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, newPath)
+	newPid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, newPath)
 	return g.gitlabLib.TransferProject(ctx, newPid,
-		fmt.Sprintf("%v/%v", g.clusterRepoConf.RecyclingParent.Path, application))
+		fmt.Sprintf("%v/%v", g.recyclingClustersGroup.FullPath, application))
 }
 
 func (g *clusterGitRepo) HardDeleteCluster(ctx context.Context, application,
@@ -678,7 +681,7 @@ func (g *clusterGitRepo) HardDeleteCluster(ctx context.Context, application,
 	const op = "cluster git repo: hard delete cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	return g.gitlabLib.DeleteProject(ctx, pid)
 }
 
@@ -687,7 +690,7 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 	const op = "cluster git repo: compare config"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
 	var compare *gitlab.Compare
 	if from == nil || to == nil {
@@ -714,7 +717,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	prID uint) (_ string, err error) {
 	mergeCommitMsg := "git merge gitops"
 	removeSourceBranch := false
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
 	title := fmt.Sprintf("git merge %v, id = %d", _branchGitops, prID)
 
@@ -756,7 +759,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 }
 
 func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*Manifest, error) {
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathManifest)
 	if err != nil {
 		return nil, err
@@ -781,7 +784,7 @@ func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster s
 func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, cluster string,
 	template string) (*PipelineOutput, error) {
 	ret := make(map[string]*PipelineOutput)
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
 	if err != nil {
 		return nil, perror.WithMessage(err, "failed to get gitlab file")
@@ -808,7 +811,7 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 
 func (g *clusterGitRepo) getPipelineOutPut(ctx context.Context,
 	application, cluster string) (map[string]map[string]interface{}, error) {
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
 	if err != nil {
 		return nil, err
@@ -914,7 +917,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		Cluster:  angular.StringPtr(cluster),
 	}, pipelineOutPut)
 
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to write gitlab files")
@@ -925,7 +928,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 func (g *clusterGitRepo) GetRestartTime(ctx context.Context, application, cluster string,
 	template string) (string, error) {
 	ret := make(map[string]map[string]string)
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathRestart)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to get gitlab file")
@@ -957,7 +960,7 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 		return "", err
 	}
 
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
 	var restartYAML []byte
 	var err1 error
@@ -994,7 +997,7 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 	const op = "cluster git repo: get config commit"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
 	var branchMaster, branchGitops *gitlab.Branch
 	var err1, err2 error
@@ -1025,7 +1028,7 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo {
 	return &RepoInfo{
 		GitRepoSSHURL: fmt.Sprintf("%v/%v/%v/%v.git",
-			g.gitlabLib.GetSSHURL(ctx), g.clusterRepoConf.Parent.Path, application, cluster),
+			g.gitlabLib.GetSSHURL(ctx), g.clustersGroup.FullPath, application, cluster),
 		ValueFiles: []string{_filePathApplication, _filePathPipelineOutput,
 			_filePathEnv, _filePathBase, _filePathTags, _filePathRestart, _filePathSRE},
 	}
@@ -1036,7 +1039,7 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 	const op = "cluster git repo: get config commit"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
 	bytes, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathEnv)
 	if err != nil {
@@ -1061,14 +1064,14 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 		return "", err
 	}
 
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
 	// 1. get cluster files of the specified commit
 	// the files contains: _filePathPipeline, _filePathApplication, _filePathBase, _filePathPipelineOutput
-	var err1, err2, err3, err4, err5 error
-	var applicationBytes, pipelineBytes, baseValueBytes, pipelineOutPutBytes, tagsBytes []byte
+	var err1, err2, err3, err4, err5, err6 error
+	var applicationBytes, pipelineBytes, baseValueBytes, pipelineOutPutBytes, tagsBytes, chartBytes []byte
 	var wgReadFile sync.WaitGroup
-	wgReadFile.Add(5)
+	wgReadFile.Add(6)
 	readFile := func(b *[]byte, err *error, filePath string) {
 		defer wgReadFile.Done()
 		bytes, e := g.gitlabLib.GetFile(ctx, pid, commit, filePath)
@@ -1080,9 +1083,10 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	go readFile(&baseValueBytes, &err3, _filePathBase)
 	go readFile(&pipelineOutPutBytes, &err4, _filePathPipelineOutput)
 	go readFile(&tagsBytes, &err5, _filePathTags)
+	go readFile(&chartBytes, &err6, _filePathChart)
 	wgReadFile.Wait()
 
-	for _, err := range []error{err1, err2, err3, err4} {
+	for _, err := range []error{err1, err2, err3, err4, err6} {
 		if err != nil {
 			return "", err
 		}
@@ -1109,6 +1113,10 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 			Action:   gitlablib.FileUpdate,
 			FilePath: _filePathTags,
 			Content:  string(tagsBytes),
+		}, {
+			Action:   gitlablib.FileUpdate,
+			FilePath: _filePathChart,
+			Content:  string(chartBytes),
 		},
 	}
 
@@ -1140,7 +1148,7 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 		return err
 	}
 
-	pid := fmt.Sprintf("%v/%v/%v", g.clusterRepoConf.Parent.Path, application, cluster)
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
 	var tagsYAML []byte
 	marshal(&tagsYAML, &err, assembleTags(templateName, tags))

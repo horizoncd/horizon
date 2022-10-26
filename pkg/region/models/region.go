@@ -14,6 +14,7 @@ type Region struct {
 	Server        string
 	Certificate   string
 	IngressDomain string
+	PrometheusURL string
 	HarborID      uint `gorm:"column:harbor_id"`
 	Disabled      bool
 	CreatedBy     uint

@@ -35,6 +35,7 @@ import (
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
+	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
@@ -421,13 +422,15 @@ var (
 	manager = managerparam.InitManager(db)
 )
 
+const secondsInOneDay = 24 * 3600
+
 // nolint
 func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&harbormodels.Harbor{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
-		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}); err != nil {
+		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &envmodels.Environment{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -466,6 +469,7 @@ func TestAll(t *testing.T) {
 	t.Run("TestPinyin", testPinyin)
 	t.Run("TestListClusterByNameFuzzily", testListClusterByNameFuzzily)
 	t.Run("TestListUserClustersByNameFuzzily", testListUserClustersByNameFuzzily)
+	t.Run("TestListClusterWithExpiry", testListClusterWithExpiry)
 	t.Run("TestControllerFreeOrDeleteClusterFailed", testControllerFreeOrDeleteClusterFailed)
 }
 
@@ -576,6 +580,19 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
 
+	env, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+		Name:        "dev",
+		DisplayName: "开发",
+		AutoFree:    true,
+	})
+	env, err = envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+		Name:        "test",
+		DisplayName: "开发",
+		AutoFree:    true,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, env)
+
 	c = &controller{
 		clusterMgr:           manager.ClusterMgr,
 		clusterGitRepo:       clusterGitRepo,
@@ -646,11 +663,14 @@ func test(t *testing.T) {
 				Pipeline:    pipelineJSONBlob,
 			},
 		},
-		Name: "app-cluster",
+		Name:       "app-cluster",
+		ExpireTime: "24h0m0s",
 	}
 
 	resp, err := c.CreateCluster(ctx, application.ID, "test", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
+	t.Logf("%v", resp.ExpireTime)
+
 	createClusterRequest.Name = "app-cluster-new"
 	_, err = c.CreateCluster(ctx, application.ID, "dev", "hz", createClusterRequest, false)
 	assert.Nil(t, err)
@@ -661,6 +681,7 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.Git.Branch, "develop")
 	assert.Equal(t, resp.Git.Subfolder, "/test")
 	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
+	t.Logf("%v", resp.ExpireTime)
 
 	UpdateGitURL := "git@github.com:demo/demo.git"
 	updateClusterRequest := &UpdateClusterRequest{
@@ -703,6 +724,7 @@ func test(t *testing.T) {
 
 	resp, err = c.GetCluster(ctx, resp.ID)
 	assert.Nil(t, err)
+	assert.Equal(t, "24h0m0s", resp.ExpireTime)
 	assert.Equal(t, resp.Git.URL, UpdateGitURL)
 	assert.Equal(t, resp.Git.Branch, "new")
 	assert.Equal(t, resp.Git.Subfolder, "/new")
@@ -712,6 +734,15 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.Template.Release, "v1.0.1")
 	assert.Equal(t, resp.TemplateInput.Application, applicationJSONBlob)
 	assert.Equal(t, resp.TemplateInput.Pipeline, pipelineJSONBlob)
+
+	resp, err = c.UpdateCluster(ctx, resp.ID, &UpdateClusterRequest{
+		Base:       &Base{},
+		ExpireTime: "48h0m0s",
+	}, false)
+	assert.Nil(t, err)
+	resp, err = c.GetCluster(ctx, resp.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "48h0m0s", resp.ExpireTime)
 
 	count, respList, err := c.ListCluster(ctx, application.ID, []string{"test"}, "", nil, nil)
 	assert.Nil(t, err)
@@ -772,7 +803,6 @@ func test(t *testing.T) {
 
 	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, herrors.NewErrNotFound(herrors.PodsInK8S, "test"))
-
 	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
 		PipelinerunID: buildDeployResp.PipelinerunID,
 	})
@@ -820,6 +850,10 @@ func test(t *testing.T) {
 	assert.NotNil(t, resp)
 	b, _ = json.Marshal(restartResp)
 	t.Logf("%s", string(b))
+	pr, err := manager.PipelinerunMgr.GetByID(ctx, restartResp.PipelinerunID)
+	assert.Nil(t, err)
+	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
+	assert.NotNil(t, pr.FinishedAt)
 
 	// test deploy
 	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, herrors.ErrPipelineOutputEmpty).Times(1)
@@ -863,6 +897,11 @@ func test(t *testing.T) {
 
 	b, _ = json.Marshal(deployResp)
 	t.Logf("%s", string(b))
+
+	pr, err = manager.PipelinerunMgr.GetByID(ctx, deployResp.PipelinerunID)
+	assert.Nil(t, err)
+	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
+	assert.NotNil(t, pr.FinishedAt)
 
 	// test next
 	cd.EXPECT().Next(ctx, gomock.Any()).Return(nil)
@@ -913,6 +952,10 @@ func test(t *testing.T) {
 	assert.NotNil(t, rollbackResp)
 	b, _ = json.Marshal(rollbackResp)
 	t.Logf("%s", string(b))
+	pr, err = manager.PipelinerunMgr.GetByID(ctx, rollbackResp.PipelinerunID)
+	assert.Nil(t, err)
+	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
+	assert.NotNil(t, pr.FinishedAt)
 
 	cd.EXPECT().DeletePods(ctx, gomock.Any()).Return(
 		map[string]clustercd.OperationResult{
@@ -924,14 +967,6 @@ func test(t *testing.T) {
 	value, ok := result["pod1"]
 	assert.Equal(t, true, ok)
 	assert.Equal(t, true, value.Result)
-
-	// test GetDashboard
-	grafanaResponse, err := c.GetDashboard(ctx, resp.ID)
-	assert.NotNil(t, err)
-	assert.Nil(t, grafanaResponse)
-
-	_, err = c.GetClusterPods(ctx, resp.ID, 0, 19)
-	assert.NotNil(t, err)
 
 	podExist := "exist"
 	podNotExist := "notexist"
@@ -1272,7 +1307,7 @@ func testV2(t *testing.T) {
 	assert.True(t, strings.Contains(err.Error(), "parameter is invalid"))
 
 	var manifest = make(map[string]interface{})
-	manifest["Version"] = gitrepo.VersionV2
+	manifest["Version"] = common.MetaVersion2
 
 	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).Return(&gitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
@@ -1502,15 +1537,18 @@ javaapp:
 }
 
 func testIsClusterActuallyHealthy(t *testing.T) {
-	t1 := "1"
-	t2 := "2"
+	layout := "2006-01-02 15:04:05"
+	var t0 time.Time
+	t1, err := time.Parse(layout, "2022-09-17 17:50:00")
+	assert.Nil(t, err)
+	t2, err := time.Parse(layout, "2022-09-15 17:50:00")
+	assert.Nil(t, err)
+	tActual, err := time.Parse(layout, "2022-09-16 17:50:00")
+	assert.Nil(t, err)
 	imageV1 := "v1"
 	imageV2 := "v2"
-	po1 := &gitrepo.PipelineOutput{
-		Image: &imageV1,
-	}
 	cs := &clustercd.ClusterState{}
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, "", nil, 0))
+	assert.Equal(t, false, isClusterActuallyHealthy(ctx, cs, imageV1, t0, 0))
 
 	containerV1 := &clustercd.Container{
 		Image: imageV1,
@@ -1522,37 +1560,42 @@ func testIsClusterActuallyHealthy(t *testing.T) {
 	Pod2 := &clustercd.ClusterPod{}
 	Pod3 := &clustercd.ClusterPod{}
 
+	// pod1: t1, imagev1, imagev2
 	Pod1.Metadata.Annotations = map[string]string{
-		clustercommon.RestartTimeKey: t1,
+		clustercommon.RestartTimeKey: t1.Format(layout),
 	}
 	Pod1.Spec.Containers = []*clustercd.Container{containerV1, containerV2}
 
+	// pod2: t2, imagev1, imagev2
 	Pod2.Metadata.Annotations = map[string]string{
-		clustercommon.RestartTimeKey: t1,
+		clustercommon.RestartTimeKey: t2.Format(layout),
 	}
 	Pod2.Spec.InitContainers = []*clustercd.Container{containerV1, containerV2}
 
+	// pod2: imagev2
 	Pod3.Spec.InitContainers = []*clustercd.Container{containerV2}
 
 	cs.PodTemplateHash = "test"
 	cs.Versions = map[string]*clustercd.ClusterVersion{}
+
+	// none replicas is expected
 	cs.Versions[cs.PodTemplateHash] = &clustercd.ClusterVersion{
 		Pods: map[string]*clustercd.ClusterPod{"Pod3": Pod3},
 	}
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, "", nil, 0))
+	assert.Equal(t, true, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 0))
 
+	// one imagev1 pod is expected
+	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
+	assert.Equal(t, true, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 1))
+
+	// two imagev1 pods is expected
+	cs.Versions[cs.PodTemplateHash].Pods["Pod1-copy"] = Pod1
+	assert.Equal(t, true, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 2))
+
+	// t2 pod is unexpected
 	cs.Versions[cs.PodTemplateHash].Pods["Pod2"] = Pod2
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, "", nil, 0))
+	assert.Equal(t, false, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 2))
 
-	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1, nil, 0))
-
-	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t2, nil, 0))
-
-	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, true, isClusterActuallyHealthy(cs, po1, t1, nil, 2))
-
-	cs.Versions[cs.PodTemplateHash].Pods["Pod1"] = Pod1
-	assert.Equal(t, false, isClusterActuallyHealthy(cs, po1, t1, nil, 3))
+	// three t1 pods is not expected
+	assert.Equal(t, false, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 3))
 }

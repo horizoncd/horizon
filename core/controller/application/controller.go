@@ -23,6 +23,8 @@ import (
 	"g.hz.netease.com/horizon/pkg/member"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param"
+	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
+	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -57,11 +59,11 @@ type Controller interface {
 		request *CreateOrUpdateApplicationRequestV2) (err error)
 	// GetApplicationV2 it can also be used to read v1 repo
 	GetApplicationV2(ctx context.Context, id uint) (*GetApplicationResponseV2, error)
-}
 
-const (
-	_v2Version = "0.0.2"
-)
+	// GetApplicationPipelineStats return pipeline stats about an application
+	GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string, pageNumber, pageSize int) (
+		[]*pipelinemodels.PipelineStats, int64, error)
+}
 
 type controller struct {
 	applicationGitRepo   gitrepo.ApplicationGitRepo2
@@ -76,6 +78,7 @@ type controller struct {
 	userSvc              usersvc.Service
 	memberManager        member.Manager
 	applicationRegionMgr applicationregionmanager.Manager
+	pipelinemanager      pipelinemanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -94,6 +97,7 @@ func NewController(param *param.Param) Controller {
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
 		applicationRegionMgr: param.ApplicationRegionManager,
+		pipelinemanager:      param.PipelineMgr,
 	}
 }
 
@@ -108,7 +112,7 @@ func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplica
 	}
 
 	// 2. get application jsonBlob in git repo
-	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, "")
+	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, common.ApplicationRepoDefaultEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +144,7 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 	}
 
 	// 2. get repo file
-	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, "")
+	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, common.ApplicationRepoDefaultEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +245,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	// 3. create application in git repo
 	createRepoReq := gitrepo.CreateOrUpdateRequest{
 		Version:      "",
-		Environment:  "",
+		Environment:  common.ApplicationRepoDefaultEnv,
 		BuildConf:    request.TemplateInput.Pipeline,
 		TemplateConf: request.TemplateInput.Application,
 	}
@@ -292,10 +296,12 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 			return nil, err
 		}
 	}
+	// TODO: Validate Build Info
+
 	if request.TemplateConfig != nil && request.TemplateInfo != nil {
 		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release, &TemplateInput{
 			Application: request.TemplateConfig,
-			Pipeline:    request.BuildConfig,
+			Pipeline:    nil,
 		}); err != nil {
 			return nil, err
 		}
@@ -323,8 +329,8 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 
 	// create v2
 	createRepoReq := gitrepo.CreateOrUpdateRequest{
-		Version:      _v2Version,
-		Environment:  "",
+		Version:      common.MetaVersion2,
+		Environment:  common.ApplicationRepoDefaultEnv,
 		BuildConf:    request.BuildConfig,
 		TemplateConf: request.TemplateConfig,
 	}
@@ -392,7 +398,7 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 
 		updateRepoReq := gitrepo.CreateOrUpdateRequest{
 			Version:      "",
-			Environment:  "",
+			Environment:  common.ApplicationRepoDefaultEnv,
 			BuildConf:    request.TemplateInput.Pipeline,
 			TemplateConf: request.TemplateInput.Application,
 		}
@@ -450,13 +456,13 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release,
 			&TemplateInput{
 				Application: request.TemplateConfig,
-				Pipeline:    request.BuildConfig,
+				Pipeline:    nil,
 			}); err != nil {
 			return err
 		}
 		updateRepoReq := gitrepo.CreateOrUpdateRequest{
-			Version:      _v2Version,
-			Environment:  "",
+			Version:      common.MetaVersion2,
+			Environment:  common.ApplicationRepoDefaultEnv,
 			BuildConf:    request.BuildConfig,
 			TemplateConf: request.TemplateConfig,
 		}
@@ -509,7 +515,7 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 			}
 		}
 	} else {
-		if err := c.applicationGitRepo.DeleteApplication(ctx, app.Name, app.ID); err != nil {
+		if err := c.applicationGitRepo.HardDeleteApplication(ctx, app.Name); err != nil {
 			return err
 		}
 	}
@@ -584,13 +590,13 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if schema.Application.JSONSchema != nil {
+	if schema.Application.JSONSchema != nil && templateInput.Application != nil {
 		if err := jsonschema.Validate(schema.Application.JSONSchema,
 			templateInput.Application, false); err != nil {
 			return err
 		}
 	}
-	if schema.Pipeline.JSONSchema != nil {
+	if schema.Pipeline.JSONSchema != nil && templateInput.Pipeline != nil {
 		if err := jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline,
 			true); err != nil {
 			return err
@@ -776,4 +782,20 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 	}
 
 	return selectableRegionsByEnv, nil
+}
+
+func (c controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
+	pageNumber, pageSize int) ([]*pipelinemodels.PipelineStats, int64, error) {
+	app, err := c.applicationMgr.GetByID(ctx, applicationID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if cluster != "" {
+		_, err := c.clusterMgr.GetByName(ctx, cluster)
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+
+	return c.pipelinemanager.ListPipelineStats(ctx, app.Name, cluster, pageNumber, pageSize)
 }

@@ -14,6 +14,7 @@ import (
 )
 
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/manager/manager.go -package=mock_manager
 type Manager interface {
 	Create(ctx context.Context, cluster *models.Cluster,
@@ -34,6 +35,7 @@ type Manager interface {
 	// 3. userInfo is the user id
 	ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
 		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error)
+	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*models.Cluster, error)
 }
 
 func New(db *gorm.DB) Manager {
@@ -143,4 +145,21 @@ func (m *manager) ListUserAuthorizedByNameFuzzily(ctx context.Context, environme
 		query.PageSize = common.DefaultPageSize
 	}
 	return m.dao.ListUserAuthorizedByNameFuzzily(ctx, environment, name, applicationIDs, userInfo, query)
+}
+
+func (m *manager) ListClusterWithExpiry(ctx context.Context,
+	query *q.Query) ([]*models.Cluster, error) {
+	if query == nil {
+		query = &q.Query{
+			PageNumber: common.DefaultPageNumber,
+			PageSize:   common.DefaultPageSize,
+		}
+	}
+	if query.PageNumber < 1 {
+		query.PageNumber = common.DefaultPageNumber
+	}
+	if query.PageSize < 1 {
+		query.PageSize = common.DefaultPageSize
+	}
+	return m.dao.ListClusterWithExpiry(ctx, query)
 }

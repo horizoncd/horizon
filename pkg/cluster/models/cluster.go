@@ -21,6 +21,7 @@ type Cluster struct {
 	Status          string
 	CreatedBy       uint
 	UpdatedBy       uint
+	ExpireSeconds   uint
 }
 
 type ClusterWithRegion struct {

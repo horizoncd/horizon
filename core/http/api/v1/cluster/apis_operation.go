@@ -190,7 +190,7 @@ func (a *API) Restart(c *gin.Context) {
 
 	resp, err := a.clusterCtl.Restart(c, uint(clusterID))
 	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok || e.Source == herrors.ClusterInDB {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
@@ -394,7 +394,7 @@ func (a *API) Rollback(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-func (a *API) GetDashBoard(c *gin.Context) {
+func (a *API) GetGrafanaDashBoard(c *gin.Context) {
 	op := "cluster: get dashboard"
 	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
@@ -403,7 +403,7 @@ func (a *API) GetDashBoard(c *gin.Context) {
 		return
 	}
 
-	resp, err := a.clusterCtl.GetDashboard(c, uint(clusterID))
+	resp, err := a.clusterCtl.GetGrafanaDashBoard(c, uint(clusterID))
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.ClusterInDB {
@@ -411,44 +411,6 @@ func (a *API) GetDashBoard(c *gin.Context) {
 				return
 			}
 		}
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-	response.SuccessWithData(c, resp)
-}
-
-func (a *API) GetClusterPods(c *gin.Context) {
-	op := "cluster: get cluster pods"
-	clusterIDStr := c.Param(common.ParamClusterID)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-
-	// start means start timestamp(seconds) of the query range
-	startStr := c.Query(_start)
-	start, err := strconv.ParseInt(startStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-	// end means end timestamp(seconds) of the query range
-	endStr := c.Query(_end)
-	end, err := strconv.ParseInt(endStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-
-	resp, err := a.clusterCtl.GetClusterPods(c, uint(clusterID), start, end)
-	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
-			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-			return
-		}
-
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return

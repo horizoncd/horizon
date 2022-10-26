@@ -47,6 +47,8 @@ type Params struct {
 	Endpoint string
 	// s3存储的桶
 	Bucket string
+	// 是否禁用ssl
+	DisableSSL bool
 	// 是否要跳过https证书校验
 	SkipVerify bool
 	// 是否使用子目录形式
@@ -94,6 +96,7 @@ func NewDriver(params Params) (Interface, error) {
 	if len(params.Endpoint) > 0 {
 		awsConfig.WithEndpoint(params.Endpoint)
 	}
+	awsConfig.WithDisableSSL(params.DisableSSL)
 	if params.SkipVerify {
 		awsConfig.WithHTTPClient(&http.Client{
 			Transport: &http.Transport{

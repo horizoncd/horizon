@@ -17,6 +17,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	environmentregionmapper "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	grafanaservice "g.hz.netease.com/horizon/pkg/grafana"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -52,12 +53,14 @@ type Controller interface {
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
 	ListUserClusterByNameFuzzily(ctx context.Context, environment,
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
+	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*ListClusterWithExpiryResponse, error)
 
 	BuildDeploy(ctx context.Context, clusterID uint,
 		request *BuildDeployRequest) (*BuildDeployResponse, error)
 	Restart(ctx context.Context, clusterID uint) (*PipelinerunIDResponse, error)
 	Deploy(ctx context.Context, clusterID uint, request *DeployRequest) (*PipelinerunIDResponse, error)
 	Rollback(ctx context.Context, clusterID uint, request *RollbackRequest) (*PipelinerunIDResponse, error)
+
 	FreeCluster(ctx context.Context, clusterID uint) error
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
@@ -75,13 +78,14 @@ type Controller interface {
 	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)
 	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
 		<-chan string, error)
+
 	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
-	GetClusterPods(ctx context.Context, clusterID uint, start, end int64) (*GetClusterPodsResponse, error)
 	GetClusterPod(ctx context.Context, clusterID uint, podName string) (
 		*GetClusterPodResponse, error)
-	GetDashboard(ctx context.Context, clusterID uint) (*GetDashboardResponse, error)
+
 	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
 	GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error)
+	GetGrafanaDashBoard(c context.Context, clusterID uint) (*GetGrafanaDashboardsResponse, error)
 
 	CreateClusterV2(ctx context.Context, applicationID uint, environment,
 		region string, r *CreateClusterRequestV2, mergePatch bool) (*CreateClusterResponseV2, error)
@@ -109,13 +113,14 @@ type controller struct {
 	pipelineMgr          pipelinemanager.Manager
 	tektonFty            factory.Factory
 	registryFty          registryfty.Factory
-	grafanaMapper        grafana.Mapper
 	userManager          usermanager.Manager
 	userSvc              usersvc.Service
 	memberManager        member.Manager
 	groupManager         groupmanager.Manager
 	schemaTagManager     templateschematagmanager.Manager
 	tagMgr               tagmanager.Manager
+	grafanaService       grafanaservice.Service
+	grafanaConfig        grafana.Config
 }
 
 var _ Controller = (*controller)(nil)
@@ -141,13 +146,14 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		tektonFty:            param.TektonFty,
 		registryFty:          registryfty.Fty,
 		hook:                 param.Hook,
-		grafanaMapper:        config.GrafanaMapper,
 		userManager:          param.UserManager,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
 		groupManager:         param.GroupManager,
 		schemaTagManager:     param.ClusterSchemaTagMgr,
 		tagMgr:               param.TagManager,
+		grafanaService:       param.GrafanaService,
+		grafanaConfig:        config.GrafanaConfig,
 	}
 }
 

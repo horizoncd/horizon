@@ -14,8 +14,6 @@ import (
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/config/gitlab"
-	gitlabconf "g.hz.netease.com/horizon/pkg/config/gitlab"
 	config "g.hz.netease.com/horizon/pkg/config/templaterepo"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -23,8 +21,8 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/templaterepo/harbor"
 	"github.com/golang/mock/gomock"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/xanzy/go-gitlab"
 )
 
 /*
@@ -40,6 +38,7 @@ var (
 
 	sshURL        string
 	rootGroupName string
+	rootGroup     *gitlab.Group
 	templateName  string
 
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}
@@ -78,7 +77,6 @@ type Param struct {
 	Token         string `json:"token"`
 	BaseURL       string `json:"baseURL"`
 	RootGroupName string `json:"rootGroupName"`
-	RootGroupID   int    `json:"rootGroupId"`
 }
 
 // nolint
@@ -105,6 +103,10 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
+	rootGroup, err = g.GetGroup(ctx, p.RootGroupName)
+	if err != nil {
+		panic(err)
+	}
 
 	rootGroupName = p.RootGroupName
 	templateName = "javaapp"
@@ -121,20 +123,10 @@ func TestMain(m *testing.M) {
 
 func Test(t *testing.T) {
 	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
-	r := &clusterGitRepo{
-		gitlabLib: g,
-		clusterRepoConf: &gitlab.Repo{
-			Parent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "clusters"),
-				ID:   4970,
-			},
-			RecyclingParent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-clusters"),
-				ID:   4971,
-			},
-		},
-		templateRepo: repo,
-	}
+
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	assert.Nil(t, err)
+
 	application := "app"
 	cluster := "cluster"
 
@@ -174,9 +166,9 @@ func Test(t *testing.T) {
 	defer func() {
 		_ = r.DeleteCluster(ctx, application, cluster, 1)
 		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v/%v-%v", rootGroupName,
-			"recycling-clusters", application, cluster, 1))
+			_recyclingClusters, application, cluster, 1))
 	}()
-	err := r.CreateCluster(ctx, createParams)
+	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
 
 	updateParams.Application.Priority = "P1"
@@ -252,20 +244,9 @@ func Test(t *testing.T) {
 
 func TestV2(t *testing.T) {
 	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
-	r := &clusterGitRepo{
-		gitlabLib: g,
-		clusterRepoConf: &gitlab.Repo{
-			Parent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "clusters"),
-				ID:   4970,
-			},
-			RecyclingParent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-clusters"),
-				ID:   4971,
-			},
-		},
-		templateRepo: repo,
-	}
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	assert.Nil(t, err)
+
 	application := "appv2"
 	cluster := "clusterv2"
 
@@ -294,7 +275,7 @@ func TestV2(t *testing.T) {
 				Server: "https://harbor.com",
 			},
 		},
-		Version: VersionV2,
+		Version: common.MetaVersion2,
 	}
 	createParams := &CreateClusterParams{
 		BaseParams: baseParams,
@@ -305,7 +286,7 @@ func TestV2(t *testing.T) {
 		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v/%v-%v", rootGroupName,
 			"recycling-clusters", application, cluster, 1))
 	}()
-	err := r.CreateCluster(ctx, createParams)
+	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
 	files, err := r.GetCluster(ctx, application, cluster, templateName)
 	t.Logf("%+v", files)
@@ -394,21 +375,9 @@ func TestHardDeleteCluster(t *testing.T) {
 		BaseParams: baseParams,
 	}
 	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
-	r := &clusterGitRepo{
-		gitlabLib: g,
-		clusterRepoConf: &gitlab.Repo{
-			Parent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "clusters"),
-				ID:   4970,
-			},
-			RecyclingParent: &gitlab.Parent{
-				Path: fmt.Sprintf("%v/%v", rootGroupName, "recycling-clusters"),
-				ID:   4971,
-			},
-		},
-		templateRepo: repo,
-	}
-	err := r.CreateCluster(ctx, createParams)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	assert.Nil(t, err)
+	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
 
 	err = r.HardDeleteCluster(ctx, application, cluster)
@@ -420,25 +389,12 @@ func TestGetClusterValueFile(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	gitlabmockLib := gitlablibmock.NewMockInterface(mockCtrl)
-
-	repoConfig := gitlabconf.Repo{
-		Parent: &gitlabconf.Parent{
-			Path: "horizon",
-			ID:   1,
-		},
-		RecyclingParent: &gitlabconf.Parent{
-			Path: "horizon-recycle",
-			ID:   2,
-		},
-	}
+	gitlabmockLib.EXPECT().GetCreatedGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-
-	clusterGitRepoInstance = &clusterGitRepo{
-		gitlabLib:       gitlabmockLib,
-		clusterRepoConf: &repoConfig,
-		templateRepo:    &harbor.TemplateRepo{},
-	}
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib)
+	assert.Nil(t, err)
 
 	// 1. test gitlab get file error
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(),
@@ -490,25 +446,12 @@ java:
 			output = actions.([]gitlablib.CommitAction)[0].Content
 			return "", nil
 		}).AnyTimes()
-
-	repoConfig := gitlabconf.Repo{
-		Parent: &gitlabconf.Parent{
-			Path: "horizon",
-			ID:   1,
-		},
-		RecyclingParent: &gitlabconf.Parent{
-			Path: "horizon-recycle",
-			ID:   2,
-		},
-	}
+	gitlabmockLib.EXPECT().GetCreatedGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-
-	clusterGitRepoInstance = &clusterGitRepo{
-		gitlabLib:       gitlabmockLib,
-		clusterRepoConf: &repoConfig,
-		templateRepo:    &harbor.TemplateRepo{},
-	}
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib)
+	assert.Nil(t, err)
 
 	expectedOutput := `java:
   git:
@@ -520,7 +463,7 @@ java:
 	url := "aaa"
 	branch := "bbb"
 	commit := "ccc"
-	_, err := clusterGitRepoInstance.UpdatePipelineOutput(ctx, "", "", templateName, PipelineOutput{
+	_, err = clusterGitRepoInstance.UpdatePipelineOutput(ctx, "", "", templateName, PipelineOutput{
 		Git: &Git{
 			URL:      &url,
 			Branch:   &branch,

@@ -510,12 +510,13 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMembers[5], &members[0]))
 }
 
-//  case  /group1/group2/application/cluster
-//		group1 member: sph(1)
-//		group2 member: sph(2), jerry(2)
-//		application3 member: sph(3), cat(3)
-//		cluster4 member: cat(4)
-//		ret: sph(3), jerry(2), cat(4)
+//	 case  /group1/group2/application/cluster
+//			group1 member: sph(1)
+//			group2 member: sph(2), jerry(2)
+//			application3 member: sph(3), cat(3)
+//			cluster4 member: cat(4)
+//			ret: sph(3), jerry(2), cat(4)
+//
 // nolint
 func TestGetPipelinerunMember(t *testing.T) {
 	createEnv(t)

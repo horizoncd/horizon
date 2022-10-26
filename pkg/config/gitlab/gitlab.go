@@ -9,18 +9,7 @@ type Gitlab struct {
 	Token   string `yaml:"token"`
 }
 
-// RepoConfig gitlab repo config
-type RepoConfig struct {
-	Application *Repo `yaml:"application"`
-	Cluster     *Repo `yaml:"cluster"`
-}
-
-type Repo struct {
-	Parent          *Parent `yaml:"parent"`
-	RecyclingParent *Parent `yaml:"recyclingParent"`
-}
-
-type Parent struct {
-	Path string `yaml:"path"`
-	ID   int    `yaml:"id"`
+// GitopsRepoConfig gitops repo config
+type GitopsRepoConfig struct {
+	RootGroupPath string `yaml:"rootGroupPath"`
 }

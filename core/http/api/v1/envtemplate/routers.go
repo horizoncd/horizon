@@ -23,6 +23,5 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.Update,
 		},
 	}
-
 	route.RegisterRoutes(apiGroup, routes)
 }

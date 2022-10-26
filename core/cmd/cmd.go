@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 
@@ -15,6 +17,7 @@ import (
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
+	"g.hz.netease.com/horizon/core/controller/build"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	codectl "g.hz.netease.com/horizon/core/controller/code"
 	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
@@ -22,6 +25,7 @@ import (
 	envtemplatectl "g.hz.netease.com/horizon/core/controller/envtemplate"
 	groupctl "g.hz.netease.com/horizon/core/controller/group"
 	harborctl "g.hz.netease.com/horizon/core/controller/harbor"
+	idpctl "g.hz.netease.com/horizon/core/controller/idp"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	oauthservicectl "g.hz.netease.com/horizon/core/controller/oauth"
 	oauthappctl "g.hz.netease.com/horizon/core/controller/oauthapp"
@@ -45,6 +49,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/envtemplate"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
 	"g.hz.netease.com/horizon/core/http/api/v1/harbor"
+	"g.hz.netease.com/horizon/core/http/api/v1/idp"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthapp"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
@@ -57,6 +62,9 @@ import (
 	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
+	appv2 "g.hz.netease.com/horizon/core/http/api/v2/application"
+	buildAPI "g.hz.netease.com/horizon/core/http/api/v2/build"
+	envtemplatev2 "g.hz.netease.com/horizon/core/http/api/v2/envtemplate"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	"g.hz.netease.com/horizon/core/middleware/authenticate"
@@ -65,26 +73,23 @@ import (
 	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
 	prehandlemiddle "g.hz.netease.com/horizon/core/middleware/prehandle"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
-	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
-	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
-	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	userservice "g.hz.netease.com/horizon/pkg/user/service"
-
 	tagmiddle "g.hz.netease.com/horizon/core/middleware/tag"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
+	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	clustergitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cmdb"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
-
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
+	"g.hz.netease.com/horizon/pkg/grafana"
+	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook"
 	"g.hz.netease.com/horizon/pkg/hook/handler"
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
@@ -92,6 +97,8 @@ import (
 	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
 	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	oauthstore "g.hz.netease.com/horizon/pkg/oauth/store"
+	"g.hz.netease.com/horizon/pkg/param"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
@@ -101,23 +108,29 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschemarepo "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
 	templaterepoharbor "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
+	userservice "g.hz.netease.com/horizon/pkg/user/service"
+	"g.hz.netease.com/horizon/pkg/util/kube"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
 
-	appv2 "g.hz.netease.com/horizon/core/http/api/v2/application"
 	clusterv2 "g.hz.netease.com/horizon/core/http/api/v2/cluster"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/sessions"
+	"github.com/rbcervilla/redisstore/v8"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile     string
-	RoleConfigFile string
-	ScopeRoleFile  string
-	Dev            bool
-	Environment    string
-	LogLevel       string
+	ConfigFile          string
+	RoleConfigFile      string
+	ScopeRoleFile       string
+	BuildJSONSchemaFile string
+	BuildUISchemaFile   string
+	Dev                 bool
+	Environment         string
+	LogLevel            string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -132,6 +145,12 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.ScopeRoleFile, "scopes", "", "configuration file path")
+
+	flag.StringVar(&flags.BuildJSONSchemaFile, "buildjsonschema", "",
+		"build json schema file path")
+
+	flag.StringVar(&flags.BuildUISchemaFile, "builduischema", "",
+		"build ui schema file path")
 
 	flag.BoolVar(
 		&flags.Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
@@ -205,35 +224,68 @@ func Run(flags *Flags) {
 	}
 	callbacks.RegisterCustomCallbacks(mysqlDB)
 
+	redisClient := redis.NewClient(&redis.Options{
+		Network:  coreConfig.RedisConfig.Protocol,
+		Addr:     coreConfig.RedisConfig.Address,
+		Password: coreConfig.RedisConfig.Password,
+		DB:       int(coreConfig.RedisConfig.DB),
+	})
+
+	// session store
+	store, err := redisstore.NewRedisStore(context.Background(), redisClient)
+	if err != nil {
+		panic(err)
+	}
+
+	store.Options(sessions.Options{
+		Path:   "/",
+		MaxAge: int(coreConfig.SessionConfig.MaxAge),
+	})
+	// https://pkg.go.dev/github.com/gorilla/sessions#section-readme
+	gob.Register(&userauth.DefaultInfo{})
+
 	// init manager parameter
 	manager := managerparam.InitManager(mysqlDB)
 	// init service
 	ctx := context.Background()
 	gitlabFactory := gitlabfty.NewFactory(coreConfig.GitlabMapper)
 
-	gitlabCompute, err := gitlabFactory.GetByName(ctx, common.GitlabCompute)
+	gitlabGitops, err := gitlabFactory.GetByName(ctx, common.GitlabGitops)
+	if err != nil {
+		panic(err)
+	}
+	// check existence of gitops root group
+	rootGroup, err := gitlabGitops.GetGroup(ctx, coreConfig.GitopsRepoConfig.RootGroupPath)
 	if err != nil {
 		panic(err)
 	}
 
-	gitlabControl, err := gitlabFactory.GetByName(ctx, common.GitlabControl)
+	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo2(ctx, rootGroup, gitlabGitops)
+
 	if err != nil {
 		panic(err)
 	}
 
-	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo2(ctx, coreConfig.GitlabRepoConfig, gitlabCompute)
-	if err != nil {
-		panic(err)
-	}
 	templateRepo, err := templaterepoharbor.NewTemplateRepo(coreConfig.TemplateRepo)
 	if err != nil {
 		panic(err)
 	}
-	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, coreConfig.GitlabRepoConfig,
-		templateRepo, gitlabCompute)
+
+	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops)
 	if err != nil {
 		panic(err)
 	}
+
+	gitlabCode, err := gitlabFactory.GetByName(ctx, common.GitlabCode)
+	if err != nil {
+		panic(err)
+	}
+
+	gitlabTemplate, err := gitlabFactory.GetByName(ctx, common.GitlabTemplate)
+	if err != nil {
+		panic(err)
+	}
+
 	templateSchemaGetter := templateschemarepo.NewSchemaGetter(ctx, templateRepo, manager)
 
 	outputGetter, err := output.NewOutPutGetter(ctx, templateRepo, manager)
@@ -241,7 +293,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	gitGetter, err := code.NewGitGetter(ctx, gitlabControl)
+	gitGetter, err := code.NewGitGetter(ctx, gitlabCode)
 	if err != nil {
 		panic(err)
 	}
@@ -292,10 +344,42 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
+	// init build schema controller
+	readJSONFileFunc := func(filePath string) map[string]interface{} {
+		fileFd, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		fileContent, err := ioutil.ReadAll(fileFd)
+		if err != nil {
+			panic(err)
+		}
+		var schemaFile map[string]interface{}
+		err = json.Unmarshal(fileContent, &schemaFile)
+		if err != nil {
+			panic(err)
+		}
+		return schemaFile
+	}
+
+	buildSchema := &build.Schema{
+		JSONSchema: readJSONFileFunc(flags.BuildJSONSchemaFile),
+		UISchema:   readJSONFileFunc(flags.BuildUISchemaFile),
+	}
+
 	groupSvc := groupservice.NewService(manager)
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
+
+	// init kube client
+	_, client, err := kube.BuildClient("")
+	if err != nil {
+		panic(err)
+	}
+
+	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client)
+
 	parameter := &param.Param{
 		Manager:              manager,
 		OauthManager:         oauthManager,
@@ -314,12 +398,20 @@ func Run(flags *Flags) {
 		TektonFty:            tektonFty,
 		ClusterGitRepo:       clusterGitRepo,
 		GitGetter:            gitGetter,
+		GrafanaService:       grafanaService,
+		BuildSchema:          buildSchema,
 	}
 
 	var (
-		rbacSkippers = middleware.MethodAndPathSkipper("*",
-			regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
-				"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)"))
+		rbacSkippers = []middleware.Skipper{
+			middleware.MethodAndPathSkipper("*",
+				regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
+					"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)|"+
+					"(^/apis/core/v1/templates$)")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/logout")),
+		}
 
 		// init controller
 		memberCtl            = memberctl.NewController(parameter)
@@ -327,14 +419,14 @@ func Run(flags *Flags) {
 		envTemplateCtl       = envtemplatectl.NewController(parameter)
 		clusterCtl           = clusterctl.NewController(coreConfig, parameter)
 		prCtl                = prctl.NewController(parameter)
-		templateCtl          = templatectl.NewController(parameter, gitlabControl, templateRepo)
+		templateCtl          = templatectl.NewController(parameter, gitlabTemplate, templateRepo)
 		roleCtl              = roltctl.NewController(parameter)
 		terminalCtl          = terminalctl.NewController(parameter)
 		sloCtl               = sloctl.NewController(coreConfig.GrafanaSLO)
 		codeGitCtl           = codectl.NewController(gitGetter)
 		tagCtl               = tagctl.NewController(parameter)
 		templateSchemaTagCtl = templateschematagctl.NewController(parameter)
-		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers)
+		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers...)
 		applicationRegionCtl = applicationregionctl.NewController(parameter)
 		groupCtl             = groupctl.NewController(parameter)
 		oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(parameter)
@@ -345,6 +437,8 @@ func Run(flags *Flags) {
 		environmentCtl       = environmentctl.NewController(parameter)
 		environmentregionCtl = environmentregionctl.NewController(parameter)
 		harborCtl            = harborctl.NewController(parameter)
+		idpCtrl              = idpctl.NewController(parameter)
+		buildSchemaCtrl      = build.NewController(buildSchema)
 	)
 
 	var (
@@ -374,6 +468,9 @@ func Run(flags *Flags) {
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl,
 			coreConfig.Oauth.OauthHTMLLocation, scopeService)
+		idpAPI           = idp.NewAPI(idpCtrl, store)
+		buildSchemaAPI   = buildAPI.NewAPI(buildSchemaCtrl)
+		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl)
 	)
 
 	// init server
@@ -384,6 +481,7 @@ func Run(flags *Flags) {
 		gin.Recovery(),
 		requestid.Middleware(), // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
+
 		metricsmiddle.Middleware( // metrics middleware
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
@@ -392,15 +490,18 @@ func Run(flags *Flags) {
 		authenticate.Middleware(coreConfig.AccessSecretKeys, // authenticate middleware, check authentication
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
-		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers),
+		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
 		//  user middleware, check user and attach current user to context.
-		usermiddle.Middleware(parameter, coreConfig.OIDCConfig,
+		usermiddle.Middleware(parameter, store,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token"))),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback"))),
 		prehandlemiddle.Middleware(r, manager),
-		auth.Middleware(rbacAuthorizer, rbacSkippers),
+		auth.Middleware(rbacAuthorizer, rbacSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}
 	r.Use(middlewares...)
@@ -434,9 +535,18 @@ func Run(flags *Flags) {
 	applicationregion.RegisterRoutes(r, applicationRegionAPI)
 	oauthapp.RegisterRoutes(r, oauthAppAPI)
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
+	idp.RegisterRoutes(r, idpAPI)
+	buildAPI.RegisterRoutes(r, buildSchemaAPI)
+	envtemplatev2.RegisterRoutes(r, envtemplatev2API)
 
 	// start cloud event server
-	go runCloudEventServer(tektonFty, coreConfig.CloudEventServerConfig, parameter)
+	go runCloudEventServer(
+		tektonFty,
+		coreConfig.CloudEventServerConfig,
+		parameter,
+		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
+		requestid.Middleware(),
+	)
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))

@@ -28,6 +28,9 @@ const (
 	_resourceTypeQuery = "resourceType"
 	_clusterIDQuery    = "clusterID"
 	_withFullPath      = "fullpath"
+	_withReleases      = "withReleases"
+	_listRecursively   = "recursive"
+	_listSelfOnly      = "selfOnly"
 )
 
 type API struct {
@@ -49,6 +52,13 @@ func (a *API) ListTemplate(c *gin.Context) {
 	if err == nil {
 		ctx = context.WithValue(ctx, tplctx.TemplateWithFullPath, withFullPath)
 	}
+
+	listSelfOnlyStr := c.Query(_listSelfOnly)
+	listSelfOnly, err := strconv.ParseBool(listSelfOnlyStr)
+	if err == nil {
+		ctx = context.WithValue(ctx, tplctx.TemplateListSelfOnly, listSelfOnly)
+	}
+
 	templates, err := a.templateCtl.ListTemplate(ctx)
 	if err != nil {
 		response.AbortWithInternalError(c, err.Error())
@@ -174,6 +184,12 @@ func (a *API) CreateTemplate(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(fmt.Sprintf("not found: %s", err)))
 			return
 		}
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrCreateFailed); ok {
+			log.WithFiled(c, "op", op).Infof("release named %s duplicated", createRequest.Name)
+			response.AbortWithRPCError(c, rpcerror.ParamError.
+				WithErrMsg(fmt.Sprintf("release named %s was duplicate", createRequest.Name)))
+			return
+		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(fmt.Sprintf("%s", err)))
 		return
@@ -181,8 +197,8 @@ func (a *API) CreateTemplate(c *gin.Context) {
 	response.SuccessWithData(c, template)
 }
 
-func (a *API) GetTemplates(c *gin.Context) {
-	op := "template: get templates"
+func (a *API) ListTemplatesByGroupID(c *gin.Context) {
+	op := "template: list templates by group id"
 
 	g := c.Param(_groupParam)
 
@@ -191,6 +207,12 @@ func (a *API) GetTemplates(c *gin.Context) {
 	var ctx context.Context = c
 	if err == nil {
 		ctx = context.WithValue(ctx, tplctx.TemplateWithFullPath, withFullPath)
+	}
+
+	listRecursivelyStr := c.Query(_listRecursively)
+	listRecursively, err := strconv.ParseBool(listRecursivelyStr)
+	if err == nil {
+		ctx = context.WithValue(ctx, tplctx.TemplateListRecursively, listRecursively)
 	}
 
 	var groupID uint64
@@ -228,6 +250,13 @@ func (a *API) GetTemplate(c *gin.Context) {
 		err        error
 	)
 
+	withReleasesStr := c.Query(_withReleases)
+	withReleases, err := strconv.ParseBool(withReleasesStr)
+	var ctx context.Context = c
+	if err == nil {
+		ctx = context.WithValue(ctx, tplctx.TemplateWithRelease, withReleases)
+	}
+
 	if templateID, err = strconv.ParseUint(t, 10, 64); err != nil {
 		log.WithFiled(c, "op", op).Info("templateID not found or invalid")
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("templateID not found or invalid"))
@@ -235,7 +264,7 @@ func (a *API) GetTemplate(c *gin.Context) {
 	}
 
 	var template *templatectl.Template
-	if template, err = a.templateCtl.GetTemplate(c, uint(templateID)); err != nil {
+	if template, err = a.templateCtl.GetTemplate(ctx, uint(templateID)); err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			log.WithFiled(c, "op", op).Infof("template with ID %d not found", templateID)
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(fmt.Sprintf("not found: %s", err)))
@@ -305,7 +334,7 @@ func (a *API) DeleteTemplate(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(fmt.Sprintf("not found: %s", err)))
 			return
 		} else if e := perror.Cause(err); e == herrors.ErrSubResourceExist {
-			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(err.Error()))
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
 			return
 		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
@@ -347,6 +376,12 @@ func (a *API) CreateRelease(c *gin.Context) {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			log.WithFiled(c, "op", op).Infof("template with ID %d not found", templateID)
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(fmt.Sprintf("not found: %s", err)))
+			return
+		}
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrCreateFailed); ok {
+			log.WithFiled(c, "op", op).Infof("release named %s duplicated", createRequest.Name)
+			response.AbortWithRPCError(c, rpcerror.ParamError.
+				WithErrMsg(fmt.Sprintf("release named %s was duplicate", createRequest.Name)))
 			return
 		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
@@ -410,12 +445,12 @@ func (a *API) DeleteRelease(c *gin.Context) {
 			log.WithFiled(c, "op", op).Infof("release with ID %d not found", releaseID)
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(fmt.Sprintf("not found: %s", err)))
 			return
+		} else if e := perror.Cause(err); e == herrors.ErrSubResourceExist {
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
+			return
 		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(fmt.Sprintf("%s", err)))
-		return
-	} else if e := perror.Cause(err); e == herrors.ErrSubResourceExist {
-		response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(err.Error()))
 		return
 	}
 	response.Success(c)

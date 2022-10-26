@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"regexp"
+	"time"
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -16,6 +17,7 @@ import (
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	cmodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	emvregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -72,32 +74,12 @@ func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
 		return 0, nil, err
 	}
 
-	// 2. get applications
-	var applicationIDs []uint
-	for _, cluster := range clustersWithEnvAndRegion {
-		applicationIDs = append(applicationIDs, cluster.ApplicationID)
-	}
-	applicationMap, err := c.applicationSvc.GetByIDs(ctx, applicationIDs)
+	responses, err := c.getFullResponsesWithRegion(ctx, clustersWithEnvAndRegion)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	// 3. convert and add full path, full name
-	for _, cluster := range clustersWithEnvAndRegion {
-		application, exist := applicationMap[cluster.ApplicationID]
-		if !exist {
-			continue
-		}
-		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
-		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
-		listClusterWithFullResp = append(listClusterWithFullResp, &ListClusterWithFullResponse{
-			ofClusterWithEnvAndRegion(cluster),
-			fullName,
-			fullPath,
-		})
-	}
-
-	return count, listClusterWithFullResp, nil
+	return count, responses, nil
 }
 
 func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environment,
@@ -157,18 +139,28 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 			perror.WithMessage(err, "failed to list user clusters")
 	}
 
-	// 2. get applications
-	clusterApplicationIDs := make([]uint, 0)
-	for _, cluster := range clusters {
-		clusterApplicationIDs = append(clusterApplicationIDs, cluster.ApplicationID)
-	}
-	applicationMap, err := c.applicationSvc.GetByIDs(ctx, clusterApplicationIDs)
+	responses, err := c.getFullResponsesWithRegion(ctx, clusters)
 	if err != nil {
-		return 0, nil,
-			perror.WithMessage(err, "failed to list application for clusters")
+		return 0, nil, err
 	}
 
-	resp = make([]*ListClusterWithFullResponse, 0)
+	return count, responses, nil
+}
+
+func (c *controller) getFullResponses(ctx context.Context,
+	clusters []*cmodels.Cluster) ([]*ListClusterWithFullResponse, error) {
+	// get applications
+	var applicationIDs []uint
+	for _, cluster := range clusters {
+		applicationIDs = append(applicationIDs, cluster.ApplicationID)
+	}
+	applicationMap, err := c.applicationSvc.GetByIDs(ctx, applicationIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	responses := make([]*ListClusterWithFullResponse, 0)
+
 	// 3. convert and add full path, full name
 	for _, cluster := range clusters {
 		application, exist := applicationMap[cluster.ApplicationID]
@@ -177,14 +169,39 @@ func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environme
 		}
 		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
 		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
-		resp = append(resp, &ListClusterWithFullResponse{
-			ofClusterWithEnvAndRegion(cluster),
+		responses = append(responses, &ListClusterWithFullResponse{
+			ofCluster(cluster),
 			fullName,
 			fullPath,
 		})
 	}
+	return responses, nil
+}
 
-	return count, resp, nil
+func (c *controller) getFullResponsesWithRegion(ctx context.Context,
+	clustersWithRegion []*cmodels.ClusterWithRegion) ([]*ListClusterWithFullResponse, error) {
+	clusters := make([]*cmodels.Cluster, 0, len(clustersWithRegion))
+	for _, clusterWithRegion := range clustersWithRegion {
+		clusters = append(clusters, clusterWithRegion.Cluster)
+	}
+
+	responses, err := c.getFullResponses(ctx, clusters)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range responses {
+		responses[i].Scope.RegionDisplayName = clustersWithRegion[i].RegionDisplayName
+	}
+	return responses, nil
+}
+
+func (c *controller) ListClusterWithExpiry(ctx context.Context,
+	query *q.Query) ([]*ListClusterWithExpiryResponse, error) {
+	const op = "cluster controller: list clusters with expiry"
+	defer wlog.Start(ctx, op).StopPrint()
+	clusterList, err := c.clusterMgr.ListClusterWithExpiry(ctx, query)
+	return ofClusterWithExpiry(clusterList), err
 }
 
 func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClusterResponse, err error) {
@@ -399,6 +416,13 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 			"the region which is disabled cannot be used to create a cluster")
 	}
 
+	// transfer expireTime to expireSeconds and verify environment.
+	// expireTime's format is e.g. "300ms", "-1.5h" or "2h45m".
+	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, environment)
+	if err != nil {
+		return nil, err
+	}
+
 	// 5. get templateRelease
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, r.Template.Name, r.Template.Release)
 	if err != nil {
@@ -406,7 +430,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 	}
 
 	// 6. create cluster, after created, params.Cluster is the newest cluster
-	cluster, tags := r.toClusterModel(application, er)
+	cluster, tags := r.toClusterModel(application, er, expireSeconds)
 	cluster.Status = clustercommon.StatusCreating
 
 	if err := tagmanager.ValidateUpsert(tags); err != nil {
@@ -499,6 +523,14 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		namespace        string
 		namespaceChanged bool
 	)
+
+	if r.ExpireTime != "" {
+		expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, cluster.EnvironmentName)
+		if err != nil {
+			return nil, err
+		}
+		cluster.ExpireSeconds = expireSeconds
+	}
 
 	// can only update environment/region when the cluster has been freed
 	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
@@ -595,8 +627,10 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, err
 		}
-		r.TemplateInput.Application = files.ApplicationJSONBlob
-		r.TemplateInput.Pipeline = files.PipelineJSONBlob
+		r.TemplateInput = &TemplateInput{
+			Application: files.ApplicationJSONBlob,
+			Pipeline:    files.PipelineJSONBlob,
+		}
 	}
 
 	// 5. update cluster in db
@@ -758,10 +792,6 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 			if err := c.pipelinerunMgr.DeleteByClusterID(ctx, clusterID); err != nil {
 				log.Errorf(newctx, "failed to delete pipelineruns of cluster: %v, err: %v", cluster.Name, err)
 			}
-			// delete pipeline
-			if err := c.pipelineMgr.DeleteByClusterName(ctx, cluster.Name); err != nil {
-				log.Errorf(newctx, "failed to delete pipelineruns of cluster: %v, err: %v", cluster.Name, err)
-			}
 			// delete tag
 			if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, nil); err != nil {
 				log.Errorf(newctx, "failed to delete tags of cluster: %v, err: %v", cluster.Name, err)
@@ -801,6 +831,10 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	if err != nil {
 		return err
 	}
+	if cluster.Status == clustercommon.StatusFreeing {
+		log.Warningf(ctx, "failed to free cluster: %v, cluster status: %v", cluster.Name, cluster.Status)
+		return nil
+	}
 
 	// 1. set cluster status
 	cluster.Status = clustercommon.StatusFreeing
@@ -824,14 +858,12 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	go func() {
 		var err error
 		defer func() {
-			cluster.Status = clustercommon.StatusFreed
 			if err != nil {
 				cluster.Status = ""
-			}
-			_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
-			if err != nil {
-				log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
-				return
+				_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
+				if err != nil {
+					log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
+				}
 			}
 		}()
 
@@ -854,6 +886,28 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	}()
 
 	return nil
+}
+
+func (c *controller) toExpireSeconds(ctx context.Context, expireTime string, environment string) (uint, error) {
+	expireSeconds := uint(0)
+	if expireTime != "" {
+		duration, err := time.ParseDuration(expireTime)
+		if err != nil {
+			log.Errorf(ctx, "failed to parse expireTime, err: %v", err.Error())
+			return 0, perror.Wrap(herrors.ErrParamInvalid, err.Error())
+		}
+		expireSeconds = uint(duration.Seconds())
+		envEntity, err := c.envMgr.GetByName(ctx, environment)
+		if err != nil {
+			return 0, err
+		}
+		if !envEntity.AutoFree && expireSeconds > 0 {
+			log.Warningf(ctx, "%v environment dose not support auto-free, but expireSeconds are %v",
+				environment, expireSeconds)
+			expireSeconds = 0
+		}
+	}
+	return expireSeconds, nil
 }
 
 func (c *controller) customizeTemplateInfo(ctx context.Context, r *CreateClusterRequest,

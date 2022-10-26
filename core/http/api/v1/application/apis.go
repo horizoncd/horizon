@@ -24,6 +24,7 @@ const (
 	_groupIDStr = "groupID"
 	_envQuery   = "env"
 	_hard       = "hard"
+	_cluster    = "cluster"
 )
 
 type API struct {
@@ -221,9 +222,12 @@ func (a *API) SearchApplication(c *gin.Context) {
 		return
 	}
 
+	keywords := request.GetFilterParam(c)
+
 	filter := c.Query(common.Filter)
 
 	total, applications, err := a.applicationCtl.ListApplication(c, filter, q.Query{
+		Keywords:   keywords,
 		PageSize:   pageSize,
 		PageNumber: pageNumber,
 	})
@@ -309,4 +313,34 @@ func (a *API) GetSelectableRegionsByEnv(c *gin.Context) {
 	}
 
 	response.SuccessWithData(c, regionParts)
+}
+
+func (a *API) GetApplicationPipelineStats(c *gin.Context) {
+	pageNumber, pageSize, err := request.GetPageParam(c)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	appIDStr := c.Param(common.ParamApplicationID)
+	appID, err := strconv.ParseUint(appIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid appID: %s, err: %s",
+			appIDStr, err.Error())))
+		return
+	}
+
+	cluser := c.Query(_cluster)
+
+	pipelineStats, count, err := a.applicationCtl.GetApplicationPipelineStats(c, uint(appID), cluser, pageNumber, pageSize)
+	if err != nil {
+		log.Errorf(c, "Get application pipelineStats failed, error: %+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Total: count,
+		Items: pipelineStats,
+	})
 }

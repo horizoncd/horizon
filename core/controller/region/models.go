@@ -15,6 +15,7 @@ type Region struct {
 	Server        string        `json:"server"`
 	Certificate   string        `json:"certificate"`
 	IngressDomain string        `json:"ingressDomain"`
+	PrometheusURL string        `json:"prometheusURL"`
 	Disabled      bool          `json:"disabled"`
 	HarborID      uint          `json:"harborID"`
 	Harbor        harbor.Harbor `json:"harbor"`
@@ -29,14 +30,17 @@ type CreateRegionRequest struct {
 	Server        string `json:"server"`
 	Certificate   string `json:"certificate"`
 	IngressDomain string `json:"ingressDomain"`
+	PrometheusURL string `json:"prometheusURL"`
 	HarborID      uint   `json:"harborID"`
 }
 
 type UpdateRegionRequest struct {
+	Name          string `json:"name"`
 	DisplayName   string `json:"displayName"`
 	Server        string `json:"server"`
 	Certificate   string `json:"certificate"`
 	IngressDomain string `json:"ingressDomain"`
+	PrometheusURL string `json:"prometheusURL"`
 	HarborID      uint   `json:"harborID"`
 	Disabled      bool   `json:"disabled"`
 }
@@ -55,6 +59,7 @@ func ofRegionEntity(entity *models.RegionEntity) *Region {
 		DisplayName:   entity.DisplayName,
 		Server:        entity.Server,
 		IngressDomain: entity.IngressDomain,
+		PrometheusURL: entity.PrometheusURL,
 		Certificate:   entity.Certificate,
 		Disabled:      entity.Disabled,
 		HarborID:      entity.HarborID,

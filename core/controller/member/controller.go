@@ -84,7 +84,7 @@ func (c *controller) UpdateMember(ctx context.Context, id uint, role string) (*M
 }
 
 func (c *controller) RemoveMember(ctx context.Context, id uint) error {
-	const op = "group *controller: remove group member"
+	const op = "group controller: remove group member"
 	err := c.memberService.RemoveMember(ctx, id)
 	if err != nil {
 		switch err {

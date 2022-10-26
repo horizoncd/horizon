@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -419,20 +418,33 @@ func (d *dao) ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*mo
 	if len(ids) == 0 {
 		return nil, nil
 	}
-
-	idsStr := make([]string, 0)
-	for _, id := range ids {
-		idsStr = append(idsStr, "'%"+strconv.Itoa(int(id))+"%'")
-	}
-	traversalIDLike := strings.Join(idsStr, ` or traversal_ids like `)
-	traversalIDLike = "traversal_ids like " + traversalIDLike
-
 	var groups []*models.Group
-	result := d.db.WithContext(ctx).Raw(fmt.Sprintf(dbcommon.GroupQueryByTraversalID, traversalIDLike)).Scan(&groups)
+	children := make([]*models.Group, 0)
+	err := d.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.WithContext(ctx).
+			Where("id in ?", ids).Find(&groups)
+		if result.Error != nil {
+			return herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())
+		}
 
-	if result.Error != nil {
-		return nil, herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())
+		tdb := tx.WithContext(ctx)
+		for i, group := range groups {
+			if i == 0 {
+				tdb = tdb.Where("traversal_ids like ?", fmt.Sprintf("%s,%%", group.TraversalIDs))
+			} else {
+				tdb = tdb.Or("traversal_ids like ?", fmt.Sprintf("%s,%%", group.TraversalIDs))
+			}
+		}
+		tdb.Find(&children)
+		if result.Error != nil {
+			return herrors.NewErrListFailed(herrors.GroupInDB, result.Error.Error())
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
-
-	return groups, result.Error
+	return children, nil
 }

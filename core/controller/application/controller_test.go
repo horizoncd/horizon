@@ -298,12 +298,12 @@ func Test(t *testing.T) {
 	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	applicationGitRepo.EXPECT().CreateOrUpdateApplication(ctx, appName, gitrepo.CreateOrUpdateRequest{
 		Version:      "",
-		Environment:  "",
+		Environment:  common.ApplicationRepoDefaultEnv,
 		BuildConf:    pipelineJSONBlob,
 		TemplateConf: applicationJSONBlob,
 	}).Return(nil).AnyTimes()
-	applicationGitRepo.EXPECT().DeleteApplication(ctx, appName, uint(1)).Return(nil).AnyTimes()
-	applicationGitRepo.EXPECT().GetApplication(ctx, appName, "").Return(&gitrepo.GetResponse{
+	applicationGitRepo.EXPECT().HardDeleteApplication(ctx, appName).Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, appName, common.ApplicationRepoDefaultEnv).Return(&gitrepo.GetResponse{
 		Manifest:     nil,
 		BuildConf:    pipelineJSONBlob,
 		TemplateConf: applicationJSONBlob,
@@ -451,13 +451,14 @@ func TestV2(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	applicationGitRepo := appgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	applicationGitRepo.EXPECT().CreateOrUpdateApplication(ctx, appName, gitrepo.CreateOrUpdateRequest{
-		Version:      _v2Version,
-		Environment:  "",
+		Version:      common.MetaVersion2,
+		Environment:  common.ApplicationRepoDefaultEnv,
 		BuildConf:    nil,
 		TemplateConf: applicationJSONBlob,
 	}).Return(nil).AnyTimes()
-	applicationGitRepo.EXPECT().DeleteApplication(ctx, appName, uint(1)).Return(nil).AnyTimes()
-	applicationGitRepo.EXPECT().GetApplication(ctx, appName, "").Return(&gitrepo.GetResponse{
+	applicationGitRepo.EXPECT().HardDeleteApplication(ctx, appName).Return(nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, appName,
+		common.ApplicationRepoDefaultEnv).Return(&gitrepo.GetResponse{
 		Manifest:     nil,
 		BuildConf:    nil,
 		TemplateConf: applicationJSONBlob,

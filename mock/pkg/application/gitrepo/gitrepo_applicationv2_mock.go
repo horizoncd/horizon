@@ -49,20 +49,6 @@ func (mr *MockApplicationGitRepo2MockRecorder) CreateOrUpdateApplication(ctx, ap
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrUpdateApplication", reflect.TypeOf((*MockApplicationGitRepo2)(nil).CreateOrUpdateApplication), ctx, application, request)
 }
 
-// DeleteApplication mocks base method.
-func (m *MockApplicationGitRepo2) DeleteApplication(ctx context.Context, application string, applicationID uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteApplication", ctx, application, applicationID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteApplication indicates an expected call of DeleteApplication.
-func (mr *MockApplicationGitRepo2MockRecorder) DeleteApplication(ctx, application, applicationID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteApplication", reflect.TypeOf((*MockApplicationGitRepo2)(nil).DeleteApplication), ctx, application, applicationID)
-}
-
 // GetApplication mocks base method.
 func (m *MockApplicationGitRepo2) GetApplication(ctx context.Context, application, environment string) (*gitrepo.GetResponse, error) {
 	m.ctrl.T.Helper()

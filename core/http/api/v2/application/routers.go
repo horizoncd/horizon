@@ -18,6 +18,14 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/groups/:%v/applications", common.ParamGroupID),
 			HandlerFunc: api.Create,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/applications/:%v", common.ParamApplicationID),
+			HandlerFunc: api.Get,
+		}, {
+			Method:      http.MethodPut,
+			Pattern:     fmt.Sprintf("/applications/:%v", common.ParamApplicationID),
+			HandlerFunc: api.Update,
 		},
 	}
 	route.RegisterRoutes(apiV2Group, apiV2Routes)

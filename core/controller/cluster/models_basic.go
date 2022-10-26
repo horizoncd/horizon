@@ -29,8 +29,9 @@ type TemplateInput struct {
 type CreateClusterRequest struct {
 	*Base
 
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
+	Name       string `json:"name"`
+	Namespace  string `json:"namespace"`
+	ExpireTime string `json:"expireTime"`
 	// TODO(gjq): remove these two params after migration
 	Image        string            `json:"image"`
 	ExtraMembers map[string]string `json:"extraMembers"`
@@ -40,6 +41,7 @@ type UpdateClusterRequest struct {
 	*Base
 	Environment string `json:"environment"`
 	Region      string `json:"region"`
+	ExpireTime  string `json:"expireTime"`
 }
 
 type GetClusterResponse struct {
@@ -82,7 +84,7 @@ type Scope struct {
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
-	er *envregionmodels.EnvironmentRegion) (*models.Cluster, []*tagmodels.Tag) {
+	er *envregionmodels.EnvironmentRegion, expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
 	var (
 		// r.Git cannot be nil
 		gitURL       = r.Git.URL
@@ -101,6 +103,7 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		EnvironmentName: er.EnvironmentName,
 		RegionName:      er.RegionName,
 		Description:     r.Description,
+		ExpireSeconds:   expireSeconds,
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubfolder,
 		GitRef:          r.Git.Ref(),
@@ -141,6 +144,7 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		GitRefType:      gitRefType,
 		TemplateRelease: templateRelease,
 		Status:          cluster.Status,
+		ExpireSeconds:   cluster.ExpireSeconds,
 	}
 }
 
@@ -165,6 +169,10 @@ func toUser(user *usermodels.User) *User {
 
 func ofClusterModel(application *appmodels.Application, cluster *models.Cluster, fullPath, namespace string,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetClusterResponse {
+	expireTime := ""
+	if cluster.ExpireSeconds > 0 {
+		expireTime = time.Duration(cluster.ExpireSeconds * 1e9).String()
+	}
 	return &GetClusterResponse{
 		CreateClusterRequest: &CreateClusterRequest{
 			Base: &Base{
@@ -176,8 +184,9 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 					Pipeline:    pipelineJSONBlob,
 				},
 			},
-			Name:      cluster.Name,
-			Namespace: namespace,
+			Name:       cluster.Name,
+			Namespace:  namespace,
+			ExpireTime: expireTime,
 		},
 		ID:       cluster.ID,
 		FullPath: fullPath,
@@ -217,15 +226,14 @@ type ListClusterResponse struct {
 	Tags        []*tagmodels.TagBasic `json:"tags,omitempty"`
 }
 
-func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterResponse {
+func ofCluster(cluster *models.Cluster) *ListClusterResponse {
 	return &ListClusterResponse{
 		ID:          cluster.ID,
 		Name:        cluster.Name,
 		Description: cluster.Description,
 		Scope: &Scope{
-			Environment:       cluster.EnvironmentName,
-			Region:            cluster.RegionName,
-			RegionDisplayName: cluster.RegionDisplayName,
+			Environment: cluster.EnvironmentName,
+			Region:      cluster.RegionName,
 		},
 		Template: &Template{
 			Name:    cluster.Template,
@@ -238,6 +246,12 @@ func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterRe
 		CreatedAt: cluster.CreatedAt,
 		UpdatedAt: cluster.UpdatedAt,
 	}
+}
+
+func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterResponse {
+	resp := ofCluster(cluster.Cluster)
+	resp.Scope.RegionDisplayName = cluster.RegionDisplayName
+	return resp
 }
 
 func ofClustersWithEnvRegionTags(clusters []*models.ClusterWithRegion, tags []*tagmodels.Tag) []*ListClusterResponse {
@@ -274,4 +288,28 @@ type ListClusterWithFullResponse struct {
 	*ListClusterResponse
 	FullName string `json:"fullName"`
 	FullPath string `json:"fullPath"`
+}
+
+type ListClusterWithExpiryResponse struct {
+	ID              uint      `json:"id"`
+	Name            string    `json:"name"`
+	EnvironmentName string    `json:"environmentName"`
+	Status          string    `json:"status"`
+	ExpireSeconds   uint      `json:"expireSeconds"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+func ofClusterWithExpiry(clusters []*models.Cluster) []*ListClusterWithExpiryResponse {
+	resList := make([]*ListClusterWithExpiryResponse, 0, len(clusters))
+	for _, c := range clusters {
+		resList = append(resList, &ListClusterWithExpiryResponse{
+			ID:              c.ID,
+			Name:            c.Name,
+			EnvironmentName: c.EnvironmentName,
+			Status:          c.Status,
+			ExpireSeconds:   c.ExpireSeconds,
+			UpdatedAt:       c.UpdatedAt,
+		})
+	}
+	return resList
 }
