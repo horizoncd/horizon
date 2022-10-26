@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/controller/build"
 	controllertag "g.hz.netease.com/horizon/core/controller/tag"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
@@ -55,8 +56,8 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 		return nil, err
 	}
 
-	// TODO: add validate buildschema
-	if err := buildTemplateInfo.Validate(ctx, c.templateSchemaGetter, nil); err != nil {
+	if err := buildTemplateInfo.Validate(ctx,
+		c.templateSchemaGetter, nil, c.buildSchema); err != nil {
 		return nil, err
 	}
 
@@ -346,7 +347,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 			TemplateInfo:   templateInfo,
 			TemplateConfig: templateConfig,
 		}
-		return info.Validate(ctx, c.templateSchemaGetter, renderValues)
+		return info.Validate(ctx, c.templateSchemaGetter, renderValues, c.buildSchema)
 	}()
 	if err != nil {
 		return nil
@@ -384,7 +385,7 @@ type BuildTemplateInfo struct {
 }
 
 func (info *BuildTemplateInfo) Validate(ctx context.Context,
-	trGetter templateschema.Getter, templateSchemaRenderVal map[string]string) error {
+	trGetter templateschema.Getter, templateSchemaRenderVal map[string]string, buildSchema *build.Schema) error {
 	if templateSchemaRenderVal == nil {
 		templateSchemaRenderVal = make(map[string]string)
 	}
@@ -395,7 +396,18 @@ func (info *BuildTemplateInfo) Validate(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	return jsonschema.Validate(schema.Application.JSONSchema, info.TemplateConfig, false)
+	err = jsonschema.Validate(schema.Application.JSONSchema, info.TemplateConfig, false)
+	if err != nil {
+		return err
+	}
+
+	if buildSchema != nil && info.BuildConfig != nil {
+		err = jsonschema.Validate(buildSchema.JSONSchema, info.BuildConfig, false)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r *CreateClusterRequestV2,

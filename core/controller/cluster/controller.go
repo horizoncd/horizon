@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/core/config"
+	"g.hz.netease.com/horizon/core/controller/build"
 	"g.hz.netease.com/horizon/lib/q"
 	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
@@ -121,6 +122,7 @@ type controller struct {
 	tagMgr               tagmanager.Manager
 	grafanaService       grafanaservice.Service
 	grafanaConfig        grafana.Config
+	buildSchema          *build.Schema
 }
 
 var _ Controller = (*controller)(nil)
@@ -154,6 +156,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		tagMgr:               param.TagManager,
 		grafanaService:       param.GrafanaService,
 		grafanaConfig:        config.GrafanaConfig,
+		buildSchema:          param.BuildSchema,
 	}
 }
 

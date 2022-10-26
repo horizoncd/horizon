@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/controller/build"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
@@ -79,6 +80,7 @@ type controller struct {
 	memberManager        member.Manager
 	applicationRegionMgr applicationregionmanager.Manager
 	pipelinemanager      pipelinemanager.Manager
+	buildSchema          *build.Schema
 }
 
 var _ Controller = (*controller)(nil)
@@ -98,6 +100,7 @@ func NewController(param *param.Param) Controller {
 		memberManager:        param.MemberManager,
 		applicationRegionMgr: param.ApplicationRegionManager,
 		pipelinemanager:      param.PipelineMgr,
+		buildSchema:          param.BuildSchema,
 	}
 }
 
@@ -278,6 +281,26 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	return ret, nil
 }
 
+func (c *controller) validateBuildAndTemplateConfigV2(ctx context.Context,
+	request *CreateOrUpdateApplicationRequestV2) error {
+	if request.TemplateConfig != nil && request.TemplateInfo != nil {
+		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release, &TemplateInput{
+			Application: request.TemplateConfig,
+			Pipeline:    nil,
+		}); err != nil {
+			return err
+		}
+	}
+	if request.BuildConfig != nil {
+		if c.buildSchema != nil && c.buildSchema.JSONSchema != nil {
+			if err := jsonschema.Validate(c.buildSchema.JSONSchema, request.BuildConfig, false); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	request *CreateOrUpdateApplicationRequestV2) (*CreateApplicationResponseV2, error) {
 	const op = "application controller: create application v2"
@@ -296,17 +319,10 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 			return nil, err
 		}
 	}
-	// TODO: Validate Build Info
 
-	if request.TemplateConfig != nil && request.TemplateInfo != nil {
-		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release, &TemplateInput{
-			Application: request.TemplateConfig,
-			Pipeline:    nil,
-		}); err != nil {
-			return nil, err
-		}
+	if err := c.validateBuildAndTemplateConfigV2(ctx, request); err != nil {
+		return nil, err
 	}
-
 	// check groups or applications with the same name exists
 	groups, err := c.groupMgr.GetByNameOrPathUnderParent(ctx, request.Name, request.Name, groupID)
 	if err != nil {
@@ -452,22 +468,19 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 			return err
 		}
 	}
-	if request.TemplateConfig != nil && request.TemplateInfo != nil {
-		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release,
-			&TemplateInput{
-				Application: request.TemplateConfig,
-				Pipeline:    nil,
-			}); err != nil {
-			return err
-		}
+
+	if err := c.validateBuildAndTemplateConfigV2(ctx, request); err != nil {
+		return err
+	}
+	if (request.TemplateConfig != nil && request.TemplateInfo != nil) || request.BuildConfig != nil {
 		updateRepoReq := gitrepo.CreateOrUpdateRequest{
 			Version:      common.MetaVersion2,
 			Environment:  common.ApplicationRepoDefaultEnv,
 			BuildConf:    request.BuildConfig,
 			TemplateConf: request.TemplateConfig,
 		}
-		if err := c.applicationGitRepo.CreateOrUpdateApplication(ctx, appExistsInDB.Name, updateRepoReq); err != nil {
-			return errors.E(op, err)
+		if err = c.applicationGitRepo.CreateOrUpdateApplication(ctx, appExistsInDB.Name, updateRepoReq); err != nil {
+			return err
 		}
 	}
 
