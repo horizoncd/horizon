@@ -9,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
 )
@@ -84,7 +85,6 @@ func Middleware(param *param.Param, store sessions.Store,
 		}
 
 		c.Header(NotAuthHeader, "NotAuth")
-		c.AbortWithStatus(http.StatusUnauthorized)
-		_, _ = c.Writer.WriteString("Unauthorized")
+		response.AbortWithRPCError(c, rpcerror.Unauthorized.WithErrMsg("please login"))
 	}, skippers...)
 }

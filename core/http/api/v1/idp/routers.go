@@ -1,6 +1,7 @@
 package idp
 
 import (
+	"fmt"
 	"net/http"
 
 	"g.hz.netease.com/horizon/pkg/server/route"
@@ -15,9 +16,33 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.ListIDPs,
 		},
 		{
+			Method:      http.MethodPost,
+			Pattern:     "/discovery",
+			HandlerFunc: api.GetDiscovery,
+		},
+		{
 			Pattern:     "/endpoints",
 			Method:      http.MethodGet,
 			HandlerFunc: api.ListAuthEndpoints,
+		},
+		{
+			Method:      http.MethodPost,
+			HandlerFunc: api.CreateIDP,
+		},
+		{
+			Pattern:     fmt.Sprintf("/:%s", _idp),
+			Method:      http.MethodGet,
+			HandlerFunc: api.GetByID,
+		},
+		{
+			Pattern:     fmt.Sprintf("/:%s", _idp),
+			Method:      http.MethodDelete,
+			HandlerFunc: api.DeleteIDP,
+		},
+		{
+			Pattern:     fmt.Sprintf("/:%s", _idp),
+			Method:      http.MethodPut,
+			HandlerFunc: api.UpdateIDP,
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)
