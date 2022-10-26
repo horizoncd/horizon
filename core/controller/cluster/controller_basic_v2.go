@@ -54,6 +54,8 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: add validate buildschema
 	if err := buildTemplateInfo.Validate(ctx, c.templateSchemaGetter, nil); err != nil {
 		return nil, err
 	}
@@ -321,7 +323,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 				return nil, nil, err
 			}
 		}
-		if r.TemplateInfo != nil && mergePatch {
+		if r.TemplateConfig != nil && mergePatch {
 			templateConfig, err = mergemap.Merge(files.ApplicationJSONBlob, r.TemplateConfig)
 			if err != nil {
 				return nil, nil, err
