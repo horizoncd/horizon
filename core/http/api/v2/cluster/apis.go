@@ -83,15 +83,16 @@ func (a *API) Create(c *gin.Context) {
 		region, request, mergePatch)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, request)
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
 		if perror.Cause(err) == herrors.ErrParamInvalid {
-			log.WithFiled(c, "op", op).Errorf("err = %+v, request = %+v", err, request)
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, request)
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 			return
 		} else if perror.Cause(err) == herrors.ErrNameConflict {
-			log.WithFiled(c, "op", op).Errorf("err = %+v, request = %+v", err, request)
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, request)
 			response.AbortWithRPCError(c, rpcerror.ConflictError.WithErrMsg(err.Error()))
 			return
 		}
@@ -136,7 +137,7 @@ func (a *API) Update(c *gin.Context) {
 		}
 
 		if perror.Cause(err) == herrors.ErrParamInvalid {
-			log.WithFiled(c, "op", op).Errorf("err = %+v, request = %+v", err, request)
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, request)
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 			return
 		}
