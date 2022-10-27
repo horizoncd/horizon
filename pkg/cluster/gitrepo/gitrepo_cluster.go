@@ -479,6 +479,12 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 				FilePath: _filePathChart,
 				Content:  string(chartYAML),
 			},
+			// create _filePathPipelineOutput file first
+			{
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathPipelineOutput,
+				Content:  "",
+			},
 			// create _filePathRestart file first
 			{
 				Action:   gitlablib.FileCreate,
