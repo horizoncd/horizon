@@ -24,7 +24,7 @@ type Controller interface {
 }
 
 type controller struct {
-	applicationGitRepo   gitrepo.ApplicationGitRepo2
+	applicationGitRepo   gitrepo.ApplicationGitRepo
 	templateSchemaGetter templateschema.Getter
 	applicationMgr       applicationmanager.Manager
 	envMgr               envmanager.Manager

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"g.hz.netease.com/horizon/core/config"
+	"g.hz.netease.com/horizon/core/controller/build"
 	"g.hz.netease.com/horizon/lib/q"
 	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
@@ -34,11 +35,18 @@ import (
 	templateschematagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
-	"github.com/gin-gonic/gin"
 )
 
 type Controller interface {
+	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
+		request *CreateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
+	UpdateCluster(ctx context.Context, clusterID uint,
+		request *UpdateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
+	DeleteCluster(ctx context.Context, clusterID uint, hard bool) error
+
 	GetCluster(ctx context.Context, clusterID uint) (*GetClusterResponse, error)
+	GetClusterByName(ctx context.Context,
+		clusterName string) (*GetClusterByNameResponse, error)
 	GetClusterOutput(ctx context.Context, clusterID uint) (interface{}, error)
 	ListCluster(ctx context.Context, applicationID uint, environments []string,
 		filter string, query *q.Query, ts []tagmodels.TagSelector) (int, []*ListClusterResponse, error)
@@ -47,45 +55,49 @@ type Controller interface {
 	ListUserClusterByNameFuzzily(ctx context.Context, environment,
 		filter string, query *q.Query) (int, []*ListClusterWithFullResponse, error)
 	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*ListClusterWithExpiryResponse, error)
-	CreateCluster(ctx context.Context, applicationID uint, environment, region string,
-		request *CreateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
-	UpdateCluster(ctx context.Context, clusterID uint,
-		request *UpdateClusterRequest, mergePatch bool) (*GetClusterResponse, error)
-	DeleteCluster(ctx context.Context, clusterID uint, hard bool) error
-	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
-	GetClusterByName(ctx context.Context,
-		clusterName string) (*GetClusterByNameResponse, error)
 
 	BuildDeploy(ctx context.Context, clusterID uint,
 		request *BuildDeployRequest) (*BuildDeployResponse, error)
-	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)
-	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
 	Restart(ctx context.Context, clusterID uint) (*PipelinerunIDResponse, error)
 	Deploy(ctx context.Context, clusterID uint, request *DeployRequest) (*PipelinerunIDResponse, error)
 	Rollback(ctx context.Context, clusterID uint, request *RollbackRequest) (*PipelinerunIDResponse, error)
-	Next(ctx context.Context, clusterID uint) error
-	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
-		<-chan string, error)
-	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
-	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
+
 	FreeCluster(ctx context.Context, clusterID uint) error
-	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
-	Promote(ctx context.Context, clusterID uint) error
-	Pause(ctx context.Context, clusterID uint) error
-	Resume(ctx context.Context, clusterID uint) error
-	GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error)
-	GetClusterPod(ctx context.Context, clusterID uint, podName string) (
-		*GetClusterPodResponse, error)
 	// InternalDeploy deploy only used by internal system
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
-	GetGrafanaDashBoard(c *gin.Context, clusterID uint) (*GetGrafanaDashboardsResponse, error)
+
+	Promote(ctx context.Context, clusterID uint) error
+	Pause(ctx context.Context, clusterID uint) error
+	Resume(ctx context.Context, clusterID uint) error
+	Next(ctx context.Context, clusterID uint) error
+
+	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
+	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
+	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
+
+	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)
+	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
+		<-chan string, error)
+
+	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
+	GetClusterPod(ctx context.Context, clusterID uint, podName string) (
+		*GetClusterPodResponse, error)
+
+	GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error)
+	GetContainers(ctx context.Context, clusterID uint, podName string) (interface{}, error)
+	GetGrafanaDashBoard(c context.Context, clusterID uint) (*GetGrafanaDashboardsResponse, error)
+
+	CreateClusterV2(ctx context.Context, applicationID uint, environment,
+		region string, r *CreateClusterRequestV2, mergePatch bool) (*CreateClusterResponseV2, error)
+	GetClusterV2(ctx context.Context, clusterID uint) (*GetClusterResponseV2, error)
+	UpdateClusterV2(ctx context.Context, clusterID uint, r *UpdateClusterRequestV2, mergePatch bool) error
 }
 
 type controller struct {
 	clusterMgr           clustermanager.Manager
 	clusterGitRepo       gitrepo.ClusterGitRepo
-	applicationGitRepo   appgitrepo.ApplicationGitRepo2
+	applicationGitRepo   appgitrepo.ApplicationGitRepo
 	commitGetter         code.GitGetter
 	cd                   cd.CD
 	applicationMgr       appmanager.Manager
@@ -110,6 +122,7 @@ type controller struct {
 	tagMgr               tagmanager.Manager
 	grafanaService       grafanaservice.Service
 	grafanaConfig        grafana.Config
+	buildSchema          *build.Schema
 }
 
 var _ Controller = (*controller)(nil)
@@ -143,6 +156,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		tagMgr:               param.TagManager,
 		grafanaService:       param.GrafanaService,
 		grafanaConfig:        config.GrafanaConfig,
+		buildSchema:          param.BuildSchema,
 	}
 }
 

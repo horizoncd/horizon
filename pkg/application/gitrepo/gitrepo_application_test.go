@@ -180,7 +180,7 @@ func testInit() {
 
 func TestV2(t *testing.T) {
 	testInit()
-	r, err := NewApplicationGitlabRepo2(ctx, rootGroup, g)
+	r, err := NewApplicationGitlabRepo(ctx, rootGroup, g)
 	assert.Nil(t, err)
 
 	defer func() {

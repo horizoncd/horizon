@@ -14,7 +14,6 @@ import (
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
@@ -230,63 +229,35 @@ func testListUserClustersByNameFuzzily(t *testing.T) {
 
 func testListClusterWithExpiry(t *testing.T) {
 	// init data
-	for i := 0; i < 3; i++ {
-		name := "clusterWithExpiry" + strconv.Itoa(i)
-		cluster, err := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
-			ApplicationID:   uint(1),
-			Name:            name,
-			EnvironmentName: "testListClusterWithExpiry",
-			RegionName:      "hzListClusterWithExpiry",
-			GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
-			Status:          "",
-			ExpireSeconds:   uint((i + 1) * secondsInOneDay),
-		}, nil, nil)
-		assert.Nil(t, err)
-		assert.NotNil(t, cluster)
+	clusterInstance := &clustermodels.Cluster{
+		ApplicationID:   uint(1),
+		Name:            "clusterWithExpiry",
+		EnvironmentName: "testListClusterWithExpiry",
+		RegionName:      "hzListClusterWithExpiry",
+		GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+		Status:          "",
+		ExpireSeconds:   secondsInOneDay,
 	}
-	for i := 3; i < 5; i++ {
-		name := "clusterWithExpiry" + strconv.Itoa(i)
-		cluster, err := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
-			ApplicationID:   uint(1),
-			Name:            name,
-			EnvironmentName: "testListClusterWithExpiry",
-			RegionName:      "hzListClusterWithExpiry",
-			GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
-			Status:          clustercommon.StatusFreeing,
-			ExpireSeconds:   uint((i + 1) * secondsInOneDay),
-		}, nil, nil)
-		assert.Nil(t, err)
-		assert.NotNil(t, cluster)
-	}
-	for i := 5; i < 7; i++ {
-		name := "clusterWithExpiry" + strconv.Itoa(i)
-		cluster, err := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
-			ApplicationID:   uint(1),
-			Name:            name,
-			EnvironmentName: "testListClusterWithExpiry",
-			RegionName:      "hzListClusterWithExpiry",
-			GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
-			Status:          "",
-			ExpireSeconds:   0,
-		}, nil, nil)
-		assert.Nil(t, err)
-		assert.NotNil(t, cluster)
-	}
-	clusterWithExpiry, err := c.ListClusterWithExpiry(ctx, nil)
+
+	cluster, err := manager.ClusterMgr.Create(ctx, clusterInstance, nil, nil)
 	assert.Nil(t, err)
-	assert.Equal(t, 5, len(clusterWithExpiry))
-	for _, clr := range clusterWithExpiry {
-		t.Logf("%+v", clr)
+	assert.NotNil(t, cluster)
+	firstClusterID := cluster.ID
+
+	num := 4
+	for i := 1; i <= num; i++ {
+		clusterInstance.ID = 0
+		clusterInstance.Name = "clusterWithExpiry" + strconv.Itoa(i)
+		cluster, err := manager.ClusterMgr.Create(ctx, clusterInstance, nil, nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, cluster)
 	}
-	q2 := &q.Query{
-		Keywords:   q.KeyWords{common.IDThan: uint(15)},
-		Sorts:      nil,
-		PageNumber: 1,
-		PageSize:   20,
-	}
-	clusterWithExpiry, err = c.ListClusterWithExpiry(ctx, q2)
+
+	clusterWithExpiry, err := c.ListClusterWithExpiry(ctx, &q.Query{
+		Keywords: q.KeyWords{common.IDThan: int(firstClusterID)},
+	})
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(clusterWithExpiry))
+	assert.Equal(t, num, len(clusterWithExpiry))
 	for _, clr := range clusterWithExpiry {
 		t.Logf("%+v", clr)
 	}

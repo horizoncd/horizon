@@ -111,6 +111,8 @@ import (
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
+
+	clusterv2 "g.hz.netease.com/horizon/core/http/api/v2/cluster"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
@@ -144,7 +146,7 @@ func ParseFlags() *Flags {
 	flag.StringVar(
 		&flags.ScopeRoleFile, "scopes", "", "configuration file path")
 
-	flag.StringVar(&flags.BuildJSONSchemaFile, "buildjsonschmea", "",
+	flag.StringVar(&flags.BuildJSONSchemaFile, "buildjsonschema", "",
 		"build json schema file path")
 
 	flag.StringVar(&flags.BuildUISchemaFile, "builduischema", "",
@@ -258,7 +260,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo2(ctx, rootGroup, gitlabGitops)
+	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, rootGroup, gitlabGitops)
 
 	if err != nil {
 		panic(err)
@@ -448,6 +450,7 @@ func Run(flags *Flags) {
 		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
 		memberAPI            = member.NewAPI(memberCtl, roleService)
 		clusterAPI           = cluster.NewAPI(clusterCtl)
+		clusterAPIV2         = clusterv2.NewAPI(clusterCtl)
 		prAPI                = pipelinerun.NewAPI(prCtl)
 		environmentAPI       = environment.NewAPI(environmentCtl)
 		regionAPI            = region.NewAPI(regionCtl, tagCtl)
@@ -515,6 +518,7 @@ func Run(flags *Flags) {
 	appv2.RegisterRoutes(r, applicationAPIV2)
 	envtemplate.RegisterRoutes(r, envTemplateAPI)
 	cluster.RegisterRoutes(r, clusterAPI)
+	clusterv2.RegisterRoutes(r, clusterAPIV2)
 	pipelinerun.RegisterRoutes(r, prAPI)
 	environment.RegisterRoutes(r, environmentAPI)
 	region.RegisterRoutes(r, regionAPI)

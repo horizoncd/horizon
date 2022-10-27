@@ -16,9 +16,8 @@ type Git struct {
 }
 
 type TemplateInfo struct {
-	TemplateType string `json:"type"`
-	Name         string `json:"name"`
-	Release      string `json:"release"`
+	Name    string `json:"name"`
+	Release string `json:"release"`
 }
 
 func NewGit(url, subfolder, refType, ref string) *Git {

@@ -994,12 +994,8 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 		templateSchemaRenderVal = make(map[string]string)
 	}
 	// TODO (remove it, currently some template need it)
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, template, release)
-	if err != nil {
-		return err
-	}
 	templateSchemaRenderVal["resourceType"] = "cluster"
-	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, tr.TemplateName, tr.Name, templateSchemaRenderVal)
+	schema, err := c.templateSchemaGetter.GetTemplateSchema(ctx, template, release, templateSchemaRenderVal)
 	if err != nil {
 		return err
 	}

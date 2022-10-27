@@ -27,12 +27,13 @@ const (
 )
 
 type Manifest struct {
+	// TODO(encode the template info into manifest),currently only the Version
 	Version string `yaml:"version"`
 }
 
 type CreateOrUpdateRequest struct {
 	Version string
-	// TODO(encode the template info into manifest)
+
 	Environment  string
 	BuildConf    map[string]interface{}
 	TemplateConf map[string]interface{}
@@ -44,23 +45,23 @@ type GetResponse struct {
 	TemplateConf map[string]interface{}
 }
 
-type ApplicationGitRepo2 interface {
+type ApplicationGitRepo interface {
 	CreateOrUpdateApplication(ctx context.Context, application string, request CreateOrUpdateRequest) error
 	GetApplication(ctx context.Context, application, environment string) (*GetResponse, error)
 	// HardDeleteApplication hard delete an application by the specified application name
 	HardDeleteApplication(ctx context.Context, application string) error
 }
 
-type gitRepo2 struct {
+type gitRepo struct {
 	gitlabLib                  gitlablib.Interface
 	applicationsGroup          *gitlab.Group
 	recyclingApplicationsGroup *gitlab.Group
 }
 
-var _ ApplicationGitRepo2 = &gitRepo2{}
+var _ ApplicationGitRepo = &gitRepo{}
 
-func NewApplicationGitlabRepo2(ctx context.Context, rootGroup *gitlab.Group,
-	gitlabLib gitlablib.Interface) (ApplicationGitRepo2, error) {
+func NewApplicationGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
+	gitlabLib gitlablib.Interface) (ApplicationGitRepo, error) {
 	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _applications)
 	if err != nil {
 		return nil, err
@@ -70,14 +71,14 @@ func NewApplicationGitlabRepo2(ctx context.Context, rootGroup *gitlab.Group,
 	if err != nil {
 		return nil, err
 	}
-	return &gitRepo2{
+	return &gitRepo{
 		gitlabLib:                  gitlabLib,
 		applicationsGroup:          applicationsGroup,
 		recyclingApplicationsGroup: recyclingApplicationsGroup,
 	}, nil
 }
 
-func (g gitRepo2) CreateOrUpdateApplication(ctx context.Context, application string, req CreateOrUpdateRequest) error {
+func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application string, req CreateOrUpdateRequest) error {
 	const op = "gitlab repo: create or update application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -192,7 +193,7 @@ func (g gitRepo2) CreateOrUpdateApplication(ctx context.Context, application str
 	return nil
 }
 
-func (g gitRepo2) GetApplication(ctx context.Context, application, environment string) (*GetResponse, error) {
+func (g gitRepo) GetApplication(ctx context.Context, application, environment string) (*GetResponse, error) {
 	const op = "gitlab repo: get application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -213,7 +214,7 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 		}
 	}
 
-	manifestbytes, err1 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathManifest)
+	manifestBytes, err1 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathManifest)
 	buildConfBytes, err2 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
 	templateConfBytes, err3 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
 	for _, err := range []error{err1, err2, err3} {
@@ -235,8 +236,8 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 		return entity, nil
 	}
 
-	if manifestbytes != nil {
-		entity, err := TransformData(manifestbytes)
+	if manifestBytes != nil {
+		entity, err := TransformData(manifestBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -261,7 +262,7 @@ func (g gitRepo2) GetApplication(ctx context.Context, application, environment s
 	return &res, nil
 }
 
-func (g gitRepo2) HardDeleteApplication(ctx context.Context, application string) error {
+func (g gitRepo) HardDeleteApplication(ctx context.Context, application string) error {
 	const op = "gitlab repo: hard delete application"
 	defer wlog.Start(ctx, op).StopPrint()
 

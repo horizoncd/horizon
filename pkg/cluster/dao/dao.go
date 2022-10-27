@@ -398,9 +398,7 @@ func (d *dao) ListClusterWithExpiry(ctx context.Context,
 	limit := query.PageSize
 	idThan, ok := query.Keywords[common.IDThan]
 	if ok {
-		if id, ok := idThan.(uint); ok && id > 0 {
-			tx = tx.Where("id > ?", id)
-		}
+		tx = tx.Where("id > ?", idThan)
 	}
 	result := tx.Where("deleted_ts = ?", 0).Where("status = ?", "").
 		Where("expire_seconds > ?", 0).Order("id asc").Limit(limit).Offset(offset).Find(&clusters)
