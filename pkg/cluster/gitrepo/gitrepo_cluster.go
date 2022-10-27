@@ -888,10 +888,14 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	} else {
 		PipelineOutPutFileExist = true
 		// if current exist, just patch it
-		newPipelineOutputContent[pipelineValueParent], err =
-			mergemap.Merge(currentPipelineOutputContent[pipelineValueParent], pipelineOutPutInternalFormat)
-		if err != nil {
-			return "", perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
+		if currentPipelineOutputContent != nil {
+			newPipelineOutputContent[pipelineValueParent], err =
+				mergemap.Merge(currentPipelineOutputContent[pipelineValueParent], pipelineOutPutInternalFormat)
+			if err != nil {
+				return "", perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
+			}
+		} else {
+			newPipelineOutputContent[pipelineValueParent] = pipelineOutPutInternalFormat
 		}
 	}
 
