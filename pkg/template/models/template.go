@@ -13,6 +13,7 @@ type Template struct {
 	Repository  string
 	GroupID     uint
 	OnlyOwner   *bool
+	WithoutCI   bool
 	CreatedBy   uint
 	UpdatedBy   uint
 }
