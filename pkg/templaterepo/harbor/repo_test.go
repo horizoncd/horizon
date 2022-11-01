@@ -2,6 +2,7 @@ package harbor
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,6 +31,8 @@ var (
 
 func TestMain(m *testing.M) {
 	harborHost = os.Getenv(EnvHarborHost)
+	harborHost = strings.TrimPrefix(harborHost, "https://")
+	harborHost = strings.TrimPrefix(harborHost, "http://")
 	harborAdmin = os.Getenv(EnvHarborUser)
 	harborPasswd = os.Getenv(EnvHarborPasswd)
 	harborRepoName = os.Getenv(EnvHarborRepoName)
