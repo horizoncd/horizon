@@ -574,12 +574,12 @@ func TestListTemplate(t *testing.T) {
 	ctx = context.WithValue(ctx, hctx.ReleaseSyncToRepo, false)
 	createChart(t, ctl, 0)
 
-	templates, err = ctl.ListTemplateByGroupID(ctx, 1)
+	templates, err = ctl.ListTemplateByGroupID(ctx, 1, false)
 	_, ok = perror.Cause(err).(*herrors.HorizonErrNotFound)
 	assert.True(t, ok)
 	assert.Equal(t, 0, len(templates))
 
-	templates, err = ctl.ListTemplateByGroupID(ctx, 0)
+	templates, err = ctl.ListTemplateByGroupID(ctx, 0, false)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(templates))
 
@@ -590,7 +590,7 @@ func TestListTemplate(t *testing.T) {
 	createChart(t, ctl, 1)
 
 	ctx = context.WithValue(ctx, hctx.TemplateListRecursively, true)
-	templates, err = ctl.ListTemplateByGroupID(ctx, 0)
+	templates, err = ctl.ListTemplateByGroupID(ctx, 0, false)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(templates))
 
@@ -605,7 +605,7 @@ func TestListTemplate(t *testing.T) {
 	createChart(t, ctl, 2)
 
 	assert.Nil(t, err)
-	templates, err = ctl.ListTemplateByGroupID(ctx, 2)
+	templates, err = ctl.ListTemplateByGroupID(ctx, 2, false)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(templates))
 }

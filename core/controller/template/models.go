@@ -21,6 +21,7 @@ type CreateTemplateRequest struct {
 	Description          string `json:"description"`
 	Repository           string `json:"repository"`
 	OnlyOwner            bool   `json:"onlyOwner"`
+	WithoutCI            bool   `json:"withoutCI"`
 }
 
 func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.Template, error) {
@@ -38,6 +39,7 @@ func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		Description: c.Description,
 		Repository:  c.Repository,
 		OnlyOwner:   &c.OnlyOwner,
+		WithoutCI:   c.WithoutCI,
 	}
 	return t, nil
 }
@@ -68,6 +70,7 @@ type UpdateTemplateRequest struct {
 	Description string `json:"description"`
 	Repository  string `json:"repository"`
 	OnlyOwner   bool   `json:"onlyOwner"`
+	WithoutCI   bool   `json:"withoutCI"`
 }
 
 func (c *UpdateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.Template, error) {
@@ -86,6 +89,7 @@ func (c *UpdateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		Description: c.Description,
 		Repository:  c.Repository,
 		OnlyOwner:   &c.OnlyOwner,
+		WithoutCI:   c.WithoutCI,
 	}
 	return t, nil
 }
@@ -117,6 +121,7 @@ type Template struct {
 	FullPath    string    `json:"fullPath,omitempty"`
 	GroupID     uint      `json:"group"`
 	OnlyOwner   bool      `json:"onlyOwner"`
+	WithoutCI   bool      `json:"withoutCI"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 	CreatedBy   uint      `json:"createdBy"`
@@ -134,6 +139,7 @@ func toTemplate(m *tmodels.Template) *Template {
 		Description: m.Description,
 		Repository:  m.Repository,
 		GroupID:     m.GroupID,
+		WithoutCI:   m.WithoutCI,
 		CreatedAt:   m.Model.CreatedAt,
 		UpdatedAt:   m.Model.UpdatedAt,
 		CreatedBy:   m.CreatedBy,
