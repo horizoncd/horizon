@@ -317,7 +317,7 @@ func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint, wi
 	}
 
 	if listRecursively, ok := ctx.Value(hctx.TemplateListRecursively).(bool); ok && listRecursively {
-		return c.listTemplateByGroupIDRecursively(ctx, groupID)
+		return c.listTemplateByGroupIDRecursively(ctx, groupID, withoutCI)
 	}
 
 	templates, err := c.templateMgr.ListByGroupID(ctx, groupID)
@@ -343,7 +343,8 @@ func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint, wi
 	return tpls, err
 }
 
-func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context, groupID uint) (Templates, error) {
+func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context,
+	groupID uint, withoutCI bool) (Templates, error) {
 	if !c.groupMgr.GroupExist(ctx, groupID) {
 		reason := fmt.Sprintf("group not found: %d", groupID)
 		return nil, perror.Wrap(herrors.NewErrNotFound(herrors.GroupInDB, reason), reason)
@@ -378,7 +379,9 @@ func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context, group
 	var tpls Templates
 	for _, template := range templates {
 		if c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
-			tpls = append(tpls, toTemplate(template))
+			if template.WithoutCI == withoutCI {
+				tpls = append(tpls, toTemplate(template))
+			}
 		}
 	}
 
