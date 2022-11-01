@@ -12,7 +12,6 @@ var _harborDurationHistogram *prometheus.HistogramVec
 const (
 	_server     = "server"
 	_method     = "method"
-	_uri        = "uri"
 	_statuscode = "statuscode"
 	_operation  = "operation"
 )
@@ -22,14 +21,13 @@ func init() {
 		Name:    "harbor_request_duration_milliseconds",
 		Help:    "Harbor request duration in milliseconds",
 		Buckets: prometheus.ExponentialBuckets(50, 2, 10),
-	}, []string{_server, _method, _uri, _statuscode, _operation})
+	}, []string{_server, _method, _statuscode, _operation})
 }
 
-func observe(server, method, uri, statuscode, operation string, duration time.Duration) {
+func observe(server, method, statuscode, operation string, duration time.Duration) {
 	_harborDurationHistogram.With(prometheus.Labels{
 		_server:     server,
 		_method:     method,
-		_uri:        uri,
 		_statuscode: statuscode,
 		_operation:  operation,
 	}).Observe(float64(duration.Milliseconds()))

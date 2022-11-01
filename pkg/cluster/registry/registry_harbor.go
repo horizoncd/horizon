@@ -249,15 +249,13 @@ func (h *HarborRegistry) sendHTTPRequest(ctx context.Context, method string,
 	var err error
 	defer func() {
 		duration := time.Since(begin)
-		server := h.server
-		uri := strings.TrimPrefix(url, server)
-		server = strings.TrimPrefix(strings.TrimPrefix(h.server, "http://"), "https://")
+		server := strings.TrimPrefix(strings.TrimPrefix(h.server, "http://"), "https://")
 		// statuscode rsp可能为nil，默认为空字符串
 		statuscode := ""
 		if rsp != nil {
 			statuscode = strconv.Itoa(rsp.StatusCode)
 		}
-		observe(server, method, uri, statuscode, operation, duration)
+		observe(server, method, statuscode, operation, duration)
 	}()
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
