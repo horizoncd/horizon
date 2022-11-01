@@ -17,7 +17,7 @@ import (
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
-	// "g.hz.netease.com/horizon/core/controller/build"
+	"g.hz.netease.com/horizon/core/controller/build"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	codectl "g.hz.netease.com/horizon/core/controller/code"
 	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
@@ -65,7 +65,7 @@ import (
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
 	appv2 "g.hz.netease.com/horizon/core/http/api/v2/application"
-	// buildAPI "g.hz.netease.com/horizon/core/http/api/v2/build"
+	buildAPI "g.hz.netease.com/horizon/core/http/api/v2/build"
 	envtemplatev2 "g.hz.netease.com/horizon/core/http/api/v2/envtemplate"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
@@ -359,27 +359,27 @@ func Run(flags *Flags) {
 	}
 
 	// init build schema controller
-	//readJSONFileFunc := func(filePath string) map[string]interface{} {
-	//	fileFd, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	fileContent, err := ioutil.ReadAll(fileFd)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	var schemaFile map[string]interface{}
-	//	err = json.Unmarshal(fileContent, &schemaFile)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	return schemaFile
-	//}
+	readJSONFileFunc := func(filePath string) map[string]interface{} {
+		fileFd, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		fileContent, err := ioutil.ReadAll(fileFd)
+		if err != nil {
+			panic(err)
+		}
+		var schemaFile map[string]interface{}
+		err = json.Unmarshal(fileContent, &schemaFile)
+		if err != nil {
+			panic(err)
+		}
+		return schemaFile
+	}
 
-	//buildSchema := &build.Schema{
-	//	JSONSchema: readJSONFileFunc(flags.BuildJSONSchemaFile),
-	//	UISchema:   readJSONFileFunc(flags.BuildUISchemaFile),
-	//}
+	buildSchema := &build.Schema{
+		JSONSchema: readJSONFileFunc(flags.BuildJSONSchemaFile),
+		UISchema:   readJSONFileFunc(flags.BuildUISchemaFile),
+	}
 
 	groupSvc := groupservice.NewService(manager)
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
@@ -387,7 +387,7 @@ func Run(flags *Flags) {
 	userSvc := userservice.NewService(manager)
 
 	// init kube client
-	_, client, err := kube.BuildClient("/home/closetool/.kube/config")
+	_, client, err := kube.BuildClient("")
 	if err != nil {
 		panic(err)
 	}
@@ -413,7 +413,7 @@ func Run(flags *Flags) {
 		ClusterGitRepo:       clusterGitRepo,
 		GitGetter:            gitGetter,
 		GrafanaService:       grafanaService,
-		//BuildSchema:          buildSchema,
+		BuildSchema:          buildSchema,
 	}
 
 	var (
@@ -452,7 +452,7 @@ func Run(flags *Flags) {
 		environmentregionCtl = environmentregionctl.NewController(parameter)
 		registryCtl          = registryctl.NewController(parameter)
 		idpCtrl              = idpctl.NewController(parameter)
-		//buildSchemaCtrl      = build.NewController(buildSchema)
+		buildSchemaCtrl      = build.NewController(buildSchema)
 	)
 
 	var (
@@ -483,8 +483,8 @@ func Run(flags *Flags) {
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl,
 			coreConfig.Oauth.OauthHTMLLocation, scopeService)
-		idpAPI = idp.NewAPI(idpCtrl, store)
-		//buildSchemaAPI   = buildAPI.NewAPI(buildSchemaCtrl)
+		idpAPI           = idp.NewAPI(idpCtrl, store)
+		buildSchemaAPI   = buildAPI.NewAPI(buildSchemaCtrl)
 		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl)
 	)
 
@@ -551,7 +551,7 @@ func Run(flags *Flags) {
 	oauthapp.RegisterRoutes(r, oauthAppAPI)
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
 	idp.RegisterRoutes(r, idpAPI)
-	//buildAPI.RegisterRoutes(r, buildSchemaAPI)
+	buildAPI.RegisterRoutes(r, buildSchemaAPI)
 	envtemplatev2.RegisterRoutes(r, envtemplatev2API)
 	templatev2.RegisterRoutes(r, templateAPIV2)
 

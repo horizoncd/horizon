@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -153,8 +154,8 @@ func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 	normalizedBranch := strings.Join(pinyin.LazyPinyin(branch, args), "")
 	normalizedBranch = regexp.MustCompile(`[^a-zA-Z0-9_.-]`).ReplaceAllString(normalizedBranch, "_")
 
-	return fmt.Sprintf("%v/%v/%v/%v:%v-%v-%v",
-		domain, regionEntity.Registry.Path, application, cluster, normalizedBranch, commit[:8], timeStr)
+	return path.Join(domain, regionEntity.Registry.Path, application,
+		fmt.Sprintf("%v:%v-%v-%v", cluster, normalizedBranch, commit[:8], timeStr))
 }
 
 func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref string) (_ *GetDiffResponse, err error) {

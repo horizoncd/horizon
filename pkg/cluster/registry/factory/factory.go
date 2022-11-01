@@ -32,7 +32,7 @@ func NewFactory() Factory {
 }
 
 func (f *factory) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
-	key := fmt.Sprintf("%v-%v", config.Server, config.Token)
+	key := fmt.Sprintf("%v-%v-%v", config.Server, config.Token, config.Kind)
 	if ret, ok := f.harborRegistryCache.Load(key); ok {
 		return ret.(registry.Registry), nil
 	}

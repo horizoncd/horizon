@@ -9,10 +9,18 @@ import (
 
 type Constructor func(config *Config) (Registry, error)
 
-var Factory = make(map[string]Constructor)
+var factory = make(map[string]Constructor)
+
+func GetKinds() []string {
+	kinds := make([]string, 0, len(factory))
+	for kind := range factory {
+		kinds = append(kinds, kind)
+	}
+	return kinds
+}
 
 func Register(kind string, constructor Constructor) {
-	Factory[kind] = constructor
+	factory[kind] = constructor
 }
 
 // Registry ...
@@ -35,7 +43,7 @@ type Config struct {
 }
 
 func NewRegistry(config *Config) (Registry, error) {
-	for kind, constructor := range Factory {
+	for kind, constructor := range factory {
 		if kind == config.Kind {
 			return constructor(config)
 		}

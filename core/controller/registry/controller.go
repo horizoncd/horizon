@@ -127,10 +127,7 @@ func (c controller) GetByID(ctx context.Context, id uint) (*Registry, error) {
 func (c controller) GetKinds(ctx context.Context) []string {
 	var once sync.Once
 	once.Do(func() {
-		kindCache = make([]string, 0, len(registry.Factory))
-		for kind := range registry.Factory {
-			kindCache = append(kindCache, kind)
-		}
+		kindCache = registry.GetKinds()
 	})
 
 	return kindCache
