@@ -248,14 +248,12 @@ func (h *HarborRegistry) sendHTTPRequest(ctx context.Context, method string,
 	var rsp *http.Response
 	var err error
 	defer func() {
-		duration := time.Since(begin)
-		server := strings.TrimPrefix(strings.TrimPrefix(h.server, "http://"), "https://")
-		// statuscode rsp可能为nil，默认为空字符串
-		statuscode := ""
 		if rsp != nil {
-			statuscode = strconv.Itoa(rsp.StatusCode)
+			duration := time.Since(begin)
+			server := strings.TrimPrefix(strings.TrimPrefix(h.server, "http://"), "https://")
+			statuscode := strconv.Itoa(rsp.StatusCode)
+			observe(server, method, statuscode, operation, duration)
 		}
-		observe(server, method, statuscode, operation, duration)
 	}()
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
