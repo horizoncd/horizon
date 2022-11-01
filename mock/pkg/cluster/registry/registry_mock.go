@@ -35,15 +35,20 @@ func (m *MockRegistry) EXPECT() *MockRegistryMockRecorder {
 }
 
 // DeleteRepository mocks base method.
-func (m *MockRegistry) DeleteRepository(ctx context.Context, repository string) error {
+func (m *MockRegistry) DeleteRepository(ctx context.Context, names ...string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteRepository", ctx, repository)
+	varargs := []interface{}{ctx}
+	for _, a := range names {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteRepository", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteRepository indicates an expected call of DeleteRepository.
-func (mr *MockRegistryMockRecorder) DeleteRepository(ctx, repository interface{}) *gomock.Call {
+func (mr *MockRegistryMockRecorder) DeleteRepository(ctx interface{}, names ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockRegistry)(nil).DeleteRepository), ctx, repository)
+	varargs := append([]interface{}{ctx}, names...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockRegistry)(nil).DeleteRepository), varargs...)
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"strconv"
 	"strings"
@@ -120,11 +121,25 @@ func (h *Registry) createProject(ctx context.Context, project string) (_ int, er
 	return -1, errors.E(op, resp.StatusCode, message)
 }
 
-func (h *Registry) DeleteRepository(ctx context.Context, repository string) (err error) {
+func (h *Registry) DeleteRepository(ctx context.Context, names ...string) (err error) {
 	const op = "registry: delete repository"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	link := path.Join("/api/v2.0/projects", h.path, "repositories", repository)
+	var link string
+	if h.path == "" || path.Join(h.path) == "/" {
+		if len(names) < 2 {
+			return perror.Wrapf(herrors.ErrParamInvalid, "repository names are too short: %v", names)
+		}
+		link = path.Join("/api/v2.0/projects", names[0], "repositories",
+			path.Join(names[1:]...))
+	} else {
+		if len(names) < 1 {
+			return perror.Wrapf(herrors.ErrParamInvalid, "repository names are too short: %v", names)
+		}
+		link = path.Join("/api/v2.0/projects", h.path, "repositories",
+			url.PathEscape(path.Join(names...)))
+	}
+
 	link = fmt.Sprintf("%s%s", strings.TrimSuffix(h.server, "/"), link)
 
 	resp, err := h.sendHTTPRequest(ctx, http.MethodDelete, link, nil, true, "deleteRepository")

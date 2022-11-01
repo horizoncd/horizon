@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"net/url"
-	"path"
 	"regexp"
 	"time"
 
@@ -782,8 +780,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		})
 
 		if rg != nil {
-			if err = rg.DeleteRepository(newctx,
-				url.PathEscape(path.Join(application.Name, cluster.Name))); err != nil {
+			if err = rg.DeleteRepository(newctx, application.Name, cluster.Name); err != nil {
 				// log error, not return here, delete harbor repository failed has no effect
 				log.Errorf(newctx, "failed to delete harbor repository: %v, err: %v", cluster.Name, err)
 			}
