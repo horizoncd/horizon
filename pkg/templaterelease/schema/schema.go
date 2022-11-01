@@ -39,13 +39,17 @@ type Getter interface {
 
 func RenderFiles(params map[string]string, files ...[]byte) (retFiles [][]byte, _ error) {
 	for _, file := range files {
-		var b bytes.Buffer
-		doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(string(file)))
-		err := doTemplate.ExecuteTemplate(&b, "", params)
-		if err != nil {
-			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
+		if file != nil {
+			var b bytes.Buffer
+			doTemplate := template.Must(template.New("").Funcs(sprig.TxtFuncMap()).Parse(string(file)))
+			err := doTemplate.ExecuteTemplate(&b, "", params)
+			if err != nil {
+				return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
+			}
+			retFiles = append(retFiles, b.Bytes())
+		} else {
+			retFiles = append(retFiles, nil)
 		}
-		retFiles = append(retFiles, b.Bytes())
 	}
 	return retFiles, nil
 }
@@ -68,8 +72,10 @@ func ParseFiles(params map[string]string,
 	wgUnmarshal.Add(4)
 	unmarshal := func(b []byte, m *map[string]interface{}, err *error) {
 		defer wgUnmarshal.Done()
-		if e := json.Unmarshal(b, &m); e != nil {
-			*err = perror.Wrap(herrors.ErrParamInvalid, e.Error())
+		if b != nil {
+			if e := json.Unmarshal(b, &m); e != nil {
+				*err = perror.Wrap(herrors.ErrParamInvalid, e.Error())
+			}
 		}
 	}
 	go unmarshal(pipelineSchemaBytes, &pipelineSchema, &err1)

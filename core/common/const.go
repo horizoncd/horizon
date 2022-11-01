@@ -15,6 +15,11 @@ const (
 )
 
 const (
+	MetaVersion2              = "0.0.2"
+	ApplicationRepoDefaultEnv = "default"
+)
+
+const (
 	// InternalError internal server error code
 	InternalError = "InternalError"
 
@@ -83,6 +88,11 @@ const (
 )
 
 const (
+	ParamScope      = "scope"
+	ParamMergePatch = "mergePatch"
+	ParamExtraOwner = "extraOwner"
+)
+const (
 	GitlabCode     = "code"
 	GitlabGitops   = "gitops"
 	GitlabTemplate = "template"
@@ -93,8 +103,7 @@ const (
 )
 
 const (
-	CookieKeyAuth = "horizon|session"
-
+	CookieKeyAuth      = "horizon|session"
 	SessionKeyAuthUser = "user"
 )
 

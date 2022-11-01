@@ -16,6 +16,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 
+	"g.hz.netease.com/horizon/core/controller/build"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -46,4 +47,5 @@ type Param struct {
 	TektonFty            factory.Factory
 	ClusterGitRepo       clustergitrepo.ClusterGitRepo
 	GitGetter            code.GitGetter
+	BuildSchema          *build.Schema
 }

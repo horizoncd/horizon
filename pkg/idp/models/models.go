@@ -20,7 +20,7 @@ type IdentityProvider struct {
 	Issuer                  string
 	Scopes                  string
 	SigningAlgs             string
-	TokenEndpointAuthMethod TokenEndpointAuthMethod
+	TokenEndpointAuthMethod *TokenEndpointAuthMethod
 	Jwks                    string
 	ClientID                string
 	ClientSecret            string
@@ -92,5 +92,20 @@ func (t *TokenEndpointAuthMethod) MarshalJSON() ([]byte, error) {
 }
 
 func (t *TokenEndpointAuthMethod) UnmarshalJSON(data []byte) error {
-	return t.Scan(data)
+	str := string(data)
+	switch str {
+	case fmt.Sprintf("\"%s\"", ClientSecretSentAsPostStr):
+		*t = ClientSecretSentAsPost
+		return nil
+	case fmt.Sprintf("\"%s\"", ClientSecretSentAsBasicAuthStr):
+		*t = ClientSecretSentAsBasicAuth
+		return nil
+	case fmt.Sprintf("\"%s\"", ClientSecretAsJwtStr):
+		*t = ClientSecretAsJwt
+		return nil
+	case fmt.Sprintf("\"%s\"", JwtSignedWithPrivateKeyStr):
+		*t = JwtSignedWithPrivateKey
+		return nil
+	}
+	return fmt.Errorf("failed to unmarshal TokenEndpointAuthMethod: unsupported value %v", str)
 }

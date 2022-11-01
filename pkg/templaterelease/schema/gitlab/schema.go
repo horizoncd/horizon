@@ -4,7 +4,9 @@ import (
 	"context"
 	"sync"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
@@ -81,7 +83,9 @@ func (g *getter) GetTemplateSchema(ctx context.Context,
 	wgReadFile.Wait()
 	for _, err := range []error{err1, err2, err3, err4} {
 		if err != nil {
-			return nil, err
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+				return nil, err
+			}
 		}
 	}
 	return schema.ParseFiles(params,

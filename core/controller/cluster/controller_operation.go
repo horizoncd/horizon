@@ -11,7 +11,6 @@ import (
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
-	"github.com/gin-gonic/gin"
 )
 
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
@@ -537,7 +536,7 @@ func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podN
 	return ofBatchResp(result), nil
 }
 
-func (c *controller) GetGrafanaDashBoard(ctx *gin.Context, clusterID uint) (*GetGrafanaDashboardsResponse, error) {
+func (c *controller) GetGrafanaDashBoard(ctx context.Context, clusterID uint) (*GetGrafanaDashboardsResponse, error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err

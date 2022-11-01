@@ -19,6 +19,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterepo"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/log"
+	"g.hz.netease.com/horizon/pkg/util/mergemap"
 	timeutil "g.hz.netease.com/horizon/pkg/util/time"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/xanzy/go-gitlab"
@@ -67,6 +68,7 @@ const (
 	_filePathRestart        = "system/restart.yaml"
 	_filePathPipeline       = "pipeline/pipeline.yaml"
 	_filePathPipelineOutput = "pipeline/pipeline-output.yaml"
+	_filePathManifest       = "manifest.yaml"
 
 	// value namespace
 	_envValueNamespace  = "env"
@@ -76,6 +78,10 @@ const (
 
 	_clusters          = "clusters"
 	_recyclingClusters = "recycling-clusters"
+)
+
+const (
+	PipelineValueParent = "pipeline"
 )
 
 var ErrPipelineOutputEmpty = goerrors.New("PipelineOutput is empty")
@@ -90,6 +96,13 @@ type BaseParams struct {
 	Environment         string
 	RegionEntity        *regionmodels.RegionEntity
 	Namespace           string
+
+	Version string
+}
+
+type Manifest struct {
+	// TODO(encode the template info into manifest),currently only the Version
+	Version string `yaml:"version"`
 }
 
 type CreateClusterParams struct {
@@ -108,7 +121,9 @@ type RepoInfo struct {
 }
 
 type ClusterFiles struct {
-	PipelineJSONBlob, ApplicationJSONBlob map[string]interface{}
+	PipelineJSONBlob    map[string]interface{}
+	ApplicationJSONBlob map[string]interface{}
+	Manifest            map[string]interface{}
 }
 
 type ClusterValueFile struct {
@@ -136,8 +151,8 @@ type ClusterGitRepo interface {
 	MergeBranch(ctx context.Context, application, cluster string, prID uint) (string, error)
 	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (*PipelineOutput, error)
 	UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
-		pipelineOutputParam PipelineOutput) (string, error)
-	// GetRestartTime UpdateRestartTime update restartTime in git repo for restart
+		PipelineOutput interface{}) (string, error)
+	// UpdateRestartTime update restartTime in git repo for restart
 	// TODO(gjq): some template cannot restart, for example serverless, how to do it ?
 	GetRestartTime(ctx context.Context, application, cluster string,
 		template string) (string, error)
@@ -182,11 +197,11 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 
 	// 1. get template and pipeline from gitlab
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	var applicationBytes, pipelineBytes []byte
-	var err1, err2 error
+	var applicationBytes, pipelineBytes, manifestBytes []byte
+	var err1, err2, err3 error
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		defer wg.Done()
 		pipelineBytes, err1 = g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipeline)
@@ -209,31 +224,102 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 			err2 = perror.Wrap(herrors.ErrParamInvalid, err2.Error())
 		}
 	}()
+	go func() {
+		defer wg.Done()
+		manifestBytes, err3 = g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathManifest)
+		if err3 != nil {
+			return
+		}
+		manifestBytes, err3 = kyaml.YAMLToJSON(manifestBytes)
+		if err3 != nil {
+			return
+		}
+	}()
 	wg.Wait()
 
-	for _, err := range []error{err1, err2} {
+	for _, err := range []error{err1, err2, err3} {
 		if err != nil {
-			return nil, err
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+				return nil, err
+			}
 		}
 	}
 
 	var pipelineJSONBlobWithTemplate, applicationJSONBlobWithTemplate map[string]map[string]interface{}
-	if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlobWithTemplate); err != nil {
-		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
+	if pipelineBytes != nil {
+		if err := json.Unmarshal(pipelineBytes, &pipelineJSONBlobWithTemplate); err != nil {
+			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
+		}
 	}
-	if err := json.Unmarshal(applicationBytes, &applicationJSONBlobWithTemplate); err != nil {
-		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
+	if applicationBytes != nil {
+		if err := json.Unmarshal(applicationBytes, &applicationJSONBlobWithTemplate); err != nil {
+			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
+		}
+	}
+	var manifest = Manifest{}
+	if manifestBytes != nil {
+		err = json.Unmarshal(manifestBytes, &manifest)
+		if err != nil {
+			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
+		}
 	}
 
-	pipelineJSONBlob, ok1 := pipelineJSONBlobWithTemplate[templateName]
-	applicationJSONBlob, ok2 := applicationJSONBlobWithTemplate[templateName]
-	if !ok1 || !ok2 {
-		return nil, perror.Wrapf(herrors.ErrParamInvalid, "template name: %v is different from git and db", templateName)
+	pipelineJSONBlob, err := func() (map[string]interface{}, error) {
+		if pipelineBytes == nil {
+			return nil, nil
+		}
+		var pipelineValueParentName string
+		if manifest.Version == "" {
+			pipelineValueParentName = templateName
+		} else {
+			pipelineValueParentName = PipelineValueParent
+		}
+		jsonBlob, ok := pipelineJSONBlobWithTemplate[pipelineValueParentName]
+		if !ok {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"pipeline value parent prefix not found, prefix = %s ", pipelineValueParentName)
+		}
+		return jsonBlob, nil
+	}()
+	if err != nil {
+		return nil, err
+	}
+
+	applicationJSONBlob, err := func() (map[string]interface{}, error) {
+		if applicationBytes == nil {
+			return nil, nil
+		}
+		jsonBlob, ok := applicationJSONBlobWithTemplate[templateName]
+		if !ok {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"template value parent prefix not found, prefix = %s ", templateName)
+		}
+		return jsonBlob, nil
+	}()
+	if err != nil {
+		return nil, err
+	}
+
+	manifestJSONBlob, err := func() (map[string]interface{}, error) {
+		if manifestBytes == nil {
+			return nil, nil
+		}
+		var jsonBlob map[string]interface{}
+		err := json.Unmarshal(manifestBytes, &jsonBlob)
+		if err != nil {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"manifest Unmarshal error, value = %s ", string(manifestBytes))
+		}
+		return jsonBlob, nil
+	}()
+	if err != nil {
+		return nil, err
 	}
 
 	return &ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
+		Manifest:            manifestJSONBlob,
 	}, nil
 }
 
@@ -340,81 +426,96 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	}
 
 	// 4. write files to repo, to gitops branch
-	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, sreValueYAML, chartYAML, restartYAML, tagsYAML []byte
-	var err1, err2, err3, err4, err5, err6, err7, err8 error
+	var applicationYAML, pipelineYAML, baseValueYAML []byte
+	var envValueYAML, sreValueYAML, chartYAML, restartYAML, tagsYAML, manifestValueYAML []byte
+	var err1, err2, err3, err4, err5, err6, err7, err8, err9 error
 
-	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
-	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
+	if params.BaseParams.ApplicationJSONBlob != nil {
+		marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
+	}
+	if params.BaseParams.PipelineJSONBlob != nil {
+		marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
+	}
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
 	marshal(&envValueYAML, &err4, g.assembleEnvValue(params.BaseParams))
 	marshal(&sreValueYAML, &err5, g.assembleSREValue(params))
+	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.ChartName))
+	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.ChartName, params.Tags))
+	if params.BaseParams.Version != "" {
+		marshal(&manifestValueYAML, &err9, Manifest{Version: params.BaseParams.Version})
+	}
+
 	chart, err := g.assembleChart(params.BaseParams)
 	if err != nil {
 		return err
 	}
 	marshal(&chartYAML, &err6, chart)
-	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.ChartName))
-	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.ChartName, params.Tags))
 
-	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8} {
+	for _, err := range []error{err1, err2, err3, err4, err5, err6, err7, err8, err9} {
 		if err != nil {
 			return err
 		}
 	}
-
-	pipelineOutPut := ""
-	if params.Image != "" {
-		// if params.Image is not empty, write image to git repo
-		pipelineOutPutMap := assemblePipelineOutput(params.TemplateRelease.ChartName, params.Image)
-		pipelineOutPutYAML, err := yaml.Marshal(pipelineOutPutMap)
-		if err != nil {
-			return perror.Wrap(herrors.ErrParamInvalid, err.Error())
+	actions := func() []gitlablib.CommitAction {
+		gitActions := []gitlablib.CommitAction{
+			{
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathTags,
+				Content:  string(tagsYAML),
+			}, {
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathBase,
+				Content:  string(baseValueYAML),
+			}, {
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathEnv,
+				Content:  string(envValueYAML),
+			}, {
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathSRE,
+				Content:  string(sreValueYAML),
+			}, {
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathChart,
+				Content:  string(chartYAML),
+			},
+			// create _filePathPipelineOutput file first
+			{
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathPipelineOutput,
+				Content:  "",
+			},
+			// create _filePathRestart file first
+			{
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathRestart,
+				Content:  string(restartYAML),
+			},
 		}
-		pipelineOutPut = string(pipelineOutPutYAML)
-	}
-	actions := []gitlablib.CommitAction{
-		{
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathApplication,
-			Content:  string(applicationYAML),
-		}, {
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathTags,
-			Content:  string(tagsYAML),
-		}, {
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathPipeline,
-			Content:  string(pipelineYAML),
-		}, {
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathBase,
-			Content:  string(baseValueYAML),
-		}, {
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathEnv,
-			Content:  string(envValueYAML),
-		}, {
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathSRE,
-			Content:  string(sreValueYAML),
-		}, {
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathChart,
-			Content:  string(chartYAML),
-		},
-		// create _filePathPipelineOutput file first
-		{
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathPipelineOutput,
-			Content:  pipelineOutPut,
-		},
-		// create _filePathRestart file first
-		{
-			Action:   gitlablib.FileCreate,
-			FilePath: _filePathRestart,
-			Content:  string(restartYAML),
-		},
-	}
+
+		if applicationYAML != nil {
+			gitActions = append(gitActions, gitlablib.CommitAction{
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathApplication,
+				Content:  string(applicationYAML),
+			})
+		}
+		if pipelineYAML != nil {
+			gitActions = append(gitActions, gitlablib.CommitAction{
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathPipeline,
+				Content:  string(pipelineYAML),
+			})
+		}
+		if manifestValueYAML != nil {
+			gitActions = append(gitActions, gitlablib.CommitAction{
+				Action:   gitlablib.FileCreate,
+				FilePath: _filePathManifest,
+				Content:  string(manifestValueYAML),
+			})
+		}
+		return gitActions
+	}()
 
 	commitMsg := angular.CommitMessage("cluster", angular.Subject{
 		Operator: currentUser.GetName(),
@@ -435,7 +536,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	return nil
 }
 
-func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateClusterParams) (err error) {
+func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateClusterParams) error {
 	const op = "cluster git repo: update cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -447,50 +548,89 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 	// 1. write files to repo
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, params.Application.Name, params.Cluster)
 	var applicationYAML, pipelineYAML, baseValueYAML, envValueYAML, chartYAML []byte
-	var err1, err2, err3, err4 error
-
-	marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
-	marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
+	var err1, err2, err3, err4, err5 error
+	if params.Application != nil {
+		marshal(&applicationYAML, &err1, g.assembleApplicationValue(params.BaseParams))
+	}
+	if params.PipelineJSONBlob != nil {
+		marshal(&pipelineYAML, &err2, g.assemblePipelineValue(params.BaseParams))
+	}
 	marshal(&baseValueYAML, &err3, g.assembleBaseValue(params.BaseParams))
 	chart, err := g.assembleChart(params.BaseParams)
 	if err != nil {
 		return err
 	}
 	marshal(&chartYAML, &err4, chart)
+	if params.RegionEntity != nil {
+		marshal(&envValueYAML, &err5, g.assembleEnvValue(params.BaseParams))
+	}
+	// TODO currently not support update manifest
 
-	for _, err := range []error{err1, err2, err3, err4} {
+	for _, err := range []error{err1, err2, err3, err4, err5} {
 		if err != nil {
 			return err
 		}
 	}
 
-	actions := []gitlablib.CommitAction{
-		{
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathApplication,
-			Content:  string(applicationYAML),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathPipeline,
-			Content:  string(pipelineYAML),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathBase,
-			Content:  string(baseValueYAML),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathChart,
-			Content:  string(chartYAML),
-		},
-	}
+	actions, err := func() ([]gitlablib.CommitAction, error) {
+		gitActions := []gitlablib.CommitAction{
+			{
+				Action:   gitlablib.FileUpdate,
+				FilePath: _filePathBase,
+				Content:  string(baseValueYAML),
+			}, {
+				Action:   gitlablib.FileUpdate,
+				FilePath: _filePathChart,
+				Content:  string(chartYAML),
+			},
+		}
 
-	if params.RegionEntity != nil {
-		marshal(&envValueYAML, &err4, g.assembleEnvValue(params.BaseParams))
-		actions = append(actions, gitlablib.CommitAction{
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathEnv,
-			Content:  string(envValueYAML),
-		})
+		templateUpdate, pipelineUpdate, err := func() (gitlablib.FileAction, gitlablib.FileAction, error) {
+			applicationUpdate, pipelineUpdate := gitlablib.FileCreate, gitlablib.FileCreate
+			if applicationYAML != nil || pipelineYAML != nil {
+				files, err := g.GetCluster(ctx, params.Application.Name, params.Cluster,
+					params.TemplateRelease.TemplateName)
+				if err != nil {
+					return applicationUpdate, pipelineUpdate, err
+				}
+				if files.ApplicationJSONBlob != nil {
+					applicationUpdate = gitlablib.FileUpdate
+				}
+				if files.PipelineJSONBlob != nil {
+					pipelineUpdate = gitlablib.FileUpdate
+				}
+			}
+			return applicationUpdate, pipelineUpdate, nil
+		}()
+		if err != nil {
+			return nil, err
+		}
+
+		if applicationYAML != nil {
+			gitActions = append(gitActions, gitlablib.CommitAction{
+				Action:   templateUpdate,
+				FilePath: _filePathApplication,
+				Content:  string(applicationYAML),
+			})
+		}
+		if pipelineYAML != nil {
+			gitActions = append(gitActions, gitlablib.CommitAction{
+				Action:   pipelineUpdate,
+				FilePath: _filePathPipeline,
+				Content:  string(pipelineYAML),
+			})
+		}
+		if envValueYAML != nil {
+			gitActions = append(gitActions, gitlablib.CommitAction{
+				Action:   gitlablib.FileUpdate,
+				FilePath: _filePathEnv,
+				Content:  string(envValueYAML),
+			})
+		}
+		return gitActions, nil
+	}()
+	if err != nil {
+		return err
 	}
 
 	commitMsg := angular.CommitMessage("cluster", angular.Subject{
@@ -504,7 +644,6 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 		Application: params.ApplicationJSONBlob,
 		Pipeline:    params.PipelineJSONBlob,
 	})
-
 	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions); err != nil {
 		return err
 	}
@@ -625,6 +764,29 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	return mr.MergeCommitSHA, nil
 }
 
+func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*Manifest, error) {
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
+	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathManifest)
+	if err != nil {
+		return nil, err
+	}
+	manifest, err := func() (*Manifest, error) {
+		manifestOutputBytes, err := kyaml.YAMLToJSON(content)
+		if err != nil {
+			return nil, err
+		}
+		ret := Manifest{}
+		if err = json.Unmarshal(manifestOutputBytes, &ret); err != nil {
+			return nil, err
+		}
+		return &ret, err
+	}()
+	if err != nil {
+		return nil, err
+	}
+	return manifest, nil
+}
+
 func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, cluster string,
 	template string) (*PipelineOutput, error) {
 	ret := make(map[string]*PipelineOutput)
@@ -653,62 +815,123 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 	return pipelineOutput, nil
 }
 
+func (g *clusterGitRepo) getPipelineOutPut(ctx context.Context,
+	application, cluster string) (map[string]map[string]interface{}, error) {
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
+	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineOutput, err := func() (map[string]map[string]interface{}, error) {
+		pipelineOutputJSONBytes, err := kyaml.YAMLToJSON(content)
+		if err != nil {
+			return nil, err
+		}
+		var ret map[string]map[string]interface{}
+		if err = json.Unmarshal(pipelineOutputJSONBytes, &ret); err != nil {
+			return nil, err
+		}
+		return ret, nil
+	}()
+	if err != nil {
+		return nil, perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
+	}
+
+	return pipelineOutput, nil
+}
+
 func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
-	pipelineOutputParam PipelineOutput) (_ string, err error) {
+	pipelineOutPut interface{}) (commitID string, err error) {
 	const op = "cluster git repo: update pipeline output"
 	defer wlog.Start(ctx, op).StopPrint()
+
+	pipelineOutPutInternalFormat, err := func() (map[string]interface{}, error) {
+		bytes, err := json.Marshal(pipelineOutPut)
+		if err != nil {
+			return nil, err
+		}
+		var internalFormat map[string]interface{}
+		if err := json.Unmarshal(bytes, &internalFormat); err != nil {
+			return nil, err
+		}
+		return internalFormat, nil
+	}()
+	if err != nil {
+		return "", err
+	}
+
+	pipelineValueParent, err := func() (string, error) {
+		manifest, err := g.GetManifest(ctx, application, cluster)
+		if err != nil {
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+				return "", err
+			}
+		}
+		if manifest == nil || manifest.Version == "" {
+			return template, nil
+		}
+		return PipelineValueParent, nil
+	}()
+	if err != nil {
+		return "", err
+	}
+
+	newPipelineOutputContent := make(map[string]interface{})
+	var PipelineOutPutFileExist bool
+	currentPipelineOutputContent, err := g.getPipelineOutPut(ctx, application, cluster)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return "", err
+		}
+		newPipelineOutputContent[pipelineValueParent] = pipelineOutPutInternalFormat
+	} else {
+		PipelineOutPutFileExist = true
+		// if current exist, just patch it
+		if currentPipelineOutputContent != nil {
+			newPipelineOutputContent[pipelineValueParent], err =
+				mergemap.Merge(currentPipelineOutputContent[pipelineValueParent], pipelineOutPutInternalFormat)
+			if err != nil {
+				return "", perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
+			}
+		} else {
+			newPipelineOutputContent[pipelineValueParent] = pipelineOutPutInternalFormat
+		}
+	}
+
+	newPipelineOutPutBytes, err := kyaml.Marshal(newPipelineOutputContent)
+	if err != nil {
+		return "", perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
+	}
+
+	actions := []gitlablib.CommitAction{
+		{
+			Action: func() gitlablib.FileAction {
+				if PipelineOutPutFileExist {
+					return gitlablib.FileUpdate
+				}
+				return gitlablib.FileCreate
+			}(),
+			FilePath: _filePathPipelineOutput,
+			Content:  string(newPipelineOutPutBytes),
+		},
+	}
 
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return "", err
 	}
-
-	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-
-	pipelineOutput, err := g.GetPipelineOutput(ctx, application, cluster, template)
-	if err != nil {
-		if perror.Cause(err) == herrors.ErrPipelineOutputEmpty {
-			pipelineOutput = &pipelineOutputParam
-		} else {
-			return "", perror.WithMessage(err, "failed to get pipeline output")
-		}
-	} else {
-		if pipelineOutputParam.Image != nil {
-			pipelineOutput.Image = pipelineOutputParam.Image
-		}
-		if pipelineOutputParam.Git != nil {
-			pipelineOutput.Git = pipelineOutputParam.Git
-		}
-	}
-
-	var outputYaml []byte
-	var err1 error
-	var pipelineOutputMap = make(map[string]*PipelineOutput)
-	pipelineOutputMap[template] = pipelineOutput
-	marshal(&outputYaml, &err1, pipelineOutputMap)
-	if err1 != nil {
-		return "", err1
-	}
-
-	actions := []gitlablib.CommitAction{
-		{
-			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathPipelineOutput,
-			Content:  string(outputYaml),
-		},
-	}
-
 	commitMsg := angular.CommitMessage("cluster", angular.Subject{
 		Operator: currentUser.GetName(),
 		Action:   "deploy cluster",
 		Cluster:  angular.StringPtr(cluster),
-	}, pipelineOutputParam)
+	}, pipelineOutPut)
 
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to write gitlab files")
 	}
-
 	return commit.ID, nil
 }
 
@@ -992,7 +1215,12 @@ func (g *clusterGitRepo) assembleApplicationValue(params *BaseParams) map[string
 // assembleApplicationValue assemble pipeline.yaml data
 func (g *clusterGitRepo) assemblePipelineValue(params *BaseParams) map[string]map[string]interface{} {
 	ret := make(map[string]map[string]interface{})
-	ret[params.TemplateRelease.ChartName] = params.PipelineJSONBlob
+	// the default version prefix pipeline value with template ChartName
+	if params.Version == "" {
+		ret[params.TemplateRelease.ChartName] = params.PipelineJSONBlob
+	} else {
+		ret[PipelineValueParent] = params.PipelineJSONBlob
+	}
 	return ret
 }
 
@@ -1043,15 +1271,15 @@ type BaseValue struct {
 }
 
 type PipelineOutput struct {
-	Image *string `yaml:"image,omitempty"`
-	Git   *Git    `yaml:"git,omitempty"`
+	Image *string `yaml:"image,omitempty" json:"image,omitempty"`
+	Git   *Git    `yaml:"git,omitempty" json:"git,omitempty"`
 }
 
 type Git struct {
-	URL      *string `yaml:"url,omitempty"`
-	CommitID *string `yaml:"commitID,omitempty"`
-	Branch   *string `yaml:"branch,omitempty"`
-	Tag      *string `yaml:"tag,omitempty"`
+	URL      *string `yaml:"url,omitempty" json:"url,omitempty"`
+	CommitID *string `yaml:"commitID,omitempty" json:"commitID,omitempty"`
+	Branch   *string `yaml:"branch,omitempty" json:"branch,omitempty"`
+	Tag      *string `yaml:"tag,omitempty" json:"tag,omitempty"`
 }
 
 type BaseValueTemplate struct {
@@ -1117,15 +1345,6 @@ func renameTemplateName(name string) string {
 		}
 	}
 	return string(templateName)
-}
-
-// assemblePipelineOutput ...
-// TODO(gjq): move image update to template
-func assemblePipelineOutput(templateName, image string) map[string]map[string]string {
-	ret := make(map[string]map[string]string)
-	ret[templateName] = make(map[string]string)
-	ret[templateName]["image"] = image
-	return ret
 }
 
 func assembleRestart(templateName string) map[string]map[string]string {

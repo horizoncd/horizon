@@ -17,6 +17,7 @@ import (
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
+	"g.hz.netease.com/horizon/core/controller/build"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	codectl "g.hz.netease.com/horizon/core/controller/code"
 	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
@@ -61,6 +62,9 @@ import (
 	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
+	appv2 "g.hz.netease.com/horizon/core/http/api/v2/application"
+	buildAPI "g.hz.netease.com/horizon/core/http/api/v2/build"
+	envtemplatev2 "g.hz.netease.com/horizon/core/http/api/v2/envtemplate"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
 	"g.hz.netease.com/horizon/core/middleware/authenticate"
@@ -82,6 +86,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cmdb"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
+	"g.hz.netease.com/horizon/pkg/config/pprof"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/grafana"
@@ -107,23 +112,26 @@ import (
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
-	"github.com/gorilla/sessions"
-	"github.com/rbcervilla/redisstore/v8"
 
+	clusterv2 "g.hz.netease.com/horizon/core/http/api/v2/cluster"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/sessions"
+	"github.com/rbcervilla/redisstore/v8"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile     string
-	RoleConfigFile string
-	ScopeRoleFile  string
-	Dev            bool
-	Environment    string
-	LogLevel       string
+	ConfigFile          string
+	RoleConfigFile      string
+	ScopeRoleFile       string
+	BuildJSONSchemaFile string
+	BuildUISchemaFile   string
+	Dev                 bool
+	Environment         string
+	LogLevel            string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -138,6 +146,12 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.ScopeRoleFile, "scopes", "", "configuration file path")
+
+	flag.StringVar(&flags.BuildJSONSchemaFile, "buildjsonschema", "",
+		"build json schema file path")
+
+	flag.StringVar(&flags.BuildUISchemaFile, "builduischema", "",
+		"build ui schema file path")
 
 	flag.BoolVar(
 		&flags.Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
@@ -164,6 +178,17 @@ func InitLog(flags *Flags) {
 		panic(err)
 	}
 	logrus.SetLevel(level)
+}
+
+func runPProfServer(config *pprof.Config) {
+	if config.Enabled {
+		go func() {
+			if err := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil); err != nil {
+				log.Printf("[pprof] failed to start, error: %s", err.Error())
+			}
+		}()
+		log.Printf("[pprof] Listening and serving HTTP on :%d", config.Port)
+	}
 }
 
 // Run runs the agent.
@@ -248,6 +273,7 @@ func Run(flags *Flags) {
 	}
 
 	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, rootGroup, gitlabGitops)
+
 	if err != nil {
 		panic(err)
 	}
@@ -330,6 +356,29 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
+	// init build schema controller
+	readJSONFileFunc := func(filePath string) map[string]interface{} {
+		fileFd, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		fileContent, err := ioutil.ReadAll(fileFd)
+		if err != nil {
+			panic(err)
+		}
+		var schemaFile map[string]interface{}
+		err = json.Unmarshal(fileContent, &schemaFile)
+		if err != nil {
+			panic(err)
+		}
+		return schemaFile
+	}
+
+	buildSchema := &build.Schema{
+		JSONSchema: readJSONFileFunc(flags.BuildJSONSchemaFile),
+		UISchema:   readJSONFileFunc(flags.BuildUISchemaFile),
+	}
+
 	groupSvc := groupservice.NewService(manager)
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
@@ -362,6 +411,7 @@ func Run(flags *Flags) {
 		ClusterGitRepo:       clusterGitRepo,
 		GitGetter:            gitGetter,
 		GrafanaService:       grafanaService,
+		BuildSchema:          buildSchema,
 	}
 
 	var (
@@ -400,6 +450,7 @@ func Run(flags *Flags) {
 		environmentregionCtl = environmentregionctl.NewController(parameter)
 		harborCtl            = harborctl.NewController(parameter)
 		idpCtrl              = idpctl.NewController(parameter)
+		buildSchemaCtrl      = build.NewController(buildSchema)
 	)
 
 	var (
@@ -407,9 +458,11 @@ func Run(flags *Flags) {
 		groupAPI             = group.NewAPI(groupCtl)
 		userAPI              = user.NewAPI(userCtl)
 		applicationAPI       = application.NewAPI(applicationCtl)
+		applicationAPIV2     = appv2.NewAPI(applicationCtl)
 		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
 		memberAPI            = member.NewAPI(memberCtl, roleService)
 		clusterAPI           = cluster.NewAPI(clusterCtl)
+		clusterAPIV2         = clusterv2.NewAPI(clusterCtl)
 		prAPI                = pipelinerun.NewAPI(prCtl)
 		environmentAPI       = environment.NewAPI(environmentCtl)
 		regionAPI            = region.NewAPI(regionCtl, tagCtl)
@@ -427,7 +480,9 @@ func Run(flags *Flags) {
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl,
 			coreConfig.Oauth.OauthHTMLLocation, scopeService)
-		idpAPI = idp.NewAPI(idpCtrl, store)
+		idpAPI           = idp.NewAPI(idpCtrl, store)
+		buildSchemaAPI   = buildAPI.NewAPI(buildSchemaCtrl)
+		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl)
 	)
 
 	// init server
@@ -453,6 +508,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback"))),
@@ -471,8 +527,10 @@ func Run(flags *Flags) {
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
 	application.RegisterRoutes(r, applicationAPI)
+	appv2.RegisterRoutes(r, applicationAPIV2)
 	envtemplate.RegisterRoutes(r, envTemplateAPI)
 	cluster.RegisterRoutes(r, clusterAPI)
+	clusterv2.RegisterRoutes(r, clusterAPIV2)
 	pipelinerun.RegisterRoutes(r, prAPI)
 	environment.RegisterRoutes(r, environmentAPI)
 	region.RegisterRoutes(r, regionAPI)
@@ -490,6 +548,8 @@ func Run(flags *Flags) {
 	oauthapp.RegisterRoutes(r, oauthAppAPI)
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
 	idp.RegisterRoutes(r, idpAPI)
+	buildAPI.RegisterRoutes(r, buildSchemaAPI)
+	envtemplatev2.RegisterRoutes(r, envtemplatev2API)
 
 	// start cloud event server
 	go runCloudEventServer(
@@ -499,6 +559,10 @@ func Run(flags *Flags) {
 		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		requestid.Middleware(),
 	)
+
+	// enable pprof
+	runPProfServer(&coreConfig.PProf)
+
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))

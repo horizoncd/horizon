@@ -195,6 +195,7 @@ func Test(t *testing.T) {
 	t.Logf("\n%v\n", diff)
 
 	imageName := "newImage"
+
 	updateImageCommit, err := r.UpdatePipelineOutput(ctx, application, cluster, templateName, PipelineOutput{
 		Image: &imageName,
 	})
@@ -239,6 +240,106 @@ func Test(t *testing.T) {
 	restartTime, err := r.GetRestartTime(ctx, application, cluster, templateName)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, restartTime)
+}
+
+func TestV2(t *testing.T) {
+	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	assert.Nil(t, err)
+
+	application := "appv2"
+	cluster := "clusterv2"
+
+	baseParams := &BaseParams{
+		Cluster:             cluster,
+		PipelineJSONBlob:    nil,
+		ApplicationJSONBlob: applicationJSONBlob,
+		TemplateRelease: &trmodels.TemplateRelease{
+			TemplateName: templateName,
+			ChartName:    templateName,
+			ChartVersion: "v1.0.0",
+		},
+		Application: &appmodels.Application{
+			GroupID:  10,
+			Name:     application,
+			Priority: "P0",
+		},
+		Environment: "test",
+		RegionEntity: &regionmodels.RegionEntity{
+			Region: &regionmodels.Region{
+				Name:        "hz",
+				DisplayName: "HZ",
+				Server:      "https://k8s.com",
+			},
+			Harbor: &harbormodels.Harbor{
+				Server: "https://harbor.com",
+			},
+		},
+		Version: common.MetaVersion2,
+	}
+	createParams := &CreateClusterParams{
+		BaseParams: baseParams,
+	}
+
+	defer func() {
+		_ = r.DeleteCluster(ctx, application, cluster, 1)
+		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v/%v-%v", rootGroupName,
+			"recycling-clusters", application, cluster, 1))
+	}()
+	err = r.CreateCluster(ctx, createParams)
+	assert.Nil(t, err)
+	files, err := r.GetCluster(ctx, application, cluster, templateName)
+	t.Logf("%+v", files)
+	assert.Nil(t, err)
+	assert.NotNil(t, files.Manifest)
+	assert.NotNil(t, files.ApplicationJSONBlob)
+	assert.Nil(t, files.PipelineJSONBlob)
+	t.Logf("%+v", files)
+
+	// do not update Region \ update Version \ application yaml \ add pipeline
+	baseParams.RegionEntity = nil
+	baseParams.TemplateRelease.ChartVersion = "v2.0.0"
+	var applicationJSONBlob2 map[string]interface{}
+	applicationJSONStr2 := `{
+    "app":{
+        "health":{
+            "check":"/api/test2",
+            "offline":"/health/offline",
+            "online":"/health/online",
+            "port":1024,
+            "status":"/health/check"
+        },
+        "params":{
+            "jvmExtra":"sdfa",
+            "mainClassName":"fsda",
+            "xms":"512",
+            "xmx":"512"
+        },
+        "spec":{
+            "replicas":1,
+            "resource":"middle"
+        },
+        "strategy":{
+            "pauseType":"first",
+            "stepsTotal":2
+        }
+    }
+}`
+	if err := json.Unmarshal([]byte(applicationJSONStr2), &applicationJSONBlob2); err != nil {
+		panic(err)
+	}
+	baseParams.ApplicationJSONBlob = applicationJSONBlob2
+	baseParams.PipelineJSONBlob = pipelineJSONBlob
+	updateParam := &UpdateClusterParams{BaseParams: baseParams}
+	err = r.UpdateCluster(ctx, updateParam)
+	assert.Nil(t, err)
+
+	files, err = r.GetCluster(ctx, application, cluster, templateName)
+	t.Logf("%+v", files)
+	assert.Nil(t, err)
+	assert.NotNil(t, files.Manifest)
+	assert.NotNil(t, files.ApplicationJSONBlob)
+	assert.NotNil(t, files.PipelineJSONBlob)
 }
 
 func TestHardDeleteCluster(t *testing.T) {
@@ -353,11 +454,11 @@ java:
 	assert.Nil(t, err)
 
 	expectedOutput := `java:
-  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
   git:
-    url: aaa
-    commitID: ccc
     branch: bbb
+    commitID: ccc
+    url: aaa
+  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
 `
 	url := "aaa"
 	branch := "bbb"

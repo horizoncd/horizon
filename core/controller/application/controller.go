@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"time"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/controller/build"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
@@ -13,6 +15,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
 	applicationregionmanager "g.hz.netease.com/horizon/pkg/applicationregion/manager"
+	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
@@ -50,6 +53,14 @@ type Controller interface {
 	// Transfer  try transfer application to another group
 	Transfer(ctx context.Context, id uint, groupID uint) error
 	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
+
+	CreateApplicationV2(ctx context.Context, groupID uint,
+		request *CreateOrUpdateApplicationRequestV2) (*CreateApplicationResponseV2, error)
+	UpdateApplicationV2(ctx context.Context, id uint,
+		request *CreateOrUpdateApplicationRequestV2) (err error)
+	// GetApplicationV2 it can also be used to read v1 repo
+	GetApplicationV2(ctx context.Context, id uint) (*GetApplicationResponseV2, error)
+
 	// GetApplicationPipelineStats return pipeline stats about an application
 	GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string, pageNumber, pageSize int) (
 		[]*pipelinemodels.PipelineStats, int64, error)
@@ -69,6 +80,7 @@ type controller struct {
 	memberManager        member.Manager
 	applicationRegionMgr applicationregionmanager.Manager
 	pipelinemanager      pipelinemanager.Manager
+	buildSchema          *build.Schema
 }
 
 var _ Controller = (*controller)(nil)
@@ -88,6 +100,7 @@ func NewController(param *param.Param) Controller {
 		memberManager:        param.MemberManager,
 		applicationRegionMgr: param.ApplicationRegionManager,
 		pipelinemanager:      param.PipelineMgr,
+		buildSchema:          param.BuildSchema,
 	}
 }
 
@@ -102,10 +115,12 @@ func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplica
 	}
 
 	// 2. get application jsonBlob in git repo
-	pipelineJSONBlob, applicationJSONBlob, err := c.applicationGitRepo.GetApplication(ctx, app.Name)
+	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, common.ApplicationRepoDefaultEnv)
 	if err != nil {
 		return nil, err
 	}
+	pipelineJSONBlob := applicationRepo.BuildConf
+	applicationJSONBlob := applicationRepo.TemplateConf
 
 	// 3. list template releases
 	trs, err := c.templateReleaseMgr.ListByTemplateName(ctx, app.Template)
@@ -120,6 +135,60 @@ func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplica
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, app.Name)
 	return ofApplicationModel(app, fullPath, trs, pipelineJSONBlob, applicationJSONBlob), nil
+}
+
+func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetApplicationResponseV2, err error) {
+	const op = "application controller: get application v2"
+	defer wlog.Start(ctx, op).StopPrint()
+	// 1. get application in db
+	app, err := c.applicationMgr.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. get repo file
+	applicationRepo, err := c.applicationGitRepo.GetApplication(ctx, app.Name, common.ApplicationRepoDefaultEnv)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. get group full path
+	group, err := c.groupSvc.GetChildByID(ctx, app.GroupID)
+	if err != nil {
+		return nil, err
+	}
+	fullPath := fmt.Sprintf("%v/%v", group.FullPath, app.Name)
+
+	resp := &GetApplicationResponseV2{
+		ID:          id,
+		Name:        app.Name,
+		Description: app.Description,
+		Priority:    string(app.Priority),
+		Git: func() *codemodels.Git {
+			if app.GitURL == "" {
+				return nil
+			}
+			return codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRefType, app.GitRef)
+		}(),
+		BuildConfig: applicationRepo.BuildConf,
+		TemplateInfo: func() *codemodels.TemplateInfo {
+			if app.Template == "" {
+				return nil
+			}
+			return &codemodels.TemplateInfo{
+				Name:    app.Template,
+				Release: app.TemplateRelease,
+			}
+		}(),
+		TemplateConfig: applicationRepo.TemplateConf,
+		Manifest:       applicationRepo.Manifest,
+		FullPath:       fullPath,
+		GroupID:        group.ID,
+		CreatedAt:      app.CreatedAt,
+		UpdatedAt:      app.UpdatedAt,
+	}
+
+	return resp, err
 }
 
 func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
@@ -177,8 +246,13 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	}
 
 	// 3. create application in git repo
-	if err := c.applicationGitRepo.CreateApplication(ctx, request.Name,
-		request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
+	createRepoReq := gitrepo.CreateOrUpdateRequest{
+		Version:      "",
+		Environment:  common.ApplicationRepoDefaultEnv,
+		BuildConf:    request.TemplateInput.Pipeline,
+		TemplateConf: request.TemplateInput.Application,
+	}
+	if err := c.applicationGitRepo.CreateOrUpdateApplication(ctx, request.Name, createRepoReq); err != nil {
 		return nil, err
 	}
 
@@ -205,6 +279,107 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	c.postHook(ctx, hook.CreateApplication, ret)
 
 	return ret, nil
+}
+
+func (c *controller) validateBuildAndTemplateConfigV2(ctx context.Context,
+	request *CreateOrUpdateApplicationRequestV2) error {
+	if request.TemplateConfig != nil && request.TemplateInfo != nil {
+		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release, &TemplateInput{
+			Application: request.TemplateConfig,
+			Pipeline:    nil,
+		}); err != nil {
+			return err
+		}
+	}
+	if request.BuildConfig != nil {
+		if c.buildSchema != nil && c.buildSchema.JSONSchema != nil {
+			if err := jsonschema.Validate(c.buildSchema.JSONSchema, request.BuildConfig, false); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
+	request *CreateOrUpdateApplicationRequestV2) (*CreateApplicationResponseV2, error) {
+	const op = "application controller: create application v2"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	if err := validateApplicationName(request.Name); err != nil {
+		return nil, err
+	}
+	if request.Priority != nil {
+		if err := validatePriority(*request.Priority); err != nil {
+			return nil, err
+		}
+	}
+	if request.Git != nil {
+		if err := validateGitURL(request.Git.URL); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := c.validateBuildAndTemplateConfigV2(ctx, request); err != nil {
+		return nil, err
+	}
+	// check groups or applications with the same name exists
+	groups, err := c.groupMgr.GetByNameOrPathUnderParent(ctx, request.Name, request.Name, groupID)
+	if err != nil {
+		return nil, err
+	}
+	if len(groups) > 0 {
+		return nil, perror.Wrap(herrors.ErrNameConflict, "an group with the same name already exists")
+	}
+
+	appExistsInDB, err := c.applicationMgr.GetByName(ctx, request.Name)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return nil, err
+		}
+	}
+	if appExistsInDB != nil {
+		return nil, perror.Wrap(herrors.ErrNameConflict, "an application with the same name already exists, "+
+			"please do not create it again")
+	}
+
+	// create v2
+	createRepoReq := gitrepo.CreateOrUpdateRequest{
+		Version:      common.MetaVersion2,
+		Environment:  common.ApplicationRepoDefaultEnv,
+		BuildConf:    request.BuildConfig,
+		TemplateConf: request.TemplateConfig,
+	}
+	if err := c.applicationGitRepo.CreateOrUpdateApplication(ctx, request.Name, createRepoReq); err != nil {
+		return nil, err
+	}
+
+	applicationDBModel := request.CreateToApplicationModel(groupID)
+	applicationDBModel, err = c.applicationMgr.Create(ctx, applicationDBModel, request.ExtraMembers)
+	if err != nil {
+		return nil, err
+	}
+
+	fullPath, err := func() (string, error) {
+		group, err := c.groupSvc.GetChildByID(ctx, groupID)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%v/%v", group.FullPath, request.Name), nil
+	}()
+	if err != nil {
+		return nil, err
+	}
+
+	ret := CreateApplicationResponseV2{
+		ID:        applicationDBModel.ID,
+		GroupID:   groupID,
+		FullPath:  fullPath,
+		CreatedAt: time.Time{},
+		UpdatedAt: time.Time{},
+	}
+
+	return &ret, nil
 }
 
 func (c *controller) UpdateApplication(ctx context.Context, id uint,
@@ -236,8 +411,14 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 		if err := c.validateTemplateInput(ctx, template, templateRelease, request.TemplateInput); err != nil {
 			return nil, err
 		}
-		if err := c.applicationGitRepo.UpdateApplication(ctx, appExistsInDB.Name,
-			request.TemplateInput.Pipeline, request.TemplateInput.Application); err != nil {
+
+		updateRepoReq := gitrepo.CreateOrUpdateRequest{
+			Version:      "",
+			Environment:  common.ApplicationRepoDefaultEnv,
+			BuildConf:    request.TemplateInput.Pipeline,
+			TemplateConf: request.TemplateInput.Application,
+		}
+		if err := c.applicationGitRepo.CreateOrUpdateApplication(ctx, appExistsInDB.Name, updateRepoReq); err != nil {
 			return nil, errors.E(op, err)
 		}
 	}
@@ -264,6 +445,49 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 
 	return ofApplicationModel(applicationModel, fullPath, trs,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application), nil
+}
+
+func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
+	request *CreateOrUpdateApplicationRequestV2) (err error) {
+	const op = "application controller: update application v2"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	// 1. get application in db
+	appExistsInDB, err := c.applicationMgr.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if request.Priority != nil {
+		if err := validatePriority(*request.Priority); err != nil {
+			return err
+		}
+	}
+	if request.Git != nil {
+		if err := validateGitURL(request.Git.URL); err != nil {
+			return err
+		}
+	}
+
+	if err := c.validateBuildAndTemplateConfigV2(ctx, request); err != nil {
+		return err
+	}
+	if (request.TemplateConfig != nil && request.TemplateInfo != nil) || request.BuildConfig != nil {
+		updateRepoReq := gitrepo.CreateOrUpdateRequest{
+			Version:      common.MetaVersion2,
+			Environment:  common.ApplicationRepoDefaultEnv,
+			BuildConf:    request.BuildConfig,
+			TemplateConf: request.TemplateConfig,
+		}
+		if err = c.applicationGitRepo.CreateOrUpdateApplication(ctx, appExistsInDB.Name, updateRepoReq); err != nil {
+			return err
+		}
+	}
+
+	// 4. update application in db
+	applicationModel := request.UpdateToApplicationModel(appExistsInDB)
+	_, err = c.applicationMgr.UpdateByID(ctx, id, applicationModel)
+	return err
 }
 
 func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) (err error) {
@@ -304,7 +528,7 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 			}
 		}
 	} else {
-		if err := c.applicationGitRepo.DeleteApplication(ctx, app.Name, app.ID); err != nil {
+		if err := c.applicationGitRepo.HardDeleteApplication(ctx, app.Name); err != nil {
 			return err
 		}
 	}
@@ -353,12 +577,17 @@ func (c *controller) validateUpdate(b Base) error {
 
 func validateGit(b Base) error {
 	if b.Git != nil && b.Git.URL != "" {
-		re := `^ssh://.+[.]git$`
-		pattern := regexp.MustCompile(re)
-		if !pattern.MatchString(b.Git.URL) {
-			return perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("invalid git url, should satisfies the pattern %v", re))
-		}
+		return validateGitURL(b.Git.URL)
+	}
+	return nil
+}
+
+func validateGitURL(gitURL string) error {
+	re := `^ssh://.+[.]git$`
+	pattern := regexp.MustCompile(re)
+	if !pattern.MatchString(gitURL) {
+		return perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("invalid git url, should satisfies the pattern %v", re))
 	}
 	return nil
 }
@@ -374,10 +603,19 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if err := jsonschema.Validate(schema.Application.JSONSchema, templateInput.Application, false); err != nil {
-		return err
+	if schema.Application.JSONSchema != nil && templateInput.Application != nil {
+		if err := jsonschema.Validate(schema.Application.JSONSchema,
+			templateInput.Application, false); err != nil {
+			return err
+		}
 	}
-	return jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline, true)
+	if schema.Pipeline.JSONSchema != nil && templateInput.Pipeline != nil {
+		if err := jsonschema.Validate(schema.Pipeline.JSONSchema, templateInput.Pipeline,
+			true); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // validatePriority validate priority

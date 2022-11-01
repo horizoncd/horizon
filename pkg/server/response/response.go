@@ -42,6 +42,10 @@ func SuccessWithData(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, NewResponseWithData(data))
 }
 
+func SuccessWithDataV2(c *gin.Context, data interface{}) {
+	c.JSON(http.StatusOK, data)
+}
+
 func Abort(c *gin.Context, httpCode int, errorCode, errorMessage string) {
 	rid, err := requestid.FromContext(c)
 	if err != nil {

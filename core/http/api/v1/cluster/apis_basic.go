@@ -21,8 +21,6 @@ import (
 
 const (
 	// param
-	_scope         = "scope"
-	_mergePatch    = "mergePatch"
 	_environment   = "environment"
 	_targetBranch  = "targetBranch"
 	_targetCommit  = "targetCommit"
@@ -30,7 +28,6 @@ const (
 	_containerName = "containerName"
 	_podName       = "podName"
 	_tailLines     = "tailLines"
-	_extraOwner    = "extraOwner"
 	_hard          = "hard"
 )
 
@@ -116,7 +113,7 @@ func (a *API) Create(c *gin.Context) {
 		return
 	}
 
-	scope := c.Request.URL.Query().Get(_scope)
+	scope := c.Request.URL.Query().Get(common.ParamScope)
 	log.Infof(c, "scope: %v", scope)
 	scopeArray := strings.Split(scope, "/")
 	if len(scopeArray) != 2 {
@@ -127,7 +124,7 @@ func (a *API) Create(c *gin.Context) {
 	region := scopeArray[1]
 
 	mergePatch := false
-	mergepatchStr := c.Request.URL.Query().Get(_mergePatch)
+	mergepatchStr := c.Request.URL.Query().Get(common.ParamMergePatch)
 	if mergepatchStr != "" {
 		mergePatch, err = strconv.ParseBool(mergepatchStr)
 		if err != nil {
@@ -137,7 +134,7 @@ func (a *API) Create(c *gin.Context) {
 		}
 	}
 
-	extraOwners := c.QueryArray(_extraOwner)
+	extraOwners := c.QueryArray(common.ParamExtraOwner)
 
 	var request *cluster.CreateClusterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -192,7 +189,7 @@ func (a *API) Update(c *gin.Context) {
 	}
 
 	mergePatch := false
-	mergepatchStr := c.Request.URL.Query().Get(_mergePatch)
+	mergepatchStr := c.Request.URL.Query().Get(common.ParamMergePatch)
 	if mergepatchStr != "" {
 		mergePatch, err = strconv.ParseBool(mergepatchStr)
 		if err != nil {

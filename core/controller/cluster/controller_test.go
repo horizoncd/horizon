@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	tagmock "g.hz.netease.com/horizon/mock/pkg/tag/manager"
 	outputmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/output"
 	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
+	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustercd "g.hz.netease.com/horizon/pkg/cluster/cd"
@@ -483,7 +485,7 @@ func test(t *testing.T) {
 	templateName := "javaapp"
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
-	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo(mockCtl)
+	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockFactory(mockCtl)
@@ -614,8 +616,12 @@ func test(t *testing.T) {
 	}
 
 	tagManager.EXPECT().ListByResourceTypeIDs(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	applicationGitRepo.EXPECT().GetApplicationEnvTemplate(ctx, gomock.Any(), gomock.Any()).
-		Return(pipelineJSONBlob, applicationJSONBlob, nil).AnyTimes()
+	applicationGitRepo.EXPECT().GetApplication(ctx, gomock.Any(), gomock.Any()).
+		Return(&appgitrepo.GetResponse{
+			Manifest:     nil,
+			BuildConf:    pipelineJSONBlob,
+			TemplateConf: applicationJSONBlob,
+		}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(2)
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
@@ -718,6 +724,7 @@ func test(t *testing.T) {
 
 	resp, err = c.GetCluster(ctx, resp.ID)
 	assert.Nil(t, err)
+	assert.Equal(t, "24h0m0s", resp.ExpireTime)
 	assert.Equal(t, resp.Git.URL, UpdateGitURL)
 	assert.Equal(t, resp.Git.Branch, "new")
 	assert.Equal(t, resp.Git.Subfolder, "/new")
@@ -728,10 +735,19 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.TemplateInput.Application, applicationJSONBlob)
 	assert.Equal(t, resp.TemplateInput.Pipeline, pipelineJSONBlob)
 
+	resp, err = c.UpdateCluster(ctx, resp.ID, &UpdateClusterRequest{
+		Base:       &Base{},
+		ExpireTime: "48h0m0s",
+	}, false)
+	assert.Nil(t, err)
+	resp, err = c.GetCluster(ctx, resp.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "48h0m0s", resp.ExpireTime)
+
 	count, respList, err := c.ListCluster(ctx, application.ID, []string{"test"}, "", nil, nil)
 	assert.Nil(t, err)
-	assert.Equal(t, count, 1)
-	t.Logf("%v", respList[0])
+	t.Logf("%+v", respList)
+	assert.Equal(t, 1, count)
 	assert.Equal(t, respList[0].Template.Name, "javaapp")
 	assert.Equal(t, respList[0].Template.Release, "v1.0.1")
 
@@ -1103,6 +1119,225 @@ func test(t *testing.T) {
 	).Times(1)
 	_, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest, true)
 	assert.Nil(t, err)
+
+	t.Run("TestV2", testV2)
+}
+
+func testV2(t *testing.T) {
+	// for test
+	conf := config.Config{}
+	param := param.Param{
+		Manager: managerparam.InitManager(nil),
+	}
+	NewController(&conf, &param)
+	templateName := "rollout"
+	templateVersion := "v1.0.0"
+	mockCtl := gomock.NewController(t)
+	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
+	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
+	tagManager := tagmock.NewMockManager(mockCtl)
+	registryFty := registryftymock.NewMockFactory(mockCtl)
+	mockCd := cdmock.NewMockCD(mockCtl)
+
+	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.0", gomock.Any()).
+		Return(&trschema.Schemas{
+			Application: &trschema.Schema{
+				JSONSchema: applicationSchema,
+			},
+			Pipeline: &trschema.Schema{
+				JSONSchema: pipelineSchema,
+			},
+		}, nil).Times(1)
+
+	appMgr := manager.ApplicationManager
+	trMgr := manager.TemplateReleaseManager
+	envMgr := manager.EnvMgr
+	regionMgr := manager.RegionMgr
+	groupMgr := manager.GroupManager
+	envRegionMgr := manager.EnvRegionMgr
+	// harborDAO := harbordao.NewDAO(db)
+
+	// init data
+	group, err := groupMgr.Create(ctx, &groupmodels.Group{
+		Name:     "group1",
+		Path:     "group1",
+		ParentID: 0,
+	})
+	t.Logf("%+v", err)
+	t.Logf("%+v", group)
+	assert.Nil(t, err)
+	assert.NotNil(t, group)
+	gitURL := "ssh://git.com"
+
+	applicationName := "app2"
+	appGitSubFolder := "/test"
+	appGitRef := "master"
+	priority := "P3"
+	application, err := appMgr.Create(ctx, &appmodels.Application{
+		GroupID:         group.ID,
+		Name:            applicationName,
+		Priority:        appmodels.Priority(priority),
+		GitURL:          gitURL,
+		GitSubfolder:    appGitSubFolder,
+		GitRef:          appGitRef,
+		Template:        templateName,
+		TemplateRelease: templateVersion,
+	}, nil)
+	assert.Nil(t, err)
+
+	tr, err := trMgr.Create(ctx, &trmodels.TemplateRelease{
+		TemplateName: templateName,
+		Name:         "v1.0.0",
+		ChartVersion: "v1.0.0-test",
+		ChartName:    templateName,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, tr)
+	/*
+		id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
+			Server:          "https://harbor.com",
+			Token:           "xxx",
+			PreheatPolicyID: 1,
+		})
+		assert.Nil(t, err)
+		assert.NotNil(t, id)
+
+		region, err := regionMgr.Create(ctx, &regionmodels.Region{
+			Name:        "hz",
+			DisplayName: "HZ",
+			HarborID:    id,
+		})
+		assert.Nil(t, err)
+		assert.NotNil(t, region)
+
+		er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+			EnvironmentName: "test",
+			RegionName:      "hz",
+		})
+		assert.Nil(t, err)
+		assert.NotNil(t, er)
+	*/
+
+	c = &controller{
+		clusterMgr:           manager.ClusterMgr,
+		clusterGitRepo:       clusterGitRepo,
+		applicationMgr:       appMgr,
+		templateReleaseMgr:   trMgr,
+		templateSchemaGetter: templateSchemaGetter,
+		envMgr:               envMgr,
+		envRegionMgr:         envRegionMgr,
+		regionMgr:            regionMgr,
+		groupSvc:             groupservice.NewService(manager),
+		pipelinerunMgr:       manager.PipelinerunMgr,
+		userManager:          manager.UserManager,
+		userSvc:              userservice.NewService(manager),
+		schemaTagManager:     manager.ClusterSchemaTagMgr,
+		applicationGitRepo:   applicationGitRepo,
+		tagMgr:               tagManager,
+		registryFty:          registryFty,
+		cd:                   mockCd,
+	}
+	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(1)
+
+	createClusterName := "app-cluster2"
+	createReq := &CreateClusterRequestV2{
+		Name:        createClusterName,
+		Description: "cluster description",
+		Git: &codemodels.Git{
+			Branch: "develop",
+		},
+		BuildConfig: pipelineJSONBlob,
+		TemplateInfo: &codemodels.TemplateInfo{
+			Name:    templateName,
+			Release: templateVersion,
+		},
+		TemplateConfig: applicationJSONBlob,
+		ExtraMembers:   nil,
+	}
+	resp, err := c.CreateClusterV2(ctx, application.ID, "test", "hz", createReq, false)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp.ApplicationID, application.ID)
+	assert.Equal(t, resp.FullPath, "/"+group.Path+"/"+application.Name+"/"+createClusterName)
+	t.Logf("%+v", resp)
+
+	// then get cluster
+	tagManager.EXPECT().ListByResourceTypeID(ctx, gomock.Any(), resp.ID).Return(nil, nil).Times(1)
+	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).Return(&gitrepo.ClusterFiles{
+		PipelineJSONBlob:    pipelineJSONBlob,
+		ApplicationJSONBlob: applicationJSONBlob,
+		Manifest:            nil,
+	}, nil).Times(1)
+
+	getClusterResp, err := c.GetClusterV2(ctx, resp.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, getClusterResp.ID, resp.ID)
+	assert.Equal(t, getClusterResp.Name, createClusterName)
+	assert.Equal(t, getClusterResp.Priority, priority)
+	assert.NotNil(t, getClusterResp.Scope)
+	assert.Equal(t, getClusterResp.FullPath, "/"+group.Path+"/"+application.Name+"/"+createClusterName)
+	assert.Equal(t, getClusterResp.ApplicationName, application.Name)
+	assert.Equal(t, getClusterResp.ApplicationID, application.ID)
+	assertMapEqual(t, getClusterResp.TemplateConfig, applicationJSONBlob)
+	assertMapEqual(t, getClusterResp.BuildConfig, pipelineJSONBlob)
+	assert.Equal(t, getClusterResp.TemplateInfo.Name, templateName)
+	assert.Equal(t, getClusterResp.TemplateInfo.Release, templateVersion)
+	assert.Nil(t, getClusterResp.Manifest)
+	assert.Equal(t, getClusterResp.Status, "")
+	t.Logf("%+v", getClusterResp)
+
+	// update v2
+	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).Return(&gitrepo.ClusterFiles{
+		PipelineJSONBlob:    pipelineJSONBlob,
+		ApplicationJSONBlob: applicationJSONBlob,
+		Manifest:            nil,
+	}, nil).Times(1)
+
+	updateRequestV2 := &UpdateClusterRequestV2{
+		Description:    "",
+		BuildConfig:    pipelineJSONBlob,
+		TemplateInfo:   nil,
+		TemplateConfig: applicationJSONBlob,
+	}
+	// update manifest not exist (not v2 repo)
+	err = c.UpdateClusterV2(ctx, getClusterResp.ID, updateRequestV2, false)
+	t.Logf("%+v", err)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "parameter is invalid"))
+
+	var manifest = make(map[string]interface{})
+	manifest["Version"] = common.MetaVersion2
+
+	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).Return(&gitrepo.ClusterFiles{
+		PipelineJSONBlob:    pipelineJSONBlob,
+		ApplicationJSONBlob: applicationJSONBlob,
+		Manifest:            manifest,
+	}, nil).Times(1)
+	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
+	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.0", gomock.Any()).
+		Return(&trschema.Schemas{
+			Application: &trschema.Schema{
+				JSONSchema: applicationSchema,
+			},
+			Pipeline: &trschema.Schema{
+				JSONSchema: pipelineSchema,
+			},
+		}, nil).Times(1)
+	err = c.UpdateClusterV2(ctx, getClusterResp.ID, updateRequestV2, false)
+	t.Logf("%+v", err)
+	assert.Nil(t, err)
+
+	registry := registrymock.NewMockRegistry(mockCtl)
+	registryFty.EXPECT().GetByHarborConfig(gomock.Any(), gomock.Any()).Return(registry).Times(1)
+	registry.EXPECT().DeleteRepository(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+	clusterGitRepo.EXPECT().DeleteCluster(gomock.Any(), applicationName,
+		createClusterName, getClusterResp.ID).Return(nil).Times(1)
+	mockCd.EXPECT().DeleteCluster(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+	err = c.DeleteCluster(ctx, getClusterResp.ID, false)
+	assert.Nil(t, err)
+	time.Sleep(time.Second * 10)
 }
 
 func assertMapEqual(t *testing.T, expected, got map[string]interface{}) {

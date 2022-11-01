@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	"g.hz.netease.com/horizon/pkg/config/oauth"
+	"g.hz.netease.com/horizon/pkg/config/pprof"
 	"g.hz.netease.com/horizon/pkg/config/redis"
 	"g.hz.netease.com/horizon/pkg/config/server"
 	"g.hz.netease.com/horizon/pkg/config/session"
@@ -24,6 +25,7 @@ import (
 type Config struct {
 	ServerConfig           server.Config           `yaml:"serverConfig"`
 	CloudEventServerConfig server.Config           `yaml:"cloudEventServerConfig"`
+	PProf                  pprof.Config            `yaml:"pprofConfig"`
 	DBConfig               db.Config               `yaml:"dbConfig"`
 	SessionConfig          session.Config          `yaml:"sessionConfig"`
 	GitlabMapper           gitlab.Mapper           `yaml:"gitlabMapper"`

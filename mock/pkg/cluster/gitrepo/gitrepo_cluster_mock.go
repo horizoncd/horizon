@@ -242,18 +242,18 @@ func (mr *MockClusterGitRepoMockRecorder) UpdateCluster(ctx, params interface{})
 }
 
 // UpdatePipelineOutput mocks base method.
-func (m *MockClusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string, pipelineOutputParam gitrepo.PipelineOutput) (string, error) {
+func (m *MockClusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string, PipelineOutput interface{}) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdatePipelineOutput", ctx, application, cluster, template, pipelineOutputParam)
+	ret := m.ctrl.Call(m, "UpdatePipelineOutput", ctx, application, cluster, template, PipelineOutput)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdatePipelineOutput indicates an expected call of UpdatePipelineOutput.
-func (mr *MockClusterGitRepoMockRecorder) UpdatePipelineOutput(ctx, application, cluster, template, pipelineOutputParam interface{}) *gomock.Call {
+func (mr *MockClusterGitRepoMockRecorder) UpdatePipelineOutput(ctx, application, cluster, template, PipelineOutput interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePipelineOutput", reflect.TypeOf((*MockClusterGitRepo)(nil).UpdatePipelineOutput), ctx, application, cluster, template, pipelineOutputParam)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePipelineOutput", reflect.TypeOf((*MockClusterGitRepo)(nil).UpdatePipelineOutput), ctx, application, cluster, template, PipelineOutput)
 }
 
 // UpdateRestartTime mocks base method.

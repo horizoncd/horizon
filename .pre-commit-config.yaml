@@ -5,3 +5,4 @@ repos:
     rev: v1.47.3
     hooks:
     -   id: golangci-lint
+        entry: golangci-lint run --fix

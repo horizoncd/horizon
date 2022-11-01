@@ -15,6 +15,11 @@ type Git struct {
 	Commit    string `json:"commit,omitempty"`
 }
 
+type TemplateInfo struct {
+	Name    string `json:"name"`
+	Release string `json:"release"`
+}
+
 func NewGit(url, subfolder, refType, ref string) *Git {
 	g := &Git{
 		URL:       url,
