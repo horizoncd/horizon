@@ -86,6 +86,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cmdb"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
+	"g.hz.netease.com/horizon/pkg/config/pprof"
 	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
 	gitlabfty "g.hz.netease.com/horizon/pkg/gitlab/factory"
 	"g.hz.netease.com/horizon/pkg/grafana"
@@ -177,6 +178,17 @@ func InitLog(flags *Flags) {
 		panic(err)
 	}
 	logrus.SetLevel(level)
+}
+
+func runPProfServer(config *pprof.Config) {
+	if config.Enabled {
+		go func() {
+			if err := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil); err != nil {
+				log.Printf("[pprof] failed to start, error: %s", err.Error())
+			}
+		}()
+		log.Printf("[pprof] Listening and serving HTTP on :%d", config.Port)
+	}
 }
 
 // Run runs the agent.
@@ -547,6 +559,10 @@ func Run(flags *Flags) {
 		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		requestid.Middleware(),
 	)
+
+	// enable pprof
+	runPProfServer(&coreConfig.PProf)
+
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
