@@ -676,7 +676,8 @@ func createContext() {
 }
 
 func createController(t *testing.T) Controller {
-	repo, err := harbor.NewTemplateRepo(config.Repo{
+	repo, err := harbor.NewRepo(config.Repo{
+		Scheme:   "https",
 		Host:     harborHost,
 		Username: harborAdmin,
 		Password: harborPasswd,

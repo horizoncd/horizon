@@ -40,13 +40,13 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	harbordao "g.hz.netease.com/horizon/pkg/registry/dao"
+	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tmodel "g.hz.netease.com/horizon/pkg/tag/models"
@@ -428,7 +428,7 @@ const secondsInOneDay = 24 * 3600
 func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
-		&harbormodels.Harbor{},
+		&registrymodels.Registry{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &envmodels.Environment{}); err != nil {
 		panic(err)
@@ -520,7 +520,7 @@ func test(t *testing.T) {
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
 	groupMgr := manager.GroupManager
-	harborDAO := harbordao.NewDAO(db)
+	registryDAO := harbordao.NewDAO(db)
 	envRegionMgr := manager.EnvRegionMgr
 
 	// init data
@@ -553,10 +553,9 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
 
-	id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
-		Server:          "https://harbor.com",
-		Token:           "xxx",
-		PreheatPolicyID: 1,
+	id, err := registryDAO.Create(ctx, &registrymodels.Registry{
+		Server: "https://harbor.com",
+		Token:  "xxx",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, id)
@@ -564,7 +563,7 @@ func test(t *testing.T) {
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
-		HarborID:    id,
+		RegistryID:  id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
@@ -771,10 +770,6 @@ func test(t *testing.T) {
 	tektonFty.EXPECT().GetTekton(gomock.Any()).Return(tekton, nil).AnyTimes()
 	tekton.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("abc", nil)
 	tekton.EXPECT().GetPipelineRunByID(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(pr, nil).AnyTimes()
-
-	registry := registrymock.NewMockRegistry(mockCtl)
-	registry.EXPECT().CreateProject(ctx, gomock.Any()).Return(1, nil)
-	registryFty.EXPECT().GetByHarborConfig(ctx, gomock.Any()).Return(registry).AnyTimes()
 
 	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&code.Commit{
 		ID:      "code-commit-id",
@@ -1195,7 +1190,7 @@ func testV2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
 	/*
-		id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
+		id, err := harborDAO.Create(ctx, &registrymodels.Harbor{
 			Server:          "https://harbor.com",
 			Token:           "xxx",
 			PreheatPolicyID: 1,
@@ -1329,8 +1324,8 @@ func testV2(t *testing.T) {
 	assert.Nil(t, err)
 
 	registry := registrymock.NewMockRegistry(mockCtl)
-	registryFty.EXPECT().GetByHarborConfig(gomock.Any(), gomock.Any()).Return(registry).Times(1)
-	registry.EXPECT().DeleteRepository(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+	registryFty.EXPECT().GetRegistryByConfig(gomock.Any(), gomock.Any()).Return(registry, nil).Times(1)
+	registry.EXPECT().DeleteRepository(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().DeleteCluster(gomock.Any(), applicationName,
 		createClusterName, getClusterResp.ID).Return(nil).Times(1)
 	mockCd.EXPECT().DeleteCluster(gomock.Any(), gomock.Any()).Return(nil).Times(1)

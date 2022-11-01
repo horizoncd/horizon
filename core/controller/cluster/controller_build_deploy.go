@@ -10,7 +10,6 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
-	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -63,17 +62,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 1. create project in harbor
-	harbor := c.registryFty.GetByHarborConfig(ctx, &registry.HarborConfig{
-		Server:          regionEntity.Harbor.Server,
-		Token:           regionEntity.Harbor.Token,
-		PreheatPolicyID: regionEntity.Harbor.PreheatPolicyID,
-	})
-	if _, err := harbor.CreateProject(ctx, application.Name); err != nil {
-		return nil, err
-	}
-
-	// 2. update image in git repo
+	// 1. update image in git repo
 	imageURL := assembleImageURL(regionEntity, application.Name, cluster.Name, gitRef, commit.ID)
 
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
@@ -81,7 +70,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 3. add pipelinerun in db
+	// 2. add pipelinerun in db
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionBuildDeploy,
@@ -101,7 +90,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 4. create pipelinerun in k8s
+	// 3. create pipelinerun in k8s
 	tektonClient, err := c.tektonFty.GetTekton(cluster.EnvironmentName)
 	if err != nil {
 		return nil, err
@@ -148,7 +137,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 	application, cluster, branch, commit string) string {
 	// domain is harbor server
-	domain := strings.TrimPrefix(regionEntity.Harbor.Server, "http://")
+	domain := strings.TrimPrefix(regionEntity.Registry.Server, "http://")
 	domain = strings.TrimPrefix(domain, "https://")
 
 	// time now
@@ -164,8 +153,8 @@ func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 	normalizedBranch := strings.Join(pinyin.LazyPinyin(branch, args), "")
 	normalizedBranch = regexp.MustCompile(`[^a-zA-Z0-9_.-]`).ReplaceAllString(normalizedBranch, "_")
 
-	return fmt.Sprintf("%v/%v/%v:%v-%v-%v",
-		domain, application, cluster, normalizedBranch, commit[:8], timeStr)
+	return fmt.Sprintf("%v/%v/%v/%v:%v-%v-%v",
+		domain, regionEntity.Registry.Path, application, cluster, normalizedBranch, commit[:8], timeStr)
 }
 
 func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref string) (_ *GetDiffResponse, err error) {

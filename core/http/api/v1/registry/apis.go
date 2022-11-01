@@ -1,10 +1,10 @@
-package harbor
+package registry
 
 import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/controller/harbor"
+	"g.hz.netease.com/horizon/core/controller/registry"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
@@ -18,15 +18,15 @@ const (
 )
 
 type API struct {
-	harborCtl harbor.Controller
+	registryCtl registry.Controller
 }
 
-func NewAPI(ctl harbor.Controller) *API {
-	return &API{harborCtl: ctl}
+func NewAPI(ctl registry.Controller) *API {
+	return &API{registryCtl: ctl}
 }
 
 func (a *API) ListAll(c *gin.Context) {
-	harbors, err := a.harborCtl.ListAll(c)
+	harbors, err := a.registryCtl.ListAll(c)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
@@ -35,14 +35,14 @@ func (a *API) ListAll(c *gin.Context) {
 }
 
 func (a *API) Create(c *gin.Context) {
-	var request *harbor.CreateHarborRequest
+	var request *registry.CreateRegistryRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid request body, err: %s",
 			err.Error())))
 		return
 	}
 
-	id, err := a.harborCtl.Create(c, request)
+	id, err := a.registryCtl.Create(c, request)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
@@ -60,14 +60,14 @@ func (a *API) UpdateByID(c *gin.Context) {
 		return
 	}
 
-	var request *harbor.UpdateHarborRequest
+	var request *registry.UpdateRegistryRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid request body, err: %s",
 			err.Error())))
 		return
 	}
 
-	err = a.harborCtl.UpdateByID(c, uint(id), request)
+	err = a.registryCtl.UpdateByID(c, uint(id), request)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -89,7 +89,7 @@ func (a *API) DeleteByID(c *gin.Context) {
 		return
 	}
 
-	err = a.harborCtl.DeleteByID(c, uint(id))
+	err = a.registryCtl.DeleteByID(c, uint(id))
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -115,7 +115,7 @@ func (a *API) GetByID(c *gin.Context) {
 		return
 	}
 
-	harborEntity, err := a.harborCtl.GetByID(c, uint(id))
+	harborEntity, err := a.registryCtl.GetByID(c, uint(id))
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -126,4 +126,9 @@ func (a *API) GetByID(c *gin.Context) {
 	}
 
 	response.SuccessWithData(c, harborEntity)
+}
+
+func (a *API) GetKinds(c *gin.Context) {
+	kinds := a.registryCtl.GetKinds(c)
+	response.SuccessWithData(c, kinds)
 }

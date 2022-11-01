@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"net/url"
+	"path"
 	"regexp"
 	"time"
 
@@ -770,16 +772,21 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 			return
 		}
 
-		// 2. delete harbor repository
-		harbor := c.registryFty.GetByHarborConfig(newctx, &registry.HarborConfig{
-			Server:          regionEntity.Harbor.Server,
-			Token:           regionEntity.Harbor.Token,
-			PreheatPolicyID: regionEntity.Harbor.PreheatPolicyID,
+		// 2. delete rg repository
+		rg, _ := c.registryFty.GetRegistryByConfig(newctx, &registry.Config{
+			Server:             regionEntity.Registry.Server,
+			Token:              regionEntity.Registry.Token,
+			InsecureSkipVerify: regionEntity.Registry.InsecureSkipTLSVerify,
+			Kind:               regionEntity.Registry.Kind,
+			Path:               regionEntity.Registry.Path,
 		})
 
-		if err = harbor.DeleteRepository(newctx, application.Name, cluster.Name); err != nil {
-			// log error, not return here, delete harbor repository failed has no effect
-			log.Errorf(newctx, "failed to delete harbor repository: %v, err: %v", cluster.Name, err)
+		if rg != nil {
+			if err = rg.DeleteRepository(newctx,
+				url.PathEscape(path.Join(application.Name, cluster.Name))); err != nil {
+				// log error, not return here, delete harbor repository failed has no effect
+				log.Errorf(newctx, "failed to delete harbor repository: %v, err: %v", cluster.Name, err)
+			}
 		}
 
 		if hard {

@@ -1,11 +1,10 @@
 package harbor
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -19,13 +18,6 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"k8s.io/helm/pkg/tlsutil"
-)
-
-const (
-	HarborUploadPath   = "/api/chartrepo/%s/charts"
-	HarborDeletePath   = "/api/chartrepo/%s/charts/%s/%s"
-	HarborStatPath     = "/api/chartrepo/%s/charts/%s/%s"
-	HarborDownloadPath = "/chartrepo/%s/%s"
 )
 
 type Metadata struct {
@@ -43,22 +35,26 @@ type Stat struct {
 	Metadata Metadata `json:"metadata"`
 }
 
-type TemplateRepo struct {
-	url      *url.URL
+type Repo struct {
+	host     *url.URL
+	scheme   string
+	token    string
 	username string
 	password string
 	repoName string
 	client   *http.Client
 }
 
-func NewTemplateRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
-	host, err := url.Parse(config.Host)
+func NewRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
+	host, err := url.Parse(fmt.Sprintf("%s://%s", config.Scheme, config.Host))
 	if err != nil {
 		return nil, perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("url is incorrect: %v", err))
 	}
 
-	transport := &http.Transport{}
+	if config.PlainHTTP {
+		config.Scheme = "http"
+	}
 
 	tlsConf, err := tlsutil.NewClientTLS(config.CertFile, config.KeyFile, config.CAFile)
 	if err != nil {
@@ -67,47 +63,53 @@ func NewTemplateRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
 	}
 	tlsConf.InsecureSkipVerify = config.Insecure
 
-	transport.TLSClientConfig = tlsConf
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConf,
+		},
+	}
 
-	client := &http.Client{}
-	client.Transport = transport
-
-	return templaterepo.NewRepoWithCache(&TemplateRepo{
+	return &Repo{
 		repoName: config.RepoName,
-		url:      host,
+		host:     host,
+		scheme:   config.Scheme,
 		username: config.Username,
 		password: config.Password,
+		token:    config.Token,
 		client:   client,
-	}), nil
+	}, nil
 }
 
-func (h *TemplateRepo) GetLoc() string {
-	return fmt.Sprintf("%s://%s/chartrepo/%s", h.url.Scheme, h.url.Host, h.repoName)
+func (h *Repo) GetLoc() string {
+	return fmt.Sprintf("%s://%s/chartrepo/%s", h.scheme, h.host.Host, url.PathEscape(h.repoName))
 }
 
-func (h *TemplateRepo) UploadChart(chart *chart.Chart) error {
-	var (
-		err error
-		req *http.Request
-	)
-
-	h.url.Path = fmt.Sprintf(HarborUploadPath, h.repoName)
-	req, err = http.NewRequest("POST", h.url.String(), nil)
+func (h *Repo) UploadChart(chartPkg *chart.Chart) error {
+	var buf bytes.Buffer
+	bodyWriter := multipart.NewWriter(&buf)
+	chartWriter, err := bodyWriter.CreateFormFile("chart",
+		fmt.Sprintf("%s-%s", chartPkg.Metadata.Name, chartPkg.Metadata.Version))
 	if err != nil {
 		return perror.Wrap(herrors.ErrHTTPRequestFailed,
-			fmt.Sprintf("failed to create request: %v", err))
+			fmt.Sprintf("failed to create multipart writer: %v", err))
 	}
-	h.url.RawQuery = "force"
 
-	if err = writeChartToBody(req, chart); err != nil {
+	err = templaterepo.ChartSerialize(chartPkg, chartWriter)
+	if err != nil {
 		return err
 	}
-	req.SetBasicAuth(h.username, h.password)
 
-	resp, err := h.client.Do(req)
+	contentType := bodyWriter.FormDataContentType()
+	err = bodyWriter.Close()
 	if err != nil {
 		return perror.Wrap(herrors.ErrHTTPRequestFailed,
-			fmt.Sprintf("failed to create send request: %v", err))
+			fmt.Sprintf("failed to create multipart writer: %v", err))
+	}
+
+	resp, err := h.do("POST", h.uploadLink(),
+		ioutil.NopCloser(&buf), http.Header{"Content-Type": []string{contentType}})
+	if err != nil {
+		return err
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -126,24 +128,10 @@ func (h *TemplateRepo) UploadChart(chart *chart.Chart) error {
 	return nil
 }
 
-func (h *TemplateRepo) DeleteChart(name string, version string) error {
-	var (
-		err error
-		req *http.Request
-	)
-	h.url.Path = fmt.Sprintf(HarborDeletePath, h.repoName, name, version)
-	req, err = http.NewRequest("DELETE", h.url.String(), nil)
+func (h *Repo) DeleteChart(name string, version string) error {
+	resp, err := h.do("DELETE", h.deleteLink(name, version), nil)
 	if err != nil {
-		return perror.Wrap(herrors.ErrHTTPRequestFailed,
-			fmt.Sprintf("failed to create request: %v", err))
-	}
-
-	req.SetBasicAuth(h.username, h.password)
-
-	resp, err := h.client.Do(req)
-	if err != nil {
-		return perror.Wrap(herrors.ErrHTTPRequestFailed,
-			fmt.Sprintf("failed to create send request: %v", err))
+		return err
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -162,7 +150,7 @@ func (h *TemplateRepo) DeleteChart(name string, version string) error {
 	return nil
 }
 
-func (h *TemplateRepo) ExistChart(name string, version string) (bool, error) {
+func (h *Repo) ExistChart(name string, version string) (bool, error) {
 	_, err := h.statChart(name, version)
 	if err != nil {
 		return false, err
@@ -170,30 +158,19 @@ func (h *TemplateRepo) ExistChart(name string, version string) (bool, error) {
 	return true, nil
 }
 
-func (h *TemplateRepo) GetChart(name string, version string, lastSyncAt time.Time) (*chart.Chart, error) {
+func (h *Repo) GetChart(name string, version string, lastSyncAt time.Time) (*chart.Chart, error) {
 	meta, err := h.statChart(name, version)
 	if err != nil {
 		return nil, err
 	}
-
 	if len(meta.Urls) < 1 {
 		return nil, perror.Wrap(herrors.NewErrGetFailed(herrors.HarborChartURL,
 			"chart url is empty"), "chart url is empty")
 	}
 
-	h.url.Path = fmt.Sprintf(HarborDownloadPath, h.repoName, meta.Urls[0])
-	req, err := http.NewRequest("GET", h.url.String(), nil)
+	resp, err := h.do("GET", h.downloadLink(meta.Urls[0]), nil)
 	if err != nil {
-		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed,
-			fmt.Sprintf("failed to create request: %v", err))
-	}
-
-	req.SetBasicAuth(h.username, h.password)
-
-	resp, err := h.client.Do(req)
-	if err != nil {
-		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed,
-			fmt.Sprintf("failed to create send request: %v", err))
+		return nil, err
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -221,20 +198,10 @@ func (h *TemplateRepo) GetChart(name string, version string, lastSyncAt time.Tim
 	return chartPackage, nil
 }
 
-func (h *TemplateRepo) statChart(name string, version string) (*Metadata, error) {
-	h.url.Path = fmt.Sprintf(HarborStatPath, h.repoName, name, version)
-	req, err := http.NewRequest("GET", h.url.String(), nil)
+func (h *Repo) statChart(name string, version string) (*Metadata, error) {
+	resp, err := h.do("GET", h.statLink(name, version), nil)
 	if err != nil {
-		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed,
-			fmt.Sprintf("failed to create request: %v", err))
-	}
-
-	req.SetBasicAuth(h.username, h.password)
-
-	resp, err := h.client.Do(req)
-	if err != nil {
-		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed,
-			fmt.Sprintf("failed to create send request: %v", err))
+		return nil, err
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -259,29 +226,48 @@ func (h *TemplateRepo) statChart(name string, version string) (*Metadata, error)
 	return &stat.Metadata, nil
 }
 
-func writeChartToBody(req *http.Request, c *chart.Chart) error {
-	var buf bytes.Buffer
-	bodyWriter := multipart.NewWriter(&buf)
-	chartWriter, err := bodyWriter.CreateFormFile("chart",
-		fmt.Sprintf("%s-%s", c.Metadata.Name, c.Metadata.Version))
+func (h *Repo) do(method, url string, body io.Reader, headers ...http.Header) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return perror.Wrap(herrors.ErrHTTPRequestFailed,
-			fmt.Sprintf("failed to create multipart writer: %v", err))
+		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed,
+			fmt.Sprintf("failed to create request: %v", err))
 	}
 
-	gzipper := gzip.NewWriter(chartWriter)
-	twriter := tar.NewWriter(gzipper)
-	defer func() {
-		_ = twriter.Close()
-		_ = gzipper.Close()
-		_ = bodyWriter.Close()
-	}()
-	err = templaterepo.WriteTarContents(twriter, c, "")
-	if err != nil {
-		return perror.Wrap(herrors.ErrWriteFailed,
-			fmt.Sprintf("writing chart to buffer failed: %s", err.Error()))
+	for _, header := range headers {
+		for k, values := range header {
+			for _, v := range values {
+				req.Header.Add(k, v)
+			}
+		}
 	}
-	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
-	req.Body = ioutil.NopCloser(&buf)
-	return nil
+
+	req.SetBasicAuth(h.username, h.password)
+
+	resp, err := h.client.Do(req)
+	if err != nil {
+		return nil, perror.Wrap(herrors.ErrHTTPRequestFailed,
+			fmt.Sprintf("failed to create send request: %v", err))
+	}
+
+	return resp, nil
+}
+
+func (h *Repo) uploadLink() string {
+	return fmt.Sprintf("%s://%s/api/chartrepo/%s/charts",
+		h.scheme, h.host.Host, url.PathEscape(h.repoName))
+}
+
+func (h *Repo) deleteLink(name, version string) string {
+	return fmt.Sprintf("%s://%s/api/chartrepo/%s/charts/%s/%s",
+		h.scheme, h.host.Host, url.PathEscape(h.repoName), url.PathEscape(name), url.PathEscape(version))
+}
+
+func (h *Repo) statLink(name, version string) string {
+	return fmt.Sprintf("%s://%s/api/chartrepo/%s/charts/%s/%s",
+		h.scheme, h.host.Host, url.PathEscape(h.repoName), url.PathEscape(name), url.PathEscape(version))
+}
+
+func (h *Repo) downloadLink(link string) string {
+	return fmt.Sprintf("%s://%s/chartrepo/%s/%s",
+		h.scheme, h.host.Host, url.PathEscape(h.repoName), link)
 }
