@@ -861,22 +861,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		return "", err
 	}
 
-	pipelineValueParent, err := func() (string, error) {
-		manifest, err := g.GetManifest(ctx, application, cluster)
-		if err != nil {
-			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
-				return "", err
-			}
-		}
-		if manifest == nil || manifest.Version == "" {
-			return template, nil
-		}
-		return PipelineValueParent, nil
-	}()
-	if err != nil {
-		return "", err
-	}
-
+	pipelineOutPutValueParent := template
 	newPipelineOutputContent := make(map[string]interface{})
 	var PipelineOutPutFileExist bool
 	currentPipelineOutputContent, err := g.getPipelineOutPut(ctx, application, cluster)
@@ -884,18 +869,18 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return "", err
 		}
-		newPipelineOutputContent[pipelineValueParent] = pipelineOutPutInternalFormat
+		newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 	} else {
 		PipelineOutPutFileExist = true
 		// if current exist, just patch it
 		if currentPipelineOutputContent != nil {
-			newPipelineOutputContent[pipelineValueParent], err =
-				mergemap.Merge(currentPipelineOutputContent[pipelineValueParent], pipelineOutPutInternalFormat)
+			newPipelineOutputContent[pipelineOutPutValueParent], err =
+				mergemap.Merge(currentPipelineOutputContent[pipelineOutPutValueParent], pipelineOutPutInternalFormat)
 			if err != nil {
 				return "", perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
 			}
 		} else {
-			newPipelineOutputContent[pipelineValueParent] = pipelineOutPutInternalFormat
+			newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 		}
 	}
 
