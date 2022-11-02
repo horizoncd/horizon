@@ -47,7 +47,7 @@ type Controller interface {
 	// GetTemplateSchema get schema for a template release
 	GetTemplateSchema(ctx context.Context, releaseID uint, params map[string]string) (*Schemas, error)
 	// ListTemplateByGroupID lists all template available by group ID
-	ListTemplateByGroupID(ctx context.Context, groupID uint) (Templates, error)
+	ListTemplateByGroupID(ctx context.Context, groupID uint, withoutCI bool) (Templates, error)
 	// ListTemplateReleaseByTemplateID lists all releases of the specified template
 	ListTemplateReleaseByTemplateID(ctx context.Context, templateID uint) (Releases, error)
 	// CreateTemplate creates a template with a release under a group
@@ -307,7 +307,7 @@ func (c *controller) GetTemplateSchema(ctx context.Context, releaseID uint,
 }
 
 // ListTemplateByGroupID lists all template available
-func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint) (Templates, error) {
+func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint, withoutCI bool) (Templates, error) {
 	const op = "template controller: listTemplateByGroupID"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -317,7 +317,7 @@ func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint) (T
 	}
 
 	if listRecursively, ok := ctx.Value(hctx.TemplateListRecursively).(bool); ok && listRecursively {
-		return c.listTemplateByGroupIDRecursively(ctx, groupID)
+		return c.listTemplateByGroupIDRecursively(ctx, groupID, withoutCI)
 	}
 
 	templates, err := c.templateMgr.ListByGroupID(ctx, groupID)
@@ -328,7 +328,9 @@ func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint) (T
 	var tpls Templates
 	for _, template := range templates {
 		if c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
-			tpls = append(tpls, toTemplate(template))
+			if template.WithoutCI == withoutCI {
+				tpls = append(tpls, toTemplate(template))
+			}
 		}
 	}
 
@@ -341,7 +343,8 @@ func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint) (T
 	return tpls, err
 }
 
-func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context, groupID uint) (Templates, error) {
+func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context,
+	groupID uint, withoutCI bool) (Templates, error) {
 	if !c.groupMgr.GroupExist(ctx, groupID) {
 		reason := fmt.Sprintf("group not found: %d", groupID)
 		return nil, perror.Wrap(herrors.NewErrNotFound(herrors.GroupInDB, reason), reason)
@@ -376,7 +379,9 @@ func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context, group
 	var tpls Templates
 	for _, template := range templates {
 		if c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
-			tpls = append(tpls, toTemplate(template))
+			if template.WithoutCI == withoutCI {
+				tpls = append(tpls, toTemplate(template))
+			}
 		}
 	}
 

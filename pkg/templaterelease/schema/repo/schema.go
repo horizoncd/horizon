@@ -2,10 +2,7 @@ package harbor
 
 import (
 	"context"
-	"fmt"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	"g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -58,12 +55,6 @@ func (g *Getter) GetTemplateSchema(ctx context.Context,
 		}
 	}
 
-	for name, file := range files {
-		if file == nil {
-			return nil, perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("lack of template schema: %v", name))
-		}
-	}
 	return schema.ParseFiles(params,
 		files[_pipelineSchemaPath], files[_applicationSchemaPath],
 		files[_pipelineUISchemaPath], files[_applicationUISchemaPath])

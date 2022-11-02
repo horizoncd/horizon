@@ -59,6 +59,8 @@ import (
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/tag"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
+	templatev2 "g.hz.netease.com/horizon/core/http/api/v2/template"
+
 	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
@@ -475,6 +477,7 @@ func Run(flags *Flags) {
 		tagAPI               = tag.NewAPI(tagCtl)
 		templateSchemaTagAPI = templateschematagapi.NewAPI(templateSchemaTagCtl)
 		templateAPI          = template.NewAPI(templateCtl, templateSchemaTagCtl)
+		templateAPIV2        = templatev2.NewAPI(templateCtl)
 		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
@@ -550,6 +553,7 @@ func Run(flags *Flags) {
 	idp.RegisterRoutes(r, idpAPI)
 	buildAPI.RegisterRoutes(r, buildSchemaAPI)
 	envtemplatev2.RegisterRoutes(r, envtemplatev2API)
+	templatev2.RegisterRoutes(r, templateAPIV2)
 
 	// start cloud event server
 	go runCloudEventServer(
