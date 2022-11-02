@@ -138,24 +138,6 @@ CREATE TABLE `tb_application`
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
 
--- harbor table
-CREATE TABLE `tb_harbor`
-(
-    `id`                bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-    `name`              varchar(128)        NOT NULL DEFAULT '' COMMENT 'name of the harbor registry',
-    `server`            varchar(256)        NOT NULL DEFAULT '' COMMENT 'harbor server address',
-    `token`             varchar(512)        NOT NULL COMMENT 'harbor server token',
-    `preheat_policy_id` int(2)                       DEFAULT NULL COMMENT 'p2p preheat policy id',
-    `created_at`        datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`        datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_ts`        bigint(20)                   DEFAULT '0' COMMENT 'deleted timestamp, 0 means not deleted',
-    `created_by`        bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'creator',
-    `updated_by`        bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'updater',
-    PRIMARY KEY (`id`)
-) ENGINE = InnoDB
-  AUTO_INCREMENT = 1
-  DEFAULT CHARSET = utf8mb4;
-
 -- registry table
 CREATE TABLE `tb_registry` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,

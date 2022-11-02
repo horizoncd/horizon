@@ -17,7 +17,7 @@ var (
 //
 //go:generate mockgen -source=$GOFILE -destination=../../../../mock/pkg/cluster/registry/factory/factory_mock.go -package=mock_factory
 type Factory interface {
-	GetRegistryByConfig(ctx context.Context, harbor *registry.Config) (registry.Registry, error)
+	GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error)
 }
 
 type factory struct {
