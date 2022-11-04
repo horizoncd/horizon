@@ -152,14 +152,20 @@ func (a *API) InternalDeploy(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
+	pipelinerunIDStr := c.Param(common.ParamPipelinerunID)
+	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
 
-	var request *cluster.InternalDeployRequest
+	var request interface{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	resp, err := a.clusterCtl.InternalDeploy(c, uint(clusterID), request)
+	resp, err := a.clusterCtl.InternalDeploy(c, uint(clusterID), uint(pipelinerunID), request)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.ClusterInDB {

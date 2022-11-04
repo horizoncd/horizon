@@ -798,9 +798,7 @@ func test(t *testing.T) {
 
 	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, herrors.NewErrNotFound(herrors.PodsInK8S, "test"))
-	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
-		PipelinerunID: buildDeployResp.PipelinerunID,
-	})
+	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, buildDeployResp.PipelinerunID, nil)
 	assert.Nil(t, err)
 	b, _ = json.Marshal(internalDeployResp)
 	t.Logf("%v", string(b))
@@ -869,7 +867,7 @@ func test(t *testing.T) {
 	err = c.Promote(ctx, resp.ID)
 	assert.Nil(t, err)
 
-	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{},
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil,
 		nil).Times(1)
 
 	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
@@ -879,9 +877,12 @@ func test(t *testing.T) {
 	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
 	assert.Nil(t, deployResp)
 
-	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{
-		Image: &imageName,
-	}, nil).AnyTimes()
+	type PipelineOutput struct {
+		Image *string
+	}
+
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&PipelineOutput{Image: &imageName}, nil).AnyTimes()
 
 	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
 		Title:       "deploy-title",

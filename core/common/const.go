@@ -85,6 +85,7 @@ const (
 	ParamClusterName   = "cluster"
 	ParamTemplateID    = "templateID"
 	ParamReleaseID     = "releaseID"
+	ParamPipelinerunID = "pipelinerunID"
 )
 
 const (

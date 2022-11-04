@@ -133,6 +133,8 @@ type ClusterCommit struct {
 	Gitops string
 }
 
+// nolint
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/gitrepo/gitrepo_cluster_mock.go -package=mock_gitrepo
 type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
 	GetClusterValueFiles(ctx context.Context,
@@ -146,9 +148,9 @@ type ClusterGitRepo interface {
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
 	// MergeBranch merge gitops branch to master branch, and return master branch's newest commit
 	MergeBranch(ctx context.Context, application, cluster string, prID uint) (string, error)
-	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (*PipelineOutput, error)
+	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (interface{}, error)
 	UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
-		PipelineOutput interface{}) (string, error)
+		pipelineOutput interface{}) (string, error)
 	// UpdateRestartTime update restartTime in git repo for restart
 	// TODO(gjq): some template cannot restart, for example serverless, how to do it ?
 	GetRestartTime(ctx context.Context, application, cluster string,
@@ -787,8 +789,8 @@ func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster s
 }
 
 func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, cluster string,
-	template string) (*PipelineOutput, error) {
-	ret := make(map[string]*PipelineOutput)
+	template string) (interface{}, error) {
+	ret := make(map[string]interface{})
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
 	if err != nil {
@@ -807,14 +809,10 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 	if !ok {
 		return nil, perror.Wrapf(herrors.ErrPipelineOutputEmpty, "no template in pipelineOutput.yaml")
 	}
-
-	if pipelineOutput.Git == nil {
-		pipelineOutput.Git = &Git{}
-	}
 	return pipelineOutput, nil
 }
 
-func (g *clusterGitRepo) getPipelineOutPut(ctx context.Context,
+func (g *clusterGitRepo) getPipelineOutput(ctx context.Context,
 	application, cluster string) (map[string]map[string]interface{}, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
@@ -841,12 +839,12 @@ func (g *clusterGitRepo) getPipelineOutPut(ctx context.Context,
 }
 
 func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
-	pipelineOutPut interface{}) (commitID string, err error) {
+	pipelineOutput interface{}) (commitID string, err error) {
 	const op = "cluster git repo: update pipeline output"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	pipelineOutPutInternalFormat, err := func() (map[string]interface{}, error) {
-		bytes, err := json.Marshal(pipelineOutPut)
+		bytes, err := json.Marshal(pipelineOutput)
 		if err != nil {
 			return nil, err
 		}
@@ -863,7 +861,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	pipelineOutPutValueParent := template
 	newPipelineOutputContent := make(map[string]interface{})
 	var PipelineOutPutFileExist bool
-	currentPipelineOutputContent, err := g.getPipelineOutPut(ctx, application, cluster)
+	currentPipelineOutputContent, err := g.getPipelineOutput(ctx, application, cluster)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return "", err
@@ -909,7 +907,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		Operator: currentUser.GetName(),
 		Action:   "deploy cluster",
 		Cluster:  angular.StringPtr(cluster),
-	}, pipelineOutPut)
+	}, pipelineOutput)
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
@@ -1255,11 +1253,6 @@ type BaseValue struct {
 	Cluster     string             `yaml:"cluster"`
 	Template    *BaseValueTemplate `yaml:"template"`
 	Priority    string             `yaml:"priority"`
-}
-
-type PipelineOutput struct {
-	Image *string `yaml:"image,omitempty" json:"image,omitempty"`
-	Git   *Git    `yaml:"git,omitempty" json:"git,omitempty"`
 }
 
 type Git struct {

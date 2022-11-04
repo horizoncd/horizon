@@ -139,7 +139,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var internalRoutes = route.Routes{
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/:%v/deploy", common.ParamClusterID),
+			Pattern:     fmt.Sprintf("/:%v/deploy/:%v", common.ParamClusterID, common.ParamPipelinerunID),
 			HandlerFunc: api.InternalDeploy,
 		},
 	}

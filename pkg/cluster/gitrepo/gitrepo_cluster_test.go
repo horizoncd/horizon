@@ -80,6 +80,11 @@ type Param struct {
 	RootGroupName string `json:"rootGroupName"`
 }
 
+type PipelineOutput struct {
+	Image *string `yaml:"image,omitempty" json:"image,omitempty"`
+	Git   *Git    `yaml:"git,omitempty" json:"git,omitempty"`
+}
+
 // nolint
 func TestMain(m *testing.M) {
 	var err error

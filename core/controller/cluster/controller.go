@@ -64,8 +64,8 @@ type Controller interface {
 
 	FreeCluster(ctx context.Context, clusterID uint) error
 	// InternalDeploy deploy only used by internal system
-	InternalDeploy(ctx context.Context, clusterID uint,
-		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
+	InternalDeploy(ctx context.Context, clusterID uint, pipelinerunID uint,
+		r interface{}) (_ *InternalDeployResponse, err error)
 
 	Promote(ctx context.Context, clusterID uint) error
 	Pause(ctx context.Context, clusterID uint) error
