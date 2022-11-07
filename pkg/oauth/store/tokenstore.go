@@ -21,9 +21,9 @@ func NewTokenStore(db *gorm.DB) TokenStore {
 
 var _ TokenStore = &DbTokenStore{}
 
-func (d *DbTokenStore) Create(ctx context.Context, token *models.Token) error {
+func (d *DbTokenStore) Create(ctx context.Context, token *models.Token) (*models.Token, error) {
 	result := d.db.WithContext(ctx).Create(token)
-	return result.Error
+	return token, result.Error
 }
 
 func (d *DbTokenStore) Get(ctx context.Context, code string) (*models.Token, error) {
@@ -40,6 +40,11 @@ func (d *DbTokenStore) Get(ctx context.Context, code string) (*models.Token, err
 
 func (d *DbTokenStore) DeleteByCode(ctx context.Context, code string) error {
 	result := d.db.WithContext(ctx).Exec(common.DeleteByCode, code)
+	return result.Error
+}
+
+func (d *DbTokenStore) DeleteByID(ctx context.Context, id uint) error {
+	result := d.db.WithContext(ctx).Where("id = ?", id).Delete(&models.Token{})
 	return result.Error
 }
 

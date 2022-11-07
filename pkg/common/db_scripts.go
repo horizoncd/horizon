@@ -56,10 +56,14 @@ const (
 /* sql about user */
 const (
 	// UserQueryByOIDC ...
-	UserQueryByOIDC  = "select * from tb_user where oidc_type = ? and email = ?"
-	UserQueryByEmail = "select * from tb_user where email = ? "
-	UserListByEmail  = "select * from tb_user where email in ? "
-	UserGetByID      = "select * from tb_user where id in ?"
+	UserQueryByOIDC  = "select * from tb_user where oidc_type = ? and email = ? and user_type = ?"
+	UserQueryByEmail = "select * from tb_user where email = ? and user_type = ?"
+	UserListByEmail  = "select * from tb_user where email in ? and user_type = ?"
+	UserSearch       = "select * from tb_user where user_type = ?" +
+		" and (name like ? or full_name like ? or email like ?) limit ? offset ?"
+	UserSearchCount = "select count(1) from tb_user where user_type = ?" +
+		" and (name like ? or full_name like ? or email like ?)"
+	UserGetByID = "select * from tb_user where id in ?"
 )
 
 /* sql about member */

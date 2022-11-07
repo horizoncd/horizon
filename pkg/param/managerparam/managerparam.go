@@ -1,6 +1,7 @@
 package managerparam
 
 import (
+	accesstokenmanager "g.hz.netease.com/horizon/pkg/accesstoken/manager"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	applicationregionmanager "g.hz.netease.com/horizon/pkg/applicationregion/manager"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
@@ -44,6 +45,7 @@ type Manager struct {
 	GroupManager             groupmanager.Manager
 	RegistryManager          registrymanager.Manager
 	IdpManager               idpmanager.Manager
+	AccessTokenManager       accesstokenmanager.Manager
 }
 
 func InitManager(db *gorm.DB) *Manager {
@@ -68,5 +70,6 @@ func InitManager(db *gorm.DB) *Manager {
 		GroupManager:             groupmanager.New(db),
 		RegistryManager:          registrymanager.New(db),
 		IdpManager:               idpmanager.NewManager(db),
+		AccessTokenManager:       accesstokenmanager.New(db),
 	}
 }

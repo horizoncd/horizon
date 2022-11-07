@@ -15,6 +15,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/config"
 	accessctl "g.hz.netease.com/horizon/core/controller/access"
+	accesstokenctl "g.hz.netease.com/horizon/core/controller/accesstoken"
 	applicationctl "g.hz.netease.com/horizon/core/controller/application"
 	applicationregionctl "g.hz.netease.com/horizon/core/controller/applicationregion"
 	"g.hz.netease.com/horizon/core/controller/build"
@@ -33,6 +34,7 @@ import (
 	regionctl "g.hz.netease.com/horizon/core/controller/region"
 	registryctl "g.hz.netease.com/horizon/core/controller/registry"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
+	scopectl "g.hz.netease.com/horizon/core/controller/scope"
 	sloctl "g.hz.netease.com/horizon/core/controller/slo"
 	tagctl "g.hz.netease.com/horizon/core/controller/tag"
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
@@ -40,6 +42,7 @@ import (
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
 	userctl "g.hz.netease.com/horizon/core/controller/user"
 	accessapi "g.hz.netease.com/horizon/core/http/api/v1/access"
+	"g.hz.netease.com/horizon/core/http/api/v1/accesstoken"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
 	"g.hz.netease.com/horizon/core/http/api/v1/applicationregion"
 	"g.hz.netease.com/horizon/core/http/api/v1/cluster"
@@ -56,6 +59,7 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/region"
 	"g.hz.netease.com/horizon/core/http/api/v1/registry"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
+	scope "g.hz.netease.com/horizon/core/http/api/v1/scope"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/tag"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
@@ -71,10 +75,10 @@ import (
 	"g.hz.netease.com/horizon/core/http/metrics"
 	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
-	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
 	prehandlemiddle "g.hz.netease.com/horizon/core/middleware/prehandle"
 	regionmiddle "g.hz.netease.com/horizon/core/middleware/region"
 	tagmiddle "g.hz.netease.com/horizon/core/middleware/tag"
+	tokenmiddle "g.hz.netease.com/horizon/core/middleware/token"
 	usermiddle "g.hz.netease.com/horizon/core/middleware/user"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/application/gitrepo"
@@ -97,7 +101,7 @@ import (
 	memberservice "g.hz.netease.com/horizon/pkg/member/service"
 	"g.hz.netease.com/horizon/pkg/oauth/generate"
 	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
-	"g.hz.netease.com/horizon/pkg/oauth/scope"
+	scopeservice "g.hz.netease.com/horizon/pkg/oauth/scope"
 	oauthstore "g.hz.netease.com/horizon/pkg/oauth/store"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
@@ -358,7 +362,7 @@ func Run(flags *Flags) {
 	} else {
 		log.Printf("the oauthScopeConfig = %+v\n", oauthConfig)
 	}
-	scopeService, err := scope.NewFileScopeService(oauthConfig)
+	scopeService, err := scopeservice.NewFileScopeService(oauthConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -459,6 +463,8 @@ func Run(flags *Flags) {
 		registryCtl          = registryctl.NewController(parameter)
 		idpCtrl              = idpctl.NewController(parameter)
 		buildSchemaCtrl      = build.NewController(buildSchema)
+		accessTokenCtl       = accesstokenctl.NewController(parameter)
+		scopeCtl             = scopectl.NewController(parameter)
 	)
 
 	var (
@@ -492,6 +498,8 @@ func Run(flags *Flags) {
 		idpAPI           = idp.NewAPI(idpCtrl, store)
 		buildSchemaAPI   = buildAPI.NewAPI(buildSchemaCtrl)
 		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl)
+		accessTokenAPI   = accesstoken.NewAPI(accessTokenCtl, roleService, scopeService)
+		scopeAPI         = scope.NewAPI(scopeCtl)
 	)
 
 	// init server
@@ -507,7 +515,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		regionmiddle.Middleware(parameter, applicationRegionCtl),
-		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
+		tokenmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
 		//  user middleware, check user and attach current user to context.
 		usermiddle.Middleware(parameter, store, coreConfig,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
@@ -555,6 +563,8 @@ func Run(flags *Flags) {
 	buildAPI.RegisterRoutes(r, buildSchemaAPI)
 	envtemplatev2.RegisterRoutes(r, envtemplatev2API)
 	templatev2.RegisterRoutes(r, templateAPIV2)
+	accesstoken.RegisterRoutes(r, accessTokenAPI)
+	scope.RegisterRoutes(r, scopeAPI)
 
 	// start cloud event server
 	go runCloudEventServer(

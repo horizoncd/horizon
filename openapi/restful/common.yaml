@@ -59,3 +59,16 @@ components:
       type: integer
       format: int64
       description: the parent id of the subgroup, if not provided, a root group
+
+    User:
+      type: object
+      properties:
+        name:
+          type: string
+          description: the name of user
+        email:
+          type: string]
+          description: the e-mail address of user
+        id:
+          type: integer
+          description: the id of user

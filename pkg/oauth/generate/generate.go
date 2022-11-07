@@ -28,6 +28,7 @@ func (g *AuthorizeGenerate) GenCode(info *CodeGenerateInfo) (code string) {
 const (
 	HorizonAppUserToServerAccessTokenPrefix = "hu_"
 	OauthAPPAccessTokenPrefix               = "ho_"
+	AccessTokenPrefix                       = "ha_"
 	// HorizonAppServerToServerAccessTokenPrefix = "hs_"
 )
 

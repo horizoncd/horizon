@@ -87,6 +87,9 @@ const (
 	ParamTemplateID    = "templateID"
 	ParamReleaseID     = "releaseID"
 	ParamPipelinerunID = "pipelinerunID"
+	ParamResourceType  = "resourceType"
+	ParamResourceID    = "resourceID"
+	ParamAccessTokenID = "accessTokenID"
 )
 
 const (

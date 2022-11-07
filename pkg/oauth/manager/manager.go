@@ -271,7 +271,7 @@ func (m *OauthManager) GenAuthorizeCode(ctx context.Context, req *AuthorizeGener
 	}
 
 	authorizationToken := m.NewAuthorizationToken(req)
-	err = m.tokenStore.Create(ctx, authorizationToken)
+	_, err = m.tokenStore.Create(ctx, authorizationToken)
 	return authorizationToken, err
 }
 func (m *OauthManager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest, codeToken *models.Token) error {
@@ -322,7 +322,7 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 
 	// new access token  and store
 	accessToken := m.NewAccessToken(authorizationCodeToken, req, accessCodeGenerate)
-	err = m.tokenStore.Create(ctx, accessToken)
+	_, err = m.tokenStore.Create(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}

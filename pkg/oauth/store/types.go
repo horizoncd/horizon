@@ -6,10 +6,11 @@ import (
 )
 
 type TokenStore interface {
-	Create(ctx context.Context, token *models.Token) error
+	Create(ctx context.Context, token *models.Token) (*models.Token, error)
 	DeleteByCode(ctx context.Context, code string) error
 	DeleteByClientID(ctx context.Context, code string) error
 	Get(ctx context.Context, code string) (*models.Token, error)
+	DeleteByID(ctx context.Context, id uint) error
 }
 
 type OauthAppStore interface {

@@ -12,6 +12,7 @@ import (
 
 const (
 	UserQueryName = "filter"
+	UserQueryType = "userType"
 )
 
 const (

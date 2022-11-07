@@ -12,6 +12,7 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )
@@ -38,6 +39,22 @@ func (a *API) List(c *gin.Context) {
 	if queryName != "" {
 		keywords[common.UserQueryName] = queryName
 	}
+
+	var userTypes []int
+	userTypeStrs := c.QueryArray(common.UserQueryType)
+	for _, userTypeStr := range userTypeStrs {
+		userType, err := strconv.Atoi(userTypeStr)
+		if err != nil {
+			response.AbortWithRPCError(c,
+				rpcerror.ParamError.WithErrMsgf("invalid user type: %s, err: %v", userTypeStr, err))
+			return
+		}
+		userTypes = append(userTypes, userType)
+	}
+	if len(userTypes) == 0 {
+		userTypes = append(userTypes, usermodels.UserTypeCommon)
+	}
+	keywords[common.UserQueryType] = userTypes
 
 	query := q.New(keywords).WithPagination(c)
 	total, users, err := a.userCtl.List(c, query)

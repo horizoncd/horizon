@@ -46,7 +46,7 @@ func (c *controller) ValidateToken(ctx context.Context, accessToken string) erro
 	if err != nil {
 		return err
 	}
-	if token.CreatedAt.Add(token.ExpiresIn).Before(time.Now()) {
+	if token.ExpiresIn > 0 && token.CreatedAt.Add(token.ExpiresIn).Before(time.Now()) {
 		return perror.Wrap(herrors.ErrOAuthAccessTokenExpired, "")
 	}
 	return nil

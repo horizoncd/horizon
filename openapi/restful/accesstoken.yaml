@@ -1,0 +1,191 @@
+openapi: 3.0.1
+info:
+  title: Horizon-AccessToken-Restful
+  description: Restful API About Access Token
+  version: 1.0.0
+servers:
+  - url: "http://localhost:8080/"
+paths:
+  /apis/core/v1/{resourceType}/{resourceID}/accesstokens:
+    parameters:
+      - name: resourceType
+        in: path
+        description: resource type
+        required: true
+        schema:
+          enum: ["groups", "applications", "clusters"]
+      - name: resourceID
+        in: path
+        description: resource id
+        required: true
+        schema:
+          type: integer
+    post:
+      tags:
+        - accesstoken
+      operationId: createResourceScopedAccessTokenReq
+      summary: create a resource-scoped access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/definitions/CreateResourceScopedAccessTokenReq"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/definitions/CreateResourceScopedAccessTokenResp"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - accesstoken
+      operationId: listResourceScopedAccessTokens
+      summary: list resource-scoped access tokens
+      responses:
+        "200":
+          description: Succuss
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/definitions/AccessTokenDetailWithRole"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/accesstokens:
+    post:
+      tags:
+        - accesstoken
+      operationId: createPersionalAccessToken
+      summary: create a personal access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/definitions/CreatePersonalAccessTokenReq"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/definitions/CreatePersonalAccessTokenResp"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - accesstoken
+      operationId: listPersonalAccessTokens
+      summary: list personal access tokens
+      responses:
+        "200":
+          description: Succuss
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/definitions/AccessTokenDetail"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/accesstokens/${id}:
+    delete:
+      tags:
+        - accesstoken
+      operationId: deleteAccessToken
+      summary: delete an access token
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+definitions:
+  Role:
+    type: object
+    properties:
+      role:
+        type: string
+        enum: ["pe", "owner", "developer", "guest"]
+  TokenCode:
+    type: object
+    properties:
+      code:
+        type: string
+        description: "You could use it to pass authentication when calling the api. When using it, you need to put it in the request header Authorization: Bearer {token} for use"
+  AccessTokenBasicInfo:
+    type: object
+    required: [name, expiresAt, role, scopes]
+    properties:
+      name:
+        type: string
+        description: "name of token"
+      expiresAt:
+        type: string
+        description: "expiration date of token, need to follow the format of 'YYYY-MM-DD' or 'never'"
+      scopes:
+        type: array
+        items:
+          type: string
+          enum:
+            [
+              "applications:read-only",
+              "applications:read-write",
+              "clusters:read-only",
+              "clusters:read-write",
+            ]
+        description: "permisson scopes"
+  CreateResourceScopedAccessTokenReq:
+    allOf:
+      - $ref: "#/definitions/AccessTokenBasicInfo"
+      - $ref: "#/definitions/Role"
+  CreatePersonalAccessTokenReq:
+    allOf:
+      - $ref: "#/definitions/AccessTokenBasicInfo"
+  AccessTokenDetail:
+    allOf:
+      - $ref: "#/definitions/AccessTokenBasicInfo"
+      - type: object
+        properties:
+          createdAt:
+            type: string
+          createdBy:
+            $ref: "common.yaml#/components/components/User"
+          id:
+            type: integer
+  AccessTokenDetailWithRole:
+    allOf:
+      - $ref: "#/definitions/AccessTokenDetail"
+      - $ref: "#/definitions/Role"
+  CreatePersonalAccessTokenResp:
+    allOf:
+      - $ref: "#/definitions/AccessTokenDetail"
+      - $ref: "#/definitions/TokenCode"
+  CreateResourceScopedAccessTokenResp:
+    allOf:
+      - $ref: "#/definitions/AccessTokenDetailWithRole"
+      - $ref: "#/definitions/TokenCode"

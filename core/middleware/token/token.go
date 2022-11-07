@@ -1,4 +1,4 @@
-package oauth
+package token
 
 import (
 	"g.hz.netease.com/horizon/core/common"
