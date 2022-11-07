@@ -324,8 +324,7 @@ func TestListTemplates(t *testing.T) {
 
 func TestGetSchema(t *testing.T) {
 	createContext()
-	groupID := 0
-	charName := fmt.Sprintf(ChartNameFormat, groupID, templateName)
+	charName := templateName
 
 	mockCtl := gomock.NewController(t)
 	// templateMgr := tmock.NewMockManager(mockCtl)

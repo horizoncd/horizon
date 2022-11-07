@@ -12,6 +12,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	pkgcommon "g.hz.netease.com/horizon/pkg/common"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
@@ -98,11 +99,6 @@ type BaseParams struct {
 	Namespace           string
 
 	Version string
-}
-
-type Manifest struct {
-	// TODO(encode the template info into manifest),currently only the Version
-	Version string `yaml:"version"`
 }
 
 type CreateClusterParams struct {
@@ -256,7 +252,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 	}
-	var manifest = Manifest{}
+	var manifest = pkgcommon.Manifest{}
 	if manifestBytes != nil {
 		err = json.Unmarshal(manifestBytes, &manifest)
 		if err != nil {
@@ -442,7 +438,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.ChartName))
 	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.ChartName, params.Tags))
 	if params.BaseParams.Version != "" {
-		marshal(&manifestValueYAML, &err9, Manifest{Version: params.BaseParams.Version})
+		marshal(&manifestValueYAML, &err9, pkgcommon.Manifest{Version: params.BaseParams.Version})
 	}
 
 	chart, err := g.assembleChart(params.BaseParams)
@@ -764,18 +760,18 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	return mr.MergeCommitSHA, nil
 }
 
-func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*Manifest, error) {
+func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*pkgcommon.Manifest, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathManifest)
 	if err != nil {
 		return nil, err
 	}
-	manifest, err := func() (*Manifest, error) {
+	manifest, err := func() (*pkgcommon.Manifest, error) {
 		manifestOutputBytes, err := kyaml.YAMLToJSON(content)
 		if err != nil {
 			return nil, err
 		}
-		ret := Manifest{}
+		ret := pkgcommon.Manifest{}
 		if err = json.Unmarshal(manifestOutputBytes, &ret); err != nil {
 			return nil, err
 		}

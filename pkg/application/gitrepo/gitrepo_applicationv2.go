@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	pkgcommon "g.hz.netease.com/horizon/pkg/common"
+
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
@@ -25,11 +27,6 @@ const (
 	_applications          = "applications"
 	_recyclingApplications = "recycling-applications"
 )
-
-type Manifest struct {
-	// TODO(encode the template info into manifest),currently only the Version
-	Version string `yaml:"version"`
-}
 
 type CreateOrUpdateRequest struct {
 	Version string
@@ -142,7 +139,7 @@ func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application stri
 		}
 	}
 	if req.Version != "" {
-		manifest := Manifest{Version: req.Version}
+		manifest := pkgcommon.Manifest{Version: req.Version}
 		manifestYaml, err = yaml.Marshal(manifest)
 		if err != nil {
 			log.Warningf(ctx, "Manifest marshal error, %+v", manifest)
