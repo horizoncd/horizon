@@ -76,10 +76,12 @@ func Test(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
+	method := uint8(idpmodels.ClientSecretSentAsPost)
 	err := db.Table("tb_identity_provider").Create(&idpmodels.IdentityProvider{
-		Model:       global.Model{ID: 1},
-		DisplayName: "netease",
-		Name:        "netease",
+		Model:                   global.Model{ID: 1},
+		DisplayName:             "netease",
+		Name:                    "netease",
+		TokenEndpointAuthMethod: (*idpmodels.TokenEndpointAuthMethod)(&method),
 	}).Error
 	assert.Nil(t, err)
 

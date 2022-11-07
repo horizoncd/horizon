@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	idpconst "g.hz.netease.com/horizon/core/common/idp"
 	"g.hz.netease.com/horizon/core/common"
+	idpconst "g.hz.netease.com/horizon/core/common/idp"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	perror "g.hz.netease.com/horizon/pkg/errors"
