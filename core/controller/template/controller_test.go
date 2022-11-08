@@ -324,8 +324,7 @@ func TestListTemplates(t *testing.T) {
 
 func TestGetSchema(t *testing.T) {
 	createContext()
-	groupID := 0
-	charName := fmt.Sprintf(ChartNameFormat, groupID, templateName)
+	charName := templateName
 
 	mockCtl := gomock.NewController(t)
 	// templateMgr := tmock.NewMockManager(mockCtl)
@@ -586,28 +585,6 @@ func TestListTemplate(t *testing.T) {
 	releases, err = ctl.ListTemplateReleaseByTemplateID(ctx, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(releases))
-
-	createChart(t, ctl, 1)
-
-	ctx = context.WithValue(ctx, hctx.TemplateListRecursively, true)
-	templates, err = ctl.ListTemplateByGroupID(ctx, 0, false)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(templates))
-
-	_, err = mgr.GroupManager.Create(ctx,
-		&groupmodels.Group{
-			Model:        global.Model{ID: 2},
-			Name:         "test2",
-			Path:         "test2",
-			ParentID:     1,
-			TraversalIDs: "1,2",
-		})
-	createChart(t, ctl, 2)
-
-	assert.Nil(t, err)
-	templates, err = ctl.ListTemplateByGroupID(ctx, 2, false)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(templates))
 }
 
 const (

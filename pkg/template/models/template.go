@@ -7,7 +7,8 @@ import (
 type Template struct {
 	global.Model
 
-	Name        string
+	Name string
+	// TODO: remove the ChartName, now ChartName equals Name
 	ChartName   string
 	Description string
 	Repository  string

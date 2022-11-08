@@ -36,9 +36,6 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
 
-const ChartNameFormat = "%d-%s"
-const GitlabName = "control"
-
 type Controller interface {
 	// ListTemplate list all template available
 	ListTemplate(ctx context.Context) (Templates, error)
@@ -455,11 +452,21 @@ func (c *controller) CreateTemplate(ctx context.Context,
 		return nil, perror.Wrap(herrors.NewErrNotFound(herrors.GroupInDB, reason), reason)
 	}
 
+	// check if template exist
+	if _, err = c.templateMgr.GetByName(ctx, request.Name); err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return nil, err
+		}
+	} else {
+		return nil, perror.Wrap(herrors.ErrNameConflict, "an template with the same name already exists, "+
+			"please do not create it again")
+	}
+
 	template, err := request.toTemplateModel(ctx)
 	if err != nil {
 		return nil, err
 	}
-	template.ChartName = fmt.Sprintf(ChartNameFormat, groupID, template.Name)
+	template.ChartName = template.Name
 	template.GroupID = groupID
 
 	template, err = c.templateMgr.Create(ctx, template)
