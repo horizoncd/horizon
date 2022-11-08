@@ -11,7 +11,6 @@ import (
 	"os"
 	"reflect"
 	"regexp"
-	"strings"
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -635,8 +634,6 @@ var (
 
 func TestMain(m *testing.M) {
 	harborHost = os.Getenv(EnvHarborHost)
-	harborHost = strings.TrimPrefix(harborHost, "https://")
-	harborHost = strings.TrimPrefix(harborHost, "http://")
 	harborAdmin = os.Getenv(EnvHarborUser)
 	harborPasswd = os.Getenv(EnvHarborPasswd)
 	harborRepoName = os.Getenv(EnvHarborRepoName)
@@ -680,7 +677,6 @@ func createContext() {
 
 func createController(t *testing.T) Controller {
 	repo, err := harbor.NewRepo(config.Repo{
-		Scheme:   "https",
 		Host:     harborHost,
 		Username: harborAdmin,
 		Password: harborPasswd,

@@ -2,7 +2,6 @@ package harbor
 
 import (
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -31,8 +30,6 @@ var (
 
 func TestMain(m *testing.M) {
 	harborHost = os.Getenv(EnvHarborHost)
-	harborHost = strings.TrimPrefix(harborHost, "https://")
-	harborHost = strings.TrimPrefix(harborHost, "http://")
 	harborAdmin = os.Getenv(EnvHarborUser)
 	harborPasswd = os.Getenv(EnvHarborPasswd)
 	harborRepoName = os.Getenv(EnvHarborRepoName)
@@ -52,7 +49,6 @@ func checkSkip(t *testing.T) {
 func createHarbor(t *testing.T) templaterepo.TemplateRepo {
 	repo, err := NewRepo(config.Repo{
 		Host:     harborHost,
-		Scheme:   "https",
 		Username: harborAdmin,
 		Password: harborPasswd,
 		Insecure: true,

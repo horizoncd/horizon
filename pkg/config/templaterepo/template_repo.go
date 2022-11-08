@@ -5,7 +5,6 @@ type Repo struct {
 	Username  string `yaml:"username"`
 	Password  string `yaml:"password"`
 	Token     string `yaml:"token"`
-	Scheme    string `yaml:"scheme"`
 	PlainHTTP bool   `yaml:"plainHTTP"`
 	Insecure  bool   `yaml:"insecure"`
 	CertFile  string `yaml:"certFile"`

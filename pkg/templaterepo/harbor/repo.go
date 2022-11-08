@@ -37,7 +37,6 @@ type Stat struct {
 
 type Repo struct {
 	host     *url.URL
-	scheme   string
 	token    string
 	username string
 	password string
@@ -46,14 +45,10 @@ type Repo struct {
 }
 
 func NewRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
-	host, err := url.Parse(fmt.Sprintf("%s://%s", config.Scheme, config.Host))
+	host, err := url.Parse(config.Host)
 	if err != nil {
 		return nil, perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("url is incorrect: %v", err))
-	}
-
-	if config.PlainHTTP {
-		config.Scheme = "http"
 	}
 
 	tlsConf, err := tlsutil.NewClientTLS(config.CertFile, config.KeyFile, config.CAFile)
@@ -72,7 +67,6 @@ func NewRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
 	return &Repo{
 		repoName: config.RepoName,
 		host:     host,
-		scheme:   config.Scheme,
 		username: config.Username,
 		password: config.Password,
 		token:    config.Token,
@@ -81,7 +75,7 @@ func NewRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
 }
 
 func (h *Repo) GetLoc() string {
-	return fmt.Sprintf("%s://%s/chartrepo/%s", h.scheme, h.host.Host, url.PathEscape(h.repoName))
+	return fmt.Sprintf("%s://%s/chartrepo/%s", h.host.Scheme, h.host.Host, url.PathEscape(h.repoName))
 }
 
 func (h *Repo) UploadChart(chartPkg *chart.Chart) error {
@@ -254,20 +248,20 @@ func (h *Repo) do(method, url string, body io.Reader, headers ...http.Header) (*
 
 func (h *Repo) uploadLink() string {
 	return fmt.Sprintf("%s://%s/api/chartrepo/%s/charts",
-		h.scheme, h.host.Host, url.PathEscape(h.repoName))
+		h.host.Scheme, h.host.Host, url.PathEscape(h.repoName))
 }
 
 func (h *Repo) deleteLink(name, version string) string {
 	return fmt.Sprintf("%s://%s/api/chartrepo/%s/charts/%s/%s",
-		h.scheme, h.host.Host, url.PathEscape(h.repoName), url.PathEscape(name), url.PathEscape(version))
+		h.host.Scheme, h.host.Host, url.PathEscape(h.repoName), url.PathEscape(name), url.PathEscape(version))
 }
 
 func (h *Repo) statLink(name, version string) string {
 	return fmt.Sprintf("%s://%s/api/chartrepo/%s/charts/%s/%s",
-		h.scheme, h.host.Host, url.PathEscape(h.repoName), url.PathEscape(name), url.PathEscape(version))
+		h.host.Scheme, h.host.Host, url.PathEscape(h.repoName), url.PathEscape(name), url.PathEscape(version))
 }
 
 func (h *Repo) downloadLink(link string) string {
 	return fmt.Sprintf("%s://%s/chartrepo/%s/%s",
-		h.scheme, h.host.Host, url.PathEscape(h.repoName), link)
+		h.host.Scheme, h.host.Host, url.PathEscape(h.repoName), link)
 }

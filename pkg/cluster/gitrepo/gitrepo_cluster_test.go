@@ -122,7 +122,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	repo, _ := harbor.NewRepo(config.Repo{Scheme: "https", Host: "harbor.mock.org"})
+	repo, _ := harbor.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
 
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
 	assert.Nil(t, err)
@@ -243,7 +243,7 @@ func Test(t *testing.T) {
 }
 
 func TestV2(t *testing.T) {
-	repo, _ := harbor.NewRepo(config.Repo{Scheme: "https", Host: "harbor.mock.org"})
+	repo, _ := harbor.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
 	assert.Nil(t, err)
 
