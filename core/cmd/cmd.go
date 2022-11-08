@@ -24,7 +24,6 @@ import (
 	environmentregionctl "g.hz.netease.com/horizon/core/controller/environmentregion"
 	envtemplatectl "g.hz.netease.com/horizon/core/controller/envtemplate"
 	groupctl "g.hz.netease.com/horizon/core/controller/group"
-	harborctl "g.hz.netease.com/horizon/core/controller/harbor"
 	idpctl "g.hz.netease.com/horizon/core/controller/idp"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	oauthservicectl "g.hz.netease.com/horizon/core/controller/oauth"
@@ -32,6 +31,7 @@ import (
 	oauthcheckctl "g.hz.netease.com/horizon/core/controller/oauthcheck"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	regionctl "g.hz.netease.com/horizon/core/controller/region"
+	registryctl "g.hz.netease.com/horizon/core/controller/registry"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	sloctl "g.hz.netease.com/horizon/core/controller/slo"
 	tagctl "g.hz.netease.com/horizon/core/controller/tag"
@@ -48,13 +48,13 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/environmentregion"
 	"g.hz.netease.com/horizon/core/http/api/v1/envtemplate"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
-	"g.hz.netease.com/horizon/core/http/api/v1/harbor"
 	"g.hz.netease.com/horizon/core/http/api/v1/idp"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthapp"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
 	"g.hz.netease.com/horizon/core/http/api/v1/region"
+	"g.hz.netease.com/horizon/core/http/api/v1/registry"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/tag"
@@ -280,7 +280,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	templateRepo, err := templaterepoharbor.NewTemplateRepo(coreConfig.TemplateRepo)
+	templateRepo, err := templaterepoharbor.NewRepo(coreConfig.TemplateRepo)
 	if err != nil {
 		panic(err)
 	}
@@ -450,7 +450,7 @@ func Run(flags *Flags) {
 		userCtl              = userctl.NewController(parameter)
 		environmentCtl       = environmentctl.NewController(parameter)
 		environmentregionCtl = environmentregionctl.NewController(parameter)
-		harborCtl            = harborctl.NewController(parameter)
+		registryCtl          = registryctl.NewController(parameter)
 		idpCtrl              = idpctl.NewController(parameter)
 		buildSchemaCtrl      = build.NewController(buildSchema)
 	)
@@ -469,7 +469,7 @@ func Run(flags *Flags) {
 		environmentAPI       = environment.NewAPI(environmentCtl)
 		regionAPI            = region.NewAPI(regionCtl, tagCtl)
 		environmentRegionAPI = environmentregion.NewAPI(environmentregionCtl)
-		harborAPI            = harbor.NewAPI(harborCtl)
+		registryAPI          = registry.NewAPI(registryCtl)
 		roleAPI              = roleapi.NewAPI(roleCtl)
 		terminalAPI          = terminalapi.NewAPI(terminalCtl)
 		sloAPI               = sloapi.NewAPI(sloCtl)
@@ -538,7 +538,7 @@ func Run(flags *Flags) {
 	environment.RegisterRoutes(r, environmentAPI)
 	region.RegisterRoutes(r, regionAPI)
 	environmentregion.RegisterRoutes(r, environmentRegionAPI)
-	harbor.RegisterRoutes(r, harborAPI)
+	registry.RegisterRoutes(r, registryAPI)
 	member.RegisterRoutes(r, memberAPI)
 	roleapi.RegisterRoutes(r, roleAPI)
 	terminalapi.RegisterRoutes(r, terminalAPI)

@@ -18,10 +18,10 @@ import (
 	envmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	harbordao "g.hz.netease.com/horizon/pkg/registry/dao"
+	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -278,14 +278,14 @@ func testControllerFreeOrDeleteClusterFailed(t *testing.T) {
 		regionMgr:      manager.RegionMgr,
 	}
 
-	id, err := harbordao.NewDAO(db).Create(ctx, &harbormodels.Harbor{
+	id, err := harbordao.NewDAO(db).Create(ctx, &registrymodels.Registry{
 		Server: "http://127.0.0.1",
 	})
 	assert.Nil(t, err)
 	region, err := manager.RegionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "TestController_FreeOrDeleteClusterFailed",
 		DisplayName: "TestController_FreeOrDeleteClusterFailed",
-		HarborID:    id,
+		RegistryID:  id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)

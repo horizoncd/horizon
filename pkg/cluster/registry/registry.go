@@ -2,103 +2,51 @@ package registry
 
 import (
 	"context"
-	"crypto/tls"
-	"net/http"
-	"time"
 
-	"github.com/hashicorp/go-retryablehttp"
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 )
+
+type Constructor func(config *Config) (Registry, error)
+
+var factory = make(map[string]Constructor)
+
+func GetKinds() []string {
+	kinds := make([]string, 0, len(factory))
+	for kind := range factory {
+		kinds = append(kinds, kind)
+	}
+	return kinds
+}
+
+func Register(kind string, constructor Constructor) {
+	factory[kind] = constructor
+}
 
 // Registry ...
+//
+// nolint
+//
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/registry/registry_mock.go -package=mock_registry
 type Registry interface {
-	// CreateProject create a project, if the project is already exists, return true, or return project's ID
-	CreateProject(ctx context.Context, project string) (int, error)
-	// AddMembers add members for project
-	AddMembers(ctx context.Context, projectID int) error
 	// DeleteRepository delete repository
-	DeleteRepository(ctx context.Context, project string, repository string) error
-	// ListImage list images for a repository
-	ListImage(ctx context.Context, project string, repository string) ([]string, error)
-	PreheatProject(ctx context.Context, project string,
-		projectID int) (err error)
-	GetServer(ctx context.Context) string
+	DeleteRepository(ctx context.Context, appName string, clusterName string) error
 }
 
-type HarborMember struct {
-	// harbor role 1:manager，2:developer，3:guest
-	Role int `yaml:"role"`
-	// harbor user name
-	Username string `yaml:"username"`
+type Config struct {
+	Server             string
+	Token              string
+	Path               string
+	InsecureSkipVerify bool
+
+	Kind string
 }
 
-// HarborRegistry implement Registry
-type HarborRegistry struct {
-	// harbor server address
-	server string
-	// harbor token
-	token string
-	// harbor preheat policy id
-	preheatPolicyID int
-	// the member to add to projects
-	members []*HarborMember
-	// http client
-	client *http.Client
-	// retryableClient retryable client
-	retryableClient *retryablehttp.Client
-}
-
-// default params
-const (
-	_backoffDuration = 1 * time.Second
-	_retry           = 3
-	_timeout         = 4 * time.Second
-)
-
-// members harbor member to add to harbor project
-// TODO(gjq): move this to config
-var members = []*HarborMember{
-	{
-		Role:     3,
-		Username: "musiccloudnative",
-	},
-}
-
-type HarborConfig struct {
-	Server          string
-	Token           string
-	PreheatPolicyID int
-}
-
-// NewHarborRegistry new a HarborRegistry
-func NewHarborRegistry(harbor *HarborConfig) Registry {
-	transport := http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
+func NewRegistry(config *Config) (Registry, error) {
+	for kind, constructor := range factory {
+		if kind == config.Kind {
+			return constructor(config)
+		}
 	}
-	harborRegistry := &HarborRegistry{
-		server:          harbor.Server,
-		token:           harbor.Token,
-		preheatPolicyID: harbor.PreheatPolicyID,
-		members:         members,
-		client: &http.Client{
-			Transport: &transport,
-		},
-		retryableClient: &retryablehttp.Client{
-			HTTPClient: &http.Client{
-				Transport: &transport,
-				Timeout:   _timeout,
-			},
-			RetryMax:   _retry,
-			CheckRetry: retryablehttp.DefaultRetryPolicy,
-			Backoff: func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
-				// wait for this duration if failed
-				return _backoffDuration
-			},
-		},
-	}
-
-	return harborRegistry
+	return nil, perror.Wrapf(herrors.ErrParamInvalid, "kind = %v is not implement", config.Kind)
 }
-
-var _ Registry = (*HarborRegistry)(nil)

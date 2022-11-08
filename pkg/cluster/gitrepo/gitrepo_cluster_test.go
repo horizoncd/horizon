@@ -15,8 +15,8 @@ import (
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	config "g.hz.netease.com/horizon/pkg/config/templaterepo"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"g.hz.netease.com/horizon/pkg/templaterepo/harbor"
@@ -122,7 +122,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := harbor.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
 
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
 	assert.Nil(t, err)
@@ -151,7 +151,7 @@ func Test(t *testing.T) {
 				DisplayName: "HZ",
 				Server:      "https://k8s.com",
 			},
-			Harbor: &harbormodels.Harbor{
+			Registry: &registrymodels.Registry{
 				Server: "https://harbor.com",
 			},
 		},
@@ -243,7 +243,7 @@ func Test(t *testing.T) {
 }
 
 func TestV2(t *testing.T) {
-	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := harbor.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
 	assert.Nil(t, err)
 
@@ -271,7 +271,7 @@ func TestV2(t *testing.T) {
 				DisplayName: "HZ",
 				Server:      "https://k8s.com",
 			},
-			Harbor: &harbormodels.Harbor{
+			Registry: &registrymodels.Registry{
 				Server: "https://harbor.com",
 			},
 		},
@@ -366,7 +366,7 @@ func TestHardDeleteCluster(t *testing.T) {
 				DisplayName: "HZ",
 				Server:      "https://k8s.com",
 			},
-			Harbor: &harbormodels.Harbor{
+			Registry: &registrymodels.Registry{
 				Server: "https://harbor.com",
 			},
 		},
@@ -374,7 +374,7 @@ func TestHardDeleteCluster(t *testing.T) {
 	createParams := &CreateClusterParams{
 		BaseParams: baseParams,
 	}
-	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := harbor.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
 	assert.Nil(t, err)
 	err = r.CreateCluster(ctx, createParams)
@@ -393,7 +393,7 @@ func TestGetClusterValueFile(t *testing.T) {
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib)
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.Repo{}, gitlabmockLib)
 	assert.Nil(t, err)
 
 	// 1. test gitlab get file error
@@ -450,7 +450,7 @@ java:
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib)
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.Repo{}, gitlabmockLib)
 	assert.Nil(t, err)
 
 	expectedOutput := `java:

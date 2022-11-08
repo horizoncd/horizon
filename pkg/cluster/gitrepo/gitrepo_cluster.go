@@ -1234,7 +1234,7 @@ func (g *clusterGitRepo) assembleEnvValue(params *BaseParams) map[string]map[str
 		Region:      params.RegionEntity.Name,
 		Namespace:   getNamespace(params),
 		BaseRegistry: strings.TrimPrefix(strings.TrimPrefix(
-			params.RegionEntity.Harbor.Server, "https://"), "http://"),
+			params.RegionEntity.Registry.Server, "https://"), "http://"),
 		IngressDomain: params.RegionEntity.IngressDomain,
 	}
 

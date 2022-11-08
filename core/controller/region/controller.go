@@ -45,7 +45,7 @@ func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegi
 		Certificate:   request.Certificate,
 		IngressDomain: request.IngressDomain,
 		PrometheusURL: request.PrometheusURL,
-		HarborID:      request.HarborID,
+		RegistryID:    request.RegistryID,
 		Disabled:      request.Disabled,
 	})
 	if err != nil {
@@ -63,7 +63,7 @@ func (c controller) Create(ctx context.Context, request *CreateRegionRequest) (u
 		Certificate:   request.Certificate,
 		IngressDomain: request.IngressDomain,
 		PrometheusURL: request.PrometheusURL,
-		HarborID:      request.HarborID,
+		RegistryID:    request.RegistryID,
 	})
 	if err != nil {
 		return 0, err

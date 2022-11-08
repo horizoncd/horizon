@@ -47,7 +47,7 @@ func checkSkip(t *testing.T) {
 }
 
 func createHarbor(t *testing.T) templaterepo.TemplateRepo {
-	repo, err := NewTemplateRepo(config.Repo{
+	repo, err := NewRepo(config.Repo{
 		Host:     harborHost,
 		Username: harborAdmin,
 		Password: harborPasswd,

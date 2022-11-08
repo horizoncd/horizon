@@ -18,11 +18,16 @@ package templaterepo
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"path/filepath"
 	"time"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"helm.sh/helm/v3/pkg/chart"
 	"sigs.k8s.io/yaml"
 )
@@ -155,4 +160,21 @@ func writeToTar(out *tar.Writer, name string, body []byte) error {
 	}
 	_, err := out.Write(body)
 	return err
+}
+
+func ChartSerialize(c *chart.Chart, out io.Writer) error {
+	gzipper := gzip.NewWriter(out)
+	gzipper.Header.Comment = "Helm"
+
+	twriter := tar.NewWriter(gzipper)
+	defer func() {
+		_ = twriter.Close()
+		_ = gzipper.Close()
+	}()
+	err := WriteTarContents(twriter, c, "")
+	if err != nil {
+		return perror.Wrap(herrors.ErrWriteFailed,
+			fmt.Sprintf("writing chart to buffer failed: %s", err.Error()))
+	}
+	return nil
 }
