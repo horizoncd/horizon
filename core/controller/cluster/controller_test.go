@@ -1240,6 +1240,7 @@ func testV2(t *testing.T) {
 	createReq := &CreateClusterRequestV2{
 		Name:        createClusterName,
 		Description: "cluster description",
+		ExpireTime:  "24h0m0s",
 		Git: &codemodels.Git{
 			Branch: "develop",
 		},
@@ -1271,6 +1272,7 @@ func testV2(t *testing.T) {
 	assert.Equal(t, getClusterResp.ID, resp.ID)
 	assert.Equal(t, getClusterResp.Name, createClusterName)
 	assert.Equal(t, getClusterResp.Priority, priority)
+	assert.Equal(t, createReq.ExpireTime, getClusterResp.ExpireTime)
 	assert.NotNil(t, getClusterResp.Scope)
 	assert.Equal(t, getClusterResp.FullPath, "/"+group.Path+"/"+application.Name+"/"+createClusterName)
 	assert.Equal(t, getClusterResp.ApplicationName, application.Name)
@@ -1292,6 +1294,7 @@ func testV2(t *testing.T) {
 
 	updateRequestV2 := &UpdateClusterRequestV2{
 		Description:    "",
+		ExpireTime:     "336h0m0s",
 		BuildConfig:    pipelineJSONBlob,
 		TemplateInfo:   nil,
 		TemplateConfig: applicationJSONBlob,

@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/build"
@@ -75,22 +76,28 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 			"the region which is disabled cannot be used to create a cluster")
 	}
 
-	// 6 get templateRelease
+	// 6. transfer expireTime to expireSeconds and verify environment.
+	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, environment)
+	if err != nil {
+		return nil, err
+	}
+
+	// 7. get templateRelease
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, r.TemplateInfo.Name, r.TemplateInfo.Release)
 	if err != nil {
 		return nil, err
 	}
 
-	// 7. customize db infos
-	cluster, tags := r.toClusterModel(application, envEntity, buildTemplateInfo)
+	// 8. customize db infos
+	cluster, tags := r.toClusterModel(application, envEntity, buildTemplateInfo, expireSeconds)
 
-	// 8. update db and tags
+	// 9. update db and tags
 	clusterResp, err := c.clusterMgr.Create(ctx, cluster, tags, r.ExtraMembers)
 	if err != nil {
 		return nil, err
 	}
 
-	// 9. create git repo
+	// 10. create git repo
 	err = c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
 		BaseParams: &gitrepo.BaseParams{
 			ClusterID:           clusterResp.ID,
@@ -123,14 +130,14 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 		return nil, err
 	}
 
-	// 10. get full path
+	// 11. get full path
 	group, err := c.groupSvc.GetChildByID(ctx, application.GroupID)
 	if err != nil {
 		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	// 11. customize response
+	// 12. customize response
 	return &CreateClusterResponseV2{
 		ID:            updateClusterResp.ID,
 		FullPath:      fullPath,
@@ -202,6 +209,13 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 			Region:            cluster.RegionName,
 			RegionDisplayName: regionEntity.DisplayName,
 		},
+		ExpireTime: func() string {
+			expireTime := ""
+			if cluster.ExpireSeconds > 0 {
+				expireTime = time.Duration(cluster.ExpireSeconds * 1e9).String()
+			}
+			return expireTime
+		}(),
 		FullPath:        fullPath,
 		ApplicationName: application.Name,
 		ApplicationID:   application.ID,
@@ -281,7 +295,16 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		}
 	}
 
-	// 3. customize template\build\template infos
+	// 3. check and transfer ExpireTime
+	expireSeconds := cluster.ExpireSeconds
+	if r.ExpireTime != "" {
+		expireSeconds, err = c.toExpireSeconds(ctx, r.ExpireTime, environmentName)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 4. customize template\build\template infos
 	templateInfo, templateRelease, err := func() (*codemodels.TemplateInfo, *models.TemplateRelease, error) {
 		var templateInfo *codemodels.TemplateInfo
 		if r.TemplateInfo == nil {
@@ -336,7 +359,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		return err
 	}
 
-	// 4. validate update Request
+	// 5. validate update Request
 	err = func() error {
 		renderValues, err := c.getRenderValueFromTag(ctx, clusterID)
 		if err != nil {
@@ -353,7 +376,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		return nil
 	}
 
-	// 5. update in git repo
+	// 6. update in git repo
 	if err = c.clusterGitRepo.UpdateCluster(ctx, &gitrepo.UpdateClusterParams{
 		BaseParams: &gitrepo.BaseParams{
 			ClusterID:           cluster.ID,
@@ -369,8 +392,9 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		return err
 	}
 
-	// 6. update cluster in db
-	clusterModel := r.toClusterModel(cluster, environmentName, regionName, templateInfo.Name, templateInfo.Release)
+	// 7. update cluster in db
+	clusterModel := r.toClusterModel(cluster, expireSeconds, environmentName,
+		regionName, templateInfo.Name, templateInfo.Release)
 	_, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {
 		return err

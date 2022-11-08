@@ -3,7 +3,6 @@ package gitrepo
 import (
 	"context"
 	"encoding/json"
-	goerrors "errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -85,8 +84,6 @@ const (
 const (
 	PipelineValueParent = "pipeline"
 )
-
-var ErrPipelineOutputEmpty = goerrors.New("PipelineOutput is empty")
 
 type BaseParams struct {
 	ClusterID           uint
