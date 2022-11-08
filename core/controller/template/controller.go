@@ -36,9 +36,6 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
 
-const ChartNameFormat = "%s"
-const GitlabName = "control"
-
 type Controller interface {
 	// ListTemplate list all template available
 	ListTemplate(ctx context.Context) (Templates, error)
