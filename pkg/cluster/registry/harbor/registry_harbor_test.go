@@ -39,10 +39,10 @@ func TestByMock(t *testing.T) {
 	// 推送镜像到repo1
 	server.PushImage("project1", "repo1", "v1")
 	// 删除repo1
-	err = h.DeleteRepository(ctx, "repo1")
+	err = h.DeleteRepository(ctx, "repo1", "")
 	assert.Nil(t, err)
 	// 再次删除repo1
-	err = h.DeleteRepository(ctx, "repo1")
+	err = h.DeleteRepository(ctx, "repo1", "")
 	assert.Nil(t, err)
 
 	// 推送镜像到repo2

@@ -1,8 +1,8 @@
 CREATE TABLE `tb_registry` (
   `id`                       bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name`                     varchar(128) NOT NULL DEFAULT '' COMMENT 'name of the registry',
-  `server`                   varchar(256) NOT NULL DEFAULT '' COMMENT 'harbor server address',
-  `token`                    varchar(512) NOT NULL DEFAULT '' COMMENT 'harbor server token',
+  `server`                   varchar(256) NOT NULL DEFAULT '' COMMENT 'registry server address',
+  `token`                    varchar(512) NOT NULL DEFAULT '' COMMENT 'registry server token',
   `path`                     varchar(256) NOT NULL DEFAULT '' COMMENT 'path of image',
   `insecure_skip_tls_verify` tinyint(1) NOT NULL DEFAULT false COMMENT 'skip tls verify',
   `kind`                     varchar(256) NOT NULL DEFAULT 'harbor' COMMENT 'which kind registry it is',
