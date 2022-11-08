@@ -125,20 +125,11 @@ func (h *Registry) DeleteRepository(ctx context.Context, names ...string) (err e
 	const op = "registry: delete repository"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	var link string
-	if h.path == "" || path.Join(h.path) == "/" {
-		if len(names) < 2 {
-			return perror.Wrapf(herrors.ErrParamInvalid, "repository names are too short: %v", names)
-		}
-		link = path.Join("/api/v2.0/projects", names[0], "repositories",
-			path.Join(names[1:]...))
-	} else {
-		if len(names) < 1 {
-			return perror.Wrapf(herrors.ErrParamInvalid, "repository names are too short: %v", names)
-		}
-		link = path.Join("/api/v2.0/projects", h.path, "repositories",
-			url.PathEscape(path.Join(names...)))
+	if len(names) < 1 {
+		return perror.Wrapf(herrors.ErrParamInvalid, "repository names are too short: %v", names)
 	}
+	link := path.Join("/api/v2.0/projects", h.path, "repositories",
+		url.PathEscape(path.Join(names...)))
 
 	link = fmt.Sprintf("%s%s", strings.TrimSuffix(h.server, "/"), link)
 

@@ -55,7 +55,7 @@ func (c controller) ListAll(ctx context.Context) (Registries, error) {
 		return nil, err
 	}
 
-	return ofHarborModels(harbors), nil
+	return ofRegistryModels(harbors), nil
 }
 
 func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegistryRequest) error {
@@ -121,7 +121,7 @@ func (c controller) GetByID(ctx context.Context, id uint) (*Registry, error) {
 		return nil, err
 	}
 
-	return ofHarborModel(harbor), nil
+	return ofRegistryModel(harbor), nil
 }
 
 func (c controller) GetKinds(ctx context.Context) []string {

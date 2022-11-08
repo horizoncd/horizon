@@ -20,16 +20,16 @@ type Registry struct {
 
 type Registries []*Registry
 
-func ofHarborModels(entities []*models.Registry) Registries {
+func ofRegistryModels(entities []*models.Registry) Registries {
 	harbors := make([]*Registry, 0)
 	for _, entity := range entities {
-		harbors = append(harbors, ofHarborModel(entity))
+		harbors = append(harbors, ofRegistryModel(entity))
 	}
 
 	return harbors
 }
 
-func ofHarborModel(entity *models.Registry) *Registry {
+func ofRegistryModel(entity *models.Registry) *Registry {
 	return &Registry{
 		ID:                    entity.ID,
 		Name:                  entity.Name,

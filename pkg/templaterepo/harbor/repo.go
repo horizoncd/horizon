@@ -100,7 +100,7 @@ func (h *Repo) UploadChart(chartPkg *chart.Chart) error {
 			fmt.Sprintf("failed to create multipart writer: %v", err))
 	}
 
-	resp, err := h.do("POST", h.uploadLink(),
+	resp, err := h.do(http.MethodPost, h.uploadLink(),
 		ioutil.NopCloser(&buf), http.Header{"Content-Type": []string{contentType}})
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func (h *Repo) UploadChart(chartPkg *chart.Chart) error {
 }
 
 func (h *Repo) DeleteChart(name string, version string) error {
-	resp, err := h.do("DELETE", h.deleteLink(name, version), nil)
+	resp, err := h.do(http.MethodDelete, h.deleteLink(name, version), nil)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (h *Repo) GetChart(name string, version string, lastSyncAt time.Time) (*cha
 			"chart url is empty"), "chart url is empty")
 	}
 
-	resp, err := h.do("GET", h.downloadLink(meta.Urls[0]), nil)
+	resp, err := h.do(http.MethodGet, h.downloadLink(meta.Urls[0]), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func (h *Repo) GetChart(name string, version string, lastSyncAt time.Time) (*cha
 }
 
 func (h *Repo) statChart(name string, version string) (*Metadata, error) {
-	resp, err := h.do("GET", h.statLink(name, version), nil)
+	resp, err := h.do(http.MethodGet, h.statLink(name, version), nil)
 	if err != nil {
 		return nil, err
 	}

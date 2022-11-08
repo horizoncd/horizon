@@ -183,7 +183,7 @@ CREATE TABLE `tb_region`
     `certificate`    text COMMENT 'k8s kube config',
     `ingress_domain` text COMMENT 'k8s ingress domain',
     `prometheus_url` varchar(128) COMMENT 'prometheus url',
-    `harbor_id`      bigint(20) unsigned NOT NULL COMMENT 'harbor id',
+    `registry_id`    bigint(20) unsigned NOT NULL COMMENT 'registry id',
     `disabled`       tinyint(1)          NOT NULL DEFAULT '0' COMMENT '0 means not disabled, 1 means disabled',
     `created_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`     datetime            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -1,6 +1,6 @@
 CREATE TABLE `tb_registry` (
   `id`                       bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `name`                     varchar(128) NOT NULL DEFAULT '' COMMENT 'name of the harbor registry',
+  `name`                     varchar(128) NOT NULL DEFAULT '' COMMENT 'name of the registry',
   `server`                   varchar(256) NOT NULL DEFAULT '' COMMENT 'harbor server address',
   `token`                    varchar(512) NOT NULL DEFAULT '' COMMENT 'harbor server token',
   `path`                     varchar(256) NOT NULL DEFAULT '' COMMENT 'path of image',
