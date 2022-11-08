@@ -771,13 +771,17 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		}
 
 		// 2. delete rg repository
-		rg, _ := c.registryFty.GetRegistryByConfig(newctx, &registry.Config{
+		rg, err := c.registryFty.GetRegistryByConfig(newctx, &registry.Config{
 			Server:             regionEntity.Registry.Server,
 			Token:              regionEntity.Registry.Token,
 			InsecureSkipVerify: regionEntity.Registry.InsecureSkipTLSVerify,
 			Kind:               regionEntity.Registry.Kind,
 			Path:               regionEntity.Registry.Path,
 		})
+
+		if err != nil {
+			log.Errorf(newctx, "failed to get registry by config: err = %v", err)
+		}
 
 		if rg != nil {
 			if err = rg.DeleteRepository(newctx, application.Name, cluster.Name); err != nil {
