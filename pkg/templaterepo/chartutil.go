@@ -67,8 +67,6 @@ const (
 	TestConnectionName = TemplatesTestsDir + sep + "test-connection.yaml"
 )
 
-var headerBytes = []byte("+aHR0cHM6Ly95b3V0dS5iZS96OVV6MWljandyTQo=")
-
 func WriteTarContents(out *tar.Writer, c *chart.Chart, prefix string) error {
 	base := filepath.Join(prefix, c.Name())
 
@@ -166,7 +164,6 @@ func writeToTar(out *tar.Writer, name string, body []byte) error {
 
 func ChartSerialize(c *chart.Chart, out io.Writer) error {
 	gzipper := gzip.NewWriter(out)
-	gzipper.Header.Extra = headerBytes
 	gzipper.Header.Comment = "Helm"
 
 	twriter := tar.NewWriter(gzipper)
