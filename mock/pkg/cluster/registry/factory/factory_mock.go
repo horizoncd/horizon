@@ -36,16 +36,16 @@ func (m *MockFactory) EXPECT() *MockFactoryMockRecorder {
 }
 
 // GetRegistryByConfig mocks base method.
-func (m *MockFactory) GetRegistryByConfig(ctx context.Context, harbor *registry.Config) (registry.Registry, error) {
+func (m *MockFactory) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRegistryByConfig", ctx, harbor)
+	ret := m.ctrl.Call(m, "GetRegistryByConfig", ctx, config)
 	ret0, _ := ret[0].(registry.Registry)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRegistryByConfig indicates an expected call of GetRegistryByConfig.
-func (mr *MockFactoryMockRecorder) GetRegistryByConfig(ctx, harbor interface{}) *gomock.Call {
+func (mr *MockFactoryMockRecorder) GetRegistryByConfig(ctx, config interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRegistryByConfig", reflect.TypeOf((*MockFactory)(nil).GetRegistryByConfig), ctx, harbor)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRegistryByConfig", reflect.TypeOf((*MockFactory)(nil).GetRegistryByConfig), ctx, config)
 }

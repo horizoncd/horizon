@@ -1325,7 +1325,7 @@ func testV2(t *testing.T) {
 
 	registry := registrymock.NewMockRegistry(mockCtl)
 	registryFty.EXPECT().GetRegistryByConfig(gomock.Any(), gomock.Any()).Return(registry, nil).Times(1)
-	registry.EXPECT().DeleteRepository(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+	registry.EXPECT().DeleteRepository(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().DeleteCluster(gomock.Any(), applicationName,
 		createClusterName, getClusterResp.ID).Return(nil).Times(1)
 	mockCd.EXPECT().DeleteCluster(gomock.Any(), gomock.Any()).Return(nil).Times(1)
