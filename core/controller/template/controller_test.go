@@ -3,6 +3,7 @@ package template
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -41,7 +42,7 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	reposchema "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
-	"g.hz.netease.com/horizon/pkg/templaterepo/harbor"
+	"g.hz.netease.com/horizon/pkg/templaterepo/chartmuseumbase"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	gitlabapi "github.com/xanzy/go-gitlab"
@@ -54,7 +55,7 @@ var (
 	mgr *managerparam.Manager
 )
 
-func TestList(t *testing.T) {
+func testList(t *testing.T) {
 	createContext()
 
 	mockCtl := gomock.NewController(t)
@@ -250,7 +251,7 @@ func TestList(t *testing.T) {
 	assert.Equal(t, 3, len(templateReleases))
 }
 
-func TestListTemplates(t *testing.T) {
+func testListTemplates(t *testing.T) {
 	createContext()
 
 	mockCtl := gomock.NewController(t)
@@ -322,9 +323,9 @@ func TestListTemplates(t *testing.T) {
 	assert.Equal(t, tpl2.Name, templates[0].Name)
 }
 
-func TestGetSchema(t *testing.T) {
+func testGetSchema(t *testing.T) {
 	createContext()
-	charName := templateName
+	charName := repoConfig.TemplateName
 
 	mockCtl := gomock.NewController(t)
 	// templateMgr := tmock.NewMockManager(mockCtl)
@@ -344,13 +345,14 @@ func TestGetSchema(t *testing.T) {
 		},
 	}
 	release := &trmodels.TemplateRelease{
-		Name:         releaseName,
-		TemplateName: templateName,
-		ChartVersion: releaseName,
+		Name:         repoConfig.TemplateTag,
+		TemplateName: repoConfig.TemplateName,
+		ChartVersion: repoConfig.TemplateTag,
 		ChartName:    charName,
 	}
 	templateReleaseMgr.EXPECT().GetByID(gomock.Any(), uint(1)).Return(release, nil)
-	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx, templateName, releaseName, nil).Return(schemas, nil)
+	templateSchemaGetter.EXPECT().GetTemplateSchema(ctx,
+		repoConfig.TemplateName, repoConfig.TemplateTag, nil).Return(schemas, nil)
 
 	ctl := &controller{
 		templateSchemaGetter: templateSchemaGetter,
@@ -373,9 +375,8 @@ func TestGetSchema(t *testing.T) {
 	}
 }
 
-func TestCreateTemplate(t *testing.T) {
+func testCreateTemplate(t *testing.T) {
 	createContext()
-	checkSkip(t)
 	ctl := createController(t)
 
 	var err error
@@ -386,19 +387,19 @@ func TestCreateTemplate(t *testing.T) {
 
 	template, err := ctl.GetTemplate(ctx, 1)
 	assert.Nil(t, err)
-	assert.Equal(t, templateName, template.Name)
-	assert.Equal(t, templateRepo, template.Repository)
+	assert.Equal(t, repoConfig.TemplateName, template.Name)
+	assert.Equal(t, repoConfig.TemplateRepo, template.Repository)
 	assert.Equal(t, uint(0), template.GroupID)
 
 	tpl, err := mgr.TemplateMgr.GetByID(ctx, 1)
 	assert.Nil(t, err)
-	assert.Equal(t, templateName, tpl.Name)
+	assert.Equal(t, repoConfig.TemplateName, tpl.Name)
 	assert.Equal(t, uint(1), tpl.ID)
 
 	releases, err := ctl.ListTemplateReleaseByTemplateID(ctx, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(releases))
-	assert.Equal(t, releaseName, releases[0].Name)
+	assert.Equal(t, repoConfig.TemplateTag, releases[0].Name)
 	versionPattern := regexp.MustCompile(`^v(\d\.){2}\d-(.+)$`)
 	assert.True(t, versionPattern.MatchString(releases[0].ChartVersion))
 
@@ -406,9 +407,8 @@ func TestCreateTemplate(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestCreateTemplateInNonRootGroup(t *testing.T) {
+func testCreateTemplateInNonRootGroup(t *testing.T) {
 	createContext()
-	checkSkip(t)
 	ctl := createController(t)
 
 	var err error
@@ -418,25 +418,24 @@ func TestCreateTemplateInNonRootGroup(t *testing.T) {
 
 	template, err := ctl.GetTemplate(ctx, 1)
 	assert.Nil(t, err)
-	assert.Equal(t, templateName, template.Name)
-	assert.Equal(t, templateRepo, template.Repository)
+	assert.Equal(t, repoConfig.TemplateName, template.Name)
+	assert.Equal(t, repoConfig.TemplateRepo, template.Repository)
 	assert.Equal(t, uint(1), template.GroupID)
 
 	tpl, err := mgr.TemplateMgr.GetByID(ctx, 1)
 	assert.Nil(t, err)
-	assert.Equal(t, templateName, tpl.Name)
+	assert.Equal(t, repoConfig.TemplateName, tpl.Name)
 	assert.Equal(t, uint(1), tpl.ID)
 
 	release, err := mgr.TemplateReleaseManager.GetByID(ctx, 1)
 	assert.Nil(t, err)
-	assert.Equal(t, releaseName, release.Name)
-	assert.Equal(t, templateName, release.TemplateName)
+	assert.Equal(t, repoConfig.TemplateTag, release.Name)
+	assert.Equal(t, repoConfig.TemplateName, release.TemplateName)
 	assert.Equal(t, tpl.ID, release.Template)
 }
 
-func TestDeleteTemplate(t *testing.T) {
+func testDeleteTemplate(t *testing.T) {
 	createContext()
-	checkSkip(t)
 	ctl := createController(t)
 
 	createChart(t, ctl, 0)
@@ -463,9 +462,8 @@ func TestDeleteTemplate(t *testing.T) {
 	assert.Nil(t, template)
 }
 
-func TestGetTemplate(t *testing.T) {
+func testGetTemplate(t *testing.T) {
 	createContext()
-	checkSkip(t)
 	ctl := createController(t)
 
 	createChart(t, ctl, 0)
@@ -476,9 +474,8 @@ func TestGetTemplate(t *testing.T) {
 	assert.NotNil(t, schemas)
 }
 
-func TestUpdateTemplate(t *testing.T) {
+func testUpdateTemplate(t *testing.T) {
 	createContext()
-	checkSkip(t)
 	ctl := createController(t)
 
 	ctx = context.WithValue(ctx, hctx.ReleaseSyncToRepo, false)
@@ -507,7 +504,7 @@ func TestUpdateTemplate(t *testing.T) {
 	tplRequest = UpdateTemplateRequest{
 		Name:        "javaapp",
 		Description: "hello, world",
-		Repository:  templateRepo,
+		Repository:  repoConfig.TemplateRepo,
 		OnlyOwner:   onlyOwnerTrue,
 	}
 	err = ctl.UpdateTemplate(ctx, 1, tplRequest)
@@ -515,7 +512,7 @@ func TestUpdateTemplate(t *testing.T) {
 
 	oldDescription := tplRequest.Description
 	tplRequest.Description = ""
-	tplRequest.Repository = templateRepo
+	tplRequest.Repository = repoConfig.TemplateRepo
 
 	err = ctl.UpdateTemplate(ctx, 1, tplRequest)
 	assert.Nil(t, err)
@@ -555,9 +552,8 @@ func TestUpdateTemplate(t *testing.T) {
 	assert.Equal(t, onlyOwnerTrue, release.OnlyOwner)
 }
 
-func TestListTemplate(t *testing.T) {
+func testListTemplate(t *testing.T) {
 	createContext()
-	checkSkip(t)
 	ctl := createController(t)
 
 	templates, err := ctl.ListTemplate(ctx)
@@ -588,50 +584,44 @@ func TestListTemplate(t *testing.T) {
 }
 
 const (
-	EnvHarborHost        = "HARBOR_HOST"
-	EnvHarborUser        = "HARBOR_USER"
-	EnvHarborPasswd      = "HARBOR_PASSWD"
-	EnvHarborRepoName    = "HARBOR_REPO_NAME"
-	EnvTemplateName      = "TEMPLATE_NAME"
-	EnvTemplateTag       = "TEMPLATE_TAG"
-	EnvTemplateRepo      = "TEMPLATE_REPO"
-	EnvTemplateRepoToken = "TEMPLATE_REPO_TOKEN"
+	EnvTemplateRepos = "TEMPLATE_REPOS"
 )
 
-var (
-	harborHost        string
-	harborAdmin       string
-	harborPasswd      string
-	harborRepoName    string
-	templateName      string
-	releaseName       string
-	templateRepo      string
-	templateRepoToken string
-)
-
-func TestMain(m *testing.M) {
-	harborHost = os.Getenv(EnvHarborHost)
-	harborAdmin = os.Getenv(EnvHarborUser)
-	harborPasswd = os.Getenv(EnvHarborPasswd)
-	harborRepoName = os.Getenv(EnvHarborRepoName)
-	templateName = os.Getenv(EnvTemplateName)
-	releaseName = os.Getenv(EnvTemplateTag)
-	templateRepo = os.Getenv(EnvTemplateRepo)
-	templateRepoToken = os.Getenv(EnvTemplateRepoToken)
-
-	os.Exit(m.Run())
+type RepoConfig struct {
+	Kind              string `json:"kind"`
+	Host              string `json:"host"`
+	Passwd            string `json:"passwd"`
+	RepoName          string `json:"repoName"`
+	Username          string `json:"username"`
+	TemplateName      string `json:"templateName"`
+	TemplateRepo      string `json:"templateRepo"`
+	TemplateRepoToken string `json:"templateRepoToken"`
+	TemplateTag       string `json:"templateTag"`
 }
 
-func checkSkip(t *testing.T) {
-	if harborHost == "" ||
-		harborAdmin == "" ||
-		harborPasswd == "" ||
-		harborRepoName == "" ||
-		templateName == "" ||
-		releaseName == "" ||
-		templateRepo == "" ||
-		templateRepoToken == "" {
-		t.Skip()
+var repoConfig *RepoConfig
+
+func Test(t *testing.T) {
+	templateRepos := os.Getenv(EnvTemplateRepos)
+
+	configs := make([]RepoConfig, 0)
+
+	if err := json.Unmarshal([]byte(templateRepos), &configs); err != nil {
+		panic(err)
+	}
+
+	for _, cfg := range configs {
+		repoConfig = &cfg
+
+		t.Run(fmt.Sprintf("TestList_%s", repoConfig.Kind), testList)
+		t.Run(fmt.Sprintf("TestListTemplates_%s", repoConfig.Kind), testListTemplates)
+		t.Run(fmt.Sprintf("TestGetSchema_%s", repoConfig.Kind), testGetSchema)
+		t.Run(fmt.Sprintf("TestCreateTemplate_%s", repoConfig.Kind), testCreateTemplate)
+		t.Run(fmt.Sprintf("TestCreateTemplateInNonRootGroup_%s", repoConfig.Kind), testCreateTemplateInNonRootGroup)
+		t.Run(fmt.Sprintf("TestDeleteTemplate_%s", repoConfig.Kind), testDeleteTemplate)
+		t.Run(fmt.Sprintf("TestGetTemplate_%s", repoConfig.Kind), testGetTemplate)
+		t.Run(fmt.Sprintf("TestUpdateTemplate_%s", repoConfig.Kind), testUpdateTemplate)
+		t.Run(fmt.Sprintf("TestListTemplate_%s", repoConfig.Kind), testListTemplate)
 	}
 }
 
@@ -653,23 +643,24 @@ func createContext() {
 }
 
 func createController(t *testing.T) Controller {
-	repo, err := harbor.NewRepo(config.Repo{
-		Host:     harborHost,
-		Username: harborAdmin,
-		Password: harborPasswd,
+	repo, err := chartmuseumbase.NewRepo(config.Repo{
+		Kind:     repoConfig.Kind,
+		Host:     repoConfig.Host,
+		Username: repoConfig.Username,
+		Password: repoConfig.Passwd,
 		Insecure: true,
 		CertFile: "",
 		KeyFile:  "",
 		CAFile:   "",
-		RepoName: harborRepoName,
+		RepoName: repoConfig.RepoName,
 	})
 	assert.Nil(t, err)
 
 	getter := reposchema.NewSchemaGetter(context.Background(), repo, mgr)
 
-	URL, err := url.Parse(templateRepo)
+	URL, err := url.Parse(repoConfig.TemplateRepo)
 	assert.Nil(t, err)
-	gitlabLib, err := gitlab.New(templateRepoToken,
+	gitlabLib, err := gitlab.New(repoConfig.TemplateRepoToken,
 		fmt.Sprintf("%s://%s", URL.Scheme, URL.Host), "")
 	assert.Nil(t, err)
 
@@ -707,11 +698,11 @@ func createChart(t *testing.T, ctl Controller, groupID uint) {
 	}
 	request := CreateTemplateRequest{
 		CreateReleaseRequest: CreateReleaseRequest{
-			Name: releaseName,
+			Name: repoConfig.TemplateTag,
 		},
-		Name:        templateName,
+		Name:        repoConfig.TemplateName,
 		Description: "",
-		Repository:  templateRepo,
+		Repository:  repoConfig.TemplateRepo,
 	}
 	template, err := ctl.CreateTemplate(ctx, groupID, request)
 	assert.Nil(t, err)

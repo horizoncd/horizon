@@ -1,4 +1,4 @@
-package harbor
+package chartmuseumbase
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"path"
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -19,6 +20,16 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"k8s.io/helm/pkg/tlsutil"
 )
+
+const (
+	kindHarbor      = "harbor"
+	kindChartMuseum = "chartmuseum"
+)
+
+func init() {
+	templaterepo.Register(kindHarbor, NewRepo)
+	templaterepo.Register(kindChartMuseum, NewRepo)
+}
 
 type Metadata struct {
 	Name        string    `json:"name"`
@@ -36,6 +47,7 @@ type Stat struct {
 }
 
 type Repo struct {
+	prefix   string
 	host     *url.URL
 	token    string
 	username string
@@ -63,9 +75,14 @@ func NewRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
 			TLSClientConfig: tlsConf,
 		},
 	}
+	prefix := ""
+	if config.Kind == kindHarbor {
+		prefix = fmt.Sprintf("chartrepo/%s", config.RepoName)
+	}
 
 	return &Repo{
 		repoName: config.RepoName,
+		prefix:   prefix,
 		host:     host,
 		username: config.Username,
 		password: config.Password,
@@ -153,16 +170,7 @@ func (h *Repo) ExistChart(name string, version string) (bool, error) {
 }
 
 func (h *Repo) GetChart(name string, version string, lastSyncAt time.Time) (*chart.Chart, error) {
-	meta, err := h.statChart(name, version)
-	if err != nil {
-		return nil, err
-	}
-	if len(meta.Urls) < 1 {
-		return nil, perror.Wrap(herrors.NewErrGetFailed(herrors.HarborChartURL,
-			"chart url is empty"), "chart url is empty")
-	}
-
-	resp, err := h.do(http.MethodGet, h.downloadLink(meta.Urls[0]), nil)
+	resp, err := h.do(http.MethodGet, h.downloadLink(name, version), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -246,22 +254,29 @@ func (h *Repo) do(method, url string, body io.Reader, headers ...http.Header) (*
 	return resp, nil
 }
 
+func (h *Repo) linkWithSchemeAndHost() string {
+	return fmt.Sprintf("%s://%s", h.host.Scheme, h.host.Host)
+}
+
 func (h *Repo) uploadLink() string {
-	return fmt.Sprintf("%s://%s/api/chartrepo/%s/charts",
-		h.host.Scheme, h.host.Host, url.PathEscape(h.repoName))
+	return fmt.Sprintf("%s/%s?force",
+		h.linkWithSchemeAndHost(), path.Join("api", h.prefix, "charts"))
 }
 
 func (h *Repo) deleteLink(name, version string) string {
-	return fmt.Sprintf("%s://%s/api/chartrepo/%s/charts/%s/%s",
-		h.host.Scheme, h.host.Host, url.PathEscape(h.repoName), url.PathEscape(name), url.PathEscape(version))
+	return fmt.Sprintf("%s/%s",
+		h.linkWithSchemeAndHost(), path.Join("api", h.prefix, "charts",
+			url.PathEscape(name), url.PathEscape(version)))
 }
 
 func (h *Repo) statLink(name, version string) string {
-	return fmt.Sprintf("%s://%s/api/chartrepo/%s/charts/%s/%s",
-		h.host.Scheme, h.host.Host, url.PathEscape(h.repoName), url.PathEscape(name), url.PathEscape(version))
+	return fmt.Sprintf("%s/%s",
+		h.linkWithSchemeAndHost(), path.Join("api", h.prefix, "charts",
+			url.PathEscape(name), url.PathEscape(version)))
 }
 
-func (h *Repo) downloadLink(link string) string {
-	return fmt.Sprintf("%s://%s/chartrepo/%s/%s",
-		h.host.Scheme, h.host.Host, url.PathEscape(h.repoName), link)
+func (h *Repo) downloadLink(name, version string) string {
+	return fmt.Sprintf("%s/%s/%s-%s.tgz",
+		h.linkWithSchemeAndHost(), path.Join(h.prefix, "charts"),
+		url.PathEscape(name), url.PathEscape(version))
 }

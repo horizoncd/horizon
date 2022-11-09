@@ -17,12 +17,6 @@ redisConfig:
   address: dev.redis:6379
   password: redis
   db: 1
-oidcConfig:
-  userHeader: X-HORIZON-OIDC-USER
-  fullNameHeader: X-HORIZON-OIDC-FULLNAME
-  emailHeader: X-HORIZON-OIDC-EMAIL
-  oidcIDHeader: X-HORIZON-OIDC-ID
-  oidcTypeHeader: X-HORIZON-OIDC-TYPE
 gitlabMapper:
   template:
     httpURL: https://g.hz.netease.com
@@ -39,6 +33,7 @@ gitlabMapper:
 gitopsRepoConfig:
   rootGroupPath: music-cloud-native
 templateRepo:
+  kind: "harbor"
   host: "https://harbor.mock.org"
   repoName: "horizon-template"
   username: ""
