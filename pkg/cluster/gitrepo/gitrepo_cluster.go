@@ -12,6 +12,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	pkgcommon "g.hz.netease.com/horizon/pkg/common"
 	gitlabconfig "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -99,11 +100,6 @@ type BaseParams struct {
 	Namespace           string
 
 	Version string
-}
-
-type Manifest struct {
-	// TODO(encode the template info into manifest),currently only the Version
-	Version string `yaml:"version"`
 }
 
 type CreateClusterParams struct {
@@ -259,7 +255,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 	}
-	var manifest = Manifest{}
+	var manifest = pkgcommon.Manifest{}
 	if manifestBytes != nil {
 		err = json.Unmarshal(manifestBytes, &manifest)
 		if err != nil {
@@ -445,7 +441,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.ChartName))
 	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.ChartName, params.Tags))
 	if params.BaseParams.Version != "" {
-		marshal(&manifestValueYAML, &err9, Manifest{Version: params.BaseParams.Version})
+		marshal(&manifestValueYAML, &err9, pkgcommon.Manifest{Version: params.BaseParams.Version})
 	}
 
 	chart, err := g.assembleChart(params.BaseParams)
@@ -767,18 +763,18 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	return mr.MergeCommitSHA, nil
 }
 
-func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*Manifest, error) {
+func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*pkgcommon.Manifest, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathManifest)
 	if err != nil {
 		return nil, err
 	}
-	manifest, err := func() (*Manifest, error) {
+	manifest, err := func() (*pkgcommon.Manifest, error) {
 		manifestOutputBytes, err := kyaml.YAMLToJSON(content)
 		if err != nil {
 			return nil, err
 		}
-		ret := Manifest{}
+		ret := pkgcommon.Manifest{}
 		if err = json.Unmarshal(manifestOutputBytes, &ret); err != nil {
 			return nil, err
 		}
@@ -864,22 +860,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		return "", err
 	}
 
-	pipelineValueParent, err := func() (string, error) {
-		manifest, err := g.GetManifest(ctx, application, cluster)
-		if err != nil {
-			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
-				return "", err
-			}
-		}
-		if manifest == nil || manifest.Version == "" {
-			return template, nil
-		}
-		return PipelineValueParent, nil
-	}()
-	if err != nil {
-		return "", err
-	}
-
+	pipelineOutPutValueParent := template
 	newPipelineOutputContent := make(map[string]interface{})
 	var PipelineOutPutFileExist bool
 	currentPipelineOutputContent, err := g.getPipelineOutPut(ctx, application, cluster)
@@ -887,18 +868,18 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return "", err
 		}
-		newPipelineOutputContent[pipelineValueParent] = pipelineOutPutInternalFormat
+		newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 	} else {
 		PipelineOutPutFileExist = true
 		// if current exist, just patch it
 		if currentPipelineOutputContent != nil {
-			newPipelineOutputContent[pipelineValueParent], err =
-				mergemap.Merge(currentPipelineOutputContent[pipelineValueParent], pipelineOutPutInternalFormat)
+			newPipelineOutputContent[pipelineOutPutValueParent], err =
+				mergemap.Merge(currentPipelineOutputContent[pipelineOutPutValueParent], pipelineOutPutInternalFormat)
 			if err != nil {
 				return "", perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
 			}
 		} else {
-			newPipelineOutputContent[pipelineValueParent] = pipelineOutPutInternalFormat
+			newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 		}
 	}
 
@@ -1259,7 +1240,7 @@ func (g *clusterGitRepo) assembleEnvValue(params *BaseParams) map[string]map[str
 		Region:      params.RegionEntity.Name,
 		Namespace:   getNamespace(params),
 		BaseRegistry: strings.TrimPrefix(strings.TrimPrefix(
-			params.RegionEntity.Harbor.Server, "https://"), "http://"),
+			params.RegionEntity.Registry.Server, "https://"), "http://"),
 		IngressDomain: params.RegionEntity.IngressDomain,
 	}
 

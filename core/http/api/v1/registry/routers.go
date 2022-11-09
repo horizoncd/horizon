@@ -1,4 +1,4 @@
-package harbor
+package registry
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, api *API) {
-	apiGroup := engine.Group("/apis/core/v1/harbors")
+	apiGroup := engine.Group("/apis/core/v1/registries")
 
 	var routes = route.Routes{
 		{
@@ -31,6 +31,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodDelete,
 			Pattern:     fmt.Sprintf("/:%v", _harborIDParam),
 			HandlerFunc: api.DeleteByID,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     "/kinds",
+			HandlerFunc: api.GetKinds,
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)

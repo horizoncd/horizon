@@ -223,7 +223,7 @@ func (a *API) ListTemplatesByGroupID(c *gin.Context) {
 	}
 
 	var templates templatectl.Templates
-	if templates, err = a.templateCtl.ListTemplateByGroupID(ctx, uint(groupID)); err != nil {
+	if templates, err = a.templateCtl.ListTemplateByGroupID(ctx, uint(groupID), false); err != nil {
 		if perror.Cause(err) == herrors.ErrNoPrivilege {
 			log.WithFiled(c, "op", op).Info("non-admin user try to access root group")
 			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(fmt.Sprintf("no privilege: %s", err.Error())))

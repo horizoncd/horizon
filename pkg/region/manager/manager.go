@@ -5,10 +5,10 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	"g.hz.netease.com/horizon/pkg/region/models"
+	harbordao "g.hz.netease.com/horizon/pkg/registry/dao"
+	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	tagdao "g.hz.netease.com/horizon/pkg/tag/dao"
 	"gorm.io/gorm"
 )
@@ -81,19 +81,19 @@ func (m *manager) GetRegionEntity(ctx context.Context,
 		return nil, err
 	}
 
-	harbor, err := m.getHarborByRegion(ctx, region)
+	harbor, err := m.getRegistryByRegion(ctx, region)
 	if err != nil {
 		return nil, err
 	}
 
 	return &models.RegionEntity{
-		Region: region,
-		Harbor: harbor,
+		Region:   region,
+		Registry: harbor,
 	}, nil
 }
 
 func (m *manager) UpdateByID(ctx context.Context, id uint, region *models.Region) error {
-	_, err := m.getHarborByRegion(ctx, region)
+	_, err := m.getRegistryByRegion(ctx, region)
 	if err != nil {
 		return err
 	}
@@ -101,8 +101,8 @@ func (m *manager) UpdateByID(ctx context.Context, id uint, region *models.Region
 	return m.regionDAO.UpdateByID(ctx, id, region)
 }
 
-func (m *manager) getHarborByRegion(ctx context.Context, region *models.Region) (*harbormodels.Harbor, error) {
-	harbor, err := m.harborDAO.GetByID(ctx, region.HarborID)
+func (m *manager) getRegistryByRegion(ctx context.Context, region *models.Region) (*registrymodels.Registry, error) {
+	harbor, err := m.harborDAO.GetByID(ctx, region.RegistryID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (m *manager) GetRegionByID(ctx context.Context, id uint) (*models.RegionEnt
 		return nil, err
 	}
 
-	harbor, err := m.getHarborByRegion(ctx, region)
+	registry, err := m.getRegistryByRegion(ctx, region)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +135,9 @@ func (m *manager) GetRegionByID(ctx context.Context, id uint) (*models.RegionEnt
 	}
 
 	return &models.RegionEntity{
-		Region: region,
-		Harbor: harbor,
-		Tags:   tags,
+		Region:   region,
+		Registry: registry,
+		Tags:     tags,
 	}, nil
 }
 

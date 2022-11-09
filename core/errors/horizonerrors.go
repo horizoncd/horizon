@@ -27,7 +27,7 @@ var (
 	GroupInDB                 = sourceType{name: "GroupInDB"}
 	K8SClient                 = sourceType{name: "K8SClient"}
 	Harbor                    = sourceType{name: "Harbor"}
-	HarborInDB                = sourceType{name: "HarborInDB"}
+	RegistryInDB              = sourceType{name: "RegistryInDB"}
 	Pipelinerun               = sourceType{name: "Pipelinerun"}
 	PipelinerunInTekton       = sourceType{name: "PipelinerunInTekton"}
 	PipelinerunInDB           = sourceType{name: "PipelinerunInDB"}

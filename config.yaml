@@ -34,6 +34,7 @@ gitopsRepoConfig:
   rootGroupPath: music-cloud-native
   urlSchema: http
 templateRepo:
+  kind: "harbor"
   host: "https://harbor.mock.org"
   repoName: "horizon-template"
   username: ""
@@ -86,4 +87,3 @@ oauth:
   oauthHTMLLocation:
   authorizeCodeExpireIn: 10m
   accessTokenExpireIn: 24h
-

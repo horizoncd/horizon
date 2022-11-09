@@ -95,7 +95,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) er
 	regionInDB.Certificate = region.Certificate
 	regionInDB.IngressDomain = region.IngressDomain
 	regionInDB.PrometheusURL = region.PrometheusURL
-	regionInDB.HarborID = region.HarborID
+	regionInDB.RegistryID = region.RegistryID
 	regionInDB.Disabled = region.Disabled
 	result := d.db.WithContext(ctx).Save(regionInDB)
 	if result.Error != nil {

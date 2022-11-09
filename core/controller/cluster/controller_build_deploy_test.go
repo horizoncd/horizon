@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 
 	"github.com/mozillazg/go-pinyin"
 )
@@ -27,7 +27,8 @@ func testImageURL(t *testing.T) {
 			name: "normal1",
 			args: args{
 				regionEntity: &regionmodels.RegionEntity{
-					Harbor: &harbormodels.Harbor{
+					Registry: &registrymodels.Registry{
+						Path:   "path",
 						Server: "https://harbor.com",
 					},
 				},
@@ -36,13 +37,14 @@ func testImageURL(t *testing.T) {
 				branch:      "master",
 				commit:      "117651f0c06486ba50a01eb0ed82be46ef3b528e",
 			},
-			want: "harbor.com/app/cluster:master-117651f0",
+			want: "harbor.com/path/app/cluster:master-117651f0",
 		},
 		{
 			name: "normal2",
 			args: args{
 				regionEntity: &regionmodels.RegionEntity{
-					Harbor: &harbormodels.Harbor{
+					Registry: &registrymodels.Registry{
+						Path:   "path",
 						Server: "https://harbor.com",
 					},
 				},
@@ -51,13 +53,14 @@ func testImageURL(t *testing.T) {
 				branch:      "测试",
 				commit:      "117651f0c06486ba50a01eb0ed82be46ef3b528e",
 			},
-			want: "harbor.com/app/cluster:ceshi-117651f0",
+			want: "harbor.com/path/app/cluster:ceshi-117651f0",
 		},
 		{
 			name: "normal3",
 			args: args{
 				regionEntity: &regionmodels.RegionEntity{
-					Harbor: &harbormodels.Harbor{
+					Registry: &registrymodels.Registry{
+						Path:   "path",
 						Server: "https://harbor.com",
 					},
 				},
@@ -66,13 +69,14 @@ func testImageURL(t *testing.T) {
 				branch:      "测试$90",
 				commit:      "117651f0c06486ba50a01eb0ed82be46ef3b528e",
 			},
-			want: "harbor.com/app/cluster:ceshi_90-117651f0",
+			want: "harbor.com/path/app/cluster:ceshi_90-117651f0",
 		},
 		{
 			name: "normal4",
 			args: args{
 				regionEntity: &regionmodels.RegionEntity{
-					Harbor: &harbormodels.Harbor{
+					Registry: &registrymodels.Registry{
+						Path:   "path",
 						Server: "https://harbor.com",
 					},
 				},
@@ -81,7 +85,7 @@ func testImageURL(t *testing.T) {
 				branch:      "测试@中国hello*",
 				commit:      "117651f0c06486ba50a01eb0ed82be46ef3b528e",
 			},
-			want: "harbor.com/app/cluster:ceshi_zhongguohello_-117651f0",
+			want: "harbor.com/path/app/cluster:ceshi_zhongguohello_-117651f0",
 		},
 	}
 	for _, tt := range tests {
