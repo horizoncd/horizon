@@ -1,4 +1,4 @@
-package harbor
+package chartmuseumbase
 
 import (
 	"bytes"

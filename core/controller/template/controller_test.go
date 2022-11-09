@@ -42,7 +42,7 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	reposchema "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
-	"g.hz.netease.com/horizon/pkg/templaterepo/harbor"
+	"g.hz.netease.com/horizon/pkg/templaterepo/chartmuseumbase"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	gitlabapi "github.com/xanzy/go-gitlab"
@@ -643,7 +643,7 @@ func createContext() {
 }
 
 func createController(t *testing.T) Controller {
-	repo, err := harbor.NewRepo(config.Repo{
+	repo, err := chartmuseumbase.NewRepo(config.Repo{
 		Kind:     repoConfig.Kind,
 		Host:     repoConfig.Host,
 		Username: repoConfig.Username,

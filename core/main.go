@@ -9,7 +9,7 @@ import (
 	_ "g.hz.netease.com/horizon/pkg/cluster/registry/harbor"
 
 	// for template repo
-	_ "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
+	_ "g.hz.netease.com/horizon/pkg/templaterepo/chartmuseumbase"
 )
 
 func main() {

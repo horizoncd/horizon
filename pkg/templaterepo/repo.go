@@ -24,7 +24,6 @@ func Register(tp string, constructor Constructor) {
 }
 
 func NewRepo(config templaterepo.Repo) (TemplateRepo, error) {
-	fmt.Println(factory)
 	if constructor, ok := factory[config.Kind]; ok {
 		repo, err := constructor(config)
 		if err != nil {
