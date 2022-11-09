@@ -1,0 +1,207 @@
+{
+  "type": "object",
+  "required": [
+    "buildType"
+  ],
+  "properties": {
+    "buildType": {
+      "type": "string",
+      "title": "构建方式",
+      "oneOf": [
+        {
+          "enum": [
+            "netease-normal"
+          ],
+          "title": "音乐常规构建"
+        },
+        {
+          "enum": [
+            "neteaseDockerFile"
+          ],
+          "title": "DockerFile构建"
+        }
+      ],
+      "default": "netease-normal"
+    }
+  },
+  "dependencies": {
+    "buildType": {
+      "oneOf": [
+        {
+          "properties": {
+            "buildType": {
+              "enum": [
+                "netease-normal"
+              ]
+            },
+            "language": {
+              "type": "string",
+              "title": "语言",
+              "description": "选择目标构建语言",
+              "enum": [
+                "java",
+                "node",
+                "golang"
+              ]
+            },
+            "buildInfo": {
+              "type": "object",
+              "title": "",
+              "properties": {
+                "buildTool": {
+                  "type": "string",
+                  "title": "构建工具",
+                  "description": "选择云音乐Ant构建或者Shell构建",
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "ant"
+                      ],
+                      "title": "ant构建"
+                    }
+                  ]
+                }
+              },
+              "dependencies": {
+                "buildTool": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "buildTool": {
+                          "enum": [
+                            "ant"
+                          ]
+                        },
+                        "buildxml": {
+                          "type": "string",
+                          "title": "build.xml",
+                          "default": "dsdadsa"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "dependencies": {
+            "language": {
+              "oneOf": [
+                {
+                  "properties": {
+                    "language": {
+                      "enum": [
+                        "java"
+                      ]
+                    },
+                    "environment": {
+                      "type": "string",
+                      "title": "环境",
+                      "description": "目标制品包含的依赖",
+                      "enum": [
+                        "javaapp",
+                        "tomcat7_jdk8",
+                        "tomcat8_5_jdk8",
+                        "springboot_jdk1_8"
+                      ],
+                      "default": "javaapp"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "language": {
+                      "enum": [
+                        "golang"
+                      ]
+                    },
+                    "environment": {
+                      "type": "string",
+                      "title": "环境",
+                      "description": "目标制品包含的依赖",
+                      "enum": [
+                        "golang-1.6.5"
+                      ],
+                      "default": "golang-1.6.5"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "language": {
+                      "enum": [
+                        "node"
+                      ]
+                    },
+                    "environment": {
+                      "type": "string",
+                      "title": "环境",
+                      "description": "目标制品包含的依赖",
+                      "enum": [
+                        "nodejs-8_11_2"
+                      ],
+                      "default": "nodejs-8_11_2"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "buildType": {
+              "enum": [
+                "neteaseDockerFile"
+              ]
+            },
+            "dockerfile": {
+              "type": "object",
+              "title": "Dockerfile",
+              "oneOf": [
+                {
+                  "title": "dockerfile路径",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "description": "dockerfile文件相对于代码工程中子目录的路径"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ]
+                },
+                {
+                  "title": "dockerfile内容",
+                  "properties": {
+                    "content": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "content"
+                  ]
+                }
+              ]
+            },
+            "buildArgs": {
+              "type": "array",
+              "title": "构建参数",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

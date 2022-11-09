@@ -1,0 +1,38 @@
+{
+  "ui:order": [
+    "buildType",
+    "language",
+    "environment",
+    "buildInfo",
+    "dockerfile",
+    "buildArgs"
+  ],
+  "buildInfo": {
+    "buildxml": {
+      "ui:widget": "textarea",
+      "ui:options": {
+        "rows": 18
+      }
+    },
+    "shellScript": {
+      "ui:widget": "textarea",
+      "ui:options": {
+        "rows": 18
+      }
+    }
+  },
+  "dockerfile": {
+    "content": {
+      "ui:widget": "textarea",
+      "ui:options": {
+        "rows": 18
+      }
+    }
+  },
+  "buildType": {
+    "ui:widget": "radio",
+    "ui:options": {
+      "inline": true
+    }
+  }
+}

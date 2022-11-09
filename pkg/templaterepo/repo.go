@@ -5,12 +5,35 @@ import (
 	"sync"
 	"time"
 
+	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/pkg/config/templaterepo"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"helm.sh/helm/v3/pkg/chart"
 )
 
 const (
 	cacheKeyFormat = "%s-%s"
 )
+
+type Constructor func(repo templaterepo.Repo) (TemplateRepo, error)
+
+var factory = make(map[string]Constructor)
+
+func Register(tp string, constructor Constructor) {
+	factory[tp] = constructor
+}
+
+func NewRepo(config templaterepo.Repo) (TemplateRepo, error) {
+	fmt.Println(factory)
+	if constructor, ok := factory[config.Kind]; ok {
+		repo, err := constructor(config)
+		if err != nil {
+			return nil, err
+		}
+		return NewRepoWithCache(repo), nil
+	}
+	return nil, perror.Wrapf(herrors.ErrParamInvalid, "type (%s) not implement", config.Kind)
+}
 
 //go:generate mockgen -source=$GOFILE -destination=../../mock/pkg/templaterepo/mock_repo.go -package=mock_repo
 type TemplateRepo interface {
@@ -37,22 +60,6 @@ func NewRepoWithCache(repo TemplateRepo) TemplateRepo {
 type ChartWithTime struct {
 	chartPkg   *chart.Chart
 	lastSyncAt time.Time
-}
-
-func (r *RepoWithCache) GetLoc() string {
-	return r.TemplateRepo.GetLoc()
-}
-
-func (r *RepoWithCache) UploadChart(chart *chart.Chart) error {
-	return r.TemplateRepo.UploadChart(chart)
-}
-
-func (r *RepoWithCache) DeleteChart(name string, version string) error {
-	return r.TemplateRepo.DeleteChart(name, version)
-}
-
-func (r *RepoWithCache) ExistChart(name string, version string) (bool, error) {
-	return r.TemplateRepo.ExistChart(name, version)
 }
 
 func (r *RepoWithCache) GetChart(name string, version string, lastSyncAt time.Time) (*chart.Chart, error) {

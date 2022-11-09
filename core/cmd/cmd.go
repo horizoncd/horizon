@@ -110,7 +110,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschemarepo "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
-	templaterepoharbor "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
+	"g.hz.netease.com/horizon/pkg/templaterepo"
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
@@ -280,7 +280,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	templateRepo, err := templaterepoharbor.NewRepo(coreConfig.TemplateRepo)
+	templateRepo, err := templaterepo.NewRepo(coreConfig.TemplateRepo)
 	if err != nil {
 		panic(err)
 	}

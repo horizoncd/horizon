@@ -1,6 +1,8 @@
 package harbor
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -12,86 +14,84 @@ import (
 )
 
 const (
-	EnvHarborHost     = "HARBOR_HOST"
-	EnvHarborUser     = "HARBOR_USER"
-	EnvHarborPasswd   = "HARBOR_PASSWD"
-	EnvHarborRepoName = "HARBOR_REPO_NAME"
+	EnvTemplateRepos = "TEMPLATE_REPOS"
 )
 
-var (
-	harborHost     string
-	harborAdmin    string
-	harborPasswd   string
-	harborRepoName string
-
-	templateName = "test"
-	releaseName  = "v1.0.0"
-)
-
-func TestMain(m *testing.M) {
-	harborHost = os.Getenv(EnvHarborHost)
-	harborAdmin = os.Getenv(EnvHarborUser)
-	harborPasswd = os.Getenv(EnvHarborPasswd)
-	harborRepoName = os.Getenv(EnvHarborRepoName)
-
-	os.Exit(m.Run())
+type RepoConfig struct {
+	Kind              string `json:"kind"`
+	Host              string `json:"host"`
+	Passwd            string `json:"passwd"`
+	RepoName          string `json:"repoName"`
+	Username          string `json:"username"`
+	TemplateName      string `json:"templateName"`
+	TemplateRepo      string `json:"templateRepo"`
+	TemplateRepoToken string `json:"templateRepoToken"`
+	TemplateTag       string `json:"templateTag"`
 }
 
-func checkSkip(t *testing.T) {
-	if harborHost == "" ||
-		harborAdmin == "" ||
-		harborPasswd == "" ||
-		harborRepoName == "" {
-		t.Skip()
+var repoConfig *RepoConfig
+
+func Test(t *testing.T) {
+	templateRepos := os.Getenv(EnvTemplateRepos)
+	configs := make([]RepoConfig, 0)
+
+	if err := json.Unmarshal([]byte(templateRepos), &configs); err != nil {
+		panic(err)
+	}
+
+	for _, cfg := range configs {
+		repoConfig = &cfg
+
+		t.Run(fmt.Sprintf("TestRepo_%s", repoConfig.Kind), TestRepo)
 	}
 }
 
 func createHarbor(t *testing.T) templaterepo.TemplateRepo {
 	repo, err := NewRepo(config.Repo{
-		Host:     harborHost,
-		Username: harborAdmin,
-		Password: harborPasswd,
+		Kind:     repoConfig.Kind,
+		Host:     repoConfig.Host,
+		Username: repoConfig.Username,
+		Password: repoConfig.Passwd,
 		Insecure: true,
 		CertFile: "",
 		KeyFile:  "",
 		CAFile:   "",
-		RepoName: harborRepoName,
+		RepoName: repoConfig.RepoName,
 	})
 	assert.Nil(t, err)
 
 	return repo
 }
 
-func TestHarbor(t *testing.T) {
-	checkSkip(t)
+func TestRepo(t *testing.T) {
 	harbor := createHarbor(t)
 
 	name := "test"
 	data := []byte("hello, world")
 	c := &chart.Chart{Metadata: &chart.Metadata{}, Files: []*chart.File{{Name: name, Data: data}}}
-	c.Metadata.Name = templateName
-	c.Metadata.Version = releaseName
+	c.Metadata.Name = repoConfig.TemplateName
+	c.Metadata.Version = repoConfig.TemplateTag
 
 	err := harbor.UploadChart(c)
 	assert.Nil(t, err)
 
 	tm := time.Now()
-	c, err = harbor.GetChart(templateName, releaseName, tm)
+	c, err = harbor.GetChart(repoConfig.TemplateName, repoConfig.TemplateTag, tm)
 	assert.Nil(t, err)
 	assert.NotNil(t, c)
 
 	// use cache
-	c, err = harbor.GetChart(templateName, releaseName, tm)
+	c, err = harbor.GetChart(repoConfig.TemplateName, repoConfig.TemplateTag, tm)
 	assert.Nil(t, err)
 	assert.NotNil(t, c)
 
-	res, err := harbor.ExistChart(templateName, releaseName)
+	res, err := harbor.ExistChart(repoConfig.TemplateName, repoConfig.TemplateTag)
 	assert.Nil(t, err)
 	assert.Equal(t, true, res)
 
-	err = harbor.DeleteChart(templateName, releaseName)
+	err = harbor.DeleteChart(repoConfig.TemplateName, repoConfig.TemplateTag)
 	assert.Nil(t, err)
 
-	_, err = harbor.GetChart(templateName, releaseName, time.Now())
+	_, err = harbor.GetChart(repoConfig.TemplateRepo, repoConfig.TemplateTag, time.Now())
 	assert.NotNil(t, err)
 }
