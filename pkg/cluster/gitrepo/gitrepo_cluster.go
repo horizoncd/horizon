@@ -20,7 +20,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterepo"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/mergemap"
 	timeutil "g.hz.netease.com/horizon/pkg/util/time"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/xanzy/go-gitlab"
@@ -858,7 +857,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	pipelineOutPutValueParent := template
 	newPipelineOutputContent := make(map[string]interface{})
 	var PipelineOutPutFileExist bool
-	currentPipelineOutputContent, err := g.getPipelineOutput(ctx, application, cluster)
+	_, err = g.getPipelineOutput(ctx, application, cluster)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return "", err
@@ -866,16 +865,8 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 	} else {
 		PipelineOutPutFileExist = true
-		// if current exist, just patch it
-		if currentPipelineOutputContent != nil {
-			newPipelineOutputContent[pipelineOutPutValueParent], err =
-				mergemap.Merge(currentPipelineOutputContent[pipelineOutPutValueParent], pipelineOutPutInternalFormat)
-			if err != nil {
-				return "", perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
-			}
-		} else {
-			newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
-		}
+		// if current exist, just override it
+		newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 	}
 
 	newPipelineOutPutBytes, err := kyaml.Marshal(newPipelineOutputContent)
