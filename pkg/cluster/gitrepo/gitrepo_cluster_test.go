@@ -14,6 +14,7 @@ import (
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	gitlabconfig "g.hz.netease.com/horizon/pkg/config/gitlab"
 	config "g.hz.netease.com/horizon/pkg/config/templaterepo"
 	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
@@ -124,7 +125,7 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) {
 	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
 
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
 	application := "app"
@@ -244,7 +245,7 @@ func Test(t *testing.T) {
 
 func TestV2(t *testing.T) {
 	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
 	application := "appv2"
@@ -375,7 +376,7 @@ func TestHardDeleteCluster(t *testing.T) {
 		BaseParams: baseParams,
 	}
 	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
@@ -393,7 +394,8 @@ func TestGetClusterValueFile(t *testing.T) {
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib)
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib,
+		gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
 	// 1. test gitlab get file error
@@ -450,7 +452,7 @@ java:
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib)
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
 	expectedOutput := `java:

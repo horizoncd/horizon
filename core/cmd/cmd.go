@@ -283,7 +283,8 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops)
+	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
+		coreConfig.GitopsRepoConfig.URLSchema)
 	if err != nil {
 		panic(err)
 	}
@@ -385,7 +386,7 @@ func Run(flags *Flags) {
 	userSvc := userservice.NewService(manager)
 
 	// init kube client
-	_, client, err := kube.BuildClient("")
+	_, client, err := kube.BuildClient("/Users/wurongjun/.kube/config")
 	if err != nil {
 		panic(err)
 	}

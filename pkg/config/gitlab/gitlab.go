@@ -1,5 +1,10 @@
 package gitlab
 
+const (
+	HTTPURLSchema = "http"
+	SSHURLSchema  = "ssh"
+)
+
 // Mapper gitlab mapper
 type Mapper map[string]*Gitlab
 
@@ -12,4 +17,5 @@ type Gitlab struct {
 // GitopsRepoConfig gitops repo config
 type GitopsRepoConfig struct {
 	RootGroupPath string `yaml:"rootGroupPath"`
+	URLSchema     string `yaml:"urlSchema"`
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -70,6 +71,18 @@ func LoadConfig(configFilePath string) (*Config, error) {
 		}
 	}
 	config.TektonMapper = newTektonMapper
+
+	// use http schema by default
+	if config.GitopsRepoConfig.URLSchema == "" {
+		config.GitopsRepoConfig.URLSchema = gitlab.HTTPURLSchema
+	}
+
+	// validte gitops repo schema value
+	if config.GitopsRepoConfig.URLSchema != gitlab.HTTPURLSchema &&
+		config.GitopsRepoConfig.URLSchema != gitlab.SSHURLSchema {
+		return nil, fmt.Errorf("gitops repo urlSchema not valid: %s, valid values: [http, ssh]",
+			config.GitopsRepoConfig.URLSchema)
+	}
 
 	return &config, nil
 }
