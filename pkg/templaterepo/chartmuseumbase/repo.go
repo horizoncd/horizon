@@ -72,8 +72,7 @@ func NewRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
 
 	client := &http.Client{
 		Transport: &http.Transport{
-			DisableCompression: true,
-			TLSClientConfig:    tlsConf,
+			TLSClientConfig: tlsConf,
 		},
 	}
 	prefix := ""
