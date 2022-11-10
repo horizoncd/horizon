@@ -273,7 +273,7 @@ func Run(flags *Flags) {
 	rootGroup, err := gitlabGitops.GetGroup(ctx, rootGroupPath)
 	if err != nil {
 		log.Printf("failed to get gitops root group, error: %s, start to create it", err.Error())
-		_, err = gitlabGitops.CreateGroup(ctx, rootGroupPath, rootGroupPath, nil)
+		rootGroup, err = gitlabGitops.CreateGroup(ctx, rootGroupPath, rootGroupPath, nil)
 		if err != nil {
 			panic(err)
 		}
