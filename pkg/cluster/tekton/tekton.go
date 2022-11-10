@@ -68,6 +68,7 @@ type (
 	PipelineRunGit struct {
 		URL       string `json:"url"`
 		Branch    string `json:"branch"`
+		Tag       string `json:"tag"`
 		Subfolder string `json:"subfolder"`
 		Commit    string `json:"commit"`
 	}

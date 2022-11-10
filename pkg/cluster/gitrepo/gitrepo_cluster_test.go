@@ -460,17 +460,19 @@ java:
     branch: bbb
     commitID: ccc
     url: aaa
-  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
+  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20221109170000
 `
 	url := "aaa"
 	branch := "bbb"
 	commit := "ccc"
+	image := "harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20221109170000"
 	_, err = clusterGitRepoInstance.UpdatePipelineOutput(ctx, "", "", templateName, PipelineOutput{
 		Git: &Git{
 			URL:      &url,
 			Branch:   &branch,
 			CommitID: &commit,
 		},
+		Image: &image,
 	})
 	assert.Nil(t, err)
 	fmt.Println(output)

@@ -107,17 +107,25 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
+	prGit := tekton.PipelineRunGit{
+		URL:       cluster.GitURL,
+		Subfolder: cluster.GitSubfolder,
+		Commit:    commit.ID,
+	}
+	switch prCreated.GitRefType {
+	case codemodels.GitRefTypeTag:
+		prGit.Tag = prCreated.GitRef
+	case codemodels.GitRefTypeBranch:
+		prGit.Branch = prCreated.GitRef
+	}
+
 	_, err = tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
-		Application:   application.Name,
-		ApplicationID: application.ID,
-		Cluster:       cluster.Name,
-		ClusterID:     cluster.ID,
-		Environment:   cluster.EnvironmentName,
-		Git: tekton.PipelineRunGit{
-			URL:       cluster.GitURL,
-			Subfolder: cluster.GitSubfolder,
-			Commit:    commit.ID,
-		},
+		Application:      application.Name,
+		ApplicationID:    application.ID,
+		Cluster:          cluster.Name,
+		ClusterID:        cluster.ID,
+		Environment:      cluster.EnvironmentName,
+		Git:              prGit,
 		ImageURL:         imageURL,
 		Operator:         currentUser.GetEmail(),
 		PipelinerunID:    prCreated.ID,

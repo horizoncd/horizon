@@ -3,7 +3,6 @@ package gitrepo
 import (
 	"context"
 	"encoding/json"
-	goerrors "errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -21,7 +20,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterepo"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/mergemap"
 	timeutil "g.hz.netease.com/horizon/pkg/util/time"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/xanzy/go-gitlab"
@@ -86,8 +84,6 @@ const (
 	PipelineValueParent = "pipeline"
 )
 
-var ErrPipelineOutputEmpty = goerrors.New("PipelineOutput is empty")
-
 type BaseParams struct {
 	ClusterID           uint
 	Cluster             string
@@ -133,6 +129,8 @@ type ClusterCommit struct {
 	Gitops string
 }
 
+// nolint
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/gitrepo/gitrepo_cluster_mock.go -package=mock_gitrepo
 type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
 	GetClusterValueFiles(ctx context.Context,
@@ -146,9 +144,9 @@ type ClusterGitRepo interface {
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
 	// MergeBranch merge gitops branch to master branch, and return master branch's newest commit
 	MergeBranch(ctx context.Context, application, cluster string, prID uint) (string, error)
-	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (*PipelineOutput, error)
+	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (interface{}, error)
 	UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
-		PipelineOutput interface{}) (string, error)
+		pipelineOutput interface{}) (string, error)
 	// UpdateRestartTime update restartTime in git repo for restart
 	// TODO(gjq): some template cannot restart, for example serverless, how to do it ?
 	GetRestartTime(ctx context.Context, application, cluster string,
@@ -787,8 +785,8 @@ func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster s
 }
 
 func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, cluster string,
-	template string) (*PipelineOutput, error) {
-	ret := make(map[string]*PipelineOutput)
+	template string) (interface{}, error) {
+	ret := make(map[string]interface{})
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
 	if err != nil {
@@ -807,14 +805,10 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 	if !ok {
 		return nil, perror.Wrapf(herrors.ErrPipelineOutputEmpty, "no template in pipelineOutput.yaml")
 	}
-
-	if pipelineOutput.Git == nil {
-		pipelineOutput.Git = &Git{}
-	}
 	return pipelineOutput, nil
 }
 
-func (g *clusterGitRepo) getPipelineOutPut(ctx context.Context,
+func (g *clusterGitRepo) getPipelineOutput(ctx context.Context,
 	application, cluster string) (map[string]map[string]interface{}, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
@@ -841,12 +835,12 @@ func (g *clusterGitRepo) getPipelineOutPut(ctx context.Context,
 }
 
 func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
-	pipelineOutPut interface{}) (commitID string, err error) {
+	pipelineOutput interface{}) (commitID string, err error) {
 	const op = "cluster git repo: update pipeline output"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	pipelineOutPutInternalFormat, err := func() (map[string]interface{}, error) {
-		bytes, err := json.Marshal(pipelineOutPut)
+		bytes, err := json.Marshal(pipelineOutput)
 		if err != nil {
 			return nil, err
 		}
@@ -863,7 +857,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	pipelineOutPutValueParent := template
 	newPipelineOutputContent := make(map[string]interface{})
 	var PipelineOutPutFileExist bool
-	currentPipelineOutputContent, err := g.getPipelineOutPut(ctx, application, cluster)
+	_, err = g.getPipelineOutput(ctx, application, cluster)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return "", err
@@ -871,16 +865,8 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 	} else {
 		PipelineOutPutFileExist = true
-		// if current exist, just patch it
-		if currentPipelineOutputContent != nil {
-			newPipelineOutputContent[pipelineOutPutValueParent], err =
-				mergemap.Merge(currentPipelineOutputContent[pipelineOutPutValueParent], pipelineOutPutInternalFormat)
-			if err != nil {
-				return "", perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
-			}
-		} else {
-			newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
-		}
+		// if current exist, just override it
+		newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 	}
 
 	newPipelineOutPutBytes, err := kyaml.Marshal(newPipelineOutputContent)
@@ -909,7 +895,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		Operator: currentUser.GetName(),
 		Action:   "deploy cluster",
 		Cluster:  angular.StringPtr(cluster),
-	}, pipelineOutPut)
+	}, pipelineOutput)
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)

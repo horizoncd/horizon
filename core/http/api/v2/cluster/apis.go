@@ -170,3 +170,44 @@ func (a *API) Get(c *gin.Context) {
 	}
 	response.SuccessWithData(c, resp)
 }
+
+func (a *API) InternalDeploy(c *gin.Context) {
+	op := "cluster: internal deploy v2"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+	pipelinerunIDStr := c.Param(common.ParamPipelinerunID)
+	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	var request interface{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody,
+			fmt.Sprintf("request body is invalid, err: %v", err))
+		return
+	}
+	resp, err := a.clusterCtl.InternalDeployV2(c, uint(clusterID), uint(pipelinerunID), request)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			if e.Source == herrors.ClusterInDB {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			} else if e.Source == herrors.PipelinerunInDB {
+				log.WithFiled(c, "op", op).Errorf("%+v", err)
+				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+				return
+			}
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.SuccessWithData(c, resp)
+}

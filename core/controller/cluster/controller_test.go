@@ -805,6 +805,12 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(internalDeployResp)
 	t.Logf("%v", string(b))
 
+	// v2
+	internalDeployResp, err = c.InternalDeployV2(ctx, resp.ID, buildDeployResp.PipelinerunID, nil)
+	assert.Nil(t, err)
+	b, _ = json.Marshal(internalDeployResp)
+	t.Logf("%v", string(b))
+
 	clusterStatusResp, err := c.GetClusterStatus(ctx, resp.ID)
 	assert.Nil(t, err)
 	b, _ = json.Marshal(clusterStatusResp)
@@ -869,7 +875,7 @@ func test(t *testing.T) {
 	err = c.Promote(ctx, resp.ID)
 	assert.Nil(t, err)
 
-	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{},
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil,
 		nil).Times(1)
 
 	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
@@ -879,9 +885,12 @@ func test(t *testing.T) {
 	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
 	assert.Nil(t, deployResp)
 
-	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{
-		Image: &imageName,
-	}, nil).AnyTimes()
+	type PipelineOutput struct {
+		Image *string
+	}
+
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&PipelineOutput{Image: &imageName}, nil).AnyTimes()
 
 	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
 		Title:       "deploy-title",
@@ -1239,6 +1248,7 @@ func testV2(t *testing.T) {
 	createReq := &CreateClusterRequestV2{
 		Name:        createClusterName,
 		Description: "cluster description",
+		ExpireTime:  "24h0m0s",
 		Git: &codemodels.Git{
 			Branch: "develop",
 		},
@@ -1270,6 +1280,7 @@ func testV2(t *testing.T) {
 	assert.Equal(t, getClusterResp.ID, resp.ID)
 	assert.Equal(t, getClusterResp.Name, createClusterName)
 	assert.Equal(t, getClusterResp.Priority, priority)
+	assert.Equal(t, createReq.ExpireTime, getClusterResp.ExpireTime)
 	assert.NotNil(t, getClusterResp.Scope)
 	assert.Equal(t, getClusterResp.FullPath, "/"+group.Path+"/"+application.Name+"/"+createClusterName)
 	assert.Equal(t, getClusterResp.ApplicationName, application.Name)
@@ -1291,6 +1302,7 @@ func testV2(t *testing.T) {
 
 	updateRequestV2 := &UpdateClusterRequestV2{
 		Description:    "",
+		ExpireTime:     "336h0m0s",
 		BuildConfig:    pipelineJSONBlob,
 		TemplateInfo:   nil,
 		TemplateConfig: applicationJSONBlob,

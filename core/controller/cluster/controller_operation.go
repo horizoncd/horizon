@@ -106,7 +106,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 			}
 			return nil, herrors.ErrShouldBuildDeployFirst
 		}
-		if po == nil || po.Image == nil || *po.Image == "" {
+		if po == nil {
 			return nil, herrors.ErrShouldBuildDeployFirst
 		}
 	}
