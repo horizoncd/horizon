@@ -1243,6 +1243,11 @@ type BaseValue struct {
 	Priority    string             `yaml:"priority"`
 }
 
+type PipelineOutput struct {
+	Image *string `yaml:"image,omitempty" json:"image,omitempty"`
+	Git   *Git    `yaml:"git,omitempty" json:"git,omitempty"`
+}
+
 type Git struct {
 	URL      *string `yaml:"url,omitempty" json:"url,omitempty"`
 	CommitID *string `yaml:"commitID,omitempty" json:"commitID,omitempty"`

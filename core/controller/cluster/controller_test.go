@@ -798,7 +798,15 @@ func test(t *testing.T) {
 
 	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, herrors.NewErrNotFound(herrors.PodsInK8S, "test"))
-	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, buildDeployResp.PipelinerunID, nil)
+	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
+		PipelinerunID: buildDeployResp.PipelinerunID,
+	})
+	assert.Nil(t, err)
+	b, _ = json.Marshal(internalDeployResp)
+	t.Logf("%v", string(b))
+
+	// v2
+	internalDeployResp, err = c.InternalDeployV2(ctx, resp.ID, buildDeployResp.PipelinerunID, nil)
 	assert.Nil(t, err)
 	b, _ = json.Marshal(internalDeployResp)
 	t.Logf("%v", string(b))
