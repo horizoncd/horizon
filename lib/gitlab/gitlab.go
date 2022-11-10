@@ -143,6 +143,8 @@ type Interface interface {
 
 	GetSSHURL(ctx context.Context) string
 
+	GetHTTPURL(ctx context.Context) string
+
 	GetCreatedGroup(ctx context.Context, parentID int, parentPath string, name string) (*gitlab.Group, error)
 }
 
@@ -568,6 +570,11 @@ func (h *helper) GetRepositoryArchive(ctx context.Context, pid interface{}, sha 
 
 func (h *helper) GetSSHURL(ctx context.Context) string {
 	return h.sshURL
+}
+
+// GetHTTPURL implements Interface
+func (h *helper) GetHTTPURL(ctx context.Context) string {
+	return h.httpURL
 }
 
 func (h *helper) GetCreatedGroup(ctx context.Context, parentID int,

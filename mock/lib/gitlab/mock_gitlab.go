@@ -272,6 +272,20 @@ func (mr *MockInterfaceMockRecorder) GetGroup(ctx, gid interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroup", reflect.TypeOf((*MockInterface)(nil).GetGroup), ctx, gid)
 }
 
+// GetHTTPURL mocks base method.
+func (m *MockInterface) GetHTTPURL(ctx context.Context) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHTTPURL", ctx)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetHTTPURL indicates an expected call of GetHTTPURL.
+func (mr *MockInterfaceMockRecorder) GetHTTPURL(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHTTPURL", reflect.TypeOf((*MockInterface)(nil).GetHTTPURL), ctx)
+}
+
 // GetProject mocks base method.
 func (m *MockInterface) GetProject(ctx context.Context, pid interface{}) (*gitlab0.Project, error) {
 	m.ctrl.T.Helper()

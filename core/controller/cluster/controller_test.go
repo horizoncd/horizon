@@ -40,13 +40,13 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	harbordao "g.hz.netease.com/horizon/pkg/registry/dao"
+	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tmodel "g.hz.netease.com/horizon/pkg/tag/models"
@@ -428,7 +428,7 @@ const secondsInOneDay = 24 * 3600
 func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
-		&harbormodels.Harbor{},
+		&registrymodels.Registry{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &envmodels.Environment{}); err != nil {
 		panic(err)
@@ -520,7 +520,7 @@ func test(t *testing.T) {
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
 	groupMgr := manager.GroupManager
-	harborDAO := harbordao.NewDAO(db)
+	registryDAO := harbordao.NewDAO(db)
 	envRegionMgr := manager.EnvRegionMgr
 
 	// init data
@@ -553,10 +553,9 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
 
-	id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
-		Server:          "https://harbor.com",
-		Token:           "xxx",
-		PreheatPolicyID: 1,
+	id, err := registryDAO.Create(ctx, &registrymodels.Registry{
+		Server: "https://harbor.com",
+		Token:  "xxx",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, id)
@@ -564,7 +563,7 @@ func test(t *testing.T) {
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
-		HarborID:    id,
+		RegistryID:  id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
@@ -642,8 +641,8 @@ func test(t *testing.T) {
 		Namespace: "test-1",
 	}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
-		GitRepoSSHURL: "ssh://xxxx",
-		ValueFiles:    []string{},
+		GitRepoURL: "ssh://xxxx",
+		ValueFiles: []string{},
 	}).AnyTimes()
 	imageName := "image"
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
@@ -772,10 +771,6 @@ func test(t *testing.T) {
 	tekton.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("abc", nil)
 	tekton.EXPECT().GetPipelineRunByID(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(pr, nil).AnyTimes()
 
-	registry := registrymock.NewMockRegistry(mockCtl)
-	registry.EXPECT().CreateProject(ctx, gomock.Any()).Return(1, nil)
-	registryFty.EXPECT().GetByHarborConfig(ctx, gomock.Any()).Return(registry).AnyTimes()
-
 	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&code.Commit{
 		ID:      "code-commit-id",
 		Message: "msg",
@@ -797,8 +792,8 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any(),
 		gomock.Any()).Return("newest-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
-		GitRepoSSHURL: "ssh://xxxx.git",
-		ValueFiles:    []string{"file1", "file2"},
+		GitRepoURL: "ssh://xxxx.git",
+		ValueFiles: []string{"file1", "file2"},
 	}).AnyTimes()
 
 	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
@@ -806,6 +801,12 @@ func test(t *testing.T) {
 	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
 		PipelinerunID: buildDeployResp.PipelinerunID,
 	})
+	assert.Nil(t, err)
+	b, _ = json.Marshal(internalDeployResp)
+	t.Logf("%v", string(b))
+
+	// v2
+	internalDeployResp, err = c.InternalDeployV2(ctx, resp.ID, buildDeployResp.PipelinerunID, nil)
 	assert.Nil(t, err)
 	b, _ = json.Marshal(internalDeployResp)
 	t.Logf("%v", string(b))
@@ -874,7 +875,7 @@ func test(t *testing.T) {
 	err = c.Promote(ctx, resp.ID)
 	assert.Nil(t, err)
 
-	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{},
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil,
 		nil).Times(1)
 
 	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
@@ -884,9 +885,12 @@ func test(t *testing.T) {
 	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
 	assert.Nil(t, deployResp)
 
-	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.PipelineOutput{
-		Image: &imageName,
-	}, nil).AnyTimes()
+	type PipelineOutput struct {
+		Image *string
+	}
+
+	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&PipelineOutput{Image: &imageName}, nil).AnyTimes()
 
 	deployResp, err = c.Deploy(ctx, resp.ID, &DeployRequest{
 		Title:       "deploy-title",
@@ -1195,7 +1199,7 @@ func testV2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
 	/*
-		id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
+		id, err := harborDAO.Create(ctx, &registrymodels.Harbor{
 			Server:          "https://harbor.com",
 			Token:           "xxx",
 			PreheatPolicyID: 1,
@@ -1244,6 +1248,7 @@ func testV2(t *testing.T) {
 	createReq := &CreateClusterRequestV2{
 		Name:        createClusterName,
 		Description: "cluster description",
+		ExpireTime:  "24h0m0s",
 		Git: &codemodels.Git{
 			Branch: "develop",
 		},
@@ -1275,6 +1280,7 @@ func testV2(t *testing.T) {
 	assert.Equal(t, getClusterResp.ID, resp.ID)
 	assert.Equal(t, getClusterResp.Name, createClusterName)
 	assert.Equal(t, getClusterResp.Priority, priority)
+	assert.Equal(t, createReq.ExpireTime, getClusterResp.ExpireTime)
 	assert.NotNil(t, getClusterResp.Scope)
 	assert.Equal(t, getClusterResp.FullPath, "/"+group.Path+"/"+application.Name+"/"+createClusterName)
 	assert.Equal(t, getClusterResp.ApplicationName, application.Name)
@@ -1296,6 +1302,7 @@ func testV2(t *testing.T) {
 
 	updateRequestV2 := &UpdateClusterRequestV2{
 		Description:    "",
+		ExpireTime:     "336h0m0s",
 		BuildConfig:    pipelineJSONBlob,
 		TemplateInfo:   nil,
 		TemplateConfig: applicationJSONBlob,
@@ -1329,7 +1336,7 @@ func testV2(t *testing.T) {
 	assert.Nil(t, err)
 
 	registry := registrymock.NewMockRegistry(mockCtl)
-	registryFty.EXPECT().GetByHarborConfig(gomock.Any(), gomock.Any()).Return(registry).Times(1)
+	registryFty.EXPECT().GetRegistryByConfig(gomock.Any(), gomock.Any()).Return(registry, nil).Times(1)
 	registry.EXPECT().DeleteRepository(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().DeleteCluster(gomock.Any(), applicationName,
 		createClusterName, getClusterResp.ID).Return(nil).Times(1)

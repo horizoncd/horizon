@@ -106,7 +106,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 			}
 			return nil, herrors.ErrShouldBuildDeployFirst
 		}
-		if po == nil || po.Image == nil || *po.Image == "" {
+		if po == nil {
 			return nil, herrors.ErrShouldBuildDeployFirst
 		}
 	}
@@ -169,12 +169,12 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
 	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:   cluster.EnvironmentName,
-		Cluster:       cluster.Name,
-		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
-		ValueFiles:    repoInfo.ValueFiles,
-		RegionEntity:  regionEntity,
-		Namespace:     envValue.Namespace,
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		GitRepoURL:   repoInfo.GitRepoURL,
+		ValueFiles:   repoInfo.ValueFiles,
+		RegionEntity: regionEntity,
+		Namespace:    envValue.Namespace,
 	}); err != nil {
 		return nil, err
 	}
@@ -297,12 +297,12 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
 	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:   cluster.EnvironmentName,
-		Cluster:       cluster.Name,
-		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
-		ValueFiles:    repoInfo.ValueFiles,
-		RegionEntity:  regionEntity,
-		Namespace:     envValue.Namespace,
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		GitRepoURL:   repoInfo.GitRepoURL,
+		ValueFiles:   repoInfo.ValueFiles,
+		RegionEntity: regionEntity,
+		Namespace:    envValue.Namespace,
 	}); err != nil {
 		return nil, err
 	}

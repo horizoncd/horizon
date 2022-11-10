@@ -16,6 +16,7 @@ type CreateClusterRequestV2 struct {
 	Name        string               `json:"name"`
 	Description string               `json:"description"`
 	Priority    string               `json:"priority"`
+	ExpireTime  string               `json:"expireTime"`
 	Git         *codemodels.Git      `json:"git"`
 	Tags        []*controllertag.Tag `json:"tags"`
 
@@ -28,13 +29,15 @@ type CreateClusterRequestV2 struct {
 }
 
 func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Application,
-	er *envregionmodels.EnvironmentRegion, info *BuildTemplateInfo) (*models.Cluster, []*tagmodels.Tag) {
+	er *envregionmodels.EnvironmentRegion, info *BuildTemplateInfo,
+	expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
 	cluster := &models.Cluster{
 		ApplicationID:   application.ID,
 		Name:            r.Name,
 		EnvironmentName: er.EnvironmentName,
 		RegionName:      er.RegionName,
 		Description:     r.Description,
+		ExpireSeconds:   expireSeconds,
 		// cluster provide git info or just use the application's git info
 		GitURL: func() string {
 			if r.Git == nil {
@@ -90,6 +93,7 @@ type UpdateClusterRequestV2 struct {
 	// basic infos
 	Description string `json:"description"`
 	Priority    string `json:"priority"`
+	ExpireTime  string `json:"expireTime"`
 
 	// env and region info (can only be modified after cluster freed)
 	Environment *string `json:"environment"`
@@ -104,8 +108,8 @@ type UpdateClusterRequestV2 struct {
 	TemplateConfig map[string]interface{}   `json:"templateConfig"`
 }
 
-func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster,
-	environmentName, regionName, templateName, templateRelease string) *models.Cluster {
+func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireSeconds uint, environmentName,
+	regionName, templateName, templateRelease string) *models.Cluster {
 	var gitURL, gitSubFolder, gitRef, gitRefType string
 	if r.Git != nil {
 		gitURL, gitSubFolder, gitRefType, gitRef = r.Git.URL,
@@ -120,6 +124,7 @@ func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster,
 		EnvironmentName: environmentName,
 		RegionName:      regionName,
 		Description:     r.Description,
+		ExpireSeconds:   expireSeconds,
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubFolder,
 		GitRef:          gitRef,
@@ -135,6 +140,7 @@ type GetClusterResponseV2 struct {
 	Name            string              `json:"name"`
 	Description     string              `json:"description"`
 	Priority        string              `json:"priority"`
+	ExpireTime      string              `json:"expireTime"`
 	Scope           *Scope              `json:"scope"`
 	FullPath        string              `json:"fullPath"`
 	ApplicationName string              `json:"applicationName"`

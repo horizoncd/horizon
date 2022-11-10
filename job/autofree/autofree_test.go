@@ -25,13 +25,13 @@ import (
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	"g.hz.netease.com/horizon/pkg/errors"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	pipelinemodel "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
 	xrequestid "g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tmodel "g.hz.netease.com/horizon/pkg/tag/models"
@@ -53,7 +53,7 @@ const secondsInOneDay = 24 * 3600
 func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
-		&harbormodels.Harbor{},
+		&registrymodels.Registry{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &emodel.Environment{}); err != nil {
 		panic(err)

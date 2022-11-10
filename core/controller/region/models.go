@@ -3,25 +3,25 @@ package region
 import (
 	"time"
 
-	"g.hz.netease.com/horizon/core/controller/harbor"
+	"g.hz.netease.com/horizon/core/controller/registry"
 	"g.hz.netease.com/horizon/core/controller/tag"
 	"g.hz.netease.com/horizon/pkg/region/models"
 )
 
 type Region struct {
-	ID            uint          `json:"id"`
-	Name          string        `json:"name"`
-	DisplayName   string        `json:"displayName"`
-	Server        string        `json:"server"`
-	Certificate   string        `json:"certificate"`
-	IngressDomain string        `json:"ingressDomain"`
-	PrometheusURL string        `json:"prometheusURL"`
-	Disabled      bool          `json:"disabled"`
-	HarborID      uint          `json:"harborID"`
-	Harbor        harbor.Harbor `json:"harbor"`
-	Tags          []tag.Tag     `json:"tags"`
-	CreatedAt     time.Time     `json:"createdAt"`
-	UpdatedAt     time.Time     `json:"updatedAt"`
+	ID            uint              `json:"id"`
+	Name          string            `json:"name"`
+	DisplayName   string            `json:"displayName"`
+	Server        string            `json:"server"`
+	Certificate   string            `json:"certificate"`
+	IngressDomain string            `json:"ingressDomain"`
+	PrometheusURL string            `json:"prometheusURL"`
+	Disabled      bool              `json:"disabled"`
+	RegistryID    uint              `json:"registryID"`
+	Registry      registry.Registry `json:"registry"`
+	Tags          []tag.Tag         `json:"tags"`
+	CreatedAt     time.Time         `json:"createdAt"`
+	UpdatedAt     time.Time         `json:"updatedAt"`
 }
 
 type CreateRegionRequest struct {
@@ -31,7 +31,7 @@ type CreateRegionRequest struct {
 	Certificate   string `json:"certificate"`
 	IngressDomain string `json:"ingressDomain"`
 	PrometheusURL string `json:"prometheusURL"`
-	HarborID      uint   `json:"harborID"`
+	RegistryID    uint   `json:"registryID"`
 }
 
 type UpdateRegionRequest struct {
@@ -41,7 +41,7 @@ type UpdateRegionRequest struct {
 	Certificate   string `json:"certificate"`
 	IngressDomain string `json:"ingressDomain"`
 	PrometheusURL string `json:"prometheusURL"`
-	HarborID      uint   `json:"harborID"`
+	RegistryID    uint   `json:"registryID"`
 	Disabled      bool   `json:"disabled"`
 }
 
@@ -62,14 +62,14 @@ func ofRegionEntity(entity *models.RegionEntity) *Region {
 		PrometheusURL: entity.PrometheusURL,
 		Certificate:   entity.Certificate,
 		Disabled:      entity.Disabled,
-		HarborID:      entity.HarborID,
+		RegistryID:    entity.RegistryID,
 		Tags:          tags,
 		CreatedAt:     entity.CreatedAt,
 		UpdatedAt:     entity.UpdatedAt,
 	}
-	if entity.Harbor != nil {
-		r.Harbor = harbor.Harbor{
-			Name: entity.Harbor.Name,
+	if entity.Registry != nil {
+		r.Registry = registry.Registry{
+			Name: entity.Registry.Name,
 		}
 	}
 	return r

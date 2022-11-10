@@ -3,7 +3,6 @@ package gitrepo
 import (
 	"context"
 	"encoding/json"
-	goerrors "errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -12,6 +11,8 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
+	pkgcommon "g.hz.netease.com/horizon/pkg/common"
+	gitlabconfig "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
@@ -19,7 +20,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/templaterepo"
 	"g.hz.netease.com/horizon/pkg/util/angular"
 	"g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/mergemap"
 	timeutil "g.hz.netease.com/horizon/pkg/util/time"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	"github.com/xanzy/go-gitlab"
@@ -84,8 +84,6 @@ const (
 	PipelineValueParent = "pipeline"
 )
 
-var ErrPipelineOutputEmpty = goerrors.New("PipelineOutput is empty")
-
 type BaseParams struct {
 	ClusterID           uint
 	Cluster             string
@@ -100,11 +98,6 @@ type BaseParams struct {
 	Version string
 }
 
-type Manifest struct {
-	// TODO(encode the template info into manifest),currently only the Version
-	Version string `yaml:"version"`
-}
-
 type CreateClusterParams struct {
 	*BaseParams
 	Tags  []*tagmodels.Tag
@@ -116,8 +109,8 @@ type UpdateClusterParams struct {
 }
 
 type RepoInfo struct {
-	GitRepoSSHURL string
-	ValueFiles    []string
+	GitRepoURL string
+	ValueFiles []string
 }
 
 type ClusterFiles struct {
@@ -136,6 +129,8 @@ type ClusterCommit struct {
 	Gitops string
 }
 
+// nolint
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/gitrepo/gitrepo_cluster_mock.go -package=mock_gitrepo
 type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
 	GetClusterValueFiles(ctx context.Context,
@@ -149,9 +144,9 @@ type ClusterGitRepo interface {
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
 	// MergeBranch merge gitops branch to master branch, and return master branch's newest commit
 	MergeBranch(ctx context.Context, application, cluster string, prID uint) (string, error)
-	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (*PipelineOutput, error)
+	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (interface{}, error)
 	UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
-		PipelineOutput interface{}) (string, error)
+		pipelineOutput interface{}) (string, error)
 	// UpdateRestartTime update restartTime in git repo for restart
 	// TODO(gjq): some template cannot restart, for example serverless, how to do it ?
 	GetRestartTime(ctx context.Context, application, cluster string,
@@ -170,10 +165,11 @@ type clusterGitRepo struct {
 	clustersGroup          *gitlab.Group
 	recyclingClustersGroup *gitlab.Group
 	templateRepo           templaterepo.TemplateRepo
+	repoURLSchema          string
 }
 
 func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
-	templateRepo templaterepo.TemplateRepo, gitlabLib gitlablib.Interface) (ClusterGitRepo, error) {
+	templateRepo templaterepo.TemplateRepo, gitlabLib gitlablib.Interface, repoURLSchema string) (ClusterGitRepo, error) {
 	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _clusters)
 	if err != nil {
 		return nil, err
@@ -187,6 +183,7 @@ func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 		clustersGroup:          clustersGroup,
 		recyclingClustersGroup: recyclingClustersGroup,
 		templateRepo:           templateRepo,
+		repoURLSchema:          repoURLSchema,
 	}, nil
 }
 
@@ -256,7 +253,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 			return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 	}
-	var manifest = Manifest{}
+	var manifest = pkgcommon.Manifest{}
 	if manifestBytes != nil {
 		err = json.Unmarshal(manifestBytes, &manifest)
 		if err != nil {
@@ -442,7 +439,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	marshal(&restartYAML, &err7, assembleRestart(params.TemplateRelease.ChartName))
 	marshal(&tagsYAML, &err8, assembleTags(params.TemplateRelease.ChartName, params.Tags))
 	if params.BaseParams.Version != "" {
-		marshal(&manifestValueYAML, &err9, Manifest{Version: params.BaseParams.Version})
+		marshal(&manifestValueYAML, &err9, pkgcommon.Manifest{Version: params.BaseParams.Version})
 	}
 
 	chart, err := g.assembleChart(params.BaseParams)
@@ -764,18 +761,18 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	return mr.MergeCommitSHA, nil
 }
 
-func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*Manifest, error) {
+func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*pkgcommon.Manifest, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathManifest)
 	if err != nil {
 		return nil, err
 	}
-	manifest, err := func() (*Manifest, error) {
+	manifest, err := func() (*pkgcommon.Manifest, error) {
 		manifestOutputBytes, err := kyaml.YAMLToJSON(content)
 		if err != nil {
 			return nil, err
 		}
-		ret := Manifest{}
+		ret := pkgcommon.Manifest{}
 		if err = json.Unmarshal(manifestOutputBytes, &ret); err != nil {
 			return nil, err
 		}
@@ -788,8 +785,8 @@ func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster s
 }
 
 func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, cluster string,
-	template string) (*PipelineOutput, error) {
-	ret := make(map[string]*PipelineOutput)
+	template string) (interface{}, error) {
+	ret := make(map[string]interface{})
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
 	if err != nil {
@@ -808,14 +805,10 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 	if !ok {
 		return nil, perror.Wrapf(herrors.ErrPipelineOutputEmpty, "no template in pipelineOutput.yaml")
 	}
-
-	if pipelineOutput.Git == nil {
-		pipelineOutput.Git = &Git{}
-	}
 	return pipelineOutput, nil
 }
 
-func (g *clusterGitRepo) getPipelineOutPut(ctx context.Context,
+func (g *clusterGitRepo) getPipelineOutput(ctx context.Context,
 	application, cluster string) (map[string]map[string]interface{}, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
@@ -842,12 +835,12 @@ func (g *clusterGitRepo) getPipelineOutPut(ctx context.Context,
 }
 
 func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
-	pipelineOutPut interface{}) (commitID string, err error) {
+	pipelineOutput interface{}) (commitID string, err error) {
 	const op = "cluster git repo: update pipeline output"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	pipelineOutPutInternalFormat, err := func() (map[string]interface{}, error) {
-		bytes, err := json.Marshal(pipelineOutPut)
+		bytes, err := json.Marshal(pipelineOutput)
 		if err != nil {
 			return nil, err
 		}
@@ -861,42 +854,19 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		return "", err
 	}
 
-	pipelineValueParent, err := func() (string, error) {
-		manifest, err := g.GetManifest(ctx, application, cluster)
-		if err != nil {
-			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
-				return "", err
-			}
-		}
-		if manifest == nil || manifest.Version == "" {
-			return template, nil
-		}
-		return PipelineValueParent, nil
-	}()
-	if err != nil {
-		return "", err
-	}
-
+	pipelineOutPutValueParent := template
 	newPipelineOutputContent := make(map[string]interface{})
 	var PipelineOutPutFileExist bool
-	currentPipelineOutputContent, err := g.getPipelineOutPut(ctx, application, cluster)
+	_, err = g.getPipelineOutput(ctx, application, cluster)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return "", err
 		}
-		newPipelineOutputContent[pipelineValueParent] = pipelineOutPutInternalFormat
+		newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 	} else {
 		PipelineOutPutFileExist = true
-		// if current exist, just patch it
-		if currentPipelineOutputContent != nil {
-			newPipelineOutputContent[pipelineValueParent], err =
-				mergemap.Merge(currentPipelineOutputContent[pipelineValueParent], pipelineOutPutInternalFormat)
-			if err != nil {
-				return "", perror.Wrap(herrors.ErrPipelineOutPut, err.Error())
-			}
-		} else {
-			newPipelineOutputContent[pipelineValueParent] = pipelineOutPutInternalFormat
-		}
+		// if current exist, just override it
+		newPipelineOutputContent[pipelineOutPutValueParent] = pipelineOutPutInternalFormat
 	}
 
 	newPipelineOutPutBytes, err := kyaml.Marshal(newPipelineOutputContent)
@@ -925,7 +895,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 		Operator: currentUser.GetName(),
 		Action:   "deploy cluster",
 		Cluster:  angular.StringPtr(cluster),
-	}, pipelineOutPut)
+	}, pipelineOutput)
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
@@ -1036,9 +1006,12 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 }
 
 func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo {
+	repoURL := g.gitlabLib.GetHTTPURL(ctx)
+	if g.repoURLSchema == gitlabconfig.SSHURLSchema {
+		repoURL = g.gitlabLib.GetSSHURL(ctx)
+	}
 	return &RepoInfo{
-		GitRepoSSHURL: fmt.Sprintf("%v/%v/%v/%v.git",
-			g.gitlabLib.GetSSHURL(ctx), g.clustersGroup.FullPath, application, cluster),
+		GitRepoURL: fmt.Sprintf("%v/%v/%v/%v.git", repoURL, g.clustersGroup.FullPath, application, cluster),
 		ValueFiles: []string{_filePathApplication, _filePathPipelineOutput,
 			_filePathEnv, _filePathBase, _filePathTags, _filePathRestart, _filePathSRE},
 	}
@@ -1253,7 +1226,7 @@ func (g *clusterGitRepo) assembleEnvValue(params *BaseParams) map[string]map[str
 		Region:      params.RegionEntity.Name,
 		Namespace:   getNamespace(params),
 		BaseRegistry: strings.TrimPrefix(strings.TrimPrefix(
-			params.RegionEntity.Harbor.Server, "https://"), "http://"),
+			params.RegionEntity.Registry.Server, "https://"), "http://"),
 		IngressDomain: params.RegionEntity.IngressDomain,
 	}
 

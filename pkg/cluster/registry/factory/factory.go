@@ -13,8 +13,11 @@ var (
 	Fty = NewFactory()
 )
 
+// nolint
+//
+//go:generate mockgen -source=$GOFILE -destination=../../../../mock/pkg/cluster/registry/factory/factory_mock.go -package=mock_factory
 type Factory interface {
-	GetByHarborConfig(ctx context.Context, harbor *registry.HarborConfig) registry.Registry
+	GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error)
 }
 
 type factory struct {
@@ -28,12 +31,15 @@ func NewFactory() Factory {
 	}
 }
 
-func (f *factory) GetByHarborConfig(ctx context.Context, harbor *registry.HarborConfig) registry.Registry {
-	key := fmt.Sprintf("%v-%v", harbor.Server, harbor.Token)
+func (f *factory) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
+	key := fmt.Sprintf("%v-%v-%v-%v", config.Server, config.Token, config.Path, config.Kind)
 	if ret, ok := f.harborRegistryCache.Load(key); ok {
-		return ret.(registry.Registry)
+		return ret.(registry.Registry), nil
 	}
-	harborRegistry := registry.NewHarborRegistry(harbor)
-	f.harborRegistryCache.Store(key, harborRegistry)
-	return harborRegistry
+	rg, err := registry.NewRegistry(config)
+	if err != nil {
+		return nil, err
+	}
+	f.harborRegistryCache.Store(key, rg)
+	return rg, nil
 }

@@ -18,10 +18,10 @@ import (
 	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	harbordao "g.hz.netease.com/horizon/pkg/harbor/dao"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/region/models"
+	harbordao "g.hz.netease.com/horizon/pkg/registry/dao"
+	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"github.com/stretchr/testify/assert"
@@ -41,14 +41,13 @@ var (
 
 func Test(t *testing.T) {
 	harborDAO := harbordao.NewDAO(db)
-	id, err := harborDAO.Create(ctx, &harbormodels.Harbor{
-		Server:          "https://harbor1",
-		Token:           "asdf",
-		PreheatPolicyID: 1,
+	id, err := harborDAO.Create(ctx, &registrymodels.Registry{
+		Server: "https://harbor1",
+		Token:  "asdf",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, id)
-	harbor, err := harborDAO.GetByID(ctx, id)
+	rg, err := harborDAO.GetByID(ctx, id)
 	assert.Nil(t, err)
 
 	hzRegion, err := mgr.Create(ctx, &models.Region{
@@ -57,7 +56,7 @@ func Test(t *testing.T) {
 		Certificate:   "hz-cert",
 		IngressDomain: "hz.com",
 		PrometheusURL: "hz",
-		HarborID:      id,
+		RegistryID:    id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, hzRegion)
@@ -68,7 +67,7 @@ func Test(t *testing.T) {
 		Certificate:   "jd-cert",
 		IngressDomain: "jd.com",
 		PrometheusURL: "jd",
-		HarborID:      id,
+		RegistryID:    id,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, jdRegion)
@@ -87,7 +86,7 @@ func Test(t *testing.T) {
 	hzRegionEntity, err := mgr.GetRegionEntity(ctx, "hz")
 	assert.Nil(t, err)
 	assert.NotNil(t, hzRegionEntity)
-	assert.Equal(t, hzRegionEntity.Harbor.Server, harbor.Server)
+	assert.Equal(t, hzRegionEntity.Registry.Server, rg.Server)
 
 	// test updateByID
 	err = mgr.UpdateByID(ctx, jdRegion.ID, &models.Region{
@@ -97,7 +96,7 @@ func Test(t *testing.T) {
 		Certificate:   "",
 		IngressDomain: "",
 		PrometheusURL: "",
-		HarborID:      harbor.ID,
+		RegistryID:    rg.ID,
 		Disabled:      true,
 	})
 	assert.Nil(t, err)
@@ -116,7 +115,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&models.Region{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&harbormodels.Harbor{}); err != nil {
+	if err := db.AutoMigrate(&registrymodels.Registry{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&tagmodels.Tag{}); err != nil {

@@ -102,12 +102,12 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
 	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:   cluster.EnvironmentName,
-		Cluster:       cluster.Name,
-		GitRepoSSHURL: repoInfo.GitRepoSSHURL,
-		ValueFiles:    repoInfo.ValueFiles,
-		RegionEntity:  regionEntity,
-		Namespace:     envValue.Namespace,
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		GitRepoURL:   repoInfo.GitRepoURL,
+		ValueFiles:   repoInfo.ValueFiles,
+		RegionEntity: regionEntity,
+		Namespace:    envValue.Namespace,
 	}); err != nil {
 		return nil, err
 	}

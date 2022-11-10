@@ -24,7 +24,6 @@ import (
 	environmentregionctl "g.hz.netease.com/horizon/core/controller/environmentregion"
 	envtemplatectl "g.hz.netease.com/horizon/core/controller/envtemplate"
 	groupctl "g.hz.netease.com/horizon/core/controller/group"
-	harborctl "g.hz.netease.com/horizon/core/controller/harbor"
 	idpctl "g.hz.netease.com/horizon/core/controller/idp"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
 	oauthservicectl "g.hz.netease.com/horizon/core/controller/oauth"
@@ -32,6 +31,7 @@ import (
 	oauthcheckctl "g.hz.netease.com/horizon/core/controller/oauthcheck"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
 	regionctl "g.hz.netease.com/horizon/core/controller/region"
+	registryctl "g.hz.netease.com/horizon/core/controller/registry"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	sloctl "g.hz.netease.com/horizon/core/controller/slo"
 	tagctl "g.hz.netease.com/horizon/core/controller/tag"
@@ -48,17 +48,19 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/environmentregion"
 	"g.hz.netease.com/horizon/core/http/api/v1/envtemplate"
 	"g.hz.netease.com/horizon/core/http/api/v1/group"
-	"g.hz.netease.com/horizon/core/http/api/v1/harbor"
 	"g.hz.netease.com/horizon/core/http/api/v1/idp"
 	"g.hz.netease.com/horizon/core/http/api/v1/member"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthapp"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
 	"g.hz.netease.com/horizon/core/http/api/v1/pipelinerun"
 	"g.hz.netease.com/horizon/core/http/api/v1/region"
+	"g.hz.netease.com/horizon/core/http/api/v1/registry"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
 	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
 	"g.hz.netease.com/horizon/core/http/api/v1/tag"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
+	templatev2 "g.hz.netease.com/horizon/core/http/api/v2/template"
+
 	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
@@ -108,7 +110,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschemarepo "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
-	templaterepoharbor "g.hz.netease.com/horizon/pkg/templaterepo/harbor"
+	"g.hz.netease.com/horizon/pkg/templaterepo"
 	userservice "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
@@ -267,9 +269,14 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 	// check existence of gitops root group
-	rootGroup, err := gitlabGitops.GetGroup(ctx, coreConfig.GitopsRepoConfig.RootGroupPath)
+	rootGroupPath := coreConfig.GitopsRepoConfig.RootGroupPath
+	rootGroup, err := gitlabGitops.GetGroup(ctx, rootGroupPath)
 	if err != nil {
-		panic(err)
+		log.Printf("failed to get gitops root group, error: %s, start to create it", err.Error())
+		rootGroup, err = gitlabGitops.CreateGroup(ctx, rootGroupPath, rootGroupPath, nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, rootGroup, gitlabGitops)
@@ -278,12 +285,13 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	templateRepo, err := templaterepoharbor.NewTemplateRepo(coreConfig.TemplateRepo)
+	templateRepo, err := templaterepo.NewRepo(coreConfig.TemplateRepo)
 	if err != nil {
 		panic(err)
 	}
 
-	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops)
+	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
+		coreConfig.GitopsRepoConfig.URLSchema)
 	if err != nil {
 		panic(err)
 	}
@@ -448,7 +456,7 @@ func Run(flags *Flags) {
 		userCtl              = userctl.NewController(parameter)
 		environmentCtl       = environmentctl.NewController(parameter)
 		environmentregionCtl = environmentregionctl.NewController(parameter)
-		harborCtl            = harborctl.NewController(parameter)
+		registryCtl          = registryctl.NewController(parameter)
 		idpCtrl              = idpctl.NewController(parameter)
 		buildSchemaCtrl      = build.NewController(buildSchema)
 	)
@@ -467,7 +475,7 @@ func Run(flags *Flags) {
 		environmentAPI       = environment.NewAPI(environmentCtl)
 		regionAPI            = region.NewAPI(regionCtl, tagCtl)
 		environmentRegionAPI = environmentregion.NewAPI(environmentregionCtl)
-		harborAPI            = harbor.NewAPI(harborCtl)
+		registryAPI          = registry.NewAPI(registryCtl)
 		roleAPI              = roleapi.NewAPI(roleCtl)
 		terminalAPI          = terminalapi.NewAPI(terminalCtl)
 		sloAPI               = sloapi.NewAPI(sloCtl)
@@ -475,6 +483,7 @@ func Run(flags *Flags) {
 		tagAPI               = tag.NewAPI(tagCtl)
 		templateSchemaTagAPI = templateschematagapi.NewAPI(templateSchemaTagCtl)
 		templateAPI          = template.NewAPI(templateCtl, templateSchemaTagCtl)
+		templateAPIV2        = templatev2.NewAPI(templateCtl)
 		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
@@ -535,7 +544,7 @@ func Run(flags *Flags) {
 	environment.RegisterRoutes(r, environmentAPI)
 	region.RegisterRoutes(r, regionAPI)
 	environmentregion.RegisterRoutes(r, environmentRegionAPI)
-	harbor.RegisterRoutes(r, harborAPI)
+	registry.RegisterRoutes(r, registryAPI)
 	member.RegisterRoutes(r, memberAPI)
 	roleapi.RegisterRoutes(r, roleAPI)
 	terminalapi.RegisterRoutes(r, terminalAPI)
@@ -550,6 +559,7 @@ func Run(flags *Flags) {
 	idp.RegisterRoutes(r, idpAPI)
 	buildAPI.RegisterRoutes(r, buildSchemaAPI)
 	envtemplatev2.RegisterRoutes(r, envtemplatev2API)
+	templatev2.RegisterRoutes(r, templateAPIV2)
 
 	// start cloud event server
 	go runCloudEventServer(

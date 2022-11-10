@@ -51,6 +51,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, template2.Name, template2InDB.Name)
 	assert.Equal(t, template2.Description, template2InDB.Description)
+	assert.Equal(t, template2.WithoutCI, false)
 
 	template2InDB, err = templateMgr.GetByName(ctx, template2.Name)
 	assert.Nil(t, err)

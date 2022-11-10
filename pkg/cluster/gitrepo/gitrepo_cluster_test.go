@@ -14,12 +14,13 @@ import (
 	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	gitlabconfig "g.hz.netease.com/horizon/pkg/config/gitlab"
 	config "g.hz.netease.com/horizon/pkg/config/templaterepo"
-	harbormodels "g.hz.netease.com/horizon/pkg/harbor/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	"g.hz.netease.com/horizon/pkg/templaterepo/harbor"
+	"g.hz.netease.com/horizon/pkg/templaterepo/chartmuseumbase"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/xanzy/go-gitlab"
@@ -122,9 +123,9 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
 
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
 	application := "app"
@@ -151,7 +152,7 @@ func Test(t *testing.T) {
 				DisplayName: "HZ",
 				Server:      "https://k8s.com",
 			},
-			Harbor: &harbormodels.Harbor{
+			Registry: &registrymodels.Registry{
 				Server: "https://harbor.com",
 			},
 		},
@@ -243,8 +244,8 @@ func Test(t *testing.T) {
 }
 
 func TestV2(t *testing.T) {
-	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
 	application := "appv2"
@@ -271,7 +272,7 @@ func TestV2(t *testing.T) {
 				DisplayName: "HZ",
 				Server:      "https://k8s.com",
 			},
-			Harbor: &harbormodels.Harbor{
+			Registry: &registrymodels.Registry{
 				Server: "https://harbor.com",
 			},
 		},
@@ -366,7 +367,7 @@ func TestHardDeleteCluster(t *testing.T) {
 				DisplayName: "HZ",
 				Server:      "https://k8s.com",
 			},
-			Harbor: &harbormodels.Harbor{
+			Registry: &registrymodels.Registry{
 				Server: "https://harbor.com",
 			},
 		},
@@ -374,8 +375,8 @@ func TestHardDeleteCluster(t *testing.T) {
 	createParams := &CreateClusterParams{
 		BaseParams: baseParams,
 	}
-	repo, _ := harbor.NewTemplateRepo(config.Repo{Host: "https://harbor.mock.org"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g)
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
@@ -393,7 +394,8 @@ func TestGetClusterValueFile(t *testing.T) {
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib)
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{}, gitlabmockLib,
+		gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
 	// 1. test gitlab get file error
@@ -450,7 +452,7 @@ java:
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &harbor.TemplateRepo{}, gitlabmockLib)
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{}, gitlabmockLib, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
 	expectedOutput := `java:
@@ -458,17 +460,19 @@ java:
     branch: bbb
     commitID: ccc
     url: aaa
-  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
+  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20221109170000
 `
 	url := "aaa"
 	branch := "bbb"
 	commit := "ccc"
+	image := "harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20221109170000"
 	_, err = clusterGitRepoInstance.UpdatePipelineOutput(ctx, "", "", templateName, PipelineOutput{
 		Git: &Git{
 			URL:      &url,
 			Branch:   &branch,
 			CommitID: &commit,
 		},
+		Image: &image,
 	})
 	assert.Nil(t, err)
 	fmt.Println(output)
