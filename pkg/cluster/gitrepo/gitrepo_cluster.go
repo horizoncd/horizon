@@ -13,6 +13,7 @@ import (
 	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	pkgcommon "g.hz.netease.com/horizon/pkg/common"
+	gitlabconfig "g.hz.netease.com/horizon/pkg/config/gitlab"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
@@ -112,8 +113,8 @@ type UpdateClusterParams struct {
 }
 
 type RepoInfo struct {
-	GitRepoSSHURL string
-	ValueFiles    []string
+	GitRepoURL string
+	ValueFiles []string
 }
 
 type ClusterFiles struct {
@@ -166,10 +167,11 @@ type clusterGitRepo struct {
 	clustersGroup          *gitlab.Group
 	recyclingClustersGroup *gitlab.Group
 	templateRepo           templaterepo.TemplateRepo
+	repoURLSchema          string
 }
 
 func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
-	templateRepo templaterepo.TemplateRepo, gitlabLib gitlablib.Interface) (ClusterGitRepo, error) {
+	templateRepo templaterepo.TemplateRepo, gitlabLib gitlablib.Interface, repoURLSchema string) (ClusterGitRepo, error) {
 	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _clusters)
 	if err != nil {
 		return nil, err
@@ -183,6 +185,7 @@ func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 		clustersGroup:          clustersGroup,
 		recyclingClustersGroup: recyclingClustersGroup,
 		templateRepo:           templateRepo,
+		repoURLSchema:          repoURLSchema,
 	}, nil
 }
 
@@ -1017,9 +1020,12 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 }
 
 func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo {
+	repoURL := g.gitlabLib.GetHTTPURL(ctx)
+	if g.repoURLSchema == gitlabconfig.SSHURLSchema {
+		repoURL = g.gitlabLib.GetSSHURL(ctx)
+	}
 	return &RepoInfo{
-		GitRepoSSHURL: fmt.Sprintf("%v/%v/%v/%v.git",
-			g.gitlabLib.GetSSHURL(ctx), g.clustersGroup.FullPath, application, cluster),
+		GitRepoURL: fmt.Sprintf("%v/%v/%v/%v.git", repoURL, g.clustersGroup.FullPath, application, cluster),
 		ValueFiles: []string{_filePathApplication, _filePathPipelineOutput,
 			_filePathEnv, _filePathBase, _filePathTags, _filePathRestart, _filePathSRE},
 	}

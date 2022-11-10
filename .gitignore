@@ -3,3 +3,5 @@
 .vscode/
 
 coverage.data
+
+.DS_Store

@@ -269,9 +269,14 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 	// check existence of gitops root group
-	rootGroup, err := gitlabGitops.GetGroup(ctx, coreConfig.GitopsRepoConfig.RootGroupPath)
+	rootGroupPath := coreConfig.GitopsRepoConfig.RootGroupPath
+	rootGroup, err := gitlabGitops.GetGroup(ctx, rootGroupPath)
 	if err != nil {
-		panic(err)
+		log.Printf("failed to get gitops root group, error: %s, start to create it", err.Error())
+		_, err = gitlabGitops.CreateGroup(ctx, rootGroupPath, rootGroupPath, nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, rootGroup, gitlabGitops)
@@ -285,7 +290,8 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops)
+	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
+		coreConfig.GitopsRepoConfig.URLSchema)
 	if err != nil {
 		panic(err)
 	}

@@ -92,12 +92,12 @@ type GetClusterStateParams struct {
 }
 
 type CreateClusterParams struct {
-	Environment   string
-	Cluster       string
-	GitRepoSSHURL string
-	ValueFiles    []string
-	RegionEntity  *regionmodels.RegionEntity
-	Namespace     string
+	Environment  string
+	Cluster      string
+	GitRepoURL   string
+	ValueFiles   []string
+	RegionEntity *regionmodels.RegionEntity
+	Namespace    string
 }
 
 type DeployClusterParams struct {
@@ -238,7 +238,7 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 		return err
 	}
 	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
-		params.GitRepoSSHURL, params.RegionEntity.Server, params.ValueFiles)
+		params.GitRepoURL, params.RegionEntity.Server, params.ValueFiles)
 
 	manifest, err := json.Marshal(argoApplication)
 	if err != nil {
