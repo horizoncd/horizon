@@ -6,28 +6,26 @@ import (
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
-	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/common"
-	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
-func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
-	r *InternalDeployRequest) (_ *InternalDeployResponse, err error) {
-	const op = "cluster controller: internal deploy"
+func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,
+	r interface{}) (_ *InternalDeployResponse, err error) {
+	const op = "cluster controller: internal deploy v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get pr, and do some validate
-	pr, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
+	pr, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
 	if err != nil {
 		return nil, err
 	}
 	if pr == nil || pr.ClusterID != clusterID {
 		return nil, herrors.NewErrNotFound(herrors.Pipelinerun,
-			fmt.Sprintf("cannot find the pipelinerun with id: %v", r.PipelinerunID))
+			fmt.Sprintf("cannot find the pipelinerun with id: %v", pipelinerunID))
 	}
 
 	// 2. get some relevant models
@@ -45,21 +43,9 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-	po := gitrepo.PipelineOutput{
-		Image: &pr.ImageURL,
-		Git: &gitrepo.Git{
-			URL:      &pr.GitURL,
-			CommitID: &pr.GitCommit,
-		},
-	}
-	switch pr.GitRefType {
-	case codemodels.GitRefTypeTag:
-		po.Git.Tag = &pr.GitRef
-	case codemodels.GitRefTypeBranch:
-		po.Git.Branch = &pr.GitRef
-	}
+	log.Infof(ctx, "pipeline %v output content: %v", pipelinerunID, r)
 	commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
-		tr.ChartName, po)
+		tr.ChartName, r)
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}

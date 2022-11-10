@@ -26,5 +26,16 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.Get,
 		},
 	}
+
+	internalV2Group := engine.Group("/apis/internal/v2/clusters")
+	internalV2Routes := route.Routes{
+		{
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/:%v/deploy/:%v", common.ParamClusterID, common.ParamPipelinerunID),
+			HandlerFunc: api.InternalDeploy,
+		},
+	}
+
 	route.RegisterRoutes(apiV2Group, apiV2Routes)
+	route.RegisterRoutes(internalV2Group, internalV2Routes)
 }

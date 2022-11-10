@@ -152,48 +152,27 @@ func (a *API) InternalDeploy(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	pipelinerunIDStr := c.Param(common.ParamPipelinerunID)
 
-	var resp interface{}
-	var err1 error
-	if pipelinerunIDStr == "" {
-		// v1
-		var request *cluster.InternalDeployRequest
-		if err := c.ShouldBindJSON(&request); err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestBody,
-				fmt.Sprintf("request body is invalid, err: %v", err))
-			return
-		}
-		resp, err1 = a.clusterCtl.InternalDeploy(c, uint(clusterID), request)
-	} else {
-		// v2
-		pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-			return
-		}
-		var request interface{}
-		if err := c.ShouldBindJSON(&request); err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestBody,
-				fmt.Sprintf("request body is invalid, err: %v", err))
-			return
-		}
-		resp, err1 = a.clusterCtl.InternalDeployV2(c, uint(clusterID), uint(pipelinerunID), request)
+	var request *cluster.InternalDeployRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody,
+			fmt.Sprintf("request body is invalid, err: %v", err))
+		return
 	}
-
-	if err1 != nil {
-		if e, ok := perror.Cause(err1).(*herrors.HorizonErrNotFound); ok {
+	resp, err := a.clusterCtl.InternalDeploy(c, uint(clusterID), request)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.ClusterInDB {
-				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err1.Error()))
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 				return
 			} else if e.Source == herrors.PipelinerunInDB {
-				log.WithFiled(c, "op", op).Errorf("%+v", err1)
-				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err1.Error()))
+				log.WithFiled(c, "op", op).Errorf("%+v", err)
+				response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 				return
 			}
 		}
-		log.WithFiled(c, "op", op).Errorf("%+v", err1)
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err1.Error()))
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 

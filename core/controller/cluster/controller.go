@@ -68,10 +68,6 @@ type Controller interface {
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
 
-	// InternalDeployV2 deploy only used by internal system
-	InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,
-		r interface{}) (_ *InternalDeployResponse, err error)
-
 	Promote(ctx context.Context, clusterID uint) error
 	Pause(ctx context.Context, clusterID uint) error
 	Resume(ctx context.Context, clusterID uint) error
@@ -97,6 +93,9 @@ type Controller interface {
 		region string, r *CreateClusterRequestV2, mergePatch bool) (*CreateClusterResponseV2, error)
 	GetClusterV2(ctx context.Context, clusterID uint) (*GetClusterResponseV2, error)
 	UpdateClusterV2(ctx context.Context, clusterID uint, r *UpdateClusterRequestV2, mergePatch bool) error
+	// InternalDeployV2 deploy only used by internal system
+	InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,
+		r interface{}) (_ *InternalDeployResponse, err error)
 }
 
 type controller struct {
