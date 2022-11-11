@@ -34,16 +34,16 @@ func (m *MockRegistry) EXPECT() *MockRegistryMockRecorder {
 	return m.recorder
 }
 
-// DeleteRepository mocks base method.
-func (m *MockRegistry) DeleteRepository(ctx context.Context, appName, clusterName string) error {
+// DeleteImage mocks base method.
+func (m *MockRegistry) DeleteImage(ctx context.Context, appName, clusterName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteRepository", ctx, appName, clusterName)
+	ret := m.ctrl.Call(m, "DeleteImage", ctx, appName, clusterName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteRepository indicates an expected call of DeleteRepository.
-func (mr *MockRegistryMockRecorder) DeleteRepository(ctx, appName, clusterName interface{}) *gomock.Call {
+// DeleteImage indicates an expected call of DeleteImage.
+func (mr *MockRegistryMockRecorder) DeleteImage(ctx, appName, clusterName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockRegistry)(nil).DeleteRepository), ctx, appName, clusterName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImage", reflect.TypeOf((*MockRegistry)(nil).DeleteImage), ctx, appName, clusterName)
 }

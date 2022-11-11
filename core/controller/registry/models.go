@@ -21,12 +21,12 @@ type Registry struct {
 type Registries []*Registry
 
 func ofRegistryModels(entities []*models.Registry) Registries {
-	harbors := make([]*Registry, 0)
+	registries := make([]*Registry, 0)
 	for _, entity := range entities {
-		harbors = append(harbors, ofRegistryModel(entity))
+		registries = append(registries, ofRegistryModel(entity))
 	}
 
-	return harbors
+	return registries
 }
 
 func ofRegistryModel(entity *models.Registry) *Registry {

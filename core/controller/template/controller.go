@@ -49,7 +49,7 @@ type Controller interface {
 	ListTemplateReleaseByTemplateID(ctx context.Context, templateID uint) (Releases, error)
 	// CreateTemplate creates a template with a release under a group
 	CreateTemplate(ctx context.Context, groupID uint, request CreateTemplateRequest) (*Template, error)
-	// CreateRelease downloads template archive and push it to harbor,
+	// CreateRelease downloads template archive and push it to chatmusuem,
 	// then creates a template release in database.
 	CreateRelease(ctx context.Context, templateID uint, request CreateReleaseRequest) (*Release, error)
 	// GetTemplate gets template by templateID

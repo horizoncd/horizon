@@ -89,7 +89,7 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, region *models.Region) er
 		return err
 	}
 
-	// can only update displayName, server, Certificate, ingressDomain、prometheusURL, harborID
+	// can only update displayName, server, Certificate, ingressDomain、prometheusURL, registryID
 	regionInDB.DisplayName = region.DisplayName
 	regionInDB.Server = region.Server
 	regionInDB.Certificate = region.Certificate

@@ -123,8 +123,8 @@ components:
         - ingressDomain
         - prometheusURL
         - disabled
-        - harborID
-        - harbor
+        - registryID
+        - registry
         - tags
         - tags
         - createdAt
@@ -146,9 +146,9 @@ components:
           $ref: "common.yaml#/components/schemas/URL"
         disabled:
           type: boolean
-        harborID:
+        registryID:
           type: integer
-        harbor:
+        registry:
           type: object
           properties:
             name:

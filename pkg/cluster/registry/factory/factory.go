@@ -21,25 +21,25 @@ type Factory interface {
 }
 
 type factory struct {
-	harborRegistryCache *sync.Map
+	registryCache *sync.Map
 }
 
 func NewFactory() Factory {
-	harborRegistryCache := &sync.Map{}
+	registryCache := &sync.Map{}
 	return &factory{
-		harborRegistryCache: harborRegistryCache,
+		registryCache: registryCache,
 	}
 }
 
 func (f *factory) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
 	key := fmt.Sprintf("%v-%v-%v-%v", config.Server, config.Token, config.Path, config.Kind)
-	if ret, ok := f.harborRegistryCache.Load(key); ok {
+	if ret, ok := f.registryCache.Load(key); ok {
 		return ret.(registry.Registry), nil
 	}
 	rg, err := registry.NewRegistry(config)
 	if err != nil {
 		return nil, err
 	}
-	f.harborRegistryCache.Store(key, rg)
+	f.registryCache.Store(key, rg)
 	return rg, nil
 }

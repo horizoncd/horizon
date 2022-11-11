@@ -13,20 +13,20 @@ import (
 var kindCache []string
 
 type Controller interface {
-	// Create a harbor
+	// Create a registry
 	Create(ctx context.Context, request *CreateRegistryRequest) (uint, error)
-	// ListAll list all harbors
+	// ListAll list all registries
 	ListAll(ctx context.Context) (Registries, error)
-	// UpdateByID update a harbor
+	// UpdateByID update a registry
 	UpdateByID(ctx context.Context, id uint, request *UpdateRegistryRequest) error
-	// DeleteByID delete a harbor by id
+	// DeleteByID delete a registry by id
 	DeleteByID(ctx context.Context, id uint) error
 	GetByID(ctx context.Context, id uint) (*Registry, error)
 	GetKinds(ctx context.Context) []string
 }
 
 func NewController(param *param.Param) Controller {
-	return &controller{registryManager: param.HarborManager}
+	return &controller{registryManager: param.RegistryManager}
 }
 
 type controller struct {
@@ -50,16 +50,16 @@ func (c controller) Create(ctx context.Context, request *CreateRegistryRequest) 
 }
 
 func (c controller) ListAll(ctx context.Context) (Registries, error) {
-	harbors, err := c.registryManager.ListAll(ctx)
+	registries, err := c.registryManager.ListAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return ofRegistryModels(harbors), nil
+	return ofRegistryModels(registries), nil
 }
 
 func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegistryRequest) error {
-	oldRegistry, err := c.registryManager.GetByID(ctx, id)
+	_, err := c.registryManager.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -72,30 +72,8 @@ func (c controller) UpdateByID(ctx context.Context, id uint, request *UpdateRegi
 		Path:   request.Path,
 	}
 
-	if registry.Name == "" {
-		registry.Name = oldRegistry.Name
-	}
-
-	if registry.Server == "" {
-		registry.Server = oldRegistry.Server
-	}
-
-	if registry.Token == "" {
-		registry.Token = oldRegistry.Token
-	}
-
-	if registry.Kind == "" {
-		registry.Kind = oldRegistry.Kind
-	}
-
-	if registry.Path == "" {
-		registry.Path = oldRegistry.Path
-	}
-
 	if request.InsecureSkipTLSVerify != nil {
 		registry.InsecureSkipTLSVerify = *request.InsecureSkipTLSVerify
-	} else {
-		registry.InsecureSkipTLSVerify = oldRegistry.InsecureSkipTLSVerify
 	}
 
 	err = c.registryManager.UpdateByID(ctx, id, registry)
@@ -116,12 +94,12 @@ func (c controller) DeleteByID(ctx context.Context, id uint) error {
 }
 
 func (c controller) GetByID(ctx context.Context, id uint) (*Registry, error) {
-	harbor, err := c.registryManager.GetByID(ctx, id)
+	registry, err := c.registryManager.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return ofRegistryModel(harbor), nil
+	return ofRegistryModel(registry), nil
 }
 
 func (c controller) GetKinds(ctx context.Context) []string {

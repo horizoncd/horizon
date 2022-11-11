@@ -121,7 +121,7 @@ func (h *Registry) createProject(ctx context.Context, project string) (_ int, er
 	return -1, errors.E(op, resp.StatusCode, message)
 }
 
-func (h *Registry) DeleteRepository(ctx context.Context, appName string, clusterName string) (err error) {
+func (h *Registry) DeleteImage(ctx context.Context, appName string, clusterName string) (err error) {
 	const op = "registry: delete repository"
 	defer wlog.Start(ctx, op).StopPrint()
 

@@ -14,7 +14,7 @@ import (
 
 const (
 	// param
-	_harborIDParam = "harborID"
+	_registryIDParam = "registryID"
 )
 
 type API struct {
@@ -26,12 +26,12 @@ func NewAPI(ctl registry.Controller) *API {
 }
 
 func (a *API) ListAll(c *gin.Context) {
-	harbors, err := a.registryCtl.ListAll(c)
+	registries, err := a.registryCtl.ListAll(c)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
-	response.SuccessWithData(c, harbors)
+	response.SuccessWithData(c, registries)
 }
 
 func (a *API) Create(c *gin.Context) {
@@ -52,7 +52,7 @@ func (a *API) Create(c *gin.Context) {
 }
 
 func (a *API) UpdateByID(c *gin.Context) {
-	idStr := c.Param(_harborIDParam)
+	idStr := c.Param(_registryIDParam)
 	id, err := strconv.ParseUint(idStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid id: %s, err: %s",
@@ -81,7 +81,7 @@ func (a *API) UpdateByID(c *gin.Context) {
 }
 
 func (a *API) DeleteByID(c *gin.Context) {
-	idStr := c.Param(_harborIDParam)
+	idStr := c.Param(_registryIDParam)
 	id, err := strconv.ParseUint(idStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid id: %s, err: %s",
@@ -95,7 +95,7 @@ func (a *API) DeleteByID(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
-		if perror.Cause(err) == herrors.ErrHarborUsedByRegions {
+		if perror.Cause(err) == herrors.ErrRegistryUsedByRegions {
 			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
 			return
 		}
@@ -107,7 +107,7 @@ func (a *API) DeleteByID(c *gin.Context) {
 }
 
 func (a *API) GetByID(c *gin.Context) {
-	idStr := c.Param(_harborIDParam)
+	idStr := c.Param(_registryIDParam)
 	id, err := strconv.ParseUint(idStr, 10, 0)
 	if err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid id: %s, err: %s",
@@ -115,7 +115,7 @@ func (a *API) GetByID(c *gin.Context) {
 		return
 	}
 
-	harborEntity, err := a.registryCtl.GetByID(c, uint(id))
+	registry, err := a.registryCtl.GetByID(c, uint(id))
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -125,7 +125,7 @@ func (a *API) GetByID(c *gin.Context) {
 		return
 	}
 
-	response.SuccessWithData(c, harborEntity)
+	response.SuccessWithData(c, registry)
 }
 
 func (a *API) GetKinds(c *gin.Context) {

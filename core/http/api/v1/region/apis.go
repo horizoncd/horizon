@@ -102,7 +102,7 @@ func (a *API) DeleteByID(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
-		if perror.Cause(err) == herrors.ErrHarborUsedByRegions {
+		if perror.Cause(err) == herrors.ErrRegistryUsedByRegions {
 			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
 			return
 		}

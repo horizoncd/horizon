@@ -1,16 +1,16 @@
 openapi: 3.0.1
 info:
-  title: Horizon-Harbor-Restful
+  title: Horizon-Registry-Restful
   version: 1.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/harbors:
+  /apis/core/v1/registries:
     get:
       tags:
-        - harbor
-      operationId: listHarbor
-      summary: list harbors
+        - registry
+      operationId: listRegistry
+      summary: list registries
       responses:
         "200":
           description: Success
@@ -20,7 +20,7 @@ paths:
                 data:
                   type: array
                   items:
-                    $ref: '#/components/schemas/Harbor'
+                    $ref: '#/components/schemas/Registry'
         default:
           description: Unexpected error
           content:
@@ -29,15 +29,15 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     post:
       tags:
-        - harbor
-      operationId: createHarbor
-      summary: create a harbor
+        - registry
+      operationId: createRegistry
+      summary: create a registry
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Harbor"
+              $ref: "#/components/schemas/Registry"
       responses:
         "200":
           description: Success
@@ -53,22 +53,22 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/harbors/{harborID}:
+  /apis/core/v1/registries/{registryID}:
     parameters:
-      - name: harborID
+      - name: registryID
         in: path
     get:
       tags:
-        - harbor
-      operationId: getHarbor
-      summary: get a harbor
+        - registry
+      operationId: getRegistry
+      summary: get a registry
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Harbor'
+                $ref: '#/components/schemas/Registry'
         default:
           description: Unexpected error
           content:
@@ -77,15 +77,15 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     put:
       tags:
-        - harbor
-      operationId: updateHarbor
-      summary: update a harbor
+        - registry
+      operationId: updateRegistry
+      summary: update a registry
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Harbor'
+              $ref: '#/components/schemas/Registry'
       responses:
         '200':
           description: Success
@@ -97,9 +97,9 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     delete:
       tags:
-        - harbor
-      operationId: deleteHarbor
-      summary: delete a harbor
+        - registry
+      operationId: deleteRegistry
+      summary: delete a registry
       responses:
         '200':
           description: Success
@@ -112,7 +112,7 @@ paths:
 
 components:
   schemas:
-    Harbor:
+    Registry:
       type: object
       required:
         - id

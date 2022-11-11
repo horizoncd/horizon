@@ -150,12 +150,6 @@ const (
 		"and a.name like ? and a.deleted_ts = 0) da"
 )
 
-/* sql about harbor */
-const (
-	HarborListAll = "select * from tb_harbor where deleted_ts = 0 order by updated_at desc"
-	HarborGetByID = "select * from tb_harbor where id = ? and deleted_ts = 0"
-)
-
 /* sql about environment */
 const (
 	// EnvironmentListAll ...
@@ -189,11 +183,10 @@ const (
 /* sql about region */
 const (
 	// RegionListAll ...
-	RegionListAll       = "select * from tb_region where deleted_ts = 0 order by updated_at desc"
-	RegionGetByName     = "select * from tb_region where name = ? and deleted_ts = 0"
-	RegionGetByID       = "select * from tb_region where id = ? and deleted_ts = 0"
-	RegionGetByHarborID = "select * from tb_region where harbor_id = ? and deleted_ts = 0"
-	RegionListByTags    = "select r.name, r.display_name, r.disabled from tb_region r " +
+	RegionListAll    = "select * from tb_region where deleted_ts = 0 order by updated_at desc"
+	RegionGetByName  = "select * from tb_region where name = ? and deleted_ts = 0"
+	RegionGetByID    = "select * from tb_region where id = ? and deleted_ts = 0"
+	RegionListByTags = "select r.name, r.display_name, r.disabled from tb_region r " +
 		"join tb_tag tg on r.id = tg.resource_id " +
 		"where tg.resource_type = ? and r.deleted_ts = 0 " +
 		"and %s group by r.id having count(r.id) = ?"

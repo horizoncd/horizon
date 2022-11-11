@@ -46,7 +46,7 @@ func Test(t *testing.T) {
 	}
 }
 
-func createHarbor(t *testing.T) templaterepo.TemplateRepo {
+func createRepo(t *testing.T) templaterepo.TemplateRepo {
 	repo, err := NewRepo(config.Repo{
 		Kind:     repoConfig.Kind,
 		Host:     repoConfig.Host,
@@ -64,7 +64,7 @@ func createHarbor(t *testing.T) templaterepo.TemplateRepo {
 }
 
 func TestRepo(t *testing.T) {
-	harbor := createHarbor(t)
+	repo := createRepo(t)
 
 	name := "test"
 	data := []byte("hello, world")
@@ -72,26 +72,26 @@ func TestRepo(t *testing.T) {
 	c.Metadata.Name = repoConfig.TemplateName
 	c.Metadata.Version = repoConfig.TemplateTag
 
-	err := harbor.UploadChart(c)
+	err := repo.UploadChart(c)
 	assert.Nil(t, err)
 
 	tm := time.Now()
-	c, err = harbor.GetChart(repoConfig.TemplateName, repoConfig.TemplateTag, tm)
+	c, err = repo.GetChart(repoConfig.TemplateName, repoConfig.TemplateTag, tm)
 	assert.Nil(t, err)
 	assert.NotNil(t, c)
 
 	// use cache
-	c, err = harbor.GetChart(repoConfig.TemplateName, repoConfig.TemplateTag, tm)
+	c, err = repo.GetChart(repoConfig.TemplateName, repoConfig.TemplateTag, tm)
 	assert.Nil(t, err)
 	assert.NotNil(t, c)
 
-	res, err := harbor.ExistChart(repoConfig.TemplateName, repoConfig.TemplateTag)
+	res, err := repo.ExistChart(repoConfig.TemplateName, repoConfig.TemplateTag)
 	assert.Nil(t, err)
 	assert.Equal(t, true, res)
 
-	err = harbor.DeleteChart(repoConfig.TemplateName, repoConfig.TemplateTag)
+	err = repo.DeleteChart(repoConfig.TemplateName, repoConfig.TemplateTag)
 	assert.Nil(t, err)
 
-	_, err = harbor.GetChart(repoConfig.TemplateRepo, repoConfig.TemplateTag, time.Now())
+	_, err = repo.GetChart(repoConfig.TemplateRepo, repoConfig.TemplateTag, time.Now())
 	assert.NotNil(t, err)
 }

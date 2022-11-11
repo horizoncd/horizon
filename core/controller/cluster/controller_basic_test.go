@@ -20,7 +20,7 @@ import (
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	harbordao "g.hz.netease.com/horizon/pkg/registry/dao"
+	registrydao "g.hz.netease.com/horizon/pkg/registry/dao"
 	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -278,7 +278,7 @@ func testControllerFreeOrDeleteClusterFailed(t *testing.T) {
 		regionMgr:      manager.RegionMgr,
 	}
 
-	id, err := harbordao.NewDAO(db).Create(ctx, &registrymodels.Registry{
+	id, err := registrydao.NewDAO(db).Create(ctx, &registrymodels.Registry{
 		Server: "http://127.0.0.1",
 	})
 	assert.Nil(t, err)

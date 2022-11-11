@@ -26,7 +26,6 @@ var (
 	RegionInDB                = sourceType{name: "RegionInDB"}
 	GroupInDB                 = sourceType{name: "GroupInDB"}
 	K8SClient                 = sourceType{name: "K8SClient"}
-	Harbor                    = sourceType{name: "Harbor"}
 	RegistryInDB              = sourceType{name: "RegistryInDB"}
 	Pipelinerun               = sourceType{name: "Pipelinerun"}
 	PipelinerunInTekton       = sourceType{name: "PipelinerunInTekton"}
@@ -59,11 +58,10 @@ var (
 	TektonClient    = sourceType{name: "TektonClient"}
 	TektonCollector = sourceType{name: "TektonCollector"}
 
-	HelmRepo       = sourceType{name: "HelmRepo"}
-	OAuthInDB      = sourceType{name: "OauthAppClient"}
-	TokenInDB      = sourceType{name: "TokenInDB"}
-	HarborChartURL = sourceType{name: "HarborChartURL"}
-	ChartFile      = sourceType{name: "ChartFile"}
+	HelmRepo  = sourceType{name: "HelmRepo"}
+	OAuthInDB = sourceType{name: "OauthAppClient"}
+	TokenInDB = sourceType{name: "TokenInDB"}
+	ChartFile = sourceType{name: "ChartFile"}
 
 	// identity provider
 	Oauth2Token           = sourceType{name: "Oauth2Token"}
@@ -249,8 +247,8 @@ var (
 	ErrOAuthTokenFormatError          = errors.New("Oauth token format error")
 	ErrOAuthNotGroupOwnerType         = errors.New("not group oauth app")
 
-	// ErrHarborUsedByRegions used when deleting a harbor that is still used by regions
-	ErrHarborUsedByRegions = errors.New("cannot delete a harbor when used by regions")
+	// ErrRegistryUsedByRegions used when deleting a registry that is still used by regions
+	ErrRegistryUsedByRegions = errors.New("cannot delete a registry when used by regions")
 
 	// ErrRegionUsedByClusters used when deleting a region that is still used by clusters
 	ErrRegionUsedByClusters = errors.New("cannot delete a region when used by clusters")

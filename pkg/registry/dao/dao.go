@@ -10,15 +10,15 @@ import (
 )
 
 type DAO interface {
-	// Create a harbor
-	Create(ctx context.Context, harbor *models.Registry) (uint, error)
-	// UpdateByID update a harbor
-	UpdateByID(ctx context.Context, id uint, harbor *models.Registry) error
-	// DeleteByID delete a harbor by id
+	// Create a registry
+	Create(ctx context.Context, registry *models.Registry) (uint, error)
+	// UpdateByID update a registry
+	UpdateByID(ctx context.Context, id uint, registry *models.Registry) error
+	// DeleteByID delete a registry by id
 	DeleteByID(ctx context.Context, id uint) error
 	// GetByID get by id
 	GetByID(ctx context.Context, id uint) (*models.Registry, error)
-	// ListAll list all harbors
+	// ListAll list all registries
 	ListAll(ctx context.Context) ([]*models.Registry, error)
 }
 
@@ -65,8 +65,8 @@ func (d *dao) ListAll(ctx context.Context) ([]*models.Registry, error) {
 }
 
 func (d *dao) UpdateByID(ctx context.Context, id uint, registry *models.Registry) error {
-	registry.ID = id
-	result := d.db.WithContext(ctx).Save(registry)
+	result := d.db.WithContext(ctx).Where("id = ?", id).Select("Name", "Server", "Path",
+		"Token", "InsecureSkipTLSVerify", "Kind").Updates(registry)
 	if result.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.RegistryInDB, result.Error.Error())
 	}
@@ -80,7 +80,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return err
 	}
 
-	// check if any region use the harbor
+	// check if any region use the registry
 	var count int64
 	result := d.db.WithContext(ctx).Model(&regionmodels.Region{}).
 		Where("registry_id = ?", id).Where("deleted_ts = 0").Count(&count)
@@ -88,7 +88,7 @@ func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 		return herrors.NewErrDeleteFailed(herrors.RegistryInDB, result.Error.Error())
 	}
 	if count > 0 {
-		return herrors.ErrHarborUsedByRegions
+		return herrors.ErrRegistryUsedByRegions
 	}
 
 	result = d.db.WithContext(ctx).Delete(&models.Registry{}, id)
