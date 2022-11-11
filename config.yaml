@@ -47,6 +47,7 @@ argoCDMapper:
   dev,test,reg,perf,beta,pre,online:
     url: http://argocd.yf-dev2.netease.com
     token: ""
+    namespace: argocd
 tektonMapper:
   dev,test,reg,perf,beta,pre,online:
     server: http://el-horizon-listener.tekton-resources:8080

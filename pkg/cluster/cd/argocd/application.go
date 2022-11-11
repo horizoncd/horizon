@@ -61,39 +61,3 @@ type ApplicationDestination struct {
 }
 
 type SyncOptions []string
-
-func AssembleArgoApplication(name, namespace, gitRepoURL, server string, valueFiles []string) *Application {
-	const argoCDNamespace = "argocd"
-	const finalizer = "resources-finalizer.argocd.argoproj.io"
-	const apiVersion = "argoproj.io/v1alpha1"
-	const kind = "Application"
-	const project = "default"
-
-	return &Application{
-		APIVersion: apiVersion,
-		Kind:       kind,
-		Metadata: ApplicationMetadata{
-			Finalizers: []string{finalizer},
-			Name:       name,
-			Namespace:  argoCDNamespace,
-		},
-		Spec: ApplicationSpec{
-			Source: ApplicationSource{
-				RepoURL:        gitRepoURL,
-				Path:           ".",
-				TargetRevision: "master",
-				Helm: &ApplicationSourceHelm{
-					ValueFiles: valueFiles,
-				},
-			},
-			Destination: ApplicationDestination{
-				Server:    server,
-				Namespace: namespace,
-			},
-			Project: project,
-			SyncPolicy: &SyncPolicy{
-				SyncOptions: SyncOptions{"CreateNamespace=true"},
-			},
-		},
-	}
-}
