@@ -21,15 +21,15 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.Create,
 		}, {
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%v", _harborIDParam),
+			Pattern:     fmt.Sprintf("/:%v", _registryIDParam),
 			HandlerFunc: api.GetByID,
 		}, {
 			Method:      http.MethodPut,
-			Pattern:     fmt.Sprintf("/:%v", _harborIDParam),
+			Pattern:     fmt.Sprintf("/:%v", _registryIDParam),
 			HandlerFunc: api.UpdateByID,
 		}, {
 			Method:      http.MethodDelete,
-			Pattern:     fmt.Sprintf("/:%v", _harborIDParam),
+			Pattern:     fmt.Sprintf("/:%v", _registryIDParam),
 			HandlerFunc: api.DeleteByID,
 		}, {
 			Method:      http.MethodGet,

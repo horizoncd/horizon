@@ -29,8 +29,8 @@ func Register(kind string, constructor Constructor) {
 //
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/registry/registry_mock.go -package=mock_registry
 type Registry interface {
-	// DeleteRepository delete repository
-	DeleteRepository(ctx context.Context, appName string, clusterName string) error
+	// DeleteImage delete repository
+	DeleteImage(ctx context.Context, appName string, clusterName string) error
 }
 
 type Config struct {

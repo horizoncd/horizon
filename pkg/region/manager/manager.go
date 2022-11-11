@@ -7,7 +7,7 @@ import (
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
 	"g.hz.netease.com/horizon/pkg/region/models"
-	harbordao "g.hz.netease.com/horizon/pkg/registry/dao"
+	registrydao "g.hz.netease.com/horizon/pkg/registry/dao"
 	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	tagdao "g.hz.netease.com/horizon/pkg/tag/dao"
 	"gorm.io/gorm"
@@ -33,16 +33,16 @@ type Manager interface {
 }
 
 type manager struct {
-	regionDAO regiondao.DAO
-	harborDAO harbordao.DAO
-	tagDAO    tagdao.DAO
+	regionDAO   regiondao.DAO
+	registryDAO registrydao.DAO
+	tagDAO      tagdao.DAO
 }
 
 func New(db *gorm.DB) Manager {
 	return &manager{
-		regionDAO: regiondao.NewDAO(db),
-		harborDAO: harbordao.NewDAO(db),
-		tagDAO:    tagdao.NewDAO(db),
+		regionDAO:   regiondao.NewDAO(db),
+		registryDAO: registrydao.NewDAO(db),
+		tagDAO:      tagdao.NewDAO(db),
 	}
 }
 
@@ -81,14 +81,14 @@ func (m *manager) GetRegionEntity(ctx context.Context,
 		return nil, err
 	}
 
-	harbor, err := m.getRegistryByRegion(ctx, region)
+	registry, err := m.getRegistryByRegion(ctx, region)
 	if err != nil {
 		return nil, err
 	}
 
 	return &models.RegionEntity{
 		Region:   region,
-		Registry: harbor,
+		Registry: registry,
 	}, nil
 }
 
@@ -102,11 +102,11 @@ func (m *manager) UpdateByID(ctx context.Context, id uint, region *models.Region
 }
 
 func (m *manager) getRegistryByRegion(ctx context.Context, region *models.Region) (*registrymodels.Registry, error) {
-	harbor, err := m.harborDAO.GetByID(ctx, region.RegistryID)
+	registry, err := m.registryDAO.GetByID(ctx, region.RegistryID)
 	if err != nil {
 		return nil, err
 	}
-	return harbor, nil
+	return registry, nil
 }
 
 func (m *manager) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (

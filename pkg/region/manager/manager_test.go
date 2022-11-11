@@ -20,7 +20,7 @@ import (
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/region/models"
-	harbordao "g.hz.netease.com/horizon/pkg/registry/dao"
+	registrydao "g.hz.netease.com/horizon/pkg/registry/dao"
 	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
@@ -40,14 +40,14 @@ var (
 )
 
 func Test(t *testing.T) {
-	harborDAO := harbordao.NewDAO(db)
-	id, err := harborDAO.Create(ctx, &registrymodels.Registry{
+	registryDAO := registrydao.NewDAO(db)
+	id, err := registryDAO.Create(ctx, &registrymodels.Registry{
 		Server: "https://harbor1",
 		Token:  "asdf",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, id)
-	rg, err := harborDAO.GetByID(ctx, id)
+	rg, err := registryDAO.GetByID(ctx, id)
 	assert.Nil(t, err)
 
 	hzRegion, err := mgr.Create(ctx, &models.Region{

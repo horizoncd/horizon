@@ -770,7 +770,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 			return
 		}
 
-		// 2. delete rg repository
+		// 2. delete image
 		rg, err := c.registryFty.GetRegistryByConfig(newctx, &registry.Config{
 			Server:             regionEntity.Registry.Server,
 			Token:              regionEntity.Registry.Token,
@@ -784,9 +784,9 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		}
 
 		if rg != nil {
-			if err = rg.DeleteRepository(newctx, application.Name, cluster.Name); err != nil {
-				// log error, not return here, delete harbor repository failed has no effect
-				log.Errorf(newctx, "failed to delete harbor repository: %v, err: %v", cluster.Name, err)
+			if err = rg.DeleteImage(newctx, application.Name, cluster.Name); err != nil {
+				// log error, not return here, delete image failed has no effect
+				log.Errorf(newctx, "failed to delete image: %v, err: %v", cluster.Name, err)
 			}
 		}
 

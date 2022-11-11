@@ -45,7 +45,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	harbordao "g.hz.netease.com/horizon/pkg/registry/dao"
+	registrydao "g.hz.netease.com/horizon/pkg/registry/dao"
 	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
@@ -520,7 +520,7 @@ func test(t *testing.T) {
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
 	groupMgr := manager.GroupManager
-	registryDAO := harbordao.NewDAO(db)
+	registryDAO := registrydao.NewDAO(db)
 	envRegionMgr := manager.EnvRegionMgr
 
 	// init data
@@ -1160,7 +1160,6 @@ func testV2(t *testing.T) {
 	regionMgr := manager.RegionMgr
 	groupMgr := manager.GroupManager
 	envRegionMgr := manager.EnvRegionMgr
-	// harborDAO := harbordao.NewDAO(db)
 
 	// init data
 	group, err := groupMgr.Create(ctx, &groupmodels.Group{
@@ -1198,30 +1197,6 @@ func testV2(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
-	/*
-		id, err := harborDAO.Create(ctx, &registrymodels.Harbor{
-			Server:          "https://harbor.com",
-			Token:           "xxx",
-			PreheatPolicyID: 1,
-		})
-		assert.Nil(t, err)
-		assert.NotNil(t, id)
-
-		region, err := regionMgr.Create(ctx, &regionmodels.Region{
-			Name:        "hz",
-			DisplayName: "HZ",
-			HarborID:    id,
-		})
-		assert.Nil(t, err)
-		assert.NotNil(t, region)
-
-		er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
-			EnvironmentName: "test",
-			RegionName:      "hz",
-		})
-		assert.Nil(t, err)
-		assert.NotNil(t, er)
-	*/
 
 	c = &controller{
 		clusterMgr:           manager.ClusterMgr,

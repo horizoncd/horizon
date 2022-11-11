@@ -17,7 +17,7 @@ for example pushing data to cmdb or callback.
 prometheus, with grafana, we can draw a straightforward diagram.
 * With swagger, apis are supported on swagger.
 * Ci depends on tekton, Horizon triggers tekton pipeline,
-tekton builds and pushs image to harbor.
+tekton builds and pushs image to image registry.
 * CD depends on argoCD, argo calls helm.
 Helm renders files deploys on kubernetes.
 * Horizon defines all kinds of template for different projects, 
