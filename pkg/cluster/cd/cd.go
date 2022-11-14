@@ -237,7 +237,7 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 	if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 		return err
 	}
-	var argoApplication = argocd.AssembleArgoApplication(params.Cluster, params.Namespace,
+	var argoApplication = argo.AssembleArgoApplication(params.Cluster, params.Namespace,
 		params.GitRepoURL, params.RegionEntity.Server, params.ValueFiles)
 
 	manifest, err := json.Marshal(argoApplication)

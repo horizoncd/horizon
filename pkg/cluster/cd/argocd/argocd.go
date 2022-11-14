@@ -36,6 +36,9 @@ var (
 type (
 	// ArgoCD interact with ArgoCD Server
 	ArgoCD interface {
+		// AssembleArgoApplication assemble application by params
+		AssembleArgoApplication(name, namespace, gitRepoURL, server string, valueFiles []string) *Application
+
 		// CreateApplication create an application in argoCD
 		CreateApplication(ctx context.Context, manifest []byte) error
 
@@ -130,6 +133,8 @@ type (
 		URL string `json:"url"`
 		// Token the token to be used for argoCD server
 		Token string `json:"token"`
+		// Namespace where argoCD deployed
+		Namespace string `yaml:"namespace"`
 	}
 
 	Hook struct{}
@@ -146,8 +151,8 @@ type (
 	}
 )
 
-func NewArgoCD(URL, token string) ArgoCD {
-	return &helper{URL: URL, Token: token}
+func NewArgoCD(URL, token, namespace string) ArgoCD {
+	return &helper{URL: URL, Token: token, Namespace: namespace}
 }
 
 var _ ArgoCD = (*helper)(nil)
@@ -180,6 +185,41 @@ var (
 		},
 	}
 )
+
+func (h *helper) AssembleArgoApplication(name, namespace, gitRepoURL, server string, valueFiles []string) *Application {
+	const finalizer = "resources-finalizer.argocd.argoproj.io"
+	const apiVersion = "argoproj.io/v1alpha1"
+	const kind = "Application"
+	const project = "default"
+
+	return &Application{
+		APIVersion: apiVersion,
+		Kind:       kind,
+		Metadata: ApplicationMetadata{
+			Finalizers: []string{finalizer},
+			Name:       name,
+			Namespace:  h.Namespace,
+		},
+		Spec: ApplicationSpec{
+			Source: ApplicationSource{
+				RepoURL:        gitRepoURL,
+				Path:           ".",
+				TargetRevision: "master",
+				Helm: &ApplicationSourceHelm{
+					ValueFiles: valueFiles,
+				},
+			},
+			Destination: ApplicationDestination{
+				Server:    server,
+				Namespace: namespace,
+			},
+			Project: project,
+			SyncPolicy: &SyncPolicy{
+				SyncOptions: SyncOptions{"CreateNamespace=true"},
+			},
+		},
+	}
+}
 
 func (h *helper) CreateApplication(ctx context.Context, manifest []byte) (err error) {
 	const op = "argo: create application"
