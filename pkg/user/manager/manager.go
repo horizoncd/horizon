@@ -16,7 +16,7 @@ type Manager interface {
 	List(ctx context.Context, query *q.Query) (int64, []*models.User, error)
 	GetUserByIDP(ctx context.Context, email string, idp string) (*models.User, error)
 	GetUserByID(ctx context.Context, userID uint) (*models.User, error)
-	GetUserByIDs(ctx context.Context, userIDs []uint) ([]models.User, error)
+	GetUserByIDs(ctx context.Context, userIDs []uint) ([]*models.User, error)
 	GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint]*models.User, error)
 	ListByEmail(ctx context.Context, emails []string) ([]*models.User, error)
 	UpdateByID(ctx context.Context, id uint, db *models.User) (*models.User, error)
@@ -46,7 +46,7 @@ func (m *manager) GetUserByID(ctx context.Context, userID uint) (*models.User, e
 	return m.dao.GetByID(ctx, userID)
 }
 
-func (m *manager) GetUserByIDs(ctx context.Context, userIDs []uint) ([]models.User, error) {
+func (m *manager) GetUserByIDs(ctx context.Context, userIDs []uint) ([]*models.User, error) {
 	return m.dao.GetByIDs(ctx, userIDs)
 }
 
@@ -58,7 +58,7 @@ func (m *manager) GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint
 	userMap := make(map[uint]*models.User)
 	for _, user := range users {
 		tmp := user
-		userMap[user.ID] = &tmp
+		userMap[user.ID] = tmp
 	}
 	return userMap, nil
 }

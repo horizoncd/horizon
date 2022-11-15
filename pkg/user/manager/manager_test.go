@@ -59,13 +59,18 @@ func Test(t *testing.T) {
 
 	link, err := mgrs.UserLinksManager.CreateLink(ctx, u.ID, idp.ID, &utils.Claims{
 		Sub:   "netease",
-		Name:  "nobody",
-		Email: "nobody@noreply.com",
+		Name:  name,
+		Email: email,
 	}, true)
 	assert.Nil(t, err)
 	assert.Equal(t, uint(1), link.ID)
 
 	u4, err := mgr.GetUserByIDP(ctx, u.Email, idp.Name)
+	assert.Nil(t, err)
+	assert.NotNil(t, u4)
+	assert.Equal(t, u4.Name, name)
+
+	u4, err = mgr.GetUserByID(ctx, u.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, u4)
 	assert.Equal(t, u4.Name, name)
@@ -81,6 +86,19 @@ func Test(t *testing.T) {
 	assert.NotNil(t, userMap)
 	assert.Equal(t, 1, len(userMap))
 	assert.Equal(t, u4.Name, userMap[u4.ID].Name)
+
+	u4.Admin = true
+	u4.Banned = false
+	_, err = mgr.UpdateByID(ctx, u4.ID, u4)
+	assert.Nil(t, err)
+
+	users, err = mgr.ListByEmail(ctx, []string{email})
+	assert.Nil(t, err)
+	assert.NotNil(t, users)
+	assert.Equal(t, 1, len(users))
+	assert.Equal(t, u4.Name, users[0].Name)
+	assert.True(t, users[0].Admin)
+	assert.True(t, !users[0].Banned)
 }
 
 func TestSearchUser(t *testing.T) {

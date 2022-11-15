@@ -82,10 +82,10 @@ func (mr *MockManagerMockRecorder) GetUserByIDP(ctx, email, idp interface{}) *go
 }
 
 // GetUserByIDs mocks base method.
-func (m *MockManager) GetUserByIDs(ctx context.Context, userIDs []uint) ([]models.User, error) {
+func (m *MockManager) GetUserByIDs(ctx context.Context, userIDs []uint) ([]*models.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByIDs", ctx, userIDs)
-	ret0, _ := ret[0].([]models.User)
+	ret0, _ := ret[0].([]*models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

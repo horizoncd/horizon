@@ -18,7 +18,7 @@ type DAO interface {
 	// Create user
 	Create(ctx context.Context, user *models.User) (*models.User, error)
 	ListByEmail(ctx context.Context, emails []string) ([]*models.User, error)
-	GetByIDs(ctx context.Context, userID []uint) ([]models.User, error)
+	GetByIDs(ctx context.Context, userID []uint) ([]*models.User, error)
 	List(ctx context.Context, query *q.Query) (int64, []*models.User, error)
 	GetByID(ctx context.Context, id uint) (*models.User, error)
 	UpdateByID(ctx context.Context, id uint, newUser *models.User) (*models.User, error)
@@ -76,8 +76,8 @@ func (d *dao) List(ctx context.Context, query *q.Query) (int64, []*models.User, 
 	return total, users, nil
 }
 
-func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]models.User, error) {
-	var users []models.User
+func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]*models.User, error) {
+	var users []*models.User
 	result := d.db.WithContext(ctx).Raw(common.UserGetByID, userID).Scan(&users)
 	if result.Error != nil {
 		return nil,
