@@ -20,3 +20,9 @@ type User struct {
 	Admin    bool
 	Banned   bool
 }
+
+type UserBasic struct {
+	ID    uint   `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}

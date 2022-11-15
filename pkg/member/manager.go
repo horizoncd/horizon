@@ -46,6 +46,8 @@ type Manager interface {
 
 	ListResourceOfMemberInfoByRole(ctx context.Context,
 		resourceType models.ResourceType, memberInfo uint, role string) ([]uint, error)
+
+	ListMembersByUserID(ctx context.Context, userID uint) ([]models.Member, error)
 }
 
 type manager struct {
@@ -103,4 +105,8 @@ func (m *manager) ListResourceOfMemberInfo(ctx context.Context,
 func (m *manager) ListResourceOfMemberInfoByRole(ctx context.Context,
 	resourceType models.ResourceType, memberInfo uint, role string) ([]uint, error) {
 	return m.dao.ListResourceOfMemberInfoByRole(ctx, resourceType, memberInfo, role)
+}
+
+func (m *manager) ListMembersByUserID(ctx context.Context, userID uint) ([]models.Member, error) {
+	return m.dao.ListMembersByUserID(ctx, userID)
 }

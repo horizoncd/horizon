@@ -34,7 +34,7 @@ type Token struct {
 	ExpiresIn time.Duration `gorm:"column:expires_in"`
 	Scope     string        `gorm:"column:scope"`
 
-	UserOrRobotIdentity string `gorm:"column:user_or_robot_identity"`
+	UserID uint `gorm:"column:user_id"`
 }
 type AppType uint8
 

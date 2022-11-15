@@ -15,7 +15,7 @@ func NewAPI(controller scope.Controller) *API {
 	return &API{scopeCtrl: controller}
 }
 
-func (a *API) ListRole(c *gin.Context) {
+func (a *API) ListScopes(c *gin.Context) {
 	scopes := a.scopeCtrl.ListScopes(c)
 	response.SuccessWithData(c, scopes)
 }

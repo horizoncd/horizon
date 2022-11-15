@@ -191,6 +191,6 @@ func (d *dao) GetUserByIDP(ctx context.Context, email string, idp string) (*mode
 }
 
 func (d *dao) DeleteUser(ctx context.Context, id uint) error {
-	result := d.db.Unscoped().WithContext(ctx).Delete(&models.User{}, id)
+	result := d.db.WithContext(ctx).Exec(common.UserDeleteByID, id)
 	return result.Error
 }

@@ -29,9 +29,16 @@ import (
 )
 
 type Controller interface {
-	CreateAccessToken(ctx context.Context, request CreateAccessTokenRequest) (*CreateAccessTokenResponse, error)
-	RevokeAccessToken(ctx context.Context, id uint) error
-	ListTokens(ctx context.Context, opts *Resource, query *q.Query) (accessTokens []AccessToken, total int, err error)
+	CreateResourceAccessToken(ctx context.Context, request CreateResourceAccessTokenRequest,
+		resourceType string, resourceID uint) (*CreateResourceAccessTokenResponse, error)
+	CreatePersonalAccessToken(ctx context.Context,
+		request CreatePersonalAccessTokenRequest) (*CreatePersonalAccessTokenResponse, error)
+	ListPersonalAccessTokens(ctx context.Context,
+		query *q.Query) (accessTokens []PersonalAccessToken, total int, err error)
+	ListResourceAccessTokens(ctx context.Context, resourceType string,
+		reosurceID uint, query *q.Query) (accessTokens []ResourceAccessToken, total int, err error)
+	RevokePersonalAccessToken(ctx context.Context, id uint) error
+	RevokeResourceAccessToken(ctx context.Context, id uint) error
 }
 
 type controller struct {
@@ -42,8 +49,6 @@ type controller struct {
 	memberMgr      membermanager.Manager
 }
 
-var _ Controller = (*controller)(nil)
-
 func NewController(param *param.Param) Controller {
 	return &controller{
 		userMgr:        param.UserManager,
@@ -53,46 +58,31 @@ func NewController(param *param.Param) Controller {
 		memberMgr:      param.MemberManager,
 	}
 }
-func (c *controller) CreateAccessToken(ctx context.Context,
-	request CreateAccessTokenRequest) (*CreateAccessTokenResponse, error) {
+
+func (c *controller) CreateResourceAccessToken(ctx context.Context, request CreateResourceAccessTokenRequest,
+	resourceType string, resourceID uint) (*CreateResourceAccessTokenResponse, error) {
 	var (
 		userID uint
 	)
 
-	currentUser, err := common.UserFromContext(ctx)
+	// resource access token need robot user & member
+	robot := generateRobot(request.Name, resourceType, resourceID)
+	robot, err := c.userMgr.Create(ctx, robot)
 	if err != nil {
 		return nil, err
 	}
 
-	// resource access token need robot user & member
-	if request.Resource != nil {
-		resourceType := request.Resource.ResourceType
-		resourceID := request.Resource.ResourceID
-		_, total, err := c.accessTokenMgr.ListAccessTokensOfResource(ctx, resourceType, resourceID, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		robot := generateRobot(request.Name, resourceType, resourceID, total+1)
-		robot, err = c.userMgr.Create(ctx, robot)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = c.memberSvc.CreateMember(ctx, memberservice.PostMember{
-			ResourceType: resourceType,
-			ResourceID:   resourceID,
-			MemberInfo:   robot.ID,
-			MemberType:   membermodels.MemberUser,
-			Role:         request.Role,
-		})
-		if err != nil {
-			return nil, err
-		}
-		userID = robot.ID
-	} else {
-		userID = currentUser.GetID()
+	_, err = c.memberSvc.CreateMember(ctx, memberservice.PostMember{
+		ResourceType: resourceType,
+		ResourceID:   resourceID,
+		MemberInfo:   robot.ID,
+		MemberType:   membermodels.MemberUser,
+		Role:         request.Role,
+	})
+	if err != nil {
+		return nil, err
 	}
+	userID = robot.ID
 
 	token, err := generateToken(request.Name, request.ExpiresAt, userID, request.Scopes)
 	if err != nil {
@@ -103,108 +93,98 @@ func (c *controller) CreateAccessToken(ctx context.Context,
 		return nil, err
 	}
 
-	creator, err := c.userMgr.GetUserByID(ctx, token.CreatedBy)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	expiredAt := NeverExpire
-	if token.ExpiresIn > 0 {
-		expiredAt = token.CreatedAt.Add(token.ExpiresIn).Format(ExpiresAtFormat)
-	}
-
-	resp := &CreateAccessTokenResponse{
-		AccessToken: AccessToken{
-			CreateAccessTokenRequest: CreateAccessTokenRequest{
-				Name:      token.Name,
-				Scopes:    request.Scopes,
-				ExpiresAt: expiredAt,
+	resp := &CreateResourceAccessTokenResponse{
+		ResourceAccessToken: ResourceAccessToken{
+			CreateResourceAccessTokenRequest: CreateResourceAccessTokenRequest{
+				CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
+					Name:      token.Name,
+					Scopes:    request.Scopes,
+					ExpiresAt: parseExpiredAt(token.CreatedAt, token.ExpiresIn),
+				},
+				Role: request.Role,
 			},
 			CreatedAt: token.CreatedAt,
-			CreatedBy: &User{
-				ID:    creator.ID,
-				Name:  creator.Name,
-				Email: creator.Email,
+			CreatedBy: &usermodels.UserBasic{
+				ID:    currentUser.GetID(),
+				Name:  currentUser.GetName(),
+				Email: currentUser.GetEmail(),
 			},
 			ID: token.ID,
 		},
 		Token: token.Code,
 	}
 
-	if request.Resource != nil {
-		resp.Role = request.Role
+	return resp, nil
+}
+
+func (c *controller) CreatePersonalAccessToken(ctx context.Context,
+	request CreatePersonalAccessTokenRequest) (*CreatePersonalAccessTokenResponse, error) {
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := generateToken(request.Name, request.ExpiresAt,
+		currentUser.GetID(), request.Scopes)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err = c.accessTokenMgr.CreateAccessToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &CreatePersonalAccessTokenResponse{
+		PersonalAccessToken: PersonalAccessToken{
+			CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
+				Name:      token.Name,
+				Scopes:    request.Scopes,
+				ExpiresAt: parseExpiredAt(token.CreatedAt, token.ExpiresIn),
+			},
+			CreatedAt: token.CreatedAt,
+			CreatedBy: &usermodels.UserBasic{
+				ID:    currentUser.GetID(),
+				Name:  currentUser.GetName(),
+				Email: currentUser.GetEmail(),
+			},
+			ID: token.ID,
+		},
+		Token: token.Code,
 	}
 
 	return resp, nil
 }
 
-func (c *controller) RevokeAccessToken(ctx context.Context, id uint) error {
-	token, err := c.accessTokenMgr.GetAccessToken(ctx, id)
-	if err != nil {
-		return err
-	}
-	userID, err := func() (uint64, error) {
-		userIDStr := token.UserOrRobotIdentity
-		return strconv.ParseUint(userIDStr, 10, 0)
-	}()
-	if err != nil {
-		return err
-	}
-	user, err := c.userMgr.GetUserByID(ctx, uint(userID))
-	if err != nil {
-		return err
-	}
-	if user.UserType == usermodels.UserTypeRobot {
-		// 1. delete member
-		err = c.memberMgr.DeleteMemberByMemberNameID(ctx, uint(userID))
-		if err != nil {
-			return err
-		}
-		// 2. delete user
-		err = c.userMgr.DeleteUser(ctx, uint(userID))
-		if err != nil {
-			return err
-		}
-	}
-	// 3. delete token
-	return c.accessTokenMgr.DeleteAccessToken(ctx, id)
-}
-
-func (c *controller) ListTokens(ctx context.Context, opts *Resource,
-	query *q.Query) (accessTokens []AccessToken, total int, err error) {
+func (c *controller) ListPersonalAccessTokens(ctx context.Context,
+	query *q.Query) (accessTokens []PersonalAccessToken, total int, err error) {
 	var (
 		tokens []*models.AccessToken
 	)
-	if opts != nil {
-		tokens, total, err = c.accessTokenMgr.ListAccessTokensOfResource(ctx, opts.ResourceType, opts.ResourceID, query)
-		if err != nil {
-			return nil, 0, err
-		}
-	} else {
-		tokens, total, err = c.accessTokenMgr.ListOwnAccessTokens(ctx, query)
-		if err != nil {
-			return nil, 0, err
-		}
+
+	tokens, total, err = c.accessTokenMgr.ListPersonalAccessTokens(ctx, query)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	for _, token := range tokens {
-		expiredAt := NeverExpire
-		if token.ExpiresIn > 0 {
-			expiredAt = token.CreatedAt.Add(token.ExpiresIn).Format(ExpiresAtFormat)
-		}
 		creator, err := c.userMgr.GetUserByID(ctx, token.CreatedBy)
 		if err != nil {
 			return nil, 0, err
 		}
-		accessTokens = append(accessTokens, AccessToken{
-			CreateAccessTokenRequest: CreateAccessTokenRequest{
+		accessTokens = append(accessTokens, PersonalAccessToken{
+			CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
 				Name:      token.Name,
-				Role:      token.Role,
 				Scopes:    strings.Split(token.Scope, ","),
-				ExpiresAt: expiredAt,
+				ExpiresAt: parseExpiredAt(token.CreatedAt, token.ExpiresIn),
 			},
 			CreatedAt: token.CreatedAt,
-			CreatedBy: &User{
+			CreatedBy: &usermodels.UserBasic{
 				ID:    creator.ID,
 				Name:  creator.Name,
 				Email: creator.Email,
@@ -216,8 +196,128 @@ func (c *controller) ListTokens(ctx context.Context, opts *Resource,
 	return accessTokens, total, err
 }
 
-func generateRobot(token, resourceType string, resourceID uint, cnt int) *usermodels.User {
-	fullName := fmt.Sprintf("%s_%d_robot%d", resourceType, resourceID, cnt)
+func (c *controller) ListResourceAccessTokens(ctx context.Context, resourceType string,
+	resourceID uint, query *q.Query) (accessTokens []ResourceAccessToken, total int, err error) {
+	var (
+		tokens []*models.AccessToken
+	)
+	tokens, total, err = c.accessTokenMgr.ListAccessTokensByResource(ctx, resourceType, resourceID, query)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	for _, token := range tokens {
+		creator, err := c.userMgr.GetUserByID(ctx, token.CreatedBy)
+		if err != nil {
+			return nil, 0, err
+		}
+		accessTokens = append(accessTokens, ResourceAccessToken{
+			CreateResourceAccessTokenRequest: CreateResourceAccessTokenRequest{
+				CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
+					Name:      token.Name,
+					Scopes:    strings.Split(token.Scope, ","),
+					ExpiresAt: parseExpiredAt(token.CreatedAt, token.ExpiresIn),
+				},
+				Role: token.Role,
+			},
+			CreatedAt: token.CreatedAt,
+			CreatedBy: &usermodels.UserBasic{
+				ID:    creator.ID,
+				Name:  creator.Name,
+				Email: creator.Email,
+			},
+			ID: token.ID,
+		})
+	}
+
+	return accessTokens, total, err
+}
+
+func (c *controller) RevokePersonalAccessToken(ctx context.Context, id uint) error {
+	token, err := c.accessTokenMgr.GetAccessToken(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	checkPermission := func() error {
+		currentUser, err := common.UserFromContext(ctx)
+		if err != nil {
+			return err
+		}
+		if currentUser.IsAdmin() {
+			return nil
+		}
+		if currentUser.GetID() != token.UserID {
+			return perror.Wrap(herror.ErrForbidden, "you could not revoke access tokens created by others")
+		}
+		return nil
+	}
+
+	// 1. check if current user can revoke this access token
+	if err := checkPermission(); err != nil {
+		return err
+	}
+
+	// 2. delete token
+	return c.accessTokenMgr.DeleteAccessToken(ctx, id)
+}
+
+func (c *controller) RevokeResourceAccessToken(ctx context.Context, id uint) error {
+	token, err := c.accessTokenMgr.GetAccessToken(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	user, err := c.userMgr.GetUserByID(ctx, token.UserID)
+	if err != nil {
+		return err
+	}
+	if user.UserType != usermodels.UserTypeRobot {
+		return perror.Wrap(herror.ErrParamInvalid, "this is not a resource token")
+	}
+
+	checkPermission := func() error {
+		// list members of the robot user
+		members, err := c.memberMgr.ListMembersByUserID(ctx, user.ID)
+		if err != nil {
+			return err
+		}
+		// check if current user can delete all the members
+		for _, member := range members {
+			if err := c.memberSvc.CheckIfPermissionEqualOrHigher(ctx, member.Role, string(member.ResourceType),
+				member.ResourceID); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	cleanRelatedResources := func() error {
+		// 2. delete member
+		err = c.memberMgr.DeleteMemberByMemberNameID(ctx, token.UserID)
+		if err != nil {
+			return err
+		}
+		// 3. delete user
+		return c.userMgr.DeleteUser(ctx, token.UserID)
+	}
+
+	// 1. check if current user can revoke this access token
+	if err := checkPermission(); err != nil {
+		return err
+	}
+
+	// 2. delete token
+	if err := c.accessTokenMgr.DeleteAccessToken(ctx, id); err != nil {
+		return err
+	}
+
+	// 3. delete related resources
+	return cleanRelatedResources()
+}
+
+func generateRobot(token, resourceType string, resourceID uint) *usermodels.User {
+	fullName := fmt.Sprintf("%s_%d_robot_%s", resourceType, resourceID, uuid.New())
 	name := token
 	email := fmt.Sprintf("%s%s", fullName, RobotEmailSuffix)
 	return &usermodels.User{
@@ -228,10 +328,15 @@ func generateRobot(token, resourceType string, resourceID uint, cnt int) *usermo
 	}
 }
 
-func generateToken(name, expiresAtStr string, userID uint, scopes []string) (*oauthmodels.Token, error) {
+func generateCode(userID uint) string {
 	buf := bytes.NewBufferString(time.Now().String())
+	buf.WriteString(strconv.Itoa(int(userID)))
 	code := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))
 	code = generate.AccessTokenPrefix + strings.ToUpper(strings.TrimRight(code, "="))
+	return code
+}
+
+func generateToken(name, expiresAtStr string, userID uint, scopes []string) (*oauthmodels.Token, error) {
 	createdAt := time.Now()
 	expiredIn := time.Duration(0)
 	if expiresAtStr != NeverExpire {
@@ -245,11 +350,19 @@ func generateToken(name, expiresAtStr string, userID uint, scopes []string) (*oa
 		expiredIn = expiredAt.Sub(createdAt)
 	}
 	return &oauthmodels.Token{
-		Name:                name,
-		Code:                code,
-		Scope:               strings.Join(scopes, ","),
-		CreatedAt:           createdAt,
-		ExpiresIn:           expiredIn,
-		UserOrRobotIdentity: strconv.Itoa(int(userID)),
+		Name:      name,
+		Code:      generateCode(userID),
+		Scope:     strings.Join(scopes, " "),
+		CreatedAt: createdAt,
+		ExpiresIn: expiredIn,
+		UserID:    userID,
 	}, nil
+}
+
+func parseExpiredAt(startTime time.Time, expiresIn time.Duration) string {
+	expiredAt := NeverExpire
+	if expiresIn > 0 {
+		expiredAt = startTime.Add(expiresIn).Format(ExpiresAtFormat)
+	}
+	return expiredAt
 }

@@ -51,8 +51,6 @@ func (mr *MockManagerMockRecorder) Create(ctx, user interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockManager)(nil).Create), ctx, user)
 }
 
-<<<<<<< HEAD
-=======
 // DeleteUser mocks base method.
 func (m *MockManager) DeleteUser(ctx context.Context, id uint) error {
 	m.ctrl.T.Helper()
@@ -67,37 +65,6 @@ func (mr *MockManagerMockRecorder) DeleteUser(ctx, id interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockManager)(nil).DeleteUser), ctx, id)
 }
 
-// GetByOIDCMeta mocks base method.
-func (m *MockManager) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*models.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByOIDCMeta", ctx, oidcType, email)
-	ret0, _ := ret[0].(*models.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByOIDCMeta indicates an expected call of GetByOIDCMeta.
-func (mr *MockManagerMockRecorder) GetByOIDCMeta(ctx, oidcType, email interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOIDCMeta", reflect.TypeOf((*MockManager)(nil).GetByOIDCMeta), ctx, oidcType, email)
-}
-
-// GetUserByEmail mocks base method.
-func (m *MockManager) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByEmail", ctx, email)
-	ret0, _ := ret[0].(*models.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserByEmail indicates an expected call of GetUserByEmail.
-func (mr *MockManagerMockRecorder) GetUserByEmail(ctx, email interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockManager)(nil).GetUserByEmail), ctx, email)
-}
-
->>>>>>> a08728a8 (feat: support access token)
 // GetUserByID mocks base method.
 func (m *MockManager) GetUserByID(ctx context.Context, userID uint) (*models.User, error) {
 	m.ctrl.T.Helper()
@@ -113,7 +80,6 @@ func (mr *MockManagerMockRecorder) GetUserByID(ctx, userID interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockManager)(nil).GetUserByID), ctx, userID)
 }
 
-<<<<<<< HEAD
 // GetUserByIDP mocks base method.
 func (m *MockManager) GetUserByIDP(ctx context.Context, email, idp string) (*models.User, error) {
 	m.ctrl.T.Helper()
@@ -134,13 +100,6 @@ func (m *MockManager) GetUserByIDs(ctx context.Context, userIDs []uint) ([]*mode
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByIDs", ctx, userIDs)
 	ret0, _ := ret[0].([]*models.User)
-=======
-// GetUserByIDs mocks base method.
-func (m *MockManager) GetUserByIDs(ctx context.Context, userIDs []uint) ([]models.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByIDs", ctx, userIDs)
-	ret0, _ := ret[0].([]models.User)
->>>>>>> a08728a8 (feat: support access token)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -166,7 +125,6 @@ func (mr *MockManagerMockRecorder) GetUserMapByIDs(ctx, userIDs interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserMapByIDs", reflect.TypeOf((*MockManager)(nil).GetUserMapByIDs), ctx, userIDs)
 }
 
-<<<<<<< HEAD
 // List mocks base method.
 func (m *MockManager) List(ctx context.Context, query *q.Query) (int64, []*models.User, error) {
 	m.ctrl.T.Helper()
@@ -183,8 +141,6 @@ func (mr *MockManagerMockRecorder) List(ctx, query interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockManager)(nil).List), ctx, query)
 }
 
-=======
->>>>>>> a08728a8 (feat: support access token)
 // ListByEmail mocks base method.
 func (m *MockManager) ListByEmail(ctx context.Context, emails []string) ([]*models.User, error) {
 	m.ctrl.T.Helper()
@@ -200,7 +156,6 @@ func (mr *MockManagerMockRecorder) ListByEmail(ctx, emails interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByEmail", reflect.TypeOf((*MockManager)(nil).ListByEmail), ctx, emails)
 }
 
-<<<<<<< HEAD
 // UpdateByID mocks base method.
 func (m *MockManager) UpdateByID(ctx context.Context, id uint, db *models.User) (*models.User, error) {
 	m.ctrl.T.Helper()
@@ -214,20 +169,4 @@ func (m *MockManager) UpdateByID(ctx context.Context, id uint, db *models.User) 
 func (mr *MockManagerMockRecorder) UpdateByID(ctx, id, db interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByID", reflect.TypeOf((*MockManager)(nil).UpdateByID), ctx, id, db)
-=======
-// SearchUser mocks base method.
-func (m *MockManager) SearchUser(ctx context.Context, filter string, query *q.Query) (int, []models.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchUser", ctx, filter, query)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].([]models.User)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// SearchUser indicates an expected call of SearchUser.
-func (mr *MockManagerMockRecorder) SearchUser(ctx, filter, query interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchUser", reflect.TypeOf((*MockManager)(nil).SearchUser), ctx, filter, query)
->>>>>>> a08728a8 (feat: support access token)
 }

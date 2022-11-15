@@ -15,8 +15,8 @@ import (
 type Manager interface {
 	CreateAccessToken(context.Context, *oauthmodels.Token) (*oauthmodels.Token, error)
 	DeleteAccessToken(context.Context, uint) error
-	ListAccessTokensOfResource(context.Context, string, uint, *q.Query) ([]*models.AccessToken, int, error)
-	ListOwnAccessTokens(context.Context, *q.Query) ([]*models.AccessToken, int, error)
+	ListAccessTokensByResource(context.Context, string, uint, *q.Query) ([]*models.AccessToken, int, error)
+	ListPersonalAccessTokens(context.Context, *q.Query) ([]*models.AccessToken, int, error)
 	GetAccessToken(context.Context, uint) (*oauthmodels.Token, error)
 }
 
@@ -32,8 +32,6 @@ func New(db *gorm.DB) Manager {
 	}
 }
 
-var _ Manager = (*manager)(nil)
-
 func (m *manager) CreateAccessToken(ctx context.Context, token *oauthmodels.Token) (*oauthmodels.Token, error) {
 	return m.tokenstore.Create(ctx, token)
 }
@@ -42,13 +40,13 @@ func (m *manager) DeleteAccessToken(ctx context.Context, id uint) error {
 	return m.tokenstore.DeleteByID(ctx, id)
 }
 
-func (m *manager) ListAccessTokensOfResource(ctx context.Context, resourceType string,
+func (m *manager) ListAccessTokensByResource(ctx context.Context, resourceType string,
 	resourceID uint, query *q.Query) ([]*models.AccessToken, int, error) {
-	return m.dao.ListAccessTokensOfResource(ctx, resourceType, resourceID, query)
+	return m.dao.ListAccessTokensByResource(ctx, resourceType, resourceID, query)
 }
 
-func (m *manager) ListOwnAccessTokens(ctx context.Context, query *q.Query) ([]*models.AccessToken, int, error) {
-	return m.dao.ListOwnAccessTokens(ctx, query)
+func (m *manager) ListPersonalAccessTokens(ctx context.Context, query *q.Query) ([]*models.AccessToken, int, error) {
+	return m.dao.ListPersonalAccessTokens(ctx, query)
 }
 
 func (m *manager) GetAccessToken(ctx context.Context, id uint) (*oauthmodels.Token, error) {

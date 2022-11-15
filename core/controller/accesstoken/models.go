@@ -2,6 +2,8 @@ package accesstoken
 
 import (
 	"time"
+
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 )
 
 const (
@@ -10,33 +12,37 @@ const (
 	ExpiresAtFormat  = "2006-01-02"
 )
 
-type CreateAccessTokenRequest struct {
-	Name      string    `json:"name"`
-	Role      string    `json:"role,omitempty"`
-	Scopes    []string  `json:"scopes,omitempty"`
-	ExpiresAt string    `json:"expiresAt"`
-	Resource  *Resource `json:"-"`
+type CreatePersonalAccessTokenRequest struct {
+	Name      string   `json:"name"`
+	Scopes    []string `json:"scopes"`
+	ExpiresAt string   `json:"expiresAt"`
 }
 
-type AccessToken struct {
-	CreateAccessTokenRequest
-	ID        uint      `json:"id"`
-	CreatedAt time.Time `json:"createdAt"`
-	CreatedBy *User     `json:"createdBy"`
+type CreateResourceAccessTokenRequest struct {
+	CreatePersonalAccessTokenRequest
+	Role string `json:"role"`
 }
 
-type CreateAccessTokenResponse struct {
-	AccessToken
+type PersonalAccessToken struct {
+	CreatePersonalAccessTokenRequest
+	ID        uint                  `json:"id"`
+	CreatedAt time.Time             `json:"createdAt"`
+	CreatedBy *usermodels.UserBasic `json:"createdBy"`
+}
+
+type ResourceAccessToken struct {
+	CreateResourceAccessTokenRequest
+	ID        uint                  `json:"id"`
+	CreatedAt time.Time             `json:"createdAt"`
+	CreatedBy *usermodels.UserBasic `json:"createdBy"`
+}
+
+type CreatePersonalAccessTokenResponse struct {
+	PersonalAccessToken
 	Token string `json:"token"`
 }
 
-type User struct {
-	ID    uint   `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-type Resource struct {
-	ResourceType string
-	ResourceID   uint
+type CreateResourceAccessTokenResponse struct {
+	ResourceAccessToken
+	Token string `json:"token"`
 }

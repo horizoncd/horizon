@@ -36,13 +36,12 @@ var (
 
 // valid params
 var (
-	commonName      = "test"
-	commonRole      = "owner"
-	commonScopes    = []string{"applications:read-write"}
-	commonExpiresAt = time.Now().Add(time.Hour * 24).Format(ExpiresAtFormat)
-	commonResource  = Resource{
-		ResourceType: "groups",
-	}
+	commonName         = "test"
+	commonRole         = "owner"
+	commonScopes       = []string{"applications:read-write"}
+	commonExpiresAt    = time.Now().Add(time.Hour * 24).Format(ExpiresAtFormat)
+	commonResourceType = "groups"
+	commonResourceID   = uint(0)
 )
 
 // invalid params
@@ -81,7 +80,8 @@ func TestMain(m *testing.M) {
 
 	tokenStore := store.NewTokenStore(db)
 	oauthAppStore := store.NewOauthAppStore(db)
-	oauthMgr := oauthmanager.NewManager(oauthAppStore, tokenStore, generate.NewAuthorizeGenerate(), authorizeCodeExpireIn, accessTokenExpireIn)
+	oauthMgr := oauthmanager.NewManager(oauthAppStore, tokenStore,
+		generate.NewAuthorizeGenerate(), authorizeCodeExpireIn, accessTokenExpireIn)
 
 	param := &param.Param{
 		Manager:       manager,
@@ -96,7 +96,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
+	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{ // nolint
 		Name: user.Name,
 		ID:   user.ID,
 	})
@@ -107,7 +107,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	commonResource.ResourceID = group.ID
+	commonResourceID = group.ID
 
 	c = NewController(param)
 
@@ -115,77 +115,139 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	type SingleCase struct {
-		req              CreateAccessTokenRequest
+	type PatCase struct {
+		req              CreatePersonalAccessTokenRequest
 		expectedCauseErr error
-		expectedResp     *CreateAccessTokenResponse
+		expectedResp     *CreatePersonalAccessTokenResponse
+	}
+	type RatCase struct {
+		req              CreateResourceAccessTokenRequest
+		expectedCauseErr error
+		expectedResp     *CreateResourceAccessTokenResponse
+		resourceType     string
+		resourceID       uint
 	}
 
-	testCases := []SingleCase{
+	patTestCases := []PatCase{
 		{
-			req: CreateAccessTokenRequest{
+			req: CreatePersonalAccessTokenRequest{
 				Name:      commonName,
-				Role:      commonRole,
 				Scopes:    commonScopes,
 				ExpiresAt: expiredDate,
 			},
 			expectedCauseErr: herror.ErrParamInvalid,
 		},
 		{
-			req: CreateAccessTokenRequest{
+			req: CreatePersonalAccessTokenRequest{
 				Name:      commonName,
-				Role:      commonRole,
 				Scopes:    commonScopes,
 				ExpiresAt: invalidDate,
 			},
 			expectedCauseErr: herror.ErrParamInvalid,
 		},
 		{
-			req: CreateAccessTokenRequest{
+			req: CreatePersonalAccessTokenRequest{
 				Name:      commonName,
-				Role:      commonRole,
-				Scopes:    commonScopes,
-				ExpiresAt: expiredDate,
-			},
-			expectedCauseErr: herror.ErrParamInvalid,
-		},
-		{
-			req: CreateAccessTokenRequest{
-				Name:      commonName,
-				Role:      commonRole,
 				Scopes:    commonScopes,
 				ExpiresAt: NeverExpire,
 			},
 		},
+	}
+
+	ratTestCases := []RatCase{
 		{
-			req: CreateAccessTokenRequest{
-				Name:      commonName,
-				Role:      commonRole,
-				Scopes:    commonScopes,
-				ExpiresAt: commonExpiresAt,
-				Resource:  &commonResource,
+			req: CreateResourceAccessTokenRequest{
+				CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
+					Name:      commonName,
+					Scopes:    commonScopes,
+					ExpiresAt: expiredDate,
+				},
+				Role: commonRole,
 			},
+			resourceType:     commonResourceType,
+			resourceID:       commonResourceID,
+			expectedCauseErr: herror.ErrParamInvalid,
+		},
+		{
+			req: CreateResourceAccessTokenRequest{
+				CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
+					Name:      commonName,
+					Scopes:    []string{invalidScope},
+					ExpiresAt: NeverExpire,
+				},
+				Role: commonRole,
+			},
+			resourceType:     commonResourceType,
+			resourceID:       commonResourceID,
+			expectedCauseErr: herror.ErrParamInvalid,
+		},
+		{
+			req: CreateResourceAccessTokenRequest{
+				CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
+					Name:      commonName,
+					Scopes:    commonScopes,
+					ExpiresAt: NeverExpire,
+				},
+				Role: invalidRole,
+			},
+			resourceType:     commonResourceType,
+			resourceID:       commonResourceID,
+			expectedCauseErr: herror.ErrParamInvalid,
+		},
+		{
+			req: CreateResourceAccessTokenRequest{
+				CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
+					Name:      commonName,
+					Scopes:    commonScopes,
+					ExpiresAt: commonExpiresAt,
+				},
+				Role: commonRole,
+			},
+			resourceType: commonResourceType,
+			resourceID:   commonResourceID,
 		},
 	}
 
-	for _, testCase := range testCases {
+	for _, testCase := range patTestCases {
 		var (
-			createTokenResp *CreateAccessTokenResponse
+			createTokenResp *CreatePersonalAccessTokenResponse
 			err             error
 		)
 
-		createTokenResp, err = c.CreateAccessToken(ctx, testCase.req)
+		createTokenResp, err = c.CreatePersonalAccessToken(ctx, testCase.req)
 		assert.Equal(t, testCase.expectedCauseErr, perror.Cause(err))
 		if testCase.expectedResp != nil {
 			assert.Equal(t, testCase.expectedResp, createTokenResp)
 		}
 
 		if testCase.expectedCauseErr == nil {
-			_, total, err := c.ListTokens(ctx, testCase.req.Resource, nil)
+			_, total, err := c.ListPersonalAccessTokens(ctx, nil)
 			assert.Equal(t, nil, err)
 			assert.Equal(t, 1, total)
 
-			c.RevokeAccessToken(ctx, createTokenResp.ID)
+			err = c.RevokePersonalAccessToken(ctx, createTokenResp.ID)
+			assert.Equal(t, nil, err)
+		}
+	}
+
+	for _, testCase := range ratTestCases {
+		var (
+			createTokenResp *CreateResourceAccessTokenResponse
+			err             error
+		)
+
+		createTokenResp, err = c.CreateResourceAccessToken(ctx, testCase.req, testCase.resourceType, testCase.resourceID)
+		assert.Equal(t, testCase.expectedCauseErr, perror.Cause(err))
+		if testCase.expectedResp != nil {
+			assert.Equal(t, testCase.expectedResp, createTokenResp)
+		}
+
+		if testCase.expectedCauseErr == nil {
+			_, total, err := c.ListResourceAccessTokens(ctx, testCase.resourceType, testCase.resourceID, nil)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, 1, total)
+
+			err = c.RevokeResourceAccessToken(ctx, createTokenResp.ID)
 			assert.Equal(t, nil, err)
 		}
 	}

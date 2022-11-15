@@ -44,7 +44,7 @@ func (d *DbTokenStore) DeleteByCode(ctx context.Context, code string) error {
 }
 
 func (d *DbTokenStore) DeleteByID(ctx context.Context, id uint) error {
-	result := d.db.WithContext(ctx).Where("id = ?", id).Delete(&models.Token{})
+	result := d.db.WithContext(ctx).Exec(common.DeleteTokenByID, id)
 	return result.Error
 }
 

@@ -17,7 +17,7 @@ type AuthorizeGenerate struct{}
 
 func (g *AuthorizeGenerate) GenCode(info *CodeGenerateInfo) (code string) {
 	buf := bytes.NewBufferString(info.Token.ClientID)
-	buf.WriteString(info.Token.UserOrRobotIdentity)
+	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
 	token := uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes())
 	code = base64.URLEncoding.EncodeToString([]byte(token.String()))
 	code = strings.ToUpper(strings.TrimRight(code, "="))
@@ -46,7 +46,7 @@ type BasicAccessTokenGenerate struct {
 
 func (g *BasicAccessTokenGenerate) GenCode(info *CodeGenerateInfo) (code string) {
 	buf := bytes.NewBufferString(info.Token.ClientID)
-	buf.WriteString(info.Token.UserOrRobotIdentity)
+	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
 	buf.WriteString(strconv.FormatInt(info.Token.CreatedAt.UnixNano(), 10))
 	access := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))
 	access = g.prefix + strings.ToUpper(strings.TrimRight(access, "="))

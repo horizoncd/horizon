@@ -16,28 +16,33 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var coreRouters = route.Routes{
 		{
 			Method:      http.MethodPost,
-			Pattern:     "/accesstokens",
-			HandlerFunc: api.CreateAccessToken,
+			Pattern:     "/personalaccesstokens",
+			HandlerFunc: api.CreatePersonalAccessToken,
 		},
 		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/:%s/:%s/accesstokens", common.ParamResourceType, common.ParamResourceID),
-			HandlerFunc: api.CreateAccessToken,
+			HandlerFunc: api.CreateResourceAccessToken,
 		},
 		{
 			Method:      http.MethodGet,
-			Pattern:     "/accesstokens",
-			HandlerFunc: api.ListAccessTokens,
+			Pattern:     "/personalaccesstokens",
+			HandlerFunc: api.ListPersonalAccessTokens,
 		},
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%s/:%s/accesstokens", common.ParamResourceType, common.ParamResourceID),
-			HandlerFunc: api.ListAccessTokens,
+			HandlerFunc: api.ListResourceAccessTokens,
+		},
+		{
+			Method:      http.MethodDelete,
+			Pattern:     fmt.Sprintf("/personalaccesstokens/:%s", common.ParamAccessTokenID),
+			HandlerFunc: api.RevokePersonalAccessToken,
 		},
 		{
 			Method:      http.MethodDelete,
 			Pattern:     fmt.Sprintf("/accesstokens/:%s", common.ParamAccessTokenID),
-			HandlerFunc: api.RevokeAccessToken,
+			HandlerFunc: api.RevokeResourceAccessToken,
 		},
 	}
 

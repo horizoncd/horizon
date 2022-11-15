@@ -2,7 +2,6 @@ package oauthcheck
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -46,9 +45,22 @@ func (c *controller) ValidateToken(ctx context.Context, accessToken string) erro
 	if err != nil {
 		return err
 	}
-	if token.ExpiresIn > 0 && token.CreatedAt.Add(token.ExpiresIn).Before(time.Now()) {
+
+	isExpired := func() bool {
+		return token.CreatedAt.Add(token.ExpiresIn).Before(time.Now())
+	}
+	neverExpires := func() bool {
+		return token.ExpiresIn <= 0
+	}
+
+	if neverExpires() {
+		return nil
+	}
+
+	if isExpired() {
 		return perror.Wrap(herrors.ErrOAuthAccessTokenExpired, "")
 	}
+
 	return nil
 }
 
@@ -58,17 +70,7 @@ func (c *controller) LoadAccessTokenUser(ctx context.Context, accessToken string
 		return nil, err
 	}
 
-	// TODO: robotID
-	userID, err := func() (uint64, error) {
-		userIDInstr := token.UserOrRobotIdentity
-		return strconv.ParseUint(userIDInstr, 10, 0)
-	}()
-	if err != nil {
-		return nil, perror.Wrapf(herrors.ErrOAuthInternal,
-			"userID can not convert, userID = %s", token.UserOrRobotIdentity)
-	}
-
-	usr, err := c.userManager.GetUserByID(ctx, uint(userID))
+	usr, err := c.userManager.GetUserByID(ctx, token.UserID)
 	if err != nil {
 		return nil, err
 	}

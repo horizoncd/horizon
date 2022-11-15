@@ -152,6 +152,21 @@ func (mr *MockManagerMockRecorder) ListDirectMemberOnCondition(ctx, resourceType
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDirectMemberOnCondition", reflect.TypeOf((*MockManager)(nil).ListDirectMemberOnCondition), ctx, resourceType, resourceID)
 }
 
+// ListMembersByUserID mocks base method.
+func (m *MockManager) ListMembersByUserID(ctx context.Context, userID uint) ([]models.Member, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListMembersByUserID", ctx, userID)
+	ret0, _ := ret[0].([]models.Member)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListMembersByUserID indicates an expected call of ListMembersByUserID.
+func (mr *MockManagerMockRecorder) ListMembersByUserID(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMembersByUserID", reflect.TypeOf((*MockManager)(nil).ListMembersByUserID), ctx, userID)
+}
+
 // ListResourceOfMemberInfo mocks base method.
 func (m *MockManager) ListResourceOfMemberInfo(ctx context.Context, resourceType models.ResourceType, memberInfo uint) ([]uint, error) {
 	m.ctrl.T.Helper()

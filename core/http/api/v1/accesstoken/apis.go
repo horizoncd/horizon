@@ -35,37 +35,22 @@ func NewAPI(c accesstoken.Controller, roleSvc roleservice.Service, scopeSvc scop
 	}
 }
 
-func (a *API) CreateAccessToken(c *gin.Context) {
-	const op = "access token: create"
+func (a *API) CreatePersonalAccessToken(c *gin.Context) {
+	const op = "access token: create pat"
 
-	var request accesstoken.CreateAccessTokenRequest
+	var request accesstoken.CreatePersonalAccessTokenRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		log.WithFiled(c, "op", op).Errorf(err.Error())
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("request body is invalid, err: %v", err)))
 		return
 	}
 
-	resourceType := c.Param(common.ParamResourceType)
-	if resourceType != "" {
-		resourceIDStr := c.Param(common.ParamResourceID)
-		resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
-		if err != nil {
-			response.AbortWithRPCError(c, rpcerror.ParamError.
-				WithErrMsg(fmt.Sprintf("invalid resource id: %s", resourceIDStr)))
-			return
-		}
-		request.Resource = &accesstoken.Resource{
-			ResourceType: resourceType,
-			ResourceID:   uint(resourceID),
-		}
-	}
-
-	if err := a.validateCreateTokenRequest(c, request); err != nil {
+	if err := a.validateCreatePersonalAccessTokenRequest(c, request); err != nil {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 		return
 	}
 
-	resp, err := a.accessTokenCtl.CreateAccessToken(c, request)
+	resp, err := a.accessTokenCtl.CreatePersonalAccessToken(c, request)
 	if err != nil {
 		log.WithFiled(c, "op", op).Errorf(err.Error())
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
@@ -75,7 +60,45 @@ func (a *API) CreateAccessToken(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-func (a *API) RevokeAccessToken(c *gin.Context) {
+func (a *API) CreateResourceAccessToken(c *gin.Context) {
+	const op = "access token: create rat"
+
+	var (
+		request    accesstoken.CreateResourceAccessTokenRequest
+		resourceID uint64
+		err        error
+	)
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("request body is invalid, err: %v", err)))
+		return
+	}
+
+	resourceType := c.Param(common.ParamResourceType)
+	resourceIDStr := c.Param(common.ParamResourceID)
+	resourceID, err = strconv.ParseUint(resourceIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.
+			WithErrMsg(fmt.Sprintf("invalid resource id: %s", resourceIDStr)))
+		return
+	}
+
+	if err := a.validateCreateResourceAccessTokenRequest(c, request, resourceType); err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+		return
+	}
+
+	resp, err := a.accessTokenCtl.CreateResourceAccessToken(c, request, resourceType, uint(resourceID))
+	if err != nil {
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.SuccessWithData(c, resp)
+}
+
+func (a *API) RevokeResourceAccessToken(c *gin.Context) {
 	const op = "access token: delete"
 
 	accessTokenIDStr := c.Param(common.ParamAccessTokenID)
@@ -86,7 +109,7 @@ func (a *API) RevokeAccessToken(c *gin.Context) {
 		return
 	}
 
-	err = a.accessTokenCtl.RevokeAccessToken(c, uint(id))
+	err = a.accessTokenCtl.RevokeResourceAccessToken(c, uint(id))
 	if err != nil {
 		log.WithFiled(c, "op", op).Errorf(err.Error())
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
@@ -96,53 +119,35 @@ func (a *API) RevokeAccessToken(c *gin.Context) {
 	response.Success(c)
 }
 
-func (a *API) ListAccessTokens(c *gin.Context) {
-	const op = "access token: list"
+func (a *API) RevokePersonalAccessToken(c *gin.Context) {
+	const op = "access token: delete"
+
+	accessTokenIDStr := c.Param(common.ParamAccessTokenID)
+	id, err := strconv.ParseUint(accessTokenIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.
+			WithErrMsg(fmt.Sprintf("invalid access token id: %s", accessTokenIDStr)))
+		return
+	}
+
+	err = a.accessTokenCtl.RevokePersonalAccessToken(c, uint(id))
+	if err != nil {
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.Success(c)
+}
+
+func (a *API) ListPersonalAccessTokens(c *gin.Context) {
+	const op = "access token: list pat"
 	var (
-		opts       *accesstoken.Resource
-		pageNumber int64
-		pageSize   int64
-		err        error
+		err error
 	)
 
-	resourceType := c.Param(common.ParamResourceType)
-	if resourceType != "" {
-		resourceIDStr := c.Param(common.ParamResourceID)
-		resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
-		if err != nil {
-			response.AbortWithRPCError(c, rpcerror.ParamError.
-				WithErrMsg(fmt.Sprintf("invalid resource id: %s", resourceIDStr)))
-			return
-		}
-		opts = &accesstoken.Resource{
-			ResourceType: resourceType,
-			ResourceID:   uint(resourceID),
-		}
-	}
-
-	pageNumberStr := c.Param(common.PageNumber)
-	if pageNumberStr != "" {
-		pageNumber, err = strconv.ParseInt(pageNumberStr, 10, 0)
-		if err != nil {
-			response.AbortWithRPCError(c, rpcerror.ParamError.
-				WithErrMsg(fmt.Sprintf("invalid page number: %s", pageNumberStr)))
-			return
-		}
-	}
-	pageSizeStr := c.Param(common.PageSize)
-	if pageSizeStr != "" {
-		pageSize, err = strconv.ParseInt(pageSizeStr, 10, 0)
-		if err != nil {
-			response.AbortWithRPCError(c, rpcerror.ParamError.
-				WithErrMsg(fmt.Sprintf("invalid page size: %s", pageSizeStr)))
-			return
-		}
-	}
-
-	tokens, total, err := a.accessTokenCtl.ListTokens(c, opts, &q.Query{
-		PageNumber: int(pageNumber),
-		PageSize:   int(pageSize),
-	})
+	query := q.New(nil).WithPagination(c)
+	tokens, total, err := a.accessTokenCtl.ListPersonalAccessTokens(c, query)
 	if err != nil {
 		log.WithFiled(c, "op", op).Errorf(err.Error())
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
@@ -155,7 +160,37 @@ func (a *API) ListAccessTokens(c *gin.Context) {
 	})
 }
 
-func (a *API) validateCreateTokenRequest(c context.Context, r accesstoken.CreateAccessTokenRequest) error {
+func (a *API) ListResourceAccessTokens(c *gin.Context) {
+	const op = "access token: list rat"
+	var (
+		err error
+	)
+
+	resourceType := c.Param(common.ParamResourceType)
+	resourceIDStr := c.Param(common.ParamResourceID)
+	resourceID, err := strconv.ParseUint(resourceIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.
+			WithErrMsg(fmt.Sprintf("invalid resource id: %s", resourceIDStr)))
+		return
+	}
+
+	query := q.New(nil).WithPagination(c)
+	tokens, total, err := a.accessTokenCtl.ListResourceAccessTokens(c, resourceType, uint(resourceID), query)
+	if err != nil {
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+
+	response.SuccessWithData(c, response.DataWithTotal{
+		Items: tokens,
+		Total: int64(total),
+	})
+}
+
+func (a *API) validateCreatePersonalAccessTokenRequest(c context.Context,
+	r accesstoken.CreatePersonalAccessTokenRequest) error {
 	if err := a.validateTokenName(r.Name); err != nil {
 		return err
 	}
@@ -164,20 +199,16 @@ func (a *API) validateCreateTokenRequest(c context.Context, r accesstoken.Create
 		return err
 	}
 
-	if err := a.validateExpiresAt(r.ExpiresAt); err != nil {
+	return a.validateExpiresAt(r.ExpiresAt)
+}
+
+func (a *API) validateCreateResourceAccessTokenRequest(c context.Context,
+	r accesstoken.CreateResourceAccessTokenRequest, resourceType string) error {
+	if err := a.validateResourceType(resourceType); err != nil {
 		return err
 	}
 
-	if r.Resource != nil {
-		// rat: validate resource type
-		if err := a.validateResourceType(r.Resource.ResourceType); err != nil {
-			return err
-		}
-		if err := a.validateRole(c, r.Role); err != nil {
-			return err
-		}
-	}
-	return nil
+	return a.validateRole(c, r.Role)
 }
 
 func (a *API) validateTokenName(name string) error {
@@ -202,10 +233,16 @@ func (a *API) validateRole(ctx context.Context, role string) error {
 }
 
 func (a *API) validateScope(scopes []string) error {
-	rules := a.scopeSvc.GetRulesByScope(scopes)
-	if len(rules) != len(scopes) {
-		return perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("invalid scope: %s", scopes))
+	scopeMap := map[string]bool{}
+	validScopes := a.scopeSvc.GetAllScopeNames()
+	for _, validScope := range validScopes {
+		scopeMap[validScope] = true
+	}
+	for _, scope := range scopes {
+		if _, ok := scopeMap[scope]; !ok {
+			return perror.Wrap(herrors.ErrParamInvalid,
+				fmt.Sprintf("invalid scope: %s", scopes))
+		}
 	}
 	return nil
 }

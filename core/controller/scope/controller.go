@@ -5,11 +5,10 @@ import (
 
 	"g.hz.netease.com/horizon/pkg/oauth/scope"
 	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/rbac/types"
 )
 
 type Controller interface {
-	ListScopes(ctx context.Context) []types.Role
+	ListScopes(ctx context.Context) []BasicInfo
 }
 
 func NewController(param *param.Param) Controller {
@@ -20,6 +19,14 @@ type controller struct {
 	scopeSvc scope.Service
 }
 
-func (c controller) ListScopes(ctx context.Context) []types.Role {
-	return c.scopeSvc.GetAllScopes()
+func (c controller) ListScopes(ctx context.Context) []BasicInfo {
+	var resp []BasicInfo
+	scopes := c.scopeSvc.GetAllScopes()
+	for _, scope := range scopes {
+		resp = append(resp, BasicInfo{
+			Name: scope.Name,
+			Desc: scope.Desc,
+		})
+	}
+	return resp
 }

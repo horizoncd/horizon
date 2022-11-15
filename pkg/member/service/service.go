@@ -11,6 +11,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	memberctx "g.hz.netease.com/horizon/pkg/context"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	"g.hz.netease.com/horizon/pkg/member"
 	"g.hz.netease.com/horizon/pkg/member/models"
@@ -20,6 +21,8 @@ import (
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
 	templatemanager "g.hz.netease.com/horizon/pkg/template/manager"
 	templatereleasemanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 )
 
@@ -31,6 +34,7 @@ var (
 	ErrRemoveHighRole = errors.New("RemoveHighRole")  // "Remove higher role"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/member/service/service_mock.go -package=mock_service
 type Service interface {
 	// CreateMember post a new member
 	CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error)
@@ -44,6 +48,8 @@ type Service interface {
 	ListMember(ctx context.Context, resourceType string, resourceID uint) ([]models.Member, error)
 	// GetMemberOfResource return the current user's role of the resource (member from direct or parent)
 	GetMemberOfResource(ctx context.Context, resourceType string, resourceID string) (*models.Member, error)
+	// IsYourPermissionHigher helps to check if your permission is higher then specified member
+	CheckIfPermissionEqualOrHigher(ctx context.Context, role, resourceType string, resourceID uint) error
 }
 
 type service struct {
@@ -56,6 +62,7 @@ type service struct {
 	pipelineManager           pipelinerunmanager.Manager
 	roleService               roleservice.Service
 	oauthManager              oauthmanager.Manager
+	userManager               usermanager.Manager
 }
 
 func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manager,
@@ -70,7 +77,38 @@ func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manag
 		templateManager:           manager.TemplateMgr,
 		roleService:               roleService,
 		oauthManager:              oauthManager,
+		userManager:               manager.UserManager,
 	}
+}
+
+func (s *service) CheckIfPermissionEqualOrHigher(ctx context.Context, role,
+	resourceType string, resourceID uint) error {
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	if currentUser.IsAdmin() {
+		return nil
+	}
+	var userMemberInfo *models.Member
+	userMemberInfo, err = s.getMember(ctx, resourceType,
+		resourceID, models.MemberUser, currentUser.GetID())
+	if err != nil {
+		return err
+	}
+	if userMemberInfo == nil {
+		return ErrNotPermitted
+	}
+
+	comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, role)
+	if err != nil {
+		return err
+	}
+	if comResult == roleservice.RoleSmaller {
+		return ErrGrantHighRole
+	}
+	return nil
 }
 
 func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*models.Member, error) {
@@ -92,25 +130,11 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 	}
 
 	// 2. check if current user can create the role
-	if !currentUser.IsAdmin() {
-		var userMemberInfo *models.Member
-		userMemberInfo, err = s.getMember(ctx, postMember.ResourceType,
-			postMember.ResourceID, models.MemberUser, currentUser.GetID())
-		if err != nil {
-			return nil, err
-		}
-		if userMemberInfo == nil {
-			return nil, ErrNotPermitted
-		}
-
-		comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, postMember.Role)
-		if err != nil {
-			return nil, err
-		}
-		if comResult == roleservice.RoleSmaller {
-			return nil, ErrGrantHighRole
-		}
+	err = s.CheckIfPermissionEqualOrHigher(ctx, postMember.Role, postMember.ResourceType, postMember.ResourceID)
+	if err != nil {
+		return nil, err
 	}
+
 	// 3. do create  member
 	member, err := ConvertPostMemberToMember(postMember, currentUser)
 	if err != nil {
@@ -205,52 +229,34 @@ func (s *service) GetMember(ctx context.Context, memberID uint) (*models.Member,
 }
 
 func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
-	var currentUser userauth.User
-	currentUser, err := common.UserFromContext(ctx)
+	// 1. get member
+	memberItem, err := s.memberManager.GetByID(ctx, memberID)
+	if err != nil {
+		return err
+	}
+	if memberItem == nil {
+		return ErrMemberNotExist
+	}
+
+	// 2. check if the grant current user can remove the member
+	err = s.CheckIfPermissionEqualOrHigher(ctx, memberItem.Role, string(memberItem.ResourceType), memberItem.ResourceID)
 	if err != nil {
 		return err
 	}
 
-	if !currentUser.IsAdmin() {
-		// 1. get member
-		memberItem, err := s.memberManager.GetByID(ctx, memberID)
-		if err != nil {
-			return err
-		}
-		if memberItem == nil {
-			return ErrMemberNotExist
-		}
-
-		// 2. check if the grant current user can remove the member
-		var userMemberInfo *models.Member
-		userMemberInfo, err = s.getMember(ctx, string(memberItem.ResourceType),
-			memberItem.ResourceID, models.MemberUser, currentUser.GetID())
-		if err != nil {
-			return err
-		}
-		if userMemberInfo == nil {
-			return ErrNotPermitted
-		}
-
-		comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, memberItem.Role)
-		if err != nil {
-			return err
-		}
-		if comResult == roleservice.RoleSmaller {
-			return ErrRemoveHighRole
-		}
+	// 3. check if common user
+	user, err := s.userManager.GetUserByID(ctx, memberItem.MemberNameID)
+	if err != nil {
+		return err
+	}
+	if user.UserType != usermodels.UserTypeCommon {
+		return perror.Wrapf(herror.ErrParamInvalid, "member of user type %d does not support updated", user.UserType)
 	}
 
 	return s.memberManager.DeleteMember(ctx, memberID)
 }
 
 func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) (*models.Member, error) {
-	var currentUser userauth.User
-	currentUser, err := common.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// 1. get the member
 	memberItem, err := s.memberManager.GetByID(ctx, memberID)
 	if err != nil {
@@ -261,34 +267,21 @@ func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) 
 	}
 
 	// 2. check if the current user have the permission to update the role
-	if !currentUser.IsAdmin() {
-		var userMemberInfo *models.Member
-		userMemberInfo, err = s.getMember(ctx, string(memberItem.ResourceType),
-			memberItem.ResourceID, models.MemberUser, currentUser.GetID())
-		if err != nil {
-			return nil, err
-		}
-		if userMemberInfo == nil {
-			return nil, ErrNotPermitted
-		}
-
-		comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, memberItem.Role)
-		if err != nil {
-			return nil, err
-		}
-		if comResult != roleservice.RoleBigger && comResult != roleservice.RoleEqual {
-			return nil, ErrNotPermitted
-		}
-
-		comResult, err = s.roleService.RoleCompare(ctx, userMemberInfo.Role, role)
-		if err != nil {
-			return nil, err
-		}
-		if comResult == roleservice.RoleSmaller {
-			return nil, ErrGrantHighRole
-		}
+	err = s.CheckIfPermissionEqualOrHigher(ctx, memberItem.Role, string(memberItem.ResourceType), memberItem.ResourceID)
+	if err != nil {
+		return nil, err
 	}
-	// 3. update the role
+
+	// 3. check if common user
+	user, err := s.userManager.GetUserByID(ctx, memberItem.MemberNameID)
+	if err != nil {
+		return nil, err
+	}
+	if user.UserType != usermodels.UserTypeCommon {
+		return nil, perror.Wrapf(herror.ErrParamInvalid, "member of user type %d does not support updated", user.UserType)
+	}
+
+	// 4. update the role
 	return s.memberManager.UpdateByID(ctx, memberItem.ID, role)
 }
 

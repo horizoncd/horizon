@@ -31,6 +31,7 @@ type DAO interface {
 	ListResourceOfMemberInfo(ctx context.Context, resourceType models.ResourceType, memberInfo uint) ([]uint, error)
 	ListResourceOfMemberInfoByRole(ctx context.Context,
 		resourceType models.ResourceType, info uint, role string) ([]uint, error)
+	ListMembersByUserID(ctx context.Context, userID uint) ([]models.Member, error)
 }
 
 var (
@@ -113,7 +114,7 @@ func (d *dao) Delete(ctx context.Context, memberID uint) error {
 }
 
 func (d *dao) DeleteByMemberNameID(ctx context.Context, memberNameID uint) error {
-	result := d.db.Unscoped().WithContext(ctx).Where("membername_id = ?", memberNameID).Delete(&models.Member{})
+	result := d.db.WithContext(ctx).Exec(common.MemberHardDeleteByMemberNameID, memberNameID)
 	return result.Error
 }
 
@@ -166,6 +167,18 @@ func (d *dao) ListResourceOfMemberInfoByRole(ctx context.Context,
 		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.MemberInfoInDB, res.Error.Error()),
 			"failed to get members:\n"+
 				"resourceType = %v\n member id = %v\n role = %v", resourceType, info, role)
+	}
+	return members, nil
+}
+
+func (d *dao) ListMembersByUserID(ctx context.Context, userID uint) ([]models.Member, error) {
+	var members []models.Member
+	result := d.db.Model(model).WithContext(ctx).
+		Where("membername_id = ?", userID).
+		Where("deleted_ts = 0").
+		Scan(&members)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 	return members, nil
 }

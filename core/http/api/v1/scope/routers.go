@@ -15,7 +15,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		{
 			Method:      http.MethodGet,
 			Pattern:     "/scopes",
-			HandlerFunc: api.ListRole,
+			HandlerFunc: api.ListScopes,
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)

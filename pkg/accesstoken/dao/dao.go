@@ -19,9 +19,9 @@ type dao struct {
 }
 
 type DAO interface {
-	ListAccessTokensOfResource(ctx context.Context, resourceType string, resourceID uint,
+	ListAccessTokensByResource(ctx context.Context, resourceType string, resourceID uint,
 		query *q.Query) ([]*models.AccessToken, int, error)
-	ListOwnAccessTokens(ctx context.Context, query *q.Query) ([]*models.AccessToken, int, error)
+	ListPersonalAccessTokens(ctx context.Context, query *q.Query) ([]*models.AccessToken, int, error)
 	GetAccessToken(ctx context.Context, id uint) (*oauthmodels.Token, error)
 }
 
@@ -31,7 +31,7 @@ func NewDAO(db *gorm.DB) DAO {
 	}
 }
 
-func (d *dao) ListAccessTokensOfResource(ctx context.Context, resourceType string, resourceID uint,
+func (d *dao) ListAccessTokensByResource(ctx context.Context, resourceType string, resourceID uint,
 	query *q.Query) ([]*models.AccessToken, int, error) {
 	var (
 		pageSize   = common.DefaultPageSize
@@ -51,7 +51,7 @@ func (d *dao) ListAccessTokensOfResource(ctx context.Context, resourceType strin
 	offset := (pageNumber - 1) * pageSize
 
 	result := d.db.WithContext(ctx).Table("tb_token as t").
-		Joins("join tb_user as u on t.user_or_robot_identity = u.id").
+		Joins("join tb_user as u on t.user_id = u.id").
 		Joins("join tb_member as m on u.id = m.membername_id").
 		Where("u.user_type = ?", usermodels.UserTypeRobot).
 		Where("m.resource_type = ?", resourceType).
@@ -60,7 +60,7 @@ func (d *dao) ListAccessTokensOfResource(ctx context.Context, resourceType strin
 	return tokens, int(total), result.Error
 }
 
-func (d *dao) ListOwnAccessTokens(ctx context.Context, query *q.Query) ([]*models.AccessToken, int, error) {
+func (d *dao) ListPersonalAccessTokens(ctx context.Context, query *q.Query) ([]*models.AccessToken, int, error) {
 	var (
 		pageSize   = common.DefaultPageSize
 		pageNumber = common.DefaultPageNumber

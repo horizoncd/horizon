@@ -146,7 +146,7 @@ func checkAuthorizeToken(req *AuthorizeGenerateRequest, token *models.Token) boo
 		req.Scope == token.Scope &&
 		req.RedirectURL == token.RedirectURI &&
 		req.State == token.State &&
-		req.UserIdentify == token.UserOrRobotIdentity {
+		req.UserIdentify == token.UserID {
 		return true
 	}
 	return false
@@ -156,7 +156,7 @@ func checkAccessToken(codeReq *AuthorizeGenerateRequest, req *AccessTokenGenerat
 	if token.Code != req.Code &&
 		token.ClientID == req.ClientID &&
 		token.RedirectURI == req.RedirectURL &&
-		token.UserOrRobotIdentity == codeReq.UserIdentify &&
+		token.UserID == codeReq.UserIdentify &&
 		token.Scope == codeReq.Scope {
 		return true
 	}
@@ -196,7 +196,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 		RedirectURL:  oauthApp.RedirectURL,
 		State:        "dadk2sadjhkj24980",
 		Scope:        "",
-		UserIdentify: "43",
+		UserIdentify: 43,
 		Request:      nil,
 	}
 	codeToken, err := oauthManager.GenAuthorizeCode(ctx, authorizaGenerateReq)
@@ -258,7 +258,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 		RedirectURL:  oauthApp.RedirectURL,
 		State:        "dadk2sadjhkj24980",
 		Scope:        "",
-		UserIdentify: "43",
+		UserIdentify: 43,
 		Request:      nil,
 	}
 	codeToken, err = oauthManager.GenAuthorizeCode(ctx, authorizaGenerateReq)

@@ -136,7 +136,7 @@ definitions:
     properties:
       code:
         type: string
-        description: "You could use it to pass authentication when calling the api. When using it, you need to put it in the request header Authorization: Bearer {token} for use"
+        description: "You could use it to pass authentication when calling the api. When using it, you need to put it in the request header Authorization: Bearer $token for use"
   AccessTokenBasicInfo:
     type: object
     required: [name, expiresAt, role, scopes]
