@@ -11,7 +11,6 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
-	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -124,7 +123,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 		}
 		return nil, err
 	}
-	cluster.Status = clustercommon.StatusEmpty
+	cluster.Status = common.ClusterStatusEmpty
 	updateClusterResp, err := c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
 		return nil, err
@@ -276,7 +275,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	var regionEntity *regionmodels.RegionEntity
 	environmentName := cluster.EnvironmentName
 	regionName := cluster.RegionName
-	if cluster.Status == clustercommon.StatusFreed &&
+	if cluster.Status == common.ClusterStatusFreed &&
 		(r.Environment != nil && *r.Environment != environmentName) ||
 		(r.Region != nil && *r.Region != regionName) {
 		if r.Environment != nil {

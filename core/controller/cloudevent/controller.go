@@ -11,8 +11,8 @@ import (
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
@@ -51,8 +51,8 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	const op = "cloudEvent controller: cloudEvent"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	environment := wpr.PipelineRun.Labels[common.EnvironmentLabelKey]
-	pipelinerunIDStr := wpr.PipelineRun.Labels[common.PipelinerunIDLabelKey]
+	environment := wpr.PipelineRun.Labels[common.ClusterEnvironmentLabelKey]
+	pipelinerunIDStr := wpr.PipelineRun.Labels[common.ClusterPipelinerunIDLabelKey]
 	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
 	if err != nil {
 		return perror.Wrapf(herrors.ErrParamInvalid,

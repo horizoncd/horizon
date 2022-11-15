@@ -11,7 +11,7 @@ import (
 )
 
 type DAO interface {
-	// ListByClusterID List cluster tags by clusterID
+	// ListByClusterID Lists cluster tags by clusterID
 	ListByClusterID(ctx context.Context, clusterID uint) ([]*models.ClusterTemplateSchemaTag, error)
 	// UpsertByClusterID upsert cluster tags
 	UpsertByClusterID(ctx context.Context, clusterID uint, tags []*models.ClusterTemplateSchemaTag) error

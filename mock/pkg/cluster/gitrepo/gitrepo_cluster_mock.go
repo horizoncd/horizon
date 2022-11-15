@@ -284,26 +284,3 @@ func (mr *MockClusterGitRepoMockRecorder) UpdateTags(ctx, application, cluster, 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTags", reflect.TypeOf((*MockClusterGitRepo)(nil).UpdateTags), ctx, application, cluster, templateName, tags)
 }
-
-// MockPipelineOutput is a mock of PipelineOutput interface.
-type MockPipelineOutput struct {
-	ctrl     *gomock.Controller
-	recorder *MockPipelineOutputMockRecorder
-}
-
-// MockPipelineOutputMockRecorder is the mock recorder for MockPipelineOutput.
-type MockPipelineOutputMockRecorder struct {
-	mock *MockPipelineOutput
-}
-
-// NewMockPipelineOutput creates a new mock instance.
-func NewMockPipelineOutput(ctrl *gomock.Controller) *MockPipelineOutput {
-	mock := &MockPipelineOutput{ctrl: ctrl}
-	mock.recorder = &MockPipelineOutputMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockPipelineOutput) EXPECT() *MockPipelineOutputMockRecorder {
-	return m.recorder
-}

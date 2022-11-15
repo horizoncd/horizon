@@ -15,7 +15,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
-	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	cmodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
@@ -26,10 +25,10 @@ import (
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/mergemap"
+	"g.hz.netease.com/horizon/pkg/util/permission"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/Masterminds/sprig"
@@ -37,13 +36,80 @@ import (
 	kyaml "sigs.k8s.io/yaml"
 )
 
-func (c *controller) ListCluster(ctx context.Context, applicationID uint, environments []string,
-	filter string, query *q.Query, ts []tagmodels.TagSelector) (_ int, _ []*ListClusterResponse, err error) {
+func (c *controller) List(ctx context.Context, query *q.Query) (int, []*ListClusterWithFullResponse, error) {
+	applicationIDs := make([]uint, 0)
+
+	// get current user
+	if query != nil &&
+		query.Keywords != nil &&
+		query.Keywords[common.ClusterQueryByUser] != nil {
+		if userID, ok := query.Keywords[common.ClusterQueryByUser].(uint); ok {
+			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
+				return 0, nil, err
+			}
+			// get groups authorized to current user
+			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
+			if err != nil {
+				return 0, nil,
+					perror.WithMessage(err, "failed to list group resource of current user")
+			}
+
+			// get these groups' subGroups
+			subGroups, err := c.groupManager.GetSubGroupsByGroupIDs(ctx, groupIDs)
+			if err != nil {
+				return 0, nil, perror.WithMessage(err, "failed to get groups")
+			}
+
+			subGroupIDs := make([]uint, 0)
+			for _, group := range subGroups {
+				subGroupIDs = append(subGroupIDs, group.ID)
+			}
+
+			// list applications of these subGroups
+			applications, err := c.applicationMgr.GetByGroupIDs(ctx, subGroupIDs)
+			if err != nil {
+				return 0, nil, perror.WithMessage(err, "failed to get applications")
+			}
+
+			for _, application := range applications {
+				applicationIDs = append(applicationIDs, application.ID)
+			}
+
+			// get applications authorized to current user
+			authorizedApplicationIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx,
+				membermodels.TypeApplication, userID)
+			if err != nil {
+				return 0, nil,
+					perror.WithMessage(err, "failed to list application resource of current user")
+			}
+
+			// all applicationIDs, including:
+			// (1) applications under the authorized groups
+			// (2) authorized applications directly
+			applicationIDs = append(applicationIDs, authorizedApplicationIDs...)
+		}
+	}
+
+	count, clusters, err := c.clusterMgr.List(ctx, query, applicationIDs...)
+	if err != nil {
+		return 0, nil,
+			perror.WithMessage(err, "failed to list user clusters")
+	}
+
+	responses, err := c.getFullResponsesWithRegion(ctx, clusters)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return count, responses, nil
+}
+
+func (c *controller) ListByApplication(ctx context.Context,
+	query *q.Query) (_ int, _ []*ListClusterResponse, err error) {
 	const op = "cluster controller: list cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByApplicationEnvsTags(ctx,
-		applicationID, environments, filter, query, ts)
+	count, clustersWithEnvAndRegion, err := c.clusterMgr.List(ctx, query)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -59,92 +125,6 @@ func (c *controller) ListCluster(ctx context.Context, applicationID uint, enviro
 	}
 
 	return count, ofClustersWithEnvRegionTags(clustersWithEnvAndRegion, tags), nil
-}
-
-func (c *controller) ListClusterByNameFuzzily(ctx context.Context, environment,
-	filter string, query *q.Query) (count int, listClusterWithFullResp []*ListClusterWithFullResponse, err error) {
-	const op = "cluster controller: list cluster by name fuzzily"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	listClusterWithFullResp = []*ListClusterWithFullResponse{}
-	// 1. get clusters
-	count, clustersWithEnvAndRegion, err := c.clusterMgr.ListByNameFuzzily(ctx,
-		environment, filter, query)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	responses, err := c.getFullResponsesWithRegion(ctx, clustersWithEnvAndRegion)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	return count, responses, nil
-}
-
-func (c *controller) ListUserClusterByNameFuzzily(ctx context.Context, environment,
-	filter string, query *q.Query) (count int, resp []*ListClusterWithFullResponse, err error) {
-	// get current user
-	currentUser, err := common.UserFromContext(ctx)
-	if err != nil {
-		return 0, nil, perror.WithMessage(err, "no user in context")
-	}
-
-	// get groups authorized to current user
-	groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, currentUser.GetID())
-	if err != nil {
-		return 0, nil,
-			perror.WithMessage(err, "failed to list group resource of current user")
-	}
-
-	// get these groups' subGroups
-	subGroups, err := c.groupManager.GetSubGroupsByGroupIDs(ctx, groupIDs)
-	if err != nil {
-		return 0, nil, perror.WithMessage(err, "failed to get groups")
-	}
-
-	subGroupIDs := make([]uint, 0)
-	for _, group := range subGroups {
-		subGroupIDs = append(subGroupIDs, group.ID)
-	}
-
-	// list applications of these subGroups
-	applications, err := c.applicationMgr.GetByGroupIDs(ctx, subGroupIDs)
-	if err != nil {
-		return 0, nil, perror.WithMessage(err, "failed to get applications")
-	}
-
-	applicationIDs := make([]uint, 0)
-	for _, application := range applications {
-		applicationIDs = append(applicationIDs, application.ID)
-	}
-
-	// get applications authorized to current user
-	authorizedApplicationIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx,
-		membermodels.TypeApplication, currentUser.GetID())
-	if err != nil {
-		return 0, nil,
-			perror.WithMessage(err, "failed to list application resource of current user")
-	}
-
-	// all applicationIDs, including:
-	// (1) applications under the authorized groups
-	// (2) authorized applications directly
-	applicationIDs = append(applicationIDs, authorizedApplicationIDs...)
-
-	count, clusters, err := c.clusterMgr.ListUserAuthorizedByNameFuzzily(ctx, environment,
-		filter, applicationIDs, currentUser.GetID(), query)
-	if err != nil {
-		return 0, nil,
-			perror.WithMessage(err, "failed to list user clusters")
-	}
-
-	responses, err := c.getFullResponsesWithRegion(ctx, clusters)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	return count, responses, nil
 }
 
 func (c *controller) getFullResponses(ctx context.Context,
@@ -431,7 +411,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 
 	// 6. create cluster, after created, params.Cluster is the newest cluster
 	cluster, tags := r.toClusterModel(application, er, expireSeconds)
-	cluster.Status = clustercommon.StatusCreating
+	cluster.Status = common.ClusterStatusCreating
 
 	if err := tagmanager.ValidateUpsert(tags); err != nil {
 		return nil, err
@@ -472,7 +452,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 		}
 		return nil, err
 	}
-	cluster.Status = clustercommon.StatusEmpty
+	cluster.Status = common.ClusterStatusEmpty
 	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
 		return nil, err
@@ -533,7 +513,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// can only update environment/region when the cluster has been freed
-	if cluster.Status == clustercommon.StatusFreed && r.Environment != "" && r.Region != "" {
+	if cluster.Status == common.ClusterStatusFreed && r.Environment != "" && r.Region != "" {
 		er, err = c.envRegionMgr.GetByEnvironmentAndRegion(ctx, r.Environment, r.Region)
 		if err != nil {
 			return nil, err
@@ -730,7 +710,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 	}
 
 	// 0. set cluster status
-	cluster.Status = clustercommon.StatusDeleting
+	cluster.Status = common.ClusterStatusDeleting
 	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
 		return err
@@ -839,13 +819,13 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	if err != nil {
 		return err
 	}
-	if cluster.Status == clustercommon.StatusFreeing {
+	if cluster.Status == common.ClusterStatusFreeing {
 		log.Warningf(ctx, "failed to free cluster: %v, cluster status: %v", cluster.Name, cluster.Status)
 		return nil
 	}
 
 	// 1. set cluster status
-	cluster.Status = clustercommon.StatusFreeing
+	cluster.Status = common.ClusterStatusFreeing
 	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
 		return err
@@ -866,6 +846,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	go func() {
 		var err error
 		defer func() {
+			cluster.Status = common.ClusterStatusFreed
 			if err != nil {
 				cluster.Status = ""
 				_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
@@ -885,7 +866,7 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		}
 
 		// 3. set cluster status
-		cluster.Status = clustercommon.StatusFreed
+		cluster.Status = common.ClusterStatusFreed
 		_, err = c.clusterMgr.UpdateByID(newctx, cluster.ID, cluster)
 		if err != nil {
 			log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
@@ -1042,5 +1023,5 @@ func validateClusterName(name string) error {
 
 // isUnstableStatus judge if status is Creating or Deleting
 func isClusterStatusUnstable(status string) bool {
-	return status == clustercommon.StatusCreating || status == clustercommon.StatusDeleting
+	return status == common.ClusterStatusCreating || status == common.ClusterStatusDeleting
 }

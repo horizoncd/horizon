@@ -12,7 +12,6 @@ import (
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
-	userctl "g.hz.netease.com/horizon/core/controller/user"
 	"g.hz.netease.com/horizon/core/http/health"
 	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	"g.hz.netease.com/horizon/job/autofree"
@@ -106,7 +105,6 @@ func Run(flags *Flags) {
 
 	// init controller
 	var (
-		userCtl        = userctl.NewController(parameter)
 		clusterCtl     = clusterctl.NewController(&config.Config{}, parameter)
 		prCtl          = prctl.NewController(parameter)
 		environmentCtl = environmentctl.NewController(parameter)
@@ -130,7 +128,7 @@ func Run(flags *Flags) {
 	// automatically release expired clusters
 	go func() {
 		autofree.AutoReleaseExpiredClusterJob(cancellableCtx, &coreConfig.AutoFreeConfig,
-			userCtl, clusterCtl, prCtl, environmentCtl)
+			parameter.UserManager, clusterCtl, prCtl, environmentCtl)
 	}()
 
 	r := gin.New()

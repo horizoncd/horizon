@@ -1,14 +1,25 @@
 package user
 
 import (
-	"net/http"
+	"errors"
+	"fmt"
 	"strconv"
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/user"
+	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
+)
+
+// path variable
+const (
+	_userIDParam = "userID"
+	_linkIDParam = "linkID"
 )
 
 type API struct {
@@ -21,65 +32,179 @@ func NewAPI(ctl user.Controller) *API {
 	}
 }
 
-func (a *API) Search(c *gin.Context) {
-	var (
-		filter               string
-		pageNumber, pageSize int
+func (a *API) List(c *gin.Context) {
+	queryName := c.Query(common.UserQueryName)
+	keywords := q.KeyWords{}
+	if queryName != "" {
+		keywords[common.UserQueryName] = queryName
+	}
 
-		err error
-	)
-	filter = c.Query(common.Filter)
-
-	pageNumberStr := c.Query(common.PageNumber)
-	pageNumber, err = strconv.Atoi(pageNumberStr)
+	query := q.New(keywords).WithPagination(c)
+	total, users, err := a.userCtl.List(c, query)
 	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, "invalid pageNumber")
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsgf("failed to get users: "+
+				"err = %v", err))
 		return
 	}
 
-	pageSizeStr := c.Query(common.PageSize)
-	pageSize, err = strconv.Atoi(pageSizeStr)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, "invalid pageSize")
-		return
-	}
-
-	if pageNumber < 1 {
-		pageNumber = common.DefaultPageNumber
-	}
-
-	if pageSize < 0 {
-		pageSize = common.DefaultPageSize
-	}
-
-	count, res, err := a.userCtl.SearchUser(c, filter, &q.Query{
-		PageNumber: pageNumber,
-		PageSize:   pageSize,
-	})
-	if err != nil {
-		response.AbortWithError(c, err)
-		return
-	}
-
-	response.SuccessWithData(c, response.DataWithTotal{
-		Total: int64(count),
-		Items: res,
-	})
+	response.SuccessWithData(c,
+		response.DataWithTotal{
+			Total: total,
+			Items: users,
+		})
 }
 
-func (a *API) Status(c *gin.Context) {
-	u, err := common.UserFromContext(c)
+func (a *API) GetSelf(c *gin.Context) {
+	userInCtx, err := common.UserFromContext(c)
 	if err != nil {
-		response.Abort(c, http.StatusForbidden, common.Forbidden, "user not logged in")
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsgf("user in context not found: err = %v", err))
 		return
 	}
-	response.SuccessWithData(c, struct {
-		Name    string `json:"name"`
-		ID      uint   `json:"id"`
-		IsAdmin bool   `json:"isAdmin"`
-	}{
-		Name:    u.GetFullName(),
-		ID:      u.GetID(),
-		IsAdmin: u.IsAdmin(),
-	})
+	userInDB, err := a.userCtl.GetByID(c, userInCtx.GetID())
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c,
+				rpcerror.NotFoundError.WithErrMsgf("user not found: id = %v, err =  %v", userInCtx.GetID(), err))
+			return
+		}
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsgf("failed to get user by id: err =  %v", err))
+		return
+	}
+
+	response.SuccessWithData(c, userInDB)
+}
+
+func (a *API) GetByID(c *gin.Context) {
+	op := "user: get by id"
+	uid := c.Param(_userIDParam)
+	var (
+		userID uint64
+		err    error
+	)
+
+	if userID, err = strconv.ParseUint(uid, 10, 64); err != nil {
+		log.WithFiled(c, "op", op).Info("user ID not found or invalid")
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("userID not found or invalid"))
+		return
+	}
+
+	userInDB, err := a.userCtl.GetByID(c, uint(userID))
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c,
+				rpcerror.NotFoundError.WithErrMsgf("user not found: id = %v, err =  %v", userID, err))
+			return
+		}
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsgf("failed to get user by id: err =  %v", err))
+		return
+	}
+
+	response.SuccessWithData(c, userInDB)
+}
+
+func (a *API) Update(c *gin.Context) {
+	op := "user: update by id"
+	uid := c.Param(_userIDParam)
+	var (
+		userID uint64
+		err    error
+	)
+
+	if userID, err = strconv.ParseUint(uid, 10, 64); err != nil {
+		log.WithFiled(c, "op", op).Info("user ID not found or invalid")
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("userID not found or invalid"))
+		return
+	}
+
+	params := user.UpdateUserRequest{}
+	if err = c.ShouldBindJSON(&params); err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid request body, err: %s",
+			err.Error())))
+		return
+	}
+
+	updatedUser, err := a.userCtl.UpdateByID(c, uint(userID), &params)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c,
+				rpcerror.NotFoundError.WithErrMsgf("user not found: id = %v, err =  %v", userID, err))
+			return
+		}
+		if err = perror.Cause(err); errors.Is(err, herrors.ErrForbidden) {
+			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsgf(
+				"can not update user:\n"+
+					"id = %v\nerr = %v", userID, err))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsgf(
+			"failed to update user:\n"+
+				"id = %v\nerr = %v", userID, err))
+		return
+	}
+
+	response.SuccessWithData(c, updatedUser)
+}
+
+func (a *API) GetLinksByUser(c *gin.Context) {
+	op := "user links: get links by user"
+	uid := c.Param(_userIDParam)
+	var (
+		userID uint64
+		err    error
+	)
+
+	if userID, err = strconv.ParseUint(uid, 10, 64); err != nil {
+		log.WithFiled(c, "op", op).Info("user ID not found or invalid")
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("userID not found or invalid"))
+		return
+	}
+
+	links, err := a.userCtl.ListUserLinks(c, uint(userID))
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c,
+				rpcerror.NotFoundError.WithErrMsgf("user not found: id = %v, err =  %v", userID, err))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsgf(
+			"failed to list links:\n"+
+				"id = %v\nerr = %v", userID, err))
+		return
+	}
+
+	response.SuccessWithData(c, links)
+}
+
+func (a *API) DeleteLink(c *gin.Context) {
+	op := "user links: delete user"
+	idStr := c.Param(_linkIDParam)
+	var (
+		linkID uint64
+		err    error
+	)
+
+	if linkID, err = strconv.ParseUint(idStr, 10, 64); err != nil {
+		log.WithFiled(c, "op", op).Info("user ID not found or invalid")
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("userID not found or invalid"))
+		return
+	}
+
+	err = a.userCtl.DeleteLinksByID(c, uint(linkID))
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c,
+				rpcerror.NotFoundError.WithErrMsgf("link not found: id = %v, err =  %v", linkID, err))
+			return
+		}
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsgf(
+			"failed to delete link:\n"+
+				"id = %v\nerr = %v", linkID, err))
+		return
+	}
+
+	response.Success(c)
 }

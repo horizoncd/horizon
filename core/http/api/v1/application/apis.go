@@ -212,62 +212,40 @@ func (a *API) Delete(c *gin.Context) {
 	response.Success(c)
 }
 
-// SearchApplication search all applications
-func (a *API) SearchApplication(c *gin.Context) {
-	const op = "application: search application"
-	pageNumber, pageSize, err := request.GetPageParam(c)
-	if err != nil {
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid pageNumber or "+
-			"pageSize, err: %s", err.Error())))
-		return
+// List search all applications that authorized to current user
+func (a *API) List(c *gin.Context) {
+	const op = "application: list application"
+
+	keywords := make(map[string]interface{})
+
+	filter := c.Query(common.ApplicationQueryName)
+	if filter != "" {
+		keywords[common.ApplicationQueryName] = filter
 	}
 
-	keywords := request.GetFilterParam(c)
+	template := c.Query(common.ApplicationQueryByTemplate)
+	if template != "" {
+		keywords[common.ApplicationQueryByTemplate] = template
+	}
 
-	filter := c.Query(common.Filter)
+	release := c.Query(common.ApplicationQueryByRelease)
+	if release != "" {
+		keywords[common.ApplicationQueryByRelease] = release
+	}
 
-	total, applications, err := a.applicationCtl.ListApplication(c, filter, q.Query{
-		Keywords:   keywords,
-		PageSize:   pageSize,
-		PageNumber: pageNumber,
-	})
-	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {
-				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-				return
-			}
-		} else if perror.Cause(err) == herrors.ErrParamInvalid {
-			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+	idStr := c.Query(common.ApplicationQueryByUser)
+	if idStr != "" {
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("user id is not a number"))
 			return
 		}
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
+		keywords[common.ApplicationQueryByUser] = uint(id)
 	}
 
-	response.SuccessWithData(c, response.DataWithTotal{
-		Total: int64(total),
-		Items: applications,
-	})
-}
+	query := q.New(keywords).WithPagination(c)
 
-// SearchMyApplication search all applications that authorized to current user
-func (a *API) SearchMyApplication(c *gin.Context) {
-	const op = "application: search my application"
-	pageNumber, pageSize, err := request.GetPageParam(c)
-	if err != nil {
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid pageNumber or "+
-			"pageSize, err: %s", err.Error())))
-		return
-	}
-
-	filter := c.Query(common.Filter)
-
-	total, applications, err := a.applicationCtl.ListUserApplication(c, filter, &q.Query{
-		PageSize:   pageSize,
-		PageNumber: pageNumber,
-	})
+	applications, total, err := a.applicationCtl.List(c, query)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {

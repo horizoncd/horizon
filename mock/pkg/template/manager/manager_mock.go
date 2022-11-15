@@ -8,6 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	q "g.hz.netease.com/horizon/lib/q"
 	models "g.hz.netease.com/horizon/pkg/application/models"
 	models0 "g.hz.netease.com/horizon/pkg/cluster/models"
 	models1 "g.hz.netease.com/horizon/pkg/template/models"
@@ -128,21 +129,6 @@ func (mr *MockManagerMockRecorder) GetRefOfCluster(ctx, id interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRefOfCluster", reflect.TypeOf((*MockManager)(nil).GetRefOfCluster), ctx, id)
 }
 
-// List mocks base method.
-func (m *MockManager) List(ctx context.Context) ([]*models1.Template, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
-	ret0, _ := ret[0].([]*models1.Template)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// List indicates an expected call of List.
-func (mr *MockManagerMockRecorder) List(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockManager)(nil).List), ctx)
-}
-
 // ListByGroupID mocks base method.
 func (m *MockManager) ListByGroupID(ctx context.Context, groupID uint) ([]*models1.Template, error) {
 	m.ctrl.T.Helper()
@@ -186,6 +172,42 @@ func (m *MockManager) ListByIDs(ctx context.Context, ids []uint) ([]*models1.Tem
 func (mr *MockManagerMockRecorder) ListByIDs(ctx, ids interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByIDs", reflect.TypeOf((*MockManager)(nil).ListByIDs), ctx, ids)
+}
+
+// ListTemplate mocks base method.
+func (m *MockManager) ListTemplate(ctx context.Context) ([]*models1.Template, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTemplate", ctx)
+	ret0, _ := ret[0].([]*models1.Template)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTemplate indicates an expected call of ListTemplate.
+func (mr *MockManagerMockRecorder) ListTemplate(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTemplate", reflect.TypeOf((*MockManager)(nil).ListTemplate), ctx)
+}
+
+// ListV2 mocks base method.
+func (m *MockManager) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int, []*models1.Template, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, query}
+	for _, a := range groupIDs {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "List", varargs...)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].([]*models1.Template)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListV2 indicates an expected call of ListV2.
+func (mr *MockManagerMockRecorder) ListV2(ctx, query interface{}, groupIDs ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, query}, groupIDs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockManager)(nil).ListV2), varargs...)
 }
 
 // UpdateByID mocks base method.

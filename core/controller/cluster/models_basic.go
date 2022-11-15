@@ -286,8 +286,8 @@ type GetClusterByNameResponse struct {
 
 type ListClusterWithFullResponse struct {
 	*ListClusterResponse
-	FullName string `json:"fullName"`
-	FullPath string `json:"fullPath"`
+	FullName string `json:"fullName,omitempty"`
+	FullPath string `json:"fullPath,omitempty"`
 }
 
 type ListClusterWithExpiryResponse struct {

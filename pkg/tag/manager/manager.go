@@ -13,9 +13,9 @@ import (
 )
 
 type Manager interface {
-	// ListByResourceTypeID List tags by resourceType and resourceID
+	// ListByResourceTypeID Lists tags by resourceType and resourceID
 	ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error)
-	// ListByResourceTypeIDs List tags by resourceType and resourceID
+	// ListByResourceTypeIDs Lists tags by resourceType and resourceID
 	ListByResourceTypeIDs(ctx context.Context, resourceType string, resourceIDs []uint,
 		deduplicate bool) ([]*models.Tag, error)
 	// UpsertByResourceTypeID upsert tags

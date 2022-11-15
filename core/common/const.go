@@ -75,7 +75,8 @@ const (
 )
 
 const (
-	GroupCore = "core"
+	GroupCore  = "core"
+	GroupFront = "front"
 )
 
 const (
@@ -88,11 +89,6 @@ const (
 	ParamPipelinerunID = "pipelinerunID"
 )
 
-const (
-	ParamScope      = "scope"
-	ParamMergePatch = "mergePatch"
-	ParamExtraOwner = "extraOwner"
-)
 const (
 	GitlabCode     = "code"
 	GitlabGitops   = "gitops"

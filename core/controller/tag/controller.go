@@ -85,7 +85,7 @@ func (c *controller) ListSubResourceTags(ctx context.Context, resourceType strin
 
 	var results []*models.Tag
 	if resourceType == common.ResourceApplication {
-		clusters, err := c.clusterMgr.ListByApplicationID(ctx, resourceID)
+		_, clusters, err := c.clusterMgr.ListByApplicationID(ctx, resourceID)
 		if err != nil {
 			return nil, err
 		}

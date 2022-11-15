@@ -3,10 +3,10 @@ package cluster
 import (
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	controllertag "g.hz.netease.com/horizon/core/controller/tag"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
-	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
@@ -69,7 +69,7 @@ func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Applicati
 		}(),
 		Template:        info.TemplateInfo.Name,
 		TemplateRelease: info.TemplateInfo.Release,
-		Status:          clustercommon.StatusCreating,
+		Status:          common.ClusterStatusCreating,
 	}
 	tags := make([]*tagmodels.Tag, 0)
 	for _, tag := range r.Tags {

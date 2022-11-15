@@ -23,18 +23,9 @@ type Manager interface {
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
-	ListByApplicationEnvsTags(ctx context.Context, applicationID uint, environments []string,
-		filter string, query *q.Query, ts []tagmodels.TagSelector) (int, []*models.ClusterWithRegion, error)
-	ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error)
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
-	ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int,
-		[]*models.ClusterWithRegion, error)
-	// ListUserAuthorizedByNameFuzzily list cluster which is authorized to the specified user.
-	// 1. name is the cluster's fuzzily name.
-	// 2. applicationIDs is the applications' id which are authorized to the specified user.
-	// 3. userInfo is the user id
-	ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
-		name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error)
+	List(ctx context.Context, query *q.Query, appIDs ...uint) (int, []*models.ClusterWithRegion, error)
+	ListByApplicationID(ctx context.Context, applicationID uint) (int, []*models.ClusterWithRegion, error)
 	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*models.Cluster, error)
 }
 
@@ -88,63 +79,17 @@ func (m *manager) DeleteByID(ctx context.Context, id uint) error {
 	return m.dao.DeleteByID(ctx, id)
 }
 
-func (m *manager) ListByApplicationEnvsTags(ctx context.Context, applicationID uint, environments []string,
-	filter string, query *q.Query, ts []tagmodels.TagSelector) (int, []*models.ClusterWithRegion, error) {
-	if query == nil {
-		query = &q.Query{
-			PageNumber: common.DefaultPageNumber,
-			PageSize:   common.DefaultPageSize,
-		}
-	}
-	if query.PageNumber < 1 {
-		query.PageNumber = common.DefaultPageNumber
-	}
-	if query.PageSize < 1 {
-		query.PageSize = common.DefaultPageSize
-	}
-	return m.dao.ListByApplicationEnvsTags(ctx, applicationID, environments, filter, query, ts)
-}
-
-func (m *manager) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error) {
-	return m.dao.ListByApplicationID(ctx, applicationID)
-}
-
-func (m *manager) ListByNameFuzzily(ctx context.Context, environment,
-	name string, query *q.Query) (int, []*models.ClusterWithRegion, error) {
-	if query == nil {
-		query = &q.Query{
-			PageNumber: common.DefaultPageNumber,
-			PageSize:   common.DefaultPageSize,
-		}
-	}
-	if query.PageNumber < 1 {
-		query.PageNumber = common.DefaultPageNumber
-	}
-	if query.PageSize < 1 {
-		query.PageSize = common.DefaultPageSize
-	}
-	return m.dao.ListByNameFuzzily(ctx, environment, name, query)
-}
-
 func (m *manager) CheckClusterExists(ctx context.Context, cluster string) (bool, error) {
 	return m.dao.CheckClusterExists(ctx, cluster)
 }
 
-func (m *manager) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment,
-	name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error) {
-	if query == nil {
-		query = &q.Query{
-			PageNumber: common.DefaultPageNumber,
-			PageSize:   common.DefaultPageSize,
-		}
-	}
-	if query.PageNumber < 1 {
-		query.PageNumber = common.DefaultPageNumber
-	}
-	if query.PageSize < 1 {
-		query.PageSize = common.DefaultPageSize
-	}
-	return m.dao.ListUserAuthorizedByNameFuzzily(ctx, environment, name, applicationIDs, userInfo, query)
+func (m *manager) List(ctx context.Context, query *q.Query, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
+	return m.dao.List(ctx, query, true, appIDs...)
+}
+
+func (m *manager) ListByApplicationID(ctx context.Context,
+	applicationID uint) (int, []*models.ClusterWithRegion, error) {
+	return m.dao.List(ctx, q.New(q.KeyWords{common.ParamApplicationID: applicationID}), false)
 }
 
 func (m *manager) ListClusterWithExpiry(ctx context.Context,

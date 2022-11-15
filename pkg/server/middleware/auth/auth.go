@@ -31,6 +31,12 @@ func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) 
 		authRecord := record.(auth.AttributesRecord)
 		authRecord.User = currentUser
 
+		// for routes like /apis/core/v1/applications
+		if authRecord.Name == "" && authRecord.IsReadOnly() {
+			c.Next()
+			return
+		}
+
 		decision, reason, err := authorizer.Authorize(c, authRecord)
 		if err != nil {
 			log.Warningf(c, "auth failed with err = %s", err.Error())

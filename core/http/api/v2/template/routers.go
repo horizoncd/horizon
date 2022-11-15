@@ -18,4 +18,13 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)
+
+	apiGroup = engine.Group("/apis/core/v2/templates")
+	routes = route.Routes{
+		{
+			Method:      http.MethodGet,
+			HandlerFunc: api.List,
+		},
+	}
+	route.RegisterRoutes(apiGroup, routes)
 }

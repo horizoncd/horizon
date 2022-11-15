@@ -7,7 +7,9 @@ import (
 )
 
 type AuthInfo struct {
+	ID          uint   `json:"id"`
 	AuthURL     string `json:"authURL"`
+	Name        string `json:"name"`
 	DisplayName string `json:"displayName,omitempty"`
 }
 

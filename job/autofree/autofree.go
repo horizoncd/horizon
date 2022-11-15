@@ -8,35 +8,47 @@ import (
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
-	userctl "g.hz.netease.com/horizon/core/controller/user"
 	"g.hz.netease.com/horizon/lib/q"
+	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/autofree"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	uuid "github.com/satori/go.uuid"
 )
 
-func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Config, userCtr userctl.Controller,
+func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Manager,
 	clusterCtr clusterctl.Controller, prCtr prctl.Controller, envCtr environmentctl.Controller) {
 	// verify account
-	user, err := userCtr.GetUserByEmail(ctx, jobConfig.Account)
+	user, err := userMgr.GetUserByIDP(ctx, jobConfig.Account, jobConfig.AccountIDP)
 	if err != nil {
 		log.Errorf(ctx, "failed to verify operator, err: %v", err.Error())
 		panic(err)
 	}
-	ctx = common.WithContext(ctx, user)
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:     user.Name,
+		FullName: user.FullName,
+		ID:       user.ID,
+		Email:    user.Email,
+		Admin:    user.Admin,
+	})
 
 	// start job
 	log.Infof(ctx, "Starting releasing expired cluster automatically every %v", jobConfig.JobInterval)
 	defer log.Infof(ctx, "Stopping releasing expired cluster automatically")
 	ticker := time.NewTicker(jobConfig.JobInterval)
 	defer ticker.Stop()
-	for range ticker.C {
-		rid := uuid.NewV4().String()
-		// nolint
-		ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
-		log.Infof(ctx, "auto-free job starts to execute, rid: %v", rid)
-		process(ctx, jobConfig, clusterCtr, prCtr, envCtr)
+	for {
+		select {
+		case <-ticker.C:
+			rid := uuid.NewV4().String()
+			// nolint
+			ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
+			log.Infof(ctx, "auto-free job starts to execute, rid: %v", rid)
+			process(ctx, jobConfig, clusterCtr, prCtr, envCtr)
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

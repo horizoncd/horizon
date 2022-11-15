@@ -111,51 +111,41 @@ func (mr *MockManagerMockRecorder) GetByName(ctx, clusterName interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockManager)(nil).GetByName), ctx, clusterName)
 }
 
-// ListByApplicationEnvsTags mocks base method.
-func (m *MockManager) ListByApplicationEnvsTags(ctx context.Context, applicationID uint, environments []string, filter string, query *q.Query, ts []models0.TagSelector) (int, []*models.ClusterWithRegion, error) {
+// List mocks base method.
+func (m *MockManager) List(ctx context.Context, query *q.Query, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListByApplicationEnvsTags", ctx, applicationID, environments, filter, query, ts)
+	varargs := []interface{}{ctx, query}
+	for _, a := range appIDs {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "List", varargs...)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].([]*models.ClusterWithRegion)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// ListByApplicationEnvsTags indicates an expected call of ListByApplicationEnvsTags.
-func (mr *MockManagerMockRecorder) ListByApplicationEnvsTags(ctx, applicationID, environments, filter, query, ts interface{}) *gomock.Call {
+// List indicates an expected call of List.
+func (mr *MockManagerMockRecorder) List(ctx, query interface{}, appIDs ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByApplicationEnvsTags", reflect.TypeOf((*MockManager)(nil).ListByApplicationEnvsTags), ctx, applicationID, environments, filter, query, ts)
+	varargs := append([]interface{}{ctx, query}, appIDs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockManager)(nil).List), varargs...)
 }
 
 // ListByApplicationID mocks base method.
-func (m *MockManager) ListByApplicationID(ctx context.Context, applicationID uint) ([]*models.Cluster, error) {
+func (m *MockManager) ListByApplicationID(ctx context.Context, applicationID uint) (int, []*models.ClusterWithRegion, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListByApplicationID", ctx, applicationID)
-	ret0, _ := ret[0].([]*models.Cluster)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].([]*models.ClusterWithRegion)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // ListByApplicationID indicates an expected call of ListByApplicationID.
 func (mr *MockManagerMockRecorder) ListByApplicationID(ctx, applicationID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByApplicationID", reflect.TypeOf((*MockManager)(nil).ListByApplicationID), ctx, applicationID)
-}
-
-// ListByNameFuzzily mocks base method.
-func (m *MockManager) ListByNameFuzzily(ctx context.Context, environment, name string, query *q.Query) (int, []*models.ClusterWithRegion, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListByNameFuzzily", ctx, environment, name, query)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].([]*models.ClusterWithRegion)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// ListByNameFuzzily indicates an expected call of ListByNameFuzzily.
-func (mr *MockManagerMockRecorder) ListByNameFuzzily(ctx, environment, name, query interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByNameFuzzily", reflect.TypeOf((*MockManager)(nil).ListByNameFuzzily), ctx, environment, name, query)
 }
 
 // ListClusterWithExpiry mocks base method.
@@ -171,22 +161,6 @@ func (m *MockManager) ListClusterWithExpiry(ctx context.Context, query *q.Query)
 func (mr *MockManagerMockRecorder) ListClusterWithExpiry(ctx, query interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterWithExpiry", reflect.TypeOf((*MockManager)(nil).ListClusterWithExpiry), ctx, query)
-}
-
-// ListUserAuthorizedByNameFuzzily mocks base method.
-func (m *MockManager) ListUserAuthorizedByNameFuzzily(ctx context.Context, environment, name string, applicationIDs []uint, userInfo uint, query *q.Query) (int, []*models.ClusterWithRegion, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListUserAuthorizedByNameFuzzily", ctx, environment, name, applicationIDs, userInfo, query)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].([]*models.ClusterWithRegion)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// ListUserAuthorizedByNameFuzzily indicates an expected call of ListUserAuthorizedByNameFuzzily.
-func (mr *MockManagerMockRecorder) ListUserAuthorizedByNameFuzzily(ctx, environment, name, applicationIDs, userInfo, query interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserAuthorizedByNameFuzzily", reflect.TypeOf((*MockManager)(nil).ListUserAuthorizedByNameFuzzily), ctx, environment, name, applicationIDs, userInfo, query)
 }
 
 // UpdateByID mocks base method.

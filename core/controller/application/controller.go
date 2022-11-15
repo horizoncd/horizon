@@ -32,6 +32,7 @@ import (
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
+	"g.hz.netease.com/horizon/pkg/util/permission"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -46,10 +47,8 @@ type Controller interface {
 		request *UpdateApplicationRequest) (*GetApplicationResponse, error)
 	// DeleteApplication delete an application by name
 	DeleteApplication(ctx context.Context, id uint, hard bool) error
-	// ListApplication list application by filter
-	ListApplication(ctx context.Context, filter string, query q.Query) (int, []*ListApplicationResponse, error)
-	// ListUserApplication list application that authorized to current user by filter
-	ListUserApplication(ctx context.Context, filter string, query *q.Query) (int, []*ListApplicationResponse, error)
+	// List lists application by query
+	List(ctx context.Context, query *q.Query) ([]*ListApplicationResponse, int, error)
 	// Transfer  try transfer application to another group
 	Transfer(ctx context.Context, id uint, groupID uint) error
 	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
@@ -500,12 +499,12 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 		return err
 	}
 
-	clusters, err := c.clusterMgr.ListByApplicationID(ctx, id)
+	count, _, err := c.clusterMgr.ListByApplicationID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	if len(clusters) > 0 {
+	if count > 0 {
 		return perror.Wrap(herrors.ErrParamInvalid, "this application cannot be deleted "+
 			"because there are clusters under this application.")
 	}
@@ -655,16 +654,41 @@ func validateApplicationName(name string) error {
 	return nil
 }
 
-func (c *controller) ListApplication(ctx context.Context, filter string, query q.Query) (count int,
-	listApplicationResp []*ListApplicationResponse, err error) {
+func (c *controller) List(ctx context.Context, query *q.Query) (
+	listApplicationResp []*ListApplicationResponse, count int, err error) {
 	const op = "application controller: list application"
 	defer wlog.Start(ctx, op).StopPrint()
 
+	subGroupIDs := make([]uint, 0)
+	if query.Keywords != nil {
+		if userID, ok := query.Keywords[common.ApplicationQueryByUser].(uint); ok {
+			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
+				return nil, 0, err
+			}
+			// get groups authorized to current user
+			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
+			if err != nil {
+				return nil, 0,
+					perror.WithMessage(err, "failed to list group resource of current user")
+			}
+
+			// get these groups' subGroups
+			subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
+			if err != nil {
+				return nil, 0, perror.WithMessage(err, "failed to get groups")
+			}
+
+			for _, group := range subGroups {
+				subGroupIDs = append(subGroupIDs, group.ID)
+			}
+		}
+	}
+
 	listApplicationResp = []*ListApplicationResponse{}
 	// 1. get application in db
-	count, applications, err := c.applicationMgr.GetByNameFuzzilyByPagination(ctx, filter, query)
+	count, applications, err := c.applicationMgr.List(ctx, subGroupIDs, query)
 	if err != nil {
-		return count, nil, err
+		return nil, 0, err
 	}
 
 	// 2. get groups for full path, full name
@@ -674,7 +698,7 @@ func (c *controller) ListApplication(ctx context.Context, filter string, query q
 	}
 	groupMap, err := c.groupSvc.GetChildrenByIDs(ctx, groupIDs)
 	if err != nil {
-		return count, nil, err
+		return nil, count, err
 	}
 
 	// 3. convert models.Application to ListApplicationResponse
@@ -699,75 +723,7 @@ func (c *controller) ListApplication(ctx context.Context, filter string, query q
 		)
 	}
 
-	return count, listApplicationResp, nil
-}
-
-func (c *controller) ListUserApplication(ctx context.Context,
-	filter string, query *q.Query) (int, []*ListApplicationResponse, error) {
-	// get current user
-	currentUser, err := common.UserFromContext(ctx)
-	if err != nil {
-		return 0, nil, perror.WithMessage(err, "no user in context")
-	}
-
-	// get groups authorized to current user
-	groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, currentUser.GetID())
-	if err != nil {
-		return 0, nil,
-			perror.WithMessage(err, "failed to list group resource of current user")
-	}
-
-	// get these groups' subGroups
-	subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
-	if err != nil {
-		return 0, nil, perror.WithMessage(err, "failed to get groups")
-	}
-
-	subGroupIDs := make([]uint, 0)
-	for _, group := range subGroups {
-		subGroupIDs = append(subGroupIDs, group.ID)
-	}
-
-	count, applications, err := c.applicationMgr.ListUserAuthorizedByNameFuzzily(ctx,
-		filter, subGroupIDs, currentUser.GetID(), query)
-	if err != nil {
-		return 0, nil, perror.WithMessage(err, "failed to list user applications")
-	}
-
-	// get groups for full path, full name
-	var applicationGroupIDs []uint
-	for _, application := range applications {
-		applicationGroupIDs = append(applicationGroupIDs, application.GroupID)
-	}
-	groupMap, err := c.groupSvc.GetChildrenByIDs(ctx, applicationGroupIDs)
-	if err != nil {
-		return count, nil, err
-	}
-
-	// convert models.Application to ListApplicationResponse
-	listApplicationResp := make([]*ListApplicationResponse, 0)
-	for _, application := range applications {
-		group, exist := groupMap[application.GroupID]
-		if !exist {
-			continue
-		}
-		fullPath := fmt.Sprintf("%v/%v", group.FullPath, application.Name)
-		fullName := fmt.Sprintf("%v/%v", group.FullName, application.Name)
-		listApplicationResp = append(
-			listApplicationResp,
-			&ListApplicationResponse{
-				FullName:  fullName,
-				FullPath:  fullPath,
-				Name:      application.Name,
-				GroupID:   application.GroupID,
-				ID:        application.ID,
-				CreatedAt: application.CreatedAt,
-				UpdatedAt: application.UpdatedAt,
-			},
-		)
-	}
-
-	return count, listApplicationResp, nil
+	return listApplicationResp, count, nil
 }
 
 func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (

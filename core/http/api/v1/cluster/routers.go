@@ -20,6 +20,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/applications/:%v/clusters", common.ParamApplicationID),
+			HandlerFunc: api.ListByApplication,
+		}, {
+			Method:      http.MethodGet,
+			Pattern:     "/clusters",
 			HandlerFunc: api.List,
 		}, {
 			Method:      http.MethodPut,
@@ -118,16 +122,6 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 
 	frontGroup := engine.Group("/apis/front/v1/clusters")
 	var frontRoutes = route.Routes{
-		{
-			Method:      http.MethodGet,
-			Pattern:     "/searchclusters",
-			HandlerFunc: api.ListByNameFuzzily,
-		},
-		{
-			Method:      http.MethodGet,
-			Pattern:     "/searchmyclusters",
-			HandlerFunc: api.ListUserClusterByNameFuzzily,
-		},
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%v", common.ParamClusterName),

@@ -58,9 +58,9 @@ func (a *API) GetDiff(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	targetTag := c.Query(_targetTag)
-	targetBranch := c.Query(_targetBranch)
-	targetCommit := c.Query(_targetCommit)
+	targetTag := c.Query(common.ClusterQueryTargetTag)
+	targetBranch := c.Query(common.ClusterQueryTargetBranch)
+	targetCommit := c.Query(common.ClusterQueryTargetCommit)
 	var refType, ref string
 
 	if targetTag != "" {
@@ -119,7 +119,7 @@ func (a *API) PodEvents(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	podName := c.Query(_podName)
+	podName := c.Query(common.ClusterQueryPodName)
 	if podName == "" {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, "podName is empty")
 		return
@@ -276,7 +276,7 @@ func (a *API) GetContainerLog(c *gin.Context) {
 	}
 
 	tailLines := defaultTailLines
-	tailLinesStr := c.Query(_tailLines)
+	tailLinesStr := c.Query(common.ClusterQueryTailLines)
 	if tailLinesStr != "" {
 		tailLinesUint64, err := strconv.ParseUint(tailLinesStr, 10, 0)
 		if err != nil {
@@ -286,8 +286,8 @@ func (a *API) GetContainerLog(c *gin.Context) {
 		tailLines = int(tailLinesUint64)
 	}
 
-	podName := c.Query(_podName)
-	containerName := c.Query(_containerName)
+	podName := c.Query(common.ClusterQueryPodName)
+	containerName := c.Query(common.ClusterQueryContainerName)
 
 	logC, err := a.clusterCtl.GetContainerLog(c, uint(clusterID), podName, containerName, tailLines)
 	if err != nil {
@@ -427,7 +427,7 @@ func (a *API) DeleteClusterPods(c *gin.Context) {
 		return
 	}
 
-	pods := c.QueryArray(_podName)
+	pods := c.QueryArray(common.ClusterQueryPodName)
 	if len(pods) == 0 {
 		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("pod name list should not be empty"))
 		return

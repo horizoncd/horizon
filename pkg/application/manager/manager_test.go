@@ -8,7 +8,6 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	groupdao "g.hz.netease.com/horizon/pkg/group/dao"
@@ -148,22 +147,6 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, appGetByName.Name, apps[0].Name)
-
-	total, apps, err := mgr.GetByNameFuzzilyByPagination(ctx, "app", q.Query{PageSize: 1, PageNumber: 1})
-	assert.Nil(t, err)
-	assert.Equal(t, 1, total)
-	assert.Equal(t, 1, len(apps))
-	assert.Equal(t, name, apps[0].Name)
-
-	totalForUser, appsForUser, err := mgr.ListUserAuthorizedByNameFuzzily(ctx,
-		"app", []uint{1}, user2.ID, &q.Query{
-			PageNumber: 0,
-			PageSize:   common.DefaultPageSize,
-		})
-	assert.Nil(t, err)
-	assert.Equal(t, 1, totalForUser)
-	assert.Equal(t, 1, len(appsForUser))
-	assert.Equal(t, name, apps[0].Name)
 
 	apps, err = mgr.GetByIDs(ctx, []uint{application.ID})
 	assert.Nil(t, err)

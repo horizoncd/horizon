@@ -1,6 +1,7 @@
 package idp
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -62,6 +63,7 @@ func (a *API) ListIDPs(c *gin.Context) {
 func (a *API) LoginCallback(c *gin.Context) {
 	code := c.Query(_oidcCode)
 	state := c.Query(_oidcState)
+	redirect := c.Query(_redirectURL)
 	if code == "" || state == "" {
 		response.AbortWithRPCError(c,
 			rpcerror.ParamError.WithErrMsgf(
@@ -75,7 +77,18 @@ func (a *API) LoginCallback(c *gin.Context) {
 		err  error
 	)
 
-	if user, err = a.idpCtrl.Login(c, code, state); err != nil {
+	if user, err = a.idpCtrl.LoginOrLink(c, code, state, redirect); err != nil {
+		if err = perror.Cause(err); errors.Is(err, herrors.ErrForbidden) {
+			response.AbortWithRPCError(c,
+				rpcerror.ForbiddenError.WithErrMsgf(
+					"this account is banned to sign in"))
+			return
+		} else if err = perror.Cause(err); errors.Is(err, herrors.ErrDuplicatedKey) {
+			response.AbortWithRPCError(c,
+				rpcerror.ConflictError.WithErrMsgf(
+					"idp already linked by another user"))
+			return
+		}
 		response.AbortWithRPCError(c,
 			rpcerror.InternalError.WithErrMsg(err.Error()))
 		return

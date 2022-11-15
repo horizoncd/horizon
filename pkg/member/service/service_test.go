@@ -688,8 +688,6 @@ func TestListTemplateMember(t *testing.T) {
 		FullName: "Jerry",
 		Email:    "jerry@mail.com",
 		Phone:    "",
-		OIDCId:   "HZjerry",
-		OIDCType: "netease",
 		Admin:    false,
 	}
 	jerry, err := manager.UserManager.Create(ctx, jerry)

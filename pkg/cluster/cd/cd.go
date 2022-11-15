@@ -29,8 +29,8 @@ import (
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd"
-	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/kubeclient"
 	argocdconf "g.hz.netease.com/horizon/pkg/config/argocd"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -437,7 +437,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 
 	var rollout *v1alpha1.Rollout
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
-		common.ClusterLabelKey, params.Cluster))
+		common.ClusterClusterLabelKey, params.Cluster))
 	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
 		Group:        "argoproj.io",
 		Version:      "v1alpha1",
@@ -534,7 +534,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	// 从目前的配置来看，该 if 分支表示负载类型是 serverless 应用
 	if clusterState.PodTemplateHashKey == DeploymentPodTemplateHash {
 		labelSelector := fields.ParseSelectorOrDie(
-			fmt.Sprintf("%v=%v", common.ClusterLabelKey, params.Cluster))
+			fmt.Sprintf("%v=%v", common.ClusterClusterLabelKey, params.Cluster))
 		// serverless 应用会有多个 Deployment 对象
 		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient.Basic, namespace, labelSelector.String())
 		if err != nil {
@@ -638,7 +638,7 @@ func (c *cd) GetPodEvents(ctx context.Context,
 	}
 
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
-		common.ClusterLabelKey, params.Cluster))
+		common.ClusterClusterLabelKey, params.Cluster))
 	pods, err := kube.GetPods(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
 	if err != nil {
 		return nil, err
@@ -784,7 +784,7 @@ func extractEnv(pod *corev1.Pod, container corev1.Container) []corev1.EnvVar {
 func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace string,
 	kubeClientSet kubernetes.Interface, clusterState *ClusterState) error {
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
-		common.ClusterLabelKey, cluster))
+		common.ClusterClusterLabelKey, cluster))
 
 	var pods []corev1.Pod
 	var events map[string][]*corev1.Event
@@ -945,7 +945,7 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 	}
 	clusterPod.Spec.InitContainers = initContainers
 
-	cs := &containerList{name: pod.Labels[common.ClusterLabelKey]}
+	cs := &containerList{name: pod.Labels[common.ClusterClusterLabelKey]}
 	for i := range pod.Spec.Containers {
 		cs.containers = append(cs.containers, &pod.Spec.Containers[i])
 	}

@@ -69,7 +69,6 @@ import (
 	envtemplatev2 "g.hz.netease.com/horizon/core/http/api/v2/envtemplate"
 	"g.hz.netease.com/horizon/core/http/health"
 	"g.hz.netease.com/horizon/core/http/metrics"
-	"g.hz.netease.com/horizon/core/middleware/authenticate"
 	ginlogmiddle "g.hz.netease.com/horizon/core/middleware/ginlog"
 	metricsmiddle "g.hz.netease.com/horizon/core/middleware/metrics"
 	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
@@ -393,7 +392,7 @@ func Run(flags *Flags) {
 	userSvc := userservice.NewService(manager)
 
 	// init kube client
-	_, client, err := kube.BuildClient("")
+	_, client, err := kube.BuildClient(coreConfig.KubeConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -431,6 +430,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback")),
 			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/logout")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/users/self")),
 		}
 
 		// init controller
@@ -507,20 +507,15 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		regionmiddle.Middleware(parameter, applicationRegionCtl),
-		// TODO(gjq): remove this authentication, add OIDC provider
-		authenticate.Middleware(coreConfig.AccessSecretKeys, // authenticate middleware, check authentication
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		oauthmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
 		//  user middleware, check user and attach current user to context.
-		usermiddle.Middleware(parameter, store,
+		usermiddle.Middleware(parameter, store, coreConfig,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback"))),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints"))),
 		prehandlemiddle.Middleware(r, manager),
 		auth.Middleware(rbacAuthorizer, rbacSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context

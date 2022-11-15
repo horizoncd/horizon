@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
-	"g.hz.netease.com/horizon/pkg/cluster/common"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -176,7 +176,7 @@ func isClusterActuallyHealthy(ctx context.Context, clusterState *cd.ClusterState
 		}
 		checkResult := true
 		for podName, pod := range clusterVersion.Pods {
-			v, ok := pod.Metadata.Annotations[common.RestartTimeKey]
+			v, ok := pod.Metadata.Annotations[common.ClusterRestartTimeKey]
 			if ok {
 				createTime, err := time.Parse("2006-01-02 15:04:05", v)
 				if err != nil {

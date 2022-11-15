@@ -9,8 +9,8 @@ import (
 	"os"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/config/tekton"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 
@@ -38,8 +38,8 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 			Name:      "test1-1-1",
 			Namespace: "tekton",
 			Labels: map[string]string{
-				common.ClusterIDLabelKey:     "1",
-				common.PipelinerunIDLabelKey: "1",
+				common.ClusterClusterIDLabelKey:     "1",
+				common.ClusterPipelinerunIDLabelKey: "1",
 			},
 		},
 		Status: v1beta1.PipelineRunStatus{
@@ -59,8 +59,8 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 			Name:      "test2-2-1",
 			Namespace: "tekton",
 			Labels: map[string]string{
-				common.ClusterIDLabelKey:     "2",
-				common.PipelinerunIDLabelKey: "1",
+				common.ClusterClusterIDLabelKey:     "2",
+				common.ClusterPipelinerunIDLabelKey: "1",
 			},
 		},
 		Status: v1beta1.PipelineRunStatus{
@@ -242,13 +242,13 @@ func TestTekton_CreatePipelineRun(t1 *testing.T) {
 func TestTekton_getPipelineRunByID(t1 *testing.T) {
 	var pr1, pr2, pr3, pr4 v1beta1.PipelineRun
 	pr1.Name = "pr1"
-	pr1.Labels = map[string]string{common.ClusterIDLabelKey: "1", common.PipelinerunIDLabelKey: "111"}
+	pr1.Labels = map[string]string{common.ClusterClusterIDLabelKey: "1", common.ClusterPipelinerunIDLabelKey: "111"}
 	pr2.Name = "pr2"
-	pr2.Labels = map[string]string{common.ClusterIDLabelKey: "1", common.PipelinerunIDLabelKey: "222"}
+	pr2.Labels = map[string]string{common.ClusterClusterIDLabelKey: "1", common.ClusterPipelinerunIDLabelKey: "222"}
 	pr3.Name = "pr3"
-	pr3.Labels = map[string]string{common.ClusterIDLabelKey: "1", common.PipelinerunIDLabelKey: "222"}
+	pr3.Labels = map[string]string{common.ClusterClusterIDLabelKey: "1", common.ClusterPipelinerunIDLabelKey: "222"}
 	pr4.Name = "pr4"
-	pr4.Labels = map[string]string{common.ClusterIDLabelKey: "2", common.PipelinerunIDLabelKey: "111"}
+	pr4.Labels = map[string]string{common.ClusterClusterIDLabelKey: "2", common.ClusterPipelinerunIDLabelKey: "111"}
 
 	t := &Tekton{
 		client: &Client{

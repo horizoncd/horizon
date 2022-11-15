@@ -34,6 +34,7 @@ var (
 	TaskInDB                  = sourceType{name: "TaskInDB"}
 	StepInDB                  = sourceType{name: "StepInDB"}
 	UserInDB                  = sourceType{name: "UserInDB"}
+	UserLinkInDB              = sourceType{name: "UserLinkInDB"}
 	TemplateSchemaTagInDB     = sourceType{name: "TemplateSchemaTagInDB"}
 	TemplateInDB              = sourceType{name: "TemplateInDB"}
 	TemplateReleaseInDB       = sourceType{name: "TemplateReleaseInDB"}
@@ -180,6 +181,7 @@ var (
 	ErrDeadlineExceeded = errors.New("time limit exceeded")
 	ErrGenerateRandomID = errors.New("failed to generate random id")
 	ErrDisabled         = errors.New("entity is disabled")
+	ErrDuplicatedKey    = errors.New("duplicated keys")
 	// ErrInternal = errors.New("internal error")
 
 	// http

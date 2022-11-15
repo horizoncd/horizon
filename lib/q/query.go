@@ -1,5 +1,12 @@
 package q
 
+import (
+	"strconv"
+
+	"g.hz.netease.com/horizon/core/common"
+	"github.com/gin-gonic/gin"
+)
+
 // KeyWords ...
 type KeyWords = map[string]interface{}
 
@@ -13,6 +20,43 @@ type Query struct {
 	PageNumber int
 	// Page size
 	PageSize int
+}
+
+func (q *Query) Limit() int {
+	if q.PageSize < 1 {
+		q.PageSize = common.DefaultPageSize
+	}
+	return q.PageSize
+}
+
+func (q *Query) Offset() int {
+	if q.PageSize < 1 {
+		q.PageSize = common.DefaultPageSize
+	}
+	if q.PageNumber < 1 {
+		q.PageNumber = common.DefaultPageNumber
+	}
+	return (q.PageNumber - 1) * q.PageSize
+}
+
+func (q *Query) WithPagination(c *gin.Context) *Query {
+	pageNumberStr := c.Query(common.PageNumber)
+	pageNumber, _ := strconv.Atoi(pageNumberStr)
+
+	pageSizeStr := c.Query(common.PageSize)
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+
+	if pageNumber < 1 {
+		pageNumber = common.DefaultPageNumber
+	}
+
+	if pageSize < 0 {
+		pageSize = common.DefaultPageSize
+	}
+
+	q.PageSize = pageSize
+	q.PageNumber = pageNumber
+	return q
 }
 
 // First make the query only fetch the first one record in the sorting order

@@ -13,6 +13,7 @@ import (
 	"g.hz.netease.com/horizon/core/config"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	applicationgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
 	applicationmanangermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
 	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
@@ -32,7 +33,6 @@ import (
 	clustercd "g.hz.netease.com/horizon/pkg/cluster/cd"
 	"g.hz.netease.com/horizon/pkg/cluster/code"
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
-	clustercommon "g.hz.netease.com/horizon/pkg/cluster/common"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
@@ -743,20 +743,29 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "48h0m0s", resp.ExpireTime)
 
-	count, respList, err := c.ListCluster(ctx, application.ID, []string{"test"}, "", nil, nil)
+	count, respList, err := c.ListByApplication(ctx,
+		q.New(q.KeyWords{
+			common.ParamApplicationID:      application.ID,
+			common.ClusterQueryEnvironment: []string{"test"},
+		}))
 	assert.Nil(t, err)
 	t.Logf("%+v", respList)
 	assert.Equal(t, 1, count)
 	assert.Equal(t, respList[0].Template.Name, "javaapp")
 	assert.Equal(t, respList[0].Template.Release, "v1.0.1")
 
-	count, respList, err = c.ListCluster(ctx, application.ID, []string{}, "", nil, nil)
+	count, respList, err = c.ListByApplication(ctx,
+		q.New(q.KeyWords{common.ParamApplicationID: application.ID}))
 	assert.Nil(t, err)
 	assert.Equal(t, count, 2)
 	t.Logf("%+v", respList[0].Scope)
 	t.Logf("%+v", respList[1].Scope)
 
-	count, respList, err = c.ListCluster(ctx, application.ID, []string{"test", "dev"}, "", nil, nil)
+	count, respList, err = c.ListByApplication(ctx,
+		q.New(q.KeyWords{
+			common.ParamApplicationID:      application.ID,
+			common.ClusterQueryEnvironment: []string{"test", "dev"},
+		}))
 	assert.Nil(t, err)
 	assert.Equal(t, count, 2)
 	t.Logf("%+v", respList[0].Scope)
@@ -1544,13 +1553,13 @@ func testIsClusterActuallyHealthy(t *testing.T) {
 
 	// pod1: t1, imagev1, imagev2
 	Pod1.Metadata.Annotations = map[string]string{
-		clustercommon.RestartTimeKey: t1.Format(layout),
+		common.ClusterRestartTimeKey: t1.Format(layout),
 	}
 	Pod1.Spec.Containers = []*clustercd.Container{containerV1, containerV2}
 
 	// pod2: t2, imagev1, imagev2
 	Pod2.Metadata.Annotations = map[string]string{
-		clustercommon.RestartTimeKey: t2.Format(layout),
+		common.ClusterRestartTimeKey: t2.Format(layout),
 	}
 	Pod2.Spec.InitContainers = []*clustercd.Container{containerV1, containerV2}
 

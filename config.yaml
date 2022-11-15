@@ -17,6 +17,12 @@ redisConfig:
   address: dev.redis:6379
   password: redis
   db: 1
+oidcConfig:
+  userHeader: X-HORIZON-OIDC-USER
+  fullNameHeader: X-HORIZON-OIDC-FULLNAME
+  emailHeader: X-HORIZON-OIDC-EMAIL
+  oidcIDHeader: X-HORIZON-OIDC-ID
+  oidcTypeHeader: X-HORIZON-OIDC-TYPE
 gitlabMapper:
   template:
     httpURL: https://g.hz.netease.com
@@ -37,8 +43,8 @@ templateRepo:
   kind: "harbor"
   host: "https://harbor.mock.org"
   repoName: "horizon-template"
-  username: ""
-  password: ""
+  username: username
+  password: password
   insecure: true
   certFile: ""
   keyFile: ""
@@ -88,3 +94,4 @@ oauth:
   oauthHTMLLocation:
   authorizeCodeExpireIn: 10m
   accessTokenExpireIn: 24h
+

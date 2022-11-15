@@ -1,17 +1,22 @@
-package manager
+package manager_test
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
+	idpmodels "g.hz.netease.com/horizon/pkg/idp/models"
+	"g.hz.netease.com/horizon/pkg/idp/utils"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/user/models"
+	linkmodels "g.hz.netease.com/horizon/pkg/userlink/models"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -19,21 +24,29 @@ import (
 var (
 	db, _ = orm.NewSqliteDB("")
 	ctx   context.Context
-	mgr   = New(db)
+	mgrs  = managerparam.InitManager(db)
+	mgr   = mgrs.UserManager
 )
 
 func Test(t *testing.T) {
 	var (
-		name     = "Tony"
-		email    = "tony@163.com"
-		oidcID   = "H12323"
-		oidcType = "ne"
+		name  = "Tony"
+		email = "tony@163.com"
 	)
+
+	method := uint8(idpmodels.ClientSecretSentAsPost)
+	idp, err := mgrs.IdpManager.Create(ctx, &idpmodels.IdentityProvider{
+		Model:                   global.Model{ID: 1},
+		Name:                    "netease",
+		TokenEndpointAuthMethod: (*idpmodels.TokenEndpointAuthMethod)(&method),
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, uint(1), idp.ID)
+	assert.Equal(t, "netease", idp.Name)
+
 	u, err := mgr.Create(ctx, &models.User{
-		Name:     name,
-		Email:    email,
-		OIDCId:   oidcID,
-		OIDCType: oidcType,
+		Name:  name,
+		Email: email,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -44,19 +57,20 @@ func Test(t *testing.T) {
 	}
 	t.Logf(string(b))
 
-	u2, err := mgr.GetByOIDCMeta(ctx, oidcType, email)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, name, u2.Name)
-	assert.Equal(t, email, u2.Email)
-
-	// user not exits
-	u3, err := mgr.GetByOIDCMeta(ctx, "not-exist", "not-exist")
+	link, err := mgrs.UserLinksManager.CreateLink(ctx, u.ID, idp.ID, &utils.Claims{
+		Sub:   "netease",
+		Name:  name,
+		Email: email,
+	}, true)
 	assert.Nil(t, err)
-	assert.Nil(t, u3)
+	assert.Equal(t, uint(1), link.ID)
 
-	u4, err := mgr.GetUserByEmail(ctx, email)
+	u4, err := mgr.GetUserByIDP(ctx, u.Email, idp.Name)
+	assert.Nil(t, err)
+	assert.NotNil(t, u4)
+	assert.Equal(t, u4.Name, name)
+
+	u4, err = mgr.GetUserByID(ctx, u.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, u4)
 	assert.Equal(t, u4.Name, name)
@@ -72,6 +86,19 @@ func Test(t *testing.T) {
 	assert.NotNil(t, userMap)
 	assert.Equal(t, 1, len(userMap))
 	assert.Equal(t, u4.Name, userMap[u4.ID].Name)
+
+	u4.Admin = true
+	u4.Banned = false
+	_, err = mgr.UpdateByID(ctx, u4.ID, u4)
+	assert.Nil(t, err)
+
+	users, err = mgr.ListByEmail(ctx, []string{email})
+	assert.Nil(t, err)
+	assert.NotNil(t, users)
+	assert.Equal(t, 1, len(users))
+	assert.Equal(t, u4.Name, users[0].Name)
+	assert.True(t, users[0].Admin)
+	assert.True(t, !users[0].Banned)
 }
 
 func TestSearchUser(t *testing.T) {
@@ -86,8 +113,6 @@ func TestSearchUser(t *testing.T) {
 			Name:     fmt.Sprintf("%s%d", name1, i),
 			Email:    fmt.Sprintf("%s%d@163.com", name1, i),
 			FullName: fmt.Sprintf("%s%d", strings.ToUpper(name1), i),
-			OIDCId:   strconv.Itoa(i),
-			OIDCType: "netease",
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -97,66 +122,70 @@ func TestSearchUser(t *testing.T) {
 			Name:     fmt.Sprintf("%s%d", name2, i),
 			Email:    fmt.Sprintf("%s%d@163.com", name2, i),
 			FullName: fmt.Sprintf("%s%d", strings.ToUpper(name2), i),
-			OIDCId:   strconv.Itoa(i),
-			OIDCType: "netease",
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	count, users, err := mgr.SearchUser(ctx, name1, &q.Query{
+	count, users, err := mgr.List(ctx, &q.Query{
+		Keywords:   q.KeyWords{common.UserQueryName: name1},
 		PageNumber: 1,
 		PageSize:   5,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(users))
-	assert.Equal(t, 10, count)
+	assert.Equal(t, int64(10), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = mgr.SearchUser(ctx, name1, &q.Query{
+	count, users, err = mgr.List(ctx, &q.Query{
+		Keywords:   q.KeyWords{common.UserQueryName: name1},
 		PageNumber: 2,
 		PageSize:   5,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(users))
-	assert.Equal(t, 10, count)
+	assert.Equal(t, int64(10), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = mgr.SearchUser(ctx, name2, &q.Query{
+	count, users, err = mgr.List(ctx, &q.Query{
+		Keywords:   q.KeyWords{common.UserQueryName: name2},
 		PageNumber: 0,
 		PageSize:   3,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(users))
-	assert.Equal(t, 10, count)
+	assert.Equal(t, int64(10), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = mgr.SearchUser(ctx, "5", &q.Query{
+	count, users, err = mgr.List(ctx, &q.Query{
+		Keywords:   q.KeyWords{common.UserQueryName: "5"},
 		PageNumber: 0,
 		PageSize:   3,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(users))
-	assert.Equal(t, 2, count)
+	assert.Equal(t, int64(2), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))
 	}
 
-	count, users, err = mgr.SearchUser(ctx, "e", nil)
+	count, users, err = mgr.List(ctx, &q.Query{
+		Keywords: q.KeyWords{common.UserQueryName: "e"},
+	})
 	assert.Nil(t, err)
 	assert.Equal(t, 20, len(users))
-	assert.Equal(t, 20, count)
+	assert.Equal(t, int64(20), count)
 	for _, u := range users {
 		b, _ := json.Marshal(u)
 		t.Logf("%v", string(b))
@@ -164,7 +193,8 @@ func TestSearchUser(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	if err := db.AutoMigrate(&models.User{}); err != nil {
+	if err := db.AutoMigrate(&models.User{},
+		&idpmodels.IdentityProvider{}, &linkmodels.UserLink{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
