@@ -25,6 +25,8 @@ import (
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	"g.hz.netease.com/horizon/pkg/errors"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
+	idpmodels "g.hz.netease.com/horizon/pkg/idp/models"
+	"g.hz.netease.com/horizon/pkg/idp/utils"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
@@ -38,6 +40,7 @@ import (
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	tagmodel "g.hz.netease.com/horizon/pkg/templateschematag/models"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	linkmodels "g.hz.netease.com/horizon/pkg/userlink/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -53,19 +56,53 @@ const secondsInOneDay = 24 * 3600
 func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
-		&registrymodels.Registry{},
+		&registrymodels.Registry{}, &idpmodels.IdentityProvider{}, &linkmodels.UserLink{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &emodel.Environment{}); err != nil {
 		panic(err)
 	}
 	// nolint
 	ctx = context.WithValue(ctx, usercommon.UserContextKey(), &userauth.DefaultInfo{
-		Name: "grp.cloudnative",
+		Name: "horizon",
 		ID:   uint(1),
 	})
 	// nolint
 	ctx = context.WithValue(ctx, xrequestid.HeaderXRequestID, "requestid")
 	os.Exit(m.Run())
+}
+
+func createUser(t *testing.T) {
+	var (
+		name  = "horizon"
+		email = "horizon@noreply.com"
+	)
+
+	method := uint8(idpmodels.ClientSecretSentAsPost)
+	idp, err := manager.IdpManager.Create(ctx, &idpmodels.IdentityProvider{
+		Model:                   global.Model{ID: 1},
+		Name:                    "netease",
+		TokenEndpointAuthMethod: (*idpmodels.TokenEndpointAuthMethod)(&method),
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, uint(1), idp.ID)
+	assert.Equal(t, "netease", idp.Name)
+
+	mgr := manager.UserManager
+
+	u, err := mgr.Create(ctx, &usermodels.User{
+		Name:  name,
+		Email: email,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, u)
+
+	link, err := manager.UserLinksManager.CreateLink(ctx, u.ID, idp.ID, &utils.Claims{
+		Sub:   "netease",
+		Name:  name,
+		Email: email,
+	}, true)
+	assert.Nil(t, err)
+	assert.Equal(t, uint(1), link.ID)
 }
 
 func TestAutoFreeExpiredCluster(t *testing.T) {
@@ -85,13 +122,7 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	// init data
 
 	// User
-	userManager := parameter.UserManager
-	user, err := userManager.Create(ctx, &usermodels.User{
-		Name:  "grp.cloudnative",
-		Email: "grp.cloudnative@mail.com",
-	})
-	assert.Nil(t, err)
-	assert.Equal(t, "grp.cloudnative@mail.com", user.Email)
+	createUser(t)
 
 	// environment
 	devID, err := envCtl.Create(ctx, &environmentctl.CreateEnvironmentRequest{
@@ -173,11 +204,18 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		t.Logf("%v", pipelineBasics)
 	}
 	cd.EXPECT().DeleteCluster(gomock.Any(), gomock.Any()).Return(errors.New("test")).AnyTimes()
-	process(ctx, &autofree.Config{
-		Account:       "",
-		JobInterval:   2 * time.Hour,
-		BatchInterval: 1 * time.Second,
+	ctx, cancelFunc := context.WithCancel(ctx)
+	go func() {
+		timer := time.NewTimer(time.Second * 5)
+		<-timer.C
+		cancelFunc()
+	}()
+	AutoReleaseExpiredClusterJob(ctx, &autofree.Config{
+		AccountIDP:    "netease",
+		Account:       "horizon@noreply.com",
+		JobInterval:   1 * time.Second,
+		BatchInterval: 0 * time.Second,
 		BatchSize:     20,
 		SupportedEnvs: []string{"dev"},
-	}, clrCtl, prCtl, envCtl)
+	}, manager.UserManager, clrCtl, prCtl, envCtl)
 }

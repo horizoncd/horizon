@@ -1322,7 +1322,7 @@ type (
 		// Image URI of the container.
 		Image string `json:"image"`
 
-		// ListByApplication of environment variables.
+		// List of environment variables.
 		Env []corev1.EnvVar `json:"env"`
 
 		// Commands of the container

@@ -34,7 +34,7 @@ var (
 )
 
 type Service interface {
-	// ListRole ListByApplication all the role
+	// ListRole Lists all the role
 	ListRole(ctx context.Context) ([]types.Role, error)
 	// GetRole get role by the role name
 	GetRole(ctx context.Context, roleName string) (*types.Role, error)

@@ -10,7 +10,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/user/manager"
 	linkmanager "g.hz.netease.com/horizon/pkg/userlink/manager"
-	"g.hz.netease.com/horizon/pkg/util/permission"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -63,8 +62,9 @@ func (c *controller) UpdateByID(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	if err := permission.OnlySelfAndAdmin(ctx, id); err != nil {
-		return nil, err
+	if !currentUser.IsAdmin() {
+		return nil, perror.Wrap(herrors.ErrForbidden,
+			"you have no privilege")
 	}
 	userInDB, err := c.userMgr.GetUserByID(ctx, id)
 	if err != nil {
@@ -74,18 +74,11 @@ func (c *controller) UpdateByID(ctx context.Context,
 	if u.IsAdmin == nil && u.IsBanned == nil {
 		return ofUser(userInDB), nil
 	}
+
 	if u.IsBanned != nil {
-		if !currentUser.IsAdmin() {
-			return nil, perror.Wrap(herrors.ErrForbidden,
-				"you have no privilege to update whether user is banned")
-		}
 		userInDB.Banned = *u.IsBanned
 	}
 	if u.IsAdmin != nil {
-		if !currentUser.IsAdmin() {
-			return nil, perror.Wrap(herrors.ErrForbidden,
-				"you have no privilege to update user's admin permission")
-		}
 		userInDB.Admin = *u.IsAdmin
 	}
 

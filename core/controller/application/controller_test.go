@@ -655,7 +655,7 @@ func TestListUserApplication(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	count, resps, err := c.List(ctx, &q.Query{
+	resps, count, err := c.List(ctx, &q.Query{
 		Keywords: q.KeyWords{
 			common.ClusterQueryByUser: uint(2),
 			common.ClusterQueryName:   "appFu",
@@ -679,7 +679,7 @@ func TestListUserApplication(t *testing.T) {
 		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
-	count, resps, err = c.List(ctx, &q.Query{
+	resps, count, err = c.List(ctx, &q.Query{
 		Keywords: q.KeyWords{
 			common.ClusterQueryByUser: uint(2),
 			common.ClusterQueryName:   "appFu",

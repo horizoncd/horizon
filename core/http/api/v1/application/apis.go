@@ -245,7 +245,7 @@ func (a *API) List(c *gin.Context) {
 
 	query := q.New(keywords).WithPagination(c)
 
-	total, applications, err := a.applicationCtl.List(c, query)
+	applications, total, err := a.applicationCtl.List(c, query)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.GroupInDB || e.Source == herrors.ApplicationInDB {

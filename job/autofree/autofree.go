@@ -38,12 +38,17 @@ func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Confi
 	defer log.Infof(ctx, "Stopping releasing expired cluster automatically")
 	ticker := time.NewTicker(jobConfig.JobInterval)
 	defer ticker.Stop()
-	for range ticker.C {
-		rid := uuid.NewV4().String()
-		// nolint
-		ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
-		log.Infof(ctx, "auto-free job starts to execute, rid: %v", rid)
-		process(ctx, jobConfig, clusterCtr, prCtr, envCtr)
+	for {
+		select {
+		case <-ticker.C:
+			rid := uuid.NewV4().String()
+			// nolint
+			ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
+			log.Infof(ctx, "auto-free job starts to execute, rid: %v", rid)
+			process(ctx, jobConfig, clusterCtr, prCtr, envCtr)
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

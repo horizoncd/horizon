@@ -48,7 +48,7 @@ type Controller interface {
 	// DeleteApplication delete an application by name
 	DeleteApplication(ctx context.Context, id uint, hard bool) error
 	// List lists application by query
-	List(ctx context.Context, query *q.Query) (int, []*ListApplicationResponse, error)
+	List(ctx context.Context, query *q.Query) ([]*ListApplicationResponse, int, error)
 	// Transfer  try transfer application to another group
 	Transfer(ctx context.Context, id uint, groupID uint) error
 	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
@@ -654,8 +654,8 @@ func validateApplicationName(name string) error {
 	return nil
 }
 
-func (c *controller) List(ctx context.Context, query *q.Query) (count int,
-	listApplicationResp []*ListApplicationResponse, err error) {
+func (c *controller) List(ctx context.Context, query *q.Query) (
+	listApplicationResp []*ListApplicationResponse, count int, err error) {
 	const op = "application controller: list application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -663,19 +663,19 @@ func (c *controller) List(ctx context.Context, query *q.Query) (count int,
 	if query.Keywords != nil {
 		if userID, ok := query.Keywords[common.ApplicationQueryByUser].(uint); ok {
 			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
-				return 0, nil, err
+				return nil, 0, err
 			}
 			// get groups authorized to current user
 			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
 			if err != nil {
-				return 0, nil,
+				return nil, 0,
 					perror.WithMessage(err, "failed to list group resource of current user")
 			}
 
 			// get these groups' subGroups
 			subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
 			if err != nil {
-				return 0, nil, perror.WithMessage(err, "failed to get groups")
+				return nil, 0, perror.WithMessage(err, "failed to get groups")
 			}
 
 			for _, group := range subGroups {
@@ -688,7 +688,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) (count int,
 	// 1. get application in db
 	count, applications, err := c.applicationMgr.List(ctx, subGroupIDs, query)
 	if err != nil {
-		return 0, nil, err
+		return nil, 0, err
 	}
 
 	// 2. get groups for full path, full name
@@ -698,7 +698,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) (count int,
 	}
 	groupMap, err := c.groupSvc.GetChildrenByIDs(ctx, groupIDs)
 	if err != nil {
-		return count, nil, err
+		return nil, count, err
 	}
 
 	// 3. convert models.Application to ListApplicationResponse
@@ -723,7 +723,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) (count int,
 		)
 	}
 
-	return count, listApplicationResp, nil
+	return listApplicationResp, count, nil
 }
 
 func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (

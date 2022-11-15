@@ -169,7 +169,7 @@ func (c *controller) Get(ctx context.Context, clientID string) (*APPBasicInfo, e
 }
 
 func (c *controller) List(ctx context.Context, groupID uint) ([]APPBasicInfo, error) {
-	const op = "oauth  app controller  ListByApplication"
+	const op = "oauth  app controller  List"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	apps, err := c.oauthManager.ListOauthApp(ctx, models.GroupOwnerType, groupID)

@@ -11,9 +11,9 @@ import (
 )
 
 type DAO interface {
-	// ListByResourceTypeID ListByApplication tags by resourceType and resourceID
+	// ListByResourceTypeID Lists tags by resourceType and resourceID
 	ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error)
-	// ListByResourceTypeID ListByApplication tags by resourceType and resourceIDs
+	// ListByResourceTypeID Lists tags by resourceType and resourceIDs
 	// if distinct enabled, tags only contains tag_key and tag_value
 	ListByResourceTypeIDs(ctx context.Context, resourceType string, resourceIDs []uint,
 		deduplicate bool) ([]*models.Tag, error)
