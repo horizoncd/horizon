@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
-	"g.hz.netease.com/horizon/pkg/cluster/common"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -99,8 +99,8 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipel
 	}
 
 	// 7. reset cluster status
-	if cluster.Status == common.StatusFreed {
-		cluster.Status = common.StatusEmpty
+	if cluster.Status == common.ClusterStatusFreed {
+		cluster.Status = common.ClusterStatusEmpty
 		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 		if err != nil {
 			return nil, err

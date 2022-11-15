@@ -173,12 +173,12 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, newUser *models.User) (*m
 
 func (d *dao) GetUserByIDP(ctx context.Context, email string, idp string) (*models.User, error) {
 	var u *models.User
-	result := d.db.Table("tb_user u").
-		Joins("join tb_idp_user l on l.user_id = u.id").
-		Joins("join tb_idp i on i.id = l.idp_id").
-		Where("u.email = ?", email).
+	result := d.db.Table("tb_user").
+		Joins("join tb_idp_user l on l.user_id = tb_user.id").
+		Joins("join tb_identity_provider i on i.id = l.idp_id").
+		Where("tb_user.email = ?", email).
 		Where("i.name = ?", idp).
-		Select("u.*").First(&u)
+		Select("tb_user.*").First(&u)
 	if err := result.Error; err != nil {
 		return nil, perror.Wrapf(
 			herrors.NewErrGetFailed(herrors.UserInDB, "failed to find user in db"),

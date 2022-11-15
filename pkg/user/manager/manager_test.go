@@ -34,9 +34,11 @@ func Test(t *testing.T) {
 		email = "tony@163.com"
 	)
 
+	method := uint8(idpmodels.ClientSecretSentAsPost)
 	idp, err := mgrs.IdpManager.Create(ctx, &idpmodels.IdentityProvider{
-		Model: global.Model{ID: 1},
-		Name:  "netease",
+		Model:                   global.Model{ID: 1},
+		Name:                    "netease",
+		TokenEndpointAuthMethod: (*idpmodels.TokenEndpointAuthMethod)(&method),
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, uint(1), idp.ID)
