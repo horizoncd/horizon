@@ -1,4 +1,4 @@
-package manager
+package manager_test
 
 import (
 	"context"
@@ -11,7 +11,12 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
+	idpmodels "g.hz.netease.com/horizon/pkg/idp/models"
+	"g.hz.netease.com/horizon/pkg/idp/utils"
+	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"g.hz.netease.com/horizon/pkg/user/models"
+	linkmodels "g.hz.netease.com/horizon/pkg/userlink/models"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -19,7 +24,8 @@ import (
 var (
 	db, _ = orm.NewSqliteDB("")
 	ctx   context.Context
-	mgr   = New(db)
+	mgrs  = managerparam.InitManager(db)
+	mgr   = mgrs.UserManager
 )
 
 func Test(t *testing.T) {
@@ -27,6 +33,15 @@ func Test(t *testing.T) {
 		name  = "Tony"
 		email = "tony@163.com"
 	)
+
+	idp, err := mgrs.IdpManager.Create(ctx, &idpmodels.IdentityProvider{
+		Model: global.Model{ID: 1},
+		Name:  "netease",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, uint(1), idp.ID)
+	assert.Equal(t, "netease", idp.Name)
+
 	u, err := mgr.Create(ctx, &models.User{
 		Name:  name,
 		Email: email,
@@ -40,7 +55,15 @@ func Test(t *testing.T) {
 	}
 	t.Logf(string(b))
 
-	u4, err := mgr.GetUserByEmail(ctx, email)
+	link, err := mgrs.UserLinksManager.CreateLink(ctx, u.ID, idp.ID, &utils.Claims{
+		Sub:   "netease",
+		Name:  "nobody",
+		Email: "nobody@noreply.com",
+	}, true)
+	assert.Nil(t, err)
+	assert.Equal(t, uint(1), link.ID)
+
+	u4, err := mgr.GetUserByIDP(ctx, u.Email, idp.Name)
 	assert.Nil(t, err)
 	assert.NotNil(t, u4)
 	assert.Equal(t, u4.Name, name)
@@ -150,7 +173,8 @@ func TestSearchUser(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	if err := db.AutoMigrate(&models.User{}); err != nil {
+	if err := db.AutoMigrate(&models.User{},
+		&idpmodels.IdentityProvider{}, &linkmodels.UserLink{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()

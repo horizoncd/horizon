@@ -8,19 +8,19 @@ import (
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
 	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
 	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
-	userctl "g.hz.netease.com/horizon/core/controller/user"
 	"g.hz.netease.com/horizon/lib/q"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/config/autofree"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	uuid "github.com/satori/go.uuid"
 )
 
-func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Config, userCtr userctl.Controller,
+func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Manager,
 	clusterCtr clusterctl.Controller, prCtr prctl.Controller, envCtr environmentctl.Controller) {
 	// verify account
-	user, err := userCtr.GetUserByEmail(ctx, jobConfig.Account)
+	user, err := userMgr.GetUserByIDP(ctx, jobConfig.Account, jobConfig.AccountIDP)
 	if err != nil {
 		log.Errorf(ctx, "failed to verify operator, err: %v", err.Error())
 		panic(err)
@@ -30,7 +30,7 @@ func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Confi
 		FullName: user.FullName,
 		ID:       user.ID,
 		Email:    user.Email,
-		Admin:    user.IsAdmin,
+		Admin:    user.Admin,
 	})
 
 	// start job

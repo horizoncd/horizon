@@ -13,7 +13,7 @@ create table `tb_idp_user`
     `created_by`                    bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'creator',
     `updated_by`                    bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'updater',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uni_idx_idp_user` (`idp_id`, `user_id`, `deleted_ts`)
+    UNIQUE KEY `uni_idx_idp_sub` (`idp_id`, `sub`, `deleted_ts`)
 )   ENGINE = InnoDB
     AUTO_INCREMENT = 1
     DEFAULT CHARSET = utf8mb4;

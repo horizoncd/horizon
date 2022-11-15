@@ -83,6 +83,11 @@ func (a *API) LoginCallback(c *gin.Context) {
 				rpcerror.ForbiddenError.WithErrMsgf(
 					"this account is banned to sign in"))
 			return
+		} else if err = perror.Cause(err); errors.Is(err, herrors.ErrDuplicatedKey) {
+			response.AbortWithRPCError(c,
+				rpcerror.ConflictError.WithErrMsgf(
+					"idp already linked by another user"))
+			return
 		}
 		response.AbortWithRPCError(c,
 			rpcerror.InternalError.WithErrMsg(err.Error()))

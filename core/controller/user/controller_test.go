@@ -104,15 +104,6 @@ func Test(t *testing.T) {
 	assert.Equal(t, int64(2), count)
 	assert.Equal(t, 1, len(res))
 
-	// test GetUserByEmail
-	user, err := ctrl.GetUserByEmail(ctx, "name1@example.com")
-	assert.Nil(t, err)
-	assert.Equal(t, uint(1), user.ID)
-	assert.Equal(t, "name1", user.Name)
-
-	_, err = ctrl.GetUserByEmail(ctx, "name3@example.com")
-	assert.NotNil(t, err)
-
 	links, err := ctrl.ListUserLinks(ctx, 1)
 	assert.Nil(t, err)
 	assert.NotNil(t, links)
@@ -124,7 +115,7 @@ func Test(t *testing.T) {
 	err = ctrl.DeleteLinksByID(ctx, 2)
 	assert.NotNil(t, err)
 
-	user, err = ctrl.GetByID(ctx, 1)
+	user, err := ctrl.GetByID(ctx, 1)
 	assert.Nil(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, uint(1), user.ID)

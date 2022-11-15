@@ -181,6 +181,7 @@ var (
 	ErrDeadlineExceeded = errors.New("time limit exceeded")
 	ErrGenerateRandomID = errors.New("failed to generate random id")
 	ErrDisabled         = errors.New("entity is disabled")
+	ErrDuplicatedKey    = errors.New("duplicated keys")
 	// ErrInternal = errors.New("internal error")
 
 	// http

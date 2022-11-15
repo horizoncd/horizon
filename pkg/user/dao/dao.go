@@ -17,12 +17,12 @@ import (
 type DAO interface {
 	// Create user
 	Create(ctx context.Context, user *models.User) (*models.User, error)
-	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	ListByEmail(ctx context.Context, emails []string) ([]*models.User, error)
 	GetByIDs(ctx context.Context, userID []uint) ([]models.User, error)
 	List(ctx context.Context, query *q.Query) (int64, []*models.User, error)
 	GetByID(ctx context.Context, id uint) (*models.User, error)
 	UpdateByID(ctx context.Context, id uint, newUser *models.User) (*models.User, error)
+	GetUserByIDP(ctx context.Context, email string, idp string) (*models.User, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -36,7 +36,8 @@ func (d *dao) Create(ctx context.Context, user *models.User) (*models.User, erro
 	result := d.db.WithContext(ctx).Create(user)
 
 	if result.Error != nil {
-		return nil, herrors.NewErrInsertFailed(herrors.UserInDB, result.Error.Error())
+		return nil, perror.Wrapf(herrors.NewErrInsertFailed(herrors.UserInDB, "failed to insert"),
+			"failed to insert user(%#v): err = %v", user, result.Error.Error())
 	}
 
 	return user, result.Error
@@ -79,7 +80,9 @@ func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]models.User, error
 	var users []models.User
 	result := d.db.WithContext(ctx).Raw(common.UserGetByID, userID).Scan(&users)
 	if result.Error != nil {
-		return nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
+		return nil,
+			perror.Wrapf(herrors.NewErrGetFailed(herrors.UserInDB, "failed to list users"),
+				"failed to list users(%#v): err = %v", userID, result.Error.Error())
 	}
 	if result.RowsAffected == 0 {
 		return nil, nil
@@ -91,28 +94,12 @@ func (d *dao) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*model
 	var user models.User
 	result := d.db.WithContext(ctx).Raw(common.UserQueryByOIDC, oidcType, email).Scan(&user)
 	if result.Error != nil {
-		return nil, herrors.NewErrGetFailed(herrors.UserInDB, result.Error.Error())
+		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.UserInDB, "failed to get user"),
+			"failed to get user(oidcType = %v, email = %v): err = %v",
+			oidcType, email, result.Error.Error())
 	}
 	if result.RowsAffected == 0 {
 		return nil, nil
-	}
-	return &user, nil
-}
-
-func (d *dao) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	var user models.User
-	err := d.db.WithContext(ctx).Raw(common.UserQueryByEmail, email).First(&user).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, perror.Wrapf(
-				herrors.NewErrNotFound(herrors.UserInDB, "user not found"),
-				"user not found:\n"+
-					"email = %s\nerr = %v", email, err)
-		}
-		return nil, perror.Wrapf(
-			herrors.NewErrGetFailed(herrors.UserInDB, "failed to get user"),
-			"failed to get user:\n"+
-				"email = %s\nerr = %v", email, err)
 	}
 	return &user, nil
 }
@@ -125,7 +112,8 @@ func (d *dao) ListByEmail(ctx context.Context, emails []string) ([]*models.User,
 	var users []*models.User
 	result := d.db.WithContext(ctx).Raw(common.UserListByEmail, emails).Scan(&users)
 	if result.Error != nil {
-		return nil, herrors.NewErrListFailed(herrors.UserInDB, result.Error.Error())
+		return nil, perror.Wrapf(herrors.NewErrListFailed(herrors.UserInDB, "failed to list user"),
+			"failed to list user(emails = %#v): err = %v", emails, result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return nil, nil
@@ -181,4 +169,20 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, newUser *models.User) (*m
 		return nil, err
 	}
 	return user, nil
+}
+
+func (d *dao) GetUserByIDP(ctx context.Context, email string, idp string) (*models.User, error) {
+	var u *models.User
+	result := d.db.Table("tb_user u").
+		Joins("join tb_idp_user l on l.user_id = u.id").
+		Joins("join tb_idp i on i.id = l.idp_id").
+		Where("u.email = ?", email).
+		Where("i.name = ?", idp).
+		Select("u.*").First(&u)
+	if err := result.Error; err != nil {
+		return nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.UserInDB, "failed to find user in db"),
+			"failed to get user: err = %v", err)
+	}
+	return u, nil
 }

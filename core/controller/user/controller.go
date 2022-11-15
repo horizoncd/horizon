@@ -10,14 +10,11 @@ import (
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/user/manager"
 	linkmanager "g.hz.netease.com/horizon/pkg/userlink/manager"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/permission"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
 type Controller interface {
-	// GetUserByEmail get user by email
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	List(ctx context.Context, query *q.Query) (int64, []*User, error)
 	GetByID(ctx context.Context, id uint) (*User, error)
 	UpdateByID(c context.Context, id uint, u *UpdateUserRequest) (*User, error)
@@ -98,16 +95,6 @@ func (c *controller) UpdateByID(ctx context.Context,
 	}
 
 	return ofUser(updatedUserInDB), nil
-}
-
-func (c *controller) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	const op = "user controller: get user by email"
-	defer wlog.Start(ctx, op).StopPrint()
-	user, err := c.userMgr.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, errors.E(op, err)
-	}
-	return ofUser(user), nil
 }
 
 func (c *controller) ListUserLinks(ctx context.Context, uid uint) ([]*Link, error) {

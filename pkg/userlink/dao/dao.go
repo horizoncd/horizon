@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
@@ -89,6 +90,10 @@ func (d dao) GetByIDPAndSub(ctx context.Context, id uint, sub string) (*models.U
 func (d dao) CreateLink(ctx context.Context, link *models.UserLink) (*models.UserLink, error) {
 	err := d.db.WithContext(ctx).Create(&link).Error
 	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate") {
+			return nil, perror.Wrapf(herrors.ErrDuplicatedKey,
+				"failed to create link(%#v): err = %v", link, err.Error())
+		}
 		return nil, perror.Wrapf(herrors.NewErrCreateFailed(herrors.UserLinkInDB, "failed to create user link"),
 			"failed to create user link:\n"+
 				"err = %v", err)

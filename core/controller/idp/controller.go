@@ -126,13 +126,10 @@ func (c *controller) LoginOrLink(ctx context.Context,
 		return nil, err
 	}
 
+	currentUser, _ := common.UserFromContext(ctx)
 	var user *usermodel.User
-	if v, ok := stateMap[linkKey]; ok && len(v) == 1 && v[0] == "true" {
+	if v, ok := stateMap[linkKey]; ok && len(v) == 1 && v[0] == "true" && currentUser != nil {
 		// for linking
-		currentUser, err := common.UserFromContext(ctx)
-		if err != nil {
-			return nil, err
-		}
 		user, err = c.userManager.GetUserByID(ctx, currentUser.GetID())
 		if err != nil {
 			return nil, err
@@ -146,7 +143,7 @@ func (c *controller) LoginOrLink(ctx context.Context,
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 				return nil, err
 			}
-			// for signing on without link
+			// for register
 			user, err = c.userManager.Create(ctx, &usermodel.User{
 				Name:     strings.SplitN(claims.Email, "@", 2)[0],
 				FullName: claims.Name,
