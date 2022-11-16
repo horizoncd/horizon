@@ -212,6 +212,22 @@ func (a *API) Delete(c *gin.Context) {
 	response.Success(c)
 }
 
+func (a *API) ListSelf(c *gin.Context) {
+	currentUser, err := common.UserFromContext(c)
+	if err != nil {
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsgf(
+				"current user not found\n"+
+					"err = %v", err))
+		return
+	}
+
+	c.Request.URL.RawQuery =
+		fmt.Sprintf("%s%s", c.Request.URL.RawQuery,
+			fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID()))
+	a.List(c)
+}
+
 // List search all applications that authorized to current user
 func (a *API) List(c *gin.Context) {
 	const op = "application: list application"

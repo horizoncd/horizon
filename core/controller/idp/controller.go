@@ -144,8 +144,12 @@ func (c *controller) LoginOrLink(ctx context.Context,
 				return nil, err
 			}
 			// for register
+			name := strings.SplitN(claims.Email, "@", 2)[0]
+			if claims.Name == "" {
+				claims.Name = name
+			}
 			user, err = c.userManager.Create(ctx, &usermodel.User{
-				Name:     strings.SplitN(claims.Email, "@", 2)[0],
+				Name:     name,
 				FullName: claims.Name,
 				Email:    claims.Email,
 			})

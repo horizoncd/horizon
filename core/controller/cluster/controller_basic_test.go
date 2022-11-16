@@ -88,7 +88,7 @@ func testListClusterByNameFuzzily(t *testing.T) {
 		memberManager:  manager.MemberManager,
 	}
 
-	count, resps, err := c.List(ctx, &q.Query{Keywords: q.KeyWords{common.ClusterQueryName: "fuzzilyCluster"}})
+	resps, count, err := c.List(ctx, &q.Query{Keywords: q.KeyWords{common.ClusterQueryName: "fuzzilyCluster"}})
 	assert.Nil(t, err)
 	assert.Equal(t, 5, count)
 	assert.Equal(t, "fuzzilyCluster4", resps[0].Name)
@@ -203,7 +203,7 @@ func testListUserClustersByNameFuzzily(t *testing.T) {
 		memberManager:  manager.MemberManager,
 	}
 
-	count, resps, err := c.List(ctx,
+	resps, count, err := c.List(ctx,
 		&q.Query{
 			Keywords: q.KeyWords{
 				common.ClusterQueryName:        "cluster",
@@ -220,7 +220,7 @@ func testListUserClustersByNameFuzzily(t *testing.T) {
 		t.Logf("%v", string(b))
 	}
 
-	count, resps, err = c.List(ctx, &q.Query{
+	resps, count, err = c.List(ctx, &q.Query{
 		Keywords: q.KeyWords{
 			common.ClusterQueryName:        "userCluster",
 			common.ClusterQueryEnvironment: er.EnvironmentName,
