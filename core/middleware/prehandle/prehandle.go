@@ -69,14 +69,6 @@ func Middleware(r *gin.Engine, mgr *managerparam.Manager, skippers ...middleware
 				return
 			}
 		}
-
-		if authRecord.APIGroup == common.GroupFront {
-			if authRecord.Resource == common.ResourceCluster {
-				handleFrontCluster(c, r)
-			} else if authRecord.Resource == common.ResourceApplication {
-				handleFrontApplication(c, r)
-			}
-		}
 	}, skippers...)
 }
 
@@ -99,48 +91,6 @@ func constructRBACParam(c *gin.Context) (*auth.AttributesRecord, error) {
 		Path:            requestInfo.Path,
 	}
 	return &authRecord, nil
-}
-
-func handleFrontCluster(c *gin.Context, r *gin.Engine) {
-	if c.Request.URL.Path == "/apis/front/v1/clusters/searchmyclusters" {
-		currentUser, err := common.UserFromContext(c)
-		if err != nil {
-			response.AbortWithRPCError(c,
-				rpcerror.InternalError.WithErrMsgf(
-					"current user not found\n"+
-						"err = %v", err))
-			return
-		}
-		c.Request.URL.RawQuery += fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID())
-		c.Request.URL.Path = "/apis/core/v1/clusters"
-		r.HandleContext(c)
-		return
-	} else if c.Request.URL.Path == "/apis/front/v1/clusters/searchclusters" {
-		c.Request.URL.Path = "/apis/core/v1/clusters"
-		r.HandleContext(c)
-		return
-	}
-}
-
-func handleFrontApplication(c *gin.Context, r *gin.Engine) {
-	if c.Request.URL.Path == "/apis/front/v1/applications/searchmyapplications" {
-		currentUser, err := common.UserFromContext(c)
-		if err != nil {
-			response.AbortWithRPCError(c,
-				rpcerror.InternalError.WithErrMsgf(
-					"current user not found\n"+
-						"err = %v", err))
-			return
-		}
-		c.Request.URL.RawQuery += fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID())
-		c.Request.URL.Path = "/apis/core/v1/applications"
-		r.HandleContext(c)
-		return
-	} else if c.Request.URL.Path == "/apis/front/v1/applications/searchapplications" {
-		c.Request.URL.Path = "/apis/core/v1/applications"
-		r.HandleContext(c)
-		return
-	}
 }
 
 func handleApplication(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,

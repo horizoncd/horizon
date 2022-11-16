@@ -93,6 +93,22 @@ func parseContext(c *gin.Context) *q.Query {
 	return query
 }
 
+func (a *API) ListSelf(c *gin.Context) {
+	currentUser, err := common.UserFromContext(c)
+	if err != nil {
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsgf(
+				"current user not found\n"+
+					"err = %v", err))
+		return
+	}
+
+	c.Request.URL.RawQuery =
+		fmt.Sprintf("%s%s", c.Request.URL.RawQuery,
+			fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID()))
+	a.List(c)
+}
+
 func (a *API) List(c *gin.Context) {
 	const op = "cluster: list"
 
@@ -101,7 +117,7 @@ func (a *API) List(c *gin.Context) {
 		return
 	}
 
-	count, respList, err := a.clusterCtl.List(c, query)
+	respList, count, err := a.clusterCtl.List(c, query)
 	if err != nil {
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))

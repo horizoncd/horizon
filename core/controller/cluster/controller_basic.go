@@ -36,7 +36,7 @@ import (
 	kyaml "sigs.k8s.io/yaml"
 )
 
-func (c *controller) List(ctx context.Context, query *q.Query) (int, []*ListClusterWithFullResponse, error) {
+func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWithFullResponse, int, error) {
 	applicationIDs := make([]uint, 0)
 
 	// get current user
@@ -45,19 +45,19 @@ func (c *controller) List(ctx context.Context, query *q.Query) (int, []*ListClus
 		query.Keywords[common.ClusterQueryByUser] != nil {
 		if userID, ok := query.Keywords[common.ClusterQueryByUser].(uint); ok {
 			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
-				return 0, nil, err
+				return nil, 0, err
 			}
 			// get groups authorized to current user
 			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
 			if err != nil {
-				return 0, nil,
+				return nil, 0,
 					perror.WithMessage(err, "failed to list group resource of current user")
 			}
 
 			// get these groups' subGroups
 			subGroups, err := c.groupManager.GetSubGroupsByGroupIDs(ctx, groupIDs)
 			if err != nil {
-				return 0, nil, perror.WithMessage(err, "failed to get groups")
+				return nil, 0, perror.WithMessage(err, "failed to get groups")
 			}
 
 			subGroupIDs := make([]uint, 0)
@@ -68,7 +68,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) (int, []*ListClus
 			// list applications of these subGroups
 			applications, err := c.applicationMgr.GetByGroupIDs(ctx, subGroupIDs)
 			if err != nil {
-				return 0, nil, perror.WithMessage(err, "failed to get applications")
+				return nil, 0, perror.WithMessage(err, "failed to get applications")
 			}
 
 			for _, application := range applications {
@@ -79,7 +79,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) (int, []*ListClus
 			authorizedApplicationIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx,
 				membermodels.TypeApplication, userID)
 			if err != nil {
-				return 0, nil,
+				return nil, 0,
 					perror.WithMessage(err, "failed to list application resource of current user")
 			}
 
@@ -92,16 +92,16 @@ func (c *controller) List(ctx context.Context, query *q.Query) (int, []*ListClus
 
 	count, clusters, err := c.clusterMgr.List(ctx, query, applicationIDs...)
 	if err != nil {
-		return 0, nil,
+		return nil, 0,
 			perror.WithMessage(err, "failed to list user clusters")
 	}
 
 	responses, err := c.getFullResponsesWithRegion(ctx, clusters)
 	if err != nil {
-		return 0, nil, err
+		return nil, 0, err
 	}
 
-	return count, responses, nil
+	return responses, count, nil
 }
 
 func (c *controller) ListByApplication(ctx context.Context,
