@@ -284,7 +284,7 @@ func (c *controller) RevokeResourceAccessToken(ctx context.Context, id uint) err
 		}
 		// check if current user can delete all the members
 		for _, member := range members {
-			if err := c.memberSvc.CheckIfPermissionEqualOrHigher(ctx, member.Role, string(member.ResourceType),
+			if err := c.memberSvc.RequirePermissionEqualOrHigher(ctx, member.Role, string(member.ResourceType),
 				member.ResourceID); err != nil {
 				return err
 			}

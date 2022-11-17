@@ -49,7 +49,7 @@ type Service interface {
 	// GetMemberOfResource return the current user's role of the resource (member from direct or parent)
 	GetMemberOfResource(ctx context.Context, resourceType string, resourceID string) (*models.Member, error)
 	// IsYourPermissionHigher helps to check if your permission is higher then specified member
-	CheckIfPermissionEqualOrHigher(ctx context.Context, role, resourceType string, resourceID uint) error
+	RequirePermissionEqualOrHigher(ctx context.Context, role, resourceType string, resourceID uint) error
 }
 
 type service struct {
@@ -81,7 +81,7 @@ func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manag
 	}
 }
 
-func (s *service) CheckIfPermissionEqualOrHigher(ctx context.Context, role,
+func (s *service) RequirePermissionEqualOrHigher(ctx context.Context, role,
 	resourceType string, resourceID uint) error {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
@@ -130,7 +130,7 @@ func (s *service) CreateMember(ctx context.Context, postMember PostMember) (*mod
 	}
 
 	// 2. check if current user can create the role
-	err = s.CheckIfPermissionEqualOrHigher(ctx, postMember.Role, postMember.ResourceType, postMember.ResourceID)
+	err = s.RequirePermissionEqualOrHigher(ctx, postMember.Role, postMember.ResourceType, postMember.ResourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
 	}
 
 	// 2. check if the grant current user can remove the member
-	err = s.CheckIfPermissionEqualOrHigher(ctx, memberItem.Role, string(memberItem.ResourceType), memberItem.ResourceID)
+	err = s.RequirePermissionEqualOrHigher(ctx, memberItem.Role, string(memberItem.ResourceType), memberItem.ResourceID)
 	if err != nil {
 		return err
 	}
@@ -267,12 +267,12 @@ func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) 
 	}
 
 	// 2. check if the current user have the permission to update the role
-	err = s.CheckIfPermissionEqualOrHigher(ctx, memberItem.Role, string(memberItem.ResourceType),
+	err = s.RequirePermissionEqualOrHigher(ctx, memberItem.Role, string(memberItem.ResourceType),
 		memberItem.ResourceID)
 	if err != nil {
 		return nil, err
 	}
-	err = s.CheckIfPermissionEqualOrHigher(ctx, role, string(memberItem.ResourceType), memberItem.ResourceID)
+	err = s.RequirePermissionEqualOrHigher(ctx, role, string(memberItem.ResourceType), memberItem.ResourceID)
 	if err != nil {
 		return nil, err
 	}

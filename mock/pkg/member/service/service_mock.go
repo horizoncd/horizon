@@ -36,20 +36,6 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
-// CheckIfPermissionEqualOrHigher mocks base method.
-func (m *MockService) CheckIfPermissionEqualOrHigher(ctx context.Context, role, resourceType string, resourceID uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckIfPermissionEqualOrHigher", ctx, role, resourceType, resourceID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CheckIfPermissionEqualOrHigher indicates an expected call of CheckIfPermissionEqualOrHigher.
-func (mr *MockServiceMockRecorder) CheckIfPermissionEqualOrHigher(ctx, role, resourceType, resourceID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIfPermissionEqualOrHigher", reflect.TypeOf((*MockService)(nil).CheckIfPermissionEqualOrHigher), ctx, role, resourceType, resourceID)
-}
-
 // CreateMember mocks base method.
 func (m *MockService) CreateMember(ctx context.Context, postMember service.PostMember) (*models.Member, error) {
 	m.ctrl.T.Helper()
@@ -122,6 +108,20 @@ func (m *MockService) RemoveMember(ctx context.Context, memberID uint) error {
 func (mr *MockServiceMockRecorder) RemoveMember(ctx, memberID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveMember", reflect.TypeOf((*MockService)(nil).RemoveMember), ctx, memberID)
+}
+
+// RequirePermissionEqualOrHigher mocks base method.
+func (m *MockService) RequirePermissionEqualOrHigher(ctx context.Context, role, resourceType string, resourceID uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequirePermissionEqualOrHigher", ctx, role, resourceType, resourceID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RequirePermissionEqualOrHigher indicates an expected call of RequirePermissionEqualOrHigher.
+func (mr *MockServiceMockRecorder) RequirePermissionEqualOrHigher(ctx, role, resourceType, resourceID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequirePermissionEqualOrHigher", reflect.TypeOf((*MockService)(nil).RequirePermissionEqualOrHigher), ctx, role, resourceType, resourceID)
 }
 
 // UpdateMember mocks base method.
