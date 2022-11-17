@@ -78,11 +78,11 @@ const (
 	MemberHardDeleteByMemberNameID = "delete from tb_member where membername_id = ?"
 	// todo: fix user_type to query condition
 	MemberSelectAll = "select m.* from tb_member m join tb_user u on m.membername_id = u.id" +
-		" where m.resource_type = ? and m.resource_id = ? and m.deleted_ts = 0 and u.user_type = 0"
+		" where m.resource_type = ? and m.resource_id = ? and m.deleted_ts = 0"
 	// todo: fix user_type to query condition
 	MemberSelectByUserEmails = "select tb_member.* from tb_member join tb_user on tb_member.membername_id = tb_user.id" +
 		" where tb_member.resource_type = ? and tb_member.resource_id = ? and tb_user.email in ?" +
-		" and tb_member.member_type = 0 and tb_member.deleted_ts = 0 and tb_user.deleted_ts = 0 and tb_user.user_type = 0"
+		" and tb_member.member_type = 0 and tb_member.deleted_ts = 0 and tb_user.deleted_ts = 0"
 	MemberListResource = "select resource_id from tb_member where resource_type = ? and" +
 		" membername_id = ? and deleted_ts = 0"
 )
