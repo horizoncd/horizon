@@ -67,7 +67,7 @@ import (
 // nolint
 var (
 	ctx                                   context.Context
-	c                                     Controller
+	c                                     *controller
 	pr                                    *v1beta1.PipelineRun
 	applicationSchema, pipelineSchema     map[string]interface{}
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}
@@ -950,6 +950,17 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(offlineResp)
 	t.Logf("%s", string(b))
 
+	clusterGitRepo.EXPECT().GetClusterValueFiles(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return([]gitrepo.ClusterValueFile{
+			{
+				FileName: common.GitopsFileTags,
+				Content: map[interface{}]interface{}{
+					"javaapp": map[interface{}]interface{}{
+						common.GitopsKeyTags: map[interface{}]interface{}{"test_key": "test_value"},
+					},
+				},
+			},
+		}, nil)
 	// test rollback
 	clusterGitRepo.EXPECT().Rollback(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("rollback-commit", nil).AnyTimes()
@@ -958,6 +969,8 @@ func test(t *testing.T) {
 		Result: string(prmodels.StatusOK),
 	})
 	assert.Nil(t, err)
+
+	c.tagMgr = manager.TagManager
 	rollbackResp, err := c.Rollback(ctx, resp.ID, &RollbackRequest{
 		PipelinerunID: buildDeployResp.PipelinerunID,
 	})
@@ -969,6 +982,12 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
 	assert.NotNil(t, pr.FinishedAt)
+	tags, err := manager.TagManager.ListByResourceTypeID(ctx, common.ResourceCluster, 1)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(tags))
+	assert.Equal(t, "test_key", tags[0].Key)
+	assert.Equal(t, "test_value", tags[0].Value)
+	c.tagMgr = tagManager
 
 	cd.EXPECT().DeletePods(ctx, gomock.Any()).Return(
 		map[string]clustercd.OperationResult{

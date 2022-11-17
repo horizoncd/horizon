@@ -16,14 +16,12 @@ ARG USER=appops
 ARG GROUP_ID=10001
 ARG USER_ID=10001
 
-COPY --from=builder /horizon/bin/app /usr/local/bin/app
-
-RUN addgroup --gid $GROUP_ID $GROUP && adduser -h /home/$USER -u $USER_ID -G $GROUP -D $USER && \
-    chown -R $USER:$GROUP /usr/local/bin/app
-
+RUN addgroup --gid $GROUP_ID $GROUP && adduser -h /home/$USER -u $USER_ID -G $GROUP -D $USER
 
 RUN  echo "hosts: files dns" > /etc/nsswitch.conf
 
 USER $USER
+
+COPY --from=builder --chown=$USER:$GROUP /horizon/bin/app /usr/local/bin/app
 
 ENTRYPOINT ["/usr/local/bin/app"]

@@ -53,34 +53,6 @@ music-cloud-native
 */
 
 const (
-	// _branchMaster is the main branch
-	_branchMaster = "master"
-	// _branchGitops is the gitops branch, values updated in this branch, then merge into the _branchMaster
-	_branchGitops = "gitops"
-
-	// fileName
-	_filePathChart          = "Chart.yaml"
-	_filePathApplication    = "application.yaml"
-	_filePathTags           = "tags.yaml"
-	_filePathSRE            = "sre/sre.yaml"
-	_filePathBase           = "system/horizon.yaml"
-	_filePathEnv            = "system/env.yaml"
-	_filePathRestart        = "system/restart.yaml"
-	_filePathPipeline       = "pipeline/pipeline.yaml"
-	_filePathPipelineOutput = "pipeline/pipeline-output.yaml"
-	_filePathManifest       = "manifest.yaml"
-
-	// value namespace
-	_envValueNamespace  = "env"
-	_baseValueNamespace = "horizon"
-
-	_mergeRequestStateOpen = "opened"
-
-	_clusters          = "clusters"
-	_recyclingClusters = "recycling-clusters"
-)
-
-const (
 	PipelineValueParent = "pipeline"
 )
 
@@ -170,11 +142,12 @@ type clusterGitRepo struct {
 
 func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 	templateRepo templaterepo.TemplateRepo, gitlabLib gitlablib.Interface, repoURLSchema string) (ClusterGitRepo, error) {
-	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _clusters)
+	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, common.GitopsGroupClusters)
 	if err != nil {
 		return nil, err
 	}
-	recyclingClustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _recyclingClusters)
+	recyclingClustersGroup, err := gitlabLib.GetCreatedGroup(ctx,
+		rootGroup.ID, rootGroup.FullPath, common.GitopsGroupRecyclingClusters)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +174,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	wg.Add(3)
 	go func() {
 		defer wg.Done()
-		pipelineBytes, err1 = g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipeline)
+		pipelineBytes, err1 = g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFilePipeline)
 		if err1 != nil {
 			return
 		}
@@ -212,7 +185,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	}()
 	go func() {
 		defer wg.Done()
-		applicationBytes, err2 = g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathApplication)
+		applicationBytes, err2 = g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFileApplication)
 		if err2 != nil {
 			return
 		}
@@ -223,7 +196,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	}()
 	go func() {
 		defer wg.Done()
-		manifestBytes, err3 = g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathManifest)
+		manifestBytes, err3 = g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFileManifest)
 		if err3 != nil {
 			return
 		}
@@ -333,15 +306,15 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 		fileName string
 	}{
 		{
-			fileName: _filePathBase,
+			fileName: common.GitopsFileBase,
 		}, {
-			fileName: _filePathEnv,
+			fileName: common.GitopsFileEnv,
 		}, {
-			fileName: _filePathApplication,
+			fileName: common.GitopsFileApplication,
 		}, {
-			fileName: _filePathTags,
+			fileName: common.GitopsFileTags,
 		}, {
-			fileName: _filePathSRE,
+			fileName: common.GitopsFileSRE,
 		},
 	}
 
@@ -351,7 +324,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 		go func(index int) {
 			defer wg.Done()
 			cases[index].retBytes, cases[index].err = g.gitlabLib.GetFile(ctx, pid,
-				_branchMaster, cases[index].fileName)
+				common.GitopsBranchMaster, cases[index].fileName)
 			if cases[index].err != nil {
 				log.Warningf(ctx, "get file %s error, err = %s", cases[index].fileName, cases[index].err.Error())
 			}
@@ -418,7 +391,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 
 	// 3. create gitops branch from master
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, params.Application.Name, params.Cluster)
-	if _, err := g.gitlabLib.CreateBranch(ctx, pid, _branchGitops, _branchMaster); err != nil {
+	if _, err := g.gitlabLib.CreateBranch(ctx, pid, common.GitopsBranchGitops, common.GitopsBranchMaster); err != nil {
 		return err
 	}
 
@@ -457,35 +430,35 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		gitActions := []gitlablib.CommitAction{
 			{
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathTags,
+				FilePath: common.GitopsFileTags,
 				Content:  string(tagsYAML),
 			}, {
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathBase,
+				FilePath: common.GitopsFileBase,
 				Content:  string(baseValueYAML),
 			}, {
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathEnv,
+				FilePath: common.GitopsFileEnv,
 				Content:  string(envValueYAML),
 			}, {
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathSRE,
+				FilePath: common.GitopsFileSRE,
 				Content:  string(sreValueYAML),
 			}, {
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathChart,
+				FilePath: common.GitopsFileChart,
 				Content:  string(chartYAML),
 			},
-			// create _filePathPipelineOutput file first
+			// create GitopsFilePipelineOutput file first
 			{
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathPipelineOutput,
+				FilePath: common.GitopsFilePipelineOutput,
 				Content:  "",
 			},
-			// create _filePathRestart file first
+			// create GitopsFileRestart file first
 			{
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathRestart,
+				FilePath: common.GitopsFileRestart,
 				Content:  string(restartYAML),
 			},
 		}
@@ -493,21 +466,21 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		if applicationYAML != nil {
 			gitActions = append(gitActions, gitlablib.CommitAction{
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathApplication,
+				FilePath: common.GitopsFileApplication,
 				Content:  string(applicationYAML),
 			})
 		}
 		if pipelineYAML != nil {
 			gitActions = append(gitActions, gitlablib.CommitAction{
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathPipeline,
+				FilePath: common.GitopsFilePipeline,
 				Content:  string(pipelineYAML),
 			})
 		}
 		if manifestValueYAML != nil {
 			gitActions = append(gitActions, gitlablib.CommitAction{
 				Action:   gitlablib.FileCreate,
-				FilePath: _filePathManifest,
+				FilePath: common.GitopsFileManifest,
 				Content:  string(manifestValueYAML),
 			})
 		}
@@ -526,7 +499,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		Pipeline:    params.PipelineJSONBlob,
 	})
 
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions); err != nil {
 		return err
 	}
 
@@ -573,11 +546,11 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 		gitActions := []gitlablib.CommitAction{
 			{
 				Action:   gitlablib.FileUpdate,
-				FilePath: _filePathBase,
+				FilePath: common.GitopsFileBase,
 				Content:  string(baseValueYAML),
 			}, {
 				Action:   gitlablib.FileUpdate,
-				FilePath: _filePathChart,
+				FilePath: common.GitopsFileChart,
 				Content:  string(chartYAML),
 			},
 		}
@@ -606,21 +579,21 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 		if applicationYAML != nil {
 			gitActions = append(gitActions, gitlablib.CommitAction{
 				Action:   templateUpdate,
-				FilePath: _filePathApplication,
+				FilePath: common.GitopsFileApplication,
 				Content:  string(applicationYAML),
 			})
 		}
 		if pipelineYAML != nil {
 			gitActions = append(gitActions, gitlablib.CommitAction{
 				Action:   pipelineUpdate,
-				FilePath: _filePathPipeline,
+				FilePath: common.GitopsFilePipeline,
 				Content:  string(pipelineYAML),
 			})
 		}
 		if envValueYAML != nil {
 			gitActions = append(gitActions, gitlablib.CommitAction{
 				Action:   gitlablib.FileUpdate,
-				FilePath: _filePathEnv,
+				FilePath: common.GitopsFileEnv,
 				Content:  string(envValueYAML),
 			})
 		}
@@ -641,7 +614,7 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 		Application: params.ApplicationJSONBlob,
 		Pipeline:    params.PipelineJSONBlob,
 	})
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions); err != nil {
 		return err
 	}
 
@@ -697,7 +670,7 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 
 	var compare *gitlab.Compare
 	if from == nil || to == nil {
-		compare, err = g.gitlabLib.Compare(ctx, pid, _branchMaster, _branchGitops, nil)
+		compare, err = g.gitlabLib.Compare(ctx, pid, common.GitopsBranchMaster, common.GitopsBranchGitops, nil)
 	} else {
 		compare, err = g.gitlabLib.Compare(ctx, pid, *from, *to, nil)
 	}
@@ -722,10 +695,11 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	removeSourceBranch := false
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
-	title := fmt.Sprintf("git merge %v, id = %d", _branchGitops, prID)
+	title := fmt.Sprintf("git merge %v, id = %d", common.GitopsBranchGitops, prID)
 
 	var mr *gitlab.MergeRequest
-	mrs, err := g.gitlabLib.ListMRs(ctx, pid, _branchGitops, _branchMaster, _mergeRequestStateOpen)
+	mrs, err := g.gitlabLib.ListMRs(ctx, pid, common.GitopsBranchGitops,
+		common.GitopsBranchMaster, common.GitopsMergeRequestStateOpen)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to list merge requests")
 	}
@@ -738,7 +712,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 		// (source,target), caused we can't merge anymore)
 		if len(mrs) >= 2 {
 			log.Warningf(ctx, "there %d mrs for (src:%s, des:%s), here will kill redundant mrs",
-				len(mrs), _branchGitops, _branchMaster)
+				len(mrs), common.GitopsBranchGitops, common.GitopsBranchMaster)
 			for i := 1; i < len(mrs); i++ {
 				_, err := g.gitlabLib.CloseMR(ctx, pid, mrs[i].IID)
 				if err != nil {
@@ -748,7 +722,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 		}
 	} else {
 		// create new mr
-		mr, err = g.gitlabLib.CreateMR(ctx, pid, _branchGitops, _branchMaster, title)
+		mr, err = g.gitlabLib.CreateMR(ctx, pid, common.GitopsBranchGitops, common.GitopsBranchMaster, title)
 		if err != nil {
 			return "", perror.WithMessage(err, "failed to create new merge request")
 		}
@@ -763,7 +737,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 
 func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*pkgcommon.Manifest, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathManifest)
+	content, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFileManifest)
 	if err != nil {
 		return nil, err
 	}
@@ -788,7 +762,7 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 	template string) (interface{}, error) {
 	ret := make(map[string]interface{})
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
+	content, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFilePipelineOutput)
 	if err != nil {
 		return nil, perror.WithMessage(err, "failed to get gitlab file")
 	}
@@ -811,7 +785,7 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 func (g *clusterGitRepo) getPipelineOutput(ctx context.Context,
 	application, cluster string) (map[string]map[string]interface{}, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathPipelineOutput)
+	content, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFilePipelineOutput)
 	if err != nil {
 		return nil, err
 	}
@@ -882,7 +856,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 				}
 				return gitlablib.FileCreate
 			}(),
-			FilePath: _filePathPipelineOutput,
+			FilePath: common.GitopsFilePipelineOutput,
 			Content:  string(newPipelineOutPutBytes),
 		},
 	}
@@ -898,7 +872,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	}, pipelineOutput)
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
+	commit, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to write gitlab files")
 	}
@@ -909,7 +883,7 @@ func (g *clusterGitRepo) GetRestartTime(ctx context.Context, application, cluste
 	template string) (string, error) {
 	ret := make(map[string]map[string]string)
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathRestart)
+	content, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchMaster, common.GitopsFileRestart)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to get gitlab file")
 	}
@@ -952,7 +926,7 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 	actions := []gitlablib.CommitAction{
 		{
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathRestart,
+			FilePath: common.GitopsFileRestart,
 			Content:  string(restartYAML),
 		},
 	}
@@ -963,8 +937,8 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 		Cluster:  angular.StringPtr(cluster),
 	}, nil)
 
-	// update in _branchMaster directly
-	commit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions)
+	// update in GitopsBranchMaster directly
+	commit, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchMaster, commitMsg, nil, actions)
 	if err != nil {
 		return "", err
 	}
@@ -985,11 +959,11 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		branchMaster, err1 = g.gitlabLib.GetBranch(ctx, pid, _branchMaster)
+		branchMaster, err1 = g.gitlabLib.GetBranch(ctx, pid, common.GitopsBranchMaster)
 	}()
 	go func() {
 		defer wg.Done()
-		branchGitops, err2 = g.gitlabLib.GetBranch(ctx, pid, _branchGitops)
+		branchGitops, err2 = g.gitlabLib.GetBranch(ctx, pid, common.GitopsBranchGitops)
 	}()
 	wg.Wait()
 
@@ -1012,8 +986,8 @@ func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster s
 	}
 	return &RepoInfo{
 		GitRepoURL: fmt.Sprintf("%v/%v/%v/%v.git", repoURL, g.clustersGroup.FullPath, application, cluster),
-		ValueFiles: []string{_filePathApplication, _filePathPipelineOutput,
-			_filePathEnv, _filePathBase, _filePathTags, _filePathRestart, _filePathSRE},
+		ValueFiles: []string{common.GitopsFileApplication, common.GitopsFilePipelineOutput,
+			common.GitopsFileEnv, common.GitopsFileBase, common.GitopsFileTags, common.GitopsFileRestart, common.GitopsFileSRE},
 	}
 }
 
@@ -1024,7 +998,7 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
-	bytes, err := g.gitlabLib.GetFile(ctx, pid, _branchGitops, _filePathEnv)
+	bytes, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFileEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -1035,7 +1009,7 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 
-	return envMap[templateName][_envValueNamespace], nil
+	return envMap[templateName][common.GitopsEnvValueNamespace], nil
 }
 
 func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, commit string) (_ string, err error) {
@@ -1050,7 +1024,7 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
 	// 1. get cluster files of the specified commit
-	// the files contains: _filePathPipeline, _filePathApplication, _filePathBase, _filePathPipelineOutput
+	// the files contains: GitopsFilePipeline, GitopsFileApplication, GitopsFileBase, GitopsFilePipelineOutput
 	var err1, err2, err3, err4, err5, err6 error
 	var applicationBytes, pipelineBytes, baseValueBytes, pipelineOutPutBytes, tagsBytes, chartBytes []byte
 	var wgReadFile sync.WaitGroup
@@ -1061,12 +1035,12 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 		*b = bytes
 		*err = e
 	}
-	go readFile(&pipelineBytes, &err1, _filePathPipeline)
-	go readFile(&applicationBytes, &err2, _filePathApplication)
-	go readFile(&baseValueBytes, &err3, _filePathBase)
-	go readFile(&pipelineOutPutBytes, &err4, _filePathPipelineOutput)
-	go readFile(&tagsBytes, &err5, _filePathTags)
-	go readFile(&chartBytes, &err6, _filePathChart)
+	go readFile(&pipelineBytes, &err1, common.GitopsFilePipeline)
+	go readFile(&applicationBytes, &err2, common.GitopsFileApplication)
+	go readFile(&baseValueBytes, &err3, common.GitopsFileBase)
+	go readFile(&pipelineOutPutBytes, &err4, common.GitopsFilePipelineOutput)
+	go readFile(&tagsBytes, &err5, common.GitopsFileTags)
+	go readFile(&chartBytes, &err6, common.GitopsFileChart)
 	wgReadFile.Wait()
 
 	for _, err := range []error{err1, err2, err3, err4, err6} {
@@ -1078,27 +1052,27 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	actions := []gitlablib.CommitAction{
 		{
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathPipeline,
+			FilePath: common.GitopsFilePipeline,
 			Content:  string(pipelineBytes),
 		}, {
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathApplication,
+			FilePath: common.GitopsFileApplication,
 			Content:  string(applicationBytes),
 		}, {
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathBase,
+			FilePath: common.GitopsFileBase,
 			Content:  string(baseValueBytes),
 		}, {
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathPipelineOutput,
+			FilePath: common.GitopsFilePipelineOutput,
 			Content:  string(pipelineOutPutBytes),
 		}, {
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathTags,
+			FilePath: common.GitopsFileTags,
 			Content:  string(tagsBytes),
 		}, {
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathChart,
+			FilePath: common.GitopsFileChart,
 			Content:  string(chartBytes),
 		},
 	}
@@ -1113,7 +1087,7 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 		Commit: commit,
 	})
 
-	newCommit, err := g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
+	newCommit, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions)
 	if err != nil {
 		return "", err
 	}
@@ -1142,7 +1116,7 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 	actions := []gitlablib.CommitAction{
 		{
 			Action:   gitlablib.FileUpdate,
-			FilePath: _filePathTags,
+			FilePath: common.GitopsFileTags,
 			Content:  string(tagsYAML),
 		},
 	}
@@ -1170,7 +1144,7 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 		}(tags),
 	})
 
-	_, err = g.gitlabLib.WriteFiles(ctx, pid, _branchGitops, commitMsg, nil, actions)
+	_, err = g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions)
 	if err != nil {
 		return err
 	}
@@ -1221,7 +1195,7 @@ func getNamespace(params *BaseParams) string {
 
 func (g *clusterGitRepo) assembleEnvValue(params *BaseParams) map[string]map[string]*EnvValue {
 	envMap := make(map[string]*EnvValue)
-	envMap[_envValueNamespace] = &EnvValue{
+	envMap[common.GitopsEnvValueNamespace] = &EnvValue{
 		Environment: params.Environment,
 		Region:      params.RegionEntity.Name,
 		Namespace:   getNamespace(params),
@@ -1264,7 +1238,7 @@ type BaseValueTemplate struct {
 // and value is a map which key is "horizon", and value is *BaseValue
 func (g *clusterGitRepo) assembleBaseValue(params *BaseParams) map[string]map[string]*BaseValue {
 	baseMap := make(map[string]*BaseValue)
-	baseMap[_baseValueNamespace] = &BaseValue{
+	baseMap[common.GitopsBaseValueNamespace] = &BaseValue{
 		Application: params.Application.Name,
 		ClusterID:   params.ClusterID,
 		Cluster:     params.Cluster,
@@ -1329,12 +1303,11 @@ func assembleRestart(templateName string) map[string]map[string]string {
 
 func assembleTags(templateName string,
 	tags []*tagmodels.Tag) map[string]map[string]map[string]string {
-	const tagsKey = "tags"
 	ret := make(map[string]map[string]map[string]string)
 	ret[templateName] = make(map[string]map[string]string)
-	ret[templateName][tagsKey] = make(map[string]string)
+	ret[templateName][common.GitopsKeyTags] = make(map[string]string)
 	for _, tag := range tags {
-		ret[templateName][tagsKey][tag.Key] = tag.Value
+		ret[templateName][common.GitopsKeyTags][tag.Key] = tag.Value
 	}
 	return ret
 }

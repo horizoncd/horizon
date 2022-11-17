@@ -6,9 +6,12 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	amodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	cmodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	tmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -283,6 +286,10 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 	if err := c.updatePRStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusMerged,
 		masterRevision); err != nil {
+		return nil, err
+	}
+
+	if err := c.updateTagsFromFile(ctx, application, cluster); err != nil {
 		return nil, err
 	}
 
@@ -594,5 +601,43 @@ func (c *controller) updatePRStatus(ctx context.Context, action string, prID uin
 	}
 	log.Infof(ctx, "%s status, pr = %d, status =  %s, revision = %s",
 		action, prID, pState, revision)
+	return nil
+}
+
+func (c *controller) updateTagsFromFile(ctx context.Context,
+	application *amodels.Application, cluster *cmodels.Cluster) error {
+	files, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if file.FileName == common.GitopsFileTags {
+			release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+			if err != nil {
+				return err
+			}
+			midMap := file.Content[release.ChartName].(map[interface{}]interface{})
+			tagsMap := midMap[common.GitopsKeyTags].(map[interface{}]interface{})
+			tags := make([]*tmodels.Tag, 0, len(tagsMap))
+			for k, v := range tagsMap {
+				key, ok := k.(string)
+				if !ok {
+					continue
+				}
+				value, ok := v.(string)
+				if !ok {
+					continue
+				}
+				tags = append(tags, &tmodels.Tag{
+					ResourceID:   cluster.ID,
+					ResourceType: common.ResourceCluster,
+					Key:          key,
+					Value:        value,
+				})
+			}
+			return c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, cluster.ID, tags)
+		}
+	}
 	return nil
 }

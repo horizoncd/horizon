@@ -167,7 +167,7 @@ func Test(t *testing.T) {
 	defer func() {
 		_ = r.DeleteCluster(ctx, application, cluster, 1)
 		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v/%v-%v", rootGroupName,
-			_recyclingClusters, application, cluster, 1))
+			common.GitopsGroupRecyclingClusters, application, cluster, 1))
 	}()
 	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
@@ -400,7 +400,7 @@ func TestGetClusterValueFile(t *testing.T) {
 
 	// 1. test gitlab get file error
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(),
-		_branchMaster, gomock.Any()).Return(
+		common.GitopsBranchMaster, gomock.Any()).Return(
 		nil, errors.New("gitlab getFile error")).Times(5)
 	clusterValueFiles, err := clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
 		"app", "cluster")
@@ -408,7 +408,7 @@ func TestGetClusterValueFile(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// 2. test gitlab return ok
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), common.GitopsBranchMaster, gomock.Any()).Return(
 		[]byte("cluster: xxx"), nil).Times(5)
 	clusterValueFiles, err = clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
 		"app", "cluster")
@@ -416,10 +416,10 @@ func TestGetClusterValueFile(t *testing.T) {
 	assert.NotNil(t, clusterValueFiles)
 
 	// 3. test gitlab return 404
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), common.GitopsBranchMaster, gomock.Any()).Return(
 		[]byte("cluster: xxx"), nil).Times(4)
 	var herr = herrors.NewErrNotFound(herrors.GitlabResource, "test")
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), _branchMaster, gomock.Any()).Return(
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), common.GitopsBranchMaster, gomock.Any()).Return(
 		nil, herr).Times(1)
 
 	clusterValueFile1, err := clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
