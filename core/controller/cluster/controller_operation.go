@@ -636,10 +636,7 @@ func (c *controller) updateTagsFromFile(ctx context.Context,
 					Value:        value,
 				})
 			}
-			err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, cluster.ID, tags)
-			if err != nil {
-				return err
-			}
+			return c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, cluster.ID, tags)
 		}
 	}
 	return nil
