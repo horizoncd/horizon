@@ -30,16 +30,23 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	currentUser := usermodels.User{
+		Model: global.Model{
+			ID: 110,
+		},
+		Name:  "tony",
+		Email: "tony@corp.com",
+	}
 	// nolint
 	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
-		Name: "tony",
-		ID:   110,
+		Name: currentUser.Name,
+		ID:   currentUser.ID,
 	}))
 	callbacks.RegisterCustomCallbacks(db)
 	// nolint
 	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
-		Name: "tony",
-		ID:   110,
+		Name: currentUser.Name,
+		ID:   currentUser.ID,
 	})
 
 	if err := db.AutoMigrate(&models.Application{}); err != nil {
@@ -52,18 +59,20 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	userDAO := userdao.NewDAO(db)
+	_, err := userDAO.Create(ctx, &currentUser)
+	if err != nil {
+		panic(err)
+	}
+
 	os.Exit(m.Run())
 }
 
 func Test(t *testing.T) {
-	userDAO := userdao.NewDAO(db)
-	user1, err := userDAO.Create(ctx, &usermodels.User{
-		Name:  "tony",
-		Email: "tony@corp.com",
-	})
+	currentUser, err := common.UserFromContext(ctx)
 	assert.Nil(t, err)
-	assert.NotNil(t, user1)
 
+	userDAO := userdao.NewDAO(db)
 	user2, err := userDAO.Create(ctx, &usermodels.User{
 		Name:  "leo",
 		Email: "leo@corp.com",
@@ -100,8 +109,8 @@ func Test(t *testing.T) {
 		gitBranch       = "develop"
 		template        = "javaapp"
 		templateRelease = "v1.1.0"
-		createdBy       = user1.ID
-		updatedBy       = user1.ID
+		createdBy       = currentUser.GetID()
+		updatedBy       = currentUser.GetID()
 	)
 	application := &models.Application{
 		GroupID:         uint(groupID),

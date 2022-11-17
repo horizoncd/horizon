@@ -106,7 +106,7 @@ func (s *service) CheckIfPermissionEqualOrHigher(ctx context.Context, role,
 		return err
 	}
 	if comResult == roleservice.RoleSmaller {
-		return ErrGrantHighRole
+		return ErrNotPermitted
 	}
 	return nil
 }
@@ -267,7 +267,12 @@ func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) 
 	}
 
 	// 2. check if the current user have the permission to update the role
-	err = s.CheckIfPermissionEqualOrHigher(ctx, memberItem.Role, string(memberItem.ResourceType), memberItem.ResourceID)
+	err = s.CheckIfPermissionEqualOrHigher(ctx, memberItem.Role, string(memberItem.ResourceType),
+		memberItem.ResourceID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.CheckIfPermissionEqualOrHigher(ctx, role, string(memberItem.ResourceType), memberItem.ResourceID)
 	if err != nil {
 		return nil, err
 	}

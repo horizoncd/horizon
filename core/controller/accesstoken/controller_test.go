@@ -46,10 +46,9 @@ var (
 
 // invalid params
 const (
-	expiredDate  = "2021-10-1"
-	invalidDate  = "20222-11-2"
-	invalidRole  = "joker"
-	invalidScope = "test"
+	expiredDate = "2021-10-1"
+	invalidDate = "20222-11-2"
+	invalidRole = "joker"
 )
 
 func TestMain(m *testing.M) {
@@ -172,19 +171,6 @@ func Test(t *testing.T) {
 			req: CreateResourceAccessTokenRequest{
 				CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
 					Name:      commonName,
-					Scopes:    []string{invalidScope},
-					ExpiresAt: NeverExpire,
-				},
-				Role: commonRole,
-			},
-			resourceType:     commonResourceType,
-			resourceID:       commonResourceID,
-			expectedCauseErr: herror.ErrParamInvalid,
-		},
-		{
-			req: CreateResourceAccessTokenRequest{
-				CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
-					Name:      commonName,
 					Scopes:    commonScopes,
 					ExpiresAt: NeverExpire,
 				},
@@ -192,7 +178,7 @@ func Test(t *testing.T) {
 			},
 			resourceType:     commonResourceType,
 			resourceID:       commonResourceID,
-			expectedCauseErr: herror.ErrParamInvalid,
+			expectedCauseErr: roleservice.ErrorRoleNotFound,
 		},
 		{
 			req: CreateResourceAccessTokenRequest{

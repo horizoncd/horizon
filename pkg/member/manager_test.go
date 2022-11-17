@@ -10,6 +10,9 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/server/global"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -160,8 +163,31 @@ func TestListResourceOfMemberInfo(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	if err := db.AutoMigrate(&models.Member{}); err != nil {
+	if err := db.AutoMigrate(&models.Member{}, &usermodels.User{}); err != nil {
 		panic(err)
+	}
+
+	users := []usermodels.User{
+		{
+			Model: global.Model{
+				ID: 1,
+			},
+			Name: "sph",
+		},
+		{
+			Model: global.Model{
+				ID: 2,
+			},
+			Name: "jerry",
+		},
+	}
+
+	userManager := usermanager.New(db)
+	for i := range users {
+		_, err := userManager.Create(ctx, &users[i])
+		if err != nil {
+			panic(err)
+		}
 	}
 	ctx = context.TODO()
 	os.Exit(m.Run())

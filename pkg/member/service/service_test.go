@@ -59,6 +59,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		memberManager: manager.MemberManager,
 		groupManager:  groupManager,
 		roleService:   roleMockService,
+		userManager:   manager.UserManager,
 	}
 	s = originService
 
@@ -71,12 +72,44 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	var tomID uint = 1
 	var jerryID uint = 2
 	var catID uint = 3
+
+	users := []usermodels.User{
+		{
+			Model: global.Model{
+				ID: tomID,
+			},
+			Name: "tom",
+		},
+		{
+			Model: global.Model{
+				ID: jerryID,
+			},
+			Name: "jerry",
+		},
+		{
+			Model: global.Model{
+				ID: catID,
+			},
+			Name: "cat",
+		},
+	}
+	for i := range users {
+		_, err := originService.userManager.Create(ctx, &users[i])
+		assert.Nil(t, err)
+	}
+	defer func() {
+		originService.userManager.DeleteUser(ctx, tomID)
+		originService.userManager.DeleteUser(ctx, jerryID)
+		originService.userManager.DeleteUser(ctx, catID)
+	}()
+
 	var grandUser userauth.User = &userauth.DefaultInfo{
 		Name:     "tom",
 		FullName: "tom",
 		ID:       tomID,
 	}
 	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
+
 	// insert service to group2
 	postMemberTom2 := PostMember{
 		ResourceType: common.ResourceGroup,
@@ -150,7 +183,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			ParentID:        0,
 			TraversalIDs:    traversalIDs,
 		}, nil
-	}).Times(1)
+	}).Times(2)
 	groupManager.EXPECT().IsRootGroup(gomock.Any(), gomock.Any()).AnyTimes().Return(false)
 	postMemberCat2 := PostMember{
 		ResourceType: common.ResourceGroup,
@@ -160,7 +193,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		Role:         "maintainer",
 	}
 	_, err = s.CreateMember(ctx, postMemberCat2)
-	assert.Equal(t, err, ErrGrantHighRole)
+	assert.Equal(t, err, ErrNotPermitted)
 
 	// create member exist  auto change to update role
 	roleMockService.EXPECT().RoleCompare(ctx, gomock.Any(), gomock.Any()).Return(
@@ -200,7 +233,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 			ParentID:        0,
 			TraversalIDs:    traversalIDs,
 		}, nil
-	}).Times(1)
+	}).Times(2)
 	postMemberCat2.Role = "develop"
 	member, err = s.CreateMember(ctx, postMemberCat2)
 	assert.Nil(t, err)
@@ -262,6 +295,7 @@ func TestListGroupMember(t *testing.T) {
 	originService := &service{
 		memberManager: manager.MemberManager,
 		groupManager:  groupManager,
+		userManager:   manager.UserManager,
 	}
 	s = originService
 
@@ -280,6 +314,35 @@ func TestListGroupMember(t *testing.T) {
 		FullName: "tom",
 		ID:       tomID,
 	}
+	users := []usermodels.User{
+		{
+			Model: global.Model{
+				ID: tomID,
+			},
+			Name: "tom",
+		},
+		{
+			Model: global.Model{
+				ID: jerryID,
+			},
+			Name: "jerry",
+		},
+		{
+			Model: global.Model{
+				ID: catID,
+			},
+			Name: "cat",
+		},
+	}
+	for i := range users {
+		_, err := originService.userManager.Create(ctx, &users[i])
+		assert.Nil(t, err)
+	}
+	defer func() {
+		originService.userManager.DeleteUser(ctx, tomID)
+		originService.userManager.DeleteUser(ctx, jerryID)
+		originService.userManager.DeleteUser(ctx, catID)
+	}()
 	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
 
 	// insert service to group2
@@ -388,6 +451,38 @@ func TestListApplicationInstanceMember(t *testing.T) {
 			ID:       1,
 		}
 	)
+	users := []usermodels.User{
+		{
+			Model: global.Model{
+				ID: sphID,
+			},
+			Name: "sph",
+		},
+		{
+			Model: global.Model{
+				ID: jerryID,
+			},
+			Name: "jerry",
+		},
+		{
+			Model: global.Model{
+				ID: catID,
+			},
+			Email: catEmail,
+			Name:  "cat",
+		},
+	}
+
+	userManager := usermanager.New(db)
+	for i := range users {
+		_, err := userManager.Create(ctx, &users[i])
+		assert.Nil(t, err)
+	}
+	defer func() {
+		userManager.DeleteUser(ctx, sphID)
+		userManager.DeleteUser(ctx, jerryID)
+		userManager.DeleteUser(ctx, catID)
+	}()
 	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser) // nolint
 
 	// mock the groupManager
@@ -498,10 +593,6 @@ func TestListApplicationInstanceMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMembers[3], &members[1]))
 	assert.True(t, PostMemberEqualsMember(postMembers[2], &members[2]))
 
-	userMgr := usermanager.New(db)
-	_, err = userMgr.Create(ctx, &usermodels.User{Model: global.Model{ID: catID}, Email: catEmail})
-	assert.Nil(t, err)
-
 	ctx = context.WithValue(ctx, memberctx.MemberQueryOnCondition, true)
 	ctx = context.WithValue(ctx, memberctx.MemberDirectMemberOnly, true)
 	ctx = context.WithValue(ctx, memberctx.MemberEmails, []string{catEmail})
@@ -541,6 +632,37 @@ func TestGetPipelinerunMember(t *testing.T) {
 		}
 		pipelineRunID uint = 23123
 	)
+	users := []usermodels.User{
+		{
+			Model: global.Model{
+				ID: sphID,
+			},
+			Name: "sph",
+		},
+		{
+			Model: global.Model{
+				ID: jerryID,
+			},
+			Name: "jerry",
+		},
+		{
+			Model: global.Model{
+				ID: catID,
+			},
+			Name: "cat",
+		},
+	}
+
+	userManager := usermanager.New(db)
+	for i := range users {
+		_, err := userManager.Create(ctx, &users[i])
+		assert.Nil(t, err)
+	}
+	defer func() {
+		userManager.DeleteUser(ctx, sphID)
+		userManager.DeleteUser(ctx, jerryID)
+		userManager.DeleteUser(ctx, catID)
+	}()
 	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser)
 
 	// mock the groupManager
@@ -597,6 +719,7 @@ func TestGetPipelinerunMember(t *testing.T) {
 		applicationClusterManager: clusterManager,
 		pipelineManager:           pipelineMockManager,
 		roleService:               roleSvc,
+		userManager:               manager.UserManager,
 	}
 	s = originService
 

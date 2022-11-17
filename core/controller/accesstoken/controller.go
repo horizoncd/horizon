@@ -180,7 +180,7 @@ func (c *controller) ListPersonalAccessTokens(ctx context.Context,
 		accessTokens = append(accessTokens, PersonalAccessToken{
 			CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
 				Name:      token.Name,
-				Scopes:    strings.Split(token.Scope, ","),
+				Scopes:    strings.Split(token.Scope, " "),
 				ExpiresAt: parseExpiredAt(token.CreatedAt, token.ExpiresIn),
 			},
 			CreatedAt: token.CreatedAt,
@@ -215,7 +215,7 @@ func (c *controller) ListResourceAccessTokens(ctx context.Context, resourceType 
 			CreateResourceAccessTokenRequest: CreateResourceAccessTokenRequest{
 				CreatePersonalAccessTokenRequest: CreatePersonalAccessTokenRequest{
 					Name:      token.Name,
-					Scopes:    strings.Split(token.Scope, ","),
+					Scopes:    strings.Split(token.Scope, " "),
 					ExpiresAt: parseExpiredAt(token.CreatedAt, token.ExpiresIn),
 				},
 				Role: token.Role,

@@ -43,6 +43,7 @@ import (
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	reposchema "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
 	"g.hz.netease.com/horizon/pkg/templaterepo/chartmuseumbase"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	gitlabapi "github.com/xanzy/go-gitlab"
@@ -224,10 +225,11 @@ func testList(t *testing.T) {
 	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[1].SyncStatusCode)
 	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[2].SyncStatusCode)
 
+	currentUser, err := common.UserFromContext(ctx)
+	assert.Nil(t, err)
 	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
-		Name:  "Jerry",
-		ID:    1,
-		Admin: false,
+		Name: currentUser.GetName(),
+		ID:   currentUser.GetID(),
 	})
 
 	templates, err = ctl.ListTemplate(ctx)
@@ -240,7 +242,7 @@ func testList(t *testing.T) {
 		ResourceID:   1,
 		Role:         roleservice.Owner,
 		MemberType:   membermodels.MemberUser,
-		MemberNameID: 1,
+		MemberNameID: currentUser.GetID(),
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
@@ -629,7 +631,7 @@ func createContext() {
 	db, _ = orm.NewSqliteDB("")
 	if err := db.AutoMigrate(&trmodels.TemplateRelease{},
 		&amodels.Application{}, &cmodels.Cluster{}, &membermodels.Member{},
-		&tmodels.Template{}, &membermodels.Member{}, &groupmodels.Group{}); err != nil {
+		&tmodels.Template{}, &membermodels.Member{}, &groupmodels.Group{}, &usermodels.User{}); err != nil {
 		panic(err)
 	}
 	mgr = managerparam.InitManager(db)
@@ -640,6 +642,17 @@ func createContext() {
 		ID:    1,
 		Admin: true,
 	})
+
+	currentUser := usermodels.User{
+		Name: "Jerry",
+		Model: global.Model{
+			ID: 1,
+		},
+	}
+	_, err := mgr.UserManager.Create(ctx, &currentUser)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func createController(t *testing.T) Controller {
