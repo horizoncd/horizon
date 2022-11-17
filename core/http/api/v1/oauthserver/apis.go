@@ -187,7 +187,7 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 			Scope:        c.PostForm(Scope),
 			RedirectURL:  c.PostForm(RedirectURI),
 			State:        c.PostForm(State),
-			UserIdentity: user.GetStrID(),
+			UserIdentity: user.GetID(),
 			Request:      c.Request,
 		})
 		if err != nil {

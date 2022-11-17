@@ -20,7 +20,7 @@ type AuthorizeReq struct {
 	Scope        string
 	RedirectURL  string
 	State        string
-	UserIdentity string
+	UserIdentity uint
 
 	Request *http.Request
 }

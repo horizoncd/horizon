@@ -23,6 +23,7 @@ type DAO interface {
 	GetByID(ctx context.Context, id uint) (*models.User, error)
 	UpdateByID(ctx context.Context, id uint, newUser *models.User) (*models.User, error)
 	GetUserByIDP(ctx context.Context, email string, idp string) (*models.User, error)
+	DeleteUser(ctx context.Context, id uint) error
 }
 
 // NewDAO returns an instance of the default DAO
@@ -51,6 +52,8 @@ func (d *dao) List(ctx context.Context, query *q.Query) (int64, []*models.User, 
 			switch k {
 			case corecommon.UserQueryName:
 				tx = tx.Where("name like ?", fmt.Sprintf("%%%v%%", v))
+			case corecommon.UserQueryType:
+				tx = tx.Where("user_type in ?", v)
 			}
 		}
 	}
@@ -92,7 +95,7 @@ func (d *dao) GetByIDs(ctx context.Context, userID []uint) ([]*models.User, erro
 
 func (d *dao) GetByOIDCMeta(ctx context.Context, oidcType, email string) (*models.User, error) {
 	var user models.User
-	result := d.db.WithContext(ctx).Raw(common.UserQueryByOIDC, oidcType, email).Scan(&user)
+	result := d.db.WithContext(ctx).Raw(common.UserQueryByOIDC, oidcType, email, models.UserTypeCommon).Scan(&user)
 	if result.Error != nil {
 		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.UserInDB, "failed to get user"),
 			"failed to get user(oidcType = %v, email = %v): err = %v",
@@ -110,7 +113,7 @@ func (d *dao) ListByEmail(ctx context.Context, emails []string) ([]*models.User,
 	}
 
 	var users []*models.User
-	result := d.db.WithContext(ctx).Raw(common.UserListByEmail, emails).Scan(&users)
+	result := d.db.WithContext(ctx).Raw(common.UserListByEmail, emails, models.UserTypeCommon).Scan(&users)
 	if result.Error != nil {
 		return nil, perror.Wrapf(herrors.NewErrListFailed(herrors.UserInDB, "failed to list user"),
 			"failed to list user(emails = %#v): err = %v", emails, result.Error)
@@ -185,4 +188,9 @@ func (d *dao) GetUserByIDP(ctx context.Context, email string, idp string) (*mode
 			"failed to get user: err = %v", err)
 	}
 	return u, nil
+}
+
+func (d *dao) DeleteUser(ctx context.Context, id uint) error {
+	result := d.db.WithContext(ctx).Exec(common.UserDeleteByID, id)
+	return result.Error
 }

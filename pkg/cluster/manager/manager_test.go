@@ -17,6 +17,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/rbac/role"
 	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	userdao "g.hz.netease.com/horizon/pkg/user/dao"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
@@ -37,21 +38,33 @@ const secondsInOneDay = 24 * 3600
 
 func TestMain(m *testing.M) {
 	db = db.Debug()
+	currentUser := &usermodels.User{
+		Name:  "tony",
+		Email: "tony@corp.com",
+		Model: global.Model{
+			ID: 110,
+		},
+	}
 	// nolint
 	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
-		Name: "tony",
-		ID:   110,
+		Name: currentUser.Name,
+		ID:   currentUser.ID,
 	}))
 	if err := db.AutoMigrate(&models.Cluster{}, &tagmodels.Tag{}, &usermodels.User{},
 		&envregionmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{},
 		&pipelinemodel.Pipelinerun{}); err != nil {
 		panic(err)
 	}
+	userDAO := userdao.NewDAO(db)
+	_, err := userDAO.Create(ctx, currentUser)
+	if err != nil {
+		panic(err)
+	}
 	ctx = context.TODO()
 	// nolint
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
-		Name: "tony",
-		ID:   110,
+		Name: currentUser.Name,
+		ID:   currentUser.ID,
 	})
 	callbacks.RegisterCustomCallbacks(db)
 	os.Exit(m.Run())
@@ -59,19 +72,15 @@ func TestMain(m *testing.M) {
 
 func Test(t *testing.T) {
 	userDAO := userdao.NewDAO(db)
-	user1, err := userDAO.Create(ctx, &usermodels.User{
-		Name:  "tony",
-		Email: "tony@corp.com",
-	})
-	assert.Nil(t, err)
-	assert.NotNil(t, user1)
-
 	user2, err := userDAO.Create(ctx, &usermodels.User{
 		Name:  "leo",
 		Email: "leo@corp.com",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, user2)
+
+	currentUser, err := common.UserFromContext(ctx)
+	assert.Nil(t, err)
 
 	var (
 		applicationID   = uint(1)
@@ -83,8 +92,8 @@ func Test(t *testing.T) {
 		gitBranch       = "develop"
 		template        = "javaapp"
 		templateRelease = "v1.1.0"
-		createdBy       = user1.ID
-		updatedBy       = user1.ID
+		createdBy       = currentUser.GetID()
+		updatedBy       = currentUser.GetID()
 	)
 
 	region, err := regionMgr.Create(ctx, &regionmodels.Region{

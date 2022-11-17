@@ -22,7 +22,7 @@ type AuthorizeGenerateRequest struct {
 	State       string
 
 	Scope        string
-	UserIdentify string
+	UserIdentify uint
 	Request      *http.Request
 }
 
@@ -230,13 +230,13 @@ func (m *OauthManager) ListSecret(ctx context.Context, ClientID string) ([]model
 
 func (m *OauthManager) NewAuthorizationToken(req *AuthorizeGenerateRequest) *models.Token {
 	token := &models.Token{
-		ClientID:            req.ClientID,
-		RedirectURI:         req.RedirectURL,
-		State:               req.State,
-		CreatedAt:           time.Now(),
-		ExpiresIn:           m.authorizeCodeExpireTime,
-		Scope:               req.Scope,
-		UserOrRobotIdentity: req.UserIdentify,
+		ClientID:    req.ClientID,
+		RedirectURI: req.RedirectURL,
+		State:       req.State,
+		CreatedAt:   time.Now(),
+		ExpiresIn:   m.authorizeCodeExpireTime,
+		Scope:       req.Scope,
+		UserID:      req.UserIdentify,
 	}
 	token.Code = m.authorizationGenerate.GenCode(&generate.CodeGenerateInfo{
 		Token:   *token,
@@ -247,12 +247,12 @@ func (m *OauthManager) NewAuthorizationToken(req *AuthorizeGenerateRequest) *mod
 func (m *OauthManager) NewAccessToken(authorizationCodeToken *models.Token,
 	req *AccessTokenGenerateRequest, accessCodeGenerate generate.AccessTokenCodeGenerate) *models.Token {
 	token := &models.Token{
-		ClientID:            req.ClientID,
-		RedirectURI:         req.RedirectURL,
-		CreatedAt:           time.Now(),
-		ExpiresIn:           m.accessTokenExpireTime,
-		Scope:               authorizationCodeToken.Scope,
-		UserOrRobotIdentity: authorizationCodeToken.UserOrRobotIdentity,
+		ClientID:    req.ClientID,
+		RedirectURI: req.RedirectURL,
+		CreatedAt:   time.Now(),
+		ExpiresIn:   m.accessTokenExpireTime,
+		Scope:       authorizationCodeToken.Scope,
+		UserID:      authorizationCodeToken.UserID,
 	}
 	token.Code = accessCodeGenerate.GenCode(&generate.CodeGenerateInfo{
 		Token:   *token,
@@ -271,7 +271,7 @@ func (m *OauthManager) GenAuthorizeCode(ctx context.Context, req *AuthorizeGener
 	}
 
 	authorizationToken := m.NewAuthorizationToken(req)
-	err = m.tokenStore.Create(ctx, authorizationToken)
+	_, err = m.tokenStore.Create(ctx, authorizationToken)
 	return authorizationToken, err
 }
 func (m *OauthManager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest, codeToken *models.Token) error {
@@ -322,7 +322,7 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 
 	// new access token  and store
 	accessToken := m.NewAccessToken(authorizationCodeToken, req, accessCodeGenerate)
-	err = m.tokenStore.Create(ctx, accessToken)
+	_, err = m.tokenStore.Create(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}

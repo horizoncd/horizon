@@ -64,6 +64,20 @@ func (mr *MockManagerMockRecorder) DeleteMember(ctx, memberID interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMember", reflect.TypeOf((*MockManager)(nil).DeleteMember), ctx, memberID)
 }
 
+// DeleteMemberByMemberNameID mocks base method.
+func (m *MockManager) DeleteMemberByMemberNameID(ctx context.Context, memberNameID uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteMemberByMemberNameID", ctx, memberNameID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteMemberByMemberNameID indicates an expected call of DeleteMemberByMemberNameID.
+func (mr *MockManagerMockRecorder) DeleteMemberByMemberNameID(ctx, memberNameID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMemberByMemberNameID", reflect.TypeOf((*MockManager)(nil).DeleteMemberByMemberNameID), ctx, memberNameID)
+}
+
 // Get mocks base method.
 func (m *MockManager) Get(ctx context.Context, resourceType models.ResourceType, resourceID uint, memberType models.MemberType, memberInfo uint) (*models.Member, error) {
 	m.ctrl.T.Helper()
@@ -136,6 +150,21 @@ func (m *MockManager) ListDirectMemberOnCondition(ctx context.Context, resourceT
 func (mr *MockManagerMockRecorder) ListDirectMemberOnCondition(ctx, resourceType, resourceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDirectMemberOnCondition", reflect.TypeOf((*MockManager)(nil).ListDirectMemberOnCondition), ctx, resourceType, resourceID)
+}
+
+// ListMembersByUserID mocks base method.
+func (m *MockManager) ListMembersByUserID(ctx context.Context, userID uint) ([]models.Member, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListMembersByUserID", ctx, userID)
+	ret0, _ := ret[0].([]models.Member)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListMembersByUserID indicates an expected call of ListMembersByUserID.
+func (mr *MockManagerMockRecorder) ListMembersByUserID(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMembersByUserID", reflect.TypeOf((*MockManager)(nil).ListMembersByUserID), ctx, userID)
 }
 
 // ListResourceOfMemberInfo mocks base method.

@@ -20,6 +20,7 @@ type Manager interface {
 	GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint]*models.User, error)
 	ListByEmail(ctx context.Context, emails []string) ([]*models.User, error)
 	UpdateByID(ctx context.Context, id uint, db *models.User) (*models.User, error)
+	DeleteUser(ctx context.Context, id uint) error
 }
 
 type manager struct {
@@ -69,4 +70,8 @@ func (m *manager) GetUserByIDP(ctx context.Context, email string, idp string) (*
 
 func (m *manager) UpdateByID(ctx context.Context, id uint, db *models.User) (*models.User, error) {
 	return m.dao.UpdateByID(ctx, id, db)
+}
+
+func (m *manager) DeleteUser(ctx context.Context, id uint) error {
+	return m.dao.DeleteUser(ctx, id)
 }

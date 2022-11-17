@@ -7,7 +7,8 @@ import (
 
 type Service interface {
 	GetRulesByScope([]string) []types.Role
-	GetAllScopeNames([]string) []string
+	GetAllScopeNames() []string
+	GetAllScopes() []types.Role
 }
 
 type fileScopeService struct {
@@ -57,10 +58,14 @@ func (f *fileScopeService) GetRulesByScope(scopes []string) []types.Role {
 	return roles
 }
 
-func (f *fileScopeService) GetAllScopeNames([]string) []string {
+func (f *fileScopeService) GetAllScopeNames() []string {
 	var scopeNames = make([]string, 0)
 	for _, role := range f.Roles {
 		scopeNames = append(scopeNames, role.Name)
 	}
 	return scopeNames
+}
+
+func (f *fileScopeService) GetAllScopes() []types.Role {
+	return f.Roles
 }

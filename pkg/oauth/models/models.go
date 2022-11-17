@@ -27,12 +27,14 @@ type Token struct {
 
 	// token basic info
 	// Code authorize_code/access_token/refresh-token
+	Name      string        `gorm:"column:name"`
 	Code      string        `gorm:"column:code"`
 	CreatedAt time.Time     `gorm:"column:created_at"`
+	CreatedBy uint          `gorm:"column:created_by"`
 	ExpiresIn time.Duration `gorm:"column:expires_in"`
 	Scope     string        `gorm:"column:scope"`
 
-	UserOrRobotIdentity string `gorm:"column:user_or_robot_identity"`
+	UserID uint `gorm:"column:user_id"`
 }
 type AppType uint8
 
