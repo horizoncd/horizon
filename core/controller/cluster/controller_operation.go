@@ -618,7 +618,7 @@ func (c *controller) updateTagsFromFile(ctx context.Context,
 				return err
 			}
 			midMap := file.Content[release.ChartName].(map[interface{}]interface{})
-			tagsMap := midMap["tags"].(map[interface{}]interface{})
+			tagsMap := midMap[common.GitopsKeyTags].(map[interface{}]interface{})
 			tags := make([]*tmodels.Tag, 0, len(tagsMap))
 			for k, v := range tagsMap {
 				key, ok := k.(string)
