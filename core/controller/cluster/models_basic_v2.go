@@ -82,11 +82,14 @@ func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Applicati
 }
 
 type CreateClusterResponseV2 struct {
-	ID            uint      `json:"id"`
-	FullPath      string    `json:"fullPath"`
-	ApplicationID uint      `json:"applicationID"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+	ID            uint         `json:"id"`
+	Name          string       `json:"name"`
+	FullPath      string       `json:"fullPath"`
+	ApplicationID uint         `json:"applicationID"`
+	Scope         *Scope       `json:"scope"`
+	Application   *Application `json:"application"`
+	CreatedAt     time.Time    `json:"createdAt"`
+	UpdatedAt     time.Time    `json:"updatedAt"`
 }
 
 type UpdateClusterRequestV2 struct {
