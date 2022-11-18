@@ -370,7 +370,7 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		return nil, err
 	}
 
-	ret := CreateApplicationResponseV2{
+	ret := &CreateApplicationResponseV2{
 		ID:        applicationDBModel.ID,
 		Name:      request.Name,
 		GroupID:   groupID,
@@ -384,7 +384,7 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 
 	c.postHook(ctx, hook.CreateApplication, ret)
 
-	return &ret, nil
+	return ret, nil
 }
 
 func (c *controller) UpdateApplication(ctx context.Context, id uint,
