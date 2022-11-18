@@ -372,11 +372,17 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 
 	ret := CreateApplicationResponseV2{
 		ID:        applicationDBModel.ID,
+		Name:      request.Name,
 		GroupID:   groupID,
 		FullPath:  fullPath,
 		CreatedAt: time.Time{},
 		UpdatedAt: time.Time{},
 	}
+	if request.Priority != nil {
+		ret.Priority = *request.Priority
+	}
+
+	c.postHook(ctx, hook.CreateApplication, ret)
 
 	return &ret, nil
 }

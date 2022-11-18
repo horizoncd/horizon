@@ -122,6 +122,8 @@ func (req *CreateOrUpdateApplicationRequestV2) UpdateToApplicationModel(
 
 type CreateApplicationResponseV2 struct {
 	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	Priority  string    `json:"priority"`
 	FullPath  string    `json:"fullPath"`
 	GroupID   uint      `json:"groupID"`
 	CreatedAt time.Time `json:"createdAt"`

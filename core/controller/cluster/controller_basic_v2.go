@@ -12,6 +12,7 @@ import (
 	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
@@ -136,14 +137,27 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	}
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
-	// 12. customize response
-	return &CreateClusterResponseV2{
-		ID:            updateClusterResp.ID,
+	ret := &CreateClusterResponseV2{
+		ID:   updateClusterResp.ID,
+		Name: r.Name,
+		Application: &Application{
+			ID:   application.ID,
+			Name: application.Name,
+		},
+		Scope: &Scope{
+			Environment: cluster.EnvironmentName,
+			Region:      cluster.RegionName,
+		},
 		FullPath:      fullPath,
 		ApplicationID: applicationID,
 		CreatedAt:     updateClusterResp.CreatedAt,
 		UpdatedAt:     updateClusterResp.UpdatedAt,
-	}, nil
+	}
+
+	c.postHook(ctx, hook.CreateCluster, ret)
+
+	// 12. customize response
+	return ret, nil
 }
 
 func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClusterResponseV2, error) {
