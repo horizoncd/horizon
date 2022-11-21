@@ -10,6 +10,7 @@ dbConfig:
   password: O{AyroRA@
   database: horizon
   prometheusEnabled: true
+kubeconfig: ""
 sessionConfig:
   maxAge: 43200
 redisConfig:
