@@ -5,7 +5,7 @@ const (
 	ClusterQueryName          = "filter"
 	ClusterQueryByUser        = "userID"
 	ClusterQueryByTemplate    = "template"
-	ClusterQueryByRelease     = "release"
+	ClusterQueryByRelease     = "templateRelease"
 	ClusterQueryTagSelector   = "tagSelector"
 	ClusterQueryScope         = "scope"
 	ClusterQueryMergePatch    = "mergePatch"

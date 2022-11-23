@@ -212,7 +212,7 @@ func (d *dao) List(ctx context.Context,
 	if withRegion {
 		statement.
 			Select("c.*, r.display_name as region_display_name").
-			Joins("join tb_region as r on r.name = c.region_name").
+			Joins("straight_join tb_region as r on r.name = c.region_name").
 			Where("r.deleted_ts = 0")
 	}
 
@@ -237,7 +237,7 @@ func (d *dao) List(ctx context.Context,
 				statement = statement.Where("c.name like ?", fmt.Sprintf("%%%v%%", v))
 			case common.ClusterQueryByUser:
 				statement = statement.
-					Joins("join tb_member as m on m.resource_id = c.id").
+					Joins("straight_join tb_member as m on m.resource_id = c.id").
 					Where("m.resource_type = ?", common.ResourceCluster).
 					Where("m.member_type = '0'").
 					Where("m.deleted_ts = 0").
@@ -276,13 +276,13 @@ func (d *dao) List(ctx context.Context,
 		}
 	}
 
-	res := d.db.Raw("select count(distinct id) from (?) as clusters", statement).Debug().Scan(&total)
+	res := d.db.Raw("select count(id) from (?) as clusters", statement).Debug().Scan(&total)
 
 	if res.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, res.Error.Error())
 	}
 
-	statement = d.db.Raw("select distinct * from (?) as apps order by updated_at desc limit ? offset ?",
+	statement = d.db.Raw("select * from (?) as apps order by updated_at desc limit ? offset ?",
 		statement, query.Limit(), query.Offset())
 	res = statement.Scan(&clusters)
 	if res.Error != nil {

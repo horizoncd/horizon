@@ -479,9 +479,9 @@ func TestListApplicationInstanceMember(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	defer func() {
-		userManager.DeleteUser(ctx, sphID)
-		userManager.DeleteUser(ctx, jerryID)
-		userManager.DeleteUser(ctx, catID)
+		_ = userManager.DeleteUser(ctx, sphID)
+		_ = userManager.DeleteUser(ctx, jerryID)
+		_ = userManager.DeleteUser(ctx, catID)
 	}()
 	ctx = context.WithValue(ctx, common.UserContextKey(), grandUser) // nolint
 
