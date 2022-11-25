@@ -243,7 +243,7 @@ func (d dao) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int,
 		}
 	}
 
-	res := d.db.Raw("select count(distinct id) from (?) as templates", statement).Debug().Scan(&total)
+	res := d.db.Raw("select count(distinct id) from (?) as templates", statement).Scan(&total)
 
 	if res.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error())

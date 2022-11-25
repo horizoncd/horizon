@@ -212,7 +212,7 @@ func (d *dao) List(ctx context.Context,
 	if withRegion {
 		statement.
 			Select("c.*, r.display_name as region_display_name").
-			Joins("straight_join tb_region as r on r.name = c.region_name").
+			Joins("join tb_region as r on r.name = c.region_name").
 			Where("r.deleted_ts = 0")
 	}
 
@@ -276,7 +276,7 @@ func (d *dao) List(ctx context.Context,
 		}
 	}
 
-	res := d.db.Raw("select count(id) from (?) as clusters", statement).Debug().Scan(&total)
+	res := d.db.Raw("select count(id) from (?) as clusters", statement).Scan(&total)
 
 	if res.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, res.Error.Error())
