@@ -237,7 +237,7 @@ func (d *dao) List(ctx context.Context,
 				statement = statement.Where("c.name like ?", fmt.Sprintf("%%%v%%", v))
 			case common.ClusterQueryByUser:
 				statement = statement.
-					Joins("straight_join tb_member as m on m.resource_id = c.id").
+					Joins("join tb_member as m on m.resource_id = c.id").
 					Where("m.resource_type = ?", common.ResourceCluster).
 					Where("m.member_type = '0'").
 					Where("m.deleted_ts = 0").
