@@ -54,6 +54,10 @@ type LogSummary struct {
 	EventID      uint         `json:"eventID"`
 	URL          string       `json:"url"`
 	Status       string       `json:"status"`
+	ResourceType string       `json:"resourceType"`
+	ResourceName string       `json:"resourceName"`
+	ResourceID   uint         `json:"resourceID"`
+	Action       string       `json:"action"`
 	ErrorMessage string       `json:"errorMessage"`
 	CreatedAt    time.Time    `json:"createdAt"`
 	CreatedBy    *common.User `json:"createdBy,omitempty"`
@@ -260,12 +264,16 @@ func ofWebhookModel(wm *wmodels.Webhook) *Webhook {
 	return w
 }
 
-func ofWebhookLogSummaryModel(wm *wmodels.WebhookLog) *LogSummary {
+func ofWebhookLogSummaryModel(wm *wmodels.WebhookLogWithEventInfo) *LogSummary {
 	wl := &LogSummary{
 		ID:           wm.ID,
 		WebhookID:    wm.WebhookID,
 		EventID:      wm.EventID,
 		URL:          wm.URL,
+		ResourceType: wm.ResourceType,
+		ResourceID:   wm.ResourceID,
+		ResourceName: wm.ResourceName,
+		Action:       wm.Action,
 		Status:       wm.Status,
 		ErrorMessage: wm.ErrorMessage,
 		CreatedAt:    wm.CreatedAt,

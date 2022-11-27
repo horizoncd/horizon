@@ -21,7 +21,7 @@ type Manager interface {
 	DeleteWebhook(ctx context.Context, id uint) error
 	CreateWebhookLog(ctx context.Context, wl *models.WebhookLog) (*models.WebhookLog, error)
 	CreateWebhookLogs(ctx context.Context, wls []*models.WebhookLog) ([]*models.WebhookLog, error)
-	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query) ([]*models.WebhookLog, int64, error)
+	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query) ([]*models.WebhookLogWithEventInfo, int64, error)
 	ListWebhookLogsByMap(ctx context.Context,
 		webhookEventMap map[uint][]uint) ([]*models.WebhookLog, error)
 	ListWebhookLogsByStatus(ctx context.Context, wID uint,
@@ -90,7 +90,7 @@ func (m *manager) CreateWebhookLog(ctx context.Context,
 }
 
 func (m *manager) ListWebhookLogs(ctx context.Context, wID uint,
-	query *q.Query) ([]*models.WebhookLog, int64, error) {
+	query *q.Query) ([]*models.WebhookLogWithEventInfo, int64, error) {
 	const op = "webhook manager: list webhook logs"
 	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.ListWebhookLogs(ctx, wID, query)

@@ -39,3 +39,24 @@ type WebhookLog struct {
 	CreatedBy       uint
 	UpdatedAt       time.Time
 }
+
+type WebhookHistory struct {
+	WebhookID    uint
+	EventID      uint
+	URL          string
+	ResourceType string
+	ResourceName string
+	ResourceID   uint
+	Action       string
+	Status       string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+type WebhookLogWithEventInfo struct {
+	WebhookLog
+	Action       string
+	ResourceType string
+	ResourceName string
+	ResourceID   uint
+}

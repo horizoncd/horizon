@@ -9,9 +9,12 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
+	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/event/models"
 	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
+	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
@@ -46,8 +49,15 @@ var (
 
 func createContext() {
 	db, _ = orm.NewSqliteDB("file::memory:?cache=shared")
-	if err := db.AutoMigrate(&webhookmodels.Webhook{},
-		&webhookmodels.WebhookLog{}, &usermodels.User{}); err != nil {
+	if err := db.AutoMigrate(
+		&webhookmodels.Webhook{},
+		&webhookmodels.WebhookLog{},
+		&usermodels.User{},
+		&eventmodels.Event{},
+		&groupmodels.Group{},
+		&applicationmodels.Application{},
+		&clustermodels.Cluster{},
+	); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(); err != nil {

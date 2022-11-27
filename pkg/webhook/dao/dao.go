@@ -23,7 +23,7 @@ type DAO interface {
 	DeleteWebhook(ctx context.Context, id uint) error
 	CreateWebhookLog(ctx context.Context, wl *models.WebhookLog) (*models.WebhookLog, error)
 	CreateWebhookLogs(ctx context.Context, wls []*models.WebhookLog) ([]*models.WebhookLog, error)
-	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query) ([]*models.WebhookLog, int64, error)
+	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query) ([]*models.WebhookLogWithEventInfo, int64, error)
 	ListWebhookLogsByStatus(ctx context.Context, wID uint,
 		status string) ([]*models.WebhookLog, error)
 	ListWebhookLogsByMap(ctx context.Context,
@@ -152,9 +152,9 @@ func (d *dao) CreateWebhookLogs(ctx context.Context,
 }
 
 func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
-	query *q.Query) ([]*models.WebhookLog, int64, error) {
+	query *q.Query) ([]*models.WebhookLogWithEventInfo, int64, error) {
 	var (
-		ws         []*models.WebhookLog
+		logs       []*models.WebhookLogWithEventInfo
 		pageSize   = common.DefaultPageSize
 		pageNumber = common.DefaultPageNumber
 		limit      int
@@ -173,12 +173,38 @@ func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
 	limit = pageSize
 	offset = (pageNumber - 1) * pageSize
 
-	if result := d.db.WithContext(ctx).Order("created_at desc").Limit(limit).
-		Offset(offset).Where("webhook_id = ?", wID).
-		Find(&ws).Limit(-1).Count(&count); result.Error != nil {
-		return nil, count, herrors.NewErrGetFailed(herrors.WebhookLogInDB, result.Error.Error())
+	resourceTableMap := map[string]string{
+		common.ResourceGroup:       "tb_group",
+		common.ResourceApplication: "tb_application",
+		common.ResourceCluster:     "tb_cluster",
 	}
-	return ws, count, nil
+
+	for resource, table := range resourceTableMap {
+		var (
+			resourceWls      []*models.WebhookLogWithEventInfo
+			resourceWlscount int64
+		)
+
+		if result := d.db.WithContext(ctx).
+			Order("created_at desc").
+			Limit(limit).
+			Offset(offset).
+			Table("tb_webhook_log l").
+			Joins("join tb_event e on l.event_id=e.id").
+			Joins(fmt.Sprintf("join %s r on e.resource_id=r.id", table)).
+			Where("l.webhook_id=?", wID).
+			Where("e.resource_type=?", resource).
+			Select("l.*, e.resource_type, e.resource_id, e.action, r.name as resource_name").
+			Find(&resourceWls).
+			Limit(-1).
+			Count(&resourceWlscount); result.Error != nil {
+			return nil, count, herrors.NewErrGetFailed(herrors.WebhookLogInDB, result.Error.Error())
+		}
+		logs = append(logs, resourceWls...)
+		count += resourceWlscount
+	}
+
+	return logs, count, nil
 }
 
 func (d *dao) ListWebhookLogsByMap(ctx context.Context,
