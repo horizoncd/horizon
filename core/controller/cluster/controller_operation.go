@@ -12,7 +12,6 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -206,14 +205,12 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 
 	// 8. record event
-	rid, _ := requestid.FromContext(ctx)
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: eventmodels.Cluster,
 			Action:       eventmodels.Deployed,
 			ResourceID:   cluster.ID,
 		},
-		ReqID: rid,
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
@@ -351,14 +348,12 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 
 	// 11. record event
-	rid, _ := requestid.FromContext(ctx)
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: eventmodels.Cluster,
 			Action:       eventmodels.Rollbacked,
 			ResourceID:   cluster.ID,
 		},
-		ReqID: rid,
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}

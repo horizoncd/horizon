@@ -12,10 +12,12 @@ import (
 	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	"g.hz.netease.com/horizon/pkg/templaterelease/models"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/mergemap"
 
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
@@ -135,6 +137,18 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	if err != nil {
 		return nil, err
 	}
+
+	// 12. record event
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: eventmodels.Cluster,
+			Action:       eventmodels.Created,
+			ResourceID:   cluster.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
+
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	ret := &CreateClusterResponseV2{

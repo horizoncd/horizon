@@ -25,10 +25,10 @@ const (
 	Transferred EventAction = "transferred"
 
 	// cluster actions
-	Builded    EventAction = "builded"
-	Deployed   EventAction = "deployed"
-	Rollbacked EventAction = "rollbacked"
-	Freed      EventAction = "freed"
+	BuildDeployed EventAction = "buildDeployed"
+	Deployed      EventAction = "deployed"
+	Rollbacked    EventAction = "rollbacked"
+	Freed         EventAction = "freed"
 )
 
 type EventSummary struct {

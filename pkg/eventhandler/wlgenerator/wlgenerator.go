@@ -116,7 +116,7 @@ func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Even
 		cluster, err := w.clusterMgr.GetByID(ctx, id)
 		if err != nil {
 			log.Warningf(ctx, "cluster %d is not exist",
-				cluster.ID)
+				id)
 			return nil, nil, nil
 		}
 		app, resources := listAssociatedResourcesOfApp(cluster.ApplicationID)

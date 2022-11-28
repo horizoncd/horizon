@@ -157,7 +157,7 @@ func validateURL(url string) error {
 func validateTriggers(triggers []string) error {
 	validateClusterAction := func(action models.EventAction) bool {
 		switch action {
-		case models.Builded, models.Deployed, models.Freed, models.Rollbacked:
+		case models.BuildDeployed, models.Deployed, models.Freed, models.Rollbacked:
 		default:
 			return false
 		}

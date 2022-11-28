@@ -8,6 +8,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/event/dao"
 	"g.hz.netease.com/horizon/pkg/event/models"
+	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -36,6 +37,13 @@ func (m *manager) CreateEvent(ctx context.Context,
 	const op = "event manager: create event"
 	defer wlog.Start(ctx, op).StopPrint()
 
+	if event.ReqID == "" {
+		rid, err := requestid.FromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		event.ReqID = rid
+	}
 	e, err := m.dao.CreateEvent(ctx, event)
 	if err != nil {
 		return nil, herrors.NewErrCreateFailed(herrors.EventInDB, err.Error())

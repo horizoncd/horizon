@@ -474,16 +474,13 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 	ret := ofClusterModel(application, cluster, fullPath, envValue.Namespace,
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
-	// 11. post hook
-	// c.postHook(ctx, hook.CreateCluster, ret)
-	rid, _ := requestid.FromContext(ctx)
+	// 11. record event
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: eventmodels.Cluster,
 			Action:       eventmodels.Created,
 			ResourceID:   ret.ID,
 		},
-		ReqID: rid,
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
@@ -813,9 +810,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 			log.Errorf(newctx, "failed to delete cluster: %v in db, err: %v", cluster.Name, err)
 		}
 
-		// 5. post hook
-		// c.postHook(newctx, hook.DeleteCluster, cluster.Name)
-		rid, _ := requestid.FromContext(ctx)
+		// 5. record event
 		if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 			EventSummary: eventmodels.EventSummary{
 				ResourceType: eventmodels.Cluster,
@@ -896,14 +891,12 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		}
 
 		// 4. create event
-		rid, _ := requestid.FromContext(ctx)
 		if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 			EventSummary: eventmodels.EventSummary{
 				ResourceType: eventmodels.Cluster,
 				Action:       eventmodels.Freed,
 				ResourceID:   clusterID,
 			},
-			ReqID: rid,
 		}); err != nil {
 			log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 		}

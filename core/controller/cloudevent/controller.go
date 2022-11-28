@@ -7,11 +7,9 @@ import (
 
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
-	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 
 	"g.hz.netease.com/horizon/core/common"
@@ -119,24 +117,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	// 最后指标上报，保证同一条pipelineRun，只上报一条指标
 	metrics.Observe(pipelineResult)
 
-	// 6. create event
-	rid, _ := requestid.FromContext(ctx)
-	clusterID, err := strconv.ParseUint(pipelineResult.BusinessData.ClusterID, 10, 0)
-	if err != nil {
-		log.Warningf(ctx, "failed to parse cluster id, err: %s", err.Error())
-	}
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: eventmodels.Cluster,
-			Action:       eventmodels.Builded,
-			ResourceID:   uint(clusterID),
-		},
-		ReqID: rid,
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
-	// 7. insert pipeline into db
+	// 5. insert pipeline into db
 	err = c.pipelineMgr.Create(ctx, pipelineResult)
 	if err != nil {
 		// err不往上层抛，上层也无法处理这种异常

@@ -29,7 +29,6 @@ import (
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
 	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
@@ -282,15 +281,12 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application)
 
 	// 7. record event
-	// c.postHook(ctx, hook.CreateApplication, ret)
-	rid, _ := requestid.FromContext(ctx)
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: eventmodels.Application,
 			Action:       eventmodels.Created,
 			ResourceID:   ret.ID,
 		},
-		ReqID: rid,
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
@@ -386,6 +382,16 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	}()
 	if err != nil {
 		return nil, err
+	}
+
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: eventmodels.Application,
+			Action:       eventmodels.Created,
+			ResourceID:   applicationDBModel.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
 	ret := &CreateApplicationResponseV2{
@@ -561,16 +567,13 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 		return err
 	}
 
-	// 4. delete application
-	// c.postHook(ctx, hook.DeleteApplication, app.Name)
-	rid, _ := requestid.FromContext(ctx)
+	// 4. record event
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: eventmodels.Application,
 			Action:       eventmodels.Deleted,
 			ResourceID:   id,
 		},
-		ReqID: rid,
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
