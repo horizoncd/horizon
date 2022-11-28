@@ -322,7 +322,7 @@ func (d *dao) List(ctx context.Context, groupIDs []uint, query *q.Query) (int, [
 		}
 	}
 
-	res := d.db.Raw("select count(distinct id) from (?) as apps", statement).Debug().Scan(&total)
+	res := d.db.Raw("select count(distinct id) from (?) as apps", statement).Scan(&total)
 
 	if res.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, res.Error.Error())
@@ -330,7 +330,7 @@ func (d *dao) List(ctx context.Context, groupIDs []uint, query *q.Query) (int, [
 
 	statement = d.db.Raw("select distinct * from (?) as apps order by updated_at desc limit ? offset ?",
 		statement, query.Limit(), query.Offset())
-	res = statement.Debug().Scan(&applications)
+	res = statement.Scan(&applications)
 	if res.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, res.Error.Error())
 	}

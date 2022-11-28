@@ -37,7 +37,6 @@ var (
 const secondsInOneDay = 24 * 3600
 
 func TestMain(m *testing.M) {
-	db = db.Debug()
 	currentUser := &usermodels.User{
 		Name:  "tony",
 		Email: "tony@corp.com",

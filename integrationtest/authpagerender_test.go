@@ -19,7 +19,7 @@ import (
 	oauthcheckctl "g.hz.netease.com/horizon/core/controller/oauthcheck"
 	clusterAPI "g.hz.netease.com/horizon/core/http/api/v1/cluster"
 	"g.hz.netease.com/horizon/core/http/api/v1/oauthserver"
-	oauthmiddle "g.hz.netease.com/horizon/core/middleware/oauth"
+	tokenmiddle "g.hz.netease.com/horizon/core/middleware/token"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	oauthconfig "g.hz.netease.com/horizon/pkg/config/oauth"
@@ -148,7 +148,7 @@ func TestServer(t *testing.T) {
 	}
 	oauthCheckerCtl := oauthcheckctl.NewOauthChecker(&param.Param{Manager: manager})
 	middlewares := []gin.HandlerFunc{
-		oauthmiddle.MiddleWare(oauthCheckerCtl),
+		tokenmiddle.MiddleWare(oauthCheckerCtl),
 		userMiddleWare,
 	}
 
