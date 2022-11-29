@@ -9,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/event/dao"
 	"g.hz.netease.com/horizon/pkg/event/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
@@ -40,7 +41,7 @@ func (m *manager) CreateEvent(ctx context.Context,
 	if event.ReqID == "" {
 		rid, err := requestid.FromContext(ctx)
 		if err != nil {
-			return nil, err
+			log.Warningf(ctx, "failed to get request id, err: %s", err.Error())
 		}
 		event.ReqID = rid
 	}

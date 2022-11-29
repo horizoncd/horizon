@@ -7,12 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const (
-	_paramGroupID  = "groupID"
-	_paramFullPath = "fullPath"
-	_paramType     = "type"
-)
-
 type API struct {
 	eventCtl event.Controller
 }

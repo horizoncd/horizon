@@ -9,6 +9,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
+	"g.hz.netease.com/horizon/lib/q"
 	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
@@ -118,14 +119,13 @@ func Test(t *testing.T) {
 	assert.Equal(t, wl.URL, wlRetry.URL)
 	assert.Equal(t, webhookmodels.StatusWaiting, wlRetry.Status)
 
-	wlss, _, err := c.ListWebhookLogs(ctx, w.ID, nil)
+	query := q.New(nil)
+	query.PageNumber = common.DefaultPageNumber
+	query.PageSize = common.DefaultPageSize
+
+	_, _, err = c.ListWebhookLogs(ctx, w.ID, query)
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(wlss))
 
 	err = c.DeleteWebhook(ctx, w.ID)
 	assert.Nil(t, err)
-
-	wlss, _, err = c.ListWebhookLogs(ctx, w.ID, nil)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, len(wlss))
 }

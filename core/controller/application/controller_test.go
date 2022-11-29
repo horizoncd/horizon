@@ -498,6 +498,7 @@ func TestV2(t *testing.T) {
 		templateReleaseMgr:   manager.TemplateReleaseManager,
 		clusterMgr:           manager.ClusterMgr,
 		userSvc:              userservice.NewService(manager),
+		eventMgr:             manager.EventManager,
 	}
 
 	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
