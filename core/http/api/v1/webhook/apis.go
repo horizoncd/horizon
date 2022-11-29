@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/webhook"
 	webhookctl "g.hz.netease.com/horizon/core/controller/webhook"
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -70,36 +69,8 @@ func (a *API) ListWebhooks(c *gin.Context) {
 		return
 	}
 
-	var (
-		pageNumber, pageSize int
-	)
-
-	pageNumberStr := c.Query(common.PageNumber)
-	if pageNumberStr == "" {
-		pageNumber = common.DefaultPageNumber
-	} else {
-		pageNumber, err = strconv.Atoi(pageNumberStr)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam, "invalid pageNumber")
-			return
-		}
-	}
-
-	pageSizeStr := c.Query(common.PageSize)
-	if pageSizeStr == "" {
-		pageSize = common.DefaultPageSize
-	} else {
-		pageSize, err = strconv.Atoi(pageSizeStr)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam, "invalid pageSize")
-			return
-		}
-	}
-
-	items, total, err := a.webhookCtl.ListWebhooks(c, resourceType, uint(resourceID), &q.Query{
-		PageSize:   pageSize,
-		PageNumber: pageNumber,
-	})
+	query := q.New(nil).WithPagination(c)
+	items, total, err := a.webhookCtl.ListWebhooks(c, resourceType, uint(resourceID), query)
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
@@ -213,26 +184,8 @@ func (a *API) ListWebhookLogs(c *gin.Context) {
 		return
 	}
 
-	var (
-		pageNumber int
-		pageSize   int
-	)
-
-	pageSizeStr := c.Query(common.PageSize)
-	if pageSizeStr == "" {
-		pageSize = common.DefaultPageSize
-	} else {
-		pageSize, err = strconv.Atoi(pageSizeStr)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam, "invalid pageSize")
-			return
-		}
-	}
-
-	items, total, err := a.webhookCtl.ListWebhookLogs(c, uint(webhookID), &q.Query{
-		PageNumber: pageNumber,
-		PageSize:   pageSize,
-	})
+	query := q.New(nil).WithPagination(c)
+	items, total, err := a.webhookCtl.ListWebhookLogs(c, uint(webhookID), query)
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))

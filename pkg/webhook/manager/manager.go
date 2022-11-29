@@ -111,8 +111,6 @@ func (m *manager) CreateWebhookLogs(ctx context.Context, wls []*models.WebhookLo
 
 func (m *manager) ListWebhookLogsByStatus(ctx context.Context, wID uint,
 	status string) ([]*models.WebhookLog, error) {
-	const op = "webhook manager: list webhook logs by status"
-	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.ListWebhookLogsByStatus(ctx, wID, status)
 }
 

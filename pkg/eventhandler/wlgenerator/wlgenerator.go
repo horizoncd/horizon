@@ -188,8 +188,8 @@ func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Even
 		if dep.cluster != nil {
 			message.Cluster = &ClusterInfo{
 				ResourceCommonInfo: ResourceCommonInfo{
-					ID:   dep.application.ID,
-					Name: dep.application.Name,
+					ID:   dep.cluster.ID,
+					Name: dep.cluster.Name,
 				},
 				ApplicationName: dep.application.Name,
 				Env:             dep.cluster.EnvironmentName,
