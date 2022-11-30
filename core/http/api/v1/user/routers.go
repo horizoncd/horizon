@@ -37,6 +37,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/:%s/links", _userIDParam),
 			HandlerFunc: api.GetLinksByUser,
 		},
+		{
+			Method:      http.MethodPost,
+			Pattern:     "/login",
+			HandlerFunc: api.LoginWithPassword,
+		},
 	}
 	route.RegisterRoutes(coreGroup, coreRoutes)
 
@@ -61,16 +66,4 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 	}
 	route.RegisterRoutes(frontGroup, frontRoutes)
-
-	loginGroup := engine.Group("/apis/login/v1")
-	var apiRoutes = route.Routes{
-		{
-			Method: http.MethodGet,
-			// Deprecated: /apis/login/v1/status is not recommend, use /apis/core/v1/users/self instead
-			Pattern:     "/status",
-			HandlerFunc: api.GetSelf,
-		},
-	}
-
-	route.RegisterRoutes(loginGroup, apiRoutes)
 }

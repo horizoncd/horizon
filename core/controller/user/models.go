@@ -75,3 +75,9 @@ func ofUserLinks(links []*lmodels.UserLink) []*Link {
 	}
 	return resp
 }
+
+type LoginRequest struct {
+	Email string `json:"email"`
+	// password handled by sha256
+	Password string `json:"password"`
+}

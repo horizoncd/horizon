@@ -17,6 +17,9 @@ type User struct {
 	Email    string
 	Phone    string
 	UserType uint
+	Password string
+	OidcID   string `gorm:"column:oidc_id"`
+	OidcType string `gorm:"column:oidc_type"`
 	Admin    bool
 	Banned   bool
 }

@@ -26,6 +26,7 @@ CREATE TABLE `tb_user`
 (
     `id`         bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `name`       varchar(64)         NOT NULL DEFAULT '',
+    `password`   varchar(256)        NOT NULL DEFAULT '' COMMENT 'password of user';
     `full_name`  varchar(128)                 DEFAULT '',
     `email`      varchar(64)         NOT NULL DEFAULT '',
     `phone`      varchar(32)                  DEFAULT NULL,
@@ -109,7 +110,7 @@ CREATE TABLE `tb_member`
     `deleted_ts`    bigint(20)          NOT NULL DEFAULT '0' COMMENT 'deleted timestamp, 0 means not deleted',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_resource_member_deleted` (`resource_type`, `resource_id`, `member_type`, `membername_id`,
-                                             `deleted_ts`)
+        `deleted_ts`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4;
@@ -142,18 +143,18 @@ CREATE TABLE `tb_application`
 
 -- registry table
 CREATE TABLE `tb_registry` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(128) NOT NULL DEFAULT '' COMMENT 'name of the harbor registry',
-  `server` varchar(256) NOT NULL DEFAULT '' COMMENT 'harbor server address',
-  `token` varchar(512) NOT NULL DEFAULT '' COMMENT 'harbor server token',
-  `insecure_skip_tls_verify`  tinyint(1) NOT NULL DEFAULT false COMMENT 'skip tls verify',
-  `kind` varchar(256) NOT NULL DEFAULT 'harbor' COMMENT 'which kind registry it is',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `deleted_ts` bigint(20) DEFAULT '0' COMMENT 'deleted timestamp, 0 means not deleted',
-  `created_by` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'creator',
-  `updated_by` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'updater',
-  PRIMARY KEY (`id`)
+                               `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                               `name` varchar(128) NOT NULL DEFAULT '' COMMENT 'name of the harbor registry',
+                               `server` varchar(256) NOT NULL DEFAULT '' COMMENT 'harbor server address',
+                               `token` varchar(512) NOT NULL DEFAULT '' COMMENT 'harbor server token',
+                               `insecure_skip_tls_verify`  tinyint(1) NOT NULL DEFAULT false COMMENT 'skip tls verify',
+                               `kind` varchar(256) NOT NULL DEFAULT 'harbor' COMMENT 'which kind registry it is',
+                               `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                               `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                               `deleted_ts` bigint(20) DEFAULT '0' COMMENT 'deleted timestamp, 0 means not deleted',
+                               `created_by` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'creator',
+                               `updated_by` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'updater',
+                               PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4;
 
 -- environment table

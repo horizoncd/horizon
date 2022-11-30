@@ -19,5 +19,5 @@ CREATE TABLE `tb_registry` (
 INSERT INTO tb_registry (`id`, `name`, `server`, `token`, `insecure_skip_tls_verify`)
 (SELECT `id`, `name`, `server`, `token`, true from tb_harbor);
 
-ALTER TABLE tb_region add column `registry_id` bigint(20) unsigned NOT NULL COMMENT 'registry id';
+ALTER TABLE tb_region add column `registry_id` bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT 'registry id';
 UPDATE tb_region set `registry_id` = `harbor_id`;

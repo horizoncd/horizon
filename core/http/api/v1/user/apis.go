@@ -13,8 +13,10 @@ import (
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	"g.hz.netease.com/horizon/pkg/user/util"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/sessions"
 )
 
 // path variable
@@ -25,11 +27,13 @@ const (
 
 type API struct {
 	userCtl user.Controller
+	store   sessions.Store
 }
 
-func NewAPI(ctl user.Controller) *API {
+func NewAPI(ctl user.Controller, store sessions.Store) *API {
 	return &API{
 		userCtl: ctl,
+		store:   store,
 	}
 }
 
@@ -224,4 +228,47 @@ func (a *API) DeleteLink(c *gin.Context) {
 	}
 
 	response.Success(c)
+}
+
+func (a *API) LoginWithPassword(c *gin.Context) {
+	var request *user.LoginRequest
+	if err := c.ShouldBindJSON(&request); err != nil ||
+		request.Password == "" ||
+		request.Email == "" {
+		response.AbortWithRPCError(c,
+			rpcerror.ParamError.WithErrMsg("request body is invalid"))
+		return
+	}
+
+	user, err := a.userCtl.LoginWithPasswd(c, request)
+	if err != nil {
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsg(
+				fmt.Sprintf("login failed, err: %v", err)))
+		return
+	}
+
+	if user == nil {
+		response.AbortWithRPCError(c,
+			rpcerror.Unauthorized.WithErrMsg("login failed: email or password is incorrect!"))
+		return
+	}
+
+	session, err := util.GetSession(a.store, c.Request)
+	if err != nil {
+		log.Errorf(c, "failed to get session: store = %#v, request = %#v, err = %v",
+			a.store, c.Request, err)
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsgf("failed to get session: %v", err))
+		return
+	}
+
+	err = util.SetSession(session, c.Request, c.Writer, user)
+	if err != nil {
+		log.Errorf(c, "failed to set session: store = %#v, request = %#v, err = %v",
+			a.store, c.Request, err)
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsgf("failed to set session: %v", err))
+		return
+	}
 }
