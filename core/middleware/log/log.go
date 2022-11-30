@@ -1,8 +1,8 @@
 package log
 
 import (
-	"g.hz.netease.com/horizon/pkg/server/middleware"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	middleware "g.hz.netease.com/horizon/core/middleware"
+	"g.hz.netease.com/horizon/core/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 )

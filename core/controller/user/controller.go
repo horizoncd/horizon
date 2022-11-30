@@ -9,6 +9,7 @@ import (
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/user/manager"
+	"g.hz.netease.com/horizon/pkg/user/models"
 	linkmanager "g.hz.netease.com/horizon/pkg/userlink/manager"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -19,6 +20,8 @@ type Controller interface {
 	UpdateByID(c context.Context, id uint, u *UpdateUserRequest) (*User, error)
 	ListUserLinks(ctx context.Context, uid uint) ([]*Link, error)
 	DeleteLinksByID(c context.Context, id uint) error
+	// LoginWithPasswd checks inputed email & password
+	LoginWithPasswd(ctx context.Context, request *LoginRequest) (*models.User, error)
 }
 
 type controller struct {
@@ -128,4 +131,24 @@ func (c *controller) DeleteLinksByID(ctx context.Context, id uint) error {
 	}
 
 	return c.linksMgr.DeleteByID(ctx, id)
+}
+
+func (c *controller) LoginWithPasswd(ctx context.Context, request *LoginRequest) (*models.User, error) {
+	users, err := c.userMgr.ListByEmail(ctx, []string{request.Email})
+	if err != nil {
+		return nil, nil
+	}
+	if len(users) < 1 {
+		return nil, perror.Wrapf(herrors.ErrForbidden,
+			"there's no account with email = %v found", request.Email)
+	}
+	if len(users) > 1 {
+		return nil, perror.Wrapf(herrors.ErrDuplicatedKey,
+			"there's more than one account with email = %v", request.Email)
+	}
+	user := users[0]
+	if user.Password != request.Password {
+		return nil, nil
+	}
+	return user, nil
 }

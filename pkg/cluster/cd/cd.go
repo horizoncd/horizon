@@ -435,6 +435,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		clusterState.Status = health.HealthStatusProgressing
 	}
 
+	// TODO: rollout 耦合
 	var rollout *v1alpha1.Rollout
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
 		common.ClusterClusterLabelKey, params.Cluster))

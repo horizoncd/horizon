@@ -5,8 +5,7 @@ import (
 	"io"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
-
+	"g.hz.netease.com/horizon/core/middleware/requestid"
 	"github.com/gin-gonic/gin"
 )
 

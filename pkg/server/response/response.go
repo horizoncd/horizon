@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
+	"g.hz.netease.com/horizon/core/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/log"

@@ -5,11 +5,11 @@ import (
 	"net/http"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware"
 	"g.hz.netease.com/horizon/core/middleware/prehandle"
 	hauth "g.hz.netease.com/horizon/pkg/auth"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/rbac"
-	"g.hz.netease.com/horizon/pkg/server/middleware"
 )
 
 type Controller interface {

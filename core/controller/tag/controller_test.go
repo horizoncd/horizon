@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware/requestid"
 	"g.hz.netease.com/horizon/lib/orm"
 	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
@@ -14,7 +15,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/models"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	"github.com/golang/mock/gomock"

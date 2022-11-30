@@ -263,4 +263,7 @@ var (
 	ErrAPIServerResponseNotOK = errors.New("response for api-server is not 200 OK")
 
 	ErrListGrafanaDashboard = errors.New("List grafana dashboards error")
+
+	ErrSessionNotFound   = errors.New("session not found")
+	ErrSessionSaveFailed = errors.New("failed to save session")
 )

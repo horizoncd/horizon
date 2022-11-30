@@ -64,6 +64,10 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/tag"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	templatev2 "g.hz.netease.com/horizon/core/http/api/v2/template"
+	"g.hz.netease.com/horizon/core/middleware"
+	"g.hz.netease.com/horizon/core/middleware/auth"
+	logmiddle "g.hz.netease.com/horizon/core/middleware/log"
+	"g.hz.netease.com/horizon/core/middleware/requestid"
 
 	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
@@ -107,10 +111,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
-	"g.hz.netease.com/horizon/pkg/server/middleware"
-	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
-	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschemarepo "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
 	"g.hz.netease.com/horizon/pkg/templaterepo"
@@ -434,6 +434,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback")),
 			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/logout")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/users/login")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/users/self")),
 		}
 
@@ -470,7 +471,7 @@ func Run(flags *Flags) {
 	var (
 		// init API
 		groupAPI             = group.NewAPI(groupCtl)
-		userAPI              = user.NewAPI(userCtl)
+		userAPI              = user.NewAPI(userCtl, store)
 		applicationAPI       = application.NewAPI(applicationCtl)
 		applicationAPIV2     = appv2.NewAPI(applicationCtl)
 		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
@@ -523,7 +524,8 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints"))),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/users/login"))),
 		prehandlemiddle.Middleware(r, manager),
 		auth.Middleware(rbacAuthorizer, rbacSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context

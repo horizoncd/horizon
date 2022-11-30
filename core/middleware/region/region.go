@@ -9,8 +9,8 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/applicationregion"
+	middleware "g.hz.netease.com/horizon/core/middleware"
 	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/server/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"g.hz.netease.com/horizon/pkg/util/log"
