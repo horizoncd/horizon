@@ -5,6 +5,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/q"
+	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
 	"g.hz.netease.com/horizon/pkg/param"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -13,7 +14,8 @@ import (
 )
 
 type Controller interface {
-	CreateWebhook(ctx context.Context, w *CreateWebhookRequest) (*Webhook, error)
+	CreateWebhook(ctx context.Context, resourceType string,
+		resourceID uint, w *CreateWebhookRequest) (*Webhook, error)
 	GetWebhook(ctx context.Context, id uint) (*Webhook, error)
 	ListWebhooks(ctx context.Context, resourceType string,
 		resourceID uint, query *q.Query) ([]*Webhook, int64, error)
@@ -22,35 +24,41 @@ type Controller interface {
 	DeleteWebhook(ctx context.Context, id uint) error
 	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query) ([]*LogSummary, int64, error)
 	GetWebhookLog(ctx context.Context, id uint) (*Log, error)
-	RetryWebhookLog(ctx context.Context, id uint) (*models.WebhookLog, error)
+	ResendWebhook(ctx context.Context, id uint) (*models.WebhookLog, error)
 }
 
 type controller struct {
-	webhookMgr  wmanager.Manager
-	userManager usermanager.Manager
+	webhookMgr wmanager.Manager
+	userMgr    usermanager.Manager
+	eventMgr   eventmanager.Manager
 }
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		webhookMgr:  param.WebhookManager,
-		userManager: param.UserManager,
+		webhookMgr: param.WebhookManager,
+		userMgr:    param.UserManager,
+		eventMgr:   param.EventManager,
 	}
 }
 
-func (c *controller) CreateWebhook(ctx context.Context, w *CreateWebhookRequest) (*Webhook, error) {
+func (c *controller) CreateWebhook(ctx context.Context, resourceType string,
+	resourceID uint, w *CreateWebhookRequest) (*Webhook, error) {
 	const op = "webhook controller: create"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. validate request
-	if err := w.validate(); err != nil {
+	if err := c.validateCreateRequest(resourceType, w); err != nil {
 		return nil, err
 	}
 
 	// 2. transfer model
-	wm := w.toModel(ctx)
+	wm, err := w.toModel(ctx, resourceType, resourceID)
+	if err != nil {
+		return nil, err
+	}
 
 	// 3. create webhook
-	wm, err := c.webhookMgr.CreateWebhook(ctx, wm)
+	wm, err = c.webhookMgr.CreateWebhook(ctx, wm)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +83,7 @@ func (c *controller) UpdateWebhook(ctx context.Context, id uint,
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. validate request
-	if err := w.validate(); err != nil {
+	if err := c.validateUpdateRequest(w); err != nil {
 		return nil, err
 	}
 
@@ -148,7 +156,7 @@ func (c *controller) GetWebhookLog(ctx context.Context, id uint) (*Log, error) {
 		return nil, err
 	}
 
-	userMap, err := c.userManager.GetUserMapByIDs(ctx,
+	userMap, err := c.userMgr.GetUserMapByIDs(ctx,
 		[]uint{wl.CreatedBy})
 	if err != nil {
 		return nil, err
@@ -159,9 +167,9 @@ func (c *controller) GetWebhookLog(ctx context.Context, id uint) (*Log, error) {
 	return webhookLog, nil
 }
 
-func (c *controller) RetryWebhookLog(ctx context.Context, id uint) (*models.WebhookLog, error) {
-	const op = "wehook controller: retry log"
+func (c *controller) ResendWebhook(ctx context.Context, id uint) (*models.WebhookLog, error) {
+	const op = "wehook controller: resend"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	return c.webhookMgr.RetryWebhookLog(ctx, id)
+	return c.webhookMgr.ResendWebhook(ctx, id)
 }

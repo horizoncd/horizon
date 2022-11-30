@@ -10,16 +10,15 @@ type EventAction string
 type EventResourceType string
 
 const (
+	Any string = "*"
 	// resource type
-	AnyResource EventResourceType = "*"
 	Group       EventResourceType = common.ResourceGroup
 	Application EventResourceType = common.ResourceApplication
 	Cluster     EventResourceType = common.ResourceCluster
 
 	// common actions
-	AnyAction EventAction = "*"
-	Created   EventAction = "created"
-	Deleted   EventAction = "deleted"
+	Created EventAction = "created"
+	Deleted EventAction = "deleted"
 
 	// cluster actions
 	Transferred EventAction = "transferred"
@@ -50,4 +49,9 @@ type EventCursor struct {
 	Position  uint
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+type ActionWithDescription struct {
+	Name        EventAction
+	Description string
 }

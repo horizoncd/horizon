@@ -229,7 +229,7 @@ L:
 
 				// 3. send request
 				cli := w.secureClient
-				if !w.webhook.SslVerifyEnabled {
+				if !w.webhook.SSLVerifyEnabled {
 					cli = w.insecureClient
 				}
 				resp, err := cli.Do(req)

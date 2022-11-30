@@ -5,7 +5,9 @@ import (
 
 	"gorm.io/gorm"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/event/dao"
 	"g.hz.netease.com/horizon/pkg/event/models"
 	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
@@ -21,6 +23,7 @@ type Manager interface {
 		eventIndex *models.EventCursor) (*models.EventCursor, error)
 	GetCursor(ctx context.Context) (*models.EventCursor, error)
 	GetEvent(ctx context.Context, id uint) (*models.Event, error)
+	ListSupportEvents() map[models.EventResourceType][]models.ActionWithDescription
 }
 
 type manager struct {
@@ -69,17 +72,73 @@ func (m *manager) GetCursor(ctx context.Context) (*models.EventCursor, error) {
 func (m *manager) ListEvents(ctx context.Context, offset, limit int) ([]*models.Event, error) {
 	const op = "event manager: list events"
 	defer wlog.Start(ctx, op).StopPrint()
-	return m.dao.ListEvents(ctx, offset, limit)
+	return m.dao.ListEvents(ctx, &q.Query{
+		Keywords: q.KeyWords{
+			common.Offset: offset,
+			common.Limit:  limit,
+		},
+	})
 }
 
 func (m *manager) ListEventsByRange(ctx context.Context, start, end uint) ([]*models.Event, error) {
 	const op = "event manager: list events by range"
 	defer wlog.Start(ctx, op).StopPrint()
-	return m.dao.ListEventsByRange(ctx, start, end)
+	return m.dao.ListEvents(ctx, &q.Query{
+		Keywords: q.KeyWords{
+			common.StartID: start,
+			common.EndID:   end,
+		},
+	})
 }
 
 func (m *manager) GetEvent(ctx context.Context, id uint) (*models.Event, error) {
 	const op = "event manager: get event"
 	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.GetEvent(ctx, id)
+}
+
+func (m *manager) ListSupportEvents() map[models.EventResourceType][]models.ActionWithDescription {
+	return map[models.EventResourceType][]models.ActionWithDescription{
+		models.Application: {
+			{
+				Name:        models.Created,
+				Description: "a new application is created",
+			},
+			{
+				Name:        models.Deleted,
+				Description: "an application is deleted",
+			},
+			{
+				Name:        models.Transferred,
+				Description: "an application is transfered to another group",
+			},
+		},
+		models.Cluster: {
+			{
+				Name:        models.Created,
+				Description: "a new cluster is created",
+			},
+			{
+				Name:        models.Deleted,
+				Description: "a cluster is deleted",
+			},
+			{
+				Name:        models.BuildDeployed,
+				Description: "a cluster has completed a build task and triggered a deploy task",
+			},
+			{
+				Name:        models.Deployed,
+				Description: "a cluster has triggered a deploy task",
+			},
+			{
+				Name:        models.Rollbacked,
+				Description: "a cluster has triggered a rollback task",
+			},
+			{
+				Name:        models.Freed,
+				Description: "a cluster has been freed",
+			},
+		},
+	}
+
 }

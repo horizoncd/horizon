@@ -42,10 +42,8 @@ func (a *API) CreateWebhook(c *gin.Context) {
 			WithErrMsgf("invalid request body, err: %s", err.Error()))
 		return
 	}
-	request.ResourceType = resourceType
-	request.ResourceID = uint(resourceID)
 
-	resp, err := a.webhookCtl.CreateWebhook(c, &request)
+	resp, err := a.webhookCtl.CreateWebhook(c, resourceType, uint(resourceID), &request)
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
@@ -230,8 +228,8 @@ func (a *API) GetWebhookLog(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-func (a *API) RetryWebhookLog(c *gin.Context) {
-	const op = "webhook: retry log"
+func (a *API) ResendWebhook(c *gin.Context) {
+	const op = "webhook: resend"
 	idStr := c.Param(_webhookLogIDParam)
 	id, err := strconv.ParseUint(idStr, 10, 0)
 	if err != nil {
@@ -240,7 +238,7 @@ func (a *API) RetryWebhookLog(c *gin.Context) {
 		return
 	}
 
-	resp, err := a.webhookCtl.RetryWebhookLog(c, uint(id))
+	resp, err := a.webhookCtl.ResendWebhook(c, uint(id))
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {
 			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))

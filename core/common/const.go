@@ -9,6 +9,11 @@ const (
 	TemplateRelease = "templateRelease"
 	TagSelector     = "tagSelector"
 
+	Offset  = "offset"
+	Limit   = "limit"
+	StartID = "startID"
+	EndID   = "endID"
+
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20
 	MaxPageSize       = 50

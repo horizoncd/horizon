@@ -4,7 +4,7 @@ info:
   description: Restful API About Webhook
   version: 1.0.0
 servers:
-  - url: 'http://localhost:8080/'
+  - url: "http://localhost:8080/"
 paths:
   /apis/core/v1/{resourceType}/{resourceID}/webhooks:
     parameters:
@@ -12,7 +12,7 @@ paths:
         in: path
         description: resource type
         required: true
-        enum: [ "application", "cluster" ]
+        enum: ["application", "cluster"]
     post:
       tags:
         - webhook
@@ -23,7 +23,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateOrUpdateWebhook'
+              $ref: "#/components/schemas/CreateOrUpdateWebhook"
       responses:
         "200":
           description: Success
@@ -39,14 +39,14 @@ paths:
       operationId: listWebhooks
       summary: list webhooks
       responses:
-        '200':
+        "200":
           description: Succuss
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Webhook'
+                  $ref: "#/components/schemas/Webhook"
         default:
           description: Unexpected error
           content:
@@ -68,14 +68,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateOrUpdateWebhook'
+              $ref: "#/components/schemas/CreateOrUpdateWebhook"
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Webhook'
+                $ref: "#/components/schemas/Webhook"
         default:
           description: Unexpected error
           content:
@@ -88,12 +88,12 @@ paths:
       operationId: getWebhook
       summary: get a webhook
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Webhook'
+                $ref: "#/components/schemas/Webhook"
         default:
           description: Unexpected error
           content:
@@ -106,7 +106,7 @@ paths:
       operationId: deleteWebhook
       summary: delete a webhook
       responses:
-        '200':
+        "200":
           description: Success
         default:
           description: Unexpected error
@@ -126,14 +126,14 @@ paths:
       operationId: listWebhookLogs
       summary: list logs of webhook
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/WebhookLogSummary'
+                  $ref: "#/components/schemas/WebhookLogSummary"
         default:
           description: Unexpected error
           content:
@@ -152,21 +152,21 @@ paths:
       operationId: getWebhookLog
       summary: get a webhook log
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/WebhookLog'
+                  $ref: "#/components/schemas/WebhookLog"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/webhooklogs/{webhookLogID}/retry:
+  /apis/core/v1/webhooklogs/{webhookLogID}/resend:
     parameters:
       - name: webhookLogID
         in: path
@@ -175,17 +175,17 @@ paths:
     get:
       tags:
         - webhook
-      operationId: retryWebhookLog
-      summary: retry a webhook log
+      operationId: ResendWebhook
+      summary: resend a webhook log
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/WebhookLog'
+                  $ref: "#/components/schemas/WebhookLog"
         default:
           description: Unexpected error
           content:
@@ -196,90 +196,90 @@ components:
   schemas:
     CreateOrUpdateWebhook:
       type: object
-      required: [ url, triggers ]
+      required: [url, triggers]
       properties:
         enabled:
-          $ref: '#/components/schemas/Enabled'
+          $ref: "#/components/schemas/Enabled"
         url:
-          $ref: '#/components/schemas/URL'
+          $ref: "#/components/schemas/URL"
         sslVerifyEnabled:
-          $ref: '#/components/schemas/SslVerifyEnabled'
+          $ref: "#/components/schemas/SslVerifyEnabled"
         description:
-          $ref: '#/components/schemas/Description'
+          $ref: "#/components/schemas/Description"
         secret:
-          $ref: '#/components/schemas/Secret'
+          $ref: "#/components/schemas/Secret"
         triggers:
-          $ref: '#/components/schemas/Triggers'
+          $ref: "#/components/schemas/Triggers"
 
     Webhook:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/ID'
+          $ref: "#/components/schemas/ID"
         enabled:
-          $ref: '#/components/schemas/Enabled'
+          $ref: "#/components/schemas/Enabled"
         url:
-          $ref: '#/components/schemas/URL'
+          $ref: "#/components/schemas/URL"
         sslVerifyEnabled:
-          $ref: '#/components/schemas/SslVerifyEnabled'
+          $ref: "#/components/schemas/SslVerifyEnabled"
         description:
-          $ref: '#/components/schemas/Description'
+          $ref: "#/components/schemas/Description"
         secret:
-          $ref: '#/components/schemas/Secret'
+          $ref: "#/components/schemas/Secret"
         trigger:
-          $ref: '#/components/schemas/Trigger'
+          $ref: "#/components/schemas/Trigger"
         createdAt:
-          $ref: '#/components/schemas/CreatedAt'
+          $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         updatedAt:
-          $ref: '#/components/schemas/UpdatedAt'
+          $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
 
     WebhookLogSummary:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/ID'
+          $ref: "#/components/schemas/ID"
         webhookID:
-          $ref: '#/components/schemas/ID'
+          $ref: "#/components/schemas/ID"
         url:
-          $ref: '#/components/schemas/URL'
+          $ref: "#/components/schemas/URL"
         status:
-          $ref: '#/components/schemas/Status'
+          $ref: "#/components/schemas/Status"
         ErrorMessage:
-          $ref: '#/components/schemas/ErrorMessage'
+          $ref: "#/components/schemas/ErrorMessage"
         createdAt:
-          $ref: '#/components/schemas/CreatedAt'
+          $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         updatedAt:
-          $ref: '#/components/schemas/UpdatedAt'
+          $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
 
     WebhookLog:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/ID'
+          $ref: "#/components/schemas/ID"
         webhookID:
-          $ref: '#/components/schemas/ID'
+          $ref: "#/components/schemas/ID"
         url:
-          $ref: '#/components/schemas/URL'
+          $ref: "#/components/schemas/URL"
         status:
-          $ref: '#/components/schemas/Status'
+          $ref: "#/components/schemas/Status"
         ErrorMessage:
-          $ref: '#/components/schemas/ErrorMessage'
+          $ref: "#/components/schemas/ErrorMessage"
         createdAt:
-          $ref: '#/components/schemas/CreatedAt'
+          $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         updatedAt:
-          $ref: '#/components/schemas/UpdatedAt'
+          $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         requestHeaders:
           type: string
           description: ""
@@ -298,37 +298,49 @@ components:
       description: if webhook enabled
     URL:
       type: string
-      description: 
+      description:
     SslVerifyEnabled:
       type: boolean
-      description: 
+      description:
     Description:
       type: string
-      description: 
+      description:
     Secret:
       type: string
-      description: 
+      description:
     Triggers:
       type: array
       items:
         type: string
-        enum: [ cluster_*, application_*, cluster_created, cluster_deployed, cluster_build, cluster_freed, cluster_deleted, application_created, application_deleted ]
+        enum:
+          [
+            "*",
+            cluster_created,
+            cluster_deployed,
+            cluster_builddeployed,
+            cluster_rollbacked,
+            cluster_freed,
+            cluster_deleted,
+            application_created,
+            application_deleted,
+            application_transfered,
+          ]
       description: "conditions to trigger this webhook"
     CreatedAt:
       type: string
-      description: 
+      description:
     UpdatedAt:
       type: string
-      description: 
+      description:
     ErrorMessage:
       type: string
-      description: 
+      description:
     User:
-      type: object 
+      type: object
       properties:
         id:
           type: integer
         name:
           type: string
         email:
-          type: string 
+          type: string

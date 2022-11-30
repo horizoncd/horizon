@@ -22,7 +22,7 @@ const (
 type UpdateWebhookRequest struct {
 	Enabled          *bool    `json:"enabled"`
 	URL              *string  `json:"url"`
-	SslVerifyEnabled *bool    `json:"sslVerifyEnabled"`
+	SSLVerifyEnabled *bool    `json:"sslVerifyEnabled"`
 	Description      *string  `json:"description"`
 	Secret           *string  `json:"secret"`
 	Triggers         []string `json:"triggers"`
@@ -31,12 +31,10 @@ type UpdateWebhookRequest struct {
 type CreateWebhookRequest struct {
 	Enabled          bool     `json:"enabled"`
 	URL              string   `json:"url"`
-	SslVerifyEnabled bool     `json:"sslVerifyEnabled"`
+	SSLVerifyEnabled bool     `json:"sslVerifyEnabled"`
 	Description      string   `json:"description"`
 	Secret           string   `json:"secret"`
 	Triggers         []string `json:"triggers"`
-	ResourceType     string   `json:"-"`
-	ResourceID       uint     `json:"-"`
 }
 
 type Webhook struct {
@@ -80,8 +78,8 @@ func (w *UpdateWebhookRequest) toModel(ctx context.Context, wm *wmodels.Webhook)
 	if w.URL != nil {
 		wm.URL = *w.URL
 	}
-	if w.SslVerifyEnabled != nil {
-		wm.SslVerifyEnabled = *w.SslVerifyEnabled
+	if w.SSLVerifyEnabled != nil {
+		wm.SSLVerifyEnabled = *w.SSLVerifyEnabled
 	}
 	if w.Description != nil {
 		wm.Description = *w.Description
@@ -95,110 +93,94 @@ func (w *UpdateWebhookRequest) toModel(ctx context.Context, wm *wmodels.Webhook)
 	return wm
 }
 
-func (w *UpdateWebhookRequest) validate() error {
+func (c *controller) validateUpdateRequest(w *UpdateWebhookRequest) error {
 	if w.URL != nil {
 		if err := validateURL(*w.URL); err != nil {
 			return err
 		}
 	}
 	if len(w.Triggers) > 0 {
-		return validateTriggers(w.Triggers)
+		return c.validateTriggers(w.Triggers)
 	}
 	return nil
 }
 
-func (w *CreateWebhookRequest) toModel(ctx context.Context) *wmodels.Webhook {
+func (w *CreateWebhookRequest) toModel(ctx context.Context, resourceType string, resourceID uint) (*wmodels.Webhook, error) {
 	wm := &wmodels.Webhook{
 		Enabled:          w.Enabled,
 		URL:              w.URL,
-		SslVerifyEnabled: w.SslVerifyEnabled,
+		SSLVerifyEnabled: w.SSLVerifyEnabled,
 		Description:      w.Description,
 		Secret:           w.Secret,
 		Triggers:         JoinTriggers(w.Triggers),
 	}
-	switch w.ResourceType {
+	switch resourceType {
 	case common.ResourceGroup:
 		wm.ResourceType = string(models.Group)
 	case common.ResourceApplication:
 		wm.ResourceType = string(models.Application)
 	case common.ResourceCluster:
 		wm.ResourceType = string(models.Cluster)
+	default:
+		return nil, perror.Wrap(herrors.ErrParamInvalid, fmt.Sprintf("invalid resource type: %s", resourceType))
 	}
-	wm.ResourceID = w.ResourceID
-	return wm
+	wm.ResourceID = resourceID
+	return wm, nil
 }
 
-func (w *CreateWebhookRequest) validate() error {
-	switch w.ResourceType {
-	case common.ResourceGroup, common.ResourceApplication, common.ResourceCluster:
-	default:
-		return perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("invalid resource type: %s", w.ResourceType))
+func (c *controller) validateCreateRequest(resourceType string, w *CreateWebhookRequest) error {
+
+	if err := c.validateResourceType(resourceType); err != nil {
+		return err
 	}
 	if err := validateURL(w.URL); err != nil {
 		return err
 	}
-	if len(w.Triggers) <= 0 {
-		return perror.Wrap(herrors.ErrParamInvalid, "triggers should not be empty")
-	}
-	return validateTriggers(w.Triggers)
+	return c.validateTriggers(w.Triggers)
 }
-
-func validateURL(url string) error {
+func validateURL(u string) error {
 	re := `^http(s)?://.+$`
 	pattern := regexp.MustCompile(re)
-	if !pattern.MatchString(url) {
+	if !pattern.MatchString(u) {
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("invalid url, should satisfies the pattern %v", re))
 	}
 	return nil
 }
 
-func validateTriggers(triggers []string) error {
-	validateClusterAction := func(action models.EventAction) bool {
-		switch action {
-		case models.BuildDeployed, models.Deployed, models.Freed, models.Rollbacked:
-		default:
-			return false
-		}
-		return true
+func (c *controller) validateResourceType(resource string) error {
+	supportEvents := c.eventMgr.ListSupportEvents()
+	if _, ok := supportEvents[models.EventResourceType(resource)]; !ok {
+		return perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("invalid resource type: %s", resource))
 	}
+	return nil
+}
 
-	validateApplicationAction := func(action models.EventAction) bool {
-		switch action {
-		case models.Transferred:
-		default:
-			return false
-		}
-		return true
+func (c *controller) validateTriggers(triggers []string) error {
+	if len(triggers) <= 0 {
+		return perror.Wrap(herrors.ErrParamInvalid, "triggers should not be empty")
 	}
-
-	validateCommonAction := func(action models.EventAction) bool {
-		switch action {
-		case models.AnyAction, models.Created, models.Deleted:
-		default:
-			return false
+	// prepare supported events map
+	supportEvents := map[models.EventResourceType]map[models.EventAction]bool{}
+	for resource, actions := range c.eventMgr.ListSupportEvents() {
+		for _, action := range actions {
+			if _, ok := supportEvents[resource]; !ok {
+				supportEvents[resource] = map[models.EventAction]bool{}
+			}
+			supportEvents[resource][action.Name] = true
 		}
-		return true
 	}
 
 	for _, trigger := range triggers {
+		if trigger == models.Any {
+			continue
+		}
 		resource, action, err := ParseResourceAction(trigger)
 		if err != nil {
 			return err
 		}
-		switch resource {
-		case models.Cluster:
-			if !validateCommonAction(action) && !validateClusterAction(action) {
-				return perror.Wrap(herrors.ErrParamInvalid,
-					fmt.Sprintf("invalid trigger: %s", trigger))
-			}
-		case models.Application:
-			if !validateCommonAction(action) && !validateApplicationAction(action) {
-				return perror.Wrap(herrors.ErrParamInvalid,
-					fmt.Sprintf("invalid trigger: %s", trigger))
-			}
-		default:
+		if _, ok := supportEvents[resource][action]; !ok {
 			return perror.Wrap(herrors.ErrParamInvalid,
 				fmt.Sprintf("invalid trigger: %s", trigger))
 		}
@@ -232,12 +214,14 @@ func JoinResourceAction(resource, action string) string {
 func CheckIfEventMatch(webhook *wmodels.Webhook, event *models.Event) (bool, error) {
 	triggers := ParseTriggerStr(webhook.Triggers)
 	for _, trigger := range triggers {
+		if trigger == models.Any {
+			return true, nil
+		}
 		r, a, err := ParseResourceAction(trigger)
 		if err != nil {
 			return false, err
 		}
-		if (r == models.AnyResource || r == models.EventResourceType(event.ResourceType)) &&
-			(a == models.AnyAction || a == models.EventAction(event.Action)) {
+		if (r == models.EventResourceType(event.ResourceType)) && (a == models.EventAction(event.Action)) {
 			return true, nil
 		}
 	}
@@ -249,12 +233,10 @@ func ofWebhookModel(wm *wmodels.Webhook) *Webhook {
 		CreateWebhookRequest: CreateWebhookRequest{
 			Enabled:          wm.Enabled,
 			URL:              wm.URL,
-			SslVerifyEnabled: wm.SslVerifyEnabled,
+			SSLVerifyEnabled: wm.SSLVerifyEnabled,
 			Description:      wm.Description,
 			Secret:           wm.Secret,
 			Triggers:         ParseTriggerStr(wm.Triggers),
-			ResourceType:     wm.ResourceType,
-			ResourceID:       wm.ResourceID,
 		},
 		ID:        wm.ID,
 		CreatedAt: wm.CreatedAt,

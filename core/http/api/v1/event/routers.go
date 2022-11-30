@@ -10,13 +10,14 @@ import (
 
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, a *API) {
-	frontAPI := engine.Group("/apis/front/v1/eventactions")
-	var frontRoutes = route.Routes{
+	coreAPI := engine.Group("/apis/core/v1")
+	var coreRoutes = route.Routes{
 		{
+			Pattern:     "/supportevents",
 			Method:      http.MethodGet,
-			HandlerFunc: a.ListEventActions,
+			HandlerFunc: a.ListSupportEvents,
 		},
 	}
 
-	route.RegisterRoutes(frontAPI, frontRoutes)
+	route.RegisterRoutes(coreAPI, coreRoutes)
 }

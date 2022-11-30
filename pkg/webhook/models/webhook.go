@@ -12,7 +12,7 @@ type Webhook struct {
 	ID               uint
 	Enabled          bool
 	URL              string
-	SslVerifyEnabled bool
+	SSLVerifyEnabled bool
 	Description      string
 	Secret           string
 	Triggers         string

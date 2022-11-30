@@ -28,7 +28,7 @@ type Manager interface {
 		status string) ([]*models.WebhookLog, error)
 	UpdateWebhookLog(ctx context.Context, wl *models.WebhookLog) (*models.WebhookLog, error)
 	GetWebhookLog(ctx context.Context, id uint) (*models.WebhookLog, error)
-	RetryWebhookLog(ctx context.Context, id uint) (*models.WebhookLog, error)
+	ResendWebhook(ctx context.Context, id uint) (*models.WebhookLog, error)
 	GetWebhookLogByEventID(ctx context.Context, webhookID, eventID uint) (*models.WebhookLog, error)
 	GetMaxEventIDOfLog(ctx context.Context) (uint, error)
 }
@@ -132,8 +132,8 @@ func (m *manager) GetWebhookLogByEventID(ctx context.Context, webhookID, eventID
 	return m.dao.GetWebhookLogByEventID(ctx, webhookID, eventID)
 }
 
-func (m *manager) RetryWebhookLog(ctx context.Context, id uint) (*models.WebhookLog, error) {
-	const op = "webhook manager: retry webhook log"
+func (m *manager) ResendWebhook(ctx context.Context, id uint) (*models.WebhookLog, error) {
+	const op = "webhook manager: resend"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get webhook log

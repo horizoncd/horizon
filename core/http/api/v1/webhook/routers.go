@@ -56,8 +56,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/webhooklogs/:%v/retry", _webhookLogIDParam),
-			HandlerFunc: api.RetryWebhookLog,
+			Pattern:     fmt.Sprintf("/webhooklogs/:%v/resend", _webhookLogIDParam),
+			HandlerFunc: api.ResendWebhook,
 		},
 	}
 	route.RegisterRoutes(group, routers)

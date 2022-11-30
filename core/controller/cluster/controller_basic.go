@@ -811,7 +811,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		}
 
 		// 5. record event
-		if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		if _, err := c.eventMgr.CreateEvent(newctx, &eventmodels.Event{
 			EventSummary: eventmodels.EventSummary{
 				ResourceType: eventmodels.Cluster,
 				Action:       eventmodels.Deleted,
@@ -819,7 +819,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 			},
 			ReqID: rid,
 		}); err != nil {
-			log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+			log.Warningf(newctx, "failed to create event, err: %s", err.Error())
 		}
 	}()
 
@@ -891,14 +891,14 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		}
 
 		// 4. create event
-		if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		if _, err := c.eventMgr.CreateEvent(newctx, &eventmodels.Event{
 			EventSummary: eventmodels.EventSummary{
 				ResourceType: eventmodels.Cluster,
 				Action:       eventmodels.Freed,
 				ResourceID:   clusterID,
 			},
 		}); err != nil {
-			log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+			log.Warningf(newctx, "failed to create event, err: %s", err.Error())
 		}
 	}()
 

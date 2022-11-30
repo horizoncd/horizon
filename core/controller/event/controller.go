@@ -10,7 +10,7 @@ import (
 )
 
 type Controller interface {
-	ListEventActions(ctx context.Context) map[string][]string
+	ListSupportEvents(ctx context.Context) map[eventmodels.EventResourceType][]eventmodels.ActionWithDescription
 }
 
 type controller struct {
@@ -23,24 +23,10 @@ func NewController(param *param.Param) Controller {
 	}
 }
 
-func (c *controller) ListEventActions(ctx context.Context) map[string][]string {
-	const op = "event controller: list event actions"
+func (c *controller) ListSupportEvents(ctx context.Context) map[eventmodels.
+	EventResourceType][]eventmodels.ActionWithDescription {
+	const op = "event controller: list supported events"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	eventActions := map[string][]string{
-		string(eventmodels.Application): {
-			string(eventmodels.Created),
-			string(eventmodels.Deleted),
-			string(eventmodels.Transferred),
-		},
-		string(eventmodels.Cluster): {
-			string(eventmodels.Created),
-			string(eventmodels.Deleted),
-			string(eventmodels.BuildDeployed),
-			string(eventmodels.Deployed),
-			string(eventmodels.Rollbacked),
-			string(eventmodels.Freed),
-		},
-	}
-	return eventActions
+	return c.eventMgr.ListSupportEvents()
 }

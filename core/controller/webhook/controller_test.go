@@ -28,10 +28,12 @@ var (
 	db  *gorm.DB
 	c   *controller
 
+	resourceType     = "clusters"
+	resourceID       = uint(1)
 	updateWebhookReq = UpdateWebhookRequest{
 		Enabled:          utilcommon.BoolPtr(true),
 		URL:              utilcommon.StringPtr("http://xxxx"),
-		SslVerifyEnabled: utilcommon.BoolPtr(false),
+		SSLVerifyEnabled: utilcommon.BoolPtr(false),
 		Triggers: []string{
 			JoinResourceAction(string(eventmodels.Cluster), string(eventmodels.Created)),
 		},
@@ -39,12 +41,10 @@ var (
 	createWebhookReq = CreateWebhookRequest{
 		URL:              "http://xxx",
 		Enabled:          true,
-		SslVerifyEnabled: false,
+		SSLVerifyEnabled: false,
 		Triggers: []string{
 			JoinResourceAction(string(eventmodels.Cluster), string(eventmodels.Created)),
 		},
-		ResourceType: "clusters",
-		ResourceID:   1,
 	}
 )
 
@@ -80,7 +80,7 @@ func createContext() {
 
 func Test(t *testing.T) {
 	createContext()
-	w, err := c.CreateWebhook(ctx, &createWebhookReq)
+	w, err := c.CreateWebhook(ctx, resourceType, resourceID, &createWebhookReq)
 	assert.Nil(t, err)
 	assert.Equal(t, createWebhookReq.URL, w.URL)
 
@@ -94,7 +94,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, *(uw.URL), w.URL)
 
-	ws, _, err := c.ListWebhooks(ctx, string(models.Cluster), createWebhookReq.ResourceID, nil)
+	ws, _, err := c.ListWebhooks(ctx, string(models.Cluster), resourceID, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(ws))
 	assert.Equal(t, *(uw.URL), w.URL)
@@ -114,7 +114,7 @@ func Test(t *testing.T) {
 	wl, err = c.webhookMgr.UpdateWebhookLog(ctx, wl)
 	assert.Nil(t, err)
 
-	wlRetry, err := c.RetryWebhookLog(ctx, wl.ID)
+	wlRetry, err := c.ResendWebhook(ctx, wl.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, wl.URL, wlRetry.URL)
 	assert.Equal(t, webhookmodels.StatusWaiting, wlRetry.Status)

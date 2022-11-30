@@ -18,7 +18,7 @@ func NewAPI(controller event.Controller) *API {
 	}
 }
 
-// ListEventActions list actions categorized based on resources
-func (a *API) ListEventActions(c *gin.Context) {
-	response.SuccessWithData(c, a.eventCtl.ListEventActions(c))
+// ListSupportEvents list actions categorized based on resources
+func (a *API) ListSupportEvents(c *gin.Context) {
+	response.SuccessWithData(c, a.eventCtl.ListSupportEvents(c))
 }

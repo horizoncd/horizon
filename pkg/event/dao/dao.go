@@ -2,18 +2,21 @@ package dao
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/lib/q"
+	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/event/models"
 )
 
 type DAO interface {
 	CreateEvent(ctx context.Context, event *models.Event) (*models.Event, error)
-	ListEvents(ctx context.Context, offset, limit int) ([]*models.Event, error)
-	ListEventsByRange(ctx context.Context, start, end uint) ([]*models.Event, error)
+	ListEvents(ctx context.Context, query *q.Query) ([]*models.Event, error)
 	CreateOrUpdateCursor(ctx context.Context,
 		eventIndex *models.EventCursor) (*models.EventCursor, error)
 	GetCursor(ctx context.Context) (*models.EventCursor, error)
@@ -34,18 +37,31 @@ func (d *dao) CreateEvent(ctx context.Context, event *models.Event) (*models.Eve
 	return event, nil
 }
 
-func (d *dao) ListEvents(ctx context.Context, offset, limit int) ([]*models.Event, error) {
+func (d *dao) ListEvents(ctx context.Context, query *q.Query) ([]*models.Event, error) {
 	var events []*models.Event
-	if result := d.db.WithContext(ctx).Order("id asc").Offset(offset).Limit(limit).Find(&events); result.Error != nil {
-		return nil, herrors.NewErrInsertFailed(herrors.EventInDB, result.Error.Error())
+	statement := d.db.WithContext(ctx).Order("id asc")
+	for k, v := range query.Keywords {
+		switch k {
+		case common.Offset:
+			offset, ok := v.(int)
+			if !ok {
+				return nil, perror.Wrap(herrors.ErrParamInvalid, fmt.Sprintf("invalid offset %v", v))
+			}
+			statement = statement.Offset(offset)
+		case common.Limit:
+			limit, ok := v.(int)
+			if !ok {
+				return nil, perror.Wrap(herrors.ErrParamInvalid, fmt.Sprintf("invalid limit %v", v))
+			}
+			statement = statement.Limit(limit)
+		case common.StartID:
+			statement = statement.Where("id >= ?", v)
+		case common.EndID:
+			statement = statement.Where("id <= ?", v)
+		}
 	}
-	return events, nil
-}
 
-func (d *dao) ListEventsByRange(ctx context.Context, start, end uint) ([]*models.Event, error) {
-	var events []*models.Event
-	if result := d.db.WithContext(ctx).Order("id asc").Where("id >= ?", start).
-		Where("id <= ?", end).Find(&events); result.Error != nil {
+	if result := statement.Find(&events); result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.EventInDB, result.Error.Error())
 	}
 	return events, nil
@@ -58,7 +74,7 @@ func (d *dao) GetEvent(ctx context.Context, id uint) (*models.Event, error) {
 			return nil, herrors.NewErrNotFound(herrors.EventInDB,
 				result.Error.Error())
 		}
-		return nil, herrors.NewErrInsertFailed(herrors.EventInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.EventInDB, result.Error.Error())
 	}
 	return event, nil
 }
@@ -85,7 +101,7 @@ func (d *dao) GetCursor(ctx context.Context) (*models.EventCursor, error) {
 			return nil, herrors.NewErrNotFound(herrors.EventCursorInDB,
 				result.Error.Error())
 		}
-		return nil, herrors.NewErrInsertFailed(herrors.EventCursorInDB, result.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.EventCursorInDB, result.Error.Error())
 	}
 	return &eventIndex, nil
 }
