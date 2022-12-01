@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/cloudevent"
 	"g.hz.netease.com/horizon/pkg/server/response"
+	"g.hz.netease.com/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,6 +43,8 @@ func (a *API) CloudEvent(c *gin.Context) {
 	}
 
 	if err := a.cloudEventCtl.CloudEvent(c, wpr); err != nil {
+		log.Errorf(c, "failed to handle cloud event, pipelinerun name: %s, err: %v",
+			wpr.PipelineRun.Name, err)
 		response.AbortWithError(c, err)
 		return
 	}

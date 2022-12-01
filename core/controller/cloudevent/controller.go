@@ -73,8 +73,6 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	var result *collector.CollectResult
 	if result, err = tektonCollector.Collect(ctx, wpr.PipelineRun, businessData); err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			// 如果pipelineRun已经不存在，直接忽略。
-			// 这种情况一般是 tekton pipeline controller重复上报了同一个pipelineRun所致
 			log.Warningf(ctx, "received pipelineRun: %v is not found when collect", wpr.PipelineRun.Name)
 			return nil
 		}
@@ -93,12 +91,12 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		return err
 	}
 
-	// 3. delete pipelinerun in k8s
 	tekton, err := c.tektonFty.GetTekton(environment)
 	if err != nil {
 		return err
 	}
 
+	// 3. delete pipelinerun in k8s
 	if err := tekton.DeletePipelineRun(ctx, wpr.PipelineRun); err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			log.Warningf(ctx, "received pipelineRun: %v is not found when delete", wpr.PipelineRun.Name)
@@ -110,18 +108,18 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	// format Pipeline results
 	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun, businessData)
 
-	// 判断集群是否是JIB构建，动态修改Task和Step的值
-	c.handleJibBuild(ctx, pipelineResult)
+	err = c.handleJibBuild(ctx, pipelineResult)
+	if err != nil {
+		return err
+	}
 
 	// 4. observe metrics
-	// 最后指标上报，保证同一条pipelineRun，只上报一条指标
 	metrics.Observe(pipelineResult)
 
 	// 5. insert pipeline into db
 	err = c.pipelineMgr.Create(ctx, pipelineResult)
 	if err != nil {
-		// err不往上层抛，上层也无法处理这种异常
-		log.Errorf(ctx, "failed to save pipeline to db: %v, err: %v", pipelineResult, err)
+		return err
 	}
 
 	return nil
@@ -129,23 +127,19 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 
 // TODO remove this function in the future
 // 判断集群是否是JIB构建，动态修改Task和Step的值
-func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults) {
+func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults) error {
 	clusterID := result.BusinessData.ClusterID
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		log.Errorf(ctx, "failed to get cluster from db by id: %d, err: %+v", clusterID, err)
-		return
+		return err
 	}
-
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
 	if err != nil {
-		log.Errorf(ctx, "failed to get templateRelease from db by id: %d, err: %+v", cluster.ApplicationID, err)
-		return
+		return err
 	}
 	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, result.BusinessData.Application, cluster.Name, tr.ChartName)
 	if err != nil {
-		log.Errorf(ctx, "failed to get files from gitlab, cluster: %s, err: %+v", cluster.Name, err)
-		return
+		return err
 	}
 
 	// check if buildxml key exist in pipeline
@@ -171,9 +165,11 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 			}
 		}
 	}
+
+	return nil
 }
 
-// ResolveBusinessData 解析pipelineRun所包含的业务数据，主要包含application、cluster、environment、PipelinerunID
+// ResolveBusinessData resolve info about this pipelinerun
 func (c *controller) ResolveBusinessData(ctx context.Context, wpr *WrappedPipelineRun) (
 	*metrics.PrBusinessData, error) {
 	eventID := wpr.PipelineRun.Labels[triggers.GroupName+triggers.EventIDLabelKey]

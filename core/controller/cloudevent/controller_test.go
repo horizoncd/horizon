@@ -9,11 +9,14 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
+	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektoncollectormock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/collector"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
+	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
 	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
@@ -21,6 +24,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
+	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -48,6 +52,12 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&pipelinemodels.Pipeline{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&pipelinemodels.Task{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&pipelinemodels.Step{}); err != nil {
+		panic(err)
+	}
 	if err := db.AutoMigrate(&appmodels.Application{}); err != nil {
 		panic(err)
 	}
@@ -58,6 +68,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&trmodels.TemplateRelease{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -223,6 +236,15 @@ func Test(t *testing.T) {
 
 	tekton.EXPECT().DeletePipelineRun(ctx, gomock.Any()).Return(nil)
 
+	templateReleaseMgr := trmock.NewMockManager(mockCtl)
+	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&trmodels.TemplateRelease{}, nil)
+	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
+	clusterGitRepo.EXPECT().GetCluster(ctx, gomock.Any(),
+		gomock.Any(), gomock.Any()).Return(&gitrepo.ClusterFiles{
+		PipelineJSONBlob:    map[string]interface{}{},
+		ApplicationJSONBlob: map[string]interface{}{},
+	}, nil)
 	application, _ := manager.ApplicationManager.Create(ctx, &appmodels.Application{
 		Name: "app",
 	}, map[string]string{})
@@ -245,8 +267,10 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	c := NewController(tektonFty, &param.Param{Manager: manager})
-
+	p := &param.Param{Manager: manager}
+	p.ClusterGitRepo = clusterGitRepo
+	p.TemplateReleaseManager = templateReleaseMgr
+	c := NewController(tektonFty, p)
 	err = c.CloudEvent(ctx, &WrappedPipelineRun{
 		PipelineRun: pipelineRun,
 	})
