@@ -58,8 +58,7 @@ func Test_manager_Create(t *testing.T) {
 						Application:   "a",
 						Cluster:       "c",
 						Environment:   "dev",
-						PipelinerunID: "1",
-						RegionID:      "1",
+						PipelinerunID: 1,
 					},
 					PrResult: &metrics.PrResult{
 						DurationSeconds: 0,

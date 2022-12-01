@@ -304,9 +304,6 @@ var (
             "creationTimestamp": "2021-07-16T08:51:54Z",
             "labels":{
                 "app.kubernetes.io/managed-by":"Helm",
-                "cloudnative.music.netease.com/application":"testapp-1",
-                "cloudnative.music.netease.com/cluster":"testcluster-1",
-                "cloudnative.music.netease.com/environment":"env",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",

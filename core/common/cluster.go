@@ -22,16 +22,9 @@ const (
 )
 
 const (
-	ClusterApplicationLabelKey   = "cloudnative.music.netease.com/application"
-	ClusterApplicationIDLabelKey = "cloudnative.music.netease.com/application-id"
 	ClusterClusterLabelKey       = "cloudnative.music.netease.com/cluster"
 	ClusterClusterIDLabelKey     = "cloudnative.music.netease.com/cluster-id"
-	ClusterEnvironmentLabelKey   = "cloudnative.music.netease.com/environment"
 	ClusterPipelinerunIDLabelKey = "cloudnative.music.netease.com/pipelinerun-id"
-	ClusterRegionLabelKey        = "cloudnative.music.netease.com/region"
-	ClusterRegionIDLabelKey      = "cloudnative.music.netease.com/region-id"
-	ClusterOperatorAnnotationKey = "cloudnative.music.netease.com/operator"
-	ClusterTemplateKey           = "cloudnative.music.netease.com/template"
 	ClusterRestartTimeKey        = "cloudnative.music.netease.com/user-restart-time"
 )
 

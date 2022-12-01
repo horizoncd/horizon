@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,19 +20,11 @@ func Test_resolveObjMetadata(t *testing.T) {
             "creationTimestamp": "2021-07-16T08:51:54Z",
             "labels":{
                 "app.kubernetes.io/managed-by":"Helm",
-                "cloudnative.music.netease.com/application":"testapp-1",
-				"cloudnative.music.netease.com/application-id":"1",
-                "cloudnative.music.netease.com/cluster":"testcluster-1",
-				"cloudnative.music.netease.com/cluster-id":"2",
-                "cloudnative.music.netease.com/environment":"env",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
                 "triggers.tekton.dev/triggers-eventid":"cttzw"
-            },
-			"annotations":{
-				"cloudnative.music.netease.com/operator":"demo@mail.com"
-			}
+            }
         },
         "status":{
             "conditions":[
@@ -155,12 +148,12 @@ func Test_resolveObjMetadata(t *testing.T) {
 				pr: pr,
 			},
 			want: &ObjectMeta{
-				Application:       "ndp-gjq",
-				ApplicationID:     "1",
-				Cluster:           "test-music-docker",
-				ClusterID:         "2",
+				Application:       "app",
+				ApplicationID:     1,
+				Cluster:           "cluster",
+				ClusterID:         2,
 				Environment:       "test",
-				Operator:          "demo@mail.com",
+				Operator:          "horizon@corp.cloudnative.com",
 				CreationTimestamp: "20210716165154",
 				PipelineRun: &PipelineRunStatus{
 					StatusMeta: StatusMeta{
@@ -230,9 +223,17 @@ func Test_resolveObjMetadata(t *testing.T) {
 			},
 		},
 	}
+	businessDatas := &metrics.PrBusinessData{
+		Application:   "app",
+		Cluster:       "cluster",
+		Environment:   "test",
+		ApplicationID: 1,
+		ClusterID:     2,
+		Operator:      "horizon@corp.cloudnative.com",
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := resolveObjMetadata(tt.args.pr); !reflect.DeepEqual(got, tt.want) {
+			if got := resolveObjMetadata(tt.args.pr, businessDatas); !reflect.DeepEqual(got, tt.want) {
 				gotB, _ := json.Marshal(got)
 				wantB, _ := json.Marshal(tt.want)
 				t.Errorf("ResolveObjMetadata() = %v\n, want %v", string(gotB), string(wantB))

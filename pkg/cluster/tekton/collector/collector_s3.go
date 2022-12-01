@@ -14,6 +14,7 @@ import (
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -113,10 +114,11 @@ type CollectResult struct {
 	CompletionTime *metav1.Time
 }
 
-func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*CollectResult, error) {
+func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, prBusinessData *metrics.PrBusinessData) (
+	*CollectResult, error) {
 	const op = "s3Collector: collect"
 	defer wlog.Start(ctx, op).StopPrint()
-	metadata := resolveObjMetadata(pr)
+	metadata := resolveObjMetadata(pr, prBusinessData)
 	// 先收集日志，收集日志需要使用client-go访问k8s接口，
 	// 如果pipelineRun不存在，直接忽略即可
 	collectLogResult, err := c.collectLog(ctx, pr, metadata)
@@ -286,7 +288,7 @@ func (c *S3Collector) collectLog(ctx context.Context,
 func (c *S3Collector) getPathForPr(metadata *ObjectMeta) string {
 	timeFormat := "200601"
 	timeStr := time.Now().Format(timeFormat)
-	return fmt.Sprintf("%s/pr/%s-%s/%s-%s/%s", timeStr,
+	return fmt.Sprintf("%s/pr/%s-%d/%s-%d/%s", timeStr,
 		metadata.Application, metadata.ApplicationID, metadata.Cluster, metadata.ClusterID,
 		metadata.PipelineRun.Name)
 }
@@ -295,7 +297,7 @@ func (c *S3Collector) getPathForPr(metadata *ObjectMeta) string {
 func (c *S3Collector) getPathForPrLog(metadata *ObjectMeta) string {
 	timeFormat := "200601"
 	timeStr := time.Now().Format(timeFormat)
-	return fmt.Sprintf("%s/pr-log/%s-%s/%s-%s/%s", timeStr,
+	return fmt.Sprintf("%s/pr-log/%s-%d/%s-%d/%s", timeStr,
 		metadata.Application, metadata.ApplicationID, metadata.Cluster, metadata.ClusterID,
 		metadata.PipelineRun.Name)
 }

@@ -17,11 +17,6 @@ func TestObserve(t *testing.T) {
             "namespace":"tekton-resources",
             "labels":{
                 "app.kubernetes.io/managed-by":"Helm",
-                "cloudnative.music.netease.com/application":"ndp",
-                "cloudnative.music.netease.com/cluster":"testcluster-1",
-                "cloudnative.music.netease.com/environment":"env",
-                "cloudnative.music.netease.com/region":"hz-test",
-                "cloudnative.music.netease.com/template":"serverless",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
@@ -270,7 +265,11 @@ func TestObserve(t *testing.T) {
 
 	var wpr1 *WrappedPipelineRun
 	_ = json.Unmarshal([]byte(wprBody), &wpr1)
-	Observe(FormatPipelineResults(wpr1.PipelineRun))
+	businessDatas := &PrBusinessData{
+		Environment: "test",
+		Template:    "serverless",
+	}
+	Observe(FormatPipelineResults(wpr1.PipelineRun, businessDatas))
 	if err := testutil.CollectAndCompare(_prHistogram, strings.NewReader(prHistogramMetric)); err != nil {
 		t.Fatalf("err: %v", err)
 	}

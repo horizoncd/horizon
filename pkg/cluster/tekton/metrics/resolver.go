@@ -8,7 +8,6 @@ package metrics
 import (
 	"sort"
 
-	common "g.hz.netease.com/horizon/core/common"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,13 +32,12 @@ type PrMetadata struct {
 type PrBusinessData struct {
 	Application   string
 	Cluster       string
-	ApplicationID string
-	ClusterID     string
+	ApplicationID uint
+	ClusterID     uint
 	Environment   string
 	Operator      string
-	PipelinerunID string
+	PipelinerunID uint
 	Region        string
-	RegionID      string
 	Template      string
 }
 
@@ -126,7 +124,7 @@ type PipelineResults struct {
 	StepResults  StepResults
 }
 
-func FormatPipelineResults(pipelineRun *v1beta1.PipelineRun) *PipelineResults {
+func FormatPipelineResults(pipelineRun *v1beta1.PipelineRun, prBusiness *PrBusinessData) *PipelineResults {
 	if pipelineRun == nil {
 		return nil
 	}
@@ -138,7 +136,7 @@ func FormatPipelineResults(pipelineRun *v1beta1.PipelineRun) *PipelineResults {
 	trResults, stepResults := wpr.ResolveTrAndStepResults()
 	return &PipelineResults{
 		Metadata:     wpr.ResolveMetadata(),
-		BusinessData: wpr.ResolveBusinessData(),
+		BusinessData: prBusiness,
 		PrResult:     wpr.ResolvePrResult(),
 		TrResults:    trResults,
 		StepResults:  stepResults,
@@ -153,35 +151,6 @@ func (wpr *WrappedPipelineRun) ResolveMetadata() *PrMetadata {
 		Name:      wpr.PipelineRun.Name,
 		Namespace: wpr.PipelineRun.Namespace,
 		Pipeline:  wpr.PipelineRun.Labels[LabelKeyPipeline],
-	}
-}
-
-// ResolveBusinessData 解析pipelineRun所包含的业务数据，主要包含application、cluster、environment、PipelinerunID
-func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
-	labels := wpr.PipelineRun.Labels
-	application := labels[common.ClusterApplicationLabelKey]
-	cluster := labels[common.ClusterClusterLabelKey]
-	environment := labels[common.ClusterEnvironmentLabelKey]
-	applicationIDStr := labels[common.ClusterApplicationIDLabelKey]
-	clusterIDStr := labels[common.ClusterClusterIDLabelKey]
-	pipelinerunID := labels[common.ClusterPipelinerunIDLabelKey]
-	region := labels[common.ClusterRegionLabelKey]
-	regionID := labels[common.ClusterRegionIDLabelKey]
-	template := labels[common.ClusterTemplateKey]
-
-	annotations := wpr.PipelineRun.Annotations
-	operator := annotations[common.ClusterOperatorAnnotationKey]
-	return &PrBusinessData{
-		Application:   application,
-		Cluster:       cluster,
-		ApplicationID: applicationIDStr,
-		ClusterID:     clusterIDStr,
-		Environment:   environment,
-		Operator:      operator,
-		PipelinerunID: pipelinerunID,
-		Region:        region,
-		RegionID:      regionID,
-		Template:      template,
 	}
 }
 

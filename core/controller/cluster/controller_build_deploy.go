@@ -119,7 +119,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		prGit.Branch = prCreated.GitRef
 	}
 
-	_, err = tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
+	ciEventID, err := tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
 		Application:      application.Name,
 		ApplicationID:    application.ID,
 		Cluster:          cluster.Name,
@@ -134,6 +134,12 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		RegionID:         regionEntity.ID,
 		Template:         cluster.Template,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	// update event id returned from tekton-trigger EventListener
+	err = c.pipelinerunMgr.UpdateCIEventIDByID(ctx, pr.ID, ciEventID)
 	if err != nil {
 		return nil, err
 	}

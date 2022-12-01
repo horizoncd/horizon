@@ -64,9 +64,11 @@ type Pipelinerun struct {
 	FinishedAt *time.Time
 	// RollbackFrom which pipelinerun this pipelinerun rollback from
 	RollbackFrom *uint
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	CreatedBy    uint
+	// CIEventID event id returned from tekton-trigger EventListener
+	CIEventID string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	CreatedBy uint
 }
 
 type Result struct {

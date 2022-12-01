@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"github.com/golang/mock/gomock"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
@@ -57,9 +58,6 @@ func TestS3Collector_Collect(t *testing.T) {
             "creationTimestamp": "2021-07-16T08:51:54Z",
             "labels":{
                 "app.kubernetes.io/managed-by":"Helm",
-                "cloudnative.music.netease.com/application":"testapp-1",
-                "cloudnative.music.netease.com/cluster":"testcluster-1",
-                "cloudnative.music.netease.com/environment":"env",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
@@ -203,8 +201,14 @@ func TestS3Collector_Collect(t *testing.T) {
 
 	c := NewS3Collector(d, tek)
 
+	businessDatas := &metrics.PrBusinessData{
+		Application: "app",
+		Cluster:     "cluster",
+		Environment: "test",
+	}
+
 	// collect
-	collectResult, err := c.Collect(ctx, pr)
+	collectResult, err := c.Collect(ctx, pr, businessDatas)
 	assert.Nil(t, err)
 	b, _ := json.Marshal(collectResult)
 	t.Logf("%v", string(b))
@@ -218,7 +222,7 @@ func TestS3Collector_Collect(t *testing.T) {
 	obj, err := c.GetPipelineRunObject(ctx, collectResult.PrObject)
 	assert.Nil(t, err)
 	assert.NotNil(t, obj)
-	objectMeta := resolveObjMetadata(pr)
+	objectMeta := resolveObjMetadata(pr, businessDatas)
 	if !reflect.DeepEqual(objectMeta, obj.Metadata) {
 		t.Fatalf("pipelineRun objectMeta: expected %v, got %v", objectMeta, obj.Metadata)
 	}

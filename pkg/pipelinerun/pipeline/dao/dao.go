@@ -2,7 +2,6 @@ package dao
 
 import (
 	"context"
-	"strconv"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -33,16 +32,12 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 	trResults, stepResults := results.TrResults, results.StepResults
 
 	pipeline := prMetadata.Pipeline
-	pipelinerunIDStr := prBusinessData.PipelinerunID
-	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
-	if err != nil {
-		return err
-	}
 	application, cluster, region := prBusinessData.Application, prBusinessData.Cluster, prBusinessData.Region
 
-	err = d.db.Transaction(func(tx *gorm.DB) error {
+	pipelinerunID := prBusinessData.PipelinerunID
+	err := d.db.Transaction(func(tx *gorm.DB) error {
 		p := &models.Pipeline{
-			PipelinerunID: uint(pipelinerunID),
+			PipelinerunID: pipelinerunID,
 			Application:   application,
 			Cluster:       cluster,
 			Region:        region,
@@ -62,7 +57,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				continue
 			}
 			t := &models.Task{
-				PipelinerunID: uint(pipelinerunID),
+				PipelinerunID: pipelinerunID,
 				Application:   application,
 				Cluster:       cluster,
 				Region:        region,
@@ -84,7 +79,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				continue
 			}
 			s := &models.Step{
-				PipelinerunID: uint(pipelinerunID),
+				PipelinerunID: pipelinerunID,
 				Application:   application,
 				Cluster:       cluster,
 				Region:        region,

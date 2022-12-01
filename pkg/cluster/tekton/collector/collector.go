@@ -21,9 +21,9 @@ type Object struct {
 type (
 	ObjectMeta struct {
 		Application       string             `json:"application"`
-		ApplicationID     string             `json:"applicationID"`
+		ApplicationID     uint               `json:"applicationID"`
 		Cluster           string             `json:"cluster"`
-		ClusterID         string             `json:"clusterID"`
+		ClusterID         uint               `json:"clusterID"`
 		Environment       string             `json:"environment"`
 		Operator          string             `json:"operator"`
 		CreationTimestamp string             `json:"creationTimestamp"`
@@ -55,9 +55,12 @@ type (
 	}
 )
 
+// nolint
+//go:generate mockgen -source=$GOFILE -destination=../../../../mock/pkg/cluster/tekton/collector/collector_mock.go
+// -package=mock_collector
 type Interface interface {
 	// Collect log & object for pipelinerun
-	Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*CollectResult, error)
+	Collect(ctx context.Context, pr *v1beta1.PipelineRun, prBusinessData *metrics.PrBusinessData) (*CollectResult, error)
 
 	// GetPipelineRunLog get pipelinerun log from collector
 	GetPipelineRunLog(ctx context.Context, logObject string) (_ []byte, err error)
@@ -70,12 +73,11 @@ var _ Interface = (*S3Collector)(nil)
 
 const timestampLayout = "20060102150405"
 
-func resolveObjMetadata(pr *v1beta1.PipelineRun) *ObjectMeta {
+func resolveObjMetadata(pr *v1beta1.PipelineRun, prBusinessData *metrics.PrBusinessData) *ObjectMeta {
 	wrappedPr := &metrics.WrappedPipelineRun{
 		PipelineRun: pr,
 	}
 	prMetadata := wrappedPr.ResolveMetadata()
-	prBusinessData := wrappedPr.ResolveBusinessData()
 	prResult := wrappedPr.ResolvePrResult()
 	trResults, stepResults := wrappedPr.ResolveTrAndStepResults()
 

@@ -12,12 +12,19 @@ import (
 	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
 	tektoncollectormock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/collector"
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
+	appmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
+	membermodels "g.hz.netease.com/horizon/pkg/member/models"
+	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	triggers "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/mock/gomock"
@@ -38,6 +45,21 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&prmodels.Pipelinerun{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&pipelinemodels.Pipeline{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&appmodels.Application{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&clustermodels.Cluster{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&usermodels.User{}); err != nil {
+		panic(err)
+	}
+	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
+		panic(err)
+	}
 	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -51,10 +73,6 @@ func TestMain(m *testing.M) {
             "creationTimestamp": "2021-07-16T08:51:54Z",
             "labels":{
                 "app.kubernetes.io/managed-by":"Helm",
-                "cloudnative.music.netease.com/application":"testapp-1",
-                "cloudnative.music.netease.com/cluster":"testcluster-1",
-                "cloudnative.music.netease.com/environment":"env",
-				"cloudnative.music.netease.com/pipelinerun-id":"1",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
@@ -184,7 +202,7 @@ func Test(t *testing.T) {
 	tektonFty.EXPECT().GetTekton(gomock.Any()).Return(tekton, nil).AnyTimes()
 	tektonFty.EXPECT().GetTektonCollector(gomock.Any()).Return(tektonCollector, nil).AnyTimes()
 
-	tektonCollector.EXPECT().Collect(ctx, gomock.Any()).Return(&collector.CollectResult{
+	tektonCollector.EXPECT().Collect(ctx, gomock.Any(), gomock.Any()).Return(&collector.CollectResult{
 		Bucket:    "bucket",
 		LogObject: "log-object",
 		PrObject:  "pr-object",
@@ -205,20 +223,29 @@ func Test(t *testing.T) {
 
 	tekton.EXPECT().DeletePipelineRun(ctx, gomock.Any()).Return(nil)
 
+	application, _ := manager.ApplicationManager.Create(ctx, &appmodels.Application{
+		Name: "app",
+	}, map[string]string{})
+	user, _ := manager.UserManager.Create(ctx, &usermodels.User{
+		Name: "user",
+	})
+	cluster, _ := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
+		ApplicationID: application.ID,
+		Name:          "cluster",
+	}, nil, nil)
 	pipelinerunMgr := manager.PipelinerunMgr
 	_, err := pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
-		ClusterID:   1,
+		ClusterID:   cluster.ID,
 		Action:      "builddeploy",
 		Status:      "created",
 		Title:       "title",
 		Description: "description",
+		CIEventID:   pipelineRun.Labels[triggers.GroupName+triggers.EventIDLabelKey],
+		CreatedBy:   user.ID,
 	})
 	assert.Nil(t, err)
 
-	c := &controller{
-		pipelinerunMgr: pipelinerunMgr,
-		tektonFty:      tektonFty,
-	}
+	c := NewController(tektonFty, &param.Param{Manager: manager})
 
 	err = c.CloudEvent(ctx, &WrappedPipelineRun{
 		PipelineRun: pipelineRun,

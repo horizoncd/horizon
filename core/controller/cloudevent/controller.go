@@ -2,25 +2,26 @@ package cloudevent
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
-	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
-	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
-
-	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param"
+	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+
+	triggers "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 )
 
 type Controller interface {
@@ -34,6 +35,8 @@ type controller struct {
 	clusterMgr         clustermanager.Manager
 	clusterGitRepo     gitrepo.ClusterGitRepo
 	templateReleaseMgr trmanager.Manager
+	applicationMgr     applicationmanager.Manager
+	userMgr            usermanager.Manager
 }
 
 func NewController(tektonFty factory.Factory, parameter *param.Param) Controller {
@@ -44,6 +47,8 @@ func NewController(tektonFty factory.Factory, parameter *param.Param) Controller
 		clusterMgr:         parameter.ClusterMgr,
 		clusterGitRepo:     parameter.ClusterGitRepo,
 		templateReleaseMgr: parameter.TemplateReleaseManager,
+		applicationMgr:     parameter.ApplicationManager,
+		userMgr:            parameter.UserManager,
 	}
 }
 
@@ -51,13 +56,13 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	const op = "cloudEvent controller: cloudEvent"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	environment := wpr.PipelineRun.Labels[common.ClusterEnvironmentLabelKey]
-	pipelinerunIDStr := wpr.PipelineRun.Labels[common.ClusterPipelinerunIDLabelKey]
-	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
+	businessData, err := c.ResolveBusinessData(ctx, wpr)
 	if err != nil {
-		return perror.Wrapf(herrors.ErrParamInvalid,
-			"invalid pipeline run id: %s", pipelinerunIDStr)
+		return err
 	}
+
+	environment := businessData.Environment
+	pipelinerunID := businessData.PipelinerunID
 
 	// 1. collect log & pipelinerun object
 	tektonCollector, err := c.tektonFty.GetTektonCollector(environment)
@@ -66,7 +71,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	var result *collector.CollectResult
-	if result, err = tektonCollector.Collect(ctx, wpr.PipelineRun); err != nil {
+	if result, err = tektonCollector.Collect(ctx, wpr.PipelineRun, businessData); err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			// 如果pipelineRun已经不存在，直接忽略。
 			// 这种情况一般是 tekton pipeline controller重复上报了同一个pipelineRun所致
@@ -77,7 +82,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	// 2. update pipelinerun in db
-	if err := c.pipelinerunMgr.UpdateResultByID(ctx, uint(pipelinerunID), &prmodels.Result{
+	if err := c.pipelinerunMgr.UpdateResultByID(ctx, pipelinerunID, &prmodels.Result{
 		S3Bucket:   result.Bucket,
 		LogObject:  result.LogObject,
 		PrObject:   result.PrObject,
@@ -89,8 +94,6 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	// 3. delete pipelinerun in k8s
-	// 提前删除，如果删除返回404，则忽略
-	// 这种情况一般也是 tekton pipeline controller重复上报了同一个pipelineRun所致
 	tekton, err := c.tektonFty.GetTekton(environment)
 	if err != nil {
 		return err
@@ -105,7 +108,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	// format Pipeline results
-	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun)
+	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun, businessData)
 
 	// 判断集群是否是JIB构建，动态修改Task和Step的值
 	c.handleJibBuild(ctx, pipelineResult)
@@ -127,12 +130,8 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 // TODO remove this function in the future
 // 判断集群是否是JIB构建，动态修改Task和Step的值
 func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults) {
-	clusterID, err := strconv.ParseUint(result.BusinessData.ClusterID, 10, 0)
-	if err != nil {
-		log.Errorf(ctx, "failed to parse clusterID to uint from string: %d", clusterID)
-		return
-	}
-	cluster, err := c.clusterMgr.GetByID(ctx, uint(clusterID))
+	clusterID := result.BusinessData.ClusterID
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		log.Errorf(ctx, "failed to get cluster from db by id: %d, err: %+v", clusterID, err)
 		return
@@ -172,4 +171,38 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 			}
 		}
 	}
+}
+
+// ResolveBusinessData 解析pipelineRun所包含的业务数据，主要包含application、cluster、environment、PipelinerunID
+func (c *controller) ResolveBusinessData(ctx context.Context, wpr *WrappedPipelineRun) (
+	*metrics.PrBusinessData, error) {
+	eventID := wpr.PipelineRun.Labels[triggers.GroupName+triggers.EventIDLabelKey]
+	pipelinerun, err := c.pipelinerunMgr.GetByCIEventID(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)
+	if err != nil {
+		return nil, err
+	}
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+	user, err := c.userMgr.GetUserByID(ctx, pipelinerun.CreatedBy)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metrics.PrBusinessData{
+		Application:   application.Name,
+		ApplicationID: application.ID,
+		Cluster:       cluster.Name,
+		ClusterID:     cluster.ID,
+		Environment:   cluster.EnvironmentName,
+		Operator:      user.Email,
+		PipelinerunID: pipelinerun.ID,
+		Region:        cluster.RegionName,
+		Template:      cluster.Template,
+	}, nil
 }
