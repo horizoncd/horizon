@@ -9,10 +9,13 @@ const (
 	TemplateRelease = "templateRelease"
 	TagSelector     = "tagSelector"
 
-	Offset  = "offset"
-	Limit   = "limit"
-	StartID = "startID"
-	EndID   = "endID"
+	Offset    = "offset"
+	Limit     = "limit"
+	StartID   = "startID"
+	EndID     = "endID"
+	EventType = "eventType"
+	CreatedAt = "createdAt"
+	Enabled   = "enabled"
 
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20
@@ -78,7 +81,8 @@ const (
 	ResourceTemplateRelease = "templatereleases"
 	AliasTemplateRelease    = "releases"
 
-	ResourceWebhook = "webhooks"
+	ResourceWebhook    = "webhooks"
+	ResourceWebhookLog = "webhooklogs"
 )
 
 const (

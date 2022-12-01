@@ -162,7 +162,6 @@ func NewController(config *config.Config, param *param.Param) Controller {
 	}
 }
 
-//nolint may be used in the future
 func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
 	if c.hook != nil {
 		event := hook.Event{

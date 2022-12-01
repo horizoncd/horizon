@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/webhook"
 	webhookctl "g.hz.netease.com/horizon/core/controller/webhook"
 	herrors "g.hz.netease.com/horizon/core/errors"
@@ -182,7 +183,15 @@ func (a *API) ListWebhookLogs(c *gin.Context) {
 		return
 	}
 
-	query := q.New(nil).WithPagination(c)
+	keywords := q.KeyWords{}
+	if eventType := c.Query(common.EventType); eventType != "" {
+		keywords[common.EventType] = c.Query(common.EventType)
+	}
+	if filter := c.Query(common.Filter); filter != "" {
+		keywords[common.Filter] = c.Query(common.Filter)
+	}
+
+	query := q.New(keywords).WithPagination(c)
 	items, total, err := a.webhookCtl.ListWebhookLogs(c, uint(webhookID), query)
 	if err != nil {
 		if perror.Cause(err) == herrors.ErrParamInvalid {

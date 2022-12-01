@@ -138,17 +138,6 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 		return nil, err
 	}
 
-	// 12. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: eventmodels.Cluster,
-			Action:       eventmodels.Created,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
 	fullPath := fmt.Sprintf("%v/%v/%v", group.FullPath, application.Name, cluster.Name)
 
 	ret := &CreateClusterResponseV2{
@@ -168,6 +157,16 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 		UpdatedAt:     updateClusterResp.UpdatedAt,
 	}
 
+	// 12. hook
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceCluster,
+			EventType:    eventmodels.ClusterCreated,
+			ResourceID:   cluster.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 	c.postHook(ctx, hook.CreateCluster, ret)
 
 	// 12. customize response

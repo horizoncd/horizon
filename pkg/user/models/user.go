@@ -29,3 +29,14 @@ type UserBasic struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
+
+func ToUser(user *User) *UserBasic {
+	if user == nil {
+		return nil
+	}
+	return &UserBasic{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
+}

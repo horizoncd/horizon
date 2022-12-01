@@ -5,10 +5,12 @@ import (
 	"time"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
+	eventhandlerconfig "g.hz.netease.com/horizon/pkg/config/eventhandler"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
 	"g.hz.netease.com/horizon/pkg/event/models"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	"g.hz.netease.com/horizon/pkg/util/common"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	webhookmanager "g.hz.netease.com/horizon/pkg/webhook/manager"
 )
@@ -25,6 +27,7 @@ type cursor struct {
 }
 
 type eventHandlerService struct {
+	config        eventhandlerconfig.Config
 	ctx           context.Context
 	eventHandlers map[string]EventHandler
 	cursor        *cursor
@@ -35,8 +38,9 @@ type eventHandlerService struct {
 	webhookMgr webhookmanager.Manager
 }
 
-func NewService(ctx context.Context, manager *managerparam.Manager) Service {
+func NewService(ctx context.Context, manager *managerparam.Manager, config eventhandlerconfig.Config) Service {
 	return &eventHandlerService{
+		config:        config,
 		ctx:           ctx,
 		eventHandlers: map[string]EventHandler{},
 		resume:        true,
@@ -46,7 +50,7 @@ func NewService(ctx context.Context, manager *managerparam.Manager) Service {
 	}
 }
 
-// EventHandler can be registered to process events
+// EventHandler processes new events by registered handlers
 type EventHandler interface {
 	Process(ctx context.Context, event []*models.Event, resume bool) error
 }
@@ -59,6 +63,7 @@ func (e *eventHandlerService) RegisterEventHandler(name string, eh EventHandler)
 	return nil
 }
 
+// StopAndWait stop and wait for all registered handlers to exit
 func (e *eventHandlerService) StopAndWait() {
 	// 1. notify handlers to stop
 	e.quit <- true
@@ -69,6 +74,13 @@ func (e *eventHandlerService) StopAndWait() {
 
 func (e *eventHandlerService) Start() {
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Errorf(e.ctx, "event handler service panic: %v", err)
+				common.PrintStack()
+			}
+		}()
+
 		// 1. get cursor
 		for e.cursor == nil {
 			eventCursor, err := e.eventMgr.GetCursor(e.ctx)
@@ -90,9 +102,9 @@ func (e *eventHandlerService) Start() {
 		}
 
 		// 2. process event
-		limit := uint(5)
-		saveCursorTicker := time.NewTicker(time.Second * 10)
-		waitInterval := time.Second * 3
+		batchEventsCount := e.config.BatchEventsCount
+		cursorSaveInterval := time.NewTicker(time.Second * time.Duration(e.config.CursorSaveInterval))
+		idleWaitInterval := time.Second * time.Duration(e.config.IdleWaitInterval)
 	L:
 		for {
 			select {
@@ -101,7 +113,7 @@ func (e *eventHandlerService) Start() {
 				e.saveCursor()
 				close(e.quit)
 				break L
-			case <-saveCursorTicker.C:
+			case <-cursorSaveInterval.C:
 				e.saveCursor()
 			default:
 				var (
@@ -110,15 +122,15 @@ func (e *eventHandlerService) Start() {
 				)
 
 				if !e.resume {
-					events, err = e.eventMgr.ListEvents(e.ctx, int(e.cursor.Position), int(limit))
+					events, err = e.eventMgr.ListEvents(e.ctx, int(e.cursor.Position), int(batchEventsCount))
 					if err != nil {
 						log.Errorf(e.ctx, "failed to list event by offset: %d, limit: %d",
-							e.cursor.Position, limit)
-						time.Sleep(waitInterval)
+							e.cursor.Position, batchEventsCount)
+						time.Sleep(idleWaitInterval)
 						continue
 					}
 					if len(events) == 0 {
-						time.Sleep(waitInterval)
+						time.Sleep(idleWaitInterval)
 						continue
 					}
 				} else {
@@ -126,7 +138,7 @@ func (e *eventHandlerService) Start() {
 					lastProcessingCursor, err := e.getLastProcessingCursor()
 					if err != nil {
 						log.Error(e.ctx, "failed to get last processing cursor")
-						time.Sleep(waitInterval)
+						time.Sleep(idleWaitInterval)
 						continue
 					}
 					if lastProcessingCursor <= e.cursor.Position {
@@ -135,8 +147,8 @@ func (e *eventHandlerService) Start() {
 					}
 					events, err = e.eventMgr.ListEventsByRange(e.ctx, e.cursor.Position, lastProcessingCursor)
 					if err != nil {
-						log.Errorf(e.ctx, "failed to list event by limit %d offset %d", e.cursor.Position, limit)
-						time.Sleep(waitInterval)
+						log.Errorf(e.ctx, "failed to list event by limit %d offset %d", e.cursor.Position, batchEventsCount)
+						time.Sleep(idleWaitInterval)
 						continue
 					}
 				}
@@ -161,6 +173,7 @@ func (e *eventHandlerService) getLastProcessingCursor() (uint, error) {
 	return e.webhookMgr.GetMaxEventIDOfLog(e.ctx)
 }
 
+// saveCursor saves the event id as position in case of resume
 func (e *eventHandlerService) saveCursor() {
 	if _, err := e.eventMgr.CreateOrUpdateCursor(e.ctx, &models.EventCursor{
 		ID:       e.cursor.ID,

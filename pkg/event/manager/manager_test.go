@@ -39,9 +39,9 @@ func Test(t *testing.T) {
 	createCtx()
 	e := &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
-			ResourceType: eventmodels.Cluster,
+			ResourceType: common.ResourceCluster,
 			ResourceID:   1,
-			Action:       eventmodels.Created,
+			EventType:    eventmodels.ClusterCreated,
 		},
 	}
 	e, err := m.CreateEvent(ctx, e)

@@ -138,7 +138,7 @@ func Run(flags *Flags) {
 	}()
 
 	// start event handler service to generate webhook log by events
-	eventHandlerService := eventhandlersvc.NewService(ctx, manager)
+	eventHandlerService := eventhandlersvc.NewService(ctx, manager, coreConfig.EventHandlerConfig)
 	if err := eventHandlerService.RegisterEventHandler("webhook",
 		wlgenerator.NewWebhookLogGenerator(manager)); err != nil {
 		log.Printf("failed to register event handler, error: %s", err.Error())
@@ -146,7 +146,7 @@ func Run(flags *Flags) {
 	eventHandlerService.Start()
 
 	// start webhook service with multi workers to consume webhook logs and send webhook events
-	webhookService := webhooksvc.NewService(ctx, manager)
+	webhookService := webhooksvc.NewService(ctx, manager, coreConfig.WebhookConfig)
 	webhookService.Start()
 
 	// graceful exit

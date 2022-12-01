@@ -3,11 +3,11 @@ package webhook
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/q"
 	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
 	"g.hz.netease.com/horizon/pkg/param"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 	wmanager "g.hz.netease.com/horizon/pkg/webhook/manager"
 	"g.hz.netease.com/horizon/pkg/webhook/models"
@@ -163,7 +163,7 @@ func (c *controller) GetWebhookLog(ctx context.Context, id uint) (*Log, error) {
 	}
 
 	webhookLog := ofWebhookLogModel(wl)
-	webhookLog.CreatedBy = common.ToUser(userMap[wl.CreatedBy])
+	webhookLog.CreatedBy = usermodels.ToUser(userMap[wl.CreatedBy])
 	return webhookLog, nil
 }
 

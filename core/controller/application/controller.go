@@ -195,7 +195,6 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 	return resp, err
 }
 
-//nolint may be used in the future
 func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
 	if c.hook != nil {
 		event := hook.Event{
@@ -281,15 +280,17 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application)
 
 	// 7. record event
+	// todo: move to db
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
-			ResourceType: eventmodels.Application,
-			Action:       eventmodels.Created,
+			ResourceType: common.ResourceApplication,
+			EventType:    eventmodels.ApplicationCreated,
 			ResourceID:   ret.ID,
 		},
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
+	c.postHook(ctx, hook.CreateApplication, ret)
 
 	return ret, nil
 }
@@ -384,16 +385,6 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		return nil, err
 	}
 
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: eventmodels.Application,
-			Action:       eventmodels.Created,
-			ResourceID:   applicationDBModel.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
-
 	ret := &CreateApplicationResponseV2{
 		ID:        applicationDBModel.ID,
 		Name:      request.Name,
@@ -404,6 +395,16 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	}
 	if request.Priority != nil {
 		ret.Priority = *request.Priority
+	}
+
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceApplication,
+			EventType:    eventmodels.ApplicationCreated,
+			ResourceID:   applicationDBModel.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
 	c.postHook(ctx, hook.CreateApplication, ret)
@@ -567,16 +568,17 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 		return err
 	}
 
-	// 4. record event
+	// 4. send hook
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
-			ResourceType: eventmodels.Application,
-			Action:       eventmodels.Deleted,
+			ResourceType: common.ResourceApplication,
+			EventType:    eventmodels.ApplicationDeleted,
 			ResourceID:   id,
 		},
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
+	c.postHook(ctx, hook.DeleteApplication, app.Name)
 
 	return nil
 }

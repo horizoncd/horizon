@@ -12,7 +12,7 @@ paths:
         in: path
         description: resource type
         required: true
-        enum: ["application", "cluster"]
+        enum: ["groups", "applications", "clusters"]
     post:
       tags:
         - webhook
@@ -248,7 +248,7 @@ components:
           $ref: "#/components/schemas/URL"
         status:
           $ref: "#/components/schemas/Status"
-        ErrorMessage:
+        errorMessage:
           $ref: "#/components/schemas/ErrorMessage"
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
@@ -270,7 +270,7 @@ components:
           $ref: "#/components/schemas/URL"
         status:
           $ref: "#/components/schemas/Status"
-        ErrorMessage:
+        errorMessage:
           $ref: "#/components/schemas/ErrorMessage"
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
@@ -315,15 +315,15 @@ components:
         enum:
           [
             "*",
-            cluster_created,
-            cluster_deployed,
-            cluster_builddeployed,
-            cluster_rollbacked,
-            cluster_freed,
-            cluster_deleted,
-            application_created,
-            application_deleted,
-            application_transfered,
+            clusters_created,
+            clusters_deployed,
+            clusters_builddeployed,
+            clusters_rollbacked,
+            clusters_freed,
+            clusters_deleted,
+            applications_created,
+            applications_deleted,
+            applications_transfered,
           ]
       description: "conditions to trigger this webhook"
     CreatedAt:

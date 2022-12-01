@@ -139,8 +139,8 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	// 10. record event
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
-			ResourceType: eventmodels.Cluster,
-			Action:       eventmodels.BuildDeployed,
+			ResourceType: common.ResourceCluster,
+			EventType:    eventmodels.ClusterBuildDeployed,
 			ResourceID:   cluster.ID,
 		},
 	}); err != nil {

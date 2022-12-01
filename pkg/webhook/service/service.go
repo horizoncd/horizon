@@ -6,29 +6,30 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/go-yaml/yaml"
+
+	webhookconfig "g.hz.netease.com/horizon/pkg/config/webhook"
 	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
 	"g.hz.netease.com/horizon/pkg/eventhandler/wlgenerator"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
+	"g.hz.netease.com/horizon/pkg/util/common"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	webhookmanager "g.hz.netease.com/horizon/pkg/webhook/manager"
 	"g.hz.netease.com/horizon/pkg/webhook/models"
 	webhookmodels "g.hz.netease.com/horizon/pkg/webhook/models"
-	"github.com/go-yaml/yaml"
-)
-
-const (
-	WebhookSecretHeader      = "X-Horizon-Webhook-Secret"
-	WebhookContentTypeHeader = "Content-Type"
-	WebhookContentType       = "application/json;charset=utf-8"
 )
 
 type worker struct {
+	idleWaitInterval         uint
+	responseBodyTruncateSize uint
+
 	ctx            context.Context
 	insecureClient http.Client
 	secureClient   http.Client
@@ -46,32 +47,21 @@ type Service interface {
 }
 
 type service struct {
-	ctx            context.Context
-	quit           chan bool
-	workers        map[uint]*worker
-	insecureClient http.Client
-	secureClient   http.Client
+	config  webhookconfig.Config
+	ctx     context.Context
+	quit    chan bool
+	workers map[uint]*worker
 
 	webhookManager webhookmanager.Manager
 	eventManager   eventmanager.Manager
 	userManager    usermanager.Manager
 }
 
-func NewService(ctx context.Context, manager *managerparam.Manager) Service {
+func NewService(ctx context.Context, manager *managerparam.Manager, config webhookconfig.Config) Service {
 	return &service{
-		ctx:     ctx,
-		workers: make(map[uint]*worker),
-		insecureClient: http.Client{
-			Timeout: time.Second * 30,
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			},
-		},
-		secureClient: http.Client{
-			Timeout: time.Second * 30,
-		},
+		config:         config,
+		ctx:            ctx,
+		workers:        make(map[uint]*worker),
 		webhookManager: manager.WebhookManager,
 		eventManager:   manager.EventManager,
 		userManager:    manager.UserManager,
@@ -109,12 +99,14 @@ func (s *service) reconcileWorkers() {
 		} else {
 			// 2.2 create workers
 			s.workers[id] = newWebhookWorker(s.webhookManager, s.eventManager,
-				s.userManager, s.secureClient, s.insecureClient, webhook)
+				s.userManager, webhook, s.config.IdleWaitInterval,
+				s.config.ClientTimeout, s.config.ResponseBodyTruncateSize)
 		}
 		reconciled[id] = true
 	}
 
 	// 2.2 stop deleted workers
+	// todo: stop disabled worker
 	for id := range s.workers {
 		if _, ok := reconciled[id]; ok {
 			continue
@@ -124,9 +116,17 @@ func (s *service) reconcileWorkers() {
 	}
 }
 
+// start webhook service to reconcile workers
 func (s *service) Start() {
-	t := time.NewTicker(time.Second * 5)
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Errorf(s.ctx, "webhook service reconcile panic: %v", err)
+				common.PrintStack()
+			}
+		}()
+
+		t := time.NewTicker(time.Second * time.Duration(s.config.WorkerReconcileInterval))
 		s.reconcileWorkers()
 	L:
 		for {
@@ -150,14 +150,25 @@ func (s *service) StopAndWait() {
 
 func newWebhookWorker(webhookMgr webhookmanager.Manager,
 	eventMgr eventmanager.Manager, userMgr usermanager.Manager,
-	secureClient, insecureClient http.Client, webhook *models.Webhook) *worker {
+	webhook *models.Webhook, idleWaitInterval uint,
+	clientTimeout, responseBodyTruncateSize uint) *worker {
 	ww := &worker{
-		ctx:            context.Background(),
-		webhook:        webhook,
-		quit:           make(chan bool, 1),
-		secureClient:   secureClient,
-		insecureClient: insecureClient,
-
+		idleWaitInterval:         idleWaitInterval,
+		responseBodyTruncateSize: responseBodyTruncateSize,
+		ctx:                      context.Background(),
+		webhook:                  webhook,
+		quit:                     make(chan bool, 1),
+		insecureClient: http.Client{
+			Timeout: time.Second * time.Duration(clientTimeout),
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		},
+		secureClient: http.Client{
+			Timeout: time.Second * time.Duration(clientTimeout),
+		},
 		webhookManager: webhookMgr,
 		eventManager:   eventMgr,
 		userManager:    userMgr,
@@ -166,9 +177,93 @@ func newWebhookWorker(webhookMgr webhookmanager.Manager,
 	return ww
 }
 
+func (w *worker) sendWebhook(ctx context.Context, wl *models.WebhookLog) {
+	saveResult := func() {
+		if wl.ErrorMessage != "" {
+			wl.Status = webhookmodels.StatusFailed
+		} else {
+			wl.Status = webhookmodels.StatusSuccess
+		}
+		_, err := w.webhookManager.UpdateWebhookLog(ctx, wl)
+		if err != nil {
+			log.Errorf(ctx, "failed to update webhook log %d, error: %s", wl.ID, err.Error())
+		}
+	}
+
+	defer saveResult()
+
+	// 1. make request and set body
+	reqBody, err := addWebhookLogID([]byte(wl.RequestData), wl.ID)
+	if err != nil {
+		wl.ErrorMessage = fmt.Sprintf("failed to add id, error: %+v", err)
+		log.Errorf(ctx, wl.ErrorMessage)
+		return
+	}
+	req, err := http.NewRequest(http.MethodPost, wl.URL,
+		bytes.NewBuffer(reqBody))
+	if err != nil {
+		wl.ErrorMessage = fmt.Sprintf("failed to new request, error: %+v", err)
+		log.Errorf(ctx, wl.ErrorMessage)
+		return
+	}
+
+	// 2. set headers
+	headers := http.Header{}
+	if err := yaml.Unmarshal([]byte(wl.RequestHeaders), &headers); err != nil {
+		wl.ErrorMessage = fmt.Sprintf("failed to unmarshal header, error: %+v", err)
+		log.Errorf(ctx, wl.ErrorMessage)
+		return
+	}
+	req.Header = headers
+
+	// 3. send request
+	cli := w.secureClient
+	if !w.webhook.SSLVerifyEnabled {
+		cli = w.insecureClient
+	}
+	resp, err := cli.Do(req)
+	if err != nil {
+		wl.ErrorMessage = fmt.Sprintf("failed to send req, error: %+v", err)
+		log.Errorf(ctx, wl.ErrorMessage)
+		return
+	}
+
+	// 4. update response body
+	respBody, err := ioutil.ReadAll(
+		io.LimitReader(resp.Body, int64(w.responseBodyTruncateSize)),
+	)
+	if err != nil {
+		wl.ErrorMessage = fmt.Sprintf("failed to read response body, error: %+v", err)
+		log.Errorf(ctx, wl.ErrorMessage)
+		resp.Body.Close()
+		return
+	}
+	wl.ResponseBody = string(respBody)
+
+	// 5. update response headers
+	respHeader, err := yaml.Marshal(resp.Header)
+	if err != nil {
+		wl.ErrorMessage = fmt.Sprintf("failed to marshal, error: %+v", err)
+		log.Errorf(ctx, wl.ErrorMessage)
+		resp.Body.Close()
+		return
+	}
+	if resp.StatusCode >= http.StatusBadRequest || resp.StatusCode < http.StatusOK {
+		wl.ErrorMessage = fmt.Sprintf("unexpected response code: %d", resp.StatusCode)
+	}
+	wl.ResponseHeaders = string(respHeader)
+	resp.Body.Close()
+}
+
+// start webhook worker and begin to send process webhook logs
 func (w *worker) start() {
 	ctx := w.ctx
-	waitInterval := time.Second * 2
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf(ctx, "webhook worker panic: %v", err)
+			common.PrintStack()
+		}
+	}()
 L:
 	for {
 		select {
@@ -184,88 +279,11 @@ L:
 				continue
 			}
 			if len(wls) == 0 {
-				time.Sleep(waitInterval)
+				time.Sleep(time.Second * time.Duration(w.idleWaitInterval))
 				continue
 			}
 			for _, wl := range wls {
-				saveResult := func() {
-					if wl.ErrorMessage != "" {
-						wl.Status = webhookmodels.StatusFailed
-					} else {
-						wl.Status = webhookmodels.StatusSuccess
-					}
-					_, err = w.webhookManager.UpdateWebhookLog(ctx, wl)
-					if err != nil {
-						log.Errorf(ctx, "failed to update webhook log %d, error: %s", wl.ID, err.Error())
-					}
-				}
-
-				// 1. make request and set body
-				reqBody, err := addWebhookLogID([]byte(wl.RequestData), wl.ID)
-				if err != nil {
-					wl.ErrorMessage = fmt.Sprintf("failed to add id, error: %+v", err)
-					log.Errorf(ctx, wl.ErrorMessage)
-					saveResult()
-					continue
-				}
-				req, err := http.NewRequest(http.MethodPost, wl.URL,
-					bytes.NewBuffer(reqBody))
-				if err != nil {
-					wl.ErrorMessage = fmt.Sprintf("failed to new request, error: %+v", err)
-					log.Errorf(ctx, wl.ErrorMessage)
-					saveResult()
-					continue
-				}
-
-				// 2. set headers
-				headers := http.Header{}
-				if err := yaml.Unmarshal([]byte(wl.RequestHeaders), &headers); err != nil {
-					wl.ErrorMessage = fmt.Sprintf("failed to unmarshal header, error: %+v", err)
-					log.Errorf(ctx, wl.ErrorMessage)
-					saveResult()
-					continue
-				}
-				req.Header = headers
-
-				// 3. send request
-				cli := w.secureClient
-				if !w.webhook.SSLVerifyEnabled {
-					cli = w.insecureClient
-				}
-				resp, err := cli.Do(req)
-				if err != nil {
-					wl.ErrorMessage = fmt.Sprintf("failed to send req, error: %+v", err)
-					log.Errorf(ctx, wl.ErrorMessage)
-					saveResult()
-					continue
-				}
-
-				// 4. update response body
-				respBody, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					wl.ErrorMessage = fmt.Sprintf("failed to read response body, error: %+v", err)
-					log.Errorf(ctx, wl.ErrorMessage)
-					resp.Body.Close()
-					saveResult()
-					continue
-				}
-				wl.ResponseBody = string(respBody)
-
-				// 5. update response headers
-				respHeader, err := yaml.Marshal(resp.Header)
-				if err != nil {
-					wl.ErrorMessage = fmt.Sprintf("failed to marshal, error: %+v", err)
-					log.Errorf(ctx, wl.ErrorMessage)
-					resp.Body.Close()
-					saveResult()
-					continue
-				}
-				if resp.StatusCode >= http.StatusBadRequest || resp.StatusCode < http.StatusOK {
-					wl.ErrorMessage = fmt.Sprintf("unexpected response code: %d", resp.StatusCode)
-				}
-				wl.ResponseHeaders = string(respHeader)
-				resp.Body.Close()
-				saveResult()
+				w.sendWebhook(ctx, wl)
 			}
 		}
 	}

@@ -3,7 +3,6 @@ package webhook
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -11,12 +10,13 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/event/models"
+	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	commonvalidate "g.hz.netease.com/horizon/pkg/util/validate"
 	wmodels "g.hz.netease.com/horizon/pkg/webhook/models"
 )
 
 const (
-	_triggerSeparator        = ","
-	_resourceActionSeparator = "_"
+	_triggerSeparator = ","
 )
 
 type UpdateWebhookRequest struct {
@@ -39,28 +39,28 @@ type CreateWebhookRequest struct {
 
 type Webhook struct {
 	CreateWebhookRequest
-	ID        uint         `json:"id"`
-	CreatedAt time.Time    `json:"createdAt"`
-	CreatedBy *common.User `json:"createdBy,omitempty"`
-	UpdatedAt time.Time    `json:"updatedAt"`
-	UpdatedBy *common.User `json:"updatedBy,omitempty"`
+	ID        uint                  `json:"id"`
+	CreatedAt time.Time             `json:"createdAt"`
+	CreatedBy *usermodels.UserBasic `json:"createdBy,omitempty"`
+	UpdatedAt time.Time             `json:"updatedAt"`
+	UpdatedBy *usermodels.UserBasic `json:"updatedBy,omitempty"`
 }
 
 type LogSummary struct {
-	ID           uint         `json:"id"`
-	WebhookID    uint         `json:"webhookID"`
-	EventID      uint         `json:"eventID"`
-	URL          string       `json:"url"`
-	Status       string       `json:"status"`
-	ResourceType string       `json:"resourceType"`
-	ResourceName string       `json:"resourceName"`
-	ResourceID   uint         `json:"resourceID"`
-	Action       string       `json:"action"`
-	ErrorMessage string       `json:"errorMessage"`
-	CreatedAt    time.Time    `json:"createdAt"`
-	CreatedBy    *common.User `json:"createdBy,omitempty"`
-	UpdatedAt    time.Time    `json:"updatedAt"`
-	UpdatedBy    *common.User `json:"updatedBy,omitempty"`
+	ID           uint                  `json:"id"`
+	WebhookID    uint                  `json:"webhookID"`
+	EventID      uint                  `json:"eventID"`
+	URL          string                `json:"url"`
+	Status       string                `json:"status"`
+	ResourceType string                `json:"resourceType"`
+	ResourceName string                `json:"resourceName"`
+	ResourceID   uint                  `json:"resourceID"`
+	EventType    string                `json:"eventType"`
+	ErrorMessage string                `json:"errorMessage"`
+	CreatedAt    time.Time             `json:"createdAt"`
+	CreatedBy    *usermodels.UserBasic `json:"createdBy,omitempty"`
+	UpdatedAt    time.Time             `json:"updatedAt"`
+	UpdatedBy    *usermodels.UserBasic `json:"updatedBy,omitempty"`
 }
 
 type Log struct {
@@ -95,18 +95,21 @@ func (w *UpdateWebhookRequest) toModel(ctx context.Context, wm *wmodels.Webhook)
 
 func (c *controller) validateUpdateRequest(w *UpdateWebhookRequest) error {
 	if w.URL != nil {
-		if err := validateURL(*w.URL); err != nil {
+		if err := commonvalidate.CheckURL(*w.URL); err != nil {
 			return err
 		}
 	}
 	if len(w.Triggers) > 0 {
-		return c.validateTriggers(w.Triggers)
+		return c.validateEvents(w.Triggers)
 	}
 	return nil
 }
 
-func (w *CreateWebhookRequest) toModel(ctx context.Context, resourceType string, resourceID uint) (*wmodels.Webhook, error) {
+func (w *CreateWebhookRequest) toModel(ctx context.Context,
+	resourceType string, resourceID uint) (*wmodels.Webhook, error) {
 	wm := &wmodels.Webhook{
+		ResourceType:     resourceType,
+		ResourceID:       resourceID,
 		Enabled:          w.Enabled,
 		URL:              w.URL,
 		SSLVerifyEnabled: w.SSLVerifyEnabled,
@@ -114,75 +117,41 @@ func (w *CreateWebhookRequest) toModel(ctx context.Context, resourceType string,
 		Secret:           w.Secret,
 		Triggers:         JoinTriggers(w.Triggers),
 	}
-	switch resourceType {
-	case common.ResourceGroup:
-		wm.ResourceType = string(models.Group)
-	case common.ResourceApplication:
-		wm.ResourceType = string(models.Application)
-	case common.ResourceCluster:
-		wm.ResourceType = string(models.Cluster)
-	default:
-		return nil, perror.Wrap(herrors.ErrParamInvalid, fmt.Sprintf("invalid resource type: %s", resourceType))
-	}
-	wm.ResourceID = resourceID
 	return wm, nil
 }
 
 func (c *controller) validateCreateRequest(resourceType string, w *CreateWebhookRequest) error {
-
 	if err := c.validateResourceType(resourceType); err != nil {
 		return err
 	}
-	if err := validateURL(w.URL); err != nil {
+	if err := commonvalidate.CheckURL(w.URL); err != nil {
 		return err
 	}
-	return c.validateTriggers(w.Triggers)
-}
-func validateURL(u string) error {
-	re := `^http(s)?://.+$`
-	pattern := regexp.MustCompile(re)
-	if !pattern.MatchString(u) {
-		return perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("invalid url, should satisfies the pattern %v", re))
-	}
-	return nil
+	return c.validateEvents(w.Triggers)
 }
 
 func (c *controller) validateResourceType(resource string) error {
-	supportEvents := c.eventMgr.ListSupportEvents()
-	if _, ok := supportEvents[models.EventResourceType(resource)]; !ok {
-		return perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("invalid resource type: %s", resource))
+	switch resource {
+	case common.ResourceGroup, common.ResourceApplication, common.ResourceCluster:
+	default:
+		return perror.Wrapf(herrors.ErrParamInvalid, "invalid resource type %s", resource)
 	}
 	return nil
 }
 
-func (c *controller) validateTriggers(triggers []string) error {
-	if len(triggers) <= 0 {
-		return perror.Wrap(herrors.ErrParamInvalid, "triggers should not be empty")
+func (c *controller) validateEvents(events []string) error {
+	if len(events) <= 0 {
+		return perror.Wrap(herrors.ErrParamInvalid, "events should not be empty")
 	}
-	// prepare supported events map
-	supportEvents := map[models.EventResourceType]map[models.EventAction]bool{}
-	for resource, actions := range c.eventMgr.ListSupportEvents() {
-		for _, action := range actions {
-			if _, ok := supportEvents[resource]; !ok {
-				supportEvents[resource] = map[models.EventAction]bool{}
-			}
-			supportEvents[resource][action.Name] = true
-		}
-	}
+	supportEvents := c.eventMgr.ListSupportEvents()
 
-	for _, trigger := range triggers {
-		if trigger == models.Any {
+	for _, event := range events {
+		if event == models.Any {
 			continue
 		}
-		resource, action, err := ParseResourceAction(trigger)
-		if err != nil {
-			return err
-		}
-		if _, ok := supportEvents[resource][action]; !ok {
+		if _, ok := supportEvents[event]; !ok {
 			return perror.Wrap(herrors.ErrParamInvalid,
-				fmt.Sprintf("invalid trigger: %s", trigger))
+				fmt.Sprintf("invalid event: %s", event))
 		}
 	}
 	return nil
@@ -196,32 +165,10 @@ func JoinTriggers(triggers []string) string {
 	return strings.Join(triggers, _triggerSeparator)
 }
 
-func ParseResourceAction(trigger string) (models.EventResourceType, models.EventAction, error) {
-	parts := strings.Split(trigger, _resourceActionSeparator)
-	if len(parts) != 2 {
-		return "", "", perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("invalid trigger %s", trigger))
-	}
-	resource := parts[0]
-	action := parts[1]
-	return models.EventResourceType(resource), models.EventAction(action), nil
-}
-
-func JoinResourceAction(resource, action string) string {
-	return strings.Join([]string{resource, action}, _resourceActionSeparator)
-}
-
 func CheckIfEventMatch(webhook *wmodels.Webhook, event *models.Event) (bool, error) {
 	triggers := ParseTriggerStr(webhook.Triggers)
 	for _, trigger := range triggers {
-		if trigger == models.Any {
-			return true, nil
-		}
-		r, a, err := ParseResourceAction(trigger)
-		if err != nil {
-			return false, err
-		}
-		if (r == models.EventResourceType(event.ResourceType)) && (a == models.EventAction(event.Action)) {
+		if (trigger == models.Any) || (trigger == event.EventType) {
 			return true, nil
 		}
 	}
@@ -255,7 +202,7 @@ func ofWebhookLogSummaryModel(wm *wmodels.WebhookLogWithEventInfo) *LogSummary {
 		ResourceType: wm.ResourceType,
 		ResourceID:   wm.ResourceID,
 		ResourceName: wm.ResourceName,
-		Action:       wm.Action,
+		EventType:    wm.EventType,
 		Status:       wm.Status,
 		ErrorMessage: wm.ErrorMessage,
 		CreatedAt:    wm.CreatedAt,

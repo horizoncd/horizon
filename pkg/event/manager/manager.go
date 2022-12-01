@@ -7,10 +7,10 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/middleware/requestid"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/event/dao"
 	"g.hz.netease.com/horizon/pkg/event/models"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -23,7 +23,7 @@ type Manager interface {
 		eventIndex *models.EventCursor) (*models.EventCursor, error)
 	GetCursor(ctx context.Context) (*models.EventCursor, error)
 	GetEvent(ctx context.Context, id uint) (*models.Event, error)
-	ListSupportEvents() map[models.EventResourceType][]models.ActionWithDescription
+	ListSupportEvents() map[string]string
 }
 
 type manager struct {
@@ -97,48 +97,18 @@ func (m *manager) GetEvent(ctx context.Context, id uint) (*models.Event, error) 
 	return m.dao.GetEvent(ctx, id)
 }
 
-func (m *manager) ListSupportEvents() map[models.EventResourceType][]models.ActionWithDescription {
-	return map[models.EventResourceType][]models.ActionWithDescription{
-		models.Application: {
-			{
-				Name:        models.Created,
-				Description: "a new application is created",
-			},
-			{
-				Name:        models.Deleted,
-				Description: "an application is deleted",
-			},
-			{
-				Name:        models.Transferred,
-				Description: "an application is transfered to another group",
-			},
-		},
-		models.Cluster: {
-			{
-				Name:        models.Created,
-				Description: "a new cluster is created",
-			},
-			{
-				Name:        models.Deleted,
-				Description: "a cluster is deleted",
-			},
-			{
-				Name:        models.BuildDeployed,
-				Description: "a cluster has completed a build task and triggered a deploy task",
-			},
-			{
-				Name:        models.Deployed,
-				Description: "a cluster has triggered a deploy task",
-			},
-			{
-				Name:        models.Rollbacked,
-				Description: "a cluster has triggered a rollback task",
-			},
-			{
-				Name:        models.Freed,
-				Description: "a cluster has been freed",
-			},
-		},
-	}
+var supportedEvents = map[string]string{
+	models.ApplicationCreated:    "New application is created",
+	models.ApplicationDeleted:    "Application is deleted",
+	models.ApplicationTransfered: "Application is transferred to another group",
+	models.ClusterCreated:        "New cluster is created",
+	models.ClusterDeleted:        "Cluster is deleted",
+	models.ClusterBuildDeployed:  "Cluster has completed a build task and triggered a deploy task",
+	models.ClusterDeployed:       "Cluster has triggered a ",
+	models.ClusterRollbacked:     "Cluster has triggered a rollback task",
+	models.ClusterFreed:          "Cluster has been freed",
+}
 
+func (m *manager) ListSupportEvents() map[string]string {
+	return supportedEvents
 }

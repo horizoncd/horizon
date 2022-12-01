@@ -209,6 +209,17 @@ func (s *service) listWebhookMember(ctx context.Context, id uint) ([]models.Memb
 	}
 }
 
+func (s *service) listWebhookLogMember(ctx context.Context, id uint) ([]models.Member, error) {
+	if id == 0 {
+		return nil, nil
+	}
+	webhookLog, err := s.webhookManager.GetWebhookLog(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.listWebhookMember(ctx, webhookLog.ID)
+}
+
 func (s *service) GetMemberOfResource(ctx context.Context,
 	resourceType string, resourceIDStr string) (*models.Member, error) {
 	var currentUser userauth.User
@@ -330,6 +341,8 @@ func (s *service) ListMember(ctx context.Context, resourceType string, resourceI
 		allMembers, err = s.listPipelinerunMember(ctx, resourceID)
 	case common.ResourceWebhook:
 		allMembers, err = s.listWebhookMember(ctx, resourceID)
+	case common.ResourceWebhookLog:
+		allMembers, err = s.listWebhookLogMember(ctx, resourceID)
 	default:
 		err = errors.New("unsupported resourceType")
 	}

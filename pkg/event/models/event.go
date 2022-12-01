@@ -2,38 +2,28 @@ package models
 
 import (
 	"time"
-
-	"g.hz.netease.com/horizon/core/common"
 )
 
-type EventAction string
+type EventType string
 type EventResourceType string
 
 const (
-	Any string = "*"
-	// resource type
-	Group       EventResourceType = common.ResourceGroup
-	Application EventResourceType = common.ResourceApplication
-	Cluster     EventResourceType = common.ResourceCluster
-
-	// common actions
-	Created EventAction = "created"
-	Deleted EventAction = "deleted"
-
-	// cluster actions
-	Transferred EventAction = "transferred"
-
-	// cluster actions
-	BuildDeployed EventAction = "buildDeployed"
-	Deployed      EventAction = "deployed"
-	Rollbacked    EventAction = "rollbacked"
-	Freed         EventAction = "freed"
+	Any                   string = "*"
+	ApplicationCreated    string = "applications_created"
+	ApplicationDeleted    string = "applications_deleted"
+	ApplicationTransfered string = "applications_transferred"
+	ClusterCreated        string = "clusters_created"
+	ClusterDeleted        string = "clusters_deleted"
+	ClusterBuildDeployed  string = "clusters_builddeployed"
+	ClusterDeployed       string = "clusters_deployed"
+	ClusterRollbacked     string = "clusters_rollbacked"
+	ClusterFreed          string = "clusters_freed"
 )
 
 type EventSummary struct {
-	ResourceType EventResourceType
+	ResourceType string
 	ResourceID   uint
-	Action       EventAction
+	EventType    string
 }
 
 type Event struct {
@@ -52,6 +42,6 @@ type EventCursor struct {
 }
 
 type ActionWithDescription struct {
-	Name        EventAction
-	Description string
+	Name        EventType `json:"name"`
+	Description string    `json:"description"`
 }

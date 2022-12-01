@@ -4,13 +4,12 @@ import (
 	"context"
 
 	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
-	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
 
 type Controller interface {
-	ListSupportEvents(ctx context.Context) map[eventmodels.EventResourceType][]eventmodels.ActionWithDescription
+	ListSupportEvents(ctx context.Context) map[string]string
 }
 
 type controller struct {
@@ -23,8 +22,7 @@ func NewController(param *param.Param) Controller {
 	}
 }
 
-func (c *controller) ListSupportEvents(ctx context.Context) map[eventmodels.
-	EventResourceType][]eventmodels.ActionWithDescription {
+func (c *controller) ListSupportEvents(ctx context.Context) map[string]string {
 	const op = "event controller: list supported events"
 	defer wlog.Start(ctx, op).StopPrint()
 

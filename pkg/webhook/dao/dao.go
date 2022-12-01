@@ -87,6 +87,21 @@ func (d *dao) ListWebhookOfResources(ctx context.Context,
 		}
 	}
 
+	statement := d.db.WithContext(ctx).
+		Where(condition).
+		Order("created_at desc").
+		Limit(limit).
+		Offset(offset)
+
+	if query != nil {
+		if v, ok := query.Keywords[common.CreatedAt]; ok {
+			statement.Where("created_at <= ?", v)
+		}
+		if v, ok := query.Keywords[common.Enabled]; ok {
+			statement.Where("enabled = ?", v)
+		}
+	}
+
 	if result := d.db.WithContext(ctx).
 		Where(condition).
 		Order("created_at desc").
@@ -152,19 +167,35 @@ func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
 		count int64
 	)
 
-	getStatementByResource := func(resourceType, tableName string) *gorm.DB {
-		return d.db.Table("tb_webhook_log l").
+	resourceTableMap := map[string]string{
+		common.ResourceGroup:       "tb_group",
+		common.ResourceApplication: "tb_application",
+		common.ResourceCluster:     "tb_cluster",
+	}
+
+	// todo简化
+	getStatementByResource := func(resourceType string) *gorm.DB {
+		stm := d.db.Table("tb_webhook_log l").
 			Joins("join tb_event e on l.event_id=e.id").
-			Joins(fmt.Sprintf("join %s r on e.resource_id=r.id", tableName)).
+			Joins(fmt.Sprintf("join %s r on e.resource_id=r.id", resourceTableMap[resourceType])).
 			Where("l.webhook_id=?", wID).
 			Where("e.resource_type=?", resourceType).
-			Select("l.*, e.resource_type, e.resource_id, e.action, r.name as resource_name")
+			Select("l.*, e.resource_type, e.resource_id, e.event_type, r.name as resource_name")
+		if query != nil {
+			if v, ok := query.Keywords[common.Filter].(string); ok {
+				stm.Where("r.name = ?", v)
+			}
+			if v, ok := query.Keywords[common.EventType].(string); ok {
+				stm.Where("e.event_type = ?", v)
+			}
+		}
+		return stm
 	}
 
 	statement := d.db.Raw("? union ? union ?",
-		getStatementByResource(common.ResourceGroup, "tb_group"),
-		getStatementByResource(common.ResourceApplication, "tb_application"),
-		getStatementByResource(common.ResourceCluster, "tb_cluster"),
+		getStatementByResource(common.ResourceGroup),
+		getStatementByResource(common.ResourceApplication),
+		getStatementByResource(common.ResourceCluster),
 	)
 
 	if result := d.db.WithContext(ctx).Raw("select *"+

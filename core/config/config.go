@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/autofree"
 	"g.hz.netease.com/horizon/pkg/config/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/db"
+	"g.hz.netease.com/horizon/pkg/config/eventhandler"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	"g.hz.netease.com/horizon/pkg/config/oauth"
@@ -19,6 +20,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/session"
 	"g.hz.netease.com/horizon/pkg/config/tekton"
 	"g.hz.netease.com/horizon/pkg/config/templaterepo"
+	"g.hz.netease.com/horizon/pkg/config/webhook"
 
 	"gopkg.in/yaml.v3"
 )
@@ -41,6 +43,8 @@ type Config struct {
 	Oauth                  oauth.Server            `yaml:"oauth"`
 	AutoFreeConfig         autofree.Config         `yaml:"autoFree"`
 	KubeConfig             string                  `yaml:"kubeconfig"`
+	WebhookConfig          webhook.Config          `yaml:"webhook"`
+	EventHandlerConfig     eventhandler.Config     `yaml:"eventHandler"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {

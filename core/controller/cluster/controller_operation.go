@@ -207,8 +207,8 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	// 8. record event
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
-			ResourceType: eventmodels.Cluster,
-			Action:       eventmodels.Deployed,
+			ResourceType: common.ResourceCluster,
+			EventType:    eventmodels.ClusterDeployed,
 			ResourceID:   cluster.ID,
 		},
 	}); err != nil {
@@ -350,8 +350,8 @@ func (c *controller) Rollback(ctx context.Context,
 	// 11. record event
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
-			ResourceType: eventmodels.Cluster,
-			Action:       eventmodels.Rollbacked,
+			ResourceType: common.ResourceCluster,
+			EventType:    eventmodels.ClusterRollbacked,
 			ResourceID:   cluster.ID,
 		},
 	}); err != nil {

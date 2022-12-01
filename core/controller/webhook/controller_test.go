@@ -13,7 +13,6 @@ import (
 	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	"g.hz.netease.com/horizon/pkg/event/models"
 	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	"g.hz.netease.com/horizon/pkg/param"
@@ -35,7 +34,7 @@ var (
 		URL:              utilcommon.StringPtr("http://xxxx"),
 		SSLVerifyEnabled: utilcommon.BoolPtr(false),
 		Triggers: []string{
-			JoinResourceAction(string(eventmodels.Cluster), string(eventmodels.Created)),
+			eventmodels.ClusterCreated,
 		},
 	}
 	createWebhookReq = CreateWebhookRequest{
@@ -43,7 +42,7 @@ var (
 		Enabled:          true,
 		SSLVerifyEnabled: false,
 		Triggers: []string{
-			JoinResourceAction(string(eventmodels.Cluster), string(eventmodels.Created)),
+			eventmodels.ClusterCreated,
 		},
 	}
 )
@@ -94,7 +93,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, *(uw.URL), w.URL)
 
-	ws, _, err := c.ListWebhooks(ctx, string(models.Cluster), resourceID, nil)
+	ws, _, err := c.ListWebhooks(ctx, common.ResourceCluster, resourceID, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(ws))
 	assert.Equal(t, *(uw.URL), w.URL)
