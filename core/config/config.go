@@ -38,7 +38,6 @@ type Config struct {
 	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
 	GrafanaConfig          grafana.Config          `yaml:"grafanaConfig"`
-	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
 	AutoFreeConfig         autofree.Config         `yaml:"autoFree"`
 	KubeConfig             string                  `yaml:"kubeconfig"`
