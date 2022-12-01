@@ -123,7 +123,7 @@ func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelin
 			return nil, perror.WithMessagef(err, "faild to get tekton for %s", environment)
 		}
 
-		logCh, errCh, err := tektonClient.GetPipelineRunLogByID(ctx, cluster.Name, cluster.ID, pr.ID)
+		logCh, errCh, err := tektonClient.GetPipelineRunLogByID(ctx, pr.CIEventID)
 		if err != nil {
 			return nil, err
 		}
@@ -333,7 +333,7 @@ func (c *controller) StopPipelinerun(ctx context.Context, pipelinerunID uint) (e
 		return errors.E(op, err)
 	}
 
-	return tektonClient.StopPipelineRun(ctx, cluster.Name, cluster.ID, pipelinerunID)
+	return tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
 }
 
 func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID uint) (err error) {
@@ -360,5 +360,5 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 		return errors.E(op, err)
 	}
 
-	return tektonClient.StopPipelineRun(ctx, cluster.Name, cluster.ID, pipelinerun.ID)
+	return tektonClient.StopPipelineRun(ctx, pipelinerun.CIEventID)
 }

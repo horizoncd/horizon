@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
@@ -265,11 +266,11 @@ func TestObserve(t *testing.T) {
 
 	var wpr1 *WrappedPipelineRun
 	_ = json.Unmarshal([]byte(wprBody), &wpr1)
-	businessDatas := &PrBusinessData{
+	businessDatas := &global.HorizonMetaData{
 		Environment: "test",
 		Template:    "serverless",
 	}
-	Observe(FormatPipelineResults(wpr1.PipelineRun, businessDatas))
+	Observe(FormatPipelineResults(wpr1.PipelineRun), businessDatas)
 	if err := testutil.CollectAndCompare(_prHistogram, strings.NewReader(prHistogramMetric)); err != nil {
 		t.Fatalf("err: %v", err)
 	}

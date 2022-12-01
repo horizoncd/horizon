@@ -28,7 +28,6 @@ import (
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	triggers "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/mock/gomock"
@@ -262,7 +261,7 @@ func Test(t *testing.T) {
 		Status:      "created",
 		Title:       "title",
 		Description: "description",
-		CIEventID:   pipelineRun.Labels[triggers.GroupName+triggers.EventIDLabelKey],
+		CIEventID:   pipelineRun.Labels[common.TektonTriggersEventIDKey],
 		CreatedBy:   user.ID,
 	})
 	assert.Nil(t, err)

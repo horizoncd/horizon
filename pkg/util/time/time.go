@@ -1,6 +1,10 @@
 package time
 
-import "time"
+import (
+	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 const defaultTimeFormat = "2006-01-02 15:04:05"
 
@@ -10,4 +14,8 @@ func Now(timeFormat *string) string {
 		format = *timeFormat
 	}
 	return time.Now().Format(format)
+}
+
+func K8sTimeToStrByNowTimezone(t v1.Time) string {
+	return t.In(time.Now().Location()).Format(defaultTimeFormat)
 }

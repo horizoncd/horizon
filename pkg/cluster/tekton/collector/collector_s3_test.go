@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"github.com/golang/mock/gomock"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
@@ -201,7 +201,7 @@ func TestS3Collector_Collect(t *testing.T) {
 
 	c := NewS3Collector(d, tek)
 
-	businessDatas := &metrics.PrBusinessData{
+	businessDatas := &global.HorizonMetaData{
 		Application: "app",
 		Cluster:     "cluster",
 		Environment: "test",

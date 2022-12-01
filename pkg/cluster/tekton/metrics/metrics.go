@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -45,26 +46,25 @@ func init() {
 	}, []string{_environment, _template, _pipeline, _result, _task, _step})
 }
 
-func Observe(results *PipelineResults) {
+func Observe(results *PipelineResults, data *global.HorizonMetaData) {
 	if results == nil {
 		return
 	}
 	prMetadata := results.Metadata
-	prBusinessData := results.BusinessData
 	prResult := results.PrResult
 	trResults, stepResults := results.TrResults, results.StepResults
 
 	_prHistogram.With(prometheus.Labels{
-		_environment: prBusinessData.Environment,
-		_template:    prBusinessData.Template,
+		_environment: data.Environment,
+		_template:    data.Template,
 		_pipeline:    prMetadata.Pipeline,
 		_result:      prResult.Result,
 	}).Observe(prResult.DurationSeconds)
 
 	for _, trResult := range trResults {
 		_trHistogram.With(prometheus.Labels{
-			_environment: prBusinessData.Environment,
-			_template:    prBusinessData.Template,
+			_environment: data.Environment,
+			_template:    data.Template,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        trResult.Task,
 			_result:      trResult.Result,
@@ -73,8 +73,8 @@ func Observe(results *PipelineResults) {
 
 	for _, stepResult := range stepResults {
 		_stepHistogram.With(prometheus.Labels{
-			_environment: prBusinessData.Environment,
-			_template:    prBusinessData.Template,
+			_environment: data.Environment,
+			_template:    data.Template,
 			_step:        stepResult.Step,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        stepResult.Task,

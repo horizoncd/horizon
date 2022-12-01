@@ -1,5 +1,7 @@
 package common
 
+import triggers "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
+
 const (
 	ClusterQueryEnvironment   = "environment"
 	ClusterQueryName          = "filter"
@@ -22,10 +24,8 @@ const (
 )
 
 const (
-	ClusterClusterLabelKey       = "cloudnative.music.netease.com/cluster"
-	ClusterClusterIDLabelKey     = "cloudnative.music.netease.com/cluster-id"
-	ClusterPipelinerunIDLabelKey = "cloudnative.music.netease.com/pipelinerun-id"
-	ClusterRestartTimeKey        = "cloudnative.music.netease.com/user-restart-time"
+	ClusterClusterLabelKey = "cloudnative.music.netease.com/cluster"
+	ClusterRestartTimeKey  = "cloudnative.music.netease.com/user-restart-time"
 )
 
 // status of cluster
@@ -35,4 +35,8 @@ const (
 	ClusterStatusFreed    = "Freed"
 	ClusterStatusDeleting = "Deleting"
 	ClusterStatusCreating = "Creating"
+)
+
+const (
+	TektonTriggersEventIDKey = triggers.GroupName + triggers.EventIDLabelKey
 )

@@ -28,19 +28,6 @@ type PrMetadata struct {
 	Pipeline string
 }
 
-// PrBusinessData pipelineRun业务相关参数
-type PrBusinessData struct {
-	Application   string
-	Cluster       string
-	ApplicationID uint
-	ClusterID     uint
-	Environment   string
-	Operator      string
-	PipelinerunID uint
-	Region        string
-	Template      string
-}
-
 // PrResult pipelineRun结果
 type PrResult struct {
 	// 花费的时间，单位为秒
@@ -117,14 +104,13 @@ func (s StepResults) Swap(i, j int) {
 }
 
 type PipelineResults struct {
-	Metadata     *PrMetadata
-	BusinessData *PrBusinessData
-	PrResult     *PrResult
-	TrResults    TrResults
-	StepResults  StepResults
+	Metadata    *PrMetadata
+	PrResult    *PrResult
+	TrResults   TrResults
+	StepResults StepResults
 }
 
-func FormatPipelineResults(pipelineRun *v1beta1.PipelineRun, prBusiness *PrBusinessData) *PipelineResults {
+func FormatPipelineResults(pipelineRun *v1beta1.PipelineRun) *PipelineResults {
 	if pipelineRun == nil {
 		return nil
 	}
@@ -135,11 +121,10 @@ func FormatPipelineResults(pipelineRun *v1beta1.PipelineRun, prBusiness *PrBusin
 
 	trResults, stepResults := wpr.ResolveTrAndStepResults()
 	return &PipelineResults{
-		Metadata:     wpr.ResolveMetadata(),
-		BusinessData: prBusiness,
-		PrResult:     wpr.ResolvePrResult(),
-		TrResults:    trResults,
-		StepResults:  stepResults,
+		Metadata:    wpr.ResolveMetadata(),
+		PrResult:    wpr.ResolvePrResult(),
+		TrResults:   trResults,
+		StepResults: stepResults,
 	}
 }
 

@@ -16,12 +16,13 @@ import (
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
-	triggers "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
+	"g.hz.netease.com/horizon/core/common"
 )
 
 type Controller interface {
@@ -56,13 +57,13 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	const op = "cloudEvent controller: cloudEvent"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	businessData, err := c.ResolveBusinessData(ctx, wpr)
+	horizonMetaData, err := c.getHorizonMetaData(ctx, wpr)
 	if err != nil {
 		return err
 	}
 
-	environment := businessData.Environment
-	pipelinerunID := businessData.PipelinerunID
+	environment := horizonMetaData.Environment
+	pipelinerunID := horizonMetaData.PipelinerunID
 
 	// 1. collect log & pipelinerun object
 	tektonCollector, err := c.tektonFty.GetTektonCollector(environment)
@@ -71,7 +72,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	var result *collector.CollectResult
-	if result, err = tektonCollector.Collect(ctx, wpr.PipelineRun, businessData); err != nil {
+	if result, err = tektonCollector.Collect(ctx, wpr.PipelineRun, horizonMetaData); err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			log.Warningf(ctx, "received pipelineRun: %v is not found when collect", wpr.PipelineRun.Name)
 			return nil
@@ -106,18 +107,19 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	// format Pipeline results
-	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun, businessData)
+	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun)
 
-	err = c.handleJibBuild(ctx, pipelineResult)
+	// todo remove codes below in the future
+	err = c.handleJibBuild(ctx, pipelineResult, horizonMetaData)
 	if err != nil {
 		return err
 	}
 
 	// 4. observe metrics
-	metrics.Observe(pipelineResult)
+	metrics.Observe(pipelineResult, horizonMetaData)
 
 	// 5. insert pipeline into db
-	err = c.pipelineMgr.Create(ctx, pipelineResult)
+	err = c.pipelineMgr.Create(ctx, pipelineResult, horizonMetaData)
 	if err != nil {
 		return err
 	}
@@ -126,9 +128,10 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 }
 
 // TODO remove this function in the future
-// 判断集群是否是JIB构建，动态修改Task和Step的值
-func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults) error {
-	clusterID := result.BusinessData.ClusterID
+// check cluster's build type, change tasks' and steps' values if needed
+func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults,
+	data *global.HorizonMetaData) error {
+	clusterID := data.ClusterID
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return err
@@ -137,14 +140,13 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 	if err != nil {
 		return err
 	}
-	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, result.BusinessData.Application, cluster.Name, tr.ChartName)
+	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, data.Application, cluster.Name, tr.ChartName)
 	if err != nil {
 		return err
 	}
 
 	// check if buildxml key exist in pipeline
 	if buildXML, ok := clusterFiles.PipelineJSONBlob["buildxml"]; ok {
-		// 判断buildxml包含jib的内容，则进行替换操作
 		const jibBuild = "jib-build"
 		if strings.Contains(buildXML.(string), "jib-maven-plugin") {
 			// change taskrun name
@@ -169,10 +171,10 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 	return nil
 }
 
-// ResolveBusinessData resolve info about this pipelinerun
-func (c *controller) ResolveBusinessData(ctx context.Context, wpr *WrappedPipelineRun) (
-	*metrics.PrBusinessData, error) {
-	eventID := wpr.PipelineRun.Labels[triggers.GroupName+triggers.EventIDLabelKey]
+// getHorizonMetaData resolves info about this pipelinerun
+func (c *controller) getHorizonMetaData(ctx context.Context, wpr *WrappedPipelineRun) (
+	*global.HorizonMetaData, error) {
+	eventID := wpr.PipelineRun.Labels[common.TektonTriggersEventIDKey]
 	pipelinerun, err := c.pipelinerunMgr.GetByCIEventID(ctx, eventID)
 	if err != nil {
 		return nil, err
@@ -190,7 +192,7 @@ func (c *controller) ResolveBusinessData(ctx context.Context, wpr *WrappedPipeli
 		return nil, err
 	}
 
-	return &metrics.PrBusinessData{
+	return &global.HorizonMetaData{
 		Application:   application.Name,
 		ApplicationID: application.ID,
 		Cluster:       cluster.Name,
@@ -200,5 +202,6 @@ func (c *controller) ResolveBusinessData(ctx context.Context, wpr *WrappedPipeli
 		PipelinerunID: pipelinerun.ID,
 		Region:        cluster.RegionName,
 		Template:      cluster.Template,
+		EventID:       eventID,
 	}, nil
 }

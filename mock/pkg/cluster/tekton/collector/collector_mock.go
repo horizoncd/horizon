@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	collector "g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
-	metrics "g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
+	global "g.hz.netease.com/horizon/pkg/server/global"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
@@ -38,18 +38,18 @@ func (m *MockInterface) EXPECT() *MockInterfaceMockRecorder {
 }
 
 // Collect mocks base method.
-func (m *MockInterface) Collect(ctx context.Context, pr *v1beta1.PipelineRun, prBusinessData *metrics.PrBusinessData) (*collector.CollectResult, error) {
+func (m *MockInterface) Collect(ctx context.Context, pr *v1beta1.PipelineRun, horizonMetaData *global.HorizonMetaData) (*collector.CollectResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Collect", ctx, pr, prBusinessData)
+	ret := m.ctrl.Call(m, "Collect", ctx, pr, horizonMetaData)
 	ret0, _ := ret[0].(*collector.CollectResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Collect indicates an expected call of Collect.
-func (mr *MockInterfaceMockRecorder) Collect(ctx, pr, prBusinessData interface{}) *gomock.Call {
+func (mr *MockInterfaceMockRecorder) Collect(ctx, pr, horizonMetaData interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Collect", reflect.TypeOf((*MockInterface)(nil).Collect), ctx, pr, prBusinessData)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Collect", reflect.TypeOf((*MockInterface)(nil).Collect), ctx, pr, horizonMetaData)
 }
 
 // GetPipelineRunLog mocks base method.

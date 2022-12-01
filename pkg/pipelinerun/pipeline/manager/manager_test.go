@@ -54,12 +54,6 @@ func Test_manager_Create(t *testing.T) {
 					Metadata: &metrics.PrMetadata{
 						Pipeline: "horizon-pipeline",
 					},
-					BusinessData: &metrics.PrBusinessData{
-						Application:   "a",
-						Cluster:       "c",
-						Environment:   "dev",
-						PipelinerunID: 1,
-					},
 					PrResult: &metrics.PrResult{
 						DurationSeconds: 0,
 						Result:          "failed",
@@ -102,7 +96,7 @@ func Test_manager_Create(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := New(db)
-			if err := m.Create(ctx, tt.args.results); (err != nil) != tt.wantErr {
+			if err := m.Create(ctx, tt.args.results, nil); (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
