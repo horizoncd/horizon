@@ -18,6 +18,7 @@ const (
 	ClusterDeployed       string = "clusters_deployed"
 	ClusterRollbacked     string = "clusters_rollbacked"
 	ClusterFreed          string = "clusters_freed"
+	// TODO: add group events
 )
 
 type EventSummary struct {

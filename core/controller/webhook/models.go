@@ -71,7 +71,7 @@ type Log struct {
 	ResponseBody    string `json:"responseBody"`
 }
 
-func (w *UpdateWebhookRequest) toModel(ctx context.Context, wm *wmodels.Webhook) *wmodels.Webhook {
+func (w *UpdateWebhookRequest) toModel(wm *wmodels.Webhook) *wmodels.Webhook {
 	if w.Enabled != nil {
 		wm.Enabled = *w.Enabled
 	}

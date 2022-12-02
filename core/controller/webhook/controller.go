@@ -92,7 +92,7 @@ func (c *controller) UpdateWebhook(ctx context.Context, id uint,
 	if err != nil {
 		return nil, err
 	}
-	wm = w.toModel(ctx, wm)
+	wm = w.toModel(wm)
 
 	// 3. update webhook
 	wm, err = c.webhookMgr.UpdateWebhook(ctx, id, wm)

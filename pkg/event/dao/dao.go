@@ -106,4 +106,4 @@ func (d *dao) GetCursor(ctx context.Context) (*models.EventCursor, error) {
 	return &eventIndex, nil
 }
 
-// todo: must add gc
+// TODO: must add gc

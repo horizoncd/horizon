@@ -225,6 +225,7 @@ func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Even
 		conditionsToQuery  = map[uint][]uint{}
 	)
 
+	// TODO: simplify
 	for _, event := range events {
 		// 1. get associated resources according to event resource type
 		dependency, resources := w.listAssociatedResources(ctx, event)

@@ -173,7 +173,7 @@ func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
 		common.ResourceCluster:     "tb_cluster",
 	}
 
-	// todo简化
+	// TODO: simplify
 	getStatementByResource := func(resourceType string) *gorm.DB {
 		stm := d.db.Table("tb_webhook_log l").
 			Joins("join tb_event e on l.event_id=e.id").

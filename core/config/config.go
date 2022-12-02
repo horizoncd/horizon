@@ -88,5 +88,27 @@ func LoadConfig(configFilePath string) (*Config, error) {
 			config.GitopsRepoConfig.URLSchema)
 	}
 
+	if config.EventHandlerConfig.BatchEventsCount <= 0 {
+		config.EventHandlerConfig.BatchEventsCount = 5
+	}
+	if config.EventHandlerConfig.CursorSaveInterval <= 0 {
+		config.EventHandlerConfig.CursorSaveInterval = 10
+	}
+	if config.EventHandlerConfig.IdleWaitInterval <= 0 {
+		config.EventHandlerConfig.IdleWaitInterval = 3
+	}
+	if config.WebhookConfig.ClientTimeout <= 0 {
+		config.WebhookConfig.ClientTimeout = 30
+	}
+	if config.WebhookConfig.IdleWaitInterval <= 0 {
+		config.WebhookConfig.IdleWaitInterval = 2
+	}
+	if config.WebhookConfig.WorkerReconcileInterval <= 0 {
+		config.WebhookConfig.WorkerReconcileInterval = 5
+	}
+	if config.WebhookConfig.ResponseBodyTruncateSize <= 0 {
+		config.WebhookConfig.ResponseBodyTruncateSize = 16384
+	}
+
 	return &config, nil
 }

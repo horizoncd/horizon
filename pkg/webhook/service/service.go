@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-yaml/yaml"
@@ -34,11 +35,23 @@ type worker struct {
 	insecureClient http.Client
 	secureClient   http.Client
 	quit           chan bool
-	webhook        *models.Webhook
+	webhook        atomic.Value
 
 	webhookManager webhookmanager.Manager
 	eventManager   eventmanager.Manager
 	userManager    usermanager.Manager
+}
+
+func (w *worker) setWebhook(webhook *models.Webhook) {
+	w.webhook.Store(webhook)
+}
+
+func (w *worker) getWebhook() (*models.Webhook, error) {
+	webhook, ok := w.webhook.Load().(*models.Webhook)
+	if !ok {
+		return nil, fmt.Errorf("worker webhook is nil")
+	}
+	return webhook, nil
 }
 
 type Service interface {
@@ -93,8 +106,13 @@ func (s *service) reconcileWorkers() {
 		id := webhook.ID
 		if worker, ok := s.workers[id]; ok {
 			// 2.1 update workers
-			if worker.webhook.UpdatedAt.Before(webhook.UpdatedAt) {
-				worker.webhook = webhook
+			w, err := worker.getWebhook()
+			if err != nil {
+				log.Error(s.ctx, err)
+				continue
+			}
+			if w.UpdatedAt.Before(webhook.UpdatedAt) {
+				worker.setWebhook(webhook)
 			}
 		} else {
 			// 2.2 create workers
@@ -156,7 +174,6 @@ func newWebhookWorker(webhookMgr webhookmanager.Manager,
 		idleWaitInterval:         idleWaitInterval,
 		responseBodyTruncateSize: responseBodyTruncateSize,
 		ctx:                      context.Background(),
-		webhook:                  webhook,
 		quit:                     make(chan bool, 1),
 		insecureClient: http.Client{
 			Timeout: time.Second * time.Duration(clientTimeout),
@@ -173,38 +190,25 @@ func newWebhookWorker(webhookMgr webhookmanager.Manager,
 		eventManager:   eventMgr,
 		userManager:    userMgr,
 	}
+	ww.setWebhook(webhook)
 	go ww.start()
 	return ww
 }
 
-func (w *worker) sendWebhook(ctx context.Context, wl *models.WebhookLog) {
-	saveResult := func() {
-		if wl.ErrorMessage != "" {
-			wl.Status = webhookmodels.StatusFailed
-		} else {
-			wl.Status = webhookmodels.StatusSuccess
-		}
-		_, err := w.webhookManager.UpdateWebhookLog(ctx, wl)
-		if err != nil {
-			log.Errorf(ctx, "failed to update webhook log %d, error: %s", wl.ID, err.Error())
-		}
-	}
-
-	defer saveResult()
-
+func (w *worker) sendWebhook(ctx context.Context, wl *models.WebhookLog) *models.WebhookLog {
 	// 1. make request and set body
 	reqBody, err := addWebhookLogID([]byte(wl.RequestData), wl.ID)
 	if err != nil {
 		wl.ErrorMessage = fmt.Sprintf("failed to add id, error: %+v", err)
 		log.Errorf(ctx, wl.ErrorMessage)
-		return
+		return wl
 	}
 	req, err := http.NewRequest(http.MethodPost, wl.URL,
 		bytes.NewBuffer(reqBody))
 	if err != nil {
 		wl.ErrorMessage = fmt.Sprintf("failed to new request, error: %+v", err)
 		log.Errorf(ctx, wl.ErrorMessage)
-		return
+		return wl
 	}
 
 	// 2. set headers
@@ -212,20 +216,27 @@ func (w *worker) sendWebhook(ctx context.Context, wl *models.WebhookLog) {
 	if err := yaml.Unmarshal([]byte(wl.RequestHeaders), &headers); err != nil {
 		wl.ErrorMessage = fmt.Sprintf("failed to unmarshal header, error: %+v", err)
 		log.Errorf(ctx, wl.ErrorMessage)
-		return
+		return wl
 	}
 	req.Header = headers
 
 	// 3. send request
 	cli := w.secureClient
-	if !w.webhook.SSLVerifyEnabled {
+	webhook, err := w.getWebhook()
+	if err != nil {
+		log.Error(ctx, err)
+		wl.ErrorMessage = err.Error()
+		return wl
+	}
+
+	if !webhook.SSLVerifyEnabled {
 		cli = w.insecureClient
 	}
 	resp, err := cli.Do(req)
 	if err != nil {
 		wl.ErrorMessage = fmt.Sprintf("failed to send req, error: %+v", err)
 		log.Errorf(ctx, wl.ErrorMessage)
-		return
+		return wl
 	}
 
 	// 4. update response body
@@ -236,7 +247,7 @@ func (w *worker) sendWebhook(ctx context.Context, wl *models.WebhookLog) {
 		wl.ErrorMessage = fmt.Sprintf("failed to read response body, error: %+v", err)
 		log.Errorf(ctx, wl.ErrorMessage)
 		resp.Body.Close()
-		return
+		return wl
 	}
 	wl.ResponseBody = string(respBody)
 
@@ -246,13 +257,14 @@ func (w *worker) sendWebhook(ctx context.Context, wl *models.WebhookLog) {
 		wl.ErrorMessage = fmt.Sprintf("failed to marshal, error: %+v", err)
 		log.Errorf(ctx, wl.ErrorMessage)
 		resp.Body.Close()
-		return
+		return wl
 	}
 	if resp.StatusCode >= http.StatusBadRequest || resp.StatusCode < http.StatusOK {
 		wl.ErrorMessage = fmt.Sprintf("unexpected response code: %d", resp.StatusCode)
 	}
 	wl.ResponseHeaders = string(respHeader)
 	resp.Body.Close()
+	return wl
 }
 
 // start webhook worker and begin to send process webhook logs
@@ -271,11 +283,16 @@ L:
 			close(w.quit)
 			break L
 		default:
-			// todo: set limit and find a way to avoid this invoke
-			wls, err := w.webhookManager.ListWebhookLogsByStatus(ctx, w.webhook.ID,
+			// TODO: set limit and find a way to avoid this invoke
+			webhook, err := w.getWebhook()
+			if err != nil {
+				log.Error(ctx, err)
+				continue
+			}
+			wls, err := w.webhookManager.ListWebhookLogsByStatus(ctx, webhook.ID,
 				webhookmodels.StatusWaiting)
 			if err != nil {
-				log.Errorf(ctx, "failed to list webhook logs of %d, error: %s", w.webhook.ID, err.Error())
+				log.Errorf(ctx, "failed to list webhook logs of %d, error: %s", webhook.ID, err.Error())
 				continue
 			}
 			if len(wls) == 0 {
@@ -283,7 +300,20 @@ L:
 				continue
 			}
 			for _, wl := range wls {
-				w.sendWebhook(ctx, wl)
+				saveResult := func() {
+					if wl.ErrorMessage != "" {
+						wl.Status = webhookmodels.StatusFailed
+					} else {
+						wl.Status = webhookmodels.StatusSuccess
+					}
+					_, err := w.webhookManager.UpdateWebhookLog(ctx, wl)
+					if err != nil {
+						log.Errorf(ctx, "failed to update webhook log %d, error: %s", wl.ID, err.Error())
+					}
+				}
+
+				wl = w.sendWebhook(ctx, wl)
+				saveResult()
 			}
 		}
 	}
@@ -296,7 +326,11 @@ func (w *worker) Stop() *worker {
 
 func (w *worker) Wait() {
 	<-w.quit
-	log.Infof(w.ctx, "webhook worker %d stopped", w.webhook.ID)
+	webhook, err := w.getWebhook()
+	if err != nil {
+		log.Error(w.ctx, err)
+	}
+	log.Infof(w.ctx, "webhook worker %d stopped", webhook.ID)
 }
 
 func addWebhookLogID(reqData []byte, id uint) ([]byte, error) {
