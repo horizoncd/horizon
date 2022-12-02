@@ -217,7 +217,7 @@ func (s *service) listWebhookLogMember(ctx context.Context, id uint) ([]models.M
 	if err != nil {
 		return nil, err
 	}
-	return s.listWebhookMember(ctx, webhookLog.ID)
+	return s.listWebhookMember(ctx, webhookLog.WebhookID)
 }
 
 func (s *service) GetMemberOfResource(ctx context.Context,
