@@ -95,18 +95,14 @@ func (d *dao) ListWebhookOfResources(ctx context.Context,
 
 	if query != nil {
 		if v, ok := query.Keywords[common.CreatedAt]; ok {
-			statement.Where("created_at <= ?", v)
+			statement = statement.Where("created_at <= ?", v)
 		}
 		if v, ok := query.Keywords[common.Enabled]; ok {
-			statement.Where("enabled = ?", v)
+			statement = statement.Where("enabled = ?", v)
 		}
 	}
 
-	if result := d.db.WithContext(ctx).
-		Where(condition).
-		Order("created_at desc").
-		Limit(limit).
-		Offset(offset).
+	if result := statement.
 		Find(&ws).
 		Offset(-1).
 		Limit(-1).
