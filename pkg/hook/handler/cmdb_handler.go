@@ -48,9 +48,11 @@ func (h *CMDBEventHandler) ProcessCreateApplication(event *hook.EventCtx) error 
 
 	e := event.Event
 	switch info := e.(type) {
+	// nolint
 	case *application.GetApplicationResponse:
 		priority = info.Priority
 		name = info.Name
+	// nolint
 	case *application.CreateApplicationResponseV2:
 		priority = info.Priority
 		name = info.Name
@@ -107,10 +109,12 @@ func (h *CMDBEventHandler) ProcessCreateCluster(event *hook.EventCtx) error {
 
 	e := event.Event
 	switch info := e.(type) {
+	// nolint
 	case *cluster.GetClusterResponse:
 		environment = info.Scope.Environment
 		name = info.Name
 		applicationName = info.Application.Name
+	// nolint
 	case *cluster.CreateClusterResponseV2:
 		environment = info.Scope.Environment
 		name = info.Name

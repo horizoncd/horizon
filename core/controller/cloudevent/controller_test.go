@@ -14,6 +14,7 @@ import (
 	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
+	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +36,7 @@ var (
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	manager = managerparam.InitManager(db)
-	if err := db.AutoMigrate(&prmodels.Pipelinerun{}); err != nil {
+	if err := db.AutoMigrate(&prmodels.Pipelinerun{}, &eventmodels.Event{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -217,7 +218,9 @@ func Test(t *testing.T) {
 
 	c := &controller{
 		pipelinerunMgr: pipelinerunMgr,
+		pipelineMgr:    manager.PipelineMgr,
 		tektonFty:      tektonFty,
+		eventMgr:       manager.EventManager,
 	}
 
 	err = c.CloudEvent(ctx, &WrappedPipelineRun{

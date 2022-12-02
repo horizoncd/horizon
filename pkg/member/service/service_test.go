@@ -26,6 +26,7 @@ import (
 	templatemodels "g.hz.netease.com/horizon/pkg/template/models"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	webhookmodels "g.hz.netease.com/horizon/pkg/webhook/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -875,6 +876,89 @@ func TestListTemplateMember(t *testing.T) {
 	assert.Equal(t, "pe", memberInfo.Role)
 }
 
+func TestListWebhookMember(t *testing.T) {
+	createEnv(t)
+
+	s = &service{
+		memberManager:             manager.MemberManager,
+		groupManager:              manager.GroupManager,
+		applicationManager:        manager.ApplicationManager,
+		applicationClusterManager: manager.ClusterMgr,
+		templateManager:           manager.TemplateMgr,
+		pipelineManager:           manager.PipelinerunMgr,
+		roleService:               nil,
+		webhookManager:            manager.WebhookManager,
+	}
+
+	jerry := &usermodels.User{
+		Name:     "Jerry",
+		FullName: "Jerry",
+		Email:    "jerry@mail.com",
+		Phone:    "",
+		Admin:    false,
+	}
+	jerry, err := manager.UserManager.Create(ctx, jerry)
+	assert.Nil(t, err)
+
+	// nolint
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:     jerry.Name,
+		FullName: jerry.FullName,
+		ID:       jerry.ID,
+		Email:    jerry.Email,
+		Admin:    jerry.Admin,
+	})
+
+	group1 := &groupModels.Group{
+		Name:            "test",
+		Path:            "test",
+		VisibilityLevel: "",
+		Description:     "test",
+		ParentID:        0,
+		TraversalIDs:    "1",
+	}
+	group1, err = manager.GroupManager.Create(ctx, group1)
+	assert.Nil(t, err)
+
+	webhook := &webhookmodels.Webhook{
+		URL:          "test",
+		ResourceType: "groups",
+		ResourceID:   group1.ID,
+	}
+	webhook, err = manager.WebhookManager.CreateWebhook(ctx, webhook)
+	assert.Nil(t, err)
+
+	webhookLog := &webhookmodels.WebhookLog{
+		WebhookID: webhook.ID,
+	}
+	webhookLog, err = manager.WebhookManager.CreateWebhookLog(ctx, webhookLog)
+	assert.Nil(t, err)
+
+	_, err = manager.MemberManager.Create(ctx, &models.Member{
+		ResourceType: models.TypeGroup,
+		ResourceID:   group1.ID,
+		Role:         "pe",
+		MemberType:   0,
+		MemberNameID: jerry.ID,
+	})
+	assert.Nil(t, err)
+
+	err = manager.MemberManager.DeleteMember(ctx, 1)
+	assert.Nil(t, err)
+
+	memberInfo, err := s.GetMemberOfResource(ctx, common.ResourceWebhook, fmt.Sprintf("%d", webhook.ID))
+	assert.Nil(t, err)
+	assert.NotNil(t, memberInfo)
+	assert.Equal(t, jerry.ID, memberInfo.MemberNameID)
+	assert.Equal(t, "pe", memberInfo.Role)
+
+	memberInfo, err = s.GetMemberOfResource(ctx, common.ResourceWebhookLog, fmt.Sprintf("%d", webhookLog.ID))
+	assert.Nil(t, err)
+	assert.NotNil(t, memberInfo)
+	assert.Equal(t, jerry.ID, memberInfo.MemberNameID)
+	assert.Equal(t, "pe", memberInfo.Role)
+}
+
 func createEnv(t *testing.T) {
 	db, _ = orm.NewSqliteDB("")
 	err := db.AutoMigrate(&models.Member{},
@@ -882,7 +966,11 @@ func createEnv(t *testing.T) {
 		&usermodels.User{},
 		&applicationmodels.Application{},
 		&clustermodels.Cluster{},
-		&templatemodels.Template{})
+		&templatemodels.Template{},
+		&webhookmodels.Webhook{},
+		&webhookmodels.WebhookLog{},
+	)
+
 	assert.Nil(t, err)
 
 	ctx = context.Background()

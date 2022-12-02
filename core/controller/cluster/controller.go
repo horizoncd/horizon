@@ -18,6 +18,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	environmentregionmapper "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
 	grafanaservice "g.hz.netease.com/horizon/pkg/grafana"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
@@ -122,6 +123,7 @@ type controller struct {
 	grafanaService       grafanaservice.Service
 	grafanaConfig        grafana.Config
 	buildSchema          *build.Schema
+	eventMgr             eventmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -156,6 +158,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		grafanaService:       param.GrafanaService,
 		grafanaConfig:        config.GrafanaConfig,
 		buildSchema:          param.BuildSchema,
+		eventMgr:             param.EventManager,
 	}
 }
 

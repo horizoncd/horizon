@@ -17,6 +17,7 @@ import (
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
+	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
@@ -271,6 +272,9 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&eventmodels.Event{}); err != nil {
+		panic(err)
+	}
 	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -339,6 +343,7 @@ func Test(t *testing.T) {
 		templateReleaseMgr:   manager.TemplateReleaseManager,
 		clusterMgr:           manager.ClusterMgr,
 		userSvc:              userservice.NewService(manager),
+		eventMgr:             manager.EventManager,
 	}
 
 	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
@@ -493,6 +498,7 @@ func TestV2(t *testing.T) {
 		templateReleaseMgr:   manager.TemplateReleaseManager,
 		clusterMgr:           manager.ClusterMgr,
 		userSvc:              userservice.NewService(manager),
+		eventMgr:             manager.EventManager,
 	}
 
 	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{

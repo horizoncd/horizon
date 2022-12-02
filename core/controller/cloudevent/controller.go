@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
+	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
 	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
@@ -34,6 +35,7 @@ type controller struct {
 	clusterMgr         clustermanager.Manager
 	clusterGitRepo     gitrepo.ClusterGitRepo
 	templateReleaseMgr trmanager.Manager
+	eventMgr           eventmanager.Manager
 }
 
 func NewController(tektonFty factory.Factory, parameter *param.Param) Controller {
@@ -44,6 +46,7 @@ func NewController(tektonFty factory.Factory, parameter *param.Param) Controller
 		clusterMgr:         parameter.ClusterMgr,
 		clusterGitRepo:     parameter.ClusterGitRepo,
 		templateReleaseMgr: parameter.TemplateReleaseManager,
+		eventMgr:           parameter.EventManager,
 	}
 }
 

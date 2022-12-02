@@ -8,6 +8,7 @@ import (
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
@@ -119,6 +120,17 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipel
 	// 9. update status
 	if err := updatePRStatus(prmodels.StatusOK, masterRevision); err != nil {
 		return nil, err
+	}
+
+	// 10. record event
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceCluster,
+			EventType:    eventmodels.ClusterBuildDeployed,
+			ResourceID:   cluster.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
 	return &InternalDeployResponse{

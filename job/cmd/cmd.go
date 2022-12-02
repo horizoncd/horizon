@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"g.hz.netease.com/horizon/core/config"
 	clusterctl "g.hz.netease.com/horizon/core/controller/cluster"
@@ -17,11 +20,14 @@ import (
 	"g.hz.netease.com/horizon/job/autofree"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
+	eventhandlersvc "g.hz.netease.com/horizon/pkg/eventhandler"
+	"g.hz.netease.com/horizon/pkg/eventhandler/wlgenerator"
 	"g.hz.netease.com/horizon/pkg/grafana"
 	"g.hz.netease.com/horizon/pkg/param"
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/util/kube"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
+	webhooksvc "g.hz.netease.com/horizon/pkg/webhook/service"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -131,6 +137,21 @@ func Run(flags *Flags) {
 			parameter.UserManager, clusterCtl, prCtl, environmentCtl)
 	}()
 
+	// start event handler service to generate webhook log by events
+	eventHandlerService := eventhandlersvc.NewService(ctx, manager, coreConfig.EventHandlerConfig)
+	if err := eventHandlerService.RegisterEventHandler("webhook",
+		wlgenerator.NewWebhookLogGenerator(manager)); err != nil {
+		log.Printf("failed to register event handler, error: %s", err.Error())
+	}
+	eventHandlerService.Start()
+
+	// start webhook service with multi workers to consume webhook logs and send webhook events
+	webhookService := webhooksvc.NewService(ctx, manager, coreConfig.WebhookConfig)
+	webhookService.Start()
+
+	// graceful exit
+	setTasksBeforeExit(webhookService.StopAndWait, eventHandlerService.StopAndWait)
+
 	r := gin.New()
 	// use middleware
 	middlewares := []gin.HandlerFunc{
@@ -145,4 +166,26 @@ func Run(flags *Flags) {
 
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
+}
+
+// setTasksBeforeExit set stop funcs which will be executed after sigterm and sigint catched
+func setTasksBeforeExit(stopFuncs ...func()) {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		s := <-sig
+		log.Printf("got %s signal, stop tasks...\n", s)
+		if len(stopFuncs) == 0 {
+			return
+		}
+		wg := sync.WaitGroup{}
+		wg.Add(len(stopFuncs))
+		for _, stopFunc := range stopFuncs {
+			go func(stop func()) {
+				stop()
+			}(stopFunc)
+		}
+		wg.Wait()
+		log.Printf("all tasks stopped, exit now.")
+	}()
 }

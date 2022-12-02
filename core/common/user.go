@@ -4,10 +4,11 @@ import (
 	"context"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+
 	herror "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/pkg/authentication/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
-	"github.com/gin-gonic/gin"
 )
 
 const (
