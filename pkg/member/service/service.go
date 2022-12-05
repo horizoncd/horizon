@@ -24,6 +24,7 @@ import (
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"g.hz.netease.com/horizon/pkg/util/log"
+	webhookmanager "g.hz.netease.com/horizon/pkg/webhook/manager"
 )
 
 var (
@@ -64,6 +65,7 @@ type service struct {
 	roleService               roleservice.Service
 	oauthManager              oauthmanager.Manager
 	userManager               usermanager.Manager
+	webhookManager            webhookmanager.Manager
 }
 
 func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manager,
@@ -79,6 +81,7 @@ func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manag
 		roleService:               roleService,
 		oauthManager:              oauthManager,
 		userManager:               manager.UserManager,
+		webhookManager:            manager.WebhookManager,
 	}
 }
 
@@ -187,6 +190,34 @@ func (s *service) listPipelinerunMember(ctx context.Context, pipelinerunID uint)
 	}
 	return s.ListMember(ctx, common.ResourceApplication,
 		pipeline.ClusterID)
+}
+
+func (s *service) listWebhookMember(ctx context.Context, id uint) ([]models.Member, error) {
+	if id == 0 {
+		return nil, nil
+	}
+	webhook, err := s.webhookManager.GetWebhook(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	switch webhook.ResourceType {
+	case common.ResourceGroup, common.ResourceApplication, common.ResourceCluster:
+		return s.ListMember(ctx, webhook.ResourceType,
+			webhook.ResourceID)
+	default:
+		return nil, nil
+	}
+}
+
+func (s *service) listWebhookLogMember(ctx context.Context, id uint) ([]models.Member, error) {
+	if id == 0 {
+		return nil, nil
+	}
+	webhookLog, err := s.webhookManager.GetWebhookLog(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.listWebhookMember(ctx, webhookLog.WebhookID)
 }
 
 func (s *service) GetMemberOfResource(ctx context.Context,
@@ -308,6 +339,10 @@ func (s *service) ListMember(ctx context.Context, resourceType string, resourceI
 		allMembers, err = s.listReleaseMembers(ctx, resourceID)
 	case common.ResourcePipelinerun:
 		allMembers, err = s.listPipelinerunMember(ctx, resourceID)
+	case common.ResourceWebhook:
+		allMembers, err = s.listWebhookMember(ctx, resourceID)
+	case common.ResourceWebhookLog:
+		allMembers, err = s.listWebhookLogMember(ctx, resourceID)
 	default:
 		err = errors.New("unsupported resourceType")
 	}

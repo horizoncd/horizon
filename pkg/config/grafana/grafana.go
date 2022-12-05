@@ -2,11 +2,6 @@ package grafana
 
 import "time"
 
-type SLO struct {
-	OverviewDashboard string `yaml:"overviewDashboard"`
-	HistoryDashboard  string `yaml:"historyDashboard"`
-}
-
 type Config struct {
 	Host                 string               `yaml:"host"`
 	Namespace            string               `yaml:"namespace"`

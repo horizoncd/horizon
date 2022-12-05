@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/pkg/server/middleware"
+	middleware "g.hz.netease.com/horizon/core/middleware"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	"g.hz.netease.com/horizon/pkg/tag/models"

@@ -12,6 +12,7 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/config"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/middleware/requestid"
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/lib/q"
 	applicationgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
@@ -38,6 +39,7 @@ import (
 	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
 	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
 	groupservice "g.hz.netease.com/horizon/pkg/group/service"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
@@ -48,7 +50,6 @@ import (
 	registrydao "g.hz.netease.com/horizon/pkg/registry/dao"
 	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
 	"g.hz.netease.com/horizon/pkg/server/global"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tmodel "g.hz.netease.com/horizon/pkg/tag/models"
 	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
 	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
@@ -425,8 +426,8 @@ const secondsInOneDay = 24 * 3600
 func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
-		&registrymodels.Registry{},
-		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
+		&registrymodels.Registry{}, eventmodels.Event{},
+		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{}, &eventmodels.Event{},
 		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &envmodels.Environment{}); err != nil {
 		panic(err)
 	}
@@ -609,6 +610,7 @@ func test(t *testing.T) {
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		tagMgr:               tagManager,
 		applicationGitRepo:   applicationGitRepo,
+		eventMgr:             manager.EventManager,
 	}
 
 	tagManager.EXPECT().ListByResourceTypeIDs(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
@@ -1241,6 +1243,7 @@ func testV2(t *testing.T) {
 		tagMgr:               tagManager,
 		registryFty:          registryFty,
 		cd:                   mockCd,
+		eventMgr:             manager.EventManager,
 	}
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 

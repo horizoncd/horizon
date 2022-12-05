@@ -10,6 +10,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/autofree"
 	"g.hz.netease.com/horizon/pkg/config/cmdb"
 	"g.hz.netease.com/horizon/pkg/config/db"
+	"g.hz.netease.com/horizon/pkg/config/eventhandler"
 	"g.hz.netease.com/horizon/pkg/config/gitlab"
 	"g.hz.netease.com/horizon/pkg/config/grafana"
 	"g.hz.netease.com/horizon/pkg/config/oauth"
@@ -19,6 +20,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/config/session"
 	"g.hz.netease.com/horizon/pkg/config/tekton"
 	"g.hz.netease.com/horizon/pkg/config/templaterepo"
+	"g.hz.netease.com/horizon/pkg/config/webhook"
 
 	"gopkg.in/yaml.v3"
 )
@@ -38,10 +40,11 @@ type Config struct {
 	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
 	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
 	GrafanaConfig          grafana.Config          `yaml:"grafanaConfig"`
-	GrafanaSLO             grafana.SLO             `yaml:"grafanaSLO"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
 	AutoFreeConfig         autofree.Config         `yaml:"autoFree"`
 	KubeConfig             string                  `yaml:"kubeconfig"`
+	WebhookConfig          webhook.Config          `yaml:"webhook"`
+	EventHandlerConfig     eventhandler.Config     `yaml:"eventHandler"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {
@@ -83,6 +86,28 @@ func LoadConfig(configFilePath string) (*Config, error) {
 		config.GitopsRepoConfig.URLSchema != gitlab.SSHURLSchema {
 		return nil, fmt.Errorf("gitops repo urlSchema not valid: %s, valid values: [http, ssh]",
 			config.GitopsRepoConfig.URLSchema)
+	}
+
+	if config.EventHandlerConfig.BatchEventsCount <= 0 {
+		config.EventHandlerConfig.BatchEventsCount = 5
+	}
+	if config.EventHandlerConfig.CursorSaveInterval <= 0 {
+		config.EventHandlerConfig.CursorSaveInterval = 10
+	}
+	if config.EventHandlerConfig.IdleWaitInterval <= 0 {
+		config.EventHandlerConfig.IdleWaitInterval = 3
+	}
+	if config.WebhookConfig.ClientTimeout <= 0 {
+		config.WebhookConfig.ClientTimeout = 30
+	}
+	if config.WebhookConfig.IdleWaitInterval <= 0 {
+		config.WebhookConfig.IdleWaitInterval = 2
+	}
+	if config.WebhookConfig.WorkerReconcileInterval <= 0 {
+		config.WebhookConfig.WorkerReconcileInterval = 5
+	}
+	if config.WebhookConfig.ResponseBodyTruncateSize <= 0 {
+		config.WebhookConfig.ResponseBodyTruncateSize = 16384
 	}
 
 	return &config, nil

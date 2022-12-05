@@ -18,6 +18,8 @@ import (
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
+	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	groupsvc "g.hz.netease.com/horizon/pkg/group/service"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
@@ -32,6 +34,7 @@ import (
 	usersvc "g.hz.netease.com/horizon/pkg/user/service"
 	"g.hz.netease.com/horizon/pkg/util/errors"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/permission"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 )
@@ -77,6 +80,7 @@ type controller struct {
 	hook                 hook.Hook
 	userSvc              usersvc.Service
 	memberManager        member.Manager
+	eventMgr             eventmanager.Manager
 	applicationRegionMgr applicationregionmanager.Manager
 	pipelinemanager      pipelinemanager.Manager
 	buildSchema          *build.Schema
@@ -97,6 +101,7 @@ func NewController(param *param.Param) Controller {
 		hook:                 param.Hook,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
+		eventMgr:             param.EventManager,
 		applicationRegionMgr: param.ApplicationRegionManager,
 		pipelinemanager:      param.PipelineMgr,
 		buildSchema:          param.BuildSchema,
@@ -274,7 +279,17 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	ret := ofApplicationModel(applicationModel, fullPath, trs,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application)
 
-	// 7. post hook
+	// 7. record event
+	// todo: move to db
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceApplication,
+			EventType:    eventmodels.ApplicationCreated,
+			ResourceID:   ret.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 	c.postHook(ctx, hook.CreateApplication, ret)
 
 	return ret, nil
@@ -380,6 +395,16 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	}
 	if request.Priority != nil {
 		ret.Priority = *request.Priority
+	}
+
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceApplication,
+			EventType:    eventmodels.ApplicationCreated,
+			ResourceID:   applicationDBModel.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
 	c.postHook(ctx, hook.CreateApplication, ret)
@@ -543,7 +568,16 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 		return err
 	}
 
-	// 4. post hook
+	// 4. send hook
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceApplication,
+			EventType:    eventmodels.ApplicationDeleted,
+			ResourceID:   id,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 	c.postHook(ctx, hook.DeleteApplication, app.Name)
 
 	return nil

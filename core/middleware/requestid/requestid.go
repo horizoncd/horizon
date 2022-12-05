@@ -4,8 +4,7 @@ import (
 	"context"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/server/middleware"
-
+	middleware "g.hz.netease.com/horizon/core/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/satori/go.uuid"
 )

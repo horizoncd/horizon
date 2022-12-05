@@ -1,12 +1,15 @@
 package managerparam
 
 import (
+	"gorm.io/gorm"
+
 	accesstokenmanager "g.hz.netease.com/horizon/pkg/accesstoken/manager"
 	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	applicationregionmanager "g.hz.netease.com/horizon/pkg/applicationregion/manager"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
 	environmentregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
+	eventManager "g.hz.netease.com/horizon/pkg/event/manager"
 	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
 	idpmanager "g.hz.netease.com/horizon/pkg/idp/manager"
 	membermanager "g.hz.netease.com/horizon/pkg/member"
@@ -21,7 +24,7 @@ import (
 	trtmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
 	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	linkmanager "g.hz.netease.com/horizon/pkg/userlink/manager"
-	"gorm.io/gorm"
+	webhookManager "g.hz.netease.com/horizon/pkg/webhook/manager"
 )
 
 type Manager struct {
@@ -46,6 +49,8 @@ type Manager struct {
 	RegistryManager          registrymanager.Manager
 	IdpManager               idpmanager.Manager
 	AccessTokenManager       accesstokenmanager.Manager
+	WebhookManager           webhookManager.Manager
+	EventManager             eventManager.Manager
 }
 
 func InitManager(db *gorm.DB) *Manager {
@@ -71,5 +76,7 @@ func InitManager(db *gorm.DB) *Manager {
 		RegistryManager:          registrymanager.New(db),
 		IdpManager:               idpmanager.NewManager(db),
 		AccessTokenManager:       accesstokenmanager.New(db),
+		WebhookManager:           webhookManager.New(db),
+		EventManager:             eventManager.New(db),
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"g.hz.netease.com/horizon/core/common"
+	"g.hz.netease.com/horizon/core/middleware"
 	"g.hz.netease.com/horizon/lib/orm"
 	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
@@ -19,7 +20,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
-	"g.hz.netease.com/horizon/pkg/server/middleware"
 	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 )

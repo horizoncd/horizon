@@ -1,0 +1,1 @@
+ALTER TABLE tb_user ADD COLUMN `password` varchar(256) NOT NULL DEFAULT '' COMMENT 'password of user';

@@ -48,6 +48,10 @@ var (
 	KubeConfigInK8S           = sourceType{name: "KubeConfigK8S"}
 	GroupFullPath             = sourceType{name: "GroupFullPath"}
 	IdentityProviderInDB      = sourceType{name: "IdentityProviderInDB"}
+	EventInDB                 = sourceType{name: "EventInDB"}
+	EventCursorInDB           = sourceType{name: "EventCursorInDB"}
+	WebhookInDB               = sourceType{name: "WebhookInDB"}
+	WebhookLogInDB            = sourceType{name: "WebhookLogInDB"}
 
 	// S3
 	PipelinerunLog = sourceType{name: "PipelinerunLog"}
@@ -253,14 +257,16 @@ var (
 	ErrRegistryUsedByRegions = errors.New("cannot delete a registry when used by regions")
 
 	// ErrRegionUsedByClusters used when deleting a region that is still used by clusters
-	ErrRegionUsedByClusters = errors.New("cannot delete a region when used by clusters")
-
-	ErrPipelineOutPut = errors.New("pipeline output is not valid")
-
+	ErrRegionUsedByClusters        = errors.New("cannot delete a region when used by clusters")
+	ErrPipelineOutPut              = errors.New("pipeline output is not valid")
 	ErrTemplateParamInvalid        = errors.New("parameters of template are invalid")
 	ErrTemplateReleaseParamInvalid = errors.New("parameters of release are invalid")
+	ErrAPIServerResponseNotOK      = errors.New("response for api-server is not 200 OK")
+	ErrListGrafanaDashboard        = errors.New("List grafana dashboards error")
 
-	ErrAPIServerResponseNotOK = errors.New("response for api-server is not 200 OK")
+	// event
+	ErrEventHandlerAlreadyExist = errors.New("event handler already exist")
 
-	ErrListGrafanaDashboard = errors.New("List grafana dashboards error")
+	ErrSessionNotFound   = errors.New("session not found")
+	ErrSessionSaveFailed = errors.New("failed to save session")
 )

@@ -24,6 +24,7 @@ import (
 	environmentctl "g.hz.netease.com/horizon/core/controller/environment"
 	environmentregionctl "g.hz.netease.com/horizon/core/controller/environmentregion"
 	envtemplatectl "g.hz.netease.com/horizon/core/controller/envtemplate"
+	eventctl "g.hz.netease.com/horizon/core/controller/event"
 	groupctl "g.hz.netease.com/horizon/core/controller/group"
 	idpctl "g.hz.netease.com/horizon/core/controller/idp"
 	memberctl "g.hz.netease.com/horizon/core/controller/member"
@@ -35,12 +36,12 @@ import (
 	registryctl "g.hz.netease.com/horizon/core/controller/registry"
 	roltctl "g.hz.netease.com/horizon/core/controller/role"
 	scopectl "g.hz.netease.com/horizon/core/controller/scope"
-	sloctl "g.hz.netease.com/horizon/core/controller/slo"
 	tagctl "g.hz.netease.com/horizon/core/controller/tag"
 	templatectl "g.hz.netease.com/horizon/core/controller/template"
 	templateschematagctl "g.hz.netease.com/horizon/core/controller/templateschematag"
 	terminalctl "g.hz.netease.com/horizon/core/controller/terminal"
 	userctl "g.hz.netease.com/horizon/core/controller/user"
+	webhookctl "g.hz.netease.com/horizon/core/controller/webhook"
 	accessapi "g.hz.netease.com/horizon/core/http/api/v1/access"
 	"g.hz.netease.com/horizon/core/http/api/v1/accesstoken"
 	"g.hz.netease.com/horizon/core/http/api/v1/application"
@@ -59,15 +60,20 @@ import (
 	"g.hz.netease.com/horizon/core/http/api/v1/region"
 	"g.hz.netease.com/horizon/core/http/api/v1/registry"
 	roleapi "g.hz.netease.com/horizon/core/http/api/v1/role"
-	scope "g.hz.netease.com/horizon/core/http/api/v1/scope"
-	sloapi "g.hz.netease.com/horizon/core/http/api/v1/slo"
+	"g.hz.netease.com/horizon/core/http/api/v1/scope"
 	"g.hz.netease.com/horizon/core/http/api/v1/tag"
 	"g.hz.netease.com/horizon/core/http/api/v1/template"
 	templatev2 "g.hz.netease.com/horizon/core/http/api/v2/template"
+	"g.hz.netease.com/horizon/core/middleware"
+	"g.hz.netease.com/horizon/core/middleware/auth"
+	logmiddle "g.hz.netease.com/horizon/core/middleware/log"
+	"g.hz.netease.com/horizon/core/middleware/requestid"
 
+	"g.hz.netease.com/horizon/core/http/api/v1/event"
 	templateschematagapi "g.hz.netease.com/horizon/core/http/api/v1/templateschematag"
 	terminalapi "g.hz.netease.com/horizon/core/http/api/v1/terminal"
 	"g.hz.netease.com/horizon/core/http/api/v1/user"
+	"g.hz.netease.com/horizon/core/http/api/v1/webhook"
 	appv2 "g.hz.netease.com/horizon/core/http/api/v2/application"
 	buildAPI "g.hz.netease.com/horizon/core/http/api/v2/build"
 	envtemplatev2 "g.hz.netease.com/horizon/core/http/api/v2/envtemplate"
@@ -107,10 +113,6 @@ import (
 	"g.hz.netease.com/horizon/pkg/param/managerparam"
 	"g.hz.netease.com/horizon/pkg/rbac"
 	"g.hz.netease.com/horizon/pkg/rbac/role"
-	"g.hz.netease.com/horizon/pkg/server/middleware"
-	"g.hz.netease.com/horizon/pkg/server/middleware/auth"
-	logmiddle "g.hz.netease.com/horizon/pkg/server/middleware/log"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	"g.hz.netease.com/horizon/pkg/templaterelease/output"
 	templateschemarepo "g.hz.netease.com/horizon/pkg/templaterelease/schema/repo"
 	"g.hz.netease.com/horizon/pkg/templaterepo"
@@ -434,6 +436,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback")),
 			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/logout")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/users/login")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/users/self")),
 		}
 
@@ -446,7 +449,6 @@ func Run(flags *Flags) {
 		templateCtl          = templatectl.NewController(parameter, gitlabTemplate, templateRepo)
 		roleCtl              = roltctl.NewController(parameter)
 		terminalCtl          = terminalctl.NewController(parameter)
-		sloCtl               = sloctl.NewController(coreConfig.GrafanaSLO)
 		codeGitCtl           = codectl.NewController(gitGetter)
 		tagCtl               = tagctl.NewController(parameter)
 		templateSchemaTagCtl = templateschematagctl.NewController(parameter)
@@ -465,12 +467,14 @@ func Run(flags *Flags) {
 		buildSchemaCtrl      = build.NewController(buildSchema)
 		accessTokenCtl       = accesstokenctl.NewController(parameter)
 		scopeCtl             = scopectl.NewController(parameter)
+		webhookCtl           = webhookctl.NewController(parameter)
+		eventCtl             = eventctl.NewController(parameter)
 	)
 
 	var (
 		// init API
 		groupAPI             = group.NewAPI(groupCtl)
-		userAPI              = user.NewAPI(userCtl)
+		userAPI              = user.NewAPI(userCtl, store)
 		applicationAPI       = application.NewAPI(applicationCtl)
 		applicationAPIV2     = appv2.NewAPI(applicationCtl)
 		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
@@ -484,7 +488,6 @@ func Run(flags *Flags) {
 		registryAPI          = registry.NewAPI(registryCtl)
 		roleAPI              = roleapi.NewAPI(roleCtl)
 		terminalAPI          = terminalapi.NewAPI(terminalCtl)
-		sloAPI               = sloapi.NewAPI(sloCtl)
 		codeGitAPI           = codeapi.NewAPI(codeGitCtl)
 		tagAPI               = tag.NewAPI(tagCtl)
 		templateSchemaTagAPI = templateschematagapi.NewAPI(templateSchemaTagCtl)
@@ -500,6 +503,8 @@ func Run(flags *Flags) {
 		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl)
 		accessTokenAPI   = accesstoken.NewAPI(accessTokenCtl, roleService, scopeService)
 		scopeAPI         = scope.NewAPI(scopeCtl)
+		webhookAPI       = webhook.NewAPI(webhookCtl)
+		eventAPI         = event.NewAPI(eventCtl)
 	)
 
 	// init server
@@ -523,7 +528,8 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints"))),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/users/login"))),
 		prehandlemiddle.Middleware(r, manager),
 		auth.Middleware(rbacAuthorizer, rbacSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
@@ -551,7 +557,6 @@ func Run(flags *Flags) {
 	member.RegisterRoutes(r, memberAPI)
 	roleapi.RegisterRoutes(r, roleAPI)
 	terminalapi.RegisterRoutes(r, terminalAPI)
-	sloapi.RegisterRoutes(r, sloAPI)
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	tag.RegisterRoutes(r, tagAPI)
 	templateschematagapi.RegisterRoutes(r, templateSchemaTagAPI)
@@ -565,6 +570,8 @@ func Run(flags *Flags) {
 	templatev2.RegisterRoutes(r, templateAPIV2)
 	accesstoken.RegisterRoutes(r, accessTokenAPI)
 	scope.RegisterRoutes(r, scopeAPI)
+	webhook.RegisterRoutes(r, webhookAPI)
+	event.RegisterRoutes(r, eventAPI)
 
 	// start cloud event server
 	go runCloudEventServer(

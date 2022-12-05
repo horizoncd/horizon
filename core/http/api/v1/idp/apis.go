@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/core/controller/idp"
 	herrors "g.hz.netease.com/horizon/core/errors"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/server/response"
 	"g.hz.netease.com/horizon/pkg/server/rpcerror"
 	usermodel "g.hz.netease.com/horizon/pkg/user/models"
+	"g.hz.netease.com/horizon/pkg/user/util"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
 )
@@ -94,20 +93,14 @@ func (a *API) LoginCallback(c *gin.Context) {
 		return
 	}
 
-	session := a.getSession(c)
-	if session == nil {
+	session, err := util.GetSession(a.store, c.Request)
+	if err != nil {
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 
-	session.Values[common.SessionKeyAuthUser] = &userauth.DefaultInfo{
-		Name:     user.Name,
-		FullName: user.FullName,
-		ID:       user.ID,
-		Email:    user.Email,
-		Admin:    user.Admin,
-	}
-
-	if err := session.Save(c.Request, c.Writer); err != nil {
+	if err = util.SetSession(session, c.Request, c.Writer, user); err != nil {
 		response.AbortWithRPCError(c,
 			rpcerror.InternalError.WithErrMsgf(
 				"saving session into backend or response failed:\n"+
@@ -119,8 +112,10 @@ func (a *API) LoginCallback(c *gin.Context) {
 }
 
 func (a *API) Logout(c *gin.Context) {
-	session := a.getSession(c)
-	if session == nil {
+	session, err := util.GetSession(a.store, c.Request)
+	if err != nil {
+		response.AbortWithRPCError(c,
+			rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 
@@ -273,16 +268,4 @@ func (a *API) GetDiscovery(ctx *gin.Context) {
 		return
 	}
 	response.SuccessWithData(ctx, config)
-}
-
-func (a *API) getSession(c *gin.Context) *sessions.Session {
-	session, err := a.store.Get(c.Request, common.CookieKeyAuth)
-	if err != nil {
-		response.AbortWithRPCError(c,
-			rpcerror.InternalError.WithErrMsgf(
-				"session not found:\n"+
-					"session name = %s\n err = %v", common.CookieKeyAuth, err))
-		return nil
-	}
-	return session
 }

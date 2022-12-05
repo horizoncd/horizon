@@ -11,6 +11,7 @@ import (
 
 	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	"g.hz.netease.com/horizon/core/middleware/requestid"
 	"g.hz.netease.com/horizon/lib/q"
 	"g.hz.netease.com/horizon/pkg/application/models"
 	"g.hz.netease.com/horizon/pkg/cluster/cd"
@@ -20,10 +21,10 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/registry"
 	emvregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
 	"g.hz.netease.com/horizon/pkg/hook/hook"
 	membermodels "g.hz.netease.com/horizon/pkg/member/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	"g.hz.netease.com/horizon/pkg/server/middleware/requestid"
 	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
 	"g.hz.netease.com/horizon/pkg/util/jsonschema"
 	"g.hz.netease.com/horizon/pkg/util/log"
@@ -474,8 +475,18 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 	ret := ofClusterModel(application, cluster, fullPath, envValue.Namespace,
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
-	// 11. post hook
+	// 11. record event
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceCluster,
+			EventType:    eventmodels.ClusterCreated,
+			ResourceID:   ret.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 	c.postHook(ctx, hook.CreateCluster, ret)
+
 	return ret, nil
 }
 
@@ -802,7 +813,17 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 			log.Errorf(newctx, "failed to delete cluster: %v in db, err: %v", cluster.Name, err)
 		}
 
-		// 5. post hook
+		// 5. record event
+		if _, err := c.eventMgr.CreateEvent(newctx, &eventmodels.Event{
+			EventSummary: eventmodels.EventSummary{
+				ResourceType: common.ResourceCluster,
+				EventType:    eventmodels.ClusterDeleted,
+				ResourceID:   clusterID,
+			},
+			ReqID: rid,
+		}); err != nil {
+			log.Warningf(newctx, "failed to create event, err: %s", err.Error())
+		}
 		c.postHook(newctx, hook.DeleteCluster, cluster.Name)
 	}()
 
@@ -871,6 +892,17 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		if err != nil {
 			log.Errorf(newctx, "failed to update cluster: %v, err: %v", cluster.Name, err)
 			return
+		}
+
+		// 4. create event
+		if _, err := c.eventMgr.CreateEvent(newctx, &eventmodels.Event{
+			EventSummary: eventmodels.EventSummary{
+				ResourceType: common.ResourceCluster,
+				EventType:    eventmodels.ClusterFreed,
+				ResourceID:   clusterID,
+			},
+		}); err != nil {
+			log.Warningf(newctx, "failed to create event, err: %s", err.Error())
 		}
 	}()
 
