@@ -13,7 +13,6 @@ import (
 	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
 	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
 	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
@@ -89,7 +88,7 @@ func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) 
 		return nil, errors.E(op, fmt.Errorf("%v action has no log", pr.Action))
 	}
 
-	return c.getPipelinerunLog(ctx, pr, cluster, cluster.EnvironmentName)
+	return c.getPipelinerunLog(ctx, pr, cluster.EnvironmentName)
 }
 
 func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_ *Log, err error) {
@@ -108,10 +107,10 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
-	return c.getPipelinerunLog(ctx, pr, cluster, cluster.EnvironmentName)
+	return c.getPipelinerunLog(ctx, pr, cluster.EnvironmentName)
 }
 
-func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelinerun, cluster *clustermodels.Cluster,
+func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelinerun,
 	environment string) (_ *Log, err error) {
 	const op = "pipeline controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).StopPrint()

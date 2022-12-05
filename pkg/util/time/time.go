@@ -8,6 +8,8 @@ import (
 
 const defaultTimeFormat = "2006-01-02 15:04:05"
 
+var cstSh, _ = time.LoadLocation("Asia/Shanghai")
+
 func Now(timeFormat *string) string {
 	var format = defaultTimeFormat
 	if timeFormat != nil {
@@ -17,5 +19,5 @@ func Now(timeFormat *string) string {
 }
 
 func K8sTimeToStrByNowTimezone(t v1.Time) string {
-	return t.In(time.Now().Location()).Format(defaultTimeFormat)
+	return t.In(cstSh).Format(defaultTimeFormat)
 }
