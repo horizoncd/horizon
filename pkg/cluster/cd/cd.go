@@ -845,9 +845,11 @@ func podToClusterPod(pod corev1.Pod) (clusterPod *ClusterPod) {
 			Containers:     nil,
 		},
 		Status: PodStatus{
-			HostIP: pod.Status.HostIP,
-			PodIP:  pod.Status.PodIP,
-			Phase:  string(pod.Status.Phase),
+			HostIP:  pod.Status.HostIP,
+			PodIP:   pod.Status.PodIP,
+			Phase:   string(pod.Status.Phase),
+			Reason:  pod.Status.Reason,
+			Message: pod.Status.Message,
 		},
 		DeletionTimestamp: pod.DeletionTimestamp,
 	}
@@ -929,9 +931,11 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 			Containers:     nil,
 		},
 		Status: PodStatus{
-			HostIP: pod.Status.HostIP,
-			PodIP:  pod.Status.PodIP,
-			Phase:  string(pod.Status.Phase),
+			HostIP:  pod.Status.HostIP,
+			PodIP:   pod.Status.PodIP,
+			Phase:   string(pod.Status.Phase),
+			Reason:  pod.Status.Reason,
+			Message: pod.Status.Message,
 		},
 		DeletionTimestamp: pod.DeletionTimestamp,
 	}
@@ -1294,6 +1298,8 @@ type (
 		HostIP            string             `json:"hostIP,omitempty" yaml:"hostIP,omitempty"`
 		PodIP             string             `json:"podIP,omitempty" yaml:"podIP,omitempty"`
 		Phase             string             `json:"phase,omitempty" yaml:"phase,omitempty"`
+		Reason            string             `json:"reason,omitempty" yaml:"reason,omitempty"`
+		Message           string             `json:"message,omitempty" yaml:"message,omitempty"`
 		Events            []Event            `json:"events,omitempty" yaml:"events,omitempty"`
 		ContainerStatuses []*ContainerStatus `json:"containerStatuses,omitempty" yaml:"containerStatuses,omitempty"`
 		LifeCycle         []*LifeCycleItem   `json:"lifeCycle" yaml:"lifeCycle"`
