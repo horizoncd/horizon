@@ -33,6 +33,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterelease/output"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	templateschematagmanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
+	tokenservice "g.hz.netease.com/horizon/pkg/token/service"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usersvc "github.com/horizoncd/horizon/pkg/user/service"
 )
@@ -132,6 +133,7 @@ type controller struct {
 	grafanaConfig        grafana.Config
 	buildSchema          *build.Schema
 	eventMgr             eventmanager.Manager
+	tokenSvc             tokenservice.Service
 }
 
 var _ Controller = (*controller)(nil)
@@ -167,5 +169,6 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		grafanaConfig:        config.GrafanaConfig,
 		buildSchema:          param.BuildSchema,
 		eventMgr:             param.EventManager,
+		tokenSvc:             param.TokenSvc,
 	}
 }

@@ -58,6 +58,8 @@ import (
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	gitlabschema "github.com/horizoncd/horizon/pkg/templaterelease/schema/gitlab"
 	tagmodel "github.com/horizoncd/horizon/pkg/templateschematag/models"
+	tokenmodels "g.hz.netease.com/horizon/pkg/token/models"
+	tokenservice "g.hz.netease.com/horizon/pkg/token/service"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
 	v1 "k8s.io/api/core/v1"
@@ -431,7 +433,8 @@ func TestMain(m *testing.M) {
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&registrymodels.Registry{}, eventmodels.Event{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{}, &eventmodels.Event{},
-		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &envmodels.Environment{}); err != nil {
+		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{},
+		&envmodels.Environment{}, &tokenmodels.Token{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -622,6 +625,7 @@ func test(t *testing.T) {
 		tagMgr:               tagManager,
 		applicationGitRepo:   applicationGitRepo,
 		eventMgr:             manager.EventManager,
+		tokenSvc:             tokenservice.NewService(manager),
 	}
 
 	commitGetter.EXPECT().GetHTTPLink(gomock.Any()).Return("https://cloudnative.com:22222/demo/springboot-demo", nil).AnyTimes()

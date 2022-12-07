@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/git"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	tokenmodels "g.hz.netease.com/horizon/pkg/token/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 
@@ -64,7 +66,13 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 1. update image in git repo
+	// 1. generate temporary access token for tekton callback
+	token, err := c.createTemporaryToken(ctx, cluster.ID, currentUser.GetID())
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. assemble artifact imageURL
 	imageURL := assembleImageURL(regionEntity, application.Name, cluster.Name, gitRef, commit.ID)
 
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
@@ -72,7 +80,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 2. add pipelinerun in db
+	// 3. add pipelinerun in db
 	pr := &prmodels.Pipelinerun{
 		ClusterID:        clusterID,
 		Action:           prmodels.ActionBuildDeploy,
@@ -92,7 +100,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 3. create pipelinerun in k8s
+	// 4. create pipelinerun in k8s
 	tektonClient, err := c.tektonFty.GetTekton(cluster.EnvironmentName)
 	if err != nil {
 		return nil, err
@@ -134,6 +142,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		Region:           cluster.RegionName,
 		RegionID:         regionEntity.ID,
 		Template:         cluster.Template,
+		Token:            token.Code,
 	})
 	if err != nil {
 		return nil, err
@@ -172,6 +181,14 @@ func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 
 	return path.Join(domain, regionEntity.Registry.Path, application,
 		fmt.Sprintf("%v:%v-%v-%v", cluster, normalizedBranch, commit[:8], timeStr))
+}
+
+func (c *controller) createTemporaryToken(ctx context.Context, clusterID, userID uint) (*tokenmodels.Token, error) {
+	tokenName := fmt.Sprintf(TokenNameFormat, strconv.Itoa(int(clusterID)))
+	expiresIn := TokenExpiresIn
+	scopes := make([]string, 1)
+	scopes = append(scopes, TokenScopeClusterRW)
+	return c.tokenSvc.CreateInternalAccessToken(ctx, tokenName, expiresIn, userID, scopes)
 }
 
 func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref string) (_ *GetDiffResponse, err error) {

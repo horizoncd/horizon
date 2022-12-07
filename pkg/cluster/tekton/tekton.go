@@ -54,6 +54,7 @@ type (
 		Region           string                 `json:"region"`
 		RegionID         uint                   `json:"regionID"`
 		Template         string                 `json:"template"`
+		Token            string                 `json:"token"`
 	}
 	PipelineRunGit struct {
 		URL       string `json:"url"`

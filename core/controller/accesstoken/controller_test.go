@@ -9,6 +9,7 @@ import (
 
 	oauthdao "g.hz.netease.com/horizon/pkg/oauth/dao"
 	tokendao "g.hz.netease.com/horizon/pkg/token/dao"
+	tokenservice "g.hz.netease.com/horizon/pkg/token/service"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -86,6 +87,7 @@ func TestMain(m *testing.M) {
 
 	parameter := &param.Param{
 		Manager:       manager,
+		TokenSvc:      tokenservice.NewService(manager),
 		MemberService: memberservice.NewService(roleSvc, oauthMgr, manager),
 	}
 

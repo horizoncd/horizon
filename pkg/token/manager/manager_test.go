@@ -20,7 +20,7 @@ import (
 var (
 	db                       *gorm.DB
 	tokenManager             Manager
-	userAccessTokenGenerator *generator.UserAccessTokenGenerator
+	userAccessTokenGenerator generator.AccessTokenCodeGenerator
 	aUser                    userauth.User = &userauth.DefaultInfo{
 		Name:     "alias",
 		FullName: "alias",

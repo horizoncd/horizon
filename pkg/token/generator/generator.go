@@ -15,23 +15,29 @@ const (
 	HorizonAppUserToServerAccessTokenPrefix = "hu_"
 	OauthAPPAccessTokenPrefix               = "ho_"
 	AccessTokenPrefix                       = "ha_"
+	// InternalAccessTokenPrefix for internal component access horizon api, such as tekton
+	InternalAccessTokenPrefix = "hi_"
 	// HorizonAppServerToServerAccessTokenPrefix = "hs_"
 )
 
-func NewAuthorizeGenerator() *AuthorizeGenerator {
+func NewAuthorizeGenerator() AuthorizationCodeGenerator {
 	return &AuthorizeGenerator{}
 }
 
-func NewHorizonAppUserToServerAccessGenerator() *BasicAccessTokenGenerator {
+func NewHorizonAppUserToServerAccessGenerator() AccessTokenCodeGenerator {
 	return &BasicAccessTokenGenerator{prefix: HorizonAppUserToServerAccessTokenPrefix}
 }
 
-func NewOauthAccessGenerator() *BasicAccessTokenGenerator {
+func NewOauthAccessGenerator() AccessTokenCodeGenerator {
 	return &BasicAccessTokenGenerator{prefix: OauthAPPAccessTokenPrefix}
 }
 
-func NewUserAccessTokenGenerator() *UserAccessTokenGenerator {
+func NewUserAccessTokenGenerator() AccessTokenCodeGenerator {
 	return &UserAccessTokenGenerator{prefix: AccessTokenPrefix}
+}
+
+func NewInternalAccessTokenGenerator() AccessTokenCodeGenerator {
+	return &UserAccessTokenGenerator{prefix: InternalAccessTokenPrefix}
 }
 
 type AuthorizeGenerator struct{}

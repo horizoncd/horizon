@@ -136,6 +136,7 @@ import (
 	templateschemarepo "github.com/horizoncd/horizon/pkg/templaterelease/schema/repo"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/horizoncd/horizon/pkg/token/generator"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
@@ -409,6 +410,7 @@ func Run(flags *Flags) {
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
+	tokenSvc := tokenservice.NewService(manager)
 
 	// init kube client
 	_, client, err := kube.BuildClient(coreConfig.KubeConfig)
@@ -427,6 +429,7 @@ func Run(flags *Flags) {
 		ClusterSvc:           clusterSvc,
 		GroupSvc:             groupSvc,
 		UserSvc:              userSvc,
+		TokenSvc:             tokenSvc,
 		RoleService:          roleService,
 		ScopeService:         scopeService,
 		ApplicationGitRepo:   applicationGitRepo,

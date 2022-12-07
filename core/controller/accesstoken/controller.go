@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/token/generator"
 	tokenmanager "g.hz.netease.com/horizon/pkg/token/manager"
+	tokenservice "g.hz.netease.com/horizon/pkg/token/service"
 	"github.com/google/uuid"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -44,6 +44,7 @@ type controller struct {
 	userMgr        usermanager.Manager
 	accessTokenMgr accesstokenmanager.Manager
 	tokenMgr       tokenmanager.Manager
+	tokenSvc       tokenservice.Service
 	memberSvc      memberservice.Service
 	memberMgr      membermanager.Manager
 }
@@ -53,6 +54,7 @@ func NewController(param *param.Param) Controller {
 		userMgr:        param.UserManager,
 		accessTokenMgr: param.AccessTokenManager,
 		tokenMgr:       param.TokenManager,
+		tokenSvc:       param.TokenSvc,
 		memberSvc:      param.MemberService,
 		memberMgr:      param.MemberManager,
 	}
@@ -83,11 +85,8 @@ func (c *controller) CreateResourceAccessToken(ctx context.Context, request Crea
 	}
 	userID = robot.ID
 
-	token, err := generateToken(request.Name, request.ExpiresAt, userID, request.Scopes)
-	if err != nil {
-		return nil, err
-	}
-	token, err = c.tokenMgr.CreateToken(ctx, token)
+	token, err := c.tokenSvc.CreateUserAccessToken(ctx, request.Name,
+		request.ExpiresAt, userID, request.Scopes)
 	if err != nil {
 		return nil, err
 	}
@@ -128,13 +127,8 @@ func (c *controller) CreatePersonalAccessToken(ctx context.Context,
 		return nil, err
 	}
 
-	token, err := generateToken(request.Name, request.ExpiresAt,
+	token, err := c.tokenSvc.CreateUserAccessToken(ctx, request.Name, request.ExpiresAt,
 		currentUser.GetID(), request.Scopes)
-	if err != nil {
-		return nil, err
-	}
-
-	token, err = c.tokenMgr.CreateToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -325,32 +319,6 @@ func generateRobot(token, resourceType string, resourceID uint) *usermodels.User
 		Email:    email,
 		UserType: usermodels.UserTypeRobot,
 	}
-}
-
-func generateToken(name, expiresAtStr string, userID uint, scopes []string) (*tokenmodels.Token, error) {
-	createdAt := time.Now()
-	expiredIn := time.Duration(0)
-	if expiresAtStr != NeverExpire {
-		expiredAt, err := time.Parse(ExpiresAtFormat, expiresAtStr)
-		if err != nil {
-			return nil, perror.Wrapf(herror.ErrParamInvalid, "invalid expiration time, error: %s", err.Error())
-		}
-		if !expiredAt.After(createdAt) {
-			return nil, perror.Wrap(herror.ErrParamInvalid, "expiration time must be later than current time")
-		}
-		expiredIn = expiredAt.Sub(createdAt)
-	}
-	gen := generator.NewUserAccessTokenGenerator()
-	return &tokenmodels.Token{
-		Name: name,
-		Code: gen.GenCode(&generator.CodeGenerateInfo{
-			Token: tokenmodels.Token{UserID: userID},
-		}),
-		Scope:     strings.Join(scopes, " "),
-		CreatedAt: createdAt,
-		ExpiresIn: expiredIn,
-		UserID:    userID,
-	}, nil
 }
 
 func parseExpiredAt(startTime time.Time, expiresIn time.Duration) string {
