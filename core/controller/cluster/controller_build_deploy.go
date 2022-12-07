@@ -186,9 +186,8 @@ func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 func (c *controller) createTemporaryToken(ctx context.Context, clusterID, userID uint) (*tokenmodels.Token, error) {
 	tokenName := fmt.Sprintf(TokenNameFormat, strconv.Itoa(int(clusterID)))
 	expiresIn := TokenExpiresIn
-	scopes := make([]string, 1)
-	scopes = append(scopes, TokenScopeClusterRW)
-	return c.tokenSvc.CreateInternalAccessToken(ctx, tokenName, expiresIn, userID, scopes)
+	scopes := [1]string{TokenScopeClusterRW}
+	return c.tokenSvc.CreateInternalAccessToken(ctx, tokenName, expiresIn, userID, scopes[:])
 }
 
 func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref string) (_ *GetDiffResponse, err error) {

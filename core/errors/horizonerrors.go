@@ -276,4 +276,7 @@ var (
 	ErrTopResourceNotFound  = errors.New("top resource in resource tree not found")
 
 	ErrNotSupport = errors.New("not support")
+
+	// token
+	ErrTokenInternal = errors.New("token internal error")
 )
