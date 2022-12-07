@@ -262,7 +262,8 @@ func (m *OauthManager) NewAccessToken(authorizationCodeToken *tokenmodels.Token,
 	return token
 }
 
-func (m *OauthManager) GenAuthorizeCode(ctx context.Context, req *AuthorizeGenerateRequest) (*tokenmodels.Token, error) {
+func (m *OauthManager) GenAuthorizeCode(ctx context.Context,
+	req *AuthorizeGenerateRequest) (*tokenmodels.Token, error) {
 	oauthApp, err := m.oauthAppDAO.GetApp(ctx, req.ClientID)
 	if err != nil {
 		return nil, err

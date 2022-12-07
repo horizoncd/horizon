@@ -9,7 +9,6 @@ import (
 	"g.hz.netease.com/horizon/core/common"
 	"g.hz.netease.com/horizon/lib/orm"
 	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	tokendao "g.hz.netease.com/horizon/pkg/token/dao"
 	"g.hz.netease.com/horizon/pkg/token/generator"
 	tokenmodels "g.hz.netease.com/horizon/pkg/token/models"
 	callbacks "g.hz.netease.com/horizon/pkg/util/ormcallbacks"
@@ -20,7 +19,6 @@ import (
 
 var (
 	db                       *gorm.DB
-	tokenDAO                 tokendao.DAO
 	tokenManager             Manager
 	userAccessTokenGenerator *generator.UserAccessTokenGenerator
 	aUser                    userauth.User = &userauth.DefaultInfo{
@@ -30,7 +28,7 @@ var (
 		Email:    "",
 		Admin:    false,
 	}
-	ctx = context.WithValue(context.Background(), common.UserContextKey(), aUser)
+	ctx = context.WithValue(context.Background(), common.UserContextKey(), aUser) // nolint
 )
 
 func TestMain(m *testing.M) {
@@ -38,10 +36,9 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&tokenmodels.Token{}); err != nil {
 		panic(err)
 	}
-	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser))
+	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser)) // nolint
 	callbacks.RegisterCustomCallbacks(db)
 
-	tokenDAO = tokendao.NewDAO(db)
 	tokenManager = New(db)
 	userAccessTokenGenerator = generator.NewUserAccessTokenGenerator()
 	os.Exit(m.Run())
