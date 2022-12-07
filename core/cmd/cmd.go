@@ -90,6 +90,7 @@ import (
 	logmiddle "github.com/horizoncd/horizon/core/middleware/log"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/pkg/environment/service"
+	tokendao "github.com/horizoncd/horizon/pkg/token/dao"
 
 	"github.com/horizoncd/horizon/core/http/api/v1/event"
 	templateschematagapi "github.com/horizoncd/horizon/core/http/api/v1/templateschematag"
@@ -124,10 +125,9 @@ import (
 	"github.com/horizoncd/horizon/pkg/grafana"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
-	"github.com/horizoncd/horizon/pkg/oauth/generate"
+	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
 	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
 	scopeservice "github.com/horizoncd/horizon/pkg/oauth/scope"
-	oauthstore "github.com/horizoncd/horizon/pkg/oauth/store"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/rbac"
@@ -135,6 +135,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterelease/output"
 	templateschemarepo "github.com/horizoncd/horizon/pkg/templaterelease/schema/repo"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
+	"github.com/horizoncd/horizon/pkg/token/generator"
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
@@ -347,10 +348,10 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	oauthAppStore := oauthstore.NewOauthAppStore(mysqlDB)
-	oauthTokenStore := oauthstore.NewTokenStore(mysqlDB)
-	oauthManager := oauthmanager.NewManager(oauthAppStore, oauthTokenStore,
-		generate.NewAuthorizeGenerate(), coreConfig.Oauth.AuthorizeCodeExpireIn, coreConfig.Oauth.AccessTokenExpireIn)
+	oauthAppDAO := oauthdao.NewDAO(mysqlDB)
+	tokenDAO := tokendao.NewDAO(mysqlDB)
+	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenDAO, generator.NewAuthorizeGenerator(),
+		coreConfig.Oauth.AuthorizeCodeExpireIn, coreConfig.Oauth.AccessTokenExpireIn)
 
 	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
 	if err != nil {

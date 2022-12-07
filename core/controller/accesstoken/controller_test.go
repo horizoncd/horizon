@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	oauthdao "g.hz.netease.com/horizon/pkg/oauth/dao"
+	tokendao "g.hz.netease.com/horizon/pkg/token/dao"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -62,7 +64,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(
 		&usermodels.User{},
 		&membermodels.Member{},
-		&oauthmodels.Token{},
+		&tokenmodels.Token{},
 		&groupmodels.Group{},
 		&applicationmodels.Application{},
 	); err != nil {
@@ -77,12 +79,12 @@ func TestMain(m *testing.M) {
 	authorizeCodeExpireIn := time.Second * 3
 	accessTokenExpireIn := time.Hour * 24
 
-	tokenStore := store.NewTokenStore(db)
-	oauthAppStore := store.NewOauthAppStore(db)
-	oauthMgr := oauthmanager.NewManager(oauthAppStore, tokenStore,
-		generate.NewAuthorizeGenerate(), authorizeCodeExpireIn, accessTokenExpireIn)
+	tokenDAO := tokendao.NewDAO(db)
+	oauthAppDAO := oauthdao.NewDAO(db)
+	oauthMgr := oauthmanager.NewManager(oauthAppDAO, tokenDAO,
+		generator.NewAuthorizeGenerator(), authorizeCodeExpireIn, accessTokenExpireIn)
 
-	param := &param.Param{
+	parameter := &param.Param{
 		Manager:       manager,
 		MemberService: memberservice.NewService(roleSvc, oauthMgr, manager),
 	}
@@ -108,7 +110,7 @@ func TestMain(m *testing.M) {
 	}
 	commonResourceID = group.ID
 
-	c = NewController(param)
+	c = NewController(parameter)
 
 	os.Exit(m.Run())
 }

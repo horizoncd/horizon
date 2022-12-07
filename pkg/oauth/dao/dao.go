@@ -10,21 +10,31 @@ import (
 	"gorm.io/gorm"
 )
 
-type DBOauthAppStore struct {
+type DAO interface {
+	CreateApp(ctx context.Context, client models.OauthApp) error
+	GetApp(ctx context.Context, clientID string) (*models.OauthApp, error)
+	DeleteApp(ctx context.Context, clientID string) error
+	ListApp(ctx context.Context, ownerType models.OwnerType, ownerID uint) ([]models.OauthApp, error)
+	UpdateApp(ctx context.Context, clientID string, app models.OauthApp) (*models.OauthApp, error)
+	CreateSecret(ctx context.Context, secret *models.OauthClientSecret) (*models.OauthClientSecret, error)
+	DeleteSecret(ctx context.Context, clientID string, clientSecretID uint) error
+	DeleteSecretByClientID(ctx context.Context, clientID string) error
+	ListSecret(ctx context.Context, clientID string) ([]models.OauthClientSecret, error)
+}
+
+func NewDAO(db *gorm.DB) DAO {
+	return &dao{db: db}
+}
+
+type dao struct {
 	db *gorm.DB
 }
 
-func NewOauthAppStore(db *gorm.DB) OauthAppStore {
-	return &DBOauthAppStore{db: db}
-}
-
-var _ OauthAppStore = &DBOauthAppStore{}
-
-func (d *DBOauthAppStore) CreateApp(ctx context.Context, client models.OauthApp) error {
+func (d *dao) CreateApp(ctx context.Context, client models.OauthApp) error {
 	result := d.db.WithContext(ctx).Save(&client)
 	return result.Error
 }
-func (d *DBOauthAppStore) GetApp(ctx context.Context, clientID string) (*models.OauthApp, error) {
+func (d *dao) GetApp(ctx context.Context, clientID string) (*models.OauthApp, error) {
 	var client models.OauthApp
 	result := d.db.WithContext(ctx).Raw(common.GetOauthAppByClientID, clientID).First(&client)
 	if result.Error != nil {
@@ -36,7 +46,7 @@ func (d *DBOauthAppStore) GetApp(ctx context.Context, clientID string) (*models.
 	return &client, nil
 }
 
-func (d *DBOauthAppStore) UpdateApp(ctx context.Context,
+func (d *dao) UpdateApp(ctx context.Context,
 	clientID string, app models.OauthApp) (*models.OauthApp, error) {
 	var appInDb models.OauthApp
 	var err error
@@ -63,12 +73,12 @@ func (d *DBOauthAppStore) UpdateApp(ctx context.Context,
 	return &appInDb, err
 }
 
-func (d *DBOauthAppStore) DeleteApp(ctx context.Context, clientID string) error {
+func (d *dao) DeleteApp(ctx context.Context, clientID string) error {
 	result := d.db.WithContext(ctx).Exec(common.DeleteOauthAppByClientID, clientID)
 	return result.Error
 }
 
-func (d *DBOauthAppStore) ListApp(ctx context.Context, ownerType models.OwnerType,
+func (d *dao) ListApp(ctx context.Context, ownerType models.OwnerType,
 	ownerID uint) ([]models.OauthApp, error) {
 	var oauthApps []models.OauthApp
 	if result := d.db.WithContext(ctx).Raw(common.SelectOauthAppByOwner, ownerType,
@@ -78,22 +88,22 @@ func (d *DBOauthAppStore) ListApp(ctx context.Context, ownerType models.OwnerTyp
 	return oauthApps, nil
 }
 
-func (d *DBOauthAppStore) CreateSecret(ctx context.Context,
+func (d *dao) CreateSecret(ctx context.Context,
 	secret *models.OauthClientSecret) (*models.OauthClientSecret, error) {
 	if result := d.db.WithContext(ctx).Save(secret); result.Error != nil {
 		return nil, result.Error
 	}
 	return secret, nil
 }
-func (d *DBOauthAppStore) DeleteSecretByClientID(ctx context.Context, clientID string) error {
+func (d *dao) DeleteSecretByClientID(ctx context.Context, clientID string) error {
 	result := d.db.WithContext(ctx).Exec(common.DeleteClientSecretByClientID, clientID)
 	return result.Error
 }
-func (d *DBOauthAppStore) DeleteSecret(ctx context.Context, clientID string, clientSecretID uint) error {
+func (d *dao) DeleteSecret(ctx context.Context, clientID string, clientSecretID uint) error {
 	result := d.db.WithContext(ctx).Exec(common.DeleteClientSecret, clientID, clientSecretID)
 	return result.Error
 }
-func (d *DBOauthAppStore) ListSecret(ctx context.Context, clientID string) ([]models.OauthClientSecret, error) {
+func (d *dao) ListSecret(ctx context.Context, clientID string) ([]models.OauthClientSecret, error) {
 	var secrets []models.OauthClientSecret
 	result := d.db.WithContext(ctx).Raw(common.ClientSecretSelectAll, clientID).Scan(&secrets)
 	if result.Error != nil {

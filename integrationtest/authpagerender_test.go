@@ -96,16 +96,15 @@ func createOauthScopeConfig() oauthconfig.Scopes {
 func TestServer(t *testing.T) {
 	db, _ := orm.NewSqliteDB("")
 	manager = managerparam.InitManager(db)
-	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
+	if err := db.AutoMigrate(&tokenmodels.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
 		panic(err)
 	}
 	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
-	tokenStore := store.NewTokenStore(db)
-	oauthAppStore := store.NewOauthAppStore(db)
-
-	oauthManager := oauthmanager.NewManager(oauthAppStore, tokenStore, generate.NewAuthorizeGenerate(),
+	tokenDAO := tokendao.NewDAO(db)
+	oauthAppDAO := oauthdao.NewDAO(db)
+	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenDAO, generator.NewAuthorizeGenerator(),
 		authorizeCodeExpireIn, accessTokenExpireIn)
 	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
 	clientIDGen := func(appType models.AppType) string {
@@ -220,9 +219,9 @@ func TestServer(t *testing.T) {
 	t.Logf("%v", tokenResponse)
 	switch createReq.APPType {
 	case models.HorizonOAuthAPP:
-		assert.True(t, strings.HasPrefix(tokenResponse.AccessToken, generate.HorizonAppUserToServerAccessTokenPrefix))
+		assert.True(t, strings.HasPrefix(tokenResponse.AccessToken, generator.HorizonAppUserToServerAccessTokenPrefix))
 	case models.DirectOAuthAPP:
-		assert.True(t, strings.HasPrefix(tokenResponse.AccessToken, generate.OauthAPPAccessTokenPrefix))
+		assert.True(t, strings.HasPrefix(tokenResponse.AccessToken, generator.OauthAPPAccessTokenPrefix))
 	default:
 		assert.Fail(t, "unSupport")
 	}

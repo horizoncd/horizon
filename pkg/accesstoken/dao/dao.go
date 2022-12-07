@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"g.hz.netease.com/horizon/pkg/token/generator"
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -22,7 +23,6 @@ type DAO interface {
 	ListAccessTokensByResource(ctx context.Context, resourceType string, resourceID uint,
 		query *q.Query) ([]*models.AccessToken, int, error)
 	ListPersonalAccessTokens(ctx context.Context, query *q.Query) ([]*models.AccessToken, int, error)
-	GetAccessToken(ctx context.Context, id uint) (*oauthmodels.Token, error)
 }
 
 func NewDAO(db *gorm.DB) DAO {
@@ -84,15 +84,8 @@ func (d *dao) ListPersonalAccessTokens(ctx context.Context, query *q.Query) ([]*
 
 	result := d.db.WithContext(ctx).Table("tb_token").
 		Where("user_id = ?", currentUser.GetID()).
-		Where("code like ?", fmt.Sprintf("%s%%", generate.AccessTokenPrefix)).
+		Where("code like ?", fmt.Sprintf("%s%%", generator.AccessTokenPrefix)).
 		Offset(offset).Limit(limit).
 		Find(&tokens).Offset(0).Limit(-1).Count(&total)
 	return tokens, int(total), result.Error
-}
-
-func (d *dao) GetAccessToken(ctx context.Context, id uint) (*oauthmodels.Token, error) {
-	var token oauthmodels.Token
-
-	result := d.db.WithContext(ctx).Model(token).Where("id = ?", id).First(&token)
-	return &token, result.Error
 }

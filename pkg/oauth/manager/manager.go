@@ -8,9 +8,11 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/oauth/generate"
+	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
 	"github.com/horizoncd/horizon/pkg/oauth/models"
-	"github.com/horizoncd/horizon/pkg/oauth/store"
+	tokendao "github.com/horizoncd/horizon/pkg/token/dao"
+	"g.hz.netease.com/horizon/pkg/token/generator"
+	tokenmodels "g.hz.netease.com/horizon/pkg/token/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -63,36 +65,34 @@ type Manager interface {
 	DeleteSecret(ctx context.Context, ClientID string, clientSecretID uint) error
 	ListSecret(ctx context.Context, ClientID string) ([]models.OauthClientSecret, error)
 
-	GenAuthorizeCode(ctx context.Context, req *AuthorizeGenerateRequest) (*models.Token, error)
+	GenAuthorizeCode(ctx context.Context, req *AuthorizeGenerateRequest) (*tokenmodels.Token, error)
 	GenAccessToken(ctx context.Context, req *AccessTokenGenerateRequest,
-		accessCodeGenerate generate.AccessTokenCodeGenerate) (*models.Token, error)
-	RevokeAllAccessToken(ctx context.Context, clientID string) error
-	LoadAccessToken(ctx context.Context, AccessToken string) (*models.Token, error)
+		accessCodeGenerator generator.AccessTokenCodeGenerator) (*tokenmodels.Token, error)
 }
 
 var _ Manager = &OauthManager{}
 
-func NewManager(oauthAppStore store.OauthAppStore, tokenStore store.TokenStore,
-	gen generate.AuthorizationCodeGenerate,
+func NewManager(oauthAppDAO oauthdao.DAO, tokenDAO tokendao.DAO,
+	gen generator.AuthorizationCodeGenerator,
 	authorizeCodeExpireTime time.Duration,
 	accessTokenExpireTime time.Duration) *OauthManager {
 	return &OauthManager{
-		oauthAppStore:           oauthAppStore,
-		tokenStore:              tokenStore,
-		authorizationGenerate:   gen,
-		authorizeCodeExpireTime: authorizeCodeExpireTime,
-		accessTokenExpireTime:   accessTokenExpireTime,
-		clientIDGenerate:        GenClientID,
+		oauthAppDAO:                oauthAppDAO,
+		tokenDAO:                   tokenDAO,
+		authorizationCodeGenerator: gen,
+		authorizeCodeExpireTime:    authorizeCodeExpireTime,
+		accessTokenExpireTime:      accessTokenExpireTime,
+		clientIDGenerate:           GenClientID,
 	}
 }
 
 type OauthManager struct {
-	oauthAppStore           store.OauthAppStore
-	tokenStore              store.TokenStore
-	authorizationGenerate   generate.AuthorizationCodeGenerate
-	authorizeCodeExpireTime time.Duration
-	accessTokenExpireTime   time.Duration
-	clientIDGenerate        ClientIDGenerate
+	oauthAppDAO                oauthdao.DAO
+	tokenDAO                   tokendao.DAO
+	authorizationCodeGenerator generator.AuthorizationCodeGenerator
+	authorizeCodeExpireTime    time.Duration
+	accessTokenExpireTime      time.Duration
+	clientIDGenerate           ClientIDGenerate
 }
 
 const HorizonAPPClientIDPrefix = "ho_"
@@ -132,33 +132,33 @@ func (m *OauthManager) CreateOauthApp(ctx context.Context, info *CreateOAuthAppR
 		CreatedBy:   user.GetID(),
 		UpdatedBy:   user.GetID(),
 	}
-	if err := m.oauthAppStore.CreateApp(ctx, oauthApp); err != nil {
+	if err := m.oauthAppDAO.CreateApp(ctx, oauthApp); err != nil {
 		return nil, err
 	}
-	return m.oauthAppStore.GetApp(ctx, clientID)
+	return m.oauthAppDAO.GetApp(ctx, clientID)
 }
 
 func (m *OauthManager) GetOAuthApp(ctx context.Context, clientID string) (*models.OauthApp, error) {
-	return m.oauthAppStore.GetApp(ctx, clientID)
+	return m.oauthAppDAO.GetApp(ctx, clientID)
 }
 
 func (m *OauthManager) DeleteOAuthApp(ctx context.Context, clientID string) error {
 	// revoke all the token
-	if err := m.tokenStore.DeleteByClientID(ctx, clientID); err != nil {
+	if err := m.tokenDAO.DeleteByClientID(ctx, clientID); err != nil {
 		return err
 	}
 
 	// delete all the secret
-	if err := m.oauthAppStore.DeleteSecretByClientID(ctx, clientID); err != nil {
+	if err := m.oauthAppDAO.DeleteSecretByClientID(ctx, clientID); err != nil {
 		return err
 	}
 	// delete the app
-	return m.oauthAppStore.DeleteApp(ctx, clientID)
+	return m.oauthAppDAO.DeleteApp(ctx, clientID)
 }
 
 func (m *OauthManager) ListOauthApp(ctx context.Context,
 	ownerType models.OwnerType, ownerID uint) ([]models.OauthApp, error) {
-	return m.oauthAppStore.ListApp(ctx, ownerType, ownerID)
+	return m.oauthAppDAO.ListApp(ctx, ownerType, ownerID)
 }
 
 func (m *OauthManager) UpdateOauthApp(ctx context.Context, clientID string,
@@ -167,7 +167,7 @@ func (m *OauthManager) UpdateOauthApp(ctx context.Context, clientID string,
 	if err != nil {
 		return nil, err
 	}
-	return m.oauthAppStore.UpdateApp(ctx, clientID, models.OauthApp{
+	return m.oauthAppDAO.UpdateApp(ctx, clientID, models.OauthApp{
 		Name:        req.Name,
 		RedirectURL: req.RedirectURI,
 		HomeURL:     req.HomeURL,
@@ -188,11 +188,11 @@ func (m *OauthManager) CreateSecret(ctx context.Context, clientID string) (*mode
 		CreatedAt:    time.Now(),
 		CreatedBy:    user.GetID(),
 	}
-	return m.oauthAppStore.CreateSecret(ctx, newSecret)
+	return m.oauthAppDAO.CreateSecret(ctx, newSecret)
 }
 
 func (m *OauthManager) DeleteSecret(ctx context.Context, ClientID string, clientSecretID uint) error {
-	return m.oauthAppStore.DeleteSecret(ctx, ClientID, clientSecretID)
+	return m.oauthAppDAO.DeleteSecret(ctx, ClientID, clientSecretID)
 }
 
 // musk the secrets
@@ -208,6 +208,7 @@ func MuskClientSecrets(clientSecrets []models.OauthClientSecret) {
 		clientSecrets[i].ClientSecret = muskedSecret
 	}
 }
+
 func checkMusicSecret(muskedSecret, realSecret string) bool {
 	if strings.HasPrefix(muskedSecret, MustPrefix) &&
 		strings.HasSuffix(realSecret, strings.TrimPrefix(muskedSecret, MustPrefix)) {
@@ -217,7 +218,7 @@ func checkMusicSecret(muskedSecret, realSecret string) bool {
 }
 
 func (m *OauthManager) ListSecret(ctx context.Context, ClientID string) ([]models.OauthClientSecret, error) {
-	clientSecrets, err := m.oauthAppStore.ListSecret(ctx, ClientID)
+	clientSecrets, err := m.oauthAppDAO.ListSecret(ctx, ClientID)
 	if err != nil {
 		return nil, err
 	}
@@ -228,8 +229,8 @@ func (m *OauthManager) ListSecret(ctx context.Context, ClientID string) ([]model
 	return clientSecrets, nil
 }
 
-func (m *OauthManager) NewAuthorizationToken(req *AuthorizeGenerateRequest) *models.Token {
-	token := &models.Token{
+func (m *OauthManager) NewAuthorizationToken(req *AuthorizeGenerateRequest) *tokenmodels.Token {
+	token := &tokenmodels.Token{
 		ClientID:    req.ClientID,
 		RedirectURI: req.RedirectURL,
 		State:       req.State,
@@ -238,15 +239,15 @@ func (m *OauthManager) NewAuthorizationToken(req *AuthorizeGenerateRequest) *mod
 		Scope:       req.Scope,
 		UserID:      req.UserIdentify,
 	}
-	token.Code = m.authorizationGenerate.GenCode(&generate.CodeGenerateInfo{
+	token.Code = m.authorizationCodeGenerator.GenCode(&generator.CodeGenerateInfo{
 		Token:   *token,
 		Request: req.Request,
 	})
 	return token
 }
-func (m *OauthManager) NewAccessToken(authorizationCodeToken *models.Token,
-	req *AccessTokenGenerateRequest, accessCodeGenerate generate.AccessTokenCodeGenerate) *models.Token {
-	token := &models.Token{
+func (m *OauthManager) NewAccessToken(authorizationCodeToken *tokenmodels.Token,
+	req *AccessTokenGenerateRequest, accessCodeGenerator generator.AccessTokenCodeGenerator) *tokenmodels.Token {
+	token := &tokenmodels.Token{
 		ClientID:    req.ClientID,
 		RedirectURI: req.RedirectURL,
 		CreatedAt:   time.Now(),
@@ -254,15 +255,15 @@ func (m *OauthManager) NewAccessToken(authorizationCodeToken *models.Token,
 		Scope:       authorizationCodeToken.Scope,
 		UserID:      authorizationCodeToken.UserID,
 	}
-	token.Code = accessCodeGenerate.GenCode(&generate.CodeGenerateInfo{
+	token.Code = accessCodeGenerator.GenCode(&generator.CodeGenerateInfo{
 		Token:   *token,
 		Request: req.Request,
 	})
 	return token
 }
 
-func (m *OauthManager) GenAuthorizeCode(ctx context.Context, req *AuthorizeGenerateRequest) (*models.Token, error) {
-	oauthApp, err := m.oauthAppStore.GetApp(ctx, req.ClientID)
+func (m *OauthManager) GenAuthorizeCode(ctx context.Context, req *AuthorizeGenerateRequest) (*tokenmodels.Token, error) {
+	oauthApp, err := m.oauthAppDAO.GetApp(ctx, req.ClientID)
 	if err != nil {
 		return nil, err
 	} else if req.RedirectURL != oauthApp.RedirectURL {
@@ -271,10 +272,11 @@ func (m *OauthManager) GenAuthorizeCode(ctx context.Context, req *AuthorizeGener
 	}
 
 	authorizationToken := m.NewAuthorizationToken(req)
-	_, err = m.tokenStore.Create(ctx, authorizationToken)
+	_, err = m.tokenDAO.Create(ctx, authorizationToken)
 	return authorizationToken, err
 }
-func (m *OauthManager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest, codeToken *models.Token) error {
+
+func (m *OauthManager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest, codeToken *tokenmodels.Token) error {
 	if req.RedirectURL != codeToken.RedirectURI {
 		return perror.Wrapf(herrors.ErrOAuthReqNotValid,
 			"req redirect url = %s, code redirect url = %s", req.RedirectURL, codeToken.RedirectURI)
@@ -284,10 +286,11 @@ func (m *OauthManager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest,
 	}
 	return nil
 }
+
 func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGenerateRequest,
-	accessCodeGenerate generate.AccessTokenCodeGenerate) (*models.Token, error) {
+	accessCodeGenerator generator.AccessTokenCodeGenerator) (*tokenmodels.Token, error) {
 	// check client secret ok
-	secrets, err := m.oauthAppStore.ListSecret(ctx, req.ClientID)
+	secrets, err := m.oauthAppDAO.ListSecret(ctx, req.ClientID)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +306,7 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 	}
 
 	// get authorize token, and check by it
-	authorizationCodeToken, err := m.tokenStore.Get(ctx, req.Code)
+	authorizationCodeToken, err := m.tokenDAO.GetByCode(ctx, req.Code)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			return nil, herrors.ErrOAuthAuthorizationCodeNotExist
@@ -313,31 +316,25 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 
 	if err := m.CheckByAuthorizationCode(req, authorizationCodeToken); err != nil {
 		if perror.Cause(err) == herrors.ErrOAuthCodeExpired {
-			if delErr := m.tokenStore.DeleteByCode(ctx, req.Code); delErr != nil {
+			if delErr := m.tokenDAO.DeleteByCode(ctx, req.Code); delErr != nil {
 				log.Warningf(ctx, "delete expired code error, err = %v", delErr)
 			}
 		}
 		return nil, err
 	}
 
-	// new access token  and store
-	accessToken := m.NewAccessToken(authorizationCodeToken, req, accessCodeGenerate)
-	_, err = m.tokenStore.Create(ctx, accessToken)
+	// new access token and store
+	accessToken := m.NewAccessToken(authorizationCodeToken, req, accessCodeGenerator)
+	_, err = m.tokenDAO.Create(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}
 
 	// delete authorize code
-	err = m.tokenStore.DeleteByCode(ctx, req.Code)
+	err = m.tokenDAO.DeleteByCode(ctx, req.Code)
 	if err != nil {
 		log.Warningf(ctx, "Delete Authorization token error, code = %s, error = %v", req.Code, err)
 	}
 
 	return accessToken, nil
-}
-func (m *OauthManager) RevokeAllAccessToken(ctx context.Context, clientID string) error {
-	return m.tokenStore.DeleteByClientID(ctx, clientID)
-}
-func (m *OauthManager) LoadAccessToken(ctx context.Context, accessToken string) (*models.Token, error) {
-	return m.tokenStore.Get(ctx, accessToken)
 }

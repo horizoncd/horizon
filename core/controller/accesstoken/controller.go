@@ -1,14 +1,13 @@
 package accesstoken
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
+	"g.hz.netease.com/horizon/pkg/token/generator"
+	tokenmanager "g.hz.netease.com/horizon/pkg/token/manager"
 	"github.com/google/uuid"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -44,7 +43,7 @@ type Controller interface {
 type controller struct {
 	userMgr        usermanager.Manager
 	accessTokenMgr accesstokenmanager.Manager
-	oauthMgr       oauthmanager.Manager
+	tokenMgr       tokenmanager.Manager
 	memberSvc      memberservice.Service
 	memberMgr      membermanager.Manager
 }
@@ -53,7 +52,7 @@ func NewController(param *param.Param) Controller {
 	return &controller{
 		userMgr:        param.UserManager,
 		accessTokenMgr: param.AccessTokenManager,
-		oauthMgr:       param.OauthManager,
+		tokenMgr:       param.TokenManager,
 		memberSvc:      param.MemberService,
 		memberMgr:      param.MemberManager,
 	}
@@ -88,7 +87,7 @@ func (c *controller) CreateResourceAccessToken(ctx context.Context, request Crea
 	if err != nil {
 		return nil, err
 	}
-	token, err = c.accessTokenMgr.CreateAccessToken(ctx, token)
+	token, err = c.tokenMgr.CreateToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +134,7 @@ func (c *controller) CreatePersonalAccessToken(ctx context.Context,
 		return nil, err
 	}
 
-	token, err = c.accessTokenMgr.CreateAccessToken(ctx, token)
+	token, err = c.tokenMgr.CreateToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +233,7 @@ func (c *controller) ListResourceAccessTokens(ctx context.Context, resourceType 
 }
 
 func (c *controller) RevokePersonalAccessToken(ctx context.Context, id uint) error {
-	token, err := c.accessTokenMgr.GetAccessToken(ctx, id)
+	token, err := c.tokenMgr.LoadTokenByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -259,11 +258,11 @@ func (c *controller) RevokePersonalAccessToken(ctx context.Context, id uint) err
 	}
 
 	// 2. delete token
-	return c.accessTokenMgr.DeleteAccessToken(ctx, id)
+	return c.tokenMgr.RevokeTokenByID(ctx, id)
 }
 
 func (c *controller) RevokeResourceAccessToken(ctx context.Context, id uint) error {
-	token, err := c.accessTokenMgr.GetAccessToken(ctx, id)
+	token, err := c.tokenMgr.LoadTokenByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -308,7 +307,7 @@ func (c *controller) RevokeResourceAccessToken(ctx context.Context, id uint) err
 	}
 
 	// 2. delete token
-	if err := c.accessTokenMgr.DeleteAccessToken(ctx, id); err != nil {
+	if err := c.tokenMgr.RevokeTokenByID(ctx, id); err != nil {
 		return err
 	}
 
@@ -328,15 +327,7 @@ func generateRobot(token, resourceType string, resourceID uint) *usermodels.User
 	}
 }
 
-func generateCode(userID uint) string {
-	buf := bytes.NewBufferString(time.Now().String())
-	buf.WriteString(strconv.Itoa(int(userID)))
-	code := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))
-	code = generate.AccessTokenPrefix + strings.ToUpper(strings.TrimRight(code, "="))
-	return code
-}
-
-func generateToken(name, expiresAtStr string, userID uint, scopes []string) (*oauthmodels.Token, error) {
+func generateToken(name, expiresAtStr string, userID uint, scopes []string) (*tokenmodels.Token, error) {
 	createdAt := time.Now()
 	expiredIn := time.Duration(0)
 	if expiresAtStr != NeverExpire {
@@ -349,9 +340,12 @@ func generateToken(name, expiresAtStr string, userID uint, scopes []string) (*oa
 		}
 		expiredIn = expiredAt.Sub(createdAt)
 	}
-	return &oauthmodels.Token{
-		Name:      name,
-		Code:      generateCode(userID),
+	gen := generator.NewUserAccessTokenGenerator()
+	return &tokenmodels.Token{
+		Name: name,
+		Code: gen.GenCode(&generator.CodeGenerateInfo{
+			Token: tokenmodels.Token{UserID: userID},
+		}),
 		Scope:     strings.Join(scopes, " "),
 		CreatedAt: createdAt,
 		ExpiresIn: expiredIn,

@@ -10,10 +10,10 @@ import (
 	rbactype "github.com/horizoncd/horizon/pkg/auth"
 	"github.com/horizoncd/horizon/pkg/authentication/user"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/oauth/manager"
 	"github.com/horizoncd/horizon/pkg/oauth/scope"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/rbac/types"
+	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	"golang.org/x/net/context"
 )
@@ -25,7 +25,7 @@ type Controller interface {
 }
 
 type controller struct {
-	oauthManager manager.Manager
+	tokenManager tokenmanager.Manager
 	userManager  usermanager.Manager
 	scopeService scope.Service
 }
@@ -34,14 +34,14 @@ var _ Controller = &controller{}
 
 func NewOauthChecker(param *param.Param) Controller {
 	return &controller{
-		oauthManager: param.OauthManager,
+		tokenManager: param.TokenManager,
 		userManager:  param.UserManager,
 		scopeService: param.ScopeService,
 	}
 }
 
 func (c *controller) ValidateToken(ctx context.Context, accessToken string) error {
-	token, err := c.oauthManager.LoadAccessToken(ctx, accessToken)
+	token, err := c.tokenManager.LoadTokenByCode(ctx, accessToken)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (c *controller) ValidateToken(ctx context.Context, accessToken string) erro
 }
 
 func (c *controller) LoadAccessTokenUser(ctx context.Context, accessToken string) (user.User, error) {
-	token, err := c.oauthManager.LoadAccessToken(ctx, accessToken)
+	token, err := c.tokenManager.LoadTokenByCode(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -85,18 +85,18 @@ func (c *controller) LoadAccessTokenUser(ctx context.Context, accessToken string
 
 func (c *controller) CheckScopePermission(ctx context.Context, accessToken string,
 	requestInfo auth.RequestInfo) (bool, string, error) {
-	token, err := c.oauthManager.LoadAccessToken(ctx, accessToken)
+	token, err := c.tokenManager.LoadTokenByCode(ctx, accessToken)
 	if err != nil {
 		return false, "", err
 	}
 
-	user, err := c.LoadAccessTokenUser(ctx, accessToken)
+	usr, err := c.LoadAccessTokenUser(ctx, accessToken)
 	if err != nil {
 		return false, "", err
 	}
 
 	record := rbactype.AttributesRecord{
-		User:            user,
+		User:            usr,
 		Verb:            requestInfo.Verb,
 		APIGroup:        requestInfo.APIGroup,
 		APIVersion:      requestInfo.APIVersion,
@@ -113,7 +113,7 @@ func (c *controller) CheckScopePermission(ctx context.Context, accessToken strin
 		for i, policy := range scopeRule.PolicyRules {
 			if types.RuleAllow(record, &policy) {
 				reason := fmt.Sprintf("user %s allowd by scope(%s) by rule[%d]",
-					user.String(), scopeRule.Name, i)
+					usr.String(), scopeRule.Name, i)
 				return true, reason, nil
 			}
 		}

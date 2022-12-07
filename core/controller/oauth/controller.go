@@ -52,7 +52,6 @@ type Controller interface {
 	GenAuthorizeCode(ctx context.Context, req *AuthorizeReq) (*AuthorizeCodeResponse, error)
 	// GenAccessToken Access Token Request,ref:rfc6750
 	GenAccessToken(ctx context.Context, req *AccessTokenReq) (*AccessTokenResponse, error)
-	LoadAccessToken(ctx context.Context, token string) (*models.Token, error)
 }
 
 func NewController(param *param.Param) Controller {
@@ -95,12 +94,12 @@ func (c *controller) GenAccessToken(ctx context.Context, req *AccessTokenReq) (*
 	if err != nil {
 		return nil, err
 	}
-	var generator generate.AccessTokenCodeGenerate
+	var gen generator.AccessTokenCodeGenerator
 	switch app.AppType {
 	case oauthmodel.HorizonOAuthAPP:
-		generator = generate.NewHorizonAppUserToServerAccessGenerate()
+		gen = generator.NewHorizonAppUserToServerAccessGenerator()
 	case oauthmodel.DirectOAuthAPP:
-		generator = generate.NewOauthAccessGenerate()
+		gen = generator.NewOauthAccessGenerator()
 	default:
 		return nil, perror.Wrapf(herrors.ErrOAuthInternal,
 			"appType Not Supported, appType = %d", app.AppType)
@@ -112,7 +111,7 @@ func (c *controller) GenAccessToken(ctx context.Context, req *AccessTokenReq) (*
 		Code:         req.Code,
 		RedirectURL:  req.RedirectURL,
 		Request:      req.Request,
-	}, generator)
+	}, gen)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +121,4 @@ func (c *controller) GenAccessToken(ctx context.Context, req *AccessTokenReq) (*
 		Scope:       token.Scope,
 		TokenType:   "bearer",
 	}, err
-}
-func (c *controller) LoadAccessToken(ctx context.Context, token string) (*models.Token, error) {
-	return c.oauthManager.LoadAccessToken(ctx, token)
 }

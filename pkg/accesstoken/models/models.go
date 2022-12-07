@@ -1,10 +1,10 @@
 package models
 
 import (
-	oauthmodels "github.com/horizoncd/horizon/pkg/oauth/models"
+	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 )
 
 type AccessToken struct {
-	oauthmodels.Token
+	tokenmodels.Token
 	Role string
 }
