@@ -22,7 +22,7 @@ import (
 type DAO interface {
 	Create(ctx context.Context, cluster *models.Cluster,
 		tags []*tagmodels.Tag, extraMembers map[*usermodels.User]string) (*models.Cluster, error)
-	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
+	GetByID(ctx context.Context, id uint, includeSoftDelete bool) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
@@ -105,10 +105,13 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 	return cluster, err
 }
 
-func (d *dao) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
+func (d *dao) GetByID(ctx context.Context, id uint, includeSoftDelete bool) (*models.Cluster, error) {
 	var cluster models.Cluster
-	result := d.db.WithContext(ctx).Raw(sqlcommon.ClusterQueryByID, id).First(&cluster)
-
+	statement := d.db.Unscoped().WithContext(ctx).Where("id = ?", id)
+	if !includeSoftDelete {
+		statement.Where("deleted_ts = 0")
+	}
+	result := statement.First(&cluster)
 	if result.Error != nil {
 		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, herrors.NewErrNotFound(herrors.ClusterInDB, result.Error.Error())

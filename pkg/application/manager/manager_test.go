@@ -185,4 +185,8 @@ func Test(t *testing.T) {
 	assert.Equal(t, appGetByName.Name, apps[0].Name)
 	err = mgr.DeleteByID(ctx, appGetByName.ID)
 	assert.Nil(t, err)
+
+	app, err := mgr.GetByIDIncludeSoftDelete(ctx, appGetByName.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, app)
 }

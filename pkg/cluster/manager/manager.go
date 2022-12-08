@@ -20,6 +20,7 @@ type Manager interface {
 	Create(ctx context.Context, cluster *models.Cluster,
 		tags []*tagmodels.Tag, extraMembers map[string]string) (*models.Cluster, error)
 	GetByID(ctx context.Context, id uint) (*models.Cluster, error)
+	GetByIDIncludeSoftDelete(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
@@ -60,7 +61,15 @@ func (m *manager) Create(ctx context.Context, cluster *models.Cluster,
 }
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Cluster, error) {
-	cluster, err := m.dao.GetByID(ctx, id)
+	cluster, err := m.dao.GetByID(ctx, id, false)
+	if err != nil {
+		return nil, err
+	}
+	return cluster, nil
+}
+
+func (m *manager) GetByIDIncludeSoftDelete(ctx context.Context, id uint) (*models.Cluster, error) {
+	cluster, err := m.dao.GetByID(ctx, id, true)
 	if err != nil {
 		return nil, err
 	}

@@ -95,6 +95,21 @@ func (mr *MockManagerMockRecorder) GetByID(ctx, id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockManager)(nil).GetByID), ctx, id)
 }
 
+// GetByIDIncludeSoftDelete mocks base method.
+func (m *MockManager) GetByIDIncludeSoftDelete(ctx context.Context, id uint) (*models.Application, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByIDIncludeSoftDelete", ctx, id)
+	ret0, _ := ret[0].(*models.Application)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByIDIncludeSoftDelete indicates an expected call of GetByIDIncludeSoftDelete.
+func (mr *MockManagerMockRecorder) GetByIDIncludeSoftDelete(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIDIncludeSoftDelete", reflect.TypeOf((*MockManager)(nil).GetByIDIncludeSoftDelete), ctx, id)
+}
+
 // GetByIDs mocks base method.
 func (m *MockManager) GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error) {
 	m.ctrl.T.Helper()

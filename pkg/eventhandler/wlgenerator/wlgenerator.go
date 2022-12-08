@@ -100,7 +100,7 @@ func (w *WebhookLogGenerator) listSystemResources() map[string][]uint {
 func (w *WebhookLogGenerator) listAssociatedResourcesOfApp(ctx context.Context,
 	id uint) (*applicationmodels.Application, map[string][]uint) {
 	resources := w.listSystemResources()
-	app, err := w.applicationMgr.GetByID(ctx, id)
+	app, err := w.applicationMgr.GetByIDIncludeSoftDelete(ctx, id)
 	if err != nil {
 		log.Warningf(ctx, "application %d is not exist", id)
 		return nil, resources
@@ -120,7 +120,7 @@ func (w *WebhookLogGenerator) listAssociatedResourcesOfApp(ctx context.Context,
 // listAssociatedResourcesOfCluster get cluster by id and list all the parent resources
 func (w *WebhookLogGenerator) listAssociatedResourcesOfCluster(ctx context.Context, id uint) (*clustermodels.Cluster,
 	*applicationmodels.Application, map[string][]uint) {
-	cluster, err := w.clusterMgr.GetByID(ctx, id)
+	cluster, err := w.clusterMgr.GetByIDIncludeSoftDelete(ctx, id)
 	if err != nil {
 		log.Warningf(ctx, "cluster %d is not exist",
 			id)
