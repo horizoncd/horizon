@@ -469,6 +469,7 @@ func TestAll(t *testing.T) {
 	t.Run("TestListUserClustersByNameFuzzily", testListUserClustersByNameFuzzily)
 	t.Run("TestListClusterWithExpiry", testListClusterWithExpiry)
 	t.Run("TestControllerFreeOrDeleteClusterFailed", testControllerFreeOrDeleteClusterFailed)
+	t.Run("TestGetClusterStatusV2", testGetClusterStatusV2)
 }
 
 // nolint
