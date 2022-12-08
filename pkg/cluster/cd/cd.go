@@ -20,27 +20,27 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
-	"math"
 	"net/http"
-	"sort"
-	"strconv"
 	"sync"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
-
 	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/argocd"
+	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/ability"
+	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/deployment"
+	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/generic"
+	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/kservice"
+	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/rollout"
 	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
 	argocdconf "github.com/horizoncd/horizon/pkg/config/argocd"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"k8s.io/client-go/kubernetes"
 
-	v1alpha12 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
-	"github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
+	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
 	kube2 "github.com/argoproj/gitops-engine/pkg/utils/kube"
 	appsv1 "k8s.io/api/apps/v1"
@@ -49,9 +49,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/kubectl/pkg/cmd/exec"
 	"k8s.io/kubectl/pkg/describe"
 	kubectlresource "k8s.io/kubectl/pkg/util/resource"
 )
@@ -61,6 +58,12 @@ const (
 	DeploymentPodTemplateHash = "pod-template-hash"
 	_rolloutRevision          = "rollout.argoproj.io/revision"
 	RolloutPodTemplateHash    = "rollouts-pod-template-hash"
+
+	gvkPattern = "%s/%s/%s"
+
+	workloadRollout    = "argoproj.io/v1alpha1/Rollout"
+	workloadDeployment = "apps/v1/Deployment"
+	workloadKsvc       = "serving.knative.dev/v1/Service"
 )
 
 const (
@@ -85,110 +88,7 @@ const (
 	PodErrCrashLoopBackOff = "CrashLoopBackOff"
 )
 
-type GetClusterStateParams struct {
-	Environment  string
-	Cluster      string
-	RegionEntity *regionmodels.RegionEntity
-}
-
-type CreateClusterParams struct {
-	Environment  string
-	Cluster      string
-	GitRepoURL   string
-	ValueFiles   []string
-	RegionEntity *regionmodels.RegionEntity
-	Namespace    string
-}
-
-type DeployClusterParams struct {
-	Environment string
-	Cluster     string
-	Revision    string
-}
-
-type GetPodEventsParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Pod          string
-}
-
-type GetPodParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Pod          string
-}
-
-type DeletePodsParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Namespace    string
-	Pods         []string
-}
-
-type DeleteClusterParams struct {
-	Environment string
-	Cluster     string
-}
-
-type ClusterNextParams struct {
-	Environment string
-	Cluster     string
-}
-
-type ClusterPromoteParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Environment  string
-}
-
-type ClusterPauseParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Environment  string
-}
-
-type ClusterResumeParams struct {
-	RegionEntity *regionmodels.RegionEntity
-	Cluster      string
-	Namespace    string
-	Environment  string
-}
-
-type GetContainerLogParams struct {
-	Namespace   string
-	Cluster     string
-	Pod         string
-	Container   string
-	Environment string
-	TailLines   int
-}
-
-type ExecParams struct {
-	Environment  string
-	Cluster      string
-	RegionEntity *regionmodels.RegionEntity
-	Namespace    string
-	PodList      []string
-}
-
-type ExecResp struct {
-	key    string
-	Result bool
-	Stdout string
-	Stderr string
-	Error  error
-}
-
-type OperationResult struct {
-	Result bool
-	Error  error
-}
-
-type ExecFunc func(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
-
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/cd/cd_mock.go -package=mock_cd
 type CD interface {
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	DeployCluster(ctx context.Context, params *DeployClusterParams) error
@@ -199,6 +99,7 @@ type CD interface {
 	Resume(ctx context.Context, params *ClusterResumeParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
+	GetClusterStateV2(ctx context.Context, params *GetClusterStateParams) (*ClusterStateV2, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
 	GetPod(ctx context.Context, params *GetPodParams) (*corev1.Pod, error)
 	GetPodContainers(ctx context.Context, params *GetPodParams) ([]ContainerDetail, error)
@@ -218,6 +119,19 @@ func NewCD(argoCDMapper argocdconf.Mapper) CD {
 		kubeClientFty: kubeclient.Fty,
 		factory:       argocd.NewFactory(argoCDMapper),
 	}
+}
+
+func (c *cd) GetResourceTree(ctx context.Context,
+	params *GetResourceTreeParams) (*applicationV1alpha1.ApplicationTree, error) {
+	const op = "cd: create cluster"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	argo, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return nil, err
+	}
+
+	return argo.GetApplicationTree(ctx, params.Cluster)
 }
 
 func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
@@ -372,8 +286,8 @@ func (c *cd) Resume(ctx context.Context, params *ClusterResumeParams) (err error
 	return nil
 }
 
-func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*v1alpha1.Rollout, error) {
-	var rollout *v1alpha1.Rollout
+func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*rolloutsV1alpha1.Rollout, error) {
+	var rollout *rolloutsV1alpha1.Rollout
 	argo, err := c.factory.GetArgoCD(environment)
 	if err != nil {
 		return nil, err
@@ -397,6 +311,164 @@ func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*
 	}
 
 	return rollout, nil
+}
+
+func (c *cd) GetClusterStateV2(ctx context.Context,
+	params *GetClusterStateParams) (clusterState *ClusterStateV2, err error) {
+	const op = "cd: get cluster status"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	argo, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return nil, err
+	}
+
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	if err != nil {
+		return nil, err
+	}
+
+	clusterState = &ClusterStateV2{Versions: map[string]*Revision{}}
+
+	// get application status
+	argoApp, err := argo.GetApplication(ctx, params.Cluster)
+	if err != nil {
+		return nil, err
+	}
+	namespace := argoApp.Spec.Destination.Namespace
+
+	// namespace = argoApp.Spec.Destination.Namespace
+	if argoApp.Status.Health.Status == "" {
+		return nil, perror.Wrapf(
+			herrors.NewErrNotFound(herrors.ClusterStateInArgo, "cluster not found in argo"),
+			"failed to get cluster status from argo: app name = %v", params.Cluster)
+	}
+
+	clusterState.Status = argoApp.Status.Health.Status
+	if clusterState.Status == health.HealthStatusUnknown {
+		clusterState.Status = health.HealthStatusDegraded
+	} else if clusterState.Status == health.HealthStatusMissing {
+		clusterState.Status = health.HealthStatusProgressing
+	}
+
+	resourceTree, err := argo.GetApplicationTree(ctx, params.Cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	resourceMap := make(map[string]*applicationV1alpha1.ResourceNode)
+	gvkMap := make(map[string][]*applicationV1alpha1.ResourceNode)
+	for i := range resourceTree.Nodes {
+		resourceNode := resourceTree.Nodes[i]
+		resourceMap[resourceNode.UID] = &resourceNode
+		key := fmt.Sprintf(gvkPattern, resourceNode.Group, resourceNode.Version, resourceNode.Kind)
+		gvkMap[key] = append(gvkMap[key], &resourceNode)
+	}
+
+	var (
+		workloadType interface{}
+		gvr          schema.GroupVersionResource
+		node         *applicationV1alpha1.ResourceNode
+	)
+	if nodes, ok := gvkMap[workloadRollout]; ok {
+		node = nodes[0]
+		workloadType = rollout.Ability
+		gvr = schema.GroupVersionResource{Group: "argoproj.io", Version: "v1alpha1", Resource: "rollouts"}
+	} else if nodes, ok = gvkMap[workloadKsvc]; ok {
+		node = nodes[0]
+		workloadType = kservice.Ability
+		gvr = schema.GroupVersionResource{Group: "serving.knative.dev", Version: "v1", Resource: "services"}
+	} else if nodes, ok = gvkMap[workloadDeployment]; ok {
+		node = nodes[0]
+		workloadType = deployment.Ability
+		gvr = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
+	} else {
+		workloadType = generic.Ability
+		node = findTop(resourceMap)
+		if node == nil {
+			return nil, perror.Wrapf(herrors.ErrTopResourceNotFound,
+				"failed to get top resource: resource tree = %v", resourceMap)
+		}
+		resource, err := mapKind2Resource(node.Group, node.Version, node.Kind, kubeClient.Basic)
+		if err != nil {
+			return nil, err
+		}
+		gvr = schema.GroupVersionResource{
+			Group: node.Group, Version: node.Version, Resource: resource,
+		}
+	}
+
+	clusterState.Workload = fmt.Sprintf(gvkPattern, node.Group, node.Version, node.Kind)
+
+	un, err := kubeClient.Dynamic.Resource(gvr).
+		Namespace(namespace).Get(ctx, node.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.ResoruceInK8S, "failed to get resource"),
+			"failed to get resource on k8s: gvr = %v, err = %v", gvr, err)
+	}
+
+	getter := ability.New(workloadType)
+
+	// step
+	step, err := getter.GetSteps(un, resourceMap, kubeClient)
+	if err != nil {
+		if perror.Cause(err) != herrors.ErrMethodNotImplemented {
+			return nil, perror.Wrapf(
+				herrors.NewErrGetFailed(herrors.StepInWorkload, "failed to get step"),
+				"failed to get step: resoruce = %v, err = %v", un, err)
+		}
+	} else {
+		if step != nil {
+			clusterState.Step = &Step{
+				Index:        step.Index,
+				Total:        step.Total,
+				Replicas:     step.Replicas,
+				ManualPaused: step.ManualPaused,
+			}
+		}
+	}
+
+	// revision
+	current, revisions, err := getter.GetRevisionsOrListPods(un, resourceMap, kubeClient)
+	if err != nil {
+		if perror.Cause(err) != herrors.ErrMethodNotImplemented {
+			return nil, perror.Wrapf(
+				herrors.NewErrGetFailed(herrors.PodsInK8S, "failed to get revisions"),
+				"failed to get revisions: err = %v", err)
+		}
+	} else {
+		stripptedRevisions := make(map[string]*Revision)
+
+		for k, revision := range revisions {
+			stripptedRevision := &Revision{Pods: make(map[string]*ClusterPod)}
+			for _, pod := range revision.Pods {
+				strippedPod := podMapping(pod)
+				stripptedRevision.Pods[pod.Name] = strippedPod
+			}
+			stripptedRevisions[k] = stripptedRevision
+		}
+		clusterState.Versions = stripptedRevisions
+		clusterState.Revision = current
+	}
+
+	// healthy
+	if clusterState.Status == health.HealthStatusHealthy {
+		isHealthy, err := getter.IsHealthy(un, resourceMap, kubeClient)
+		if err != nil {
+			if perror.Cause(err) != herrors.ErrMethodNotImplemented {
+				return nil,
+					perror.Wrapf(herrors.NewErrGetFailed(herrors.ResoruceInK8S, "failed to get health status"),
+						"failed to get healthy: err = %v", err)
+			}
+		} else {
+			if !isHealthy {
+				clusterState.Status = health.HealthStatusProgressing
+			}
+		}
+	}
+
+	return clusterState, nil
 }
 
 // GetClusterState TODO(gjq) restructure
@@ -436,7 +508,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 	}
 
 	// TODO: rollout coupling
-	var rollout *v1alpha1.Rollout
+	var rollout *rolloutsV1alpha1.Rollout
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
 		common.ClusterClusterLabelKey, params.Cluster))
 	if err := argo.GetApplicationResource(ctx, params.Cluster, argocd.ResourceParams{
@@ -470,7 +542,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 						if _, ok := podMap[node.Name]; !ok {
 							return nil, herrors.NewErrNotFound(herrors.PodsInK8S, fmt.Sprintf("pod %s does not exist", node.Name))
 						}
-						clusterPodMap[node.Name] = podToClusterPod(podMap[node.Name])
+						clusterPodMap[node.Name] = podMapping(podMap[node.Name])
 					}
 				}
 				clusterState.PodTemplateHash = "default"
@@ -780,7 +852,7 @@ func extractEnv(pod *corev1.Pod, container corev1.Container) []corev1.EnvVar {
 }
 
 func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace string,
-	kubeClientSet kubernetes.Interface, clusterState *ClusterState) error {
+	kubeClient kubernetes.Interface, clusterState *ClusterState) error {
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
 		common.ClusterClusterLabelKey, cluster))
 
@@ -792,11 +864,11 @@ func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace stri
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		pods, err1 = kube.GetPods(ctx, kubeClientSet, namespace, labelSelector.String())
+		pods, err1 = kube.GetPods(ctx, kubeClient, namespace, labelSelector.String())
 	}()
 	go func() {
 		defer wg.Done()
-		events, err2 = kube.GetEvents(ctx, kubeClientSet, namespace)
+		events, err2 = kube.GetEvents(ctx, kubeClient, namespace)
 	}()
 	wg.Wait()
 
@@ -817,690 +889,6 @@ func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace stri
 		}
 	}
 	return nil
-}
-
-func resourceTreeContains(resourceTree *v1alpha12.ApplicationTree, resourceKind string) bool {
-	for _, node := range resourceTree.Nodes {
-		if node.Kind == resourceKind {
-			return true
-		}
-	}
-	return false
-}
-
-func podToClusterPod(pod corev1.Pod) (clusterPod *ClusterPod) {
-	clusterPod = &ClusterPod{
-		Metadata: PodMetadata{
-			CreationTimestamp: pod.CreationTimestamp,
-			Namespace:         pod.Namespace,
-			Annotations:       pod.Annotations,
-		},
-		Spec: PodSpec{
-			NodeName:       pod.Spec.NodeName,
-			InitContainers: nil,
-			Containers:     nil,
-		},
-		Status: PodStatus{
-			HostIP:  pod.Status.HostIP,
-			PodIP:   pod.Status.PodIP,
-			Phase:   string(pod.Status.Phase),
-			Reason:  pod.Status.Reason,
-			Message: pod.Status.Message,
-		},
-		DeletionTimestamp: pod.DeletionTimestamp,
-	}
-
-	var initContainers []*Container
-	for i := range pod.Spec.InitContainers {
-		c := pod.Spec.InitContainers[i]
-		initContainers = append(initContainers, &Container{
-			Name:  c.Name,
-			Image: c.Image,
-		})
-	}
-	clusterPod.Spec.InitContainers = initContainers
-
-	cs := &containerList{}
-	for i := range pod.Spec.Containers {
-		cs.containers = append(cs.containers, &pod.Spec.Containers[i])
-	}
-	sort.Sort(cs)
-
-	var containers []*Container
-	for i := range cs.containers {
-		c := cs.containers[i]
-		containers = append(containers, &Container{
-			Name:  c.Name,
-			Image: c.Image,
-		})
-	}
-	clusterPod.Spec.Containers = containers
-
-	var containerStatuses []*ContainerStatus
-	for i := range pod.Status.ContainerStatuses {
-		containerStatus := pod.Status.ContainerStatuses[i]
-		c := &ContainerStatus{
-			Name:         containerStatus.Name,
-			Ready:        containerStatus.Ready,
-			RestartCount: containerStatus.RestartCount,
-			State:        parseContainerState(containerStatus),
-			ImageID:      containerStatus.ImageID,
-		}
-		containerStatuses = append(containerStatuses, c)
-	}
-	clusterPod.Status.ContainerStatuses = containerStatuses
-	clusterPod.Status.LifeCycle = parsePodLifeCycle(pod)
-	return
-}
-
-func parsePod(ctx context.Context, clusterInfo *ClusterState,
-	pod *corev1.Pod, events []*corev1.Event) (err error) {
-	const deploymentPodTemplateHash = "pod-template-hash"
-	const rolloutPodTemplateHash = "rollouts-pod-template-hash"
-
-	podTemplateHash := pod.Labels[deploymentPodTemplateHash]
-	if podTemplateHash == "" {
-		podTemplateHash = pod.Labels[rolloutPodTemplateHash]
-	}
-
-	if podTemplateHash == "" {
-		log.Errorf(ctx, "pod<%s> has no %v or %v label",
-			pod.Name, deploymentPodTemplateHash, rolloutPodTemplateHash)
-		return nil
-	}
-
-	if clusterInfo.Versions[podTemplateHash] == nil {
-		log.Infof(ctx, "pod<%s> has no related ReplicaSet object", pod.Name)
-		return nil
-	}
-	clusterInfo.Versions[podTemplateHash].Replicas++
-
-	clusterPod := &ClusterPod{
-		Metadata: PodMetadata{
-			CreationTimestamp: pod.CreationTimestamp,
-			Namespace:         pod.Namespace,
-			Annotations:       pod.Annotations,
-		},
-		Spec: PodSpec{
-			NodeName:       pod.Spec.NodeName,
-			InitContainers: nil,
-			Containers:     nil,
-		},
-		Status: PodStatus{
-			HostIP:  pod.Status.HostIP,
-			PodIP:   pod.Status.PodIP,
-			Phase:   string(pod.Status.Phase),
-			Reason:  pod.Status.Reason,
-			Message: pod.Status.Message,
-		},
-		DeletionTimestamp: pod.DeletionTimestamp,
-	}
-
-	var initContainers []*Container
-	for i := range pod.Spec.InitContainers {
-		c := pod.Spec.InitContainers[i]
-		initContainers = append(initContainers, &Container{
-			Name:  c.Name,
-			Image: c.Image,
-		})
-	}
-	clusterPod.Spec.InitContainers = initContainers
-
-	cs := &containerList{name: pod.Labels[common.ClusterClusterLabelKey]}
-	for i := range pod.Spec.Containers {
-		cs.containers = append(cs.containers, &pod.Spec.Containers[i])
-	}
-	sort.Sort(cs)
-
-	var containers []*Container
-	// containerNameList holds the containerName order
-	containerNameList := make([]string, 0)
-	for i := range cs.containers {
-		c := cs.containers[i]
-		containers = append(containers, &Container{
-			Name:  c.Name,
-			Image: c.Image,
-		})
-		containerNameList = append(containerNameList, c.Name)
-	}
-	clusterPod.Spec.Containers = containers
-
-	// containerStatusMap, key is containerName, value is *ContainerStatus
-	containerStatusMap := make(map[string]*ContainerStatus)
-	for i := range pod.Status.ContainerStatuses {
-		containerStatus := pod.Status.ContainerStatuses[i]
-		c := &ContainerStatus{
-			Name:         containerStatus.Name,
-			Ready:        containerStatus.Ready,
-			RestartCount: containerStatus.RestartCount,
-			State:        parseContainerState(containerStatus),
-			ImageID:      containerStatus.ImageID,
-		}
-		containerStatusMap[containerStatus.Name] = c
-	}
-
-	// construct ContainerStatus list, in containerName order
-	var containerStatuses []*ContainerStatus
-	for _, containerName := range containerNameList {
-		if c, ok := containerStatusMap[containerName]; ok {
-			containerStatuses = append(containerStatuses, c)
-			delete(containerStatusMap, containerName)
-		}
-	}
-	// append the rest ContainerStatus in containerStatusMap if it exists
-	for containerName := range containerStatusMap {
-		containerStatuses = append(containerStatuses, containerStatusMap[containerName])
-	}
-
-	clusterPod.Status.ContainerStatuses = containerStatuses
-	clusterPod.Status.LifeCycle = parsePodLifeCycle(*pod)
-
-	for i := range events {
-		eventTimeStamp := metav1.Time{Time: events[i].EventTime.Time}
-		if eventTimeStamp.IsZero() {
-			eventTimeStamp = events[i].FirstTimestamp
-		}
-		clusterPod.Status.Events = append(clusterPod.Status.Events,
-			Event{
-				Type:           events[i].Type,
-				Reason:         events[i].Reason,
-				Message:        events[i].Message,
-				Count:          events[i].Count,
-				EventTimestamp: eventTimeStamp,
-			})
-	}
-	clusterInfo.Versions[podTemplateHash].Pods[pod.Name] = clusterPod
-	return nil
-}
-
-type containerList struct {
-	name       string
-	containers []*corev1.Container
-}
-
-func (c *containerList) Len() int { return len(c.containers) }
-
-func (c *containerList) Less(i, j int) bool {
-	if c.containers[i].Name == c.name {
-		return true
-	} else if c.containers[j].Name == c.name {
-		return false
-	}
-
-	a := c.containers[i].Name
-	b := c.containers[j].Name
-
-	return a <= b
-}
-
-func (c *containerList) Swap(i, j int) {
-	c.containers[i], c.containers[j] = c.containers[j], c.containers[i]
-}
-
-// parsePodLifecycle parse pod lifecycle by pod status
-func parsePodLifeCycle(pod corev1.Pod) []*LifeCycleItem {
-	var lifeCycle []*LifeCycleItem
-	// if DeletionTimestamp is set, pod is Terminating
-	if pod.DeletionTimestamp != nil {
-		lifeCycle = []*LifeCycleItem{
-			{
-				Type:   PodLifeCycleContainerPreStop,
-				Status: LifeCycleStatusRunning,
-			},
-		}
-	} else {
-		status := pod.Status
-		var (
-			conditionMap = map[corev1.PodConditionType]corev1.PodCondition{}
-			schedule     = LifeCycleItem{
-				Type:   PodLifeCycleSchedule,
-				Status: LifeCycleStatusWaiting,
-			}
-			initialize = LifeCycleItem{
-				Type:   PodLifeCycleInitialize,
-				Status: LifeCycleStatusWaiting,
-			}
-			containerStartup = LifeCycleItem{
-				Type:   PodLifeCycleContainerStartup,
-				Status: LifeCycleStatusWaiting,
-			}
-			containerOnline = LifeCycleItem{
-				Type:   PodLifeCycleContainerOnline,
-				Status: LifeCycleStatusWaiting,
-			}
-			healthCheck = LifeCycleItem{
-				Type:   PodLifeCycleHealthCheck,
-				Status: LifeCycleStatusWaiting,
-			}
-		)
-		lifeCycle = []*LifeCycleItem{
-			&schedule,
-			&initialize,
-			&containerStartup,
-			&containerOnline,
-			&healthCheck,
-		}
-		if len(status.ContainerStatuses) == 0 {
-			return lifeCycle
-		}
-
-		for _, condition := range status.Conditions {
-			conditionMap[condition.Type] = condition
-		}
-		if condition, ok := conditionMap[corev1.PodScheduled]; ok {
-			if condition.Status == corev1.ConditionTrue {
-				schedule.Status = LifeCycleStatusSuccess
-				schedule.CompleteTime = condition.LastTransitionTime
-				initialize.Status = LifeCycleStatusRunning
-			} else if condition.Message != "" {
-				schedule.Status = LifeCycleStatusAbnormal
-				schedule.Message = condition.Message
-			}
-		} else {
-			schedule.Status = LifeCycleStatusWaiting
-		}
-
-		if condition, ok := conditionMap[corev1.PodInitialized]; ok {
-			if condition.Status == corev1.ConditionTrue {
-				initialize.Status = LifeCycleStatusSuccess
-				initialize.CompleteTime = condition.LastTransitionTime
-				containerStartup.Status = LifeCycleStatusRunning
-			}
-		} else {
-			initialize.Status = LifeCycleStatusWaiting
-		}
-
-		if allContainersStarted(status.ContainerStatuses) {
-			containerStartup.Status = LifeCycleStatusSuccess
-			containerOnline.Status = LifeCycleStatusRunning
-		}
-
-		if allContainersRunning(status.ContainerStatuses) {
-			containerOnline.Status = LifeCycleStatusSuccess
-			healthCheck.Status = LifeCycleStatusRunning
-		}
-
-		if allContainersReady(status.ContainerStatuses) {
-			healthCheck.Status = LifeCycleStatusSuccess
-		}
-
-		// CrashLoopBackOff means rest items are abnormal
-		if oneOfContainersCrash(status.ContainerStatuses) {
-			for i := 0; i < len(lifeCycle); i++ {
-				if lifeCycle[i].Status == LifeCycleStatusRunning {
-					lifeCycle[i].Status = LifeCycleStatusAbnormal
-				}
-			}
-		}
-	}
-
-	return lifeCycle
-}
-
-// allContainersStarted determine if all containers have been started
-func allContainersStarted(containerStatuses []corev1.ContainerStatus) bool {
-	for _, containerStatus := range containerStatuses {
-		if containerStatus.Started == nil || !*(containerStatus.Started) {
-			return false
-		}
-	}
-	return true
-}
-
-// allContainersRunning determine if all containers running
-func allContainersRunning(containerStatuses []corev1.ContainerStatus) bool {
-	for _, containerStatus := range containerStatuses {
-		if containerStatus.State.Running == nil {
-			return false
-		}
-	}
-	return true
-}
-
-// allContainersReady determine if all containers ready
-func allContainersReady(containerStatuses []corev1.ContainerStatus) bool {
-	for _, containerStatus := range containerStatuses {
-		if !containerStatus.Ready {
-			return false
-		}
-	}
-	return true
-}
-
-// oneOfContainersCrash determine if one of containers crash
-func oneOfContainersCrash(containerStatuses []corev1.ContainerStatus) bool {
-	for _, containerStatus := range containerStatuses {
-		if containerStatus.State.Waiting != nil && containerStatus.State.Waiting.Reason == PodErrCrashLoopBackOff {
-			return true
-		}
-	}
-	return false
-}
-
-func parseContainerState(containerStatus corev1.ContainerStatus) ContainerState {
-	waiting := "waiting"
-	running := "running"
-	terminated := "terminated"
-
-	// Only one of its members may be specified.
-	state := containerStatus.State
-
-	if state.Running != nil {
-		return ContainerState{
-			State:     running,
-			StartedAt: &state.Running.StartedAt,
-		}
-	}
-
-	if state.Waiting != nil {
-		return ContainerState{
-			State:   waiting,
-			Reason:  state.Waiting.Reason,
-			Message: state.Waiting.Message,
-		}
-	}
-
-	if state.Terminated != nil {
-		return ContainerState{
-			State:     terminated,
-			Reason:    state.Terminated.Reason,
-			Message:   state.Terminated.Message,
-			StartedAt: &state.Terminated.StartedAt,
-		}
-	}
-
-	// If none of them is specified, the default one is ContainerStateWaiting.
-	return ContainerState{State: waiting}
-}
-
-type (
-	ClusterState struct {
-		// Status:
-		// Processing
-		// Healthy
-		// Suspended
-		// Degraded
-		// Missing
-		// Unknown
-		Status health.HealthStatusCode `json:"status,omitempty" yaml:"status,omitempty"`
-
-		// Step
-		Step *Step `json:"step"`
-
-		// Replicas the actual number of replicas running in k8s
-		Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
-
-		// DesiredReplicas desired replicas
-		DesiredReplicas *int `json:"desiredReplicas,omitempty" yaml:"desiredReplicas,omitempty"`
-
-		// PodTemplateHash
-		PodTemplateHash string `json:"podTemplateHash,omitempty" yaml:"podTemplateHash,omitempty"`
-
-		// PodTemplateHashKey the key of the label in the Deployment or Rollout object
-		PodTemplateHashKey string `json:"podTemplateHashKey,omitempty" yaml:"podTemplateHashKey,omitempty"`
-
-		// Revision the desired revision
-		Revision string `json:"revision,omitempty" yaml:"revision,omitempty"`
-
-		// Versions versions detail
-		// key is pod-template-hash, if equal to PodTemplateHash, the version is the desired version
-		Versions map[string]*ClusterVersion `json:"versions,omitempty" yaml:"versions,omitempty"`
-
-		// ManualPaused indicates whether the cluster is in manual pause state
-		ManualPaused bool `json:"manualPaused" yaml:"manualPaused"`
-	}
-
-	Step struct {
-		Index    int   `json:"index"`
-		Total    int   `json:"total"`
-		Replicas []int `json:"replicas"`
-	}
-
-	// ClusterVersion version information
-	ClusterVersion struct {
-		// Replicas the replicas of this revision
-		Replicas int    `json:"replicas,omitempty" yaml:"replicas,omitempty"`
-		Revision string `json:"revision,omitempty" yaml:"revision,omitempty"`
-		// Pods the pods detail of this revision, the key is pod name
-		Pods map[string]*ClusterPod `json:"pods,omitempty" yaml:"pods,omitempty"`
-	}
-
-	// ClusterPod pod detail
-	ClusterPod struct {
-		Metadata          PodMetadata  `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-		Spec              PodSpec      `json:"spec,omitempty" yaml:"spec,omitempty"`
-		Status            PodStatus    `json:"status,omitempty" yaml:"status,omitempty"`
-		DeletionTimestamp *metav1.Time `json:"deletionTimestamp,omitempty"`
-	}
-
-	PodMetadata struct {
-		CreationTimestamp metav1.Time       `json:"creationTimestamp"`
-		Namespace         string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-		Annotations       map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
-	}
-
-	PodSpec struct {
-		NodeName       string       `json:"nodeName,omitempty" yaml:"nodeName,omitempty"`
-		InitContainers []*Container `json:"initContainers,omitempty" yaml:"initContainers,omitempty"`
-		Containers     []*Container `json:"containers,omitempty" yaml:"containers,omitempty"`
-	}
-
-	Container struct {
-		Name  string `json:"name,omitempty" yaml:"name,omitempty"`
-		Image string `json:"image,omitempty" yaml:"image,omitempty"`
-	}
-
-	PodStatus struct {
-		HostIP            string             `json:"hostIP,omitempty" yaml:"hostIP,omitempty"`
-		PodIP             string             `json:"podIP,omitempty" yaml:"podIP,omitempty"`
-		Phase             string             `json:"phase,omitempty" yaml:"phase,omitempty"`
-		Reason            string             `json:"reason,omitempty" yaml:"reason,omitempty"`
-		Message           string             `json:"message,omitempty" yaml:"message,omitempty"`
-		Events            []Event            `json:"events,omitempty" yaml:"events,omitempty"`
-		ContainerStatuses []*ContainerStatus `json:"containerStatuses,omitempty" yaml:"containerStatuses,omitempty"`
-		LifeCycle         []*LifeCycleItem   `json:"lifeCycle" yaml:"lifeCycle"`
-	}
-
-	ContainerStatus struct {
-		Name         string         `json:"name,omitempty" yaml:"name,omitempty"`
-		Ready        bool           `json:"ready" yaml:"ready"`
-		RestartCount int32          `json:"restartCount"`
-		State        ContainerState `json:"state" yaml:"state"`
-		ImageID      string         `json:"imageID" yaml:"imageID"`
-	}
-
-	Event struct {
-		Type           string      `json:"type" yaml:"type"`
-		Reason         string      `json:"reason,omitempty" yaml:"reason,omitempty"`
-		Message        string      `json:"message,omitempty" yaml:"message,omitempty"`
-		Count          int32       `json:"count,omitempty" yaml:"count,omitempty"`
-		EventTimestamp metav1.Time `json:"eventTimestamp,omitempty" yaml:"eventTimestamp,omitempty"`
-	}
-
-	// ContainerDetail represents more information about a container
-	ContainerDetail struct {
-		// Name of the container.
-		Name string `json:"name"`
-
-		// Image URI of the container.
-		Image string `json:"image"`
-
-		// List of environment variables.
-		Env []corev1.EnvVar `json:"env"`
-
-		// Commands of the container
-		Commands []string `json:"commands"`
-
-		// Command arguments
-		Args []string `json:"args"`
-
-		// Information about mounted volumes
-		VolumeMounts []VolumeMount `json:"volumeMounts"`
-
-		// Security configuration that will be applied to a container.
-		SecurityContext *corev1.SecurityContext `json:"securityContext"`
-
-		// Status of a pod container
-		Status *corev1.ContainerStatus `json:"status"`
-
-		// Probes
-		LivenessProbe  *corev1.Probe `json:"livenessProbe"`
-		ReadinessProbe *corev1.Probe `json:"readinessProbe"`
-		StartupProbe   *corev1.Probe `json:"startupProbe"`
-	}
-
-	VolumeMount struct {
-		// Name of the variable.
-		Name string `json:"name"`
-
-		// Is the volume read only ?
-		ReadOnly bool `json:"readOnly"`
-
-		// Path within the container at which the volume should be mounted. Must not contain ':'.
-		MountPath string `json:"mountPath"`
-
-		// Path within the volume from which the container's volume should be mounted. Defaults to "" (volume's root).
-		SubPath string `json:"subPath"`
-
-		// Information about the Volume itself
-		Volume corev1.Volume `json:"volume"`
-	}
-
-	ContainerState struct {
-		State     string       `json:"state" yaml:"state"`
-		Reason    string       `json:"reason" yaml:"reason"`
-		Message   string       `json:"message" yaml:"message"`
-		StartedAt *metav1.Time `json:"startedAt,omitempty"`
-	}
-
-	LifeCycleItem struct {
-		Type         string      `json:"type" yaml:"type"`
-		Status       string      `json:"status" yaml:"status"`
-		Message      string      `json:"message" yaml:"status"`
-		CompleteTime metav1.Time `json:"completeTime" yaml:"completeTime"`
-	}
-)
-
-func getPodTemplateHash(rs *appsv1.ReplicaSet) (string, string) {
-	podTemplateHash := rs.Labels[DeploymentPodTemplateHash]
-	podTemplateHashKey := DeploymentPodTemplateHash
-	if podTemplateHash == "" {
-		podTemplateHash = rs.Labels[RolloutPodTemplateHash]
-		podTemplateHashKey = RolloutPodTemplateHash
-	}
-	return podTemplateHashKey, podTemplateHash
-}
-
-func getRevision(rs *appsv1.ReplicaSet) string {
-	revision := rs.Annotations[_deploymentRevision]
-	if revision == "" {
-		revision = rs.Annotations[_rolloutRevision]
-	}
-	return revision
-}
-
-// CompareRevision
-// Note: The latest version cannot be judged only by the CreationTimestamp, especially when the cluster is rolling back.
-func CompareRevision(ctx context.Context, rs1, rs2 *appsv1.ReplicaSet) bool {
-	revision1 := getRevision(rs1)
-	revision2 := getRevision(rs2)
-
-	hasSameOwnerRef := false
-	for _, rs1Owner := range rs1.OwnerReferences {
-		for _, rs2Owner := range rs2.OwnerReferences {
-			if rs1Owner.UID == rs2Owner.UID {
-				hasSameOwnerRef = true
-				break
-			}
-		}
-	}
-
-	if revision1 == "" || revision2 == "" || !hasSameOwnerRef {
-		return rs2.CreationTimestamp.Before(&rs1.CreationTimestamp)
-	}
-
-	num1, err := strconv.Atoi(revision1)
-	if err != nil {
-		log.Error(ctx, err)
-		return false
-	}
-	num2, err := strconv.Atoi(revision2)
-	if err != nil {
-		log.Error(ctx, err)
-		return true
-	}
-
-	return num1 > num2
-}
-
-func getDeploymentCondition(status appsv1.DeploymentStatus,
-	condType appsv1.DeploymentConditionType) *appsv1.DeploymentCondition {
-	for i := range status.Conditions {
-		c := status.Conditions[i]
-		if c.Type == condType {
-			return &c
-		}
-	}
-	return nil
-}
-
-func getStep(rollout *v1alpha1.Rollout) *Step {
-	if rollout == nil {
-		return &Step{
-			Index:    0,
-			Total:    1,
-			Replicas: []int{1},
-		}
-	}
-
-	var replicasTotal = 1
-	if rollout.Spec.Replicas != nil {
-		replicasTotal = int(*rollout.Spec.Replicas)
-	}
-
-	if rollout.Spec.Strategy.Canary == nil ||
-		len(rollout.Spec.Strategy.Canary.Steps) == 0 {
-		return &Step{
-			Index:    0,
-			Total:    1,
-			Replicas: []int{replicasTotal},
-		}
-	}
-
-	replicasList := make([]int, 0)
-	for _, step := range rollout.Spec.Strategy.Canary.Steps {
-		if step.SetWeight != nil {
-			replicasList = append(replicasList, int(math.Ceil(float64(*step.SetWeight)/100*float64(replicasTotal))))
-		}
-	}
-
-	incrementReplicasList := make([]int, 0, len(replicasList))
-	for i := 0; i < len(replicasList); i++ {
-		replicas := replicasList[i]
-		if i > 0 {
-			replicas = replicasList[i] - replicasList[i-1]
-		}
-		incrementReplicasList = append(incrementReplicasList, replicas)
-	}
-
-	var stepIndex = 0
-	// if steps changes, stepIndex = 0
-	if rollout.Status.CurrentStepHash == computeStepHash(rollout) &&
-		rollout.Status.CurrentStepIndex != nil {
-		index := float64(*rollout.Status.CurrentStepIndex)
-		index = math.Min(index, float64(len(rollout.Spec.Strategy.Canary.Steps)))
-		for i := 0; i < int(index); i++ {
-			if rollout.Spec.Strategy.Canary.Steps[i].SetWeight != nil {
-				stepIndex++
-			}
-		}
-	}
-
-	return &Step{
-		Index:    stepIndex,
-		Total:    len(incrementReplicasList),
-		Replicas: incrementReplicasList,
-	}
 }
 
 func (c *cd) GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error) {
@@ -1591,74 +979,4 @@ func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ ma
 	}
 
 	return executeCommandInPods(ctx, containers, []string{"bash", "-c", command}, nil), nil
-}
-
-func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
-	command []string, executor exec.RemoteExecutor) map[string]ExecResp {
-	var wg sync.WaitGroup
-	ch := make(chan ExecResp, len(containers))
-	for _, containerRef := range containers {
-		wg.Add(1)
-		containerRef := containerRef
-		go func(key string) {
-			defer wg.Done()
-			stdout, stderr, err := kube.Exec(ctx, containerRef, command, executor)
-			if err != nil {
-				log.Errorf(ctx, "failed to do exec %v, err=%v", command, err)
-			}
-			ch <- ExecResp{
-				key: key,
-				Result: func() bool {
-					if stderr != "" || err != nil {
-						return false
-					}
-					return true
-				}(),
-				Stdout: stdout,
-				Stderr: stderr,
-				Error:  err,
-			}
-		}(containerRef.Pod)
-	}
-	wg.Wait()
-	close(ch)
-	result := make(map[string]ExecResp)
-	for val := range ch {
-		result[val.key] = val
-	}
-
-	return result
-}
-
-func getSkipAllStepsPatchStr(stepCnt int) string {
-	return fmt.Sprintf(`{"spec":{"paused":false},"status": {"currentStepIndex": %d, "pauseCondition":null}}`,
-		stepCnt)
-}
-
-func getPausePatchStr() string {
-	return `{"spec": {"paused": true}}`
-}
-
-func getResumePatchStr() string {
-	return `{"spec": {"paused": false}}`
-}
-
-// computeStepHash returns a hash value calculated from the Rollout's steps. The hash will
-// be safe encoded to avoid bad words.
-// source code ref:
-// g.hz.netease.com/music-cloud-native/kubernetes/argo-rollouts/-/blob/develop/utils/conditions/conditions.go#L240
-func computeStepHash(rollout *v1alpha1.Rollout) string {
-	if rollout.Spec.Strategy.BlueGreen != nil || rollout.Spec.Strategy.Canary == nil {
-		return ""
-	}
-	rolloutStepHasher := fnv.New32a()
-	stepsBytes, err := json.Marshal(rollout.Spec.Strategy.Canary.Steps)
-	if err != nil {
-		panic(err)
-	}
-	_, err = rolloutStepHasher.Write(stepsBytes)
-	if err != nil {
-		panic(err)
-	}
-	return rand.SafeEncodeString(fmt.Sprint(rolloutStepHasher.Sum32()))
 }

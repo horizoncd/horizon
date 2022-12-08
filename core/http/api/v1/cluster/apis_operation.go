@@ -89,6 +89,28 @@ func (a *API) GetDiff(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
+func (a *API) ClusterStatusV2(c *gin.Context) {
+	op := "cluster: cluster status"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	resp, err := a.clusterCtl.GetClusterStatusV2(c, uint(clusterID))
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
 func (a *API) ClusterStatus(c *gin.Context) {
 	op := "cluster: cluster status"
 	clusterIDStr := c.Param(common.ParamClusterID)

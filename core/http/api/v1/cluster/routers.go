@@ -120,6 +120,15 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 	}
 
+	apiV2Group := engine.Group("/apis/core/v2")
+	var routesV2 = route.Routes{
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/status", common.ParamClusterID),
+			HandlerFunc: api.ClusterStatusV2,
+		},
+	}
+
 	frontGroup := engine.Group("/apis/front/v1/clusters")
 	var frontRoutes = route.Routes{
 		{
@@ -153,4 +162,5 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	route.RegisterRoutes(apiGroup, routes)
 	route.RegisterRoutes(frontGroup, frontRoutes)
 	route.RegisterRoutes(internalGroup, internalRoutes)
+	route.RegisterRoutes(apiV2Group, routesV2)
 }

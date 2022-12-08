@@ -1,9 +1,25 @@
 package cluster
 
 import (
+	"github.com/horizoncd/horizon/pkg/cluster/cd"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	v1 "k8s.io/api/core/v1"
 )
+
+type Step struct {
+	Index    int   `json:"index"`
+	Total    int   `json:"total"`
+	Replicas []int `json:"replicas"`
+}
+
+type Revision struct {
+	Pods map[string]interface{} `json:"pods"`
+}
+
+type StatusResponseV2 struct {
+	*cd.ClusterStateV2
+	Status string `json:"status"`
+}
 
 type GetClusterStatusResponse struct {
 	RunningTask       *RunningTask       `json:"runningTask" yaml:"runningTask"`

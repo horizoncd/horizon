@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/argoproj/argo-cd v1.8.7
-	github.com/argoproj/argo-rollouts v1.0.7
+	github.com/argoproj/argo-rollouts v0.9.3
 	github.com/argoproj/gitops-engine v0.3.3
 	github.com/aws/aws-sdk-go v1.38.49
 	github.com/coreos/go-oidc/v3 v3.2.0
@@ -53,7 +53,8 @@ require (
 	k8s.io/helm v2.17.0+incompatible
 	k8s.io/kubectl v0.23.5
 	k8s.io/kubernetes v1.20.10
-	knative.dev/pkg v0.0.0-20200922164940-4bf40ad82aab
+	knative.dev/pkg v0.0.0-20201026165741-2f75016c1368
+	knative.dev/serving v0.18.3
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -83,4 +84,5 @@ replace (
 	k8s.io/mount-utils => k8s.io/mount-utils v0.20.10
 	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.20.10
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.20.10
+	knative.dev/serving => knative.dev/serving v0.18.3
 )

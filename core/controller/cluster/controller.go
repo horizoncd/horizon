@@ -70,6 +70,7 @@ type Controller interface {
 	Next(ctx context.Context, clusterID uint) error
 
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
+	GetClusterStatusV2(ctx context.Context, clusterID uint) (_ *StatusResponseV2, err error)
 	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 

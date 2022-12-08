@@ -30,6 +30,55 @@ const (
 	_notFound = "NotFound"
 )
 
+func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*StatusResponseV2, error) {
+	const op = "cluster controller: get cluster status v2"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &StatusResponseV2{}
+	// status in db has higher priority
+	if cluster.Status != common.ClusterStatusEmpty {
+		resp.Status = cluster.Status
+	}
+
+	params := &cd.GetClusterStateParams{
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+	}
+
+	cdStatus, err := c.cd.GetClusterStateV2(ctx, params)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return nil, err
+		}
+		// for not deployed -- free or not published
+		if resp.Status == "" {
+			if cluster.Status != "" {
+				resp.Status = cluster.Status
+			} else {
+				resp.Status = _notFound
+			}
+		}
+	} else {
+		// resp has not been set
+		if resp.Status == "" {
+			resp.Status = string(cdStatus.Status)
+		}
+		resp.ClusterStateV2 = cdStatus
+	}
+	return resp, nil
+}
+
 func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error) {
 	const op = "cluster controller: get cluster status"
 	defer wlog.Start(ctx, op).StopPrint()

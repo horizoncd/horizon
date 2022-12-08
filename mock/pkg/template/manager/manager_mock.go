@@ -196,7 +196,7 @@ func (m *MockManager) ListV2(ctx context.Context, query *q.Query, groupIDs ...ui
 	for _, a := range groupIDs {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "List", varargs...)
+	ret := m.ctrl.Call(m, "ListV2", varargs...)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].([]*models1.Template)
 	ret2, _ := ret[2].(error)
@@ -207,7 +207,7 @@ func (m *MockManager) ListV2(ctx context.Context, query *q.Query, groupIDs ...ui
 func (mr *MockManagerMockRecorder) ListV2(ctx, query interface{}, groupIDs ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, query}, groupIDs...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockManager)(nil).ListV2), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListV2", reflect.TypeOf((*MockManager)(nil).ListV2), varargs...)
 }
 
 // UpdateByID mocks base method.
