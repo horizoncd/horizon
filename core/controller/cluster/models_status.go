@@ -18,7 +18,8 @@ type Revision struct {
 
 type StatusResponseV2 struct {
 	*cd.ClusterStateV2
-	Status string `json:"status"`
+	Status       string `json:"status"`
+	TTLInSeconds *uint  `json:"ttlInSeconds"`
 }
 
 type GetClusterStatusResponse struct {

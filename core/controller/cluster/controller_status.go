@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"context"
-	"math"
 	"strings"
 	"time"
 
@@ -76,7 +75,26 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 		}
 		resp.ClusterStateV2 = cdStatus
 	}
+
+	resp.TTLInSeconds, _ = c.clusterWillExpireIn(ctx, cluster)
+
 	return resp, nil
+}
+
+func (c *controller) clusterWillExpireIn(ctx context.Context, cluster *clustermodels.Cluster) (*uint, error) {
+	if cluster.ExpireSeconds == 0 {
+		return nil, nil
+	}
+
+	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, cluster.ID)
+	if err != nil {
+		return nil, err
+	}
+	if latestPipelinerun == nil {
+		return nil, nil
+	}
+
+	return willExpireIn(cluster.ExpireSeconds, cluster.UpdatedAt, latestPipelinerun.UpdatedAt), nil
 }
 
 func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error) {
@@ -189,7 +207,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		}
 	}
 	if cluster.ExpireSeconds > 0 && latestPipelinerun != nil && cluster.Status == "" {
-		resp.TTLSeconds = calculateClusterTimeToLive(cluster.ExpireSeconds, cluster.UpdatedAt, latestPipelinerun.UpdatedAt)
+		resp.TTLSeconds = willExpireIn(cluster.ExpireSeconds, cluster.UpdatedAt, latestPipelinerun.UpdatedAt)
 	}
 	return resp, nil
 }
@@ -490,23 +508,22 @@ func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName 
 	return &GetClusterPodResponse{Pod: *pod}, nil
 }
 
-func calculateClusterTimeToLive(expireSeconds uint, clusterUpdatedAt time.Time,
-	runUpdatedAt time.Time) *uint {
+func willExpireIn(ttl uint, tms ...time.Time) *uint {
 	var (
-		latestUpdateAt time.Time
-		expireDate     time.Time
+		latestTime time.Time
+		res        uint
 	)
-	if clusterUpdatedAt.After(runUpdatedAt) {
-		latestUpdateAt = clusterUpdatedAt
-	} else {
-		latestUpdateAt = runUpdatedAt
+	for _, tm := range tms {
+		if tm.After(latestTime) {
+			latestTime = tm
+		}
 	}
-	expireDate = latestUpdateAt.Add(time.Duration(expireSeconds * 1e9))
-	if expireDate.Before(time.Now()) {
-		res := uint(0)
+
+	expireAt := latestTime.Add(time.Duration(ttl) * time.Second)
+	if expireAt.Before(time.Now()) {
+		res = uint(0)
 		return &res
 	}
-	ttlSeconds := time.Until(expireDate).Seconds()
-	ttlUint := uint(math.Ceil(ttlSeconds))
-	return &ttlUint
+	res = uint(time.Until(expireAt).Seconds())
+	return &res
 }
