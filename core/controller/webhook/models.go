@@ -127,6 +127,11 @@ func (c *controller) validateCreateRequest(resourceType string, w *CreateWebhook
 	if err := commonvalidate.CheckURL(w.URL); err != nil {
 		return err
 	}
+
+	if (!strings.HasPrefix(w.URL, "https")) && w.SSLVerifyEnabled {
+		return perror.Wrapf(herrors.ErrParamInvalid, "sslVerifyEnabled is only valid for https")
+	}
+
 	return c.validateEvents(w.Triggers)
 }
 

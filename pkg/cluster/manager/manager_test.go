@@ -255,6 +255,10 @@ func Test(t *testing.T) {
 	assert.Nil(t, clusterGetByID)
 	assert.NotNil(t, err)
 
+	clusterGetByID, err = mgr.GetByIDIncludeSoftDelete(ctx, cluster.ID)
+	assert.NotNil(t, clusterGetByID)
+	assert.Nil(t, err)
+
 	cluster2 := &models.Cluster{
 		ApplicationID:   applicationID,
 		Name:            "cluster2",

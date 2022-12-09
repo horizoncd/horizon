@@ -17,6 +17,7 @@ import (
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/application/manager/manager.go -package=mock_manager
 type Manager interface {
 	GetByID(ctx context.Context, id uint) (*models.Application, error)
+	GetByIDIncludeSoftDelete(ctx context.Context, id uint) (*models.Application, error)
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
 	GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Application, error)
 	GetByName(ctx context.Context, name string) (*models.Application, error)
@@ -49,7 +50,15 @@ func (m *manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.
 }
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Application, error) {
-	application, err := m.applicationDAO.GetByID(ctx, id)
+	application, err := m.applicationDAO.GetByID(ctx, id, false)
+	if err != nil {
+		return nil, err
+	}
+	return application, nil
+}
+
+func (m *manager) GetByIDIncludeSoftDelete(ctx context.Context, id uint) (*models.Application, error) {
+	application, err := m.applicationDAO.GetByID(ctx, id, true)
 	if err != nil {
 		return nil, err
 	}

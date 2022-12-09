@@ -23,7 +23,7 @@ const (
 )
 
 type DAO interface {
-	GetByID(ctx context.Context, id uint) (*models.Application, error)
+	GetByID(ctx context.Context, id uint, includeSoftDelete bool) (*models.Application, error)
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
 	GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Application, error)
 	GetByName(ctx context.Context, name string) (*models.Application, error)
@@ -75,10 +75,13 @@ func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Appl
 	return applications, result.Error
 }
 
-func (d *dao) GetByID(ctx context.Context, id uint) (*models.Application, error) {
+func (d *dao) GetByID(ctx context.Context, id uint, includeSoftDelete bool) (*models.Application, error) {
 	var application models.Application
-	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByID, id).First(&application)
-
+	statement := d.db.Unscoped().WithContext(ctx).Where("id = ?", id)
+	if !includeSoftDelete {
+		statement.Where("deleted_ts = 0")
+	}
+	result := statement.First(&application)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())
