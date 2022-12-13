@@ -146,7 +146,7 @@ func TestServer(t *testing.T) {
 	userMiddleWare := func(c *gin.Context) {
 		common.SetUser(c, aUser)
 	}
-	oauthCheckerCtl := oauthcheckctl.NewOauthChecker(&param.Param{Manager: manager})
+	oauthCheckerCtl := oauthcheckctl.NewOauthChecker(&param.Param{Manager: manager, OauthManager: oauthManager})
 	middlewares := []gin.HandlerFunc{
 		tokenmiddle.MiddleWare(oauthCheckerCtl),
 		userMiddleWare,
