@@ -1,9 +1,9 @@
 package cluster
 
 import (
-	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/horizoncd/horizon/pkg/grafana"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type Step struct {
@@ -17,9 +17,7 @@ type Revision struct {
 }
 
 type StatusResponseV2 struct {
-	*cd.ClusterStateV2
-	Status       string `json:"status"`
-	TTLInSeconds *uint  `json:"ttlInSeconds"`
+	Status string `json:"status"`
 }
 
 type GetClusterStatusResponse struct {
@@ -50,5 +48,20 @@ type GetGrafanaDashboardsResponse struct {
 }
 
 type GetClusterPodResponse struct {
-	v1.Pod
+	corev1.Pod
+}
+type ResourceNode struct {
+	v1alpha1.ResourceNode
+	PodDetail interface{} `json:"podDetail,omitempty"`
+}
+
+type GetResourceTreeResponse struct {
+	Nodes map[string]*ResourceNode `json:"nodes"`
+}
+
+type GetStepResponse struct {
+	Index        int   `json:"index"`
+	Total        int   `json:"total"`
+	Replicas     []int `json:"replicas"`
+	ManualPaused bool  `json:"manualPaused"`
 }

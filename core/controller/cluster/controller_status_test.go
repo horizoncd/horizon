@@ -3,20 +3,19 @@ package cluster
 import (
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
-	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
-	clustermanagermock "g.hz.netease.com/horizon/mock/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/cluster/cd"
-	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
-	"g.hz.netease.com/horizon/pkg/server/global"
-	"github.com/argoproj/gitops-engine/pkg/health"
 	"github.com/golang/mock/gomock"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/orm"
+	cdmock "github.com/horizoncd/horizon/mock/pkg/cluster/cd"
+	clustermanagermock "github.com/horizoncd/horizon/mock/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,9 +57,9 @@ func testGetClusterStatusV2(t *testing.T) {
 		Return(&clustermodels.Cluster{Status: common.ClusterStatusEmpty, RegionName: regionName}, nil)
 
 	mockCD.EXPECT().GetClusterStateV2(gomock.Any(), gomock.Any()).Times(1).
-		Return(&cd.ClusterStateV2{Status: health.HealthStatusCode(status)}, nil)
+		Return(&cd.ClusterStateV2{Status: status}, nil)
 	mockCD.EXPECT().GetClusterStateV2(gomock.Any(), gomock.Any()).Times(1).
-		Return(&cd.ClusterStateV2{Status: health.HealthStatusCode(status)}, nil)
+		Return(&cd.ClusterStateV2{Status: status}, nil)
 	mockCD.EXPECT().GetClusterStateV2(gomock.Any(), gomock.Any()).Times(1).
 		Return(nil, perror.Wrap(herrors.NewErrNotFound(herrors.ApplicationInArgo, ""), ""))
 

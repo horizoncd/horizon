@@ -7,6 +7,7 @@ import (
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	"github.com/horizoncd/horizon/pkg/util/kube"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -63,4 +64,22 @@ func (s *service) GetRevisions(un *unstructured.Unstructured,
 		}
 	}
 	return ksvc.Status.LatestCreatedRevisionName, revisions, nil
+}
+
+func (*service) ListPods(un *unstructured.Unstructured,
+	resourceTree []v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
+	var ksvc servicev1.Service
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &ksvc)
+	if err != nil {
+		return nil, err
+	}
+
+	selector := metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: ksvc.Spec.Template.Labels})
+	pods, err := client.Basic.CoreV1().Pods(ksvc.Namespace).
+		List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return nil, err
+	}
+
+	return pods.Items, nil
 }

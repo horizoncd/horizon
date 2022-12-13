@@ -33,7 +33,6 @@ func fetchInfo(infos []v1alpha1.InfoItem, key string) string {
 }
 
 func (*rollout) IsHealthy(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode,
 	client *kube.Client) (bool, error) {
 	var rollout *rolloutsv1alpha1.Rollout
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &rollout)
@@ -80,8 +79,24 @@ func (*rollout) IsHealthy(un *unstructured.Unstructured,
 	return int(*rollout.Status.CurrentStepIndex) == len(rollout.Spec.Strategy.Canary.Steps), nil
 }
 
+func (*rollout) ListPods(un *unstructured.Unstructured,
+	resourceTree []v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
+	var rollout *rolloutsv1alpha1.Rollout
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &rollout)
+	if err != nil {
+		return nil, err
+	}
+
+	pods, err := client.Basic.CoreV1().Pods(rollout.Namespace).
+		List(context.TODO(), metav1.ListOptions{LabelSelector: rollout.Status.Selector})
+	if err != nil {
+		return nil, err
+	}
+	return pods.Items, nil
+}
+
 func (*rollout) GetRevisions(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode, client *kube.Client) (string, map[string]*workload.Revision, error) {
+	resourceTree []v1alpha1.ResourceNode, client *kube.Client) (string, map[string]*workload.Revision, error) {
 	var rollout *rolloutsv1alpha1.Rollout
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &rollout)
 	if err != nil {
@@ -103,8 +118,14 @@ func (*rollout) GetRevisions(un *unstructured.Unstructured,
 		podsMap[string(pod.UID)] = pod
 	}
 
+	m := make(map[string]*v1alpha1.ResourceNode)
+	for _, node := range resourceTree {
+		m[node.UID] = &node
+	}
+
 	revisions := make(map[*v1alpha1.ResourceNode]*workload.Revision)
-	rolloutNode := resourceTree[string(rollout.UID)]
+
+	rolloutNode := m[string(rollout.UID)]
 	currentRevision := ""
 	if rolloutNode != nil {
 		currentRevision = fetchInfo(rolloutNode.Info, revisionKey)
@@ -114,7 +135,7 @@ func (*rollout) GetRevisions(un *unstructured.Unstructured,
 		if node.Kind == "Pod" {
 			if len(node.ParentRefs) > 0 {
 				parentsID := node.ParentRefs[0].UID
-				rsNode := resourceTree[parentsID]
+				rsNode := m[parentsID]
 				if revision, ok := revisions[rsNode]; ok {
 					revision.Pods = append(revision.Pods, podsMap[node.UID])
 				} else {
@@ -143,20 +164,11 @@ func (*rollout) GetRevisions(un *unstructured.Unstructured,
 	return currentRevision, res, nil
 }
 
-func (*rollout) GetSteps(un *unstructured.Unstructured,
-	_ map[string]*v1alpha1.ResourceNode, _ *kube.Client) (*workload.Step, error) {
+func (*rollout) GetSteps(un *unstructured.Unstructured, _ *kube.Client) (*workload.Step, error) {
 	var rollout *rolloutsv1alpha1.Rollout
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &rollout)
 	if err != nil {
 		return nil, err
-	}
-
-	if rollout == nil {
-		return nil, nil
-	}
-
-	if len(rollout.Spec.Strategy.Canary.Steps) == int(*rollout.Status.CurrentStepIndex) {
-		return nil, nil
 	}
 
 	var replicasTotal = 1

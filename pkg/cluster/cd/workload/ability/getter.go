@@ -20,45 +20,56 @@ func New(inner interface{}) *Workload {
 	return &Workload{inner: inner}
 }
 
-func (w *Workload) GetSteps(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode, client *kube.Client) (*workload.Step, error) {
+func (w *Workload) GetSteps(un *unstructured.Unstructured, client *kube.Client) (*workload.Step, error) {
 	releaser, ok := w.inner.(workload.GreyscaleReleaser)
 	if !ok {
 		return nil, perror.Wrapf(herrors.ErrMethodNotImplemented,
 			"workload %v not support greyscale release", reflect.TypeOf(w.inner))
 	}
-	return releaser.GetSteps(un, resourceTree, client)
-}
-
-func (w *Workload) GetRevisionsOrListPods(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode, client *kube.Client) (string, map[string]*workload.Revision, error) {
-	releaser, ok := w.inner.(workload.Releaser)
-
-	if !ok {
-		pods, err := w.ListPods(un, resourceTree, client)
-		if err != nil {
-			return "", nil, err
-		}
-		return "current", map[string]*workload.Revision{"current": {Pods: pods}}, nil
+	steps, err := releaser.GetSteps(un, client)
+	if err != nil {
+		return nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.ResourceInK8S, "failed to get steps"),
+			"failed to get steps: resource name = %v, err = %v", un.GetName(), err)
 	}
-	return releaser.GetRevisions(un, resourceTree, client)
+	return steps, nil
 }
 
+// func (w *Workload) GetRevisionsOrListPods(un *unstructured.Unstructured,
+// 	resourceTree []v1alpha1.ResourceNode, client *kube.Client) (string, map[string]*workload.Revision, error) {
+// 	releaser, ok := w.inner.(workload.Releaser)
+
+// 	if !ok {
+// 		pods, err := w.ListPods(un, resourceTree, client)
+// 		if err != nil {
+// 			return "", nil, err
+// 		}
+// 		return "current", map[string]*workload.Revision{"current": {Pods: pods}}, nil
+// 	}
+// 	return releaser.GetRevisions(un, resourceTree, client)
+// }
+
+// TODO: remove this after using informer
 func (w *Workload) ListPods(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
+	resourceTree []v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
 	lister, ok := w.inner.(workload.PodsLister)
 	if !ok {
 		return nil, perror.Wrapf(herrors.ErrMethodNotImplemented,
-			"workload %v not support greyscale release", reflect.TypeOf(w.inner))
+			"workload %v not support list release", reflect.TypeOf(w.inner))
 	}
-	return lister.ListPods(un, resourceTree, client)
+	pods, err := lister.ListPods(un, resourceTree, client)
+	if err != nil {
+		return nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.ResourceInK8S, "failed to list pods"),
+			"failed to list pods: resource name = %v, err = %v", un.GetName(), err)
+	}
+	return pods, nil
 }
 
-func (w *Workload) IsHealthy(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode, client *kube.Client) (bool, error) {
+func (w *Workload) IsHealthy(un *unstructured.Unstructured, client *kube.Client) (bool, error) {
 	statusGetter, ok := w.inner.(workload.HealthStatusGetter)
 	if !ok {
 		return true, nil
 	}
-	return statusGetter.IsHealthy(un, resourceTree, client)
+	return statusGetter.IsHealthy(un, client)
 }

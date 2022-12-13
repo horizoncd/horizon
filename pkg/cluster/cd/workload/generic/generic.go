@@ -18,7 +18,7 @@ type Generic struct {
 }
 
 func (g *Generic) ListPods(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
+	resourceTree []v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
 	var pods []corev1.Pod
 	for _, node := range resourceTree {
 		if node.Kind == "Pod" {

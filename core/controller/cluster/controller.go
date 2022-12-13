@@ -70,7 +70,6 @@ type Controller interface {
 	Next(ctx context.Context, clusterID uint) error
 
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
-	GetClusterStatusV2(ctx context.Context, clusterID uint) (_ *StatusResponseV2, err error)
 	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 
@@ -93,6 +92,9 @@ type Controller interface {
 	// InternalDeployV2 deploy only used by internal system
 	InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,
 		r interface{}) (_ *InternalDeployResponse, err error)
+	GetClusterStatusV2(ctx context.Context, clusterID uint) (_ *StatusResponseV2, err error)
+	GetResourceTree(ctx context.Context, clusterID uint) (*GetResourceTreeResponse, error)
+	GetStep(ctx context.Context, clusterID uint) (resp *GetStepResponse, err error)
 }
 
 type controller struct {

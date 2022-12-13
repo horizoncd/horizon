@@ -38,21 +38,15 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 		return nil, err
 	}
 
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
-	if err != nil {
-		return nil, err
-	}
-
 	resp := &StatusResponseV2{}
 	// status in db has higher priority
 	if cluster.Status != common.ClusterStatusEmpty {
 		resp.Status = cluster.Status
 	}
 
-	params := &cd.GetClusterStateParams{
-		Environment:  cluster.EnvironmentName,
-		Cluster:      cluster.Name,
-		RegionEntity: regionEntity,
+	params := &cd.GetClusterStateV2Params{
+		Environment: cluster.EnvironmentName,
+		Cluster:     cluster.Name,
 	}
 
 	cdStatus, err := c.cd.GetClusterStateV2(ctx, params)
@@ -73,30 +67,12 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 		if resp.Status == "" {
 			resp.Status = string(cdStatus.Status)
 		}
-		resp.ClusterStateV2 = cdStatus
 	}
-
-	resp.TTLInSeconds, _ = c.clusterWillExpireIn(ctx, cluster)
 
 	return resp, nil
 }
 
-func (c *controller) clusterWillExpireIn(ctx context.Context, cluster *clustermodels.Cluster) (*uint, error) {
-	if cluster.ExpireSeconds == 0 {
-		return nil, nil
-	}
-
-	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, cluster.ID)
-	if err != nil {
-		return nil, err
-	}
-	if latestPipelinerun == nil {
-		return nil, nil
-	}
-
-	return willExpireIn(cluster.ExpireSeconds, cluster.UpdatedAt, latestPipelinerun.UpdatedAt), nil
-}
-
+// Deprecated
 func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error) {
 	const op = "cluster controller: get cluster status"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -506,6 +482,76 @@ func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName 
 		return nil, err
 	}
 	return &GetClusterPodResponse{Pod: *pod}, nil
+}
+
+func (c *controller) GetResourceTree(ctx context.Context, clusterID uint) (resp *GetResourceTreeResponse, err error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	resourceTree, err := c.cd.GetResourceTree(ctx, &cd.GetResourceTreeParams{
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+	})
+	if err != nil {
+		return
+	}
+
+	resp = &GetResourceTreeResponse{}
+	resp.Nodes = make(map[string]*ResourceNode, len(resourceTree))
+	for i := range resourceTree {
+		n := ResourceNode{
+			ResourceNode: resourceTree[i].ResourceNode,
+			PodDetail:    resourceTree[i].PodDetail,
+		}
+		resp.Nodes[n.UID] = &n
+	}
+	return
+}
+
+func (c *controller) GetStep(ctx context.Context, clusterID uint) (resp *GetStepResponse, err error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	steps, err := c.cd.GetStep(ctx, &cd.GetStepParams{
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+	})
+	if err != nil {
+		return
+	}
+
+	if steps != nil {
+		resp = &GetStepResponse{
+			Total:        steps.Total,
+			Index:        steps.Index,
+			Replicas:     steps.Replicas,
+			ManualPaused: steps.ManualPaused,
+		}
+	} else {
+		resp = &GetStepResponse{
+			Total:        0,
+			Index:        0,
+			Replicas:     []int{},
+			ManualPaused: false,
+		}
+	}
+	return
 }
 
 func willExpireIn(ttl uint, tms ...time.Time) *uint {

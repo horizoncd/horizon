@@ -22,7 +22,6 @@ type deployment struct {
 }
 
 func (*deployment) IsHealthy(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode,
 	client *kube.Client) (bool, error) {
 	var deploy v1.Deployment
 
@@ -39,7 +38,7 @@ func (*deployment) IsHealthy(un *unstructured.Unstructured,
 }
 
 func (*deployment) ListPods(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
+	_ []v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
 	var deploy v1.Deployment
 
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &deploy)
@@ -58,7 +57,7 @@ func (*deployment) ListPods(un *unstructured.Unstructured,
 }
 
 func (*deployment) GetRevisions(un *unstructured.Unstructured,
-	resourceTree map[string]*v1alpha1.ResourceNode, client *kube.Client) (string, map[string]*workload.Revision, error) {
+	_ []v1alpha1.ResourceNode, client *kube.Client) (string, map[string]*workload.Revision, error) {
 	var deploy v1.Deployment
 
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &deploy)

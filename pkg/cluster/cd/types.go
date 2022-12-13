@@ -3,11 +3,18 @@ package cd
 import (
 	"context"
 
-	"github.com/argoproj/gitops-engine/pkg/health"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	"github.com/argoproj/gitops-engine/pkg/health"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type GetStepParams struct {
+	Environment  string
+	Cluster      string
+	RegionEntity *regionmodels.RegionEntity
+}
 
 type GetClusterStateParams struct {
 	Environment  string
@@ -15,10 +22,15 @@ type GetClusterStateParams struct {
 	RegionEntity *regionmodels.RegionEntity
 }
 
-type GetClusterStateV2Params struct {
+type GetResourceTreeParams struct {
 	Environment  string
 	Cluster      string
 	RegionEntity *regionmodels.RegionEntity
+}
+
+type GetClusterStateV2Params struct {
+	Environment string
+	Cluster     string
 }
 
 type CreateClusterParams struct {
@@ -41,11 +53,6 @@ type GetPodEventsParams struct {
 	Cluster      string
 	Namespace    string
 	Pod          string
-}
-
-type GetResourceTreeParams struct {
-	Environment string
-	Cluster     string
 }
 
 type GetPodParams struct {
@@ -153,11 +160,7 @@ type Revision struct {
 }
 
 type ClusterStateV2 struct {
-	Workload string                  `json:"workload"`
-	Status   health.HealthStatusCode `json:"-"`
-	Step     *Step                   `json:"step,omitempty" yaml:"step,omitempty"`
-	Revision string                  `json:"revision" yaml:"revision"`
-	Versions map[string]*Revision    `json:"versions" yaml:"versions"`
+	Status string `json:"status"`
 }
 
 // ClusterState 集群状态信息
@@ -322,4 +325,89 @@ type LifeCycleItem struct {
 	Status       string      `json:"status" yaml:"status"`
 	Message      string      `json:"message" yaml:"status"`
 	CompleteTime metav1.Time `json:"completeTime" yaml:"completeTime"`
+}
+
+type ResourceNode struct {
+	applicationV1alpha1.ResourceNode
+	PodDetail *CompactPod
+}
+
+// for pod compact
+type CompactPodMetadata struct {
+	Name              string            `json:"name"`
+	Namespace         string            `json:"namespace"`
+	CreationTimestamp metav1.Time       `json:"creationTimestamp"`
+	DeletionTimestamp *metav1.Time      `json:"deletionTimestamp"`
+	Labels            map[string]string `json:"labels"`
+	Annotations       map[string]string `json:"annotations"`
+}
+
+type CompactContainer struct {
+	Name  string `json:"name"`
+	Image string `json:"image"`
+}
+
+type CompactPodSpec struct {
+	InitContainers []CompactContainer `json:"initContainers"`
+	Containers     []CompactContainer `json:"containers"`
+}
+
+type CompactCondition struct {
+	Type              string `json:"type"`
+	Status            string `json:"status"`
+	Message           string `json:"message"`
+	LastTranitionTime string `json:"lastTranitionTime"`
+}
+
+type CompactPodStatus struct {
+	Phase             corev1.PodPhase          `json:"phase"`
+	Conditions        []corev1.PodCondition    `json:"conditions"`
+	PodIP             string                   `json:"podIP"`
+	ContainerStatuses []corev1.ContainerStatus `json:"containerStatuses"`
+}
+
+type CompactPod struct {
+	Metadata CompactPodMetadata `json:"metadata"`
+	Spec     CompactPodSpec     `json:"spec"`
+	Status   CompactPodStatus   `json:"status"`
+}
+
+func Compact(pod corev1.Pod) CompactPod {
+	var (
+		containers     []CompactContainer
+		initcontainers []CompactContainer
+	)
+	for _, container := range pod.Spec.Containers {
+		containers = append(containers, ContainerCompact(container))
+	}
+	for _, container := range pod.Spec.InitContainers {
+		initcontainers = append(initcontainers, ContainerCompact(container))
+	}
+	return CompactPod{
+		Metadata: CompactPodMetadata{
+			Name:              pod.Name,
+			Namespace:         pod.Namespace,
+			CreationTimestamp: pod.CreationTimestamp,
+			DeletionTimestamp: pod.DeletionTimestamp,
+			Labels:            pod.Labels,
+			Annotations:       pod.Annotations,
+		},
+		Spec: CompactPodSpec{
+			Containers:     containers,
+			InitContainers: initcontainers,
+		},
+		Status: CompactPodStatus{
+			Phase:             pod.Status.Phase,
+			Conditions:        pod.Status.Conditions,
+			PodIP:             pod.Status.PodIP,
+			ContainerStatuses: pod.Status.ContainerStatuses,
+		},
+	}
+}
+
+func ContainerCompact(container corev1.Container) CompactContainer {
+	return CompactContainer{
+		Name:  container.Name,
+		Image: container.Image,
+	}
 }

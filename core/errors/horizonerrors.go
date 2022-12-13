@@ -44,7 +44,7 @@ var (
 	PodsInK8S                 = sourceType{name: "PodsInK8S"}
 	ReplicasSetInK8S          = sourceType{name: "ReplicasSetInK8S"}
 	DeploymentInK8S           = sourceType{name: "DeploymentInK8S"}
-	ResoruceInK8S             = sourceType{name: "ResourceInK8S"}
+	ResourceInK8S             = sourceType{name: "ResourceInK8S"}
 	PodEventInK8S             = sourceType{name: "PodEventInK8S"}
 	KubeConfigInK8S           = sourceType{name: "KubeConfigK8S"}
 	GroupFullPath             = sourceType{name: "GroupFullPath"}

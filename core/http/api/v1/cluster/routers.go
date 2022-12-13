@@ -124,6 +124,16 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	var routesV2 = route.Routes{
 		{
 			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/step", common.ParamClusterID),
+			HandlerFunc: api.GetStep,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/resourcetree", common.ParamClusterID),
+			HandlerFunc: api.GetResourceTree,
+		},
+		{
+			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/status", common.ParamClusterID),
 			HandlerFunc: api.ClusterStatusV2,
 		},

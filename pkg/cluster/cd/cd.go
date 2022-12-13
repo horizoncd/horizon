@@ -34,6 +34,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
 	argocdconf "github.com/horizoncd/horizon/pkg/config/argocd"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
@@ -46,6 +47,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -99,7 +101,9 @@ type CD interface {
 	Resume(ctx context.Context, params *ClusterResumeParams) error
 	// GetClusterState get cluster state in cd system
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
-	GetClusterStateV2(ctx context.Context, params *GetClusterStateParams) (*ClusterStateV2, error)
+	GetClusterStateV2(ctx context.Context, params *GetClusterStateV2Params) (*ClusterStateV2, error)
+	GetResourceTree(ctx context.Context, params *GetResourceTreeParams) ([]ResourceNode, error)
+	GetStep(ctx context.Context, params *GetStepParams) (*Step, error)
 	GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error)
 	GetPod(ctx context.Context, params *GetPodParams) (*corev1.Pod, error)
 	GetPodContainers(ctx context.Context, params *GetPodParams) ([]ContainerDetail, error)
@@ -119,19 +123,6 @@ func NewCD(argoCDMapper argocdconf.Mapper) CD {
 		kubeClientFty: kubeclient.Fty,
 		factory:       argocd.NewFactory(argoCDMapper),
 	}
-}
-
-func (c *cd) GetResourceTree(ctx context.Context,
-	params *GetResourceTreeParams) (*applicationV1alpha1.ApplicationTree, error) {
-	const op = "cd: create cluster"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	argo, err := c.factory.GetArgoCD(params.Environment)
-	if err != nil {
-		return nil, err
-	}
-
-	return argo.GetApplicationTree(ctx, params.Cluster)
 }
 
 func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
@@ -313,8 +304,8 @@ func (c *cd) getRollout(ctx context.Context, environment, clusterName string) (*
 	return rollout, nil
 }
 
-func (c *cd) GetClusterStateV2(ctx context.Context,
-	params *GetClusterStateParams) (clusterState *ClusterStateV2, err error) {
+func (c *cd) GetResourceTree(ctx context.Context,
+	params *GetResourceTreeParams) ([]ResourceNode, error) {
 	const op = "cd: get cluster status"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -323,37 +314,75 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 		return nil, err
 	}
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	_, kubeClient, err := c.kubeClientFty.
+		GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
 
-	clusterState = &ClusterStateV2{Versions: map[string]*Revision{}}
-
-	// get application status
-	argoApp, err := argo.GetApplication(ctx, params.Cluster)
+	// get resourceTreeInArgo
+	resourceTreeInArgo, err := argo.GetApplicationTree(ctx, params.Cluster)
 	if err != nil {
 		return nil, err
+	}
+
+	un, workloadType, err := c.getTopWorkload(ctx, params.Cluster, params.Environment, params.RegionEntity)
+	if err != nil {
+		return nil, err
+	}
+
+	getter := ability.New(workloadType)
+
+	// TODO: delete this after using informer
+	// add detail for pods
+	pods, err := getter.ListPods(un, resourceTreeInArgo.Nodes, kubeClient)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[string]*CompactPod, len(pods))
+	for i := range pods {
+		t := Compact(pods[i])
+		m[string(pods[i].UID)] = &t
+	}
+
+	resourceTree := make([]ResourceNode, 0, len(resourceTreeInArgo.Nodes))
+	for _, node := range resourceTreeInArgo.Nodes {
+		n := ResourceNode{ResourceNode: node}
+		if n.Kind == "Pod" {
+			if podDetail, ok := m[n.UID]; ok {
+				n.PodDetail = podDetail
+			} else {
+				continue
+			}
+		}
+		resourceTree = append(resourceTree, n)
+	}
+
+	return resourceTree, nil
+}
+
+func (c *cd) getTopWorkload(ctx context.Context, clusterName, environment string,
+	region *regionmodels.RegionEntity) (un *unstructured.Unstructured, workloadType interface{}, err error) {
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(region.Server, region.Certificate)
+	if err != nil {
+		return
+	}
+
+	argo, err := c.factory.GetArgoCD(environment)
+	if err != nil {
+		return
+	}
+
+	// get application status
+	argoApp, err := argo.GetApplication(ctx, clusterName)
+	if err != nil {
+		return
 	}
 	namespace := argoApp.Spec.Destination.Namespace
 
-	// namespace = argoApp.Spec.Destination.Namespace
-	if argoApp.Status.Health.Status == "" {
-		return nil, perror.Wrapf(
-			herrors.NewErrNotFound(herrors.ClusterStateInArgo, "cluster not found in argo"),
-			"failed to get cluster status from argo: app name = %v", params.Cluster)
-	}
-
-	clusterState.Status = argoApp.Status.Health.Status
-	if clusterState.Status == health.HealthStatusUnknown {
-		clusterState.Status = health.HealthStatusDegraded
-	} else if clusterState.Status == health.HealthStatusMissing {
-		clusterState.Status = health.HealthStatusProgressing
-	}
-
-	resourceTree, err := argo.GetApplicationTree(ctx, params.Cluster)
+	resourceTree, err := argo.GetApplicationTree(ctx, clusterName)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	resourceMap := make(map[string]*applicationV1alpha1.ResourceNode)
@@ -366,9 +395,8 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 	}
 
 	var (
-		workloadType interface{}
-		gvr          schema.GroupVersionResource
-		node         *applicationV1alpha1.ResourceNode
+		gvr  schema.GroupVersionResource
+		node *applicationV1alpha1.ResourceNode
 	)
 	if nodes, ok := gvkMap[workloadRollout]; ok {
 		node = nodes[0]
@@ -386,92 +414,91 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 		workloadType = generic.Ability
 		node = findTop(resourceMap)
 		if node == nil {
-			return nil, perror.Wrapf(herrors.ErrTopResourceNotFound,
+			return nil, nil, perror.Wrapf(herrors.ErrTopResourceNotFound,
 				"failed to get top resource: resource tree = %v", resourceMap)
 		}
 		resource, err := mapKind2Resource(node.Group, node.Version, node.Kind, kubeClient.Basic)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		gvr = schema.GroupVersionResource{
 			Group: node.Group, Version: node.Version, Resource: resource,
 		}
 	}
 
-	clusterState.Workload = fmt.Sprintf(gvkPattern, node.Group, node.Version, node.Kind)
-
-	un, err := kubeClient.Dynamic.Resource(gvr).
+	un, err = kubeClient.Dynamic.Resource(gvr).
 		Namespace(namespace).Get(ctx, node.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, perror.Wrapf(
-			herrors.NewErrGetFailed(herrors.ResoruceInK8S, "failed to get resource"),
+		return nil, nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.ResourceInK8S, "failed to get resource"),
 			"failed to get resource on k8s: gvr = %v, err = %v", gvr, err)
+	}
+	return
+}
+
+func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) {
+	const op = "cd: get step"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	if err != nil {
+		return nil, err
+	}
+
+	un, workloadType, err := c.getTopWorkload(ctx,
+		params.Cluster, params.Environment, params.RegionEntity)
+	if err != nil {
+		return nil, err
 	}
 
 	getter := ability.New(workloadType)
 
 	// step
-	step, err := getter.GetSteps(un, resourceMap, kubeClient)
+	step, err := getter.GetSteps(un, kubeClient)
 	if err != nil {
-		if perror.Cause(err) != herrors.ErrMethodNotImplemented {
-			return nil, perror.Wrapf(
-				herrors.NewErrGetFailed(herrors.StepInWorkload, "failed to get step"),
-				"failed to get step: resoruce = %v, err = %v", un, err)
-		}
-	} else {
-		if step != nil {
-			clusterState.Step = &Step{
-				Index:        step.Index,
-				Total:        step.Total,
-				Replicas:     step.Replicas,
-				ManualPaused: step.ManualPaused,
-			}
-		}
+		return nil, err
 	}
 
-	// revision
-	current, revisions, err := getter.GetRevisionsOrListPods(un, resourceMap, kubeClient)
-	if err != nil {
-		if perror.Cause(err) != herrors.ErrMethodNotImplemented {
-			return nil, perror.Wrapf(
-				herrors.NewErrGetFailed(herrors.PodsInK8S, "failed to get revisions"),
-				"failed to get revisions: err = %v", err)
-		}
-	} else {
-		stripptedRevisions := make(map[string]*Revision)
-
-		for k, revision := range revisions {
-			stripptedRevision := &Revision{Pods: make(map[string]*ClusterPod)}
-			for _, pod := range revision.Pods {
-				strippedPod := podMapping(pod)
-				stripptedRevision.Pods[pod.Name] = strippedPod
-			}
-			stripptedRevisions[k] = stripptedRevision
-		}
-		clusterState.Versions = stripptedRevisions
-		clusterState.Revision = current
-	}
-
-	// healthy
-	if clusterState.Status == health.HealthStatusHealthy {
-		isHealthy, err := getter.IsHealthy(un, resourceMap, kubeClient)
-		if err != nil {
-			if perror.Cause(err) != herrors.ErrMethodNotImplemented {
-				return nil,
-					perror.Wrapf(herrors.NewErrGetFailed(herrors.ResoruceInK8S, "failed to get health status"),
-						"failed to get healthy: err = %v", err)
-			}
-		} else {
-			if !isHealthy {
-				clusterState.Status = health.HealthStatusProgressing
-			}
-		}
-	}
-
-	return clusterState, nil
+	return &Step{
+		Index:        step.Index,
+		Total:        step.Total,
+		Replicas:     step.Replicas,
+		ManualPaused: step.ManualPaused,
+	}, nil
 }
 
-// GetClusterState TODO(gjq) restructure
+// GetClusterStatusV2 fetchs status of cluster
+func (c *cd) GetClusterStateV2(ctx context.Context,
+	params *GetClusterStateV2Params) (status *ClusterStateV2, err error) {
+	const op = "cd: get cluster status"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	argo, err := c.factory.GetArgoCD(params.Environment)
+	if err != nil {
+		return
+	}
+
+	// get application status
+	argoApp, err := argo.GetApplication(ctx, params.Cluster)
+	if err != nil {
+		return
+	}
+
+	if argoApp.Status.Health.Status == "" {
+		return status, perror.Wrapf(
+			herrors.NewErrNotFound(herrors.ClusterStateInArgo, "cluster not found in argo"),
+			"failed to get cluster status from argo: app name = %v", params.Cluster)
+	}
+
+	// TODO: check commit revision
+	status = &ClusterStateV2{string(argoApp.Status.Health.Status)}
+	if argoApp.Status.Sync.Status != applicationV1alpha1.SyncStatusCodeSynced {
+		status.Status = string(health.HealthStatusProgressing)
+	}
+	return
+}
+
+// Deprecated: GetClusterState TODO(gjq) restructure
 func (c *cd) GetClusterState(ctx context.Context,
 	params *GetClusterStateParams) (clusterState *ClusterState, err error) {
 	const op = "cd: get cluster status"

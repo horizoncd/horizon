@@ -109,7 +109,7 @@ func (mr *MockCDMockRecorder) GetClusterState(ctx, params interface{}) *gomock.C
 }
 
 // GetClusterStateV2 mocks base method.
-func (m *MockCD) GetClusterStateV2(ctx context.Context, params *cd.GetClusterStateParams) (*cd.ClusterStateV2, error) {
+func (m *MockCD) GetClusterStateV2(ctx context.Context, params *cd.GetClusterStateV2Params) (*cd.ClusterStateV2, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClusterStateV2", ctx, params)
 	ret0, _ := ret[0].(*cd.ClusterStateV2)
@@ -181,6 +181,36 @@ func (m *MockCD) GetPodEvents(ctx context.Context, params *cd.GetPodEventsParams
 func (mr *MockCDMockRecorder) GetPodEvents(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodEvents", reflect.TypeOf((*MockCD)(nil).GetPodEvents), ctx, params)
+}
+
+// GetResourceTree mocks base method.
+func (m *MockCD) GetResourceTree(ctx context.Context, params *cd.GetResourceTreeParams) ([]cd.ResourceNode, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceTree", ctx, params)
+	ret0, _ := ret[0].([]cd.ResourceNode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResourceTree indicates an expected call of GetResourceTree.
+func (mr *MockCDMockRecorder) GetResourceTree(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceTree", reflect.TypeOf((*MockCD)(nil).GetResourceTree), ctx, params)
+}
+
+// GetStep mocks base method.
+func (m *MockCD) GetStep(ctx context.Context, params *cd.GetStepParams) (*cd.Step, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStep", ctx, params)
+	ret0, _ := ret[0].(*cd.Step)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStep indicates an expected call of GetStep.
+func (mr *MockCDMockRecorder) GetStep(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStep", reflect.TypeOf((*MockCD)(nil).GetStep), ctx, params)
 }
 
 // Next mocks base method.

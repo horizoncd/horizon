@@ -153,7 +153,7 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 	return nil
 }
 
-// allContainersStarted determine if all containers have been started
+// Deprecated: allContainersStarted determine if all containers have been started
 func allContainersStarted(containerStatuses []corev1.ContainerStatus) bool {
 	for _, containerStatus := range containerStatuses {
 		if containerStatus.Started == nil || !*(containerStatus.Started) {
@@ -163,7 +163,7 @@ func allContainersStarted(containerStatuses []corev1.ContainerStatus) bool {
 	return true
 }
 
-// allContainersRunning determine if all containers running
+// Deprecated: allContainersRunning determine if all containers running
 func allContainersRunning(containerStatuses []corev1.ContainerStatus) bool {
 	for _, containerStatus := range containerStatuses {
 		if containerStatus.State.Running == nil {
@@ -173,7 +173,7 @@ func allContainersRunning(containerStatuses []corev1.ContainerStatus) bool {
 	return true
 }
 
-// allContainersReady determine if all containers ready
+// Deprecated: allContainersReady determine if all containers ready
 func allContainersReady(containerStatuses []corev1.ContainerStatus) bool {
 	for _, containerStatus := range containerStatuses {
 		if !containerStatus.Ready {
@@ -183,7 +183,7 @@ func allContainersReady(containerStatuses []corev1.ContainerStatus) bool {
 	return true
 }
 
-// oneOfContainersCrash determine if one of containers crash
+// Deprecated: oneOfContainersCrash determine if one of containers crash
 func oneOfContainersCrash(containerStatuses []corev1.ContainerStatus) bool {
 	for _, containerStatus := range containerStatuses {
 		if containerStatus.State.Waiting != nil && containerStatus.State.Waiting.Reason == PodErrCrashLoopBackOff {
@@ -193,6 +193,7 @@ func oneOfContainersCrash(containerStatuses []corev1.ContainerStatus) bool {
 	return false
 }
 
+// Deprecated
 func parseContainerState(containerStatus corev1.ContainerStatus) ContainerState {
 	waiting := "waiting"
 	running := "running"
@@ -424,6 +425,7 @@ func computeRolloutStepHash(rollout *rolloutsV1alpha1.Rollout) string {
 	}
 	return rand.SafeEncodeString(fmt.Sprint(rolloutStepHasher.Sum32()))
 }
+
 func podMapping(pod corev1.Pod) *ClusterPod {
 	clusterPod := &ClusterPod{
 		Metadata: PodMetadata{
@@ -590,7 +592,7 @@ func parsePodLifeCycle(pod corev1.Pod) []*LifeCycleItem {
 func mapKind2Resource(group, version, kind string, kubeClient kubernetes.Interface) (string, error) {
 	apiList, err := kubeClient.Discovery().ServerResourcesForGroupVersion(fmt.Sprintf("%s/%s", group, version))
 	if err != nil {
-		return "", perror.Wrapf(herrors.NewErrGetFailed(herrors.ResoruceInK8S, "failed to get api list"),
+		return "", perror.Wrapf(herrors.NewErrGetFailed(herrors.ResourceInK8S, "failed to get api list"),
 			"failed to get resource api list: gvk = %s/%s/%s, err = %v", group, version, kind, err)
 	}
 	for _, resource := range apiList.APIResources {
@@ -603,17 +605,22 @@ func mapKind2Resource(group, version, kind string, kubeClient kubernetes.Interfa
 	return fmt.Sprintf("%ss", strings.ToLower(kind)), nil
 }
 
+// findTop finds the one who has the most pods
 func findTop(nodeTree map[string]*applicationV1alpha1.ResourceNode) *applicationV1alpha1.ResourceNode {
 	type node struct {
 		*applicationV1alpha1.ResourceNode
-		childCount int
+		count int
 	}
 	var maxDepth = 100
 
 	m := make(map[string]*node, len(nodeTree))
 
 	for k, v := range nodeTree {
-		m[k] = &node{v, 0}
+		if v.Kind == "Pod" {
+			m[k] = &node{v, 1}
+		} else {
+			m[k] = &node{v, 0}
+		}
 	}
 
 	var findParent func(string, int) *node
@@ -636,13 +643,11 @@ func findTop(nodeTree map[string]*applicationV1alpha1.ResourceNode) *application
 	for k := range m {
 		parent := findParent(k, 0)
 		if parent != nil {
-			parent.childCount++
-		}
-		if parent != nil {
+			parent.count += m[k].count
 			if maxNode == nil {
 				maxNode = parent
 			}
-			if maxNode.childCount < parent.childCount {
+			if maxNode.count < parent.count {
 				maxNode = parent
 			}
 		}
