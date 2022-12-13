@@ -456,7 +456,12 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 	// step
 	step, err := getter.GetSteps(un, kubeClient)
 	if err != nil {
-		return nil, err
+		return &Step{
+			Index:        0,
+			Total:        0,
+			Replicas:     []int{},
+			ManualPaused: false,
+		}, nil
 	}
 
 	return &Step{
@@ -493,6 +498,28 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 	// TODO: check commit revision
 	status = &ClusterStateV2{string(argoApp.Status.Health.Status)}
 	if argoApp.Status.Sync.Status != applicationV1alpha1.SyncStatusCodeSynced {
+		status.Status = string(health.HealthStatusProgressing)
+	}
+
+	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	if err != nil {
+		return nil, err
+	}
+
+	un, workloadType, err := c.getTopWorkload(ctx,
+		params.Cluster, params.Environment, params.RegionEntity)
+	if err != nil {
+		return nil, err
+	}
+
+	getter := ability.New(workloadType)
+
+	// step
+	isHealthy, err := getter.IsHealthy(un, kubeClient)
+	if err != nil {
+		return status, nil
+	}
+	if !isHealthy {
 		status.Status = string(health.HealthStatusProgressing)
 	}
 	return

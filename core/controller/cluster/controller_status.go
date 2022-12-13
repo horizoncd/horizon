@@ -38,6 +38,11 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 		return nil, err
 	}
 
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
 	resp := &StatusResponseV2{}
 	// status in db has higher priority
 	if cluster.Status != common.ClusterStatusEmpty {
@@ -45,8 +50,9 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 	}
 
 	params := &cd.GetClusterStateV2Params{
-		Environment: cluster.EnvironmentName,
-		Cluster:     cluster.Name,
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
 	}
 
 	cdStatus, err := c.cd.GetClusterStateV2(ctx, params)
