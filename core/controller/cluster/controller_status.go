@@ -239,7 +239,7 @@ func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *cl
 		if err != nil {
 			return nil, err
 		}
-		latestPr, err = tektonClient.GetPipelineRunByID(ctx, cluster.Name, cluster.ID, pipelinerun.ID)
+		latestPr, err = tektonClient.GetPipelineRunByID(ctx, pipelinerun.CIEventID)
 		if err != nil {
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 				return nil, nil

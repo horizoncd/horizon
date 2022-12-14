@@ -15,6 +15,7 @@ import (
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	perror "g.hz.netease.com/horizon/pkg/errors"
+	"g.hz.netease.com/horizon/pkg/server/global"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
@@ -113,10 +114,11 @@ type CollectResult struct {
 	CompletionTime *metav1.Time
 }
 
-func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun) (*CollectResult, error) {
+func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, horizonMetaData *global.HorizonMetaData) (
+	*CollectResult, error) {
 	const op = "s3Collector: collect"
 	defer wlog.Start(ctx, op).StopPrint()
-	metadata := resolveObjMetadata(pr)
+	metadata := resolveObjMetadata(pr, horizonMetaData)
 	// 先收集日志，收集日志需要使用client-go访问k8s接口，
 	// 如果pipelineRun不存在，直接忽略即可
 	collectLogResult, err := c.collectLog(ctx, pr, metadata)

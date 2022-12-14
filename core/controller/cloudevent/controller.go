@@ -2,26 +2,27 @@ package cloudevent
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
-	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
-	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
-	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
-
-	"g.hz.netease.com/horizon/core/common"
 	herrors "g.hz.netease.com/horizon/core/errors"
+	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
+	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	perror "g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/param"
+	prmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
+	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	pipelinemanager "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/manager"
+	"g.hz.netease.com/horizon/pkg/server/global"
+	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
+	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
 	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
+
+	"g.hz.netease.com/horizon/core/common"
 )
 
 type Controller interface {
@@ -35,7 +36,8 @@ type controller struct {
 	clusterMgr         clustermanager.Manager
 	clusterGitRepo     gitrepo.ClusterGitRepo
 	templateReleaseMgr trmanager.Manager
-	eventMgr           eventmanager.Manager
+	applicationMgr     applicationmanager.Manager
+	userMgr            usermanager.Manager
 }
 
 func NewController(tektonFty factory.Factory, parameter *param.Param) Controller {
@@ -46,7 +48,8 @@ func NewController(tektonFty factory.Factory, parameter *param.Param) Controller
 		clusterMgr:         parameter.ClusterMgr,
 		clusterGitRepo:     parameter.ClusterGitRepo,
 		templateReleaseMgr: parameter.TemplateReleaseManager,
-		eventMgr:           parameter.EventManager,
+		applicationMgr:     parameter.ApplicationManager,
+		userMgr:            parameter.UserManager,
 	}
 }
 
@@ -54,13 +57,13 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	const op = "cloudEvent controller: cloudEvent"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	environment := wpr.PipelineRun.Labels[common.ClusterEnvironmentLabelKey]
-	pipelinerunIDStr := wpr.PipelineRun.Labels[common.ClusterPipelinerunIDLabelKey]
-	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
+	horizonMetaData, err := c.getHorizonMetaData(ctx, wpr)
 	if err != nil {
-		return perror.Wrapf(herrors.ErrParamInvalid,
-			"invalid pipeline run id: %s", pipelinerunIDStr)
+		return err
 	}
+
+	environment := horizonMetaData.Environment
+	pipelinerunID := horizonMetaData.PipelinerunID
 
 	// 1. collect log & pipelinerun object
 	tektonCollector, err := c.tektonFty.GetTektonCollector(environment)
@@ -69,10 +72,8 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	var result *collector.CollectResult
-	if result, err = tektonCollector.Collect(ctx, wpr.PipelineRun); err != nil {
+	if result, err = tektonCollector.Collect(ctx, wpr.PipelineRun, horizonMetaData); err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			// 如果pipelineRun已经不存在，直接忽略。
-			// 这种情况一般是 tekton pipeline controller重复上报了同一个pipelineRun所致
 			log.Warningf(ctx, "received pipelineRun: %v is not found when collect", wpr.PipelineRun.Name)
 			return nil
 		}
@@ -80,7 +81,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	}
 
 	// 2. update pipelinerun in db
-	if err := c.pipelinerunMgr.UpdateResultByID(ctx, uint(pipelinerunID), &prmodels.Result{
+	if err := c.pipelinerunMgr.UpdateResultByID(ctx, pipelinerunID, &prmodels.Result{
 		S3Bucket:   result.Bucket,
 		LogObject:  result.LogObject,
 		PrObject:   result.PrObject,
@@ -91,14 +92,12 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		return err
 	}
 
-	// 3. delete pipelinerun in k8s
-	// 提前删除，如果删除返回404，则忽略
-	// 这种情况一般也是 tekton pipeline controller重复上报了同一个pipelineRun所致
 	tekton, err := c.tektonFty.GetTekton(environment)
 	if err != nil {
 		return err
 	}
 
+	// 3. delete pipelinerun in k8s
 	if err := tekton.DeletePipelineRun(ctx, wpr.PipelineRun); err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			log.Warningf(ctx, "received pipelineRun: %v is not found when delete", wpr.PipelineRun.Name)
@@ -110,51 +109,44 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	// format Pipeline results
 	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun)
 
-	// 判断集群是否是JIB构建，动态修改Task和Step的值
-	c.handleJibBuild(ctx, pipelineResult)
+	// todo remove codes below in the future
+	err = c.handleJibBuild(ctx, pipelineResult, horizonMetaData)
+	if err != nil {
+		return err
+	}
 
 	// 4. observe metrics
-	// 最后指标上报，保证同一条pipelineRun，只上报一条指标
-	metrics.Observe(pipelineResult)
+	metrics.Observe(pipelineResult, horizonMetaData)
 
 	// 5. insert pipeline into db
-	err = c.pipelineMgr.Create(ctx, pipelineResult)
+	err = c.pipelineMgr.Create(ctx, pipelineResult, horizonMetaData)
 	if err != nil {
-		// err不往上层抛，上层也无法处理这种异常
-		log.Errorf(ctx, "failed to save pipeline to db: %v, err: %v", pipelineResult, err)
+		return err
 	}
 
 	return nil
 }
 
 // TODO remove this function in the future
-// 判断集群是否是JIB构建，动态修改Task和Step的值
-func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults) {
-	clusterID, err := strconv.ParseUint(result.BusinessData.ClusterID, 10, 0)
+// check cluster's build type, change tasks' and steps' values if needed
+func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults,
+	data *global.HorizonMetaData) error {
+	clusterID := data.ClusterID
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
-		log.Errorf(ctx, "failed to parse clusterID to uint from string: %d", clusterID)
-		return
+		return err
 	}
-	cluster, err := c.clusterMgr.GetByID(ctx, uint(clusterID))
-	if err != nil {
-		log.Errorf(ctx, "failed to get cluster from db by id: %d, err: %+v", clusterID, err)
-		return
-	}
-
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
 	if err != nil {
-		log.Errorf(ctx, "failed to get templateRelease from db by id: %d, err: %+v", cluster.ApplicationID, err)
-		return
+		return err
 	}
-	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, result.BusinessData.Application, cluster.Name, tr.ChartName)
+	clusterFiles, err := c.clusterGitRepo.GetCluster(ctx, data.Application, cluster.Name, tr.ChartName)
 	if err != nil {
-		log.Errorf(ctx, "failed to get files from gitlab, cluster: %s, err: %+v", cluster.Name, err)
-		return
+		return err
 	}
 
 	// check if buildxml key exist in pipeline
 	if buildXML, ok := clusterFiles.PipelineJSONBlob["buildxml"]; ok {
-		// 判断buildxml包含jib的内容，则进行替换操作
 		const jibBuild = "jib-build"
 		if strings.Contains(buildXML.(string), "jib-maven-plugin") {
 			// change taskrun name
@@ -175,4 +167,41 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 			}
 		}
 	}
+
+	return nil
+}
+
+// getHorizonMetaData resolves info about this pipelinerun
+func (c *controller) getHorizonMetaData(ctx context.Context, wpr *WrappedPipelineRun) (
+	*global.HorizonMetaData, error) {
+	eventID := wpr.PipelineRun.Labels[common.TektonTriggersEventIDKey]
+	pipelinerun, err := c.pipelinerunMgr.GetByCIEventID(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+	cluster, err := c.clusterMgr.GetByID(ctx, pipelinerun.ClusterID)
+	if err != nil {
+		return nil, err
+	}
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+	user, err := c.userMgr.GetUserByID(ctx, pipelinerun.CreatedBy)
+	if err != nil {
+		return nil, err
+	}
+
+	return &global.HorizonMetaData{
+		Application:   application.Name,
+		ApplicationID: application.ID,
+		Cluster:       cluster.Name,
+		ClusterID:     cluster.ID,
+		Environment:   cluster.EnvironmentName,
+		Operator:      user.Email,
+		PipelinerunID: pipelinerun.ID,
+		Region:        cluster.RegionName,
+		Template:      cluster.Template,
+		EventID:       eventID,
+	}, nil
 }

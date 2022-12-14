@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,19 +20,11 @@ func Test_resolveObjMetadata(t *testing.T) {
             "creationTimestamp": "2021-07-16T08:51:54Z",
             "labels":{
                 "app.kubernetes.io/managed-by":"Helm",
-                "cloudnative.music.netease.com/application":"testapp-1",
-				"cloudnative.music.netease.com/application-id":"1",
-                "cloudnative.music.netease.com/cluster":"testcluster-1",
-				"cloudnative.music.netease.com/cluster-id":"2",
-                "cloudnative.music.netease.com/environment":"env",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
                 "triggers.tekton.dev/triggers-eventid":"cttzw"
-            },
-			"annotations":{
-				"cloudnative.music.netease.com/operator":"demo@mail.com"
-			}
+            }
         },
         "status":{
             "conditions":[
@@ -155,13 +148,13 @@ func Test_resolveObjMetadata(t *testing.T) {
 				pr: pr,
 			},
 			want: &ObjectMeta{
-				Application:       "ndp-gjq",
+				Application:       "app",
 				ApplicationID:     "1",
-				Cluster:           "test-music-docker",
+				Cluster:           "cluster",
 				ClusterID:         "2",
 				Environment:       "test",
-				Operator:          "demo@mail.com",
-				CreationTimestamp: "20210716165154",
+				Operator:          "horizon@corp.cloudnative.com",
+				CreationTimestamp: "2021-07-16 16:51:54",
 				PipelineRun: &PipelineRunStatus{
 					StatusMeta: StatusMeta{
 						Name:            "test-music-docker-q58rp",
@@ -171,68 +164,21 @@ func Test_resolveObjMetadata(t *testing.T) {
 						CompletionTime:  parseTime("2021-06-24T06:38:18Z"),
 					},
 					Pipeline: "default",
-					TaskRuns: map[string]TaskRunStatus{
-						"test-music-docker-q58rp-build-g8khd": {
-							StatusMeta: StatusMeta{
-								Name:            "test-music-docker-q58rp-build-g8khd",
-								Result:          "ok",
-								DurationSeconds: 32,
-							},
-							Pod:  "test-music-docker-q58rp-build-g8khd-pod-mwsld",
-							Task: "build",
-							Steps: map[string]StepStatus{
-								"git": {
-									StatusMeta: StatusMeta{
-										Name:            "git",
-										Result:          "ok",
-										DurationSeconds: 8,
-									},
-								},
-								"compile": {
-									StatusMeta: StatusMeta{
-										Name:            "compile",
-										Result:          "ok",
-										DurationSeconds: 8,
-									},
-								},
-								"image": {
-									StatusMeta: StatusMeta{
-										Name:            "image",
-										Result:          "ok",
-										DurationSeconds: 8,
-									},
-								},
-							},
-							StepsOrder: []string{"git", "compile", "image"},
-						},
-						"test-music-docker-q58rp-deploy-xzjkg": {
-							StatusMeta: StatusMeta{
-								Name:            "test-music-docker-q58rp-deploy-xzjkg",
-								Result:          "ok",
-								DurationSeconds: 95,
-							},
-							Pod:  "test-music-docker-q58rp-deploy-xzjkg-pod-zkcc4",
-							Task: "deploy",
-							Steps: map[string]StepStatus{
-								"deploy": {
-									StatusMeta: StatusMeta{
-										Name:            "deploy",
-										Result:          "ok",
-										DurationSeconds: 90,
-									},
-								},
-							},
-							StepsOrder: []string{"deploy"},
-						},
-					},
-					TasksOrder: []string{"build", "deploy"},
 				},
 			},
 		},
 	}
+	businessDatas := &global.HorizonMetaData{
+		Application:   "app",
+		Cluster:       "cluster",
+		Environment:   "test",
+		ApplicationID: 1,
+		ClusterID:     2,
+		Operator:      "horizon@corp.cloudnative.com",
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := resolveObjMetadata(tt.args.pr); !reflect.DeepEqual(got, tt.want) {
+			if got := resolveObjMetadata(tt.args.pr, businessDatas); !reflect.DeepEqual(got, tt.want) {
 				gotB, _ := json.Marshal(got)
 				wantB, _ := json.Marshal(tt.want)
 				t.Errorf("ResolveObjMetadata() = %v\n, want %v", string(gotB), string(wantB))

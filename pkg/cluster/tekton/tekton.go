@@ -9,15 +9,14 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/tekton/tekton_mock.go -package=mock_tekton
 type Interface interface {
-	GetPipelineRunByID(ctx context.Context, cluster string,
-		clusterID, pipelinerunID uint) (*v1beta1.PipelineRun, error)
+	GetPipelineRunByID(ctx context.Context, ciEventID string) (*v1beta1.PipelineRun, error)
 	// CreatePipelineRun create pipelinerun
 	CreatePipelineRun(ctx context.Context, pr *PipelineRun) (string, error)
 	// StopPipelineRun stop pipelinerun
-	StopPipelineRun(ctx context.Context, cluster string, clusterID, pipelinerunID uint) error
-	GetPipelineRunLogByID(ctx context.Context, cluster string,
-		clusterID, pipelinerunID uint) (<-chan log.Log, <-chan error, error)
+	StopPipelineRun(ctx context.Context, ciEventID string) error
+	GetPipelineRunLogByID(ctx context.Context, ciEventID string) (<-chan log.Log, <-chan error, error)
 	// GetPipelineRunLog 根据传入的pipelineRun获取该pipelineRun对应的log
 	GetPipelineRunLog(ctx context.Context, pr *v1beta1.PipelineRun) (<-chan log.Log, <-chan error, error)
 	// DeletePipelineRun 删除pipelineRun

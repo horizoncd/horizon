@@ -14,6 +14,7 @@ type DAO interface {
 	// Create create a pipelinerun
 	Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error)
 	GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error)
+	GetByCIEventID(ctx context.Context, ciEventID string) (*models.Pipelinerun, error)
 	GetByClusterID(ctx context.Context, clusterID uint,
 		canRollback bool, query q.Query) (int, []*models.Pipelinerun, error)
 	// DeleteByID delete pipelinerun by id
@@ -24,6 +25,7 @@ type DAO interface {
 	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint,
 		action, status string) (*models.Pipelinerun, error)
 	UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error
+	UpdateCIEventIDByID(ctx context.Context, pipelinerunID uint, ciEventID string) error
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 	GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
@@ -48,6 +50,18 @@ func (d *dao) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*mod
 func (d *dao) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error) {
 	var pr models.Pipelinerun
 	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetByID, pipelinerunID).Scan(&pr)
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+	return &pr, nil
+}
+
+func (d *dao) GetByCIEventID(ctx context.Context, ciEventID string) (*models.Pipelinerun, error) {
+	var pr models.Pipelinerun
+	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetByCIEventID, ciEventID).Scan(&pr)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
 	}
@@ -129,7 +143,15 @@ func (d *dao) GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (
 func (d *dao) UpdateStatusByID(ctx context.Context, pipelinerunID uint, status models.PipelineStatus) error {
 	res := d.db.WithContext(ctx).Exec(common.PipelinerunUpdateStatusByID, status, pipelinerunID)
 	if res.Error != nil {
-		return herrors.NewErrGetFailed(herrors.PipelinerunInDB, res.Error.Error())
+		return herrors.NewErrUpdateFailed(herrors.PipelinerunInDB, res.Error.Error())
+	}
+	return res.Error
+}
+
+func (d *dao) UpdateCIEventIDByID(ctx context.Context, pipelinerunID uint, ciEventID string) error {
+	res := d.db.WithContext(ctx).Exec(common.PipelinerunUpdateCIEventIDByID, ciEventID, pipelinerunID)
+	if res.Error != nil {
+		return herrors.NewErrUpdateFailed(herrors.PipelinerunInDB, res.Error.Error())
 	}
 	return res.Error
 }
@@ -139,7 +161,7 @@ func (d *dao) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *
 		result.LogObject, result.PrObject, result.StartedAt, result.FinishedAt, pipelinerunID)
 
 	if res.Error != nil {
-		return herrors.NewErrGetFailed(herrors.PipelinerunInDB, res.Error.Error())
+		return herrors.NewErrUpdateFailed(herrors.PipelinerunInDB, res.Error.Error())
 	}
 	return res.Error
 }

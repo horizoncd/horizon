@@ -9,9 +9,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// nolint
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/pipelinerun/manager/mock_manager.go
+// -package=mock_manager
 type Manager interface {
 	Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error)
 	GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error)
+	GetByCIEventID(ctx context.Context, ciEventID string) (*models.Pipelinerun, error)
 	GetByClusterID(ctx context.Context, clusterID uint, canRollback bool,
 		query q.Query) (int, []*models.Pipelinerun, error)
 	GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
@@ -23,6 +27,7 @@ type Manager interface {
 		status string) (*models.Pipelinerun, error)
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 	UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error
+	UpdateCIEventIDByID(ctx context.Context, pipelinerunID uint, ciEventID string) error
 	// UpdateResultByID  update the pipelinerun restore result
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
 }
@@ -43,6 +48,10 @@ func (m *manager) Create(ctx context.Context, pipelinerun *models.Pipelinerun) (
 
 func (m *manager) GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error) {
 	return m.dao.GetByID(ctx, pipelinerunID)
+}
+
+func (m *manager) GetByCIEventID(ctx context.Context, ciEventID string) (*models.Pipelinerun, error) {
+	return m.dao.GetByCIEventID(ctx, ciEventID)
 }
 
 func (m *manager) DeleteByID(ctx context.Context, pipelinerunID uint) error {
@@ -68,6 +77,10 @@ func (m *manager) GetLatestSuccessByClusterID(ctx context.Context, clusterID uin
 
 func (m *manager) UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error {
 	return m.dao.UpdateStatusByID(ctx, pipelinerunID, result)
+}
+
+func (m *manager) UpdateCIEventIDByID(ctx context.Context, pipelinerunID uint, ciEventID string) error {
+	return m.dao.UpdateCIEventIDByID(ctx, pipelinerunID, ciEventID)
 }
 
 func (m *manager) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error {

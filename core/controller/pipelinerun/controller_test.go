@@ -271,7 +271,7 @@ func Test(t *testing.T) {
 
 	logCh := make(chan log.Log)
 	errCh := make(chan error)
-	tekton.EXPECT().GetPipelineRunLogByID(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(logCh, errCh, nil)
+	tekton.EXPECT().GetPipelineRunLogByID(ctx, gomock.Any()).Return(logCh, errCh, nil)
 
 	l, err := c.GetPipelinerunLog(ctx, pipelinerun.ID)
 	assert.Nil(t, err)
@@ -346,7 +346,7 @@ func Test(t *testing.T) {
 		CreatedBy: 1,
 	})
 	assert.Nil(t, err)
-	tekton.EXPECT().StopPipelineRun(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	tekton.EXPECT().StopPipelineRun(ctx, gomock.Any()).Return(nil).AnyTimes()
 	err = c.StopPipelinerun(ctx, pipelinerun.ID)
 	assert.Nil(t, err)
 

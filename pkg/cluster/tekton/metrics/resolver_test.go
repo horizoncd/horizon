@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,64 +14,6 @@ import (
 )
 
 const _layout = "2006-01-02T15:04:05Z"
-
-func TestWrappedPipelineRun_ResolveBusinessData(t *testing.T) {
-	type fields struct {
-		PipelineRun *v1beta1.PipelineRun
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *PrBusinessData
-	}{
-		{
-			name: "normal1",
-			fields: fields{
-				PipelineRun: &v1beta1.PipelineRun{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{
-							common.ClusterApplicationLabelKey: "app",
-						},
-					},
-				},
-			},
-			want: &PrBusinessData{
-				Application: "app",
-				Cluster:     "",
-				Environment: "",
-			},
-		},
-		{
-			name: "normal2",
-			fields: fields{
-				PipelineRun: &v1beta1.PipelineRun{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{
-							common.ClusterApplicationLabelKey: "app",
-							common.ClusterClusterLabelKey:     "cluster",
-							common.ClusterEnvironmentLabelKey: "environment",
-						},
-					},
-				},
-			},
-			want: &PrBusinessData{
-				Application: "app",
-				Cluster:     "cluster",
-				Environment: "environment",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			wpr := &WrappedPipelineRun{
-				PipelineRun: tt.fields.PipelineRun,
-			}
-			if got := wpr.ResolveBusinessData(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ResolveBusinessData() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestWrappedPipelineRun_ResolveMetadata(t *testing.T) {
 	type fields struct {
@@ -320,9 +261,6 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
             "namespace":"tekton-resources",
             "labels":{
                 "app.kubernetes.io/managed-by":"Helm",
-                "cloudnative.music.netease.com/application":"testapp-1",
-                "cloudnative.music.netease.com/cluster":"testcluster-1",
-                "cloudnative.music.netease.com/environment":"env",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
@@ -440,9 +378,6 @@ func TestWrappedPipelineRun_ResolveTrAndStepResults(t *testing.T) {
         "metadata":{
             "labels":{
                 "app.kubernetes.io/managed-by":"Helm",
-                "cloudnative.music.netease.com/application":"testapp-2",
-                "cloudnative.music.netease.com/cluster":"testapp-2-testcluster-2",
-                "cloudnative.music.netease.com/environment":"env",
                 "tekton.dev/pipeline":"default",
                 "triggers.tekton.dev/eventlistener":"default-listener",
                 "triggers.tekton.dev/trigger":"",
