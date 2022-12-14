@@ -1,9 +1,13 @@
+/**
+Pr 是 PipelineRun的缩写
+Tr 是 TaskRun的缩写
+*/
+
 package metrics
 
 import (
 	"sort"
 
-	common "g.hz.netease.com/horizon/core/common"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,40 +18,44 @@ type WrappedPipelineRun struct {
 	PipelineRun *v1beta1.PipelineRun `json:"pipelineRun"`
 }
 
+// PrMetadata pipelineRun的元信息
 type PrMetadata struct {
-	Name      string
+	// pipelineRun的name
+	Name string
+	// pipelineRun的namespace
 	Namespace string
-	Pipeline  string
+	// pipelineRun对应的pipeline
+	Pipeline string
 }
 
-type PrBusinessData struct {
-	Application   string
-	Cluster       string
-	ApplicationID string
-	ClusterID     string
-	Environment   string
-	Operator      string
-	PipelinerunID string
-	Region        string
-	RegionID      string
-	Template      string
-}
-
+// PrResult pipelineRun结果
 type PrResult struct {
+	// 花费的时间，单位为秒
 	DurationSeconds float64
-	Result          string
-	StartTime       *metav1.Time
-	CompletionTime  *metav1.Time
+	// 执行结果
+	Result string
+	// pipelineRun开始执行的时间，用于排序
+	StartTime *metav1.Time
+	// pipelineRun执行完成的时间
+	CompletionTime *metav1.Time
 }
 
+// TrResult taskRun结果
 type TrResult struct {
-	Name            string
-	Pod             string
-	Task            string
-	StartTime       *metav1.Time
-	CompletionTime  *metav1.Time
+	// taskRun的名称
+	Name string
+	// 对应的Pod
+	Pod string
+	// 对应的task的名称
+	Task string
+	// taskRun开始执行的时间，用于排序
+	StartTime *metav1.Time
+	// taskRun执行完成的时间
+	CompletionTime *metav1.Time
+	// 花费的时间，单位为秒
 	DurationSeconds float64
-	Result          string
+	// 执行结果
+	Result string
 }
 
 type TrResults []*TrResult
@@ -65,13 +73,20 @@ func (t TrResults) Swap(i, j int) {
 }
 
 type StepResult struct {
-	Step            string
-	Task            string
-	TaskRun         string
-	StartTime       *metav1.Time
-	CompletionTime  *metav1.Time
+	// step名称
+	Step string
+	// 所属Task名称
+	Task string
+	// 所属TaskRun名称
+	TaskRun string
+	// step开始执行的时间
+	StartTime *metav1.Time
+	// step执行完成的时间
+	CompletionTime *metav1.Time
+	// 花费的时间，单位为秒
 	DurationSeconds float64
-	Result          string
+	// 执行结果
+	Result string
 }
 
 type StepResults []*StepResult
@@ -89,11 +104,10 @@ func (s StepResults) Swap(i, j int) {
 }
 
 type PipelineResults struct {
-	Metadata     *PrMetadata
-	BusinessData *PrBusinessData
-	PrResult     *PrResult
-	TrResults    TrResults
-	StepResults  StepResults
+	Metadata    *PrMetadata
+	PrResult    *PrResult
+	TrResults   TrResults
+	StepResults StepResults
 }
 
 func FormatPipelineResults(pipelineRun *v1beta1.PipelineRun) *PipelineResults {
@@ -107,16 +121,16 @@ func FormatPipelineResults(pipelineRun *v1beta1.PipelineRun) *PipelineResults {
 
 	trResults, stepResults := wpr.ResolveTrAndStepResults()
 	return &PipelineResults{
-		Metadata:     wpr.ResolveMetadata(),
-		BusinessData: wpr.ResolveBusinessData(),
-		PrResult:     wpr.ResolvePrResult(),
-		TrResults:    trResults,
-		StepResults:  stepResults,
+		Metadata:    wpr.ResolveMetadata(),
+		PrResult:    wpr.ResolvePrResult(),
+		TrResults:   trResults,
+		StepResults: stepResults,
 	}
 }
 
 const LabelKeyPipeline = "tekton.dev/pipeline"
 
+// ResolveMetadata 解析pipelineRun的元数据
 func (wpr *WrappedPipelineRun) ResolveMetadata() *PrMetadata {
 	return &PrMetadata{
 		Name:      wpr.PipelineRun.Name,
@@ -125,34 +139,7 @@ func (wpr *WrappedPipelineRun) ResolveMetadata() *PrMetadata {
 	}
 }
 
-func (wpr *WrappedPipelineRun) ResolveBusinessData() *PrBusinessData {
-	labels := wpr.PipelineRun.Labels
-	application := labels[common.ClusterApplicationLabelKey]
-	cluster := labels[common.ClusterClusterLabelKey]
-	environment := labels[common.ClusterEnvironmentLabelKey]
-	applicationIDStr := labels[common.ClusterApplicationIDLabelKey]
-	clusterIDStr := labels[common.ClusterClusterIDLabelKey]
-	pipelinerunID := labels[common.ClusterPipelinerunIDLabelKey]
-	region := labels[common.ClusterRegionLabelKey]
-	regionID := labels[common.ClusterRegionIDLabelKey]
-	template := labels[common.ClusterTemplateKey]
-
-	annotations := wpr.PipelineRun.Annotations
-	operator := annotations[common.ClusterOperatorAnnotationKey]
-	return &PrBusinessData{
-		Application:   application,
-		Cluster:       cluster,
-		ApplicationID: applicationIDStr,
-		ClusterID:     clusterIDStr,
-		Environment:   environment,
-		Operator:      operator,
-		PipelinerunID: pipelinerunID,
-		Region:        region,
-		RegionID:      regionID,
-		Template:      template,
-	}
-}
-
+// ResolvePrResult 解析pipelineRun整体的执行结果
 func (wpr *WrappedPipelineRun) ResolvePrResult() *PrResult {
 	r := func() prmodels.PipelineStatus {
 		prc := wpr.PipelineRun.Status.GetCondition(apis.ConditionSucceeded)
@@ -164,6 +151,10 @@ func (wpr *WrappedPipelineRun) ResolvePrResult() *PrResult {
 			return prmodels.StatusOK
 		case v1beta1.PipelineRunReasonFailed, v1beta1.PipelineRunReasonTimedOut:
 			return prmodels.StatusFailed
+			// tekton pipelines v0.18.1版本，取消的情况下，
+			// 实际用的是v1beta1.PipelineRunSpecStatusCancelled字段，
+			// ref: (1) https://github.com/tektoncd/pipeline/blob/v0.18.1/pkg/reconciler/pipelinerun/cancel.go#L67
+			// (2) https://github.com/tektoncd/pipeline/blob/v0.18.1/pkg/reconciler/pipelinerun/pipelinerun.go#L99
 		case v1beta1.PipelineRunReasonCancelled, v1beta1.PipelineRunSpecStatusCancelled:
 			return prmodels.StatusCancelled
 		}
@@ -180,6 +171,7 @@ func (wpr *WrappedPipelineRun) ResolvePrResult() *PrResult {
 	}
 }
 
+// ResolveTrAndStepResults 解析pipelineRun中包含的taskRun以及各个taskRun中step的执行结果
 func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults) {
 	trResults := make(TrResults, 0)
 	stepResults := make(StepResults, 0)
@@ -211,6 +203,7 @@ func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults
 				return prmodels.StatusFailed
 			}()
 			if stepResult == prmodels.StatusUnknown {
+				// ResultUnknown的情况表示pipelineRun取消执行，当前step被取消，此时可以跳过后续step
 				break
 			}
 			stepResults = append(stepResults, &StepResult{
@@ -229,16 +222,19 @@ func (wpr *WrappedPipelineRun) ResolveTrAndStepResults() (TrResults, StepResults
 				Result: string(stepResult),
 			})
 			if stepResult == prmodels.StatusFailed {
+				// 如果一个step失败了，那么后续的step都会跳过执行，故这里跳过后续step
 				break
 			}
 		}
 	}
 
+	// 返回的结果按照执行顺序排序
 	sort.Sort(trResults)
 	sort.Sort(stepResults)
 	return trResults, stepResults
 }
 
+// trResult 根据 v1beta1.PipelineRunTaskRunStatus 获取 taskRun 的执行结果
 func trResult(trStatus *v1beta1.PipelineRunTaskRunStatus) prmodels.PipelineStatus {
 	if trStatus == nil {
 		return prmodels.StatusUnknown
@@ -255,8 +251,10 @@ func trResult(trStatus *v1beta1.PipelineRunTaskRunStatus) prmodels.PipelineStatu
 	return prmodels.StatusUnknown
 }
 
+// durationSeconds 根据起始时间计算以秒为单位的时间差
 func durationSeconds(beginTime, endTime *metav1.Time) float64 {
 	if beginTime == nil || endTime == nil {
+		// -1 代表数据有问题
 		return -1
 	}
 	return endTime.Time.Sub(beginTime.Time).Seconds()

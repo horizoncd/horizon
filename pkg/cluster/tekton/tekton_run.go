@@ -24,9 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func (t *Tekton) GetPipelineRunByID(ctx context.Context, cluster string,
-	clusterID, pipelinerunID uint) (_ *v1beta1.PipelineRun, err error) {
-	return t.getPipelineRunByID(ctx, clusterID, pipelinerunID)
+func (t *Tekton) GetPipelineRunByID(ctx context.Context, ciEventID string) (_ *v1beta1.PipelineRun, err error) {
+	return t.getPipelineRunByID(ctx, ciEventID)
 }
 
 func (t *Tekton) CreatePipelineRun(ctx context.Context, pr *PipelineRun) (eventID string, err error) {
@@ -69,11 +68,11 @@ type patchStringValue struct {
 	Value string `json:"value"`
 }
 
-func (t *Tekton) StopPipelineRun(ctx context.Context, cluster string, clusterID, pipelinerunID uint) (err error) {
+func (t *Tekton) StopPipelineRun(ctx context.Context, ciEventID string) (err error) {
 	const op = "tekton: stop pipelineRun"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pr, err := t.GetPipelineRunByID(ctx, cluster, clusterID, pipelinerunID)
+	pr, err := t.GetPipelineRunByID(ctx, ciEventID)
 	if err != nil {
 		return err
 	}
@@ -107,9 +106,9 @@ func (t *Tekton) StopPipelineRun(ctx context.Context, cluster string, clusterID,
 	return nil
 }
 
-func (t *Tekton) GetPipelineRunLogByID(ctx context.Context,
-	cluster string, clusterID, pipelinerunID uint) (_ <-chan log.Log, _ <-chan error, err error) {
-	pr, err := t.getPipelineRunByID(ctx, clusterID, pipelinerunID)
+func (t *Tekton) GetPipelineRunLogByID(ctx context.Context, ciEventID string) (
+	_ <-chan log.Log, _ <-chan error, err error) {
+	pr, err := t.getPipelineRunByID(ctx, ciEventID)
 
 	if err != nil {
 		return nil, nil, perror.WithMessage(err, "failed to get pipeline run with labels")
@@ -147,10 +146,9 @@ func (t *Tekton) DeletePipelineRun(ctx context.Context, pr *v1beta1.PipelineRun)
 	return nil
 }
 
-func (t *Tekton) getPipelineRunByID(ctx context.Context, clusterID, pipelinerunID uint) (_ *v1beta1.PipelineRun,
+func (t *Tekton) getPipelineRunByID(ctx context.Context, ciEventID string) (_ *v1beta1.PipelineRun,
 	err error) {
-	selector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v,%v=%v",
-		common.ClusterPipelinerunIDLabelKey, pipelinerunID, common.ClusterClusterIDLabelKey, clusterID))
+	selector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v", common.TektonTriggersEventIDKey, ciEventID))
 	prs, err := t.client.Tekton.TektonV1beta1().PipelineRuns(t.namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector.String(),
 	})

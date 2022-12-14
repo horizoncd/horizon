@@ -14,6 +14,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton"
 	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
 	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	"g.hz.netease.com/horizon/pkg/util/log"
 	"g.hz.netease.com/horizon/pkg/util/wlog"
 
 	"github.com/mozillazg/go-pinyin"
@@ -119,7 +120,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		prGit.Branch = prCreated.GitRef
 	}
 
-	_, err = tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
+	ciEventID, err := tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
 		Application:      application.Name,
 		ApplicationID:    application.ID,
 		Cluster:          cluster.Name,
@@ -134,6 +135,13 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		RegionID:         regionEntity.ID,
 		Template:         cluster.Template,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	// update event id returned from tekton-trigger EventListener
+	log.Infof(ctx, "received event id: %s from tekton-trigger EventListener, pipelinerunID: %d", ciEventID, pr.ID)
+	err = c.pipelinerunMgr.UpdateCIEventIDByID(ctx, pr.ID, ciEventID)
 	if err != nil {
 		return nil, err
 	}

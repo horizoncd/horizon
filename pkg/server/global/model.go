@@ -12,3 +12,16 @@ type Model struct {
 	UpdatedAt time.Time
 	DeletedTs soft_delete.DeletedAt
 }
+
+type HorizonMetaData struct {
+	Application   string
+	Cluster       string
+	ApplicationID uint
+	ClusterID     uint
+	Environment   string
+	Operator      string
+	PipelinerunID uint
+	Region        string
+	Template      string
+	EventID       string
+}

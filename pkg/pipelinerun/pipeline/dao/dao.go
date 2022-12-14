@@ -2,7 +2,6 @@ package dao
 
 import (
 	"context"
-	"strconv"
 
 	herrors "g.hz.netease.com/horizon/core/errors"
 	"g.hz.netease.com/horizon/lib/orm"
@@ -10,6 +9,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"g.hz.netease.com/horizon/pkg/errors"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"gorm.io/gorm"
 )
 
@@ -19,30 +19,25 @@ var (
 
 type DAO interface {
 	// Create create a pipeline
-	Create(ctx context.Context, results *metrics.PipelineResults) error
+	Create(ctx context.Context, results *metrics.PipelineResults, data *global.HorizonMetaData) error
 	// ListPipelineStats list pipeline stats by query struct
 	ListPipelineStats(ctx context.Context, query *q.Query) ([]*models.PipelineStats, int64, error)
 }
 
 type dao struct{ db *gorm.DB }
 
-func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error {
+func (d dao) Create(ctx context.Context, results *metrics.PipelineResults, data *global.HorizonMetaData) error {
 	prMetadata := results.Metadata
-	prBusinessData := results.BusinessData
 	prResult := results.PrResult
 	trResults, stepResults := results.TrResults, results.StepResults
 
 	pipeline := prMetadata.Pipeline
-	pipelinerunIDStr := prBusinessData.PipelinerunID
-	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
-	if err != nil {
-		return err
-	}
-	application, cluster, region := prBusinessData.Application, prBusinessData.Cluster, prBusinessData.Region
+	application, cluster, region := data.Application, data.Cluster, data.Region
 
-	err = d.db.Transaction(func(tx *gorm.DB) error {
+	pipelinerunID := data.PipelinerunID
+	err := d.db.Transaction(func(tx *gorm.DB) error {
 		p := &models.Pipeline{
-			PipelinerunID: uint(pipelinerunID),
+			PipelinerunID: pipelinerunID,
 			Application:   application,
 			Cluster:       cluster,
 			Region:        region,
@@ -62,7 +57,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				continue
 			}
 			t := &models.Task{
-				PipelinerunID: uint(pipelinerunID),
+				PipelinerunID: pipelinerunID,
 				Application:   application,
 				Cluster:       cluster,
 				Region:        region,
@@ -84,7 +79,7 @@ func (d dao) Create(ctx context.Context, results *metrics.PipelineResults) error
 				continue
 			}
 			s := &models.Step{
-				PipelinerunID: uint(pipelinerunID),
+				PipelinerunID: pipelinerunID,
 				Application:   application,
 				Cluster:       cluster,
 				Region:        region,

@@ -38,8 +38,7 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 			Name:      "test1-1-1",
 			Namespace: "tekton",
 			Labels: map[string]string{
-				common.ClusterClusterIDLabelKey:     "1",
-				common.ClusterPipelinerunIDLabelKey: "1",
+				common.TektonTriggersEventIDKey: "1",
 			},
 		},
 		Status: v1beta1.PipelineRunStatus{
@@ -59,8 +58,7 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 			Name:      "test2-2-1",
 			Namespace: "tekton",
 			Labels: map[string]string{
-				common.ClusterClusterIDLabelKey:     "2",
-				common.ClusterPipelinerunIDLabelKey: "1",
+				common.TektonTriggersEventIDKey: "2",
 			},
 		},
 		Status: v1beta1.PipelineRunStatus{
@@ -79,10 +77,8 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 		TektonConfig *tekton.Tekton
 	}
 	type args struct {
-		ctx           context.Context
-		cluster       string
-		clusterID     uint
-		pipelinerunID uint
+		ctx       context.Context
+		ciEventID string
 	}
 	tests := []struct {
 		name         string
@@ -98,10 +94,8 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 			},
 			pipelineRuns: []runtime.Object{pr1},
 			args: args{
-				ctx:           context.Background(),
-				cluster:       "test1",
-				clusterID:     1,
-				pipelinerunID: 1,
+				ctx: context.Background(),
+				ciEventID: "1",
 			},
 			wantErr: false,
 		},
@@ -112,10 +106,8 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 			},
 			pipelineRuns: []runtime.Object{pr2},
 			args: args{
-				ctx:           context.Background(),
-				cluster:       "test2",
-				clusterID:     2,
-				pipelinerunID: 1,
+				ctx: context.Background(),
+				ciEventID: "2",
 			},
 			wantErr: false,
 		},
@@ -129,8 +121,7 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 					Dynamic: fakeddynamic.NewSimpleDynamicClient(runtime.NewScheme()),
 				},
 			}
-			if err := t.StopPipelineRun(tt.args.ctx, tt.args.cluster, tt.args.clusterID,
-				tt.args.pipelinerunID); (err != nil) != tt.wantErr {
+			if err := t.StopPipelineRun(tt.args.ctx, tt.args.ciEventID); (err != nil) != tt.wantErr {
 				t1.Errorf("StopPipelineRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -240,15 +231,13 @@ func TestTekton_CreatePipelineRun(t1 *testing.T) {
 
 // nolint
 func TestTekton_getPipelineRunByID(t1 *testing.T) {
-	var pr1, pr2, pr3, pr4 v1beta1.PipelineRun
+	var pr1, pr2, pr3 v1beta1.PipelineRun
 	pr1.Name = "pr1"
-	pr1.Labels = map[string]string{common.ClusterClusterIDLabelKey: "1", common.ClusterPipelinerunIDLabelKey: "111"}
+	pr1.Labels = map[string]string{common.TektonTriggersEventIDKey: "1"}
 	pr2.Name = "pr2"
-	pr2.Labels = map[string]string{common.ClusterClusterIDLabelKey: "1", common.ClusterPipelinerunIDLabelKey: "222"}
+	pr2.Labels = map[string]string{common.TektonTriggersEventIDKey: "1"}
 	pr3.Name = "pr3"
-	pr3.Labels = map[string]string{common.ClusterClusterIDLabelKey: "1", common.ClusterPipelinerunIDLabelKey: "222"}
-	pr4.Name = "pr4"
-	pr4.Labels = map[string]string{common.ClusterClusterIDLabelKey: "2", common.ClusterPipelinerunIDLabelKey: "111"}
+	pr3.Labels = map[string]string{common.TektonTriggersEventIDKey: "2"}
 
 	t := &Tekton{
 		client: &Client{
@@ -256,15 +245,15 @@ func TestTekton_getPipelineRunByID(t1 *testing.T) {
 			Dynamic: fakeddynamic.NewSimpleDynamicClient(runtime.NewScheme()),
 		},
 	}
-	pr, err := t.getPipelineRunByID(context.Background(), 1, 12345)
+	pr, err := t.getPipelineRunByID(context.Background(), "10")
 	e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
 	assert.True(t1, ok)
 	assert.Equal(t1, e.Source, herrors.PipelinerunInTekton)
 
-	pr, err = t.getPipelineRunByID(context.Background(), 1, 111)
+	pr, err = t.getPipelineRunByID(context.Background(), "2")
 	assert.Nil(t1, err)
-	assert.Equal(t1, pr1.Name, pr.Name)
+	assert.Equal(t1, pr3.Name, pr.Name)
 
-	pr, err = t.getPipelineRunByID(context.Background(), 1, 222)
+	pr, err = t.getPipelineRunByID(context.Background(), "1")
 	assert.Equal(t1, herrors.ErrTektonInternal, perror.Cause(err))
 }

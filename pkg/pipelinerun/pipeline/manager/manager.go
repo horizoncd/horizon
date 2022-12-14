@@ -7,6 +7,7 @@ import (
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/dao"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +18,7 @@ const (
 )
 
 type Manager interface {
-	Create(ctx context.Context, results *metrics.PipelineResults) error
+	Create(ctx context.Context, results *metrics.PipelineResults, data *global.HorizonMetaData) error
 	ListPipelineStats(ctx context.Context, application, cluster string, pageNumber, pageSize int) (
 		[]*models.PipelineStats, int64, error)
 }
@@ -43,8 +44,8 @@ func (m manager) ListPipelineStats(ctx context.Context, application, cluster str
 	return m.dao.ListPipelineStats(ctx, query)
 }
 
-func (m manager) Create(ctx context.Context, results *metrics.PipelineResults) error {
-	return m.dao.Create(ctx, results)
+func (m manager) Create(ctx context.Context, results *metrics.PipelineResults, data *global.HorizonMetaData) error {
+	return m.dao.Create(ctx, results, data)
 }
 
 func New(db *gorm.DB) Manager {

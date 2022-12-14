@@ -11,6 +11,7 @@ import (
 	"g.hz.netease.com/horizon/lib/orm"
 	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
 	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
+	"g.hz.netease.com/horizon/pkg/server/global"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -38,6 +39,12 @@ func init() {
 }
 
 func Test_manager_Create(t *testing.T) {
+	data := &global.HorizonMetaData{
+		Application:   "a",
+		Cluster:       "c",
+		Environment:   "dev",
+		PipelinerunID: 1,
+	}
 	type args struct {
 		results *metrics.PipelineResults
 	}
@@ -53,13 +60,6 @@ func Test_manager_Create(t *testing.T) {
 				results: &metrics.PipelineResults{
 					Metadata: &metrics.PrMetadata{
 						Pipeline: "horizon-pipeline",
-					},
-					BusinessData: &metrics.PrBusinessData{
-						Application:   "a",
-						Cluster:       "c",
-						Environment:   "dev",
-						PipelinerunID: "1",
-						RegionID:      "1",
 					},
 					PrResult: &metrics.PrResult{
 						DurationSeconds: 0,
@@ -103,7 +103,7 @@ func Test_manager_Create(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := New(db)
-			if err := m.Create(ctx, tt.args.results); (err != nil) != tt.wantErr {
+			if err := m.Create(ctx, tt.args.results, data); (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
