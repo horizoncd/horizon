@@ -156,8 +156,8 @@ paths:
                                       "release":"v1.1.0"
                                   },
                                   "git": {
-                                    "sshURL": "git@github.com:demo/demo.git",
-                                    "httpURL": "https://github.com/demo/demo"
+                                    "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                                    "httpURL": "https://cloudnative.com/app/app-demo"
                                   },
                                   "createdAt":"2021-12-15T21:17:20+08:00",
                                   "updatedAt":"2021-12-15T21:17:20+08:00",
@@ -177,8 +177,8 @@ paths:
                                       "release":"v1.1.0"
                                   },
                                   "git": {
-                                    "sshURL": "git@github.com:demo/demo.git",
-                                    "httpURL": "https://github.com/demo/demo"
+                                    "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                                    "httpURL": "https://cloudnative.com/app/app-demo"
                                   },
                                   "createdAt":"2021-12-15T12:26:41+08:00",
                                   "updatedAt":"2021-12-15T13:14:20+08:00",

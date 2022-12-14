@@ -262,14 +262,14 @@ var (
     "buildxml": {
       "title": "build.xml",
       "type": "string",
-      "default": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+      "default": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=qa-game.cloudnative.com\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
     }
   }
 }
 `
 
 	pipelineJSONStr = `{
-		"buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+		"buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=qa-game.cloudnative.com\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
 	}`
 	applicationJSONStr = `{
     "app":{
@@ -350,7 +350,7 @@ var (
                                 },
                                 "name":"git",
                                 "container":"step-git",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             },
                             {
                                 "terminated":{
@@ -362,20 +362,20 @@ var (
                                 },
                                 "name":"compile",
                                 "container":"step-compile",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             },
                             {
                                 "terminated":{
                                     "exitCode":0,
                                     "reason":"Completed",
-                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.mock.org/ndp-gjq/test-music-docker:helloworld-b1f57848-20210624143634 git@github.com:demo/demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
+                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.cloudnative.com/ndp-gjq/test-music-docker:helloworld-b1f57848-20210624143634 git@github.com:demo/demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
                                     "startedAt":"2021-06-24T06:36:34Z",
                                     "finishedAt":"2021-06-24T06:36:42Z",
                                     "containerID":"docker://9189624ad3981fd738ec5bf286f1fc5b688d71128b9827820ebc2541b2801dae"
                                 },
                                 "name":"image",
                                 "container":"step-image",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/kaniko-executor@sha256:473d6dfb011c69f32192e668d86a47c0235791e7e857c870ad70c5e86ec07e8c"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/kaniko-executor@sha256:473d6dfb011c69f32192e668d86a47c0235791e7e857c870ad70c5e86ec07e8c"
                             }
                         ]
                     }
@@ -406,7 +406,7 @@ var (
                                 },
                                 "name":"deploy",
                                 "container":"step-deploy",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             }
                         ]
                     }
@@ -1408,8 +1408,8 @@ javaapp:
     environment: pre
     region: hz
     namespace: pre-54
-    baseRegistry: harbor.mock.org
-    ingressDomain: mock.org
+    baseRegistry: harbor.cloudnative.com
+    ingressDomain: cloudnative.com
   horizon:
     cluster: app-cluster-demo
 `
@@ -1432,7 +1432,7 @@ syncDomainName:
 	assert.Nil(t, err)
 	var ExpectOutPutStr = `syncDomainName:
   Description: sync domain name
-  Value: app-cluster-demo.mock.org
+  Value: app-cluster-demo.cloudnative.com
 `
 	assert.Equal(t, string(out), ExpectOutPutStr)
 }
@@ -1443,8 +1443,8 @@ javaapp:
     environment: pre
     region: hz
     namespace: pre-54
-    baseRegistry: harbor.mock.org
-    ingressDomain: mock.org
+    baseRegistry: harbor.cloudnative.com
+    ingressDomain: cloudnative.com
 
 `
 var horizonValue = `
@@ -1499,7 +1499,7 @@ func testRenderOutPutObject(t *testing.T) {
 	jsonBytes, err := json.Marshal(outPutRenderJSONObject)
 	assert.Nil(t, err)
 	t.Logf("outPutRenderStr = \n%+s", string(jsonBytes))
-	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"music-social-zone-pre.mock.org"}}` // nolint
+	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"music-social-zone-pre.cloudnative.com"}}` // nolint
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }
 
@@ -1511,7 +1511,7 @@ javaapp:
     environment: pre
     region: hz
     namespace: pre-54
-    baseRegistry: harbor.mock.org
+    baseRegistry: harbor.cloudnative.com
 `
 	var horizonValue = `
 javaapp:

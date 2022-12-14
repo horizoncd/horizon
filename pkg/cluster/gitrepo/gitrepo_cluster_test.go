@@ -123,7 +123,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
 
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
@@ -244,7 +244,7 @@ func Test(t *testing.T) {
 }
 
 func TestV2(t *testing.T) {
-	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
@@ -375,7 +375,7 @@ func TestHardDeleteCluster(t *testing.T) {
 	createParams := &CreateClusterParams{
 		BaseParams: baseParams,
 	}
-	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 	err = r.CreateCluster(ctx, createParams)
@@ -436,7 +436,7 @@ func TestClusterGitRepo_UpdatePipelineOutput(t *testing.T) {
 	templateName := "java"
 	output := `
 java:
-  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
+  image: harbor.cloudnative.com/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
 `
 	gitlabmockLib := gitlablibmock.NewMockInterface(mockCtrl)
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(),
@@ -460,12 +460,12 @@ java:
     branch: bbb
     commitID: ccc
     url: aaa
-  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20221109170000
+  image: harbor.cloudnative.com/music-job-console/music-job-console-1:dev-d094e34f-20221109170000
 `
 	url := "aaa"
 	branch := "bbb"
 	commit := "ccc"
-	image := "harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20221109170000"
+	image := "harbor.cloudnative.com/music-job-console/music-job-console-1:dev-d094e34f-20221109170000"
 	_, err = clusterGitRepoInstance.UpdatePipelineOutput(ctx, "", "", templateName, PipelineOutput{
 		Git: &Git{
 			URL:      &url,

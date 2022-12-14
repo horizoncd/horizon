@@ -85,7 +85,7 @@ paths:
                           "description":"release big rocket",
                           "action":"builddeploy",
                           "status":"StatusCreated",
-                          "gitURL":"git@github.com:demo/demo.git",
+                          "gitURL":"ssh://git@cloudnative.com:22222/app/app-demo.git",
                           "gitBranch":"master",
                           "gitCommit":"4234324dsdjasljl43",
                           "imageURL":"",
