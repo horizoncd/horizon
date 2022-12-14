@@ -24,7 +24,7 @@ func NewAPI(cloudEventCtl cloudevent.Controller) *API {
 
 func (a *API) CloudEvent(c *gin.Context) {
 	// "Ce-Source": "/apis/tekton.dev/v1beta1/namespaces/default/taskruns/curl-run-6gplk"
-	// Ce-Source 为资源在k8s中的selfLink
+	// Ce-Source is the selfLink in k8s resource
 	// if resource is not a pipelineRun, return
 	if !strings.Contains(c.GetHeader("Ce-Source"), "pipelineruns") {
 		response.Success(c)
