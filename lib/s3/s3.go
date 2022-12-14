@@ -18,45 +18,28 @@ import (
 )
 
 type Interface interface {
-	// PutObject 上传对象，path为对象路径，content为对象内容的reader，metadata为对象的元数据
 	PutObject(ctx context.Context, path string, content io.ReadSeeker, metadata map[string]string) error
-	// GetObject 获取对象内容
 	GetObject(ctx context.Context, path string) ([]byte, error)
-	// CopyObject 同一个桶内的对象拷贝，从srcPath拷贝到destPath
 	CopyObject(ctx context.Context, srcPath, destPath string) error
-	// ListObjects 获取以prefix开头的对象，最多返回maxKeys个;
-	// NOTE: s3的ListObjects返回结果是以key的字母序正序排序的，而不是按照上传时间排序的
+	// ListObjects NOTE: The returned results of the func are sorted alphabetically by key, not by upload time
 	// Ref: https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
 	ListObjects(ctx context.Context, prefix string, maxKeys int64) ([]*awss3.Object, error)
-	// DeleteObjects 删除所有以prefix开头的对象
 	DeleteObjects(ctx context.Context, prefix string) error
-	// GetSignedObjectURL  获取上传文件的url
 	GetSignedObjectURL(path string, expire time.Duration) (string, error)
-	// GetBucket get s3 bucket
 	GetBucket(ctx context.Context) string
 }
 
 type Params struct {
-	// s3存储的AccessKey
-	AccessKey string
-	// s3存储的SecretKey
-	SecretKey string
-	// s3存储的Region
-	Region string
-	// s3存储的Endpoint
-	Endpoint string
-	// s3存储的桶
-	Bucket string
-	// 是否禁用ssl
-	DisableSSL bool
-	// 是否要跳过https证书校验
-	SkipVerify bool
-	// 是否使用子目录形式
+	AccessKey        string
+	SecretKey        string
+	Region           string
+	Endpoint         string
+	Bucket           string
+	DisableSSL       bool
+	SkipVerify       bool
 	S3ForcePathStyle bool
-	// 对象的ContentType
-	ContentType string
-	// s3 sdk log level
-	LogLevel *aws.LogLevelType
+	ContentType      string
+	LogLevel         *aws.LogLevelType
 }
 
 func (params *Params) check() error {
@@ -119,7 +102,6 @@ func NewDriver(params Params) (Interface, error) {
 	return d, nil
 }
 
-// PutObject 上传对象，path为对象路径，content为对象内容的reader，metadata为对象的元数据
 func (d *Driver) PutObject(ctx context.Context, path string, content io.ReadSeeker, metadata map[string]string) error {
 	_, err := d.S3.PutObjectWithContext(ctx, &awss3.PutObjectInput{
 		Body:        content,
@@ -170,7 +152,6 @@ func (d *Driver) GetSignedObjectURL(path string, expire time.Duration) (string, 
 	return urlStr, nil
 }
 
-// CopyObject 同一个桶内的对象拷贝，从srcPath拷贝到destPath
 func (d *Driver) CopyObject(ctx context.Context, srcPath, destPath string) error {
 	_, err := d.S3.CopyObjectWithContext(ctx, &awss3.CopyObjectInput{
 		Bucket:     aws.String(d.Bucket),
@@ -180,9 +161,6 @@ func (d *Driver) CopyObject(ctx context.Context, srcPath, destPath string) error
 	return err
 }
 
-// ListObjects 获取以prefix开头的对象，最多返回maxKeys个;
-// NOTE: s3的ListObjects返回结果是以key的字母序正序排序的，而不是按照上传时间排序的
-// Ref: https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
 func (d *Driver) ListObjects(ctx context.Context, prefix string, maxKeys int64) ([]*awss3.Object, error) {
 	output, err := d.S3.ListObjectsWithContext(ctx, &awss3.ListObjectsInput{
 		Bucket:  aws.String(d.Bucket),
@@ -195,9 +173,7 @@ func (d *Driver) ListObjects(ctx context.Context, prefix string, maxKeys int64) 
 	return output.Contents, nil
 }
 
-// DeleteObjects 删除所有以prefix开头的对象
 func (d *Driver) DeleteObjects(ctx context.Context, prefix string) error {
-	// maxKey的取值范围为[0, 1000]
 	maxKeys := int64(1000)
 	var objects []*awss3.Object
 	var err error

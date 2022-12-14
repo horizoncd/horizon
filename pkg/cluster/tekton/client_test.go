@@ -13,10 +13,8 @@ func TestInitClients(t *testing.T) {
 	assert.Nil(t, client)
 	assert.NotNil(t, err)
 
-	// kubeconfig为空的情况下，如果在本地运行是不通过的；如果在k8s里通过pod运行，是可以通过的（比如在gitlab runner中）
 	client2, err2 := InitClient("")
 	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-	// 通过这两个环境变量判断是否在k8s集群中运行
 	if len(host) == 0 || len(port) == 0 {
 		assert.Nil(t, client2)
 		assert.NotNil(t, err2)

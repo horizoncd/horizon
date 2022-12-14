@@ -77,11 +77,11 @@ func (t *Tekton) StopPipelineRun(ctx context.Context, ciEventID string) (err err
 		return err
 	}
 	if pr == nil {
-		// 如果没有处于Running状态的PipelineRun，则直接返回
 		return nil
 	}
 
-	// 这个判断参考tekton/cli的源代码：https://github.com/tektoncd/cli/blob/master/pkg/cmd/pipelinerun/cancel.go#L69
+	// This judgment refers to the source code of tekton/cli：
+	// https://github.com/tektoncd/cli/blob/master/pkg/cmd/pipelinerun/cancel.go#L69
 	if len(pr.Status.Conditions) > 0 {
 		if pr.Status.Conditions[0].Status != corev1.ConditionUnknown {
 			// PipelineRun has already finished execution
@@ -172,7 +172,6 @@ func (t *Tekton) sendHTTPRequest(ctx context.Context, method string,
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	// 添加X-Request-Id header，供tekton trigger使用, TODO(gjq) add requestID
 	req.Header.Set("X-Request-Id", "")
 	client := &http.Client{}
 	return client.Do(req)

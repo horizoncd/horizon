@@ -9,8 +9,6 @@ import (
 	k8s "k8s.io/client-go/kubernetes"
 )
 
-// TektonParams 继承 https://github.com/tektoncd/cli/blob/v0.13.1/pkg/cli/params.go 的TektonParams，
-// 用来获取pipelineRun的日志
 type TektonParams struct {
 	*cli.TektonParams
 	namespace  string
@@ -30,7 +28,6 @@ func NewTektonParams(dynamic dynamic.Interface, kubeClient k8s.Interface,
 	}
 }
 
-// 重写Clients方法，替换为我们自己的Clients
 func (t *TektonParams) Clients() (*cli.Clients, error) {
 	t.clients = &cli.Clients{
 		Tekton:     t.tekton,
@@ -41,7 +38,6 @@ func (t *TektonParams) Clients() (*cli.Clients, error) {
 	return t.clients, nil
 }
 
-// 重写Namespace方法，获取我们自己的Namespace
 func (t *TektonParams) Namespace() string {
 	return t.namespace
 }

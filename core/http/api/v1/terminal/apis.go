@@ -56,9 +56,13 @@ func (a *API) CreateShell(c *gin.Context) {
 		return
 	}
 
-	// 在使用sockJS处理请求前，修改URL，以适配sockJS协议: GET {prefix}/{server_id}/{session_id}/websocket
-	// server_id：服务端ID，主要在sockjs协议中用于连接多个服务端，我们填写固定值（如：0）即可，用户无感知
-	// session_id: 会话ID，用于多人会话或者重连，我们目前重连均是开启新会话，因此session直接在当前接口生成并传入即可，用户无感知
+	// Before using sock JS to process the request, modify the URL to adapt to the sock JS protocol:
+	// GET {prefix}/{server_id}/{session_id}/websocket
+	// server_id：The server ID is mainly used in the sockjs protocol to connect multiple servers.
+	// We can fill in a fixed value (such as: 0), and the user has no perception
+	// session_id: Session ID, used for multi-person sessions or reconnection,
+	// we are currently reconnecting to open a new session,
+	// so the session can be directly generated and passed in the current interface, the user has no perception
 	c.Request.URL.Path = fmt.Sprintf("/apis/core/v1/0/%s/websocket", sessionID)
 	sockJS.ServeHTTP(c.Writer, c.Request)
 }

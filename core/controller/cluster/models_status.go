@@ -12,7 +12,7 @@ type GetClusterStatusResponse struct {
 	TTLSeconds        *uint              `json:"ttlSeconds,omitempty" yaml:"ttlSeconds,omitempty"`
 }
 
-// RunningTask 最近一次在执行中的Task
+// RunningTask the most recent task in progress
 type RunningTask struct {
 	Task string `json:"task" yaml:"task"`
 	// the latest buildDeploy pipelinerun ID

@@ -11,18 +11,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Client 组装需要用到的Client
 type Client struct {
-	// 用来获取Tekton相关CRD的Client
-	Tekton tektonclientset.Interface
-	// 获取k8s核心资源的Client
-	Kube k8s.Interface
-	// 通过REST API方法访问k8s api的Client。Dynamic client可以获取k8s所有资源，包括核心资源和第三方资源
+	Tekton  tektonclientset.Interface
+	Kube    k8s.Interface
 	Dynamic dynamic.Interface
 }
 
-// InitClient 初始化Clients
-// Kubeconfig表示kubeconfig文件的地址。如果该地址为空，则默认使用InClusterConfig，即本Pod所在集群的config
 func InitClient(kubeconfig string) (*Client, error) {
 	var config *rest.Config
 	var err error

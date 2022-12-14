@@ -36,16 +36,12 @@ func TestByMock(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, -1, projectIDAgain)
 
-	// 推送镜像到repo1
 	server.PushImage("project1", "repo1", "v1")
-	// 删除repo1
 	err = h.DeleteImage(ctx, "repo1", "")
 	assert.Nil(t, err)
-	// 再次删除repo1
 	err = h.DeleteImage(ctx, "repo1", "")
 	assert.Nil(t, err)
 
-	// 推送镜像到repo2
 	server.PushImage("project1", "repo2", "master-12345578-20210702134536")
 	server.PushImage("project1", "repo2", "master-12345578-20210703113624")
 	server.PushImage("project1", "repo2", "master-12345578-20210704100908")

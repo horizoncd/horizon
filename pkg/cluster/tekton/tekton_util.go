@@ -21,8 +21,6 @@ type RunningTask struct {
 	Status string
 }
 
-// GetPipelineRunStatus 获取pipelineRun当前的状态
-// 包括pipelineRun本身的status和正在执行的Task的status
 func GetPipelineRunStatus(ctx context.Context, pr *v1beta1.PipelineRun) *PipelineRunStatus {
 	const op = "tekton util: get pipelineRun status"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -39,7 +37,6 @@ func GetPipelineRunStatus(ctx context.Context, pr *v1beta1.PipelineRun) *Pipelin
 		ps.Status = prc.Reason
 	}
 	runningTask := GetPipelineRunningTask(ctx, pr)
-	// 如果pipelineRun的状态是Cancelled，那么要确保TaskRun的状态一定是Cancelled
 	if strings.Contains(ps.Status, string(v1beta1.PipelineRunReasonCancelled)) {
 		runningTask.Status = string(v1beta1.TaskRunReasonCancelled)
 	}
@@ -48,7 +45,6 @@ func GetPipelineRunStatus(ctx context.Context, pr *v1beta1.PipelineRun) *Pipelin
 	return ps
 }
 
-// GetPipelineRunningTask 获取pipelineRun当前正在执行的task的状态
 func GetPipelineRunningTask(ctx context.Context, pr *v1beta1.PipelineRun) *RunningTask {
 	const op = "tekton util: get pipeline runningTask"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -60,7 +56,6 @@ func GetPipelineRunningTask(ctx context.Context, pr *v1beta1.PipelineRun) *Runni
 	}
 
 	if pr.Status.PipelineSpec == nil || pr.Status.TaskRuns == nil {
-		// pipelineRun还未开始执行，RunningTask返回空值
 		return nil
 	}
 

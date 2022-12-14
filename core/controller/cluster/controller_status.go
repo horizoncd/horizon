@@ -128,15 +128,12 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		resp.ClusterStatus = clusterState
 
 		if cluster.Status == "" && resp.RunningTask.Task == _taskNone && clusterState.Status != "" {
-			// task为none的情况下，判断是否单独在发布（重启、回滚等）
-			// 如果是的话，把runningTask.task设置为deploy，并设置runningTask.taskStatus对应的状态，
-			// 这个逻辑是因为overmind想统一通过runningTask判断是否发布完成
+			// When the task is none, judge type of the pipelinerun (restart, rollback, etc.)
 			if clusterState.Status == health.HealthStatusDegraded {
-				// Degraded 认为是发布失败Failed
 				resp.RunningTask.Task = _taskDeploy
 				resp.RunningTask.TaskStatus = string(v1beta1.TaskRunReasonFailed)
 			} else if clusterState.Status != health.HealthStatusHealthy {
-				// 除了Degraded和Healthy之外的状态（Progressing、Suspended）认为是发布中Running
+				// Statuses (Progressing, Suspended) other than Degraded and Healthy are considered to be Running in the release
 				resp.RunningTask.Task = _taskDeploy
 				resp.RunningTask.TaskStatus = string(v1beta1.TaskRunReasonRunning)
 			}
@@ -255,8 +252,9 @@ func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *cl
 	return latestPr, nil
 }
 
-// getRunningTask 获取pipelineRun当前最近一次处于执行中的Task。如果最近一次执行的pipelineRun是成功状态，
-// 则返回noneRunningTask
+// getRunningTask Get the latest currently executing Task of the pipeline Run.
+// If the last executed pipelineRun is successful,
+// return noneRunningTask
 func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun) *RunningTask {
 	noneRunningTask := &RunningTask{
 		Task: _taskNone,
@@ -281,20 +279,21 @@ func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun
 	}
 
 	if isPrFinished(prs) {
-		// 流水线处于完成状态，则返回noneRunningTask。表示当前没有在执行中的Task
+		// If the pipeline is in a completed state, none Running Task will be returned.
+		// Indicates that there is no currently executing Task
 		return noneRunningTask
 	}
 
 	runningTask := prs.RunningTask
 	if runningTask == nil {
-		// 如果流水线还未开始执行，则返回build是Pending状态
+		// If the pipeline has not started execution, the return build is Pending status
 		return &RunningTask{
 			Task:       _taskBuild,
 			TaskStatus: _taskStatusPending,
 		}
 	}
 	taskStatus := strings.TrimPrefix(runningTask.Status, "TaskRun")
-	// 如果是Timeout，则认为是Failed
+	// If it is Timeout, it is considered Failed
 	if taskStatus == strings.TrimPrefix(string(v1beta1.TaskRunReasonTimedOut), "TaskRun") {
 		taskStatus = string(v1beta1.TaskRunReasonFailed)
 	}

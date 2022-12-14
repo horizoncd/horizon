@@ -140,7 +140,6 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 	const op = "terminal controller: create shell"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	// 1. 获取各类关联资源
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return "", nil, err
@@ -170,7 +169,7 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 		return "", nil, err
 	}
 
-	// 2. 生成随机数，作为session id
+	// Generate a random number as the session id
 	randomID, err := genRandomID()
 	if err != nil {
 		return "", nil, err
@@ -192,10 +191,8 @@ func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
 		sizeChan: make(chan remotecommand.TerminalSize),
 	})
 
-	// 3. 初始化sockJS处理函数
 	handler := sockjs.NewHandler("/apis/core/v1", sockjs.DefaultOptions, handleShellSession(ctx, ref.String()))
 
-	// 4. 启动协程，等待客户端发送绑定请求，连接容器
 	go WaitForTerminal(kubeClient.Basic, kubeConfig, ref)
 	return randomID, handler, nil
 }

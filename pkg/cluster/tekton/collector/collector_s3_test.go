@@ -213,7 +213,6 @@ func TestS3Collector_Collect(t *testing.T) {
 	b, _ := json.Marshal(collectResult)
 	t.Logf("%v", string(b))
 
-	// 验证collect
 	// 1. getLatestPipelineRunLog
 	b, err = c.GetPipelineRunLog(ctx, collectResult.LogObject)
 	assert.Nil(t, err)

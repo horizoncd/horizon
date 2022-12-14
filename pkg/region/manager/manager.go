@@ -20,7 +20,7 @@ type Manager interface {
 	ListAll(ctx context.Context) ([]*models.Region, error)
 	// ListRegionEntities list all region entity
 	ListRegionEntities(ctx context.Context) ([]*models.RegionEntity, error)
-	// GetRegionEntity get region entity, todo(gjq) add cache
+	// GetRegionEntity get region entity
 	GetRegionEntity(ctx context.Context, regionName string) (*models.RegionEntity, error)
 	GetRegionByID(ctx context.Context, id uint) (*models.RegionEntity, error)
 	GetRegionByName(ctx context.Context, name string) (*models.Region, error)

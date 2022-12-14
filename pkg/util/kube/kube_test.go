@@ -27,7 +27,6 @@ func TestGetEvents(t *testing.T) {
 			Name:      "alice",
 			Namespace: "ns",
 		},
-		// InvolvedObject 无论是否匹配，faked clientset 都会返回
 		InvolvedObject: v1core.ObjectReference{
 			Kind: "Pod",
 			UID:  "111111",
@@ -80,7 +79,6 @@ func TestGetPods(t *testing.T) {
 }
 
 func TestBuildClient(t *testing.T) {
-	// 创建临时文件
 	data := `
 apiVersion: v1
 clusters:
@@ -104,25 +102,18 @@ preferences: {}
 	err = ioutil.WriteFile(filePath, []byte(data), 0644)
 	assert.Nil(t, err)
 
-	// 构建 client set
 	_, _, err = BuildClient(filePath)
 	assert.Nil(t, err)
 }
 
 func TestExec(t *testing.T) {
-	// 创建 restClient
 	restClient := fake.NewFakeClient()
 
-	// 创建空的 config
 	config := fake.NewEmptyClient()
 
-	// 设置 clientset 底层使用的 http client
 	clientset := kubernetes.NewForConfigOrDie(config)
 	clientset.CoreV1().RESTClient().(*restclient.RESTClient).Client = restClient.Client
 
-	// 执行 kubectl exec 动作，它包括两个请求
-	// GET  'https://kubernetes.docker.internal:6443/api/v1/namespaces/default/pods/kube-proxy'
-	// POST 'https://kubernetes.docker.internal:6443/api/v1/namespaces/default/pods/kube-proxy/exec
 	containerRef := ContainerRef{
 		Config:        config,
 		KubeClientset: clientset,

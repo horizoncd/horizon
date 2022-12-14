@@ -424,7 +424,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 		return nil, err
 	}
 
-	// TODO: refactor by asynchronous task, and notify overmind/faas to adapt
+	// TODO: refactor by asynchronous task, and notify api callers to adapt
 	// 8. create cluster in git repo
 	err = c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
 		BaseParams: &gitrepo.BaseParams{

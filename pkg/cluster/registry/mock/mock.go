@@ -167,7 +167,6 @@ func (s *HarborServer) AddSharedMemberForProject(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusCreated)
 }
 
-// 实际harbor并没有这个接口，需要通过docker push来push image，这里通过该方法模拟docker push命令
 func (s *HarborServer) PushImage(projectName string, repository string, tag string) {
 	if projectName == "" || repository == "" || tag == "" {
 		return
