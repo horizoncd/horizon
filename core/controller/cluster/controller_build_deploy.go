@@ -202,9 +202,8 @@ func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref s
 func ofClusterDiff(gitURL, refType, ref string, commit *code.Commit, diff string) *GetDiffResponse {
 	var codeInfo *CodeInfo
 
-	// TODO: support any gitlab or gitlab not only internal
+	// TODO: support any git repository
 	if commit != nil {
-		// git@github.com:demo/demo.git
 		var historyLink string
 		if strings.HasPrefix(gitURL, common.InternalGitSSHPrefix) {
 			httpURL := common.InternalSSHToHTTPURL(gitURL)

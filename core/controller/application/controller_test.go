@@ -432,7 +432,6 @@ func Test(t *testing.T) {
 
 	getResponseV1, err := c.GetApplication(ctx, resp.ID)
 
-	// TODO(tom) user v2 to get
 	getReponsev2, err := c.GetApplicationV2(ctx, getResponseV1.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, getReponsev2.ID, getResponseV1.ID)

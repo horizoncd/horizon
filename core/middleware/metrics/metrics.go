@@ -51,7 +51,6 @@ func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 		var handler string
 		if handler = func() string {
 			handlerName := c.HandlerName()
-			// 忽略匿名的handler
 			if regexp.MustCompile(`.*func\d*$`).MatchString(handlerName) {
 				return ""
 			}

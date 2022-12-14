@@ -48,11 +48,7 @@ type (
 		// DeleteApplication delete an application in argoCD
 		DeleteApplication(ctx context.Context, application string) error
 
-		// WaitApplication 等待应用同步完成。在删除应用集群时，需要先删除Argo Application，再删除gitlab repo，否则，
-		// Argo Application 永远无法删除。
-		// 参见：https://argoproj.github.io/argo-cd/faq/#ive-deletedcorrupted-my-repo-and-cant-delete-my-app
-		// status == 200: 表示期望应用同步成功
-		// status == 404: 表示期望应用删除成功
+		// WaitApplication Wait for the app sync to complete
 		WaitApplication(ctx context.Context, application string, uid string, status int) error
 
 		// GetApplication get an application in argoCD
@@ -100,7 +96,6 @@ type (
 		ResourceName string `json:"resourceName,omitempty"`
 	}
 
-	// ErrorResponse 由于无法复用 argocd 的 internal.StreamError, 故新建结构体
 	ErrorResponse struct {
 		StreamError struct {
 			GrpcCode   int    `json:"grpc_code"`
@@ -180,7 +175,6 @@ var (
 		CheckRetry:   retryablehttp.DefaultRetryPolicy,
 		ErrorHandler: retryablehttp.PassthroughErrorHandler,
 		Backoff: func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
-			// 每次失败，等待 _backoff 时间后，进行下次重试
 			return _backoff
 		},
 	}
@@ -305,7 +299,6 @@ func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string
 			return waitError
 		}
 
-		// 如果使用switch，则需要两层break
 		if err == nil {
 			if uid != "" && uid != string(applicationCR.UID) {
 				return perror.Wrap(herrors.ErrNameConflict,
@@ -357,7 +350,6 @@ func (h *helper) RefreshApplication(ctx context.Context,
 	return h.getOrRefreshApplication(ctx, url)
 }
 
-// getOrRefreshApplication 具体是 get 还是 refresh 操作，由调用者的 url 中的 parameter 决定
 func (h *helper) getOrRefreshApplication(ctx context.Context,
 	url string) (applicationCRD *v1alpha1.Application, err error) {
 	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
@@ -500,7 +492,6 @@ func (h *helper) ResumeRollout(ctx context.Context, application string) (err err
 	rolloutVersion := "v1alpha1"
 	rolloutGroup := "argoproj.io"
 	namespace := app.Spec.Destination.Namespace
-	// rollout名字和所属application的名字一致
 	format := "%v/api/v1/applications/%v/resource/actions?namespace=%v&resourceName=%v&version=%s&kind=Rollout&group=%s"
 	url := fmt.Sprintf(format, h.URL, application, namespace, application, rolloutVersion, rolloutGroup)
 	requestBodyStr := `"resume"`
@@ -528,7 +519,6 @@ func (h *helper) GetContainerLog(ctx context.Context, application string,
 	if err != nil {
 		return nil, nil, err
 	}
-	// NOTE: 不需要在此进行close操作，否则会引起 read on closed response body 错误
 
 	if resp.StatusCode != http.StatusOK {
 		data, err := ioutil.ReadAll(resp.Body)

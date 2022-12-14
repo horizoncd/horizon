@@ -179,7 +179,7 @@ func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bo
 	return total, tpls, nil
 }
 
-// TODO: remove this, keep it for overmind
+// ListTemplate TODO: remove this, keep it for api callers
 func (c *controller) ListTemplate(ctx context.Context) (Templates, error) {
 	const op = "template controller: listTemplate"
 	defer wlog.Start(ctx, op).StopPrint()

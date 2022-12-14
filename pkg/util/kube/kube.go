@@ -53,7 +53,7 @@ func init() {
 	}
 }
 
-// GetEvents 返回一个map。key是Pod的基本信息，name-uid-namespace
+// GetEvents Returns a map. key is the basic information of Pod, name-uid-namespace
 func GetEvents(ctx context.Context, kubeClientset kubernetes.Interface,
 	namespace string) (_ map[string][]*v1.Event, err error) {
 	const op = "kube: get multi pod events from k8s "
@@ -140,8 +140,6 @@ func DeletePods(ctx context.Context, kubeClientset kubernetes.Interface, namespa
 	return nil
 }
 
-// BuildClient 根据传入的kubeconfig地址生成对应的k8sClient
-// kubeconfig表示kubeconfig文件的地址。如果该地址为空，则默认使用InClusterConfig，即本Pod所在集群的config
 func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) {
 	var restConfig *rest.Config
 	var err error

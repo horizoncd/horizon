@@ -280,7 +280,6 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application)
 
 	// 7. record event
-	// todo: move to db
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: common.ResourceApplication,

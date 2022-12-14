@@ -27,31 +27,6 @@ import (
 	kyaml "sigs.k8s.io/yaml"
 )
 
-/*
-music-cloud-native
-	  │
-      ├── applications                 -- 应用配置 group
-      │    └── app1                    -- 应用 group
-      │         ├── application.yaml   -- 部署模板参数
-      │         └── pipeline.yaml      -- 流水线参数
-      │
-      └── clusters                                            -- 集群配置 group
-      			└──	app1                                      -- 应用 group
-                    └──Cluster-1                              -- 集群 repo
-                              ├── Chart.yaml
-                              ├── application.yaml            -- 用户实际数据
-							  ├── tags.yaml                   -- tags数据
-                              ├── sre                         -- sre目录
-                              │     └── sre.yaml              -- sre values数据
-                              ├── system
-                              │     ├── horizon.yaml          -- 基础数据
-                              │     ├── restart.yaml          -- 重启时间
-                              │     └── env.yaml              -- 环境相关数据
-                              └── pipeline
-                                    ├── pipeline.yaml         -- pipeline模板参数
-                                    └── pipeline-output.yaml  -- pipeline输出
-*/
-
 const (
 	PipelineValueParent = "pipeline"
 )
@@ -1283,7 +1258,6 @@ func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
 	}, nil
 }
 
-// helm dependency 不支持 chart name 中包含 '.' 符号
 func renameTemplateName(name string) string {
 	templateName := []byte(name)
 	for i := range templateName {

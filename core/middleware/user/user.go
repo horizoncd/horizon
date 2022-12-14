@@ -113,7 +113,6 @@ func Middleware(param *param.Param, store sessions.Store,
 }
 
 func akskAuthn(c *gin.Context, keys authenticate.KeysConfig, userMgr usermanager.Manager) (*models.User, error) {
-	// 解析 Date Header
 	r := c.Request
 	log.Infof(c, "request url path: %v", r.URL)
 
@@ -141,7 +140,6 @@ func akskAuthn(c *gin.Context, keys authenticate.KeysConfig, userMgr usermanager
 		return nil, err
 	}
 
-	// 解析 Signature Header
 	signature := r.Header.Get(HTTPHeaderSignature)
 	if signature == "" {
 		return nil, perror.Wrapf(herrors.ErrParamInvalid, "%v Header is missing", HTTPHeaderSignature)
@@ -173,15 +171,12 @@ func akskAuthn(c *gin.Context, keys authenticate.KeysConfig, userMgr usermanager
 		return nil, perror.Wrapf(herrors.ErrParamInvalid, "invalid access key")
 	}
 
-	// 签名验证
 	actualSignature := signature
 	expectSignature := SignRequest(c, r, accessKey, secretKey)
 	if actualSignature != expectSignature {
 		return nil, perror.Wrapf(herrors.ErrParamInvalid, "signature verify failed on %v Header", HTTPHeaderSignature)
 	}
 
-	// TODO(gjq): remove this later
-	// 1. get user by operator if operator is not empty
 	u, err := userMgr.GetUserByIDP(c, operator, key.IDP)
 	if err != nil {
 		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.UserInDB, "unauthorized"),

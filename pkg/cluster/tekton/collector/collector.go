@@ -40,8 +40,7 @@ type (
 		Pod        string                `json:"pod"`
 		Task       string                `json:"task"`
 		Steps      map[string]StepStatus `json:"steps"`
-		// step的执行顺序
-		StepsOrder []string `json:"stepsOrder"`
+		StepsOrder []string              `json:"stepsOrder"`
 	}
 	StepStatus struct {
 		StatusMeta `json:",inline"`

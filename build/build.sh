@@ -38,8 +38,6 @@ main(){
     for SUB in $(ls "$SCRIPT_DIR"); do
       SUB_PATH="$SCRIPT_DIR/$SUB"
       [[ -f "$SUB_PATH" ]] && continue
-      # gateway镜像固定，不需要每次都打镜像
-      [[ "$SUB" == "gateway" ]] && continue
       build "$SUB_PATH" "$@"
     done
 }

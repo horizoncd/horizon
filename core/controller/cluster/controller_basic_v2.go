@@ -228,7 +228,7 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 		ID:          cluster.ID,
 		Name:        cluster.Name,
 		Description: cluster.Description,
-		// TODO: currently cluster not support different priority with application
+		// TODO: currently it's not allowed that the cluster has different priority with related application.
 		Priority: string(application.Priority),
 		Scope: &Scope{
 			Environment:       cluster.EnvironmentName,

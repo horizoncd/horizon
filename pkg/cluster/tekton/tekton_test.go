@@ -22,7 +22,6 @@ func TestNewTekton(t *testing.T) {
 	}
 	tekton, err = NewTekton(tektonConfig)
 	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-	// 通过这两个环境变量判断是否在k8s集群中运行
 	if len(host) == 0 || len(port) == 0 {
 		assert.Nil(t, tekton)
 		assert.NotNil(t, err)

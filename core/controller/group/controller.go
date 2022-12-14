@@ -327,8 +327,8 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 	return group.ID, err
 }
 
-// GetByFullPath TODO: 根据功能重构
-// GetByFullPath get a group by the URLPath
+// GetByFullPath TODO: refactor by resource type
+// get a resource by the URLPath
 func (c *controller) GetByFullPath(ctx context.Context,
 	resourcePath string, resourceType string) (*service.Child, error) {
 	const op = "get record by fullPath"

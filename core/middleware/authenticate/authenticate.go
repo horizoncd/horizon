@@ -36,7 +36,6 @@ const (
 
 func Middleware(keys authenticate.KeysConfig, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
-		// 解析 Date Header
 		r := c.Request
 		log.Infof(c, "request url path: %v", r.URL)
 
@@ -69,7 +68,6 @@ func Middleware(keys authenticate.KeysConfig, skippers ...middleware.Skipper) gi
 			return
 		}
 
-		// 解析 Signature Header
 		signature := r.Header.Get(HTTPHeaderSignature)
 		if signature == "" {
 			response.Abort(c, http.StatusForbidden, errCodeForbidden, fmt.Sprintf("%v Header is missing", HTTPHeaderSignature))
@@ -104,7 +102,6 @@ func Middleware(keys authenticate.KeysConfig, skippers ...middleware.Skipper) gi
 			return
 		}
 
-		// 签名验证
 		actualSignature := signature
 		expectSignature := SignRequest(c, r, accessKey, secretKey)
 		if actualSignature != expectSignature {

@@ -104,7 +104,6 @@ func (h *Registry) createProject(ctx context.Context, project string) (_ int, er
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusCreated {
-		// 创建成功
 		location := resp.Header.Get("Location")
 		projectIDStr := location[strings.LastIndex(location, "/")+1:]
 		projectID, err := strconv.Atoi(projectIDStr)
@@ -113,7 +112,6 @@ func (h *Registry) createProject(ctx context.Context, project string) (_ int, er
 		}
 		return projectID, nil
 	} else if resp.StatusCode == http.StatusConflict {
-		// 已经存在
 		return -1, nil
 	}
 

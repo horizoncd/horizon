@@ -334,7 +334,6 @@ func TestGetContainerLog_PodInitializing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// 400 是一个特殊标识
 	_, _, err := argoClient.GetContainerLog(ctx, "PodInitializing", ContainerLogParams{
 		Namespace:     "test-guanggao",
 		PodName:       "podName",

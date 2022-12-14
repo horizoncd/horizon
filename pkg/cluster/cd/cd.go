@@ -435,7 +435,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		clusterState.Status = health.HealthStatusProgressing
 	}
 
-	// TODO: rollout 耦合
+	// TODO: rollout coupling
 	var rollout *v1alpha1.Rollout
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
 		common.ClusterClusterLabelKey, params.Cluster))
@@ -531,12 +531,9 @@ func (c *cd) GetClusterState(ctx context.Context,
 		return nil, herrors.NewErrNotFound(herrors.ClusterStateInArgo, "clusterState.PodTemplateHash == ''")
 	}
 
-	// TODO(gjq): 通用化，POD的展示是直接按照resourceVersion 来获取Pod
-	// 从目前的配置来看，该 if 分支表示负载类型是 serverless 应用
 	if clusterState.PodTemplateHashKey == DeploymentPodTemplateHash {
 		labelSelector := fields.ParseSelectorOrDie(
 			fmt.Sprintf("%v=%v", common.ClusterClusterLabelKey, params.Cluster))
-		// serverless 应用会有多个 Deployment 对象
 		deploymentList, err := kube.GetDeploymentList(ctx, kubeClient.Basic, namespace, labelSelector.String())
 		if err != nil {
 			return nil, err
@@ -553,13 +550,13 @@ func (c *cd) GetClusterState(ctx context.Context,
 			if latestDeployment.Generation <= latestDeployment.Status.ObservedGeneration {
 				cond := getDeploymentCondition(latestDeployment.Status, appsv1.DeploymentProgressing)
 				if cond != nil && cond.Reason == "ProgressDeadlineExceeded" {
-					// 默认情况下，如果 Deployment 在十分钟之内，未能完成滚动更新，
-					// 则 Deployment 的健康状态是 HealthStatusDegraded.
+					// By default, if a Deployment fails to complete a rollover within ten minutes,
+					// Then the Deployment's health status is HealthStatusDegraded.
 					clusterState.Status = health.HealthStatusDegraded
 				}
 			} else {
-				// 如果 Deployment 有更新，而 Deployment Controller 尚未处理，
-				// 则 Deployment 的健康状态是 HealthStatusProgressing
+				// If the Deployment has an update that has not been processed by the Deployment Controller,，
+				// Then the Deployment's health status is HealthStatusProgressing.
 				clusterState.Status = health.HealthStatusProgressing
 			}
 		}
@@ -813,7 +810,6 @@ func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace stri
 		pod := &pods[i]
 		podEvents := events[fmt.Sprintf("%v-%v-%v", pod.Name, pod.UID, pod.Namespace)]
 		if err := parsePod(ctx, clusterState, pod, podEvents); err != nil {
-			// pod 可能已经被删除
 			log.Info(ctx, err)
 			continue
 		} else {
@@ -1218,14 +1214,14 @@ func parseContainerState(containerStatus corev1.ContainerStatus) ContainerState 
 }
 
 type (
-
-	// ClusterState 集群状态信息
 	ClusterState struct {
 		// Status:
-		// Processing(正在部署)；Healthy(部署完成)
-		// Suspended(已暂停)；Degraded(已降级)
-		// Missing(Rollout或Deployment还尚未部署到业务集群)
-		// Unknown(集群健康评估失败，无法获悉当前的部署状态)
+		// Processing
+		// Healthy
+		// Suspended
+		// Degraded
+		// Missing
+		// Unknown
 		Status health.HealthStatusCode `json:"status,omitempty" yaml:"status,omitempty"`
 
 		// Step
@@ -1240,7 +1236,7 @@ type (
 		// PodTemplateHash
 		PodTemplateHash string `json:"podTemplateHash,omitempty" yaml:"podTemplateHash,omitempty"`
 
-		// PodTemplateHashKey 在 Deployment 或 Rollout 对象中的 label 的 key
+		// PodTemplateHashKey the key of the label in the Deployment or Rollout object
 		PodTemplateHashKey string `json:"podTemplateHashKey,omitempty" yaml:"podTemplateHashKey,omitempty"`
 
 		// Revision the desired revision
@@ -1404,8 +1400,7 @@ func getRevision(rs *appsv1.ReplicaSet) string {
 }
 
 // CompareRevision
-// rs1 版本更加新的话，则返回true，否则返回false
-// 注意：仅仅通过 CreationTimestamp 是无法判断最新版本的，尤其是当 集群进行回滚操作。
+// Note: The latest version cannot be judged only by the CreationTimestamp, especially when the cluster is rolling back.
 func CompareRevision(ctx context.Context, rs1, rs2 *appsv1.ReplicaSet) bool {
 	revision1 := getRevision(rs1)
 	revision2 := getRevision(rs2)
@@ -1421,9 +1416,6 @@ func CompareRevision(ctx context.Context, rs1, rs2 *appsv1.ReplicaSet) bool {
 	}
 
 	if revision1 == "" || revision2 == "" || !hasSameOwnerRef {
-		// 如果它们属于不同的Deployment或Rollout，或
-		// 如果某个revision不存在，
-		// 则使用 CreationTimestamp 进行比较
 		return rs2.CreationTimestamp.Before(&rs1.CreationTimestamp)
 	}
 
