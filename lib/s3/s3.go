@@ -21,6 +21,8 @@ type Interface interface {
 	PutObject(ctx context.Context, path string, content io.ReadSeeker, metadata map[string]string) error
 	GetObject(ctx context.Context, path string) ([]byte, error)
 	CopyObject(ctx context.Context, srcPath, destPath string) error
+	// ListObjects NOTE: The returned results of the func are sorted alphabetically by key, not by upload time
+	// Ref: https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
 	ListObjects(ctx context.Context, prefix string, maxKeys int64) ([]*awss3.Object, error)
 	DeleteObjects(ctx context.Context, prefix string) error
 	GetSignedObjectURL(path string, expire time.Duration) (string, error)

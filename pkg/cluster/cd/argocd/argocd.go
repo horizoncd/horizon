@@ -46,6 +46,9 @@ type (
 		DeployApplication(ctx context.Context, application string, revision string) error
 
 		// DeleteApplication delete an application in argoCD
+		// You need to delete Argo Application first, then delete gitlab repo,
+		// otherwise Argo Application can never be deleted.
+		// ref：https://argoproj.github.io/argo-cd/faq/#ive-deletedcorrupted-my-repo-and-cant-delete-my-app
 		DeleteApplication(ctx context.Context, application string) error
 
 		// WaitApplication Wait for the app sync to complete
