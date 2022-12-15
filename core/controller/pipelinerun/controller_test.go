@@ -144,7 +144,7 @@ func TestGetDiff(t *testing.T) {
 
 	var pipelineID uint = 99854
 	var clusterID uint = 3213
-	gitURL := "git@github.com:demo/demo.git"
+	gitURL := "ssh://git@g.hz.netease.com:22222/demo/springboot-demo.git"
 	gitBranch := "master"
 	gitCommit := "12388508504390230802832"
 	configCommit := "123123"
