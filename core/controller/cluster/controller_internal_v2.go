@@ -14,19 +14,19 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
-func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,
-	r interface{}) (_ *InternalDeployResponse, err error) {
+func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
+	r *InternalDeployRequestV2) (_ *InternalDeployResponseV2, err error) {
 	const op = "cluster controller: internal deploy v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get pr, and do some validate
-	pr, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
+	pr, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
 	if err != nil {
 		return nil, err
 	}
 	if pr == nil || pr.ClusterID != clusterID {
 		return nil, herrors.NewErrNotFound(herrors.Pipelinerun,
-			fmt.Sprintf("cannot find the pipelinerun with id: %v", pipelinerunID))
+			fmt.Sprintf("cannot find the pipelinerun with id: %v", r.PipelinerunID))
 	}
 
 	// 2. get some relevant models
@@ -44,9 +44,9 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipel
 	if err != nil {
 		return nil, err
 	}
-	log.Infof(ctx, "pipeline %v output content: %v", pipelinerunID, r)
+	log.Infof(ctx, "pipeline %v output content: %+v", r.PipelinerunID, r.Output)
 	commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
-		tr.ChartName, r)
+		tr.ChartName, r.Output)
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}
@@ -133,7 +133,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipel
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
-	return &InternalDeployResponse{
+	return &InternalDeployResponseV2{
 		PipelinerunID: pr.ID,
 		Commit:        commit,
 	}, nil

@@ -95,8 +95,8 @@ type Controller interface {
 	GetClusterV2(ctx context.Context, clusterID uint) (*GetClusterResponseV2, error)
 	UpdateClusterV2(ctx context.Context, clusterID uint, r *UpdateClusterRequestV2, mergePatch bool) error
 	// InternalDeployV2 deploy only used by internal system
-	InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,
-		r interface{}) (_ *InternalDeployResponse, err error)
+	InternalDeployV2(ctx context.Context, clusterID uint,
+		r *InternalDeployRequestV2) (_ *InternalDeployResponseV2, err error)
 	GetClusterStatusV2(ctx context.Context, clusterID uint) (_ *StatusResponseV2, err error)
 	GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error)
 	GetResourceTree(ctx context.Context, clusterID uint) (*GetResourceTreeResponse, error)

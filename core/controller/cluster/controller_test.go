@@ -830,9 +830,12 @@ func test(t *testing.T) {
 	t.Logf("%v", string(b))
 
 	// v2
-	internalDeployResp, err = c.InternalDeployV2(ctx, resp.ID, buildDeployResp.PipelinerunID, nil)
+	internalDeployRespV2, err := c.InternalDeployV2(ctx, resp.ID, &InternalDeployRequestV2{
+		PipelinerunID: buildDeployResp.PipelinerunID,
+		Output:        nil,
+	})
 	assert.Nil(t, err)
-	b, _ = json.Marshal(internalDeployResp)
+	b, _ = json.Marshal(internalDeployRespV2)
 	t.Logf("%v", string(b))
 
 	clusterStatusResp, err := c.GetClusterStatus(ctx, resp.ID)

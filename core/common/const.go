@@ -97,7 +97,6 @@ const (
 	ParamClusterName   = "cluster"
 	ParamTemplateID    = "templateID"
 	ParamReleaseID     = "releaseID"
-	ParamPipelinerunID = "pipelinerunID"
 	ParamResourceType  = "resourceType"
 	ParamResourceID    = "resourceID"
 	ParamAccessTokenID = "accessTokenID"

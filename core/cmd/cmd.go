@@ -447,7 +447,7 @@ func Run(flags *Flags) {
 		rbacSkippers = []middleware.Skipper{
 			middleware.MethodAndPathSkipper("*",
 				regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
-					"(^/apis/core/v[12]/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)|"+
+					"(^/apis/core/v[12]/roles)|(^/login/oauth/authorize)|(^/login/oauth/access_token)|"+
 					"(^/apis/core/v[12]/templates$)")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/login/callback")),
