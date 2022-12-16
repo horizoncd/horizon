@@ -91,6 +91,8 @@ import (
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	tokendao "github.com/horizoncd/horizon/pkg/token/dao"
+	"github.com/horizoncd/horizon/pkg/token/generator"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 
 	"github.com/horizoncd/horizon/core/http/api/v1/event"
 	templateschematagapi "github.com/horizoncd/horizon/core/http/api/v1/templateschematag"
@@ -135,8 +137,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterelease/output"
 	templateschemarepo "github.com/horizoncd/horizon/pkg/templaterelease/schema/repo"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
-	"github.com/horizoncd/horizon/pkg/token/generator"
-	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"

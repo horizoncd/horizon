@@ -15,7 +15,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/git"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	tokenmodels "g.hz.netease.com/horizon/pkg/token/models"
+	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 

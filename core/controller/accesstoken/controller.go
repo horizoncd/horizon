@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	tokenmanager "g.hz.netease.com/horizon/pkg/token/manager"
-	tokenservice "g.hz.netease.com/horizon/pkg/token/service"
 	"github.com/google/uuid"
+	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 
 	"github.com/horizoncd/horizon/core/common"
 	herror "github.com/horizoncd/horizon/core/errors"
@@ -19,9 +19,6 @@ import (
 	membermanager "github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
-	"github.com/horizoncd/horizon/pkg/oauth/generate"
-	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
-	oauthmodels "github.com/horizoncd/horizon/pkg/oauth/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"

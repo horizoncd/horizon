@@ -6,10 +6,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/lib/q"
-	dao "github.com/horizoncd/horizon/pkg/accesstoken/dao"
+	"github.com/horizoncd/horizon/pkg/accesstoken/dao"
 	"github.com/horizoncd/horizon/pkg/accesstoken/models"
-	oauthmodels "github.com/horizoncd/horizon/pkg/oauth/models"
-	oauthstore "github.com/horizoncd/horizon/pkg/oauth/store"
 )
 
 type Manager interface {

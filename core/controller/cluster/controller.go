@@ -33,7 +33,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterelease/output"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	templateschematagmanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
-	tokenservice "g.hz.netease.com/horizon/pkg/token/service"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usersvc "github.com/horizoncd/horizon/pkg/user/service"
 )

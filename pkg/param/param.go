@@ -16,7 +16,7 @@ import (
 	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
 	"github.com/horizoncd/horizon/pkg/oauth/scope"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	tokenservice "g.hz.netease.com/horizon/pkg/token/service"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 
 	"github.com/horizoncd/horizon/core/controller/build"
 	"github.com/horizoncd/horizon/pkg/rbac/role"

@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
-	herror "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	"g.hz.netease.com/horizon/pkg/token/generator"
-	tokenmanager "g.hz.netease.com/horizon/pkg/token/manager"
-	tokenmodels "g.hz.netease.com/horizon/pkg/token/models"
+	herror "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	"github.com/horizoncd/horizon/pkg/token/generator"
+	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
+	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 )
 
 type Service interface {

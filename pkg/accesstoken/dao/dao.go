@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"g.hz.netease.com/horizon/pkg/token/generator"
+	"github.com/horizoncd/horizon/pkg/token/generator"
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/accesstoken/models"
-	"github.com/horizoncd/horizon/pkg/oauth/generate"
-	oauthmodels "github.com/horizoncd/horizon/pkg/oauth/models"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 )
 

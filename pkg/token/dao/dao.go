@@ -4,9 +4,9 @@ import (
 	"context"
 	goerrors "errors"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/common"
-	"g.hz.netease.com/horizon/pkg/token/models"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/common"
+	"github.com/horizoncd/horizon/pkg/token/models"
 	"gorm.io/gorm"
 )
 

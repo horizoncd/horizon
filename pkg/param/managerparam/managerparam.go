@@ -22,7 +22,7 @@ import (
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	templateschematagmanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
 	trtmanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
-	tokenmanager "g.hz.netease.com/horizon/pkg/token/manager"
+	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	linkmanager "github.com/horizoncd/horizon/pkg/userlink/manager"
 	webhookManager "github.com/horizoncd/horizon/pkg/webhook/manager"

@@ -3,7 +3,7 @@ package generator
 import (
 	"net/http"
 
-	"g.hz.netease.com/horizon/pkg/token/models"
+	"github.com/horizoncd/horizon/pkg/token/models"
 )
 
 type CodeGenerateInfo struct {
