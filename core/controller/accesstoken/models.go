@@ -3,7 +3,7 @@ package accesstoken
 import (
 	"time"
 
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 )
 
 const (

@@ -9,54 +9,54 @@ import (
 	"testing"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/config"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/requestid"
-	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/lib/q"
-	applicationgitrepomock "g.hz.netease.com/horizon/mock/pkg/application/gitrepo"
-	applicationmanangermock "g.hz.netease.com/horizon/mock/pkg/application/manager"
-	cdmock "g.hz.netease.com/horizon/mock/pkg/cluster/cd"
-	commitmock "g.hz.netease.com/horizon/mock/pkg/cluster/code"
-	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
-	clustermanagermock "g.hz.netease.com/horizon/mock/pkg/cluster/manager"
-	registrymock "g.hz.netease.com/horizon/mock/pkg/cluster/registry"
-	registryftymock "g.hz.netease.com/horizon/mock/pkg/cluster/registry/factory"
-	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
-	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
-	tagmock "g.hz.netease.com/horizon/mock/pkg/tag/manager"
-	outputmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/output"
-	trschemamock "g.hz.netease.com/horizon/mock/pkg/templaterelease/schema"
-	appgitrepo "g.hz.netease.com/horizon/pkg/application/gitrepo"
-	appmodels "g.hz.netease.com/horizon/pkg/application/models"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustercd "g.hz.netease.com/horizon/pkg/cluster/cd"
-	"g.hz.netease.com/horizon/pkg/cluster/code"
-	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
-	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
-	"g.hz.netease.com/horizon/pkg/cluster/models"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
-	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
-	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	registrydao "g.hz.netease.com/horizon/pkg/registry/dao"
-	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
-	"g.hz.netease.com/horizon/pkg/server/global"
-	tmodel "g.hz.netease.com/horizon/pkg/tag/models"
-	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	gitlabschema "g.hz.netease.com/horizon/pkg/templaterelease/schema/gitlab"
-	tagmodel "g.hz.netease.com/horizon/pkg/templateschematag/models"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-	userservice "g.hz.netease.com/horizon/pkg/user/service"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/config"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/lib/orm"
+	"github.com/horizoncd/horizon/lib/q"
+	applicationgitrepomock "github.com/horizoncd/horizon/mock/pkg/application/gitrepo"
+	applicationmanangermock "github.com/horizoncd/horizon/mock/pkg/application/manager"
+	cdmock "github.com/horizoncd/horizon/mock/pkg/cluster/cd"
+	commitmock "github.com/horizoncd/horizon/mock/pkg/cluster/code"
+	clustergitrepomock "github.com/horizoncd/horizon/mock/pkg/cluster/gitrepo"
+	clustermanagermock "github.com/horizoncd/horizon/mock/pkg/cluster/manager"
+	registrymock "github.com/horizoncd/horizon/mock/pkg/cluster/registry"
+	registryftymock "github.com/horizoncd/horizon/mock/pkg/cluster/registry/factory"
+	tektonmock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton"
+	tektonftymock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/factory"
+	tagmock "github.com/horizoncd/horizon/mock/pkg/tag/manager"
+	outputmock "github.com/horizoncd/horizon/mock/pkg/templaterelease/output"
+	trschemamock "github.com/horizoncd/horizon/mock/pkg/templaterelease/schema"
+	appgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
+	appmodels "github.com/horizoncd/horizon/pkg/application/models"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	clustercd "github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cluster/code"
+	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
+	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
+	"github.com/horizoncd/horizon/pkg/cluster/models"
+	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
+	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
+	groupservice "github.com/horizoncd/horizon/pkg/group/service"
+	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	registrydao "github.com/horizoncd/horizon/pkg/registry/dao"
+	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
+	tmodel "github.com/horizoncd/horizon/pkg/tag/models"
+	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
+	gitlabschema "github.com/horizoncd/horizon/pkg/templaterelease/schema/gitlab"
+	tagmodel "github.com/horizoncd/horizon/pkg/templateschematag/models"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	userservice "github.com/horizoncd/horizon/pkg/user/service"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/go-yaml/yaml"
@@ -262,14 +262,14 @@ var (
     "buildxml": {
       "title": "build.xml",
       "type": "string",
-      "default": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+      "default": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=qa-game.cloudnative.com\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
     }
   }
 }
 `
 
 	pipelineJSONStr = `{
-		"buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=mockserver.org\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+		"buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=qa-game.cloudnative.com\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
 	}`
 	applicationJSONStr = `{
     "app":{
@@ -350,7 +350,7 @@ var (
                                 },
                                 "name":"git",
                                 "container":"step-git",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             },
                             {
                                 "terminated":{
@@ -362,20 +362,20 @@ var (
                                 },
                                 "name":"compile",
                                 "container":"step-compile",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             },
                             {
                                 "terminated":{
                                     "exitCode":0,
                                     "reason":"Completed",
-                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.mock.org/ndp-gjq/test-music-docker:helloworld-b1f57848-20210624143634 git@github.com:demo/demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
+                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.cloudnative.com/ndp-gjq/test-music-docker:helloworld-b1f57848-20210624143634 ssh://git@g.hz.netease.com:22222/demo/springboot-demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
                                     "startedAt":"2021-06-24T06:36:34Z",
                                     "finishedAt":"2021-06-24T06:36:42Z",
                                     "containerID":"docker://9189624ad3981fd738ec5bf286f1fc5b688d71128b9827820ebc2541b2801dae"
                                 },
                                 "name":"image",
                                 "container":"step-image",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/kaniko-executor@sha256:473d6dfb011c69f32192e668d86a47c0235791e7e857c870ad70c5e86ec07e8c"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/kaniko-executor@sha256:473d6dfb011c69f32192e668d86a47c0235791e7e857c870ad70c5e86ec07e8c"
                             }
                         ]
                     }
@@ -406,7 +406,7 @@ var (
                                 },
                                 "name":"deploy",
                                 "container":"step-deploy",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             }
                         ]
                     }
@@ -681,7 +681,7 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
 	t.Logf("%v", resp.ExpireTime)
 
-	UpdateGitURL := "git@github.com:demo/demo.git"
+	UpdateGitURL := "ssh://git@g.hz.netease.com:22222/demo/springboot-demo.git"
 	updateClusterRequest := &UpdateClusterRequest{
 		Base: &Base{
 			Description: "new description",
@@ -1408,8 +1408,8 @@ javaapp:
     environment: pre
     region: hz
     namespace: pre-54
-    baseRegistry: harbor.mock.org
-    ingressDomain: mock.org
+    baseRegistry: harbor.cloudnative.com
+    ingressDomain: cloudnative.com
   horizon:
     cluster: app-cluster-demo
 `
@@ -1432,7 +1432,7 @@ syncDomainName:
 	assert.Nil(t, err)
 	var ExpectOutPutStr = `syncDomainName:
   Description: sync domain name
-  Value: app-cluster-demo.mock.org
+  Value: app-cluster-demo.cloudnative.com
 `
 	assert.Equal(t, string(out), ExpectOutPutStr)
 }
@@ -1443,8 +1443,8 @@ javaapp:
     environment: pre
     region: hz
     namespace: pre-54
-    baseRegistry: harbor.mock.org
-    ingressDomain: mock.org
+    baseRegistry: harbor.cloudnative.com
+    ingressDomain: cloudnative.com
 
 `
 var horizonValue = `
@@ -1499,7 +1499,7 @@ func testRenderOutPutObject(t *testing.T) {
 	jsonBytes, err := json.Marshal(outPutRenderJSONObject)
 	assert.Nil(t, err)
 	t.Logf("outPutRenderStr = \n%+s", string(jsonBytes))
-	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"music-social-zone-pre.mock.org"}}` // nolint
+	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"music-social-zone-pre.cloudnative.com"}}` // nolint
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }
 
@@ -1511,7 +1511,7 @@ javaapp:
     environment: pre
     region: hz
     namespace: pre-54
-    baseRegistry: harbor.mock.org
+    baseRegistry: harbor.cloudnative.com
 `
 	var horizonValue = `
 javaapp:

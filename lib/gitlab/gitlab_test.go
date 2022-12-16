@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xanzy/go-gitlab"

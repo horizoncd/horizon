@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/envtemplate"
-	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/envtemplate"
+	"github.com/horizoncd/horizon/pkg/server/response"
 )
 
 const (

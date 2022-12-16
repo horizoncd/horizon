@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"g.hz.netease.com/horizon/pkg/server/global"
+	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
@@ -63,7 +63,7 @@ func TestObserve(t *testing.T) {
                                 },
                                 "name":"git",
                                 "container":"step-git",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             },
                             {
                                 "terminated":{
@@ -75,20 +75,20 @@ func TestObserve(t *testing.T) {
                                 },
                                 "name":"compile",
                                 "container":"step-compile",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             },
                             {
                                 "terminated":{
                                     "exitCode":0,
                                     "reason":"Completed",
-                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.mock.org/ndp/test-music-docker:helloworld-b1f57848-20210624143634 git@github.com:demo/demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
+                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.cloudnative.com/ndp/test-music-docker:helloworld-b1f57848-20210624143634 ssh://git@g.hz.netease.com:22222/demo/springboot-demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
                                     "startedAt":"2021-06-24T06:36:34Z",
                                     "finishedAt":"2021-06-24T06:36:42Z",
                                     "containerID":"docker://9189624ad3981fd738ec5bf286f1fc5b688d71128b9827820ebc2541b2801dae"
                                 },
                                 "name":"image",
                                 "container":"step-image",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/kaniko-executor@sha256:473d6dfb011c69f32192e668d86a47c0235791e7e857c870ad70c5e86ec07e8c"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/kaniko-executor@sha256:473d6dfb011c69f32192e668d86a47c0235791e7e857c870ad70c5e86ec07e8c"
                             }
                         ]
                     }
@@ -119,7 +119,7 @@ func TestObserve(t *testing.T) {
                                 },
                                 "name":"deploy",
                                 "container":"step-deploy",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             }
                         ]
                     }

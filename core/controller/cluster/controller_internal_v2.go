@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/cluster/cd"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
-	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	"g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,

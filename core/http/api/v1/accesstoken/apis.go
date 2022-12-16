@@ -9,16 +9,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/accesstoken"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/q"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	scopeservice "g.hz.netease.com/horizon/pkg/oauth/scope"
-	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/accesstoken"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/q"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	scopeservice "github.com/horizoncd/horizon/pkg/oauth/scope"
+	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 type API struct {

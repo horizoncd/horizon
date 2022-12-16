@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/pkg/config/cmdb"
+	"github.com/horizoncd/horizon/pkg/config/cmdb"
 	"github.com/stretchr/testify/assert"
 )
 

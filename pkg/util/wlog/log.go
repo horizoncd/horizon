@@ -5,7 +5,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 type Log struct {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"g.hz.netease.com/horizon/job/cmd"
+	"github.com/horizoncd/horizon/job/cmd"
 )
 
 func main() {

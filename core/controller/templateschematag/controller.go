@@ -3,12 +3,12 @@ package templateschematag
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/pkg/param"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/param"
 
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	templateschematagmanager "g.hz.netease.com/horizon/pkg/templateschematag/manager"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	templateschematagmanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

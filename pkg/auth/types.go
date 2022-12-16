@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/authentication/user"
 )
 
 // attention: authorization is refers to the kubernetes rbac

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"g.hz.netease.com/horizon/pkg/config/gitlab"
+	"github.com/horizoncd/horizon/pkg/config/gitlab"
 
 	"github.com/stretchr/testify/assert"
 )

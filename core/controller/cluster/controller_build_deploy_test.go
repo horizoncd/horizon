@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
 
 	"github.com/mozillazg/go-pinyin"
 )

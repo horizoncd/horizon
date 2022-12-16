@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"time"
 
-	middleware "g.hz.netease.com/horizon/core/middleware"
 	"github.com/gin-gonic/gin"
+	middleware "github.com/horizoncd/horizon/core/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )

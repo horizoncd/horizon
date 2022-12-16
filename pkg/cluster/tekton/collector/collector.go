@@ -4,12 +4,12 @@ import (
 	"context"
 	"strconv"
 
-	"g.hz.netease.com/horizon/pkg/server/global"
+	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	timeutil "g.hz.netease.com/horizon/pkg/util/time"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
+	timeutil "github.com/horizoncd/horizon/pkg/util/time"
 )
 
 // Object the pipelinerun object to be collected

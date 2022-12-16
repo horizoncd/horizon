@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/lib/q"
-	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
-	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	"github.com/horizoncd/horizon/lib/orm"
+	"github.com/horizoncd/horizon/lib/q"
+	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
+	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/pkg/config/cmdb"
-	"g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/config/cmdb"
+	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

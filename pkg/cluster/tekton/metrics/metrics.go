@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"g.hz.netease.com/horizon/pkg/server/global"
+	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )

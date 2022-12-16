@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"g.hz.netease.com/horizon/lib/orm"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	"g.hz.netease.com/horizon/pkg/registry/models"
+	"github.com/horizoncd/horizon/lib/orm"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	"github.com/horizoncd/horizon/pkg/registry/models"
 	"github.com/stretchr/testify/assert"
 )
 

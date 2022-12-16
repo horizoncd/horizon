@@ -3,8 +3,8 @@ package application
 import (
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/application/models"
-	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
+	"github.com/horizoncd/horizon/pkg/application/models"
+	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 )
 
 type GetApplicationResponseV2 struct {

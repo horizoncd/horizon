@@ -3,12 +3,12 @@ package util
 import (
 	"net/http"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
 	"github.com/gorilla/sessions"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 )
 
 func SetSession(ss *sessions.Session,

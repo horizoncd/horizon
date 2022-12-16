@@ -6,11 +6,11 @@ import (
 
 	"gorm.io/gorm"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/q"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/webhook/models"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/q"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/webhook/models"
 )
 
 type DAO interface {

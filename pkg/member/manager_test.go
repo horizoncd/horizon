@@ -6,13 +6,13 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/lib/orm"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/member/models"
-	"g.hz.netease.com/horizon/pkg/server/global"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/lib/orm"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
+	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 )
 

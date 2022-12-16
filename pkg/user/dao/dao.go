@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	corecommon "g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/common"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/user/models"
+	corecommon "github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/common"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/user/models"
 	"gorm.io/gorm"
 )
 

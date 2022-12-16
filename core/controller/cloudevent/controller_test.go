@@ -7,25 +7,25 @@ import (
 	"testing"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/lib/orm"
-	clustergitrepomock "g.hz.netease.com/horizon/mock/pkg/cluster/gitrepo"
-	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
-	tektoncollectormock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/collector"
-	tektonftymock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton/factory"
-	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
-	appmodels "g.hz.netease.com/horizon/pkg/application/models"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
-	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
-	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	pipelinemodels "g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
-	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/lib/orm"
+	clustergitrepomock "github.com/horizoncd/horizon/mock/pkg/cluster/gitrepo"
+	tektonmock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton"
+	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
+	tektonftymock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/factory"
+	trmock "github.com/horizoncd/horizon/mock/pkg/templaterelease/manager"
+	appmodels "github.com/horizoncd/horizon/pkg/application/models"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
+	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
+	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	pipelinemodels "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
+	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -91,7 +91,7 @@ func TestMain(m *testing.M) {
                 "triggers.tekton.dev/triggers-eventid":"cttzw"
             },
 			"annotations":{
-                "cloudnative.music.netease.com/operator":"demo@mail.com"
+                "operator":"operator@mail.com"
             }
         },
         "status":{
@@ -133,7 +133,7 @@ func TestMain(m *testing.M) {
                                 },
                                 "name":"git",
                                 "container":"step-git",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             },
                             {
                                 "terminated":{
@@ -145,20 +145,20 @@ func TestMain(m *testing.M) {
                                 },
                                 "name":"compile",
                                 "container":"step-compile",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             },
                             {
                                 "terminated":{
                                     "exitCode":0,
                                     "reason":"Completed",
-                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.mock.org/ndp-gjq/test-music-docker:helloworld-b1f57848-20210624143634 git@github.com:demo/demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
+                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.cloudnative.com/ndp-gjq/test-music-docker:helloworld-b1f57848-20210624143634 ssh://git@g.hz.netease.com:22222/demo/springboot-demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
                                     "startedAt":"2021-06-24T06:36:34Z",
                                     "finishedAt":"2021-06-24T06:36:42Z",
                                     "containerID":"docker://9189624ad3981fd738ec5bf286f1fc5b688d71128b9827820ebc2541b2801dae"
                                 },
                                 "name":"image",
                                 "container":"step-image",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/kaniko-executor@sha256:473d6dfb011c69f32192e668d86a47c0235791e7e857c870ad70c5e86ec07e8c"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/kaniko-executor@sha256:473d6dfb011c69f32192e668d86a47c0235791e7e857c870ad70c5e86ec07e8c"
                             }
                         ]
                     }
@@ -189,7 +189,7 @@ func TestMain(m *testing.M) {
                                 },
                                 "name":"deploy",
                                 "container":"step-deploy",
-                                "imageID":"docker-pullable://harbor.mock.org/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
+                                "imageID":"docker-pullable://harbor.cloudnative.com/cloudnative/library/tekton-builder@sha256:14194e518981f5d893b85e170a28ba8aa80c2c610f63cfba814b6a460f48dc29"
                             }
                         ]
                     }

@@ -4,10 +4,10 @@ import (
 	"context"
 	"regexp"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/templateschematag/dao"
-	"g.hz.netease.com/horizon/pkg/templateschematag/models"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/templateschematag/dao"
+	"github.com/horizoncd/horizon/pkg/templateschematag/models"
 	"gorm.io/gorm"
 )
 

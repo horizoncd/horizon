@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	middleware "g.hz.netease.com/horizon/core/middleware"
-	"g.hz.netease.com/horizon/pkg/config/authenticate"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	middleware "github.com/horizoncd/horizon/core/middleware"
+	"github.com/horizoncd/horizon/pkg/config/authenticate"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"g.hz.netease.com/horizon/pkg/auth"
-	"g.hz.netease.com/horizon/pkg/util/sets"
+	"github.com/horizoncd/horizon/pkg/auth"
+	"github.com/horizoncd/horizon/pkg/util/sets"
 
 	"github.com/stretchr/testify/assert"
 )

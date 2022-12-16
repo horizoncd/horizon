@@ -3,14 +3,14 @@ package cluster
 import (
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	controllertag "g.hz.netease.com/horizon/core/controller/tag"
-	appmodels "g.hz.netease.com/horizon/pkg/application/models"
-	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
-	"g.hz.netease.com/horizon/pkg/cluster/models"
-	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/core/common"
+	controllertag "github.com/horizoncd/horizon/core/controller/tag"
+	appmodels "github.com/horizoncd/horizon/pkg/application/models"
+	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
+	"github.com/horizoncd/horizon/pkg/cluster/models"
+	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 )
 
 type Base struct {

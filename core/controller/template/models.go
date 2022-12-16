@@ -6,11 +6,11 @@ import (
 	"sort"
 	"time"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	tmodels "g.hz.netease.com/horizon/pkg/template/models"
-	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	trschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	tmodels "github.com/horizoncd/horizon/pkg/template/models"
+	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 )
 
 type CreateTemplateRequest struct {

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/group"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/server/request"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/server/rpcerror"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/group"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/server/request"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 
 	"github.com/gin-gonic/gin"
 )

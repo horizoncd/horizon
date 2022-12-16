@@ -1,7 +1,7 @@
 package group
 
 import (
-	"g.hz.netease.com/horizon/pkg/group/models"
+	"github.com/horizoncd/horizon/pkg/group/models"
 )
 
 // convertNewGroupToGroup convert newGroup model to group model

@@ -3,7 +3,7 @@ package errors
 import (
 	"fmt"
 
-	"g.hz.netease.com/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/errors"
 )
 
 type sourceType struct {

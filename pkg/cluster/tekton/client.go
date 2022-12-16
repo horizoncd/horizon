@@ -3,8 +3,8 @@ package tekton
 import (
 	"strings"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/util/kube"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/util/kube"
 	tektonclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"

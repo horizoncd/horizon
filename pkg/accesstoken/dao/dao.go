@@ -6,12 +6,12 @@ import (
 
 	"gorm.io/gorm"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/accesstoken/models"
-	"g.hz.netease.com/horizon/pkg/oauth/generate"
-	oauthmodels "g.hz.netease.com/horizon/pkg/oauth/models"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/accesstoken/models"
+	"github.com/horizoncd/horizon/pkg/oauth/generate"
+	oauthmodels "github.com/horizoncd/horizon/pkg/oauth/models"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 )
 
 type dao struct {

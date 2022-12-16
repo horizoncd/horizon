@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
-	"g.hz.netease.com/horizon/pkg/server/global"
+	"github.com/horizoncd/horizon/lib/orm"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
+	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

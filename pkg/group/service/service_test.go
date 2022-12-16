@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"testing"
 
-	"g.hz.netease.com/horizon/lib/orm"
-	appmodels "g.hz.netease.com/horizon/pkg/application/models"
-	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	"g.hz.netease.com/horizon/pkg/group/models"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	"github.com/horizoncd/horizon/lib/orm"
+	appmodels "github.com/horizoncd/horizon/pkg/application/models"
+	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/group/models"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/stretchr/testify/assert"
 )
 

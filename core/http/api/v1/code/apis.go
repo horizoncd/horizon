@@ -1,12 +1,12 @@
 package code
 
 import (
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/code"
-	codegetter "g.hz.netease.com/horizon/pkg/cluster/code"
-	"g.hz.netease.com/horizon/pkg/server/request"
-	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/code"
+	codegetter "github.com/horizoncd/horizon/pkg/cluster/code"
+	"github.com/horizoncd/horizon/pkg/server/request"
+	"github.com/horizoncd/horizon/pkg/server/response"
 )
 
 const (

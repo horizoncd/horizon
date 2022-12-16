@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	common2 "g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/common"
-	memberctx "g.hz.netease.com/horizon/pkg/context"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/member/models"
-	"g.hz.netease.com/horizon/pkg/util/errors"
+	common2 "github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/common"
+	memberctx "github.com/horizoncd/horizon/pkg/context"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/util/errors"
 	"gorm.io/gorm"
 )
 

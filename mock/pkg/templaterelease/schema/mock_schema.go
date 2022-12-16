@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	schema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
+	schema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	gomock "github.com/golang/mock/gomock"
 )
 

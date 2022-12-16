@@ -8,10 +8,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	q "g.hz.netease.com/horizon/lib/q"
-	models "g.hz.netease.com/horizon/pkg/application/models"
-	models0 "g.hz.netease.com/horizon/pkg/cluster/models"
-	models1 "g.hz.netease.com/horizon/pkg/template/models"
+	q "github.com/horizoncd/horizon/lib/q"
+	models "github.com/horizoncd/horizon/pkg/application/models"
+	models0 "github.com/horizoncd/horizon/pkg/cluster/models"
+	models1 "github.com/horizoncd/horizon/pkg/template/models"
 	gomock "github.com/golang/mock/gomock"
 )
 

@@ -5,8 +5,8 @@ import (
 	"io"
 	"time"
 
-	"g.hz.netease.com/horizon/core/middleware/requestid"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/middleware/requestid"
 )
 
 func Middleware(output io.Writer, skipPaths ...string) gin.HandlerFunc {

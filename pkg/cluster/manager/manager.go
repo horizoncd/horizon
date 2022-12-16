@@ -3,13 +3,13 @@ package manager
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/cluster/dao"
-	"g.hz.netease.com/horizon/pkg/cluster/models"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
-	userdao "g.hz.netease.com/horizon/pkg/user/dao"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/cluster/dao"
+	"github.com/horizoncd/horizon/pkg/cluster/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	userdao "github.com/horizoncd/horizon/pkg/user/dao"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"gorm.io/gorm"
 )
 

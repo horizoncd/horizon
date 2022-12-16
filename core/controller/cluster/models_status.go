@@ -1,7 +1,7 @@
 package cluster
 
 import (
-	"g.hz.netease.com/horizon/pkg/grafana"
+	"github.com/horizoncd/horizon/pkg/grafana"
 	v1 "k8s.io/api/core/v1"
 )
 

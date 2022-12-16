@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
 
-	"g.hz.netease.com/horizon/pkg/util/errors"
+	"github.com/horizoncd/horizon/pkg/util/errors"
 )
 
 type Interface interface {

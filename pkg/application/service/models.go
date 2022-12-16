@@ -1,7 +1,7 @@
 package service
 
 import (
-	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
+	applicationmodels "github.com/horizoncd/horizon/pkg/application/models"
 )
 
 // ApplicationDetail contains the fullPath

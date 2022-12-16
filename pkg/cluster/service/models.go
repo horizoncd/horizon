@@ -1,7 +1,7 @@
 package service
 
 import (
-	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
+	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 )
 
 // ClusterDetail contains the fullPath

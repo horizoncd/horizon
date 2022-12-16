@@ -3,9 +3,9 @@ package store
 import (
 	goerrors "errors"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/common"
-	"g.hz.netease.com/horizon/pkg/oauth/models"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/common"
+	"github.com/horizoncd/horizon/pkg/oauth/models"
 	"golang.org/x/net/context"
 
 	"gorm.io/gorm"

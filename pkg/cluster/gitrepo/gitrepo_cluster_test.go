@@ -8,20 +8,20 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
-	appmodels "g.hz.netease.com/horizon/pkg/application/models"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	gitlabconfig "g.hz.netease.com/horizon/pkg/config/gitlab"
-	config "g.hz.netease.com/horizon/pkg/config/templaterepo"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
-	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	"g.hz.netease.com/horizon/pkg/templaterepo/chartmuseumbase"
 	"github.com/golang/mock/gomock"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	gitlablibmock "github.com/horizoncd/horizon/mock/lib/gitlab"
+	appmodels "github.com/horizoncd/horizon/pkg/application/models"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	gitlabconfig "github.com/horizoncd/horizon/pkg/config/gitlab"
+	config "github.com/horizoncd/horizon/pkg/config/templaterepo"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	"github.com/horizoncd/horizon/pkg/templaterepo/chartmuseumbase"
 	"github.com/stretchr/testify/assert"
 	"github.com/xanzy/go-gitlab"
 )
@@ -123,7 +123,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
 
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
@@ -244,7 +244,7 @@ func Test(t *testing.T) {
 }
 
 func TestV2(t *testing.T) {
-	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 
@@ -375,7 +375,7 @@ func TestHardDeleteCluster(t *testing.T) {
 	createParams := &CreateClusterParams{
 		BaseParams: baseParams,
 	}
-	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.mock.org"})
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
 	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
 	assert.Nil(t, err)
 	err = r.CreateCluster(ctx, createParams)
@@ -436,7 +436,7 @@ func TestClusterGitRepo_UpdatePipelineOutput(t *testing.T) {
 	templateName := "java"
 	output := `
 java:
-  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
+  image: harbor.cloudnative.com/music-job-console/music-job-console-1:dev-d094e34f-20220118150928
 `
 	gitlabmockLib := gitlablibmock.NewMockInterface(mockCtrl)
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(),
@@ -460,12 +460,12 @@ java:
     branch: bbb
     commitID: ccc
     url: aaa
-  image: harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20221109170000
+  image: harbor.cloudnative.com/music-job-console/music-job-console-1:dev-d094e34f-20221109170000
 `
 	url := "aaa"
 	branch := "bbb"
 	commit := "ccc"
-	image := "harbor.mock.org/music-job-console/music-job-console-1:dev-d094e34f-20221109170000"
+	image := "harbor.cloudnative.com/music-job-console/music-job-console-1:dev-d094e34f-20221109170000"
 	_, err = clusterGitRepoInstance.UpdatePipelineOutput(ctx, "", "", templateName, PipelineOutput{
 		Git: &Git{
 			URL:      &url,

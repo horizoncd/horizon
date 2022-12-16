@@ -3,9 +3,9 @@ package requestid
 import (
 	"context"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	middleware "g.hz.netease.com/horizon/core/middleware"
 	"github.com/gin-gonic/gin"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	middleware "github.com/horizoncd/horizon/core/middleware"
 	"github.com/satori/go.uuid"
 )
 

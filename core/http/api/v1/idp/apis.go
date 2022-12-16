@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/controller/idp"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	usermodel "g.hz.netease.com/horizon/pkg/user/models"
-	"g.hz.netease.com/horizon/pkg/user/util"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
+	"github.com/horizoncd/horizon/core/controller/idp"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
+	usermodel "github.com/horizoncd/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/pkg/user/util"
 )
 
 // for path variable

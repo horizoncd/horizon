@@ -1,7 +1,7 @@
 package models
 
 import (
-	oauthmodels "g.hz.netease.com/horizon/pkg/oauth/models"
+	oauthmodels "github.com/horizoncd/horizon/pkg/oauth/models"
 )
 
 type AccessToken struct {

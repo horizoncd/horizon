@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/applicationregion"
-	middleware "g.hz.netease.com/horizon/core/middleware"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/applicationregion"
+	middleware "github.com/horizoncd/horizon/core/middleware"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
+	"github.com/horizoncd/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )

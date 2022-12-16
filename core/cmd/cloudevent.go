@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 
-	cloudeventctl "g.hz.netease.com/horizon/core/controller/cloudevent"
-	"g.hz.netease.com/horizon/core/http/cloudevent"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/factory"
-	"g.hz.netease.com/horizon/pkg/config/server"
-	"g.hz.netease.com/horizon/pkg/param"
 	"github.com/gin-gonic/gin"
+	cloudeventctl "github.com/horizoncd/horizon/core/controller/cloudevent"
+	"github.com/horizoncd/horizon/core/http/cloudevent"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
+	"github.com/horizoncd/horizon/pkg/config/server"
+	"github.com/horizoncd/horizon/pkg/param"
 )
 
 func runCloudEventServer(tektonFty factory.Factory, config server.Config,

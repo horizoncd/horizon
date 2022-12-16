@@ -5,16 +5,16 @@ import (
 	"path"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	middleware "g.hz.netease.com/horizon/core/middleware"
-	"g.hz.netease.com/horizon/pkg/auth"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	"g.hz.netease.com/horizon/pkg/util/sets"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	middleware "github.com/horizoncd/horizon/core/middleware"
+	"github.com/horizoncd/horizon/pkg/auth"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
+	"github.com/horizoncd/horizon/pkg/util/sets"
 )
 
 const (

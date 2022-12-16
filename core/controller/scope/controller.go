@@ -3,8 +3,8 @@ package scope
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/oauth/scope"
-	"g.hz.netease.com/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/oauth/scope"
+	"github.com/horizoncd/horizon/pkg/param"
 )
 
 type Controller interface {

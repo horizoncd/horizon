@@ -4,7 +4,7 @@ import (
 	"database/sql/driver"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/server/global"
+	"github.com/horizoncd/horizon/pkg/server/global"
 )
 
 type TemplateRelease struct {

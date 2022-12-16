@@ -5,26 +5,26 @@ import (
 	"errors"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
-	herror "g.hz.netease.com/horizon/core/errors"
-	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	memberctx "g.hz.netease.com/horizon/pkg/context"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
-	"g.hz.netease.com/horizon/pkg/member"
-	"g.hz.netease.com/horizon/pkg/member/models"
-	oauthmanager "g.hz.netease.com/horizon/pkg/oauth/manager"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	pipelinerunmanager "g.hz.netease.com/horizon/pkg/pipelinerun/manager"
-	roleservice "g.hz.netease.com/horizon/pkg/rbac/role"
-	templatemanager "g.hz.netease.com/horizon/pkg/template/manager"
-	templatereleasemanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-	"g.hz.netease.com/horizon/pkg/util/log"
-	webhookmanager "g.hz.netease.com/horizon/pkg/webhook/manager"
+	"github.com/horizoncd/horizon/core/common"
+	herror "github.com/horizoncd/horizon/core/errors"
+	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	memberctx "github.com/horizoncd/horizon/pkg/context"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
+	"github.com/horizoncd/horizon/pkg/member"
+	"github.com/horizoncd/horizon/pkg/member/models"
+	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	pipelinerunmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
+	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
+	templatemanager "github.com/horizoncd/horizon/pkg/template/manager"
+	templatereleasemanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
+	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/pkg/util/log"
+	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
 )
 
 var (
@@ -35,7 +35,7 @@ var (
 	ErrRemoveHighRole = errors.New("RemoveHighRole")  // "Remove higher role"
 )
 
-//nolint
+// nolint
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/member/service/service_mock.go -package=mock_service
 type Service interface {
 	// CreateMember post a new member

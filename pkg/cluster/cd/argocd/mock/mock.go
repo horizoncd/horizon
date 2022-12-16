@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"

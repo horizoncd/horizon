@@ -4,11 +4,11 @@ import (
 	"context"
 	"sort"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	appregionmodels "g.hz.netease.com/horizon/pkg/applicationregion/models"
-	"g.hz.netease.com/horizon/pkg/common"
-	"g.hz.netease.com/horizon/pkg/environment/models"
-	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	appregionmodels "github.com/horizoncd/horizon/pkg/applicationregion/models"
+	"github.com/horizoncd/horizon/pkg/common"
+	"github.com/horizoncd/horizon/pkg/environment/models"
+	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	"gorm.io/gorm"
 )
 

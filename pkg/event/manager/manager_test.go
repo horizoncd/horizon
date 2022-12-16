@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/lib/orm"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/lib/orm"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/stretchr/testify/assert"
 )
 

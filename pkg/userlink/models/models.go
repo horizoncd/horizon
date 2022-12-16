@@ -1,6 +1,6 @@
 package models
 
-import "g.hz.netease.com/horizon/pkg/server/global"
+import "github.com/horizoncd/horizon/pkg/server/global"
 
 type UserLink struct {
 	global.Model

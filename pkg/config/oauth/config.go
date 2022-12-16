@@ -3,7 +3,7 @@ package oauth
 import (
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/rbac/types"
+	"github.com/horizoncd/horizon/pkg/rbac/types"
 )
 
 type Scopes struct {

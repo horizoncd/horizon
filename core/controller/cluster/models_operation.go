@@ -1,6 +1,6 @@
 package cluster
 
-import "g.hz.netease.com/horizon/pkg/cluster/cd"
+import "github.com/horizoncd/horizon/pkg/cluster/cd"
 
 const ServerlessTemplateName = "serverless"
 

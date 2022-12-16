@@ -3,9 +3,9 @@ package event
 import (
 	"context"
 
-	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

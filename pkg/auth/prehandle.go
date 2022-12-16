@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"g.hz.netease.com/horizon/pkg/util/sets"
+	"github.com/horizoncd/horizon/pkg/util/sets"
 )
 
 type RequestInfoResolver interface {

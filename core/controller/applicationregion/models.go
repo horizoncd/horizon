@@ -3,9 +3,9 @@ package applicationregion
 import (
 	"sort"
 
-	"g.hz.netease.com/horizon/pkg/applicationregion/models"
-	envmodels "g.hz.netease.com/horizon/pkg/environment/models"
-	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
+	"github.com/horizoncd/horizon/pkg/applicationregion/models"
+	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
+	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 )
 
 type ApplicationRegion []*Region

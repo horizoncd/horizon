@@ -3,15 +3,15 @@ package user
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/q"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/user/manager"
-	"g.hz.netease.com/horizon/pkg/user/models"
-	linkmanager "g.hz.netease.com/horizon/pkg/userlink/manager"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/q"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/user/manager"
+	"github.com/horizoncd/horizon/pkg/user/models"
+	linkmanager "github.com/horizoncd/horizon/pkg/userlink/manager"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

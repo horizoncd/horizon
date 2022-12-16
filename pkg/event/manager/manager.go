@@ -5,14 +5,14 @@ import (
 
 	"gorm.io/gorm"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/core/middleware/requestid"
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/event/dao"
-	"g.hz.netease.com/horizon/pkg/event/models"
-	"g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/event/dao"
+	"github.com/horizoncd/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Manager interface {

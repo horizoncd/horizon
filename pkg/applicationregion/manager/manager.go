@@ -3,8 +3,8 @@ package manager
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/applicationregion/dao"
-	"g.hz.netease.com/horizon/pkg/applicationregion/models"
+	"github.com/horizoncd/horizon/pkg/applicationregion/dao"
+	"github.com/horizoncd/horizon/pkg/applicationregion/models"
 	"gorm.io/gorm"
 )
 

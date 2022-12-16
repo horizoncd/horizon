@@ -3,10 +3,10 @@ package harbor
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
-	"g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	"g.hz.netease.com/horizon/pkg/templaterepo"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
+	"github.com/horizoncd/horizon/pkg/templaterelease/schema"
+	"github.com/horizoncd/horizon/pkg/templaterepo"
 )
 
 const (

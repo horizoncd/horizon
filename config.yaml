@@ -1,22 +1,21 @@
-# "horizon:O{AyroRA@@tcp(music-horizon-dev-jd-26519.rds.cn-east-p1.internal:3331)/horizon?charset=utf8mb4&parseTime=True&loc=Local"
 serverConfig:
   port: 8080
 cloudEventServerConfig:
   port: 8181
 dbConfig:
-  host: music-horizon-dev-jd-26519.rds.cn-east-p1.internal
+  host: ""
   port: 3331
-  username: horizon
-  password: O{AyroRA@
-  database: horizon
+  username: ""
+  password: ""
+  database: ""
   prometheusEnabled: true
 kubeconfig: ""
 sessionConfig:
   maxAge: 43200
 redisConfig:
   protocol: tcp
-  address: dev.redis:6379
-  password: redis
+  address: ""
+  password: ""
   db: 1
 oidcConfig:
   userHeader: X-HORIZON-OIDC-USER
@@ -26,48 +25,46 @@ oidcConfig:
   oidcTypeHeader: X-HORIZON-OIDC-TYPE
 gitlabMapper:
   template:
-    httpURL: https://g.hz.netease.com
-    # token for grp.cloudnative
+    httpURL: ""
     token: ""
   code:
-    httpURL: https://g.hz.netease.com
-    # token for grp.cloudnative
+    httpURL: ""
     token: ""
   gitops:
-    httpURL: http://cicd.mockserver.org
-    sshURL: ssh://git@music-cicd-gitlab-test.hz.netease.com:22222
+    httpURL: ""
+    sshURL: ""
     token: ""
 gitopsRepoConfig:
-  rootGroupPath: music-cloud-native
+  rootGroupPath: ""
   urlSchema: http
 templateRepo:
   kind: "harbor"
-  host: "https://harbor.mock.org"
+  host: ""
   repoName: "horizon-template"
-  username: username
-  password: password
+  username: ""
+  password: ""
   insecure: true
   certFile: ""
   keyFile: ""
   caFile: ""
 argoCDMapper:
   dev,test,reg,perf,beta,pre,online:
-    url: http://argocd.yf-dev2.netease.com
+    url: ""
     token: ""
-    namespace: argocd
+    namespace: ""
 tektonMapper:
   dev,test,reg,perf,beta,pre,online:
-    server: http://el-horizon-listener.tekton-resources:8080
-    namespace: tekton-resources
+    server: ""
+    namespace: ""
     # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
     # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
     kubeconfig: "/Users/xxx/.kube/config"
     s3:
-      accessKey: 
-      secretKey: 
-      region: us-east-1
-      endpoint: nos-jd.service.163.org
-      bucket: yufeng-collector-dev
+      accessKey: ""
+      secretKey: ""
+      region: ""
+      endpoint: ""
+      bucket: ""
       disableSSL: false
       skipVerify: true
       s3ForcePathStyle: true
@@ -88,7 +85,7 @@ grafanaConfig:
 oauth:
   # if you run horizon on local machine, you need to set this to the absolute path of your auth.html
   # for example ${projectdir}/core/http/api/v1/oauthserver/auth.html
-  oauthHTMLLocation:
+  oauthHTMLLocation: ""
   authorizeCodeExpireIn: 10m
   accessTokenExpireIn: 24h
 

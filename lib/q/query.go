@@ -3,8 +3,8 @@ package q
 import (
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/common"
 )
 
 // KeyWords ...

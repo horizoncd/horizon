@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"time"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/oauth/generate"
-	"g.hz.netease.com/horizon/pkg/oauth/manager"
-	"g.hz.netease.com/horizon/pkg/oauth/models"
-	oauthmodel "g.hz.netease.com/horizon/pkg/oauth/models"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/oauth/generate"
+	"github.com/horizoncd/horizon/pkg/oauth/manager"
+	"github.com/horizoncd/horizon/pkg/oauth/models"
+	oauthmodel "github.com/horizoncd/horizon/pkg/oauth/models"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"golang.org/x/net/context"
 )
 

@@ -3,8 +3,8 @@ package member
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/member/dao"
-	"g.hz.netease.com/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/member/dao"
+	"github.com/horizoncd/horizon/pkg/member/models"
 	"gorm.io/gorm"
 )
 

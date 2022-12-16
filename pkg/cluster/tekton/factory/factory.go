@@ -3,12 +3,12 @@ package factory
 import (
 	"sync"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/s3"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
-	tektonconfig "g.hz.netease.com/horizon/pkg/config/tekton"
-	"g.hz.netease.com/horizon/pkg/util/errors"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/s3"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
+	tektonconfig "github.com/horizoncd/horizon/pkg/config/tekton"
+	"github.com/horizoncd/horizon/pkg/util/errors"
 )
 
 const _default = "default"

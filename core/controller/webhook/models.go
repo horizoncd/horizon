@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/event/models"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-	commonvalidate "g.hz.netease.com/horizon/pkg/util/validate"
-	wmodels "g.hz.netease.com/horizon/pkg/webhook/models"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/event/models"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	commonvalidate "github.com/horizoncd/horizon/pkg/util/validate"
+	wmodels "github.com/horizoncd/horizon/pkg/webhook/models"
 )
 
 const (

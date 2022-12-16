@@ -10,15 +10,15 @@ import (
 	"strings"
 	"testing"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	rolloutv1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/kubernetes/pkg/apis/apps"
 
-	"g.hz.netease.com/horizon/pkg/cluster/cd/argocd/mock"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/cluster/cd/argocd/mock"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 var (

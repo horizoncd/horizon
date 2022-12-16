@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	amodels "g.hz.netease.com/horizon/pkg/application/models"
-	cmodel "g.hz.netease.com/horizon/pkg/cluster/models"
-	"g.hz.netease.com/horizon/pkg/common"
-	hctx "g.hz.netease.com/horizon/pkg/context"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/templaterelease/models"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	amodels "github.com/horizoncd/horizon/pkg/application/models"
+	cmodel "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/common"
+	hctx "github.com/horizoncd/horizon/pkg/context"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/templaterelease/models"
 	"gorm.io/gorm"
 )
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"g.hz.netease.com/horizon/core/common/idp"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/q"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/idp/models"
+	"github.com/horizoncd/horizon/core/common/idp"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/q"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/idp/models"
 	"gorm.io/gorm"
 )
 

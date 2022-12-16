@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	memberservice "g.hz.netease.com/horizon/pkg/member/service"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/util/errors"
+	memberservice "github.com/horizoncd/horizon/pkg/member/service"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/util/errors"
 )
 
 type Controller interface {

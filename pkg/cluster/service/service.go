@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
+	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
 )
 
 type Service interface {

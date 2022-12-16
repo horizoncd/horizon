@@ -3,12 +3,12 @@ package tag
 import (
 	"fmt"
 
-	"g.hz.netease.com/horizon/core/common"
-	middleware "g.hz.netease.com/horizon/core/middleware"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	"g.hz.netease.com/horizon/pkg/tag/models"
-	"g.hz.netease.com/horizon/pkg/util/sets"
+	"github.com/horizoncd/horizon/core/common"
+	middleware "github.com/horizoncd/horizon/core/middleware"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
+	"github.com/horizoncd/horizon/pkg/tag/models"
+	"github.com/horizoncd/horizon/pkg/util/sets"
 
 	"github.com/gin-gonic/gin"
 	"k8s.io/apimachinery/pkg/labels"

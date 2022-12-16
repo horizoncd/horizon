@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
-	"g.hz.netease.com/horizon/pkg/util/sets"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
+	"github.com/horizoncd/horizon/pkg/util/sets"
 )
 
 type Service interface {

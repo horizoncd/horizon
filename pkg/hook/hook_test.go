@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/middleware/requestid"
-	handlermock "g.hz.netease.com/horizon/mock/pkg/hook/handler"
-	hhook "g.hz.netease.com/horizon/pkg/hook/hook"
-	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/golang/mock/gomock"
+	"github.com/horizoncd/horizon/core/middleware/requestid"
+	handlermock "github.com/horizoncd/horizon/mock/pkg/hook/handler"
+	hhook "github.com/horizoncd/horizon/pkg/hook/hook"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 func TestHook(t *testing.T) {

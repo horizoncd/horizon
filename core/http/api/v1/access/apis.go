@@ -3,11 +3,11 @@ package access
 import (
 	"fmt"
 
-	"g.hz.netease.com/horizon/core/controller/access"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/controller/access"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 type API struct {

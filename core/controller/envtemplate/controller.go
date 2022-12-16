@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/build"
-	"g.hz.netease.com/horizon/pkg/application/gitrepo"
-	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
-	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	"g.hz.netease.com/horizon/pkg/param"
-	templateschema "g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	"g.hz.netease.com/horizon/pkg/util/errors"
-	"g.hz.netease.com/horizon/pkg/util/jsonschema"
-	"g.hz.netease.com/horizon/pkg/util/sets"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/build"
+	"github.com/horizoncd/horizon/pkg/application/gitrepo"
+	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
+	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
+	"github.com/horizoncd/horizon/pkg/param"
+	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
+	"github.com/horizoncd/horizon/pkg/util/errors"
+	"github.com/horizoncd/horizon/pkg/util/jsonschema"
+	"github.com/horizoncd/horizon/pkg/util/sets"
 )
 
 type Controller interface {

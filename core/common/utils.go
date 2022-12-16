@@ -9,8 +9,8 @@ import (
 	"strings"
 	"syscall"
 
-	"g.hz.netease.com/horizon/pkg/hook/hook"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/hook/hook"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 const (

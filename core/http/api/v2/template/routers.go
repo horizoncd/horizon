@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"g.hz.netease.com/horizon/pkg/server/route"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/pkg/server/route"
 )
 
 // RegisterRoutes register routes

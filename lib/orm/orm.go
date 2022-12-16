@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"g.hz.netease.com/horizon/lib/q"
+	"github.com/horizoncd/horizon/lib/q"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

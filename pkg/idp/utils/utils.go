@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/idp/models"
 	"github.com/coreos/go-oidc/v3/oidc"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/idp/models"
 	"golang.org/x/oauth2"
 )
 

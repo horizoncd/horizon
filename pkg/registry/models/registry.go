@@ -1,7 +1,7 @@
 package models
 
 import (
-	"g.hz.netease.com/horizon/pkg/server/global"
+	"github.com/horizoncd/horizon/pkg/server/global"
 )
 
 type Registry struct {

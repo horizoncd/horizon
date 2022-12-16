@@ -3,8 +3,8 @@ package types
 import (
 	"testing"
 
-	"g.hz.netease.com/horizon/pkg/auth"
-	"g.hz.netease.com/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/auth"
+	"github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/stretchr/testify/assert"
 )
 

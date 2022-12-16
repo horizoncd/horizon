@@ -13,9 +13,9 @@ import (
 	"strconv"
 	"time"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/server/global"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/server/global"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
@@ -24,10 +24,10 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"g.hz.netease.com/horizon/lib/s3"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton"
-	logutil "g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/lib/s3"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton"
+	logutil "github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 const (

@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
-	"g.hz.netease.com/horizon/pkg/group/models"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
+	"github.com/horizoncd/horizon/pkg/group/models"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
 )
 
 const (

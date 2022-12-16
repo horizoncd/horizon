@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"g.hz.netease.com/horizon/pkg/cluster/registry"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/registry/manager"
-	"g.hz.netease.com/horizon/pkg/registry/models"
+	"github.com/horizoncd/horizon/pkg/cluster/registry"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/registry/manager"
+	"github.com/horizoncd/horizon/pkg/registry/models"
 )
 
 var kindCache []string

@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/user"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/q"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/server/rpcerror"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-	"g.hz.netease.com/horizon/pkg/user/util"
-	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/user"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/q"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/pkg/user/util"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 // path variable

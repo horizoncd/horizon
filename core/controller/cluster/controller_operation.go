@@ -4,17 +4,17 @@ import (
 	"context"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	amodels "g.hz.netease.com/horizon/pkg/application/models"
-	"g.hz.netease.com/horizon/pkg/cluster/cd"
-	cmodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	eventmodels "g.hz.netease.com/horizon/pkg/event/models"
-	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	tmodels "g.hz.netease.com/horizon/pkg/tag/models"
-	"g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	amodels "github.com/horizoncd/horizon/pkg/application/models"
+	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	tmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {

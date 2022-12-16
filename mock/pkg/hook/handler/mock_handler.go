@@ -7,7 +7,7 @@ package mock_handler
 import (
 	reflect "reflect"
 
-	hook "g.hz.netease.com/horizon/pkg/hook/hook"
+	hook "github.com/horizoncd/horizon/pkg/hook/hook"
 	gomock "github.com/golang/mock/gomock"
 )
 

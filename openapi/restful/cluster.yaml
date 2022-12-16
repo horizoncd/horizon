@@ -664,7 +664,7 @@ paths:
                                   "description":"release big rocket",
                                   "action":"builddeploy",
                                   "status":"ok",
-                                  "gitURL":"git@github.com:demo/demo.git",
+                                  "gitURL":"ssh://git@cloudnative.com:22222/app/app-demo.git",
                                   "gitBranch":"master",
                                   "gitCommit":"4234324dsdjasljl43",
                                   "imageURL":"",
@@ -1142,7 +1142,7 @@ paths:
                       "data": [
                           {
                               "eventTimestamp": null,
-                              "message": "Successfully assigned test-1/sph-xxxx-78dd96647c-szj2g to k8s1.mock.org",
+                              "message": "Successfully assigned test-1/sph-xxxx-78dd96647c-szj2g to k8s1.cloudnative.org",
                               "reason": "Scheduled",
                               "type": "Normal"
                           },
@@ -1246,7 +1246,7 @@ paths:
                               "containers": [
                                   {
                                       "name": "sph-test",
-                                      "image": "harbor.mock.org/cloudnative-template/javaapp:v1.2.0",
+                                      "image": "harbor.cloudnative.com/cloudnative-template/javaapp:v1.2.0",
                                       "env": [],
                                       "resources": {
                                           "limits": {
@@ -1364,8 +1364,8 @@ paths:
                           "release": "v0.0.0-sph-rc1"
                         },
                         "git": {
-                          "sshURL": "git@github.com:demo/demo.git",
-                          "httpURL": "https://github.com/demo/demo"
+                          "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                          "httpURL": "https://cloudnative.com:22222/app/app-demo"
                         },
                         "createdAt": "2022-09-21T11:03:56+08:00",
                         "updatedAt": "2022-10-18T19:40:06+08:00",
