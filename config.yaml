@@ -3,20 +3,20 @@ serverConfig:
 cloudEventServerConfig:
   port: 8181
 dbConfig:
-  host:
+  host: ""
   port: 3331
-  username:
-  password:
-  database:
+  username: ""
+  password: ""
+  database: ""
   prometheusEnabled: true
 kubeconfig: ""
 sessionConfig:
   maxAge: 43200
 redisConfig:
   protocol: tcp
-  address:
-  password:
-  db:
+  address: ""
+  password: ""
+  db: 1
 oidcConfig:
   userHeader: X-HORIZON-OIDC-USER
   fullNameHeader: X-HORIZON-OIDC-FULLNAME
@@ -25,46 +25,46 @@ oidcConfig:
   oidcTypeHeader: X-HORIZON-OIDC-TYPE
 gitlabMapper:
   template:
-    httpURL:
-    token:
+    httpURL: ""
+    token: ""
   code:
-    httpURL:
-    token:
+    httpURL: ""
+    token: ""
   gitops:
-    httpURL:
-    sshURL:
-    token:
+    httpURL: ""
+    sshURL: ""
+    token: ""
 gitopsRepoConfig:
-  rootGroupPath: music-cloud-native
+  rootGroupPath: ""
   urlSchema: http
 templateRepo:
   kind: "harbor"
-  host:
+  host: ""
   repoName: "horizon-template"
-  username: username
-  password: password
+  username: ""
+  password: ""
   insecure: true
   certFile: ""
   keyFile: ""
   caFile: ""
 argoCDMapper:
   dev,test,reg,perf,beta,pre,online:
-    url:
-    token:
-    namespace:
+    url: ""
+    token: ""
+    namespace: ""
 tektonMapper:
   dev,test,reg,perf,beta,pre,online:
-    server:
-    namespace:
+    server: ""
+    namespace: ""
     # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
     # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
     kubeconfig: "/Users/xxx/.kube/config"
     s3:
-      accessKey:
-      secretKey:
-      region:
-      endpoint:
-      bucket:
+      accessKey: ""
+      secretKey: ""
+      region: ""
+      endpoint: ""
+      bucket: ""
       disableSSL: false
       skipVerify: true
       s3ForcePathStyle: true
@@ -85,7 +85,7 @@ grafanaConfig:
 oauth:
   # if you run horizon on local machine, you need to set this to the absolute path of your auth.html
   # for example ${projectdir}/core/http/api/v1/oauthserver/auth.html
-  oauthHTMLLocation:
+  oauthHTMLLocation: ""
   authorizeCodeExpireIn: 10m
   accessTokenExpireIn: 24h
 
