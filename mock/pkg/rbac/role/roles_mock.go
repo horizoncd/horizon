@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	role "g.hz.netease.com/horizon/pkg/rbac/role"
-	types "g.hz.netease.com/horizon/pkg/rbac/types"
+	role "github.com/horizoncd/horizon/pkg/rbac/role"
+	types "github.com/horizoncd/horizon/pkg/rbac/types"
 	gomock "github.com/golang/mock/gomock"
 )
 

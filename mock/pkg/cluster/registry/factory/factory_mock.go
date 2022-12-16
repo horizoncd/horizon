@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	registry "g.hz.netease.com/horizon/pkg/cluster/registry"
+	registry "github.com/horizoncd/horizon/pkg/cluster/registry"
 	gomock "github.com/golang/mock/gomock"
 )
 

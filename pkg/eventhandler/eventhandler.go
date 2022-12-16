@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	eventhandlerconfig "g.hz.netease.com/horizon/pkg/config/eventhandler"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
-	"g.hz.netease.com/horizon/pkg/event/models"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	"g.hz.netease.com/horizon/pkg/util/common"
-	"g.hz.netease.com/horizon/pkg/util/log"
-	webhookmanager "g.hz.netease.com/horizon/pkg/webhook/manager"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	eventhandlerconfig "github.com/horizoncd/horizon/pkg/config/eventhandler"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
+	"github.com/horizoncd/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	"github.com/horizoncd/horizon/pkg/util/common"
+	"github.com/horizoncd/horizon/pkg/util/log"
+	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
 )
 
 type Service interface {

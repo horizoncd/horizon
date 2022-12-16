@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"sync"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	"g.hz.netease.com/horizon/pkg/config/gitlab"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	"github.com/horizoncd/horizon/pkg/config/gitlab"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 // Factory used to get the gitlab instance

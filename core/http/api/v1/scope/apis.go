@@ -3,8 +3,8 @@ package scope
 import (
 	"github.com/gin-gonic/gin"
 
-	"g.hz.netease.com/horizon/core/controller/scope"
-	"g.hz.netease.com/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/core/controller/scope"
+	"github.com/horizoncd/horizon/pkg/server/response"
 )
 
 type API struct {

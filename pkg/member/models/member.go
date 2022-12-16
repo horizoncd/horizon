@@ -3,8 +3,8 @@ package models
 import (
 	"fmt"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/pkg/server/global"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/server/global"
 )
 
 type ResourceType string

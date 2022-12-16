@@ -3,8 +3,8 @@ package tekton
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
-	"g.hz.netease.com/horizon/pkg/config/tekton"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
+	"github.com/horizoncd/horizon/pkg/config/tekton"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )

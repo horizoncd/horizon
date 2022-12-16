@@ -4,9 +4,9 @@ import (
 	"context"
 	"regexp"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	perror "g.hz.netease.com/horizon/pkg/errors"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/xanzy/go-gitlab"
 )
 

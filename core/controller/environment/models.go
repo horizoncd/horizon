@@ -3,7 +3,7 @@ package environment
 import (
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/environment/models"
+	"github.com/horizoncd/horizon/pkg/environment/models"
 )
 
 type Environment struct {

@@ -1,8 +1,8 @@
 package environmentregion
 
 import (
-	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 )
 
 type EnvironmentRegion struct {

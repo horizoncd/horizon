@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
-	prctl "g.hz.netease.com/horizon/core/controller/pipelinerun"
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/server/request"
-	"g.hz.netease.com/horizon/pkg/server/response"
-	"g.hz.netease.com/horizon/pkg/util/errors"
+	"github.com/horizoncd/horizon/core/common"
+	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/server/request"
+	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/util/errors"
 
 	"github.com/gin-gonic/gin"
 )

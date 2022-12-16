@@ -3,8 +3,8 @@ package kubeclient
 import (
 	"sync"
 
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/util/kube"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/util/kube"
 	"k8s.io/client-go/rest"
 )
 

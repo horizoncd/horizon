@@ -4,11 +4,11 @@ import (
 	"sort"
 	"strings"
 
-	appmodels "g.hz.netease.com/horizon/pkg/application/models"
-	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	"g.hz.netease.com/horizon/pkg/group/models"
-	tmodels "g.hz.netease.com/horizon/pkg/template/models"
-	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
+	appmodels "github.com/horizoncd/horizon/pkg/application/models"
+	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/group/models"
+	tmodels "github.com/horizoncd/horizon/pkg/template/models"
+	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 )
 
 // GenerateFullFromGroups generate fullPath which looks like /a/b/c, and fullName which looks like 1 / 2

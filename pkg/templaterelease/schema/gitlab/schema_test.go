@@ -6,15 +6,15 @@ import (
 	"net/http"
 	"testing"
 
-	gitlablibmock "g.hz.netease.com/horizon/mock/lib/gitlab"
-	tmock "g.hz.netease.com/horizon/mock/pkg/template/manager"
-	trmock "g.hz.netease.com/horizon/mock/pkg/templaterelease/manager"
-	"g.hz.netease.com/horizon/pkg/server/global"
-	tmodels "g.hz.netease.com/horizon/pkg/template/models"
-	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
-	"g.hz.netease.com/horizon/pkg/templaterelease/schema"
-	"g.hz.netease.com/horizon/pkg/util/errors"
 	"github.com/golang/mock/gomock"
+	gitlablibmock "github.com/horizoncd/horizon/mock/lib/gitlab"
+	tmock "github.com/horizoncd/horizon/mock/pkg/template/manager"
+	trmock "github.com/horizoncd/horizon/mock/pkg/templaterelease/manager"
+	"github.com/horizoncd/horizon/pkg/server/global"
+	tmodels "github.com/horizoncd/horizon/pkg/template/models"
+	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	"github.com/horizoncd/horizon/pkg/templaterelease/schema"
+	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/stretchr/testify/assert"
 )
 

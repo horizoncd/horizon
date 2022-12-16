@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/pkg/cluster/code"
-	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton"
-	prmodels "g.hz.netease.com/horizon/pkg/pipelinerun/models"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
-	"g.hz.netease.com/horizon/pkg/util/log"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/cluster/code"
+	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton"
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 
 	"github.com/mozillazg/go-pinyin"
 )

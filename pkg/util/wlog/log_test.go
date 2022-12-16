@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 func TestLogOK(t *testing.T) {

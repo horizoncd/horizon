@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"g.hz.netease.com/horizon/pkg/server/route"
+	"github.com/horizoncd/horizon/pkg/server/route"
 )
 
 const (

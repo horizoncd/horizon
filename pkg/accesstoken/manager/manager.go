@@ -5,11 +5,11 @@ import (
 
 	"gorm.io/gorm"
 
-	"g.hz.netease.com/horizon/lib/q"
-	dao "g.hz.netease.com/horizon/pkg/accesstoken/dao"
-	"g.hz.netease.com/horizon/pkg/accesstoken/models"
-	oauthmodels "g.hz.netease.com/horizon/pkg/oauth/models"
-	oauthstore "g.hz.netease.com/horizon/pkg/oauth/store"
+	"github.com/horizoncd/horizon/lib/q"
+	dao "github.com/horizoncd/horizon/pkg/accesstoken/dao"
+	"github.com/horizoncd/horizon/pkg/accesstoken/models"
+	oauthmodels "github.com/horizoncd/horizon/pkg/oauth/models"
+	oauthstore "github.com/horizoncd/horizon/pkg/oauth/store"
 )
 
 type Manager interface {

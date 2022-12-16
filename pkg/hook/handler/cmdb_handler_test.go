@@ -5,13 +5,13 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/application"
-	"g.hz.netease.com/horizon/core/controller/cluster"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/cmdb"
-	cmdbconfig "g.hz.netease.com/horizon/pkg/config/cmdb"
-	"g.hz.netease.com/horizon/pkg/hook/hook"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/application"
+	"github.com/horizoncd/horizon/core/controller/cluster"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/cmdb"
+	cmdbconfig "github.com/horizoncd/horizon/pkg/config/cmdb"
+	"github.com/horizoncd/horizon/pkg/hook/hook"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	collector "g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
-	global "g.hz.netease.com/horizon/pkg/server/global"
+	collector "github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
+	global "github.com/horizoncd/horizon/pkg/server/global"
 	gomock "github.com/golang/mock/gomock"
 	v1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )

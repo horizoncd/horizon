@@ -5,10 +5,10 @@ import (
 	"regexp"
 	"strings"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/tag/dao"
-	"g.hz.netease.com/horizon/pkg/tag/models"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/tag/dao"
+	"github.com/horizoncd/horizon/pkg/tag/models"
 	"gorm.io/gorm"
 )
 

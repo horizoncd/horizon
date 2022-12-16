@@ -3,14 +3,14 @@ package tag
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/common"
-	appmanager "g.hz.netease.com/horizon/pkg/application/manager"
-	"g.hz.netease.com/horizon/pkg/cluster/gitrepo"
-	clustermanager "g.hz.netease.com/horizon/pkg/cluster/manager"
-	"g.hz.netease.com/horizon/pkg/param"
-	tagmanager "g.hz.netease.com/horizon/pkg/tag/manager"
-	"g.hz.netease.com/horizon/pkg/tag/models"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/core/common"
+	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
+	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
+	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/param"
+	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
+	"github.com/horizoncd/horizon/pkg/tag/models"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

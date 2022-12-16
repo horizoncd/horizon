@@ -5,8 +5,8 @@
 package mock_factory
 
 import (
-	tekton "g.hz.netease.com/horizon/pkg/cluster/tekton"
-	collector "g.hz.netease.com/horizon/pkg/cluster/tekton/collector"
+	tekton "github.com/horizoncd/horizon/pkg/cluster/tekton"
+	collector "github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )

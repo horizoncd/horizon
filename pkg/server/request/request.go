@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/lib/q"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/lib/q"
 )
 
 // GetPageParam get and check the page params

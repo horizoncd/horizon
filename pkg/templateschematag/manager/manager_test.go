@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/pkg/templateschematag/models"
+	"github.com/horizoncd/horizon/lib/orm"
+	"github.com/horizoncd/horizon/pkg/templateschematag/models"
 
 	"github.com/stretchr/testify/assert"
 )

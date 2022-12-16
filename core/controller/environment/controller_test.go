@@ -5,14 +5,14 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/region"
-	"g.hz.netease.com/horizon/lib/orm"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/environment/models"
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/region"
+	"github.com/horizoncd/horizon/lib/orm"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/environment/models"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	"github.com/stretchr/testify/assert"
 )
 

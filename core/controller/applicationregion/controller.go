@@ -3,15 +3,15 @@ package applicationregion
 import (
 	"context"
 
-	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
-	applicationregionmanager "g.hz.netease.com/horizon/pkg/applicationregion/manager"
-	"g.hz.netease.com/horizon/pkg/applicationregion/models"
-	envmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	groupmanager "g.hz.netease.com/horizon/pkg/group/manager"
-	"g.hz.netease.com/horizon/pkg/param"
-	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
+	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
+	applicationregionmanager "github.com/horizoncd/horizon/pkg/applicationregion/manager"
+	"github.com/horizoncd/horizon/pkg/applicationregion/models"
+	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
+	envregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
+	"github.com/horizoncd/horizon/pkg/param"
+	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
 )
 
 type Controller interface {

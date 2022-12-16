@@ -1,8 +1,8 @@
 package templateschematag
 
 import (
-	"g.hz.netease.com/horizon/pkg/authentication/user"
-	tagmodels "g.hz.netease.com/horizon/pkg/templateschematag/models"
+	"github.com/horizoncd/horizon/pkg/authentication/user"
+	tagmodels "github.com/horizoncd/horizon/pkg/templateschematag/models"
 )
 
 type ListResponse struct {

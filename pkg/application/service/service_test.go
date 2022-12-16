@@ -6,11 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/pkg/application/models"
-	groupModels "g.hz.netease.com/horizon/pkg/group/models"
-	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	"github.com/horizoncd/horizon/lib/orm"
+	"github.com/horizoncd/horizon/pkg/application/models"
+	groupModels "github.com/horizoncd/horizon/pkg/group/models"
+	groupservice "github.com/horizoncd/horizon/pkg/group/service"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/stretchr/testify/assert"
 )
 

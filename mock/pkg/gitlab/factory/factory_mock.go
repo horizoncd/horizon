@@ -6,7 +6,7 @@ package mock_factory
 
 import (
 	context "context"
-	gitlab "g.hz.netease.com/horizon/lib/gitlab"
+	gitlab "github.com/horizoncd/horizon/lib/gitlab"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )

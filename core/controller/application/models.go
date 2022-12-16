@@ -3,9 +3,9 @@ package application
 import (
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/application/models"
-	codemodels "g.hz.netease.com/horizon/pkg/cluster/code"
-	trmodels "g.hz.netease.com/horizon/pkg/templaterelease/models"
+	"github.com/horizoncd/horizon/pkg/application/models"
+	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
+	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 )
 
 // Base holds the parameters which can be updated of an application

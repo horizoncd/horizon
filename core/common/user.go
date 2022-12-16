@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	herror "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/authentication/user"
-	perror "g.hz.netease.com/horizon/pkg/errors"
+	herror "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/authentication/user"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 )
 
 const (

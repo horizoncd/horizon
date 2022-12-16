@@ -1,9 +1,9 @@
 package models
 
 import (
-	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
-	"g.hz.netease.com/horizon/pkg/server/global"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
+	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 )
 
 type Region struct {

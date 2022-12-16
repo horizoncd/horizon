@@ -1,7 +1,7 @@
 package horizonapp
 
 import (
-	"g.hz.netease.com/horizon/pkg/oauth/models"
+	"github.com/horizoncd/horizon/pkg/oauth/models"
 	"golang.org/x/net/context"
 )
 

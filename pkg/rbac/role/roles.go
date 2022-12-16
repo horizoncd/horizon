@@ -6,9 +6,9 @@ import (
 	"io"
 	"io/ioutil"
 
-	roleconfig "g.hz.netease.com/horizon/pkg/config/role"
-	"g.hz.netease.com/horizon/pkg/rbac/types"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	roleconfig "github.com/horizoncd/horizon/pkg/config/role"
+	"github.com/horizoncd/horizon/pkg/rbac/types"
+	"github.com/horizoncd/horizon/pkg/util/log"
 	"gopkg.in/yaml.v2"
 )
 

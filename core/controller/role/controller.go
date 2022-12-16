@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"g.hz.netease.com/horizon/pkg/param"
-	"g.hz.netease.com/horizon/pkg/rbac/role"
-	"g.hz.netease.com/horizon/pkg/rbac/types"
-	"g.hz.netease.com/horizon/pkg/util/errors"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/rbac/role"
+	"github.com/horizoncd/horizon/pkg/rbac/types"
+	"github.com/horizoncd/horizon/pkg/util/errors"
 )
 
 type Controller interface {

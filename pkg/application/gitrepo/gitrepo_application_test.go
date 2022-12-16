@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	gitlablib "g.hz.netease.com/horizon/lib/gitlab"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/core/common"
+	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/xanzy/go-gitlab"
 )

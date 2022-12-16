@@ -3,11 +3,11 @@ package manager
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/lib/q"
-	amodels "g.hz.netease.com/horizon/pkg/application/models"
-	cmodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	"g.hz.netease.com/horizon/pkg/template/dao"
-	"g.hz.netease.com/horizon/pkg/template/models"
+	"github.com/horizoncd/horizon/lib/q"
+	amodels "github.com/horizoncd/horizon/pkg/application/models"
+	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/template/dao"
+	"github.com/horizoncd/horizon/pkg/template/models"
 	"gorm.io/gorm"
 )
 

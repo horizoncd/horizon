@@ -3,8 +3,8 @@ package user
 import (
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/user/models"
-	lmodels "g.hz.netease.com/horizon/pkg/userlink/models"
+	"github.com/horizoncd/horizon/pkg/user/models"
+	lmodels "github.com/horizoncd/horizon/pkg/userlink/models"
 )
 
 type User struct {

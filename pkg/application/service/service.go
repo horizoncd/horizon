@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	applicationmanager "g.hz.netease.com/horizon/pkg/application/manager"
-	"g.hz.netease.com/horizon/pkg/application/models"
-	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
+	"github.com/horizoncd/horizon/pkg/application/models"
+	groupservice "github.com/horizoncd/horizon/pkg/group/service"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
 )
 
 type Service interface {

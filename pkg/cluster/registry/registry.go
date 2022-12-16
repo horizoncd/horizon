@@ -3,8 +3,8 @@ package registry
 import (
 	"context"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 )
 
 type Constructor func(config *Config) (Registry, error)

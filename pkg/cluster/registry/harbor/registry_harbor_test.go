@@ -8,8 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/pkg/cluster/registry"
-	"g.hz.netease.com/horizon/pkg/cluster/registry/mock"
+	"github.com/horizoncd/horizon/pkg/cluster/registry"
+	"github.com/horizoncd/horizon/pkg/cluster/registry/mock"
 	"github.com/stretchr/testify/assert"
 )
 

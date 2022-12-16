@@ -1,8 +1,8 @@
 package scope
 
 import (
-	"g.hz.netease.com/horizon/pkg/config/oauth"
-	"g.hz.netease.com/horizon/pkg/rbac/types"
+	"github.com/horizoncd/horizon/pkg/config/oauth"
+	"github.com/horizoncd/horizon/pkg/rbac/types"
 )
 
 type Service interface {

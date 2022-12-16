@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"reflect"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/application"
-	"g.hz.netease.com/horizon/core/controller/cluster"
-	applicationmodel "g.hz.netease.com/horizon/pkg/application/models"
-	"g.hz.netease.com/horizon/pkg/cmdb"
-	"g.hz.netease.com/horizon/pkg/hook/hook"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/application"
+	"github.com/horizoncd/horizon/core/controller/cluster"
+	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
+	"github.com/horizoncd/horizon/pkg/cmdb"
+	"github.com/horizoncd/horizon/pkg/hook/hook"
 )
 
 func NewCMDBEventHandler(controller cmdb.Controller) EventHandler {

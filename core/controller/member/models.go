@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"time"
 
-	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
-	clusterservice "g.hz.netease.com/horizon/pkg/cluster/service"
-	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	"g.hz.netease.com/horizon/pkg/member/models"
-	memberservice "g.hz.netease.com/horizon/pkg/member/service"
-	"g.hz.netease.com/horizon/pkg/param"
-	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
-	trmanager "g.hz.netease.com/horizon/pkg/templaterelease/manager"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
+	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
+	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
+	groupservice "github.com/horizoncd/horizon/pkg/group/service"
+	"github.com/horizoncd/horizon/pkg/member/models"
+	memberservice "github.com/horizoncd/horizon/pkg/member/service"
+	"github.com/horizoncd/horizon/pkg/param"
+	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
+	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
+	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 )
 
 type UpdateMember struct {

@@ -3,7 +3,7 @@ package argocd
 import (
 	"testing"
 
-	"g.hz.netease.com/horizon/pkg/config/argocd"
+	"github.com/horizoncd/horizon/pkg/config/argocd"
 	"github.com/stretchr/testify/assert"
 )
 

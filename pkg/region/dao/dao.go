@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 
-	hcommon "g.hz.netease.com/horizon/core/common"
-	appregionmodels "g.hz.netease.com/horizon/pkg/applicationregion/models"
-	"g.hz.netease.com/horizon/pkg/common"
-	envregionmodels "g.hz.netease.com/horizon/pkg/environmentregion/models"
-	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	"g.hz.netease.com/horizon/pkg/region/models"
+	hcommon "github.com/horizoncd/horizon/core/common"
+	appregionmodels "github.com/horizoncd/horizon/pkg/applicationregion/models"
+	"github.com/horizoncd/horizon/pkg/common"
+	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
+	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
+	"github.com/horizoncd/horizon/pkg/region/models"
 	"gorm.io/gorm"
 )
 

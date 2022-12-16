@@ -3,7 +3,7 @@ package registry
 import (
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/registry/models"
+	"github.com/horizoncd/horizon/pkg/registry/models"
 )
 
 type Registry struct {

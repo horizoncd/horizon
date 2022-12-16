@@ -3,12 +3,12 @@ package environment
 import (
 	"context"
 
-	environmentmanager "g.hz.netease.com/horizon/pkg/environment/manager"
-	"g.hz.netease.com/horizon/pkg/environment/models"
-	envregionmanager "g.hz.netease.com/horizon/pkg/environmentregion/manager"
-	"g.hz.netease.com/horizon/pkg/param"
-	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	environmentmanager "github.com/horizoncd/horizon/pkg/environment/manager"
+	"github.com/horizoncd/horizon/pkg/environment/models"
+	envregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
+	"github.com/horizoncd/horizon/pkg/param"
+	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 )
 
 type Controller interface {

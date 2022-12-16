@@ -3,11 +3,11 @@ package manager
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/dao"
-	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
-	"g.hz.netease.com/horizon/pkg/server/global"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
+	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/dao"
+	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
 	"gorm.io/gorm"
 )
 

@@ -3,14 +3,14 @@ package webhook
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/lib/q"
-	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
-	"g.hz.netease.com/horizon/pkg/param"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
-	usermodels "g.hz.netease.com/horizon/pkg/user/models"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
-	wmanager "g.hz.netease.com/horizon/pkg/webhook/manager"
-	"g.hz.netease.com/horizon/pkg/webhook/models"
+	"github.com/horizoncd/horizon/lib/q"
+	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
+	"github.com/horizoncd/horizon/pkg/param"
+	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
+	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
+	wmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
+	"github.com/horizoncd/horizon/pkg/webhook/models"
 )
 
 type Controller interface {

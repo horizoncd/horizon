@@ -4,12 +4,12 @@ import (
 	"context"
 	"net/http"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/middleware"
-	"g.hz.netease.com/horizon/core/middleware/prehandle"
-	hauth "g.hz.netease.com/horizon/pkg/auth"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/rbac"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/middleware"
+	"github.com/horizoncd/horizon/core/middleware/prehandle"
+	hauth "github.com/horizoncd/horizon/pkg/auth"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/rbac"
 )
 
 type Controller interface {

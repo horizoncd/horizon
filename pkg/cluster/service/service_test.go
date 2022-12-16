@@ -6,13 +6,13 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/lib/orm"
-	applicationmodels "g.hz.netease.com/horizon/pkg/application/models"
-	applicationservice "g.hz.netease.com/horizon/pkg/application/service"
-	clustermodels "g.hz.netease.com/horizon/pkg/cluster/models"
-	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	groupservice "g.hz.netease.com/horizon/pkg/group/service"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
+	"github.com/horizoncd/horizon/lib/orm"
+	applicationmodels "github.com/horizoncd/horizon/pkg/application/models"
+	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
+	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
+	groupservice "github.com/horizoncd/horizon/pkg/group/service"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/stretchr/testify/assert"
 )
 

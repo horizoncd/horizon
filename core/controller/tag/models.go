@@ -1,7 +1,7 @@
 package tag
 
 import (
-	tagmodels "g.hz.netease.com/horizon/pkg/tag/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 )
 
 type ListResponse struct {

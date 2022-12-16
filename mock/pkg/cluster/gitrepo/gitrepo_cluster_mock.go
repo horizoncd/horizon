@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gitrepo "g.hz.netease.com/horizon/pkg/cluster/gitrepo"
-	models "g.hz.netease.com/horizon/pkg/tag/models"
+	gitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
+	models "github.com/horizoncd/horizon/pkg/tag/models"
 	gomock "github.com/golang/mock/gomock"
 )
 

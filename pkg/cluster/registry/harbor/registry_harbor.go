@@ -14,14 +14,14 @@ import (
 	"strings"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/cluster/registry"
-	perror "g.hz.netease.com/horizon/pkg/errors"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/cluster/registry"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 
-	"g.hz.netease.com/horizon/pkg/util/errors"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/util/errors"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 const kind = "harbor"

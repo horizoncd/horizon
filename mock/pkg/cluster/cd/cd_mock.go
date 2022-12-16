@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	cd "g.hz.netease.com/horizon/pkg/cluster/cd"
+	cd "github.com/horizoncd/horizon/pkg/cluster/cd"
 	gomock "github.com/golang/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 )

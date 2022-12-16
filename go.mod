@@ -1,4 +1,4 @@
-module g.hz.netease.com/horizon
+module github.com/horizoncd/horizon
 
 go 1.15
 

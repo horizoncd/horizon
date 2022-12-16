@@ -1,7 +1,7 @@
 package callbacks
 
 import (
-	"g.hz.netease.com/horizon/core/common"
+	"github.com/horizoncd/horizon/core/common"
 	"gorm.io/gorm"
 )
 

@@ -1,10 +1,10 @@
 package log
 
 import (
-	middleware "g.hz.netease.com/horizon/core/middleware"
-	"g.hz.netease.com/horizon/core/middleware/requestid"
-	"g.hz.netease.com/horizon/pkg/util/log"
 	"github.com/gin-gonic/gin"
+	middleware "github.com/horizoncd/horizon/core/middleware"
+	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 // Middleware add logger to context

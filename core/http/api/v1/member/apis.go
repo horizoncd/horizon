@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/controller/member"
-	memberctx "g.hz.netease.com/horizon/pkg/context"
-	membermodels "g.hz.netease.com/horizon/pkg/member/models"
-	"g.hz.netease.com/horizon/pkg/rbac/role"
-	"g.hz.netease.com/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/controller/member"
+	memberctx "github.com/horizoncd/horizon/pkg/context"
+	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/rbac/role"
+	"github.com/horizoncd/horizon/pkg/server/response"
 
 	"github.com/gin-gonic/gin"
 )

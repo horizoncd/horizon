@@ -9,13 +9,13 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"g.hz.netease.com/horizon/core/common"
+	"github.com/horizoncd/horizon/core/common"
 	"k8s.io/apimachinery/pkg/fields"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"github.com/tektoncd/cli/pkg/options"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"

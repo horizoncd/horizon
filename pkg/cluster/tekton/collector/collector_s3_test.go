@@ -9,16 +9,16 @@ import (
 	"testing"
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/server/global"
 	"github.com/golang/mock/gomock"
+	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
-	"g.hz.netease.com/horizon/lib/s3"
-	tektonmock "g.hz.netease.com/horizon/mock/pkg/cluster/tekton"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/log"
+	"github.com/horizoncd/horizon/lib/s3"
+	tektonmock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
 )
 
 func getPipelineRunLog(pr *v1beta1.PipelineRun) (<-chan log.Log, <-chan error, error) {

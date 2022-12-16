@@ -19,7 +19,7 @@ package types
 import (
 	"strings"
 
-	"g.hz.netease.com/horizon/pkg/auth"
+	"github.com/horizoncd/horizon/pkg/auth"
 )
 
 func VerbMatches(rule *PolicyRule, requestedVerb string) bool {

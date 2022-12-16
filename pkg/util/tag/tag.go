@@ -1,10 +1,10 @@
 package tag
 
 import (
-	herrors "g.hz.netease.com/horizon/core/errors"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/tag/models"
-	"g.hz.netease.com/horizon/pkg/util/sets"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/tag/models"
+	"github.com/horizoncd/horizon/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/labels"
 )
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"g.hz.netease.com/horizon/pkg/cluster/registry"
+	"github.com/horizoncd/horizon/pkg/cluster/registry"
 )
 
 var (

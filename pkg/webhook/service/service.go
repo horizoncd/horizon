@@ -15,16 +15,16 @@ import (
 
 	"github.com/go-yaml/yaml"
 
-	webhookconfig "g.hz.netease.com/horizon/pkg/config/webhook"
-	eventmanager "g.hz.netease.com/horizon/pkg/event/manager"
-	"g.hz.netease.com/horizon/pkg/eventhandler/wlgenerator"
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	usermanager "g.hz.netease.com/horizon/pkg/user/manager"
-	"g.hz.netease.com/horizon/pkg/util/common"
-	"g.hz.netease.com/horizon/pkg/util/log"
-	webhookmanager "g.hz.netease.com/horizon/pkg/webhook/manager"
-	"g.hz.netease.com/horizon/pkg/webhook/models"
-	webhookmodels "g.hz.netease.com/horizon/pkg/webhook/models"
+	webhookconfig "github.com/horizoncd/horizon/pkg/config/webhook"
+	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
+	"github.com/horizoncd/horizon/pkg/eventhandler/wlgenerator"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
+	"github.com/horizoncd/horizon/pkg/util/common"
+	"github.com/horizoncd/horizon/pkg/util/log"
+	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
+	"github.com/horizoncd/horizon/pkg/webhook/models"
+	webhookmodels "github.com/horizoncd/horizon/pkg/webhook/models"
 )
 
 type worker struct {

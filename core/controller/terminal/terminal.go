@@ -14,7 +14,7 @@ import (
 	"strings"
 	"sync"
 
-	utillog "g.hz.netease.com/horizon/pkg/util/log"
+	utillog "github.com/horizoncd/horizon/pkg/util/log"
 	"gopkg.in/igm/sockjs-go.v3/sockjs"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"

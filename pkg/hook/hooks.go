@@ -6,10 +6,10 @@ import (
 	"reflect"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/core/middleware/requestid"
-	"g.hz.netease.com/horizon/pkg/hook/hook"
-	"g.hz.netease.com/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/pkg/hook/hook"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 type EventHandler interface {

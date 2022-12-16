@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	tektonconfig "g.hz.netease.com/horizon/pkg/config/tekton"
+	tektonconfig "github.com/horizoncd/horizon/pkg/config/tekton"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -3,9 +3,9 @@ package dao
 import (
 	"context"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/common"
-	"g.hz.netease.com/horizon/pkg/tag/models"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/common"
+	"github.com/horizoncd/horizon/pkg/tag/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

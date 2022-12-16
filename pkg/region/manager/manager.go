@@ -3,13 +3,13 @@ package manager
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/core/common"
-	groupmodels "g.hz.netease.com/horizon/pkg/group/models"
-	regiondao "g.hz.netease.com/horizon/pkg/region/dao"
-	"g.hz.netease.com/horizon/pkg/region/models"
-	registrydao "g.hz.netease.com/horizon/pkg/registry/dao"
-	registrymodels "g.hz.netease.com/horizon/pkg/registry/models"
-	tagdao "g.hz.netease.com/horizon/pkg/tag/dao"
+	"github.com/horizoncd/horizon/core/common"
+	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
+	regiondao "github.com/horizoncd/horizon/pkg/region/dao"
+	"github.com/horizoncd/horizon/pkg/region/models"
+	registrydao "github.com/horizoncd/horizon/pkg/registry/dao"
+	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
+	tagdao "github.com/horizoncd/horizon/pkg/tag/dao"
 	"gorm.io/gorm"
 )
 

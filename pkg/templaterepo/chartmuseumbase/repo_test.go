@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	config "g.hz.netease.com/horizon/pkg/config/templaterepo"
-	"g.hz.netease.com/horizon/pkg/templaterepo"
+	config "github.com/horizoncd/horizon/pkg/config/templaterepo"
+	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/chart"
 )

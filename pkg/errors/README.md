@@ -6,9 +6,9 @@ Before throwing error to its caller, it should be wrapped with more information,
 such as stack info, error msg and operation. That will help developers localize bugs.
 
 ```go
-package "g.hz.netease.com/horizon/pkg/gitrepo" 
+package "github.com/horizoncd/horizon/pkg/gitrepo" 
 import (
-    "g.hz.netease.com/horizon/pkg/errors"
+    "github.com/horizoncd/horizon/pkg/errors"
 )
 var (
 	GitNotFoundErr = errors.New("Not Found")

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	"g.hz.netease.com/horizon/pkg/tag/models"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/tag/models"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -3,13 +3,13 @@ package main
 import (
 	_ "net/http/pprof"
 
-	"g.hz.netease.com/horizon/core/cmd"
+	"github.com/horizoncd/horizon/core/cmd"
 
 	// for image registry
-	_ "g.hz.netease.com/horizon/pkg/cluster/registry/harbor"
+	_ "github.com/horizoncd/horizon/pkg/cluster/registry/harbor"
 
 	// for template repo
-	_ "g.hz.netease.com/horizon/pkg/templaterepo/chartmuseumbase"
+	_ "github.com/horizoncd/horizon/pkg/templaterepo/chartmuseumbase"
 )
 
 func main() {

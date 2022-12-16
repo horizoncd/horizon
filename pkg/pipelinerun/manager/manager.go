@@ -3,9 +3,9 @@ package manager
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/pipelinerun/dao"
-	"g.hz.netease.com/horizon/pkg/pipelinerun/models"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/pipelinerun/dao"
+	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	"gorm.io/gorm"
 )
 

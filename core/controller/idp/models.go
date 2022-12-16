@@ -3,7 +3,7 @@ package idp
 import (
 	"time"
 
-	"g.hz.netease.com/horizon/pkg/idp/models"
+	"github.com/horizoncd/horizon/pkg/idp/models"
 )
 
 type AuthInfo struct {

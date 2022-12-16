@@ -3,11 +3,11 @@ package dao
 import (
 	"context"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/common"
-	"g.hz.netease.com/horizon/pkg/environmentregion/models"
-	perror "g.hz.netease.com/horizon/pkg/errors"
-	regionmodels "g.hz.netease.com/horizon/pkg/region/models"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/common"
+	"github.com/horizoncd/horizon/pkg/environmentregion/models"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	"gorm.io/gorm"
 )
 

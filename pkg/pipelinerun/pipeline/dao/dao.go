@@ -3,13 +3,13 @@ package dao
 import (
 	"context"
 
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/lib/orm"
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/cluster/tekton/metrics"
-	"g.hz.netease.com/horizon/pkg/errors"
-	"g.hz.netease.com/horizon/pkg/pipelinerun/pipeline/models"
-	"g.hz.netease.com/horizon/pkg/server/global"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/orm"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
+	"github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
+	"github.com/horizoncd/horizon/pkg/server/global"
 	"gorm.io/gorm"
 )
 

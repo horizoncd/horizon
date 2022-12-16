@@ -5,10 +5,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"g.hz.netease.com/horizon/lib/q"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
-	"g.hz.netease.com/horizon/pkg/webhook/dao"
-	models "g.hz.netease.com/horizon/pkg/webhook/models"
+	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/webhook/dao"
+	models "github.com/horizoncd/horizon/pkg/webhook/models"
 )
 
 type Manager interface {

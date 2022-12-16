@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"g.hz.netease.com/horizon/core/common"
-	userauth "g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/core/common"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/member/models"
 )
 
 type PostMember struct {

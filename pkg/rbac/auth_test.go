@@ -5,14 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	servicemock "g.hz.netease.com/horizon/mock/pkg/member/service"
-	rolemock "g.hz.netease.com/horizon/mock/pkg/rbac/role"
-	"g.hz.netease.com/horizon/pkg/auth"
-	"g.hz.netease.com/horizon/pkg/authentication/user"
-	"g.hz.netease.com/horizon/pkg/member/models"
-	"g.hz.netease.com/horizon/pkg/rbac/types"
 	"github.com/golang/mock/gomock"
+	"github.com/horizoncd/horizon/core/common"
+	servicemock "github.com/horizoncd/horizon/mock/pkg/member/service"
+	rolemock "github.com/horizoncd/horizon/mock/pkg/rbac/role"
+	"github.com/horizoncd/horizon/pkg/auth"
+	"github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/rbac/types"
 	"github.com/stretchr/testify/assert"
 )
 

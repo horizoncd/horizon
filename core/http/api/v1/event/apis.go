@@ -1,8 +1,8 @@
 package event
 
 import (
-	"g.hz.netease.com/horizon/core/controller/event"
-	"g.hz.netease.com/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/core/controller/event"
+	"github.com/horizoncd/horizon/pkg/server/response"
 
 	"github.com/gin-gonic/gin"
 )

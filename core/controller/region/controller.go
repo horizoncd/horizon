@@ -3,9 +3,9 @@ package region
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/param"
-	regionmanager "g.hz.netease.com/horizon/pkg/region/manager"
-	"g.hz.netease.com/horizon/pkg/region/models"
+	"github.com/horizoncd/horizon/pkg/param"
+	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
+	"github.com/horizoncd/horizon/pkg/region/models"
 )
 
 type Controller interface {

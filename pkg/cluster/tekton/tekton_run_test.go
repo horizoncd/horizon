@@ -9,10 +9,10 @@ import (
 	"os"
 	"testing"
 
-	"g.hz.netease.com/horizon/core/common"
-	herrors "g.hz.netease.com/horizon/core/errors"
-	"g.hz.netease.com/horizon/pkg/config/tekton"
-	perror "g.hz.netease.com/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/config/tekton"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -94,7 +94,7 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 			},
 			pipelineRuns: []runtime.Object{pr1},
 			args: args{
-				ctx: context.Background(),
+				ctx:       context.Background(),
 				ciEventID: "1",
 			},
 			wantErr: false,
@@ -106,7 +106,7 @@ func TestTekton_StopPipelineRun(t1 *testing.T) {
 			},
 			pipelineRuns: []runtime.Object{pr2},
 			args: args{
-				ctx: context.Background(),
+				ctx:       context.Background(),
 				ciEventID: "2",
 			},
 			wantErr: false,

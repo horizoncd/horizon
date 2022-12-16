@@ -1,9 +1,9 @@
 package role
 
 import (
-	"g.hz.netease.com/horizon/core/controller/role"
-	"g.hz.netease.com/horizon/pkg/server/response"
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/controller/role"
+	"github.com/horizoncd/horizon/pkg/server/response"
 )
 
 type API struct {

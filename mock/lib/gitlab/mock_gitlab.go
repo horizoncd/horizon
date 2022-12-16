@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gitlab "g.hz.netease.com/horizon/lib/gitlab"
+	gitlab "github.com/horizoncd/horizon/lib/gitlab"
 	gomock "github.com/golang/mock/gomock"
 	gitlab0 "github.com/xanzy/go-gitlab"
 )

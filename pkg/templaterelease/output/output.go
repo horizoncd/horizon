@@ -3,11 +3,11 @@ package output
 import (
 	"errors"
 
-	"g.hz.netease.com/horizon/pkg/param/managerparam"
-	tmanager "g.hz.netease.com/horizon/pkg/template/manager"
-	"g.hz.netease.com/horizon/pkg/templaterelease/manager"
-	"g.hz.netease.com/horizon/pkg/templaterepo"
-	"g.hz.netease.com/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
+	"github.com/horizoncd/horizon/pkg/templaterelease/manager"
+	"github.com/horizoncd/horizon/pkg/templaterepo"
+	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"golang.org/x/net/context"
 )
 

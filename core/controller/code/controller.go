@@ -3,7 +3,7 @@ package code
 import (
 	"context"
 
-	"g.hz.netease.com/horizon/pkg/cluster/code"
+	"github.com/horizoncd/horizon/pkg/cluster/code"
 )
 
 type Controller interface {
