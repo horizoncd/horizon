@@ -227,36 +227,6 @@ func (mr *MockCDMockRecorder) Next(ctx, params interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockCD)(nil).Next), ctx, params)
 }
 
-// Offline mocks base method.
-func (m *MockCD) Offline(ctx context.Context, params *cd.ExecParams) (map[string]cd.ExecResp, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Offline", ctx, params)
-	ret0, _ := ret[0].(map[string]cd.ExecResp)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Offline indicates an expected call of Offline.
-func (mr *MockCDMockRecorder) Offline(ctx, params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Offline", reflect.TypeOf((*MockCD)(nil).Offline), ctx, params)
-}
-
-// Online mocks base method.
-func (m *MockCD) Online(ctx context.Context, params *cd.ExecParams) (map[string]cd.ExecResp, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Online", ctx, params)
-	ret0, _ := ret[0].(map[string]cd.ExecResp)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Online indicates an expected call of Online.
-func (mr *MockCDMockRecorder) Online(ctx, params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Online", reflect.TypeOf((*MockCD)(nil).Online), ctx, params)
-}
-
 // Pause mocks base method.
 func (m *MockCD) Pause(ctx context.Context, params *cd.ClusterPauseParams) error {
 	m.ctrl.T.Helper()
@@ -297,4 +267,19 @@ func (m *MockCD) Resume(ctx context.Context, params *cd.ClusterResumeParams) err
 func (mr *MockCDMockRecorder) Resume(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resume", reflect.TypeOf((*MockCD)(nil).Resume), ctx, params)
+}
+
+// ShellExec mocks base method.
+func (m *MockCD) ShellExec(ctx context.Context, params *cd.ShellExecParams) (map[string]cd.ExecResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ShellExec", ctx, params)
+	ret0, _ := ret[0].(map[string]cd.ExecResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ShellExec indicates an expected call of ShellExec.
+func (mr *MockCDMockRecorder) ShellExec(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShellExec", reflect.TypeOf((*MockCD)(nil).ShellExec), ctx, params)
 }

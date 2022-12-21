@@ -480,22 +480,10 @@ func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
 	return c.cd.Resume(ctx, &param)
 }
 
-func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
-	const op = "cluster controller: online"
+func (c *controller) ShellExec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
+	const op = "cluster controller: shell exec"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	return c.exec(ctx, clusterID, r, c.cd.Online)
-}
-
-func (c *controller) Offline(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
-	const op = "cluster controller: offline"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	return c.exec(ctx, clusterID, r, c.cd.Offline)
-}
-
-func (c *controller) exec(ctx context.Context, clusterID uint,
-	r *ExecRequest, execFunc cd.ExecFunc) (_ ExecResponse, err error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -520,17 +508,21 @@ func (c *controller) exec(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	execResp, err := execFunc(ctx, &cd.ExecParams{
+	params := &cd.ShellExecParams{
+		Command:      r.Command,
 		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
 		Namespace:    envValue.Namespace,
 		PodList:      r.PodList,
-	})
+	}
+
+	resp, err := c.cd.ShellExec(ctx, params)
 	if err != nil {
 		return nil, err
 	}
-	return ofExecResp(execResp), nil
+
+	return ofExecResp(resp), nil
 }
 
 func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error) {

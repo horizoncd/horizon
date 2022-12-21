@@ -109,7 +109,8 @@ type GetContainerLogParams struct {
 	TailLines   int
 }
 
-type ExecParams struct {
+type ShellExecParams struct {
+	Command      string
 	Environment  string
 	Cluster      string
 	RegionEntity *regionmodels.RegionEntity
@@ -130,7 +131,7 @@ type OperationResult struct {
 	Error  error
 }
 
-type ExecFunc func(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
+type ExecFunc func(ctx context.Context, params *ShellExecParams) (map[string]ExecResp, error)
 
 type containerList struct {
 	name       string
@@ -331,6 +332,12 @@ type LifeCycleItem struct {
 type ResourceNode struct {
 	applicationV1alpha1.ResourceNode
 	PodDetail *CompactPod
+}
+
+type ResourceTreeNode struct {
+	*applicationV1alpha1.ResourceNode
+
+	children []*ResourceTreeNode
 }
 
 // for pod compact

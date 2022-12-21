@@ -71,12 +71,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.GetContainerLog,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/online", common.ParamClusterID),
-			HandlerFunc: api.Online,
-		}, {
-			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/offline", common.ParamClusterID),
-			HandlerFunc: api.Offline,
+			Pattern:     fmt.Sprintf("/clusters/:%v/shellexec", common.ParamClusterID),
+			HandlerFunc: api.ShellExec,
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/dashboards", common.ParamClusterID),
@@ -136,6 +132,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/status", common.ParamClusterID),
 			HandlerFunc: api.ClusterStatusV2,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/buildstatus", common.ParamClusterID),
+			HandlerFunc: api.ClusterBuildStatus,
 		},
 	}
 

@@ -14,6 +14,7 @@ type DeployRequest struct {
 }
 
 type ExecRequest struct {
+	Command string   `json:"command"`
 	PodList []string `json:"podList"`
 }
 

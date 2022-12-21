@@ -20,6 +20,11 @@ type StatusResponseV2 struct {
 	Status string `json:"status"`
 }
 
+type BuildStatusResponse struct {
+	LatestPipelinerun *LatestPipelinerun `json:"latestPipelinerun,omitempty"`
+	RunningTask       *RunningTask       `json:"runningTask,omitempty"`
+}
+
 type GetClusterStatusResponse struct {
 	RunningTask       *RunningTask       `json:"runningTask" yaml:"runningTask"`
 	LatestPipelinerun *LatestPipelinerun `json:"latestPipelinerun,omitempty"`

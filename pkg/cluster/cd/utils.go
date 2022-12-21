@@ -8,22 +8,20 @@ import (
 	"math"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 
-	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
-	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/horizoncd/horizon/core/common"
-	herrors "github.com/horizoncd/horizon/core/errors"
-	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
+	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubectl/pkg/cmd/exec"
+	"k8s.io/kubectl/pkg/describe"
+	kubectlresource "k8s.io/kubectl/pkg/util/resource"
 )
 
 func resourceTreeContains(resourceTree *applicationV1alpha1.ApplicationTree, resourceKind string) bool {
@@ -426,6 +424,7 @@ func computeRolloutStepHash(rollout *rolloutsV1alpha1.Rollout) string {
 	return rand.SafeEncodeString(fmt.Sprint(rolloutStepHasher.Sum32()))
 }
 
+// Deprecated
 func podMapping(pod corev1.Pod) *ClusterPod {
 	clusterPod := &ClusterPod{
 		Metadata: PodMetadata{
@@ -489,6 +488,7 @@ func podMapping(pod corev1.Pod) *ClusterPod {
 	return clusterPod
 }
 
+// Deprecated
 // parsePodLifecycle parse pod lifecycle by pod status
 func parsePodLifeCycle(pod corev1.Pod) []*LifeCycleItem {
 	var lifeCycle []*LifeCycleItem
@@ -589,72 +589,112 @@ func parsePodLifeCycle(pod corev1.Pod) []*LifeCycleItem {
 	return lifeCycle
 }
 
-func mapKind2Resource(group, version, kind string, kubeClient kubernetes.Interface) (string, error) {
-	apiList, err := kubeClient.Discovery().ServerResourcesForGroupVersion(fmt.Sprintf("%s/%s", group, version))
-	if err != nil {
-		return "", perror.Wrapf(herrors.NewErrGetFailed(herrors.ResourceInK8S, "failed to get api list"),
-			"failed to get resource api list: gvk = %s/%s/%s, err = %v", group, version, kind, err)
-	}
-	for _, resource := range apiList.APIResources {
-		if resource.Kind == kind {
-			return resource.Name, nil
-		}
-	}
+// extractContainerInfo extract container detail
+func extractContainerDetail(pod *corev1.Pod) []ContainerDetail {
+	containers := make([]ContainerDetail, 0)
+	for _, container := range pod.Spec.Containers {
+		vars := extractEnv(pod, container)
+		volumeMounts := extractContainerMounts(container, pod)
 
-	// default
-	return fmt.Sprintf("%ss", strings.ToLower(kind)), nil
+		containers = append(containers, ContainerDetail{
+			Name:            container.Name,
+			Image:           container.Image,
+			Env:             vars,
+			Commands:        container.Command,
+			Args:            container.Args,
+			VolumeMounts:    volumeMounts,
+			SecurityContext: container.SecurityContext,
+			Status:          extractContainerStatus(pod, &container),
+			LivenessProbe:   container.LivenessProbe,
+			ReadinessProbe:  container.ReadinessProbe,
+			StartupProbe:    container.StartupProbe,
+		})
+	}
+	return containers
 }
 
-// findTop finds the one who has the most pods
-func findTop(nodeTree map[string]*applicationV1alpha1.ResourceNode) *applicationV1alpha1.ResourceNode {
-	type node struct {
-		*applicationV1alpha1.ResourceNode
-		count int
-	}
-	var maxDepth = 100
-
-	m := make(map[string]*node, len(nodeTree))
-
-	for k, v := range nodeTree {
-		if v.Kind == "Pod" {
-			m[k] = &node{v, 1}
-		} else {
-			m[k] = &node{v, 0}
+// extractContainerMounts extract container status from pod.status.containerStatus
+func extractContainerStatus(pod *corev1.Pod, container *corev1.Container) *corev1.ContainerStatus {
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.Name == container.Name {
+			return &status
 		}
 	}
+	return nil
+}
 
-	var findParent func(string, int) *node
-
-	findParent = func(uid string, depth int) *node {
-		if depth > maxDepth {
-			return nil
-		}
-		n := m[uid]
-		if n == nil {
-			return nil
-		}
-		if len(n.ParentRefs) == 0 {
-			return n
-		}
-		return findParent(n.ParentRefs[0].UID, depth+1)
+// extractContainerMounts extract container mounts
+// the same to https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/pod/detail.go#L226
+func extractContainerMounts(container corev1.Container, pod *corev1.Pod) []VolumeMount {
+	volumeMounts := make([]VolumeMount, 0)
+	for _, volumeMount := range container.VolumeMounts {
+		volumeMounts = append(volumeMounts, VolumeMount{
+			Name:      volumeMount.Name,
+			ReadOnly:  volumeMount.ReadOnly,
+			MountPath: volumeMount.MountPath,
+			SubPath:   volumeMount.SubPath,
+			Volume:    getVolume(pod.Spec.Volumes, volumeMount.Name),
+		})
 	}
+	return volumeMounts
+}
 
-	var maxNode *node
-	for k := range m {
-		parent := findParent(k, 0)
-		if parent != nil {
-			parent.count += m[k].count
-			if maxNode == nil {
-				maxNode = parent
+// getVolume get volume by name
+// the same to https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/pod/detail.go#L216
+func getVolume(volumes []corev1.Volume, volumeName string) corev1.Volume {
+	for _, volume := range volumes {
+		if volume.Name == volumeName {
+			return volume
+		}
+	}
+	return corev1.Volume{}
+}
+
+// extractEnv extract env by resolving references
+// the same to https://github.com/kubernetes/kubectl/blob/master/pkg/describe/describe.go#L1853
+// todo: maybe we should follow dashboard to resolve config/secret references
+// https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/pod/detail.go#L303
+func extractEnv(pod *corev1.Pod, container corev1.Container) []corev1.EnvVar {
+	var env []corev1.EnvVar
+	for _, e := range container.Env {
+		switch {
+		case e.ValueFrom == nil:
+			env = append(env, e)
+		case e.ValueFrom.FieldRef != nil:
+			var valueFrom string
+			valueFrom = describe.EnvValueRetriever(pod)(e)
+			env = append(env, corev1.EnvVar{
+				Name:  e.Name,
+				Value: valueFrom,
+			})
+		case e.ValueFrom.ResourceFieldRef != nil:
+			valueFrom, err := kubectlresource.ExtractContainerResourceValue(e.ValueFrom.ResourceFieldRef, &container)
+			if err != nil {
+				valueFrom = ""
 			}
-			if maxNode.count < parent.count {
-				maxNode = parent
+			resource := e.ValueFrom.ResourceFieldRef.Resource
+			if valueFrom == "0" && (resource == "limits.cpu" || resource == "limits.memory") {
+				valueFrom = "node allocatable"
 			}
+			env = append(env, corev1.EnvVar{
+				Name:  e.Name,
+				Value: valueFrom,
+			})
+		case e.ValueFrom.SecretKeyRef != nil:
+			optional := e.ValueFrom.SecretKeyRef.Optional != nil && *e.ValueFrom.SecretKeyRef.Optional
+			env = append(env, corev1.EnvVar{
+				Name: e.Name,
+				Value: fmt.Sprintf("<set to the key '%s' in secret '%s'>\tOptional: %t\n",
+					e.ValueFrom.SecretKeyRef.Key, e.ValueFrom.SecretKeyRef.Name, optional),
+			})
+		case e.ValueFrom.ConfigMapKeyRef != nil:
+			optional := e.ValueFrom.ConfigMapKeyRef.Optional != nil && *e.ValueFrom.ConfigMapKeyRef.Optional
+			env = append(env, corev1.EnvVar{
+				Name: e.Name,
+				Value: fmt.Sprintf("<set to the key '%s' of config map '%s'>\tOptional: %t\n",
+					e.ValueFrom.ConfigMapKeyRef.Key, e.ValueFrom.ConfigMapKeyRef.Name, optional),
+			})
 		}
 	}
-
-	if maxNode == nil {
-		return nil
-	}
-	return maxNode.ResourceNode
+	return env
 }

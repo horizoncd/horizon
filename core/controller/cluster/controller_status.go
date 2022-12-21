@@ -55,6 +55,9 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 		RegionEntity: regionEntity,
 	}
 
+	// If cluster not found on argo, check the cluster is freed or has not been published yet,
+	// or the cluster will be "notFound". If response's status field has not been set,
+	// set it with status from argocd.
 	cdStatus, err := c.cd.GetClusterStateV2(ctx, params)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
@@ -62,19 +65,52 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 		}
 		// for not deployed -- free or not published
 		if resp.Status == "" {
-			if cluster.Status != "" {
-				resp.Status = cluster.Status
-			} else {
-				resp.Status = _notFound
-			}
+			resp.Status = _notFound
 		}
 	} else {
 		// resp has not been set
 		if resp.Status == "" {
-			resp.Status = string(cdStatus.Status)
+			resp.Status = cdStatus.Status
 		}
 	}
 
+	return resp, nil
+}
+
+func (c *controller) GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error) {
+	resp := &BuildStatusResponse{}
+
+	// get latest pipelinerun
+	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	if latestPipelinerun != nil {
+		resp.LatestPipelinerun = &LatestPipelinerun{
+			ID:     latestPipelinerun.ID,
+			Action: latestPipelinerun.Action,
+		}
+	}
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	if latestPipelinerun == nil ||
+		latestPipelinerun.Action != prmodels.ActionBuildDeploy {
+		resp.RunningTask = &RunningTask{
+			Task: _taskNone,
+		}
+	} else {
+		latestPipelineRunObject, err := c.getLatestPipelineRunObject(ctx, cluster, latestPipelinerun)
+		if err != nil {
+			return nil, err
+		}
+
+		resp.RunningTask = c.getRunningTask(ctx, latestPipelineRunObject)
+		resp.RunningTask.PipelinerunID = latestPipelinerun.ID
+	}
 	return resp, nil
 }
 
@@ -122,6 +158,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
+	// nolint
 	clusterState, err := c.cd.GetClusterState(ctx, &cd.GetClusterStateParams{
 		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,

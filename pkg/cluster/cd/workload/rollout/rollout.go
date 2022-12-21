@@ -4,68 +4,89 @@ import (
 	"context"
 	"math"
 
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	rolloutsv1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
-	"github.com/horizoncd/horizon/pkg/util/kube"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-const (
-	revisionKey = "Revision"
-)
+func init() {
+	workload.Register(Ability, 0)
+}
 
+// please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
 var Ability = &rollout{}
 
 type rollout struct {
 }
 
-func fetchInfo(infos []v1alpha1.InfoItem, key string) string {
-	for _, info := range infos {
-		if info.Name == key {
-			return info.Value
-		}
-	}
-	return ""
+func (*rollout) MatchGK(gk string) bool {
+	return "argoproj.io/Rollout" == gk
 }
 
-func (*rollout) IsHealthy(un *unstructured.Unstructured,
+func (*rollout) getRolloutByNode(node *v1alpha1.ResourceNode, client *kube.Client) (*rolloutsv1alpha1.Rollout, error) {
+	gvr := schema.GroupVersionResource{
+		Group:    "argoproj.io",
+		Version:  node.Version,
+		Resource: "rollouts",
+	}
+
+	un, err := client.Dynamic.Resource(gvr).Namespace(node.Namespace).
+		Get(context.TODO(), node.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.ResourceInK8S,
+				"failed to get rollout in k8s"),
+			"failed to get rollout in k8s: deployment = %s, err = %v", node.Name, err)
+	}
+
+	var instance *rolloutsv1alpha1.Rollout
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &instance)
+	if err != nil {
+		return nil, err
+	}
+	return instance, nil
+}
+
+func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 	client *kube.Client) (bool, error) {
-	var rollout *rolloutsv1alpha1.Rollout
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &rollout)
+	instance, err := r.getRolloutByNode(node, client)
 	if err != nil {
 		return true, err
 	}
 
-	if rollout == nil {
+	if instance == nil {
 		return true, nil
 	}
 
-	labels := rollout.Status.Selector
-	pods, err := client.Basic.CoreV1().Pods(rollout.Namespace).
+	labels := instance.Status.Selector
+	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
 		List(context.TODO(), metav1.ListOptions{LabelSelector: labels})
 	if err != nil {
 		return true, err
 	}
 
 	count := 0
-	required := int(*rollout.Spec.Replicas)
+	required := int(*instance.Spec.Replicas)
 
-	templateHashSum := ComputePodSpecHash(rollout.Spec.Template.Spec)
+	templateHashSum := ComputePodSpecHash(instance.Spec.Template.Spec)
 	for _, pod := range pods.Items {
 		hashSum := ComputePodSpecHash(pod.Spec)
 		if templateHashSum != hashSum {
 			continue
 		}
-		for k, v := range rollout.Spec.Template.ObjectMeta.Annotations {
+		for k, v := range instance.Spec.Template.ObjectMeta.Annotations {
 			if pod.Annotations[k] != v {
 				continue
 			}
 		}
-		for k, v := range rollout.Spec.Template.ObjectMeta.Labels {
+		for k, v := range instance.Spec.Template.ObjectMeta.Labels {
 			if pod.Annotations[k] != v {
 				continue
 			}
@@ -76,108 +97,36 @@ func (*rollout) IsHealthy(un *unstructured.Unstructured,
 		return false, nil
 	}
 
-	return int(*rollout.Status.CurrentStepIndex) == len(rollout.Spec.Strategy.Canary.Steps), nil
+	return int(*instance.Status.CurrentStepIndex) == len(instance.Spec.Strategy.Canary.Steps), nil
 }
 
-func (*rollout) ListPods(un *unstructured.Unstructured,
-	resourceTree []v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
-	var rollout *rolloutsv1alpha1.Rollout
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &rollout)
+func (r *rollout) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
+	instance, err := r.getRolloutByNode(node, client)
 	if err != nil {
 		return nil, err
 	}
 
-	pods, err := client.Basic.CoreV1().Pods(rollout.Namespace).
-		List(context.TODO(), metav1.ListOptions{LabelSelector: rollout.Status.Selector})
+	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
+		List(context.TODO(), metav1.ListOptions{LabelSelector: instance.Status.Selector})
 	if err != nil {
 		return nil, err
 	}
 	return pods.Items, nil
 }
 
-func (*rollout) GetRevisions(un *unstructured.Unstructured,
-	resourceTree []v1alpha1.ResourceNode, client *kube.Client) (string, map[string]*workload.Revision, error) {
-	var rollout *rolloutsv1alpha1.Rollout
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &rollout)
-	if err != nil {
-		return "", nil, err
-	}
-
-	if rollout == nil {
-		return "", nil, nil
-	}
-
-	labels := rollout.Status.Selector
-	pods, err := client.Basic.CoreV1().Pods(rollout.Namespace).
-		List(context.TODO(), metav1.ListOptions{LabelSelector: labels})
-	if err != nil {
-		return "", nil, err
-	}
-	podsMap := make(map[string]corev1.Pod)
-	for _, pod := range pods.Items {
-		podsMap[string(pod.UID)] = pod
-	}
-
-	m := make(map[string]*v1alpha1.ResourceNode)
-	for _, node := range resourceTree {
-		m[node.UID] = &node
-	}
-
-	revisions := make(map[*v1alpha1.ResourceNode]*workload.Revision)
-
-	rolloutNode := m[string(rollout.UID)]
-	currentRevision := ""
-	if rolloutNode != nil {
-		currentRevision = fetchInfo(rolloutNode.Info, revisionKey)
-	}
-
-	for _, node := range resourceTree {
-		if node.Kind == "Pod" {
-			if len(node.ParentRefs) > 0 {
-				parentsID := node.ParentRefs[0].UID
-				rsNode := m[parentsID]
-				if revision, ok := revisions[rsNode]; ok {
-					revision.Pods = append(revision.Pods, podsMap[node.UID])
-				} else {
-					revName := fetchInfo(rsNode.Info, revisionKey)
-					if revName == "" {
-						revName = rsNode.Name
-					}
-					if currentRevision == "" {
-						currentRevision = revName
-					}
-					revision := workload.Revision{
-						Name: revName,
-						Pods: []corev1.Pod{podsMap[node.UID]},
-					}
-					revisions[rsNode] = &revision
-				}
-			}
-		}
-	}
-
-	res := make(map[string]*workload.Revision)
-	for _, revision := range revisions {
-		res[revision.Name] = revision
-	}
-
-	return currentRevision, res, nil
-}
-
-func (*rollout) GetSteps(un *unstructured.Unstructured, _ *kube.Client) (*workload.Step, error) {
-	var rollout *rolloutsv1alpha1.Rollout
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &rollout)
+func (r *rollout) GetSteps(node *v1alpha1.ResourceNode, client *kube.Client) (*workload.Step, error) {
+	instance, err := r.getRolloutByNode(node, client)
 	if err != nil {
 		return nil, err
 	}
 
 	var replicasTotal = 1
-	if rollout.Spec.Replicas != nil {
-		replicasTotal = int(*rollout.Spec.Replicas)
+	if instance.Spec.Replicas != nil {
+		replicasTotal = int(*instance.Spec.Replicas)
 	}
 
-	if rollout.Spec.Strategy.Canary == nil ||
-		len(rollout.Spec.Strategy.Canary.Steps) == 0 {
+	if instance.Spec.Strategy.Canary == nil ||
+		len(instance.Spec.Strategy.Canary.Steps) == 0 {
 		return &workload.Step{
 			Index:    0,
 			Total:    1,
@@ -186,7 +135,7 @@ func (*rollout) GetSteps(un *unstructured.Unstructured, _ *kube.Client) (*worklo
 	}
 
 	replicasList := make([]int, 0)
-	for _, step := range rollout.Spec.Strategy.Canary.Steps {
+	for _, step := range instance.Spec.Strategy.Canary.Steps {
 		if step.SetWeight != nil {
 			replicasList = append(replicasList, int(math.Ceil(float64(*step.SetWeight)/100*float64(replicasTotal))))
 		}
@@ -203,12 +152,12 @@ func (*rollout) GetSteps(un *unstructured.Unstructured, _ *kube.Client) (*worklo
 
 	var stepIndex = 0
 	// if steps changes, stepIndex = 0
-	if rollout.Status.CurrentStepHash == computeStepHash(rollout) &&
-		rollout.Status.CurrentStepIndex != nil {
-		index := float64(*rollout.Status.CurrentStepIndex)
-		index = math.Min(index, float64(len(rollout.Spec.Strategy.Canary.Steps)))
+	if instance.Status.CurrentStepHash == computeStepHash(instance) &&
+		instance.Status.CurrentStepIndex != nil {
+		index := float64(*instance.Status.CurrentStepIndex)
+		index = math.Min(index, float64(len(instance.Spec.Strategy.Canary.Steps)))
 		for i := 0; i < int(index); i++ {
-			if rollout.Spec.Strategy.Canary.Steps[i].SetWeight != nil {
+			if instance.Spec.Strategy.Canary.Steps[i].SetWeight != nil {
 				stepIndex++
 			}
 		}
@@ -219,6 +168,6 @@ func (*rollout) GetSteps(un *unstructured.Unstructured, _ *kube.Client) (*worklo
 		Index:        stepIndex,
 		Total:        len(incrementReplicasList),
 		Replicas:     incrementReplicasList,
-		ManualPaused: rollout.Spec.Paused,
+		ManualPaused: instance.Spec.Paused,
 	}, nil
 }

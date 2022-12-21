@@ -932,22 +932,16 @@ func test(t *testing.T) {
 		},
 	}
 
-	cd.EXPECT().Online(ctx, gomock.Any()).Return(execResp, nil)
-	cd.EXPECT().Offline(ctx, gomock.Any()).Return(execResp, nil)
+	cd.EXPECT().ShellExec(ctx, gomock.Any()).Return(execResp, nil)
 
 	execRequest := &ExecRequest{
 		PodList: []string{"pod1", "pod2"},
+		Command: "echo 'hello, world'",
 	}
-	onlineResp, err := c.Online(ctx, resp.ID, execRequest)
+	shellResp, err := c.ShellExec(ctx, resp.ID, execRequest)
 	assert.Nil(t, err)
-	assert.NotNil(t, onlineResp)
-	b, _ = json.Marshal(onlineResp)
-	t.Logf("%s", string(b))
-
-	offlineResp, err := c.Offline(ctx, resp.ID, execRequest)
-	assert.Nil(t, err)
-	assert.NotNil(t, offlineResp)
-	b, _ = json.Marshal(offlineResp)
+	assert.NotNil(t, shellResp)
+	b, _ = json.Marshal(shellResp)
 	t.Logf("%s", string(b))
 
 	clusterGitRepo.EXPECT().GetClusterValueFiles(gomock.Any(), gomock.Any(), gomock.Any()).

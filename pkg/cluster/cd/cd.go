@@ -26,19 +26,14 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/argocd"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/ability"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/deployment"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/generic"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/kservice"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/rollout"
+	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
+	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/getter"
 	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
 	argocdconf "github.com/horizoncd/horizon/pkg/config/argocd"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	"k8s.io/client-go/kubernetes"
 
 	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
@@ -47,12 +42,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubectl/pkg/describe"
-	kubectlresource "k8s.io/kubectl/pkg/util/resource"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -61,11 +54,7 @@ const (
 	_rolloutRevision          = "rollout.argoproj.io/revision"
 	RolloutPodTemplateHash    = "rollouts-pod-template-hash"
 
-	gvkPattern = "%s/%s/%s"
-
-	workloadRollout    = "argoproj.io/v1alpha1/Rollout"
-	workloadDeployment = "apps/v1/Deployment"
-	workloadKsvc       = "serving.knative.dev/v1/Service"
+	gkPattern = "%s/%s"
 )
 
 const (
@@ -99,7 +88,8 @@ type CD interface {
 	Promote(ctx context.Context, params *ClusterPromoteParams) error
 	Pause(ctx context.Context, params *ClusterPauseParams) error
 	Resume(ctx context.Context, params *ClusterResumeParams) error
-	// GetClusterState get cluster state in cd system
+	// Deprecated: GetClusterState get cluster state in cd system
+	// replaced by GetClusterStatusV2
 	GetClusterState(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 	GetClusterStateV2(ctx context.Context, params *GetClusterStateV2Params) (*ClusterStateV2, error)
 	GetResourceTree(ctx context.Context, params *GetResourceTreeParams) ([]ResourceNode, error)
@@ -108,8 +98,7 @@ type CD interface {
 	GetPod(ctx context.Context, params *GetPodParams) (*corev1.Pod, error)
 	GetPodContainers(ctx context.Context, params *GetPodParams) ([]ContainerDetail, error)
 	GetPodEvents(ctx context.Context, params *GetPodEventsParams) ([]Event, error)
-	Online(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
-	Offline(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
+	ShellExec(ctx context.Context, params *ShellExecParams) (map[string]ExecResp, error)
 	DeletePods(ctx context.Context, params *DeletePodsParams) (map[string]OperationResult, error)
 }
 
@@ -326,31 +315,36 @@ func (c *cd) GetResourceTree(ctx context.Context,
 		return nil, err
 	}
 
-	un, workloadType, err := c.getTopWorkload(ctx, params.Cluster, params.Environment, params.RegionEntity)
-	if err != nil {
-		return nil, err
-	}
+	podsMap := make(map[string]*corev1.Pod)
+	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
+		gk := fmt.Sprintf(gkPattern, node.Group, node.Kind)
+		handled := false
+		workload.LoopAbilities(func(workload workload.Workload) bool {
+			if !workload.MatchGK(gk) {
+				return true
+			}
+			gt := getter.New(workload)
+			pods, err := gt.ListPods(node.ResourceNode, kubeClient)
+			if err != nil {
+				return true
+			}
 
-	getter := ability.New(workloadType)
-
-	// TODO: delete this after using informer
-	// add detail for pods
-	pods, err := getter.ListPods(un, resourceTreeInArgo.Nodes, kubeClient)
-	if err != nil {
-		return nil, err
-	}
-	m := make(map[string]*CompactPod, len(pods))
-	for i := range pods {
-		t := Compact(pods[i])
-		m[string(pods[i].UID)] = &t
-	}
+			for i := range pods {
+				podsMap[string(pods[i].UID)] = &pods[i]
+			}
+			handled = true
+			return false
+		})
+		return !handled
+	})
 
 	resourceTree := make([]ResourceNode, 0, len(resourceTreeInArgo.Nodes))
 	for _, node := range resourceTreeInArgo.Nodes {
 		n := ResourceNode{ResourceNode: node}
 		if n.Kind == "Pod" {
-			if podDetail, ok := m[n.UID]; ok {
-				n.PodDetail = podDetail
+			if podDetail, ok := podsMap[n.UID]; ok {
+				t := Compact(*podDetail)
+				n.PodDetail = &t
 			} else {
 				continue
 			}
@@ -359,81 +353,6 @@ func (c *cd) GetResourceTree(ctx context.Context,
 	}
 
 	return resourceTree, nil
-}
-
-func (c *cd) getTopWorkload(ctx context.Context, clusterName, environment string,
-	region *regionmodels.RegionEntity) (un *unstructured.Unstructured, workloadType interface{}, err error) {
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(region.Server, region.Certificate)
-	if err != nil {
-		return
-	}
-
-	argo, err := c.factory.GetArgoCD(environment)
-	if err != nil {
-		return
-	}
-
-	// get application status
-	argoApp, err := argo.GetApplication(ctx, clusterName)
-	if err != nil {
-		return
-	}
-	namespace := argoApp.Spec.Destination.Namespace
-
-	resourceTree, err := argo.GetApplicationTree(ctx, clusterName)
-	if err != nil {
-		return
-	}
-
-	resourceMap := make(map[string]*applicationV1alpha1.ResourceNode)
-	gvkMap := make(map[string][]*applicationV1alpha1.ResourceNode)
-	for i := range resourceTree.Nodes {
-		resourceNode := resourceTree.Nodes[i]
-		resourceMap[resourceNode.UID] = &resourceNode
-		key := fmt.Sprintf(gvkPattern, resourceNode.Group, resourceNode.Version, resourceNode.Kind)
-		gvkMap[key] = append(gvkMap[key], &resourceNode)
-	}
-
-	var (
-		gvr  schema.GroupVersionResource
-		node *applicationV1alpha1.ResourceNode
-	)
-	if nodes, ok := gvkMap[workloadRollout]; ok {
-		node = nodes[0]
-		workloadType = rollout.Ability
-		gvr = schema.GroupVersionResource{Group: "argoproj.io", Version: "v1alpha1", Resource: "rollouts"}
-	} else if nodes, ok = gvkMap[workloadKsvc]; ok {
-		node = nodes[0]
-		workloadType = kservice.Ability
-		gvr = schema.GroupVersionResource{Group: "serving.knative.dev", Version: "v1", Resource: "services"}
-	} else if nodes, ok = gvkMap[workloadDeployment]; ok {
-		node = nodes[0]
-		workloadType = deployment.Ability
-		gvr = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
-	} else {
-		workloadType = generic.Ability
-		node = findTop(resourceMap)
-		if node == nil {
-			return nil, nil, perror.Wrapf(herrors.ErrTopResourceNotFound,
-				"failed to get top resource: resource tree = %v", resourceMap)
-		}
-		resource, err := mapKind2Resource(node.Group, node.Version, node.Kind, kubeClient.Basic)
-		if err != nil {
-			return nil, nil, err
-		}
-		gvr = schema.GroupVersionResource{
-			Group: node.Group, Version: node.Version, Resource: resource,
-		}
-	}
-
-	un, err = kubeClient.Dynamic.Resource(gvr).
-		Namespace(namespace).Get(ctx, node.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, nil, perror.Wrapf(
-			herrors.NewErrGetFailed(herrors.ResourceInK8S, "failed to get resource"),
-			"failed to get resource on k8s: gvr = %v, err = %v", gvr, err)
-	}
-	return
 }
 
 func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) {
@@ -445,17 +364,40 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 		return nil, err
 	}
 
-	un, workloadType, err := c.getTopWorkload(ctx,
-		params.Cluster, params.Environment, params.RegionEntity)
+	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
 		return nil, err
 	}
 
-	getter := ability.New(workloadType)
+	// get resourceTreeInArgo
+	resourceTreeInArgo, err := argo.GetApplicationTree(ctx, params.Cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	handled := false
+	step := (*workload.Step)(nil)
+	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
+		gk := fmt.Sprintf(gkPattern, node.Group, node.Kind)
+		workload.LoopAbilities(func(workload workload.Workload) bool {
+			if !workload.MatchGK(gk) {
+				return true
+			}
+
+			gt := getter.New(workload)
+			step, err = gt.GetSteps(node.ResourceNode, kubeClient)
+			if err != nil {
+				return true
+			}
+
+			handled = true
+			return false
+		})
+		return !handled
+	})
 
 	// step
-	step, err := getter.GetSteps(un, kubeClient)
-	if err != nil {
+	if step == nil {
 		return &Step{
 			Index:        0,
 			Total:        0,
@@ -472,33 +414,31 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 	}, nil
 }
 
-// GetClusterStatusV2 fetchs status of cluster
+// GetClusterStateV2 fetches status of cluster
 func (c *cd) GetClusterStateV2(ctx context.Context,
-	params *GetClusterStateV2Params) (status *ClusterStateV2, err error) {
+	params *GetClusterStateV2Params) (*ClusterStateV2, error) {
 	const op = "cd: get cluster status"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	argo, err := c.factory.GetArgoCD(params.Environment)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	// get application status
 	argoApp, err := argo.GetApplication(ctx, params.Cluster)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	if argoApp.Status.Health.Status == "" {
-		return status, perror.Wrapf(
+		return nil, perror.Wrapf(
 			herrors.NewErrNotFound(herrors.ClusterStateInArgo, "cluster not found in argo"),
 			"failed to get cluster status from argo: app name = %v", params.Cluster)
 	}
 
-	// TODO: check commit revision
-	status = &ClusterStateV2{string(argoApp.Status.Health.Status)}
-	if argoApp.Status.Sync.Status != applicationV1alpha1.SyncStatusCodeSynced {
-		status.Status = string(health.HealthStatusProgressing)
+	status := &ClusterStateV2{
+		Status: string(argoApp.Status.Health.Status),
 	}
 
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
@@ -506,26 +446,37 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 		return nil, err
 	}
 
-	un, workloadType, err := c.getTopWorkload(ctx,
-		params.Cluster, params.Environment, params.RegionEntity)
+	// get resourceTreeInArgo
+	resourceTreeInArgo, err := argo.GetApplicationTree(ctx, params.Cluster)
 	if err != nil {
 		return nil, err
 	}
 
-	getter := ability.New(workloadType)
+	isHealthy := true
+	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
+		gk := fmt.Sprintf(gkPattern, node.Group, node.Kind)
+		workload.LoopAbilities(func(workload workload.Workload) bool {
+			if !workload.MatchGK(gk) {
+				return true
+			}
+			gt := getter.New(workload)
+			nodeHealthy, err := gt.IsHealthy(node.ResourceNode, kubeClient)
+			if err != nil {
+				return true
+			}
+			isHealthy = isHealthy && nodeHealthy
+			return isHealthy
+		})
+		return isHealthy
+	})
 
-	// step
-	isHealthy, err := getter.IsHealthy(un, kubeClient)
-	if err != nil {
-		return status, nil
-	}
 	if !isHealthy {
 		status.Status = string(health.HealthStatusProgressing)
 	}
-	return
+	return status, nil
 }
 
-// Deprecated: GetClusterState TODO(gjq) restructure
+// Deprecated: GetClusterState
 func (c *cd) GetClusterState(ctx context.Context,
 	params *GetClusterStateParams) (clusterState *ClusterState, err error) {
 	const op = "cd: get cluster status"
@@ -795,116 +746,7 @@ func (c *cd) GetPodEvents(ctx context.Context,
 	return nil, herrors.NewErrNotFound(herrors.PodsInK8S, "pod does not exist")
 }
 
-// extractContainerInfo extract container detail
-func extractContainerDetail(pod *corev1.Pod) []ContainerDetail {
-	containers := make([]ContainerDetail, 0)
-	for _, container := range pod.Spec.Containers {
-		vars := extractEnv(pod, container)
-		volumeMounts := extractContainerMounts(container, pod)
-
-		containers = append(containers, ContainerDetail{
-			Name:            container.Name,
-			Image:           container.Image,
-			Env:             vars,
-			Commands:        container.Command,
-			Args:            container.Args,
-			VolumeMounts:    volumeMounts,
-			SecurityContext: container.SecurityContext,
-			Status:          extractContainerStatus(pod, &container),
-			LivenessProbe:   container.LivenessProbe,
-			ReadinessProbe:  container.ReadinessProbe,
-			StartupProbe:    container.StartupProbe,
-		})
-	}
-	return containers
-}
-
-// extractContainerMounts extract container status from pod.status.containerStatus
-func extractContainerStatus(pod *corev1.Pod, container *corev1.Container) *corev1.ContainerStatus {
-	for _, status := range pod.Status.ContainerStatuses {
-		if status.Name == container.Name {
-			return &status
-		}
-	}
-	return nil
-}
-
-// extractContainerMounts extract container mounts
-// the same to https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/pod/detail.go#L226
-func extractContainerMounts(container corev1.Container, pod *corev1.Pod) []VolumeMount {
-	volumeMounts := make([]VolumeMount, 0)
-	for _, volumeMount := range container.VolumeMounts {
-		volumeMounts = append(volumeMounts, VolumeMount{
-			Name:      volumeMount.Name,
-			ReadOnly:  volumeMount.ReadOnly,
-			MountPath: volumeMount.MountPath,
-			SubPath:   volumeMount.SubPath,
-			Volume:    getVolume(pod.Spec.Volumes, volumeMount.Name),
-		})
-	}
-	return volumeMounts
-}
-
-// getVolume get volume by name
-// the same to https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/pod/detail.go#L216
-func getVolume(volumes []corev1.Volume, volumeName string) corev1.Volume {
-	for _, volume := range volumes {
-		if volume.Name == volumeName {
-			return volume
-		}
-	}
-	return corev1.Volume{}
-}
-
-// extractEnv extract env by resolving references
-// the same to https://github.com/kubernetes/kubectl/blob/master/pkg/describe/describe.go#L1853
-// todo: maybe we should follow dashboard to resolve config/secret references
-// https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/pod/detail.go#L303
-func extractEnv(pod *corev1.Pod, container corev1.Container) []corev1.EnvVar {
-	var env []corev1.EnvVar
-	for _, e := range container.Env {
-		switch {
-		case e.ValueFrom == nil:
-			env = append(env, e)
-		case e.ValueFrom.FieldRef != nil:
-			var valueFrom string
-			valueFrom = describe.EnvValueRetriever(pod)(e)
-			env = append(env, corev1.EnvVar{
-				Name:  e.Name,
-				Value: valueFrom,
-			})
-		case e.ValueFrom.ResourceFieldRef != nil:
-			valueFrom, err := kubectlresource.ExtractContainerResourceValue(e.ValueFrom.ResourceFieldRef, &container)
-			if err != nil {
-				valueFrom = ""
-			}
-			resource := e.ValueFrom.ResourceFieldRef.Resource
-			if valueFrom == "0" && (resource == "limits.cpu" || resource == "limits.memory") {
-				valueFrom = "node allocatable"
-			}
-			env = append(env, corev1.EnvVar{
-				Name:  e.Name,
-				Value: valueFrom,
-			})
-		case e.ValueFrom.SecretKeyRef != nil:
-			optional := e.ValueFrom.SecretKeyRef.Optional != nil && *e.ValueFrom.SecretKeyRef.Optional
-			env = append(env, corev1.EnvVar{
-				Name: e.Name,
-				Value: fmt.Sprintf("<set to the key '%s' in secret '%s'>\tOptional: %t\n",
-					e.ValueFrom.SecretKeyRef.Key, e.ValueFrom.SecretKeyRef.Name, optional),
-			})
-		case e.ValueFrom.ConfigMapKeyRef != nil:
-			optional := e.ValueFrom.ConfigMapKeyRef.Optional != nil && *e.ValueFrom.ConfigMapKeyRef.Optional
-			env = append(env, corev1.EnvVar{
-				Name: e.Name,
-				Value: fmt.Sprintf("<set to the key '%s' of config map '%s'>\tOptional: %t\n",
-					e.ValueFrom.ConfigMapKeyRef.Key, e.ValueFrom.ConfigMapKeyRef.Name, optional),
-			})
-		}
-	}
-	return env
-}
-
+// Deprecated
 func (c *cd) paddingPodAndEventInfo(ctx context.Context, cluster, namespace string,
 	kubeClient kubernetes.Interface, clusterState *ClusterState) error {
 	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
@@ -985,36 +827,8 @@ func (c *cd) GetContainerLog(ctx context.Context, params *GetContainerLogParams)
 	return logStrC, nil
 }
 
-// onlineCommand the location of online.sh in pod is /home/appops/.probe/online-once.sh
-const onlineCommand = `
-export ONLINE_SHELL="/home/appops/.probe/online-once.sh"
-[[ -f "$ONLINE_SHELL" ]] || {
-	echo "there is no online config for this cluster." >&2; exit 1
-}
-
-bash "$ONLINE_SHELL"
-`
-
-// offlineCommand the location of offline.sh in pod is /home/appops/.probe/offline-once.sh
-const offlineCommand = `
-export OFFLINE_SHELL="/home/appops/.probe/offline-once.sh"
-[[ -f "$OFFLINE_SHELL" ]] || {
-	echo "there is no offline config for this cluster." >&2; exit 1
-}
-
-bash "$OFFLINE_SHELL"
-`
-
-func (c *cd) Online(ctx context.Context, params *ExecParams) (_ map[string]ExecResp, err error) {
-	return c.exec(ctx, params, onlineCommand)
-}
-
-func (c *cd) Offline(ctx context.Context, params *ExecParams) (_ map[string]ExecResp, err error) {
-	return c.exec(ctx, params, offlineCommand)
-}
-
-func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ map[string]ExecResp, err error) {
-	const op = "cd: exec"
+func (c *cd) ShellExec(ctx context.Context, params *ShellExecParams) (_ map[string]ExecResp, err error) {
+	const op = "cd: shell exec"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	config, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
@@ -1032,5 +846,68 @@ func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ ma
 		})
 	}
 
-	return executeCommandInPods(ctx, containers, []string{"bash", "-c", command}, nil), nil
+	return executeCommandInPods(ctx, containers, []string{"bash", "-c", params.Command}, nil), nil
+}
+
+// TraverseOperator stops if result is false
+type TraverseOperator func(node *ResourceTreeNode) bool
+
+// traverseResourceTree traverses tree by dfs
+func (c *cd) traverseResourceTree(resourceTree *applicationV1alpha1.ApplicationTree,
+	operators ...TraverseOperator) {
+	m := make(map[string]*applicationV1alpha1.ResourceNode)
+	for i, node := range resourceTree.Nodes {
+		m[node.UID] = &resourceTree.Nodes[i]
+	}
+
+	visited := make(map[string]*ResourceTreeNode)
+	roots := make([]*ResourceTreeNode, 0, 4)
+	for i := range resourceTree.Nodes {
+		tree := (*ResourceTreeNode)(nil)
+		currentNode := &resourceTree.Nodes[i]
+		for {
+			if _, ok := visited[currentNode.UID]; ok {
+				parent := visited[currentNode.UID]
+				if tree != nil {
+					parent.children = append(parent.children, tree)
+				}
+				break
+			}
+
+			t := &ResourceTreeNode{
+				ResourceNode: currentNode,
+			}
+			if tree != nil {
+				t.children = append(t.children, tree)
+			}
+			tree = t
+			visited[currentNode.UID] = tree
+
+			if currentNode.ParentRefs != nil {
+				currentNode = m[currentNode.ParentRefs[0].UID]
+			} else {
+				roots = append(roots, tree)
+				break
+			}
+		}
+	}
+
+	var dfs func(node *ResourceTreeNode, operator TraverseOperator)
+	dfs = func(node *ResourceTreeNode, operator TraverseOperator) {
+		if node == nil {
+			return
+		}
+		if !operator(node) || node.children == nil {
+			return
+		}
+		for _, child := range node.children {
+			dfs(child, operator)
+		}
+	}
+
+	for _, operator := range operators {
+		for _, root := range roots {
+			dfs(root, operator)
+		}
+	}
 }

@@ -231,9 +231,6 @@ var (
 	// tekton
 	ErrTektonInternal = errors.New("tekton internal error")
 
-	// grafana
-	ErrGrafanaNotSupport = errors.New("grafana not support")
-
 	// helm
 	ErrLoadChartArchive = errors.New("failed to load archive")
 
@@ -275,4 +272,6 @@ var (
 
 	ErrMethodNotImplemented = errors.New("method not implemented")
 	ErrTopResourceNotFound  = errors.New("top resource in resource tree not found")
+
+	ErrNotSupport = errors.New("not support")
 )

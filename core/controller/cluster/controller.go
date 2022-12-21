@@ -69,9 +69,9 @@ type Controller interface {
 	Resume(ctx context.Context, clusterID uint) error
 	Next(ctx context.Context, clusterID uint) error
 
+	// Deprecated: GetClusterStatus
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
-	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
-	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
+	ShellExec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error)
 
 	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)
 	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
@@ -93,6 +93,7 @@ type Controller interface {
 	InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,
 		r interface{}) (_ *InternalDeployResponse, err error)
 	GetClusterStatusV2(ctx context.Context, clusterID uint) (_ *StatusResponseV2, err error)
+	GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error)
 	GetResourceTree(ctx context.Context, clusterID uint) (*GetResourceTreeResponse, error)
 	GetStep(ctx context.Context, clusterID uint) (resp *GetStepResponse, err error)
 }

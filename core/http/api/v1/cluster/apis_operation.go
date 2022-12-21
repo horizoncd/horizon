@@ -155,6 +155,29 @@ func (a *API) ClusterStatusV2(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
+func (a *API) ClusterBuildStatus(c *gin.Context) {
+	op := "cluster: cluster build status"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	resp, err := a.clusterCtl.GetClusterBuildStatus(c, uint(clusterID))
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, resp)
+}
+
+// Deprecated
 func (a *API) ClusterStatus(c *gin.Context) {
 	op := "cluster: cluster status"
 	clusterIDStr := c.Param(common.ParamClusterID)
@@ -164,6 +187,7 @@ func (a *API) ClusterStatus(c *gin.Context) {
 		return
 	}
 
+	// nolint
 	resp, err := a.clusterCtl.GetClusterStatus(c, uint(clusterID))
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
@@ -371,8 +395,8 @@ func (a *API) GetContainerLog(c *gin.Context) {
 	}
 }
 
-func (a *API) Online(c *gin.Context) {
-	op := "cluster: online"
+func (a *API) ShellExec(c *gin.Context) {
+	op := "cluster: shell exec"
 	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -387,36 +411,7 @@ func (a *API) Online(c *gin.Context) {
 		return
 	}
 
-	resp, err := a.clusterCtl.Online(c, uint(clusterID), request)
-	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
-			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-			return
-		}
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-	response.SuccessWithData(c, resp)
-}
-
-func (a *API) Offline(c *gin.Context) {
-	op := "cluster: offline"
-	clusterIDStr := c.Param(common.ParamClusterID)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-
-	var request *cluster.ExecRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestBody,
-			fmt.Sprintf("request body is invalid, err: %v", err))
-		return
-	}
-
-	resp, err := a.clusterCtl.Offline(c, uint(clusterID), request)
+	resp, err := a.clusterCtl.ShellExec(c, uint(clusterID), request)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
