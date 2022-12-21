@@ -13,10 +13,10 @@ import (
 )
 
 func init() {
-	workload.Register(Ability, 0)
+	workload.Register(ability)
 }
 
-var Ability = &pod{}
+var ability = &pod{}
 
 type pod struct{}
 

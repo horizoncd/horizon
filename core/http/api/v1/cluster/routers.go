@@ -71,8 +71,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.GetContainerLog,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/shellexec", common.ParamClusterID),
-			HandlerFunc: api.ShellExec,
+			Pattern:     fmt.Sprintf("/clusters/:%v/exec", common.ParamClusterID),
+			HandlerFunc: api.Exec,
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/dashboards", common.ParamClusterID),

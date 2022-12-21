@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "github.com/golang/mock/gomock"
 	utils "github.com/horizoncd/horizon/pkg/idp/utils"
 	models "github.com/horizoncd/horizon/pkg/userlink/models"
-	gomock "github.com/golang/mock/gomock"
 )
 
 // MockManager is a mock of Manager interface.

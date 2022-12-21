@@ -938,7 +938,7 @@ func test(t *testing.T) {
 		PodList: []string{"pod1", "pod2"},
 		Command: "echo 'hello, world'",
 	}
-	shellResp, err := c.ShellExec(ctx, resp.ID, execRequest)
+	shellResp, err := c.Exec(ctx, resp.ID, execRequest)
 	assert.Nil(t, err)
 	assert.NotNil(t, shellResp)
 	b, _ = json.Marshal(shellResp)

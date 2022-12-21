@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	schema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	gomock "github.com/golang/mock/gomock"
+	schema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 )
 
 // MockGetter is a mock of Getter interface.

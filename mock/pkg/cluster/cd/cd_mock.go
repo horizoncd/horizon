@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	cd "github.com/horizoncd/horizon/pkg/cluster/cd"
 	gomock "github.com/golang/mock/gomock"
+	cd "github.com/horizoncd/horizon/pkg/cluster/cd"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -91,6 +91,21 @@ func (m *MockCD) DeployCluster(ctx context.Context, params *cd.DeployClusterPara
 func (mr *MockCDMockRecorder) DeployCluster(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeployCluster", reflect.TypeOf((*MockCD)(nil).DeployCluster), ctx, params)
+}
+
+// Exec mocks base method.
+func (m *MockCD) Exec(ctx context.Context, params *cd.ShellExecParams) (map[string]cd.ExecResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Exec", ctx, params)
+	ret0, _ := ret[0].(map[string]cd.ExecResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Exec indicates an expected call of Exec.
+func (mr *MockCDMockRecorder) Exec(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockCD)(nil).Exec), ctx, params)
 }
 
 // GetClusterState mocks base method.
@@ -267,19 +282,4 @@ func (m *MockCD) Resume(ctx context.Context, params *cd.ClusterResumeParams) err
 func (mr *MockCDMockRecorder) Resume(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resume", reflect.TypeOf((*MockCD)(nil).Resume), ctx, params)
-}
-
-// ShellExec mocks base method.
-func (m *MockCD) ShellExec(ctx context.Context, params *cd.ShellExecParams) (map[string]cd.ExecResp, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ShellExec", ctx, params)
-	ret0, _ := ret[0].(map[string]cd.ExecResp)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ShellExec indicates an expected call of ShellExec.
-func (mr *MockCDMockRecorder) ShellExec(ctx, params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShellExec", reflect.TypeOf((*MockCD)(nil).ShellExec), ctx, params)
 }

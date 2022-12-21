@@ -4,12 +4,12 @@ import (
 	"context"
 	"math"
 
+	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	rolloutsv1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
-	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
-	rolloutsv1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,11 +17,11 @@ import (
 )
 
 func init() {
-	workload.Register(Ability, 0)
+	workload.Register(ability)
 }
 
 // please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
-var Ability = &rollout{}
+var ability = &rollout{}
 
 type rollout struct {
 }

@@ -480,7 +480,7 @@ func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
 	return c.cd.Resume(ctx, &param)
 }
 
-func (c *controller) ShellExec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
+func (c *controller) Exec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
 	const op = "cluster controller: shell exec"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -509,7 +509,7 @@ func (c *controller) ShellExec(ctx context.Context, clusterID uint, r *ExecReque
 	}
 
 	params := &cd.ShellExecParams{
-		Command:      r.Command,
+		Commands:     r.Commands,
 		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
@@ -517,7 +517,7 @@ func (c *controller) ShellExec(ctx context.Context, clusterID uint, r *ExecReque
 		PodList:      r.PodList,
 	}
 
-	resp, err := c.cd.ShellExec(ctx, params)
+	resp, err := c.cd.Exec(ctx, params)
 	if err != nil {
 		return nil, err
 	}

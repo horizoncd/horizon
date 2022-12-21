@@ -3,9 +3,9 @@ package cd
 import (
 	"context"
 
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/gitops-engine/pkg/health"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -110,7 +110,7 @@ type GetContainerLogParams struct {
 }
 
 type ShellExecParams struct {
-	Command      string
+	Commands     []string
 	Environment  string
 	Cluster      string
 	RegionEntity *regionmodels.RegionEntity

@@ -14,8 +14,8 @@ type DeployRequest struct {
 }
 
 type ExecRequest struct {
-	Command string   `json:"command"`
-	PodList []string `json:"podList"`
+	Commands []string `json:"commands"`
+	PodList  []string `json:"podList"`
 }
 
 type ExecResponse map[string]ExecResult

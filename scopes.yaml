@@ -50,6 +50,9 @@ roles:
           - clusters/pipelineruns
           - clusters/containerlog
           - clusters/tags
+          - clusters/buildstatus
+          - clusters/step
+          - clusters/resourcetree
         verbs:
           - get
         scopes:
@@ -70,6 +73,10 @@ roles:
           - clusters/pipelineruns
           - clusters/containerlog
           - clusters/tags
+          - clusters/exec
+          - clusters/buildstatus
+          - clusters/step
+          - clusters/resourcetree
         verbs:
           - "*"
         scopes:

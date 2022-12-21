@@ -3,10 +3,10 @@ package kservice
 import (
 	"context"
 
+	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,11 +16,11 @@ import (
 )
 
 func init() {
-	workload.Register(Ability, 0)
+	workload.Register(ability)
 }
 
 // please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
-var Ability = &service{}
+var ability = &service{}
 
 type service struct{}
 

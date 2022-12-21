@@ -72,8 +72,9 @@ func NewObjectMeta(horizonMetaData *global.HorizonMetaData, pr *v1beta1.Pipeline
 }
 
 // nolint
-//go:generate mockgen -source=$GOFILE -destination=../../../../mock/pkg/cluster/tekton/collector/collector_mock.go
 // -package=mock_collector
+//
+//go:generate mockgen -source=$GOFILE -destination=../../../../mock/pkg/cluster/tekton/collector/collector_mock.go
 type Interface interface {
 	// Collect log & object for pipelinerun
 	Collect(ctx context.Context, pr *v1beta1.PipelineRun, horizonMetaData *global.HorizonMetaData) (*CollectResult, error)

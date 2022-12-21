@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "github.com/golang/mock/gomock"
 	tekton "github.com/horizoncd/horizon/pkg/cluster/tekton"
 	log "github.com/horizoncd/horizon/pkg/cluster/tekton/log"
-	gomock "github.com/golang/mock/gomock"
 	v1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 

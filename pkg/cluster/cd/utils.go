@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"sync"
 
+	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
-	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
-	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

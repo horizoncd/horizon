@@ -1,29 +1,26 @@
 package workload
 
 import (
-	"container/heap"
-
-	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	"github.com/horizoncd/horizon/pkg/util/kube"
 	corev1 "k8s.io/api/core/v1"
 )
 
-var Abilities = make(PriorityQueue, 0, 4)
+var abilities = make([]*WorkloadWithPriority, 0, 4)
 
-func Register(ability Workload, priority uint) {
+func Register(ability Workload) {
 	workload := WorkloadWithPriority{
 		workload: ability,
 		index:    1,
-		priority: priority,
 	}
-	heap.Push(&Abilities, &workload)
+	abilities = append(abilities, &workload)
 }
 
 type Handler func(workload Workload) bool
 
 func LoopAbilities(handlers ...Handler) {
 	for _, handler := range handlers {
-		for _, ability := range Abilities {
+		for _, ability := range abilities {
 			if !handler(ability.workload) {
 				break
 			}
@@ -59,36 +56,4 @@ type WorkloadWithPriority struct {
 
 	index    int
 	priority uint
-}
-
-type PriorityQueue []*WorkloadWithPriority
-
-func (pq PriorityQueue) Len() int { return len(pq) }
-
-func (pq PriorityQueue) Less(i, j int) bool {
-	// We want Pop to give us the lowest, not lowest, priority so we use less than here.
-	return pq[i].priority < pq[j].priority
-}
-
-func (pq PriorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *PriorityQueue) Push(x interface{}) {
-	n := len(*pq)
-	item := x.(*WorkloadWithPriority)
-	item.index = n
-	*pq = append(*pq, item)
-}
-
-func (pq *PriorityQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil  // avoid memory leak
-	item.index = -1 // for safety
-	*pq = old[0 : n-1]
-	return item
 }

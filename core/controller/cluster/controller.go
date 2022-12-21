@@ -71,7 +71,7 @@ type Controller interface {
 
 	// Deprecated: GetClusterStatus
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
-	ShellExec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error)
+	Exec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error)
 
 	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)
 	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (

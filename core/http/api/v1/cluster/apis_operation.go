@@ -395,8 +395,8 @@ func (a *API) GetContainerLog(c *gin.Context) {
 	}
 }
 
-func (a *API) ShellExec(c *gin.Context) {
-	op := "cluster: shell exec"
+func (a *API) Exec(c *gin.Context) {
+	op := "cluster: exec"
 	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -411,7 +411,7 @@ func (a *API) ShellExec(c *gin.Context) {
 		return
 	}
 
-	resp, err := a.clusterCtl.ShellExec(c, uint(clusterID), request)
+	resp, err := a.clusterCtl.Exec(c, uint(clusterID), request)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))

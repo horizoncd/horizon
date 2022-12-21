@@ -98,7 +98,7 @@ type CD interface {
 	GetPod(ctx context.Context, params *GetPodParams) (*corev1.Pod, error)
 	GetPodContainers(ctx context.Context, params *GetPodParams) ([]ContainerDetail, error)
 	GetPodEvents(ctx context.Context, params *GetPodEventsParams) ([]Event, error)
-	ShellExec(ctx context.Context, params *ShellExecParams) (map[string]ExecResp, error)
+	Exec(ctx context.Context, params *ShellExecParams) (map[string]ExecResp, error)
 	DeletePods(ctx context.Context, params *DeletePodsParams) (map[string]OperationResult, error)
 }
 
@@ -317,8 +317,8 @@ func (c *cd) GetResourceTree(ctx context.Context,
 
 	podsMap := make(map[string]*corev1.Pod)
 	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
+		ifContinue := false
 		gk := fmt.Sprintf(gkPattern, node.Group, node.Kind)
-		handled := false
 		workload.LoopAbilities(func(workload workload.Workload) bool {
 			if !workload.MatchGK(gk) {
 				return true
@@ -332,10 +332,10 @@ func (c *cd) GetResourceTree(ctx context.Context,
 			for i := range pods {
 				podsMap[string(pods[i].UID)] = &pods[i]
 			}
-			handled = true
+			ifContinue = false
 			return false
 		})
-		return !handled
+		return ifContinue
 	})
 
 	resourceTree := make([]ResourceNode, 0, len(resourceTreeInArgo.Nodes))
@@ -375,9 +375,12 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 		return nil, err
 	}
 
-	handled := false
+	ifContinue := true
 	step := (*workload.Step)(nil)
 	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
+		if !ifContinue {
+			return ifContinue
+		}
 		gk := fmt.Sprintf(gkPattern, node.Group, node.Kind)
 		workload.LoopAbilities(func(workload workload.Workload) bool {
 			if !workload.MatchGK(gk) {
@@ -390,10 +393,10 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 				return true
 			}
 
-			handled = true
+			ifContinue = false
 			return false
 		})
-		return !handled
+		return ifContinue
 	})
 
 	// step
@@ -452,26 +455,32 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 		return nil, err
 	}
 
-	isHealthy := true
-	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
-		gk := fmt.Sprintf(gkPattern, node.Group, node.Kind)
-		workload.LoopAbilities(func(workload workload.Workload) bool {
-			if !workload.MatchGK(gk) {
-				return true
+	if argoApp.Status.Health.Status == health.HealthStatusHealthy {
+		isHealthy := true
+		c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
+			if !isHealthy {
+				return false
 			}
-			gt := getter.New(workload)
-			nodeHealthy, err := gt.IsHealthy(node.ResourceNode, kubeClient)
-			if err != nil {
-				return true
-			}
-			isHealthy = isHealthy && nodeHealthy
+			gk := fmt.Sprintf(gkPattern, node.Group, node.Kind)
+			workload.LoopAbilities(func(workload workload.Workload) bool {
+				if !workload.MatchGK(gk) {
+					return true
+				}
+				gt := getter.New(workload)
+				nodeHealthy, err := gt.IsHealthy(node.ResourceNode, kubeClient)
+				if err != nil {
+					return true
+				}
+				isHealthy = isHealthy && nodeHealthy
+				return isHealthy
+			})
+			// break if isHealthy is false
 			return isHealthy
 		})
-		return isHealthy
-	})
 
-	if !isHealthy {
-		status.Status = string(health.HealthStatusProgressing)
+		if !isHealthy {
+			status.Status = string(health.HealthStatusProgressing)
+		}
 	}
 	return status, nil
 }
@@ -827,7 +836,7 @@ func (c *cd) GetContainerLog(ctx context.Context, params *GetContainerLogParams)
 	return logStrC, nil
 }
 
-func (c *cd) ShellExec(ctx context.Context, params *ShellExecParams) (_ map[string]ExecResp, err error) {
+func (c *cd) Exec(ctx context.Context, params *ShellExecParams) (_ map[string]ExecResp, err error) {
 	const op = "cd: shell exec"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -846,7 +855,7 @@ func (c *cd) ShellExec(ctx context.Context, params *ShellExecParams) (_ map[stri
 		})
 	}
 
-	return executeCommandInPods(ctx, containers, []string{"bash", "-c", params.Command}, nil), nil
+	return executeCommandInPods(ctx, containers, params.Commands, nil), nil
 }
 
 // TraverseOperator stops if result is false

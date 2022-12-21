@@ -3,11 +3,11 @@ package deployment
 import (
 	"context"
 
+	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
-	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,11 +15,11 @@ import (
 )
 
 func init() {
-	workload.Register(Ability, 0)
+	workload.Register(ability)
 }
 
 // please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
-var Ability = &deployment{}
+var ability = &deployment{}
 
 type deployment struct{}
 
@@ -33,7 +33,7 @@ func (*deployment) getDeployByNode(node *v1alpha1.ResourceNode, client *kube.Cli
 		return nil, perror.Wrapf(
 			herrors.NewErrGetFailed(herrors.ResourceInK8S,
 				"failed to get deployment in k8s"),
-			"failed to get deployment in k8s: deployment = %s, err = %v", node.Name, err)
+			"failed to get deployment in k8s: deployment = %s, ns = %v, err = %v", node.Name, node.Namespace, err)
 	}
 	return deploy, nil
 }
