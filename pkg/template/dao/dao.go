@@ -28,7 +28,7 @@ type DAO interface {
 	UpdateByID(ctx context.Context, id uint, template *models.Template) error
 	ListByGroupIDs(ctx context.Context, ids []uint) ([]*models.Template, error)
 	ListByIDs(ctx context.Context, ids []uint) ([]*models.Template, error)
-	ListV2(ctx context.Context, query *q.Query, gorupIDs ...uint) (int, []*models.Template, error)
+	ListV2(ctx context.Context, query *q.Query, gorupIDs ...uint) ([]*models.Template, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -189,11 +189,8 @@ func (d dao) ListByIDs(ctx context.Context, ids []uint) ([]*models.Template, err
 	return templates, nil
 }
 
-func (d dao) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int, []*models.Template, error) {
-	var (
-		templates []*models.Template
-		total     int64
-	)
+func (d dao) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) ([]*models.Template, error) {
+	var templates []*models.Template
 
 	statement := d.db.WithContext(ctx).
 		Table("tb_template as t").
@@ -202,11 +199,13 @@ func (d dao) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int,
 	genSQL := func(statement *gorm.DB, query *q.Query) *gorm.DB {
 		for k, v := range query.Keywords {
 			switch k {
-			case common.ParamGroupID:
+			case common.TemplateQueryWithoutCI:
+				statement = statement.Where("t.without_ci = ?", v)
+			case common.TemplateQueryByGroup:
 				statement = statement.Where("t.group_id = ?", v)
 			case common.TemplateQueryName:
 				statement = statement.Where("t.name like ?", fmt.Sprintf("%%%v%%", v))
-			case common.TemplateQueryByGroup:
+			case common.TemplateQueryByGroups:
 				if _, ok := v.(uint); ok {
 					statement = statement.Where("t.group_id = ?", v)
 				} else if _, ok = v.([]uint); ok {
@@ -243,18 +242,11 @@ func (d dao) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int,
 		}
 	}
 
-	res := d.db.Raw("select count(distinct id) from (?) as templates", statement).Scan(&total)
-
+	statement = d.db.Raw("select distinct * from (?) as apps order by updated_at desc", statement)
+	res := statement.Scan(&templates)
 	if res.Error != nil {
-		return 0, nil, herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error())
+		return nil, herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error())
 	}
 
-	statement = d.db.Raw("select distinct * from (?) as apps order by updated_at desc limit ? offset ?",
-		statement, query.Limit(), query.Offset())
-	res = statement.Scan(&templates)
-	if res.Error != nil {
-		return 0, nil, herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error())
-	}
-
-	return int(total), templates, nil
+	return templates, nil
 }

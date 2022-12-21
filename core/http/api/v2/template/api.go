@@ -34,6 +34,7 @@ func NewAPI(ctl templatectl.Controller) *API {
 	}
 }
 
+// Deprecated
 func (a *API) ListTemplatesByGroupID(c *gin.Context) {
 	op := "template: list templates by group id"
 
@@ -84,6 +85,19 @@ func (a *API) List(c *gin.Context) {
 
 	keywords := q.KeyWords{}
 
+	withoutCIStr := c.Query(common.TemplateQueryWithoutCI)
+	if withoutCIStr != "" {
+		withoutCI, err := strconv.ParseBool(withoutCIStr)
+		if err != nil {
+			response.AbortWithRPCError(c,
+				rpcerror.ParamError.WithErrMsgf(
+					"failed to parse withoutCI\n"+
+						"withoutCI = %s\nerr = %v", withoutCIStr, err))
+			return
+		}
+		keywords[common.TemplateQueryWithoutCI] = withoutCI
+	}
+
 	userIDStr := c.Query(common.TemplateQueryByUser)
 	if userIDStr != "" {
 		userID, err := strconv.ParseUint(userIDStr, 10, 0)
@@ -97,7 +111,20 @@ func (a *API) List(c *gin.Context) {
 		keywords[common.TemplateQueryByUser] = uint(userID)
 	}
 
-	groupIDStr := c.Query(common.TemplateQueryByGroupRecursive)
+	groupIDRecursiveStr := c.Query(common.TemplateQueryByGroupRecursive)
+	if groupIDRecursiveStr != "" {
+		groupIDRecursive, err := strconv.ParseUint(groupIDRecursiveStr, 10, 0)
+		if err != nil {
+			response.AbortWithRPCError(c,
+				rpcerror.ParamError.WithErrMsgf(
+					"failed to parse groupIDRecursive\n"+
+						"groupIDRecursive = %s\nerr = %v", groupIDRecursiveStr, err))
+			return
+		}
+		keywords[common.TemplateQueryByGroupRecursive] = uint(groupIDRecursive)
+	}
+
+	groupIDStr := c.Query(common.TemplateQueryByGroup)
 	if groupIDStr != "" {
 		groupID, err := strconv.ParseUint(groupIDStr, 10, 0)
 		if err != nil {
@@ -107,7 +134,7 @@ func (a *API) List(c *gin.Context) {
 						"groupID = %s\nerr = %v", groupIDStr, err))
 			return
 		}
-		keywords[common.TemplateQueryByGroupRecursive] = uint(groupID)
+		keywords[common.TemplateQueryByGroup] = uint(groupID)
 	}
 
 	filter := c.Query(common.TemplateQueryName)
@@ -115,9 +142,9 @@ func (a *API) List(c *gin.Context) {
 		keywords[common.TemplateQueryName] = filter
 	}
 
-	query := q.New(keywords).WithPagination(c)
+	query := q.New(keywords)
 
-	total, templates, err := a.templateCtl.ListV2(c, query, withFullPath)
+	templates, err := a.templateCtl.ListV2(c, query, withFullPath)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(
@@ -128,8 +155,5 @@ func (a *API) List(c *gin.Context) {
 		response.AbortWithRPCError(c,
 			rpcerror.InternalError.WithErrMsgf("failed to get templates: %v", err))
 	}
-	response.SuccessWithData(c, response.DataWithTotal{
-		Total: int64(total),
-		Items: templates,
-	})
+	response.SuccessWithData(c, templates)
 }

@@ -17,7 +17,7 @@ import (
 type Manager interface {
 	// Create template
 	Create(ctx context.Context, template *models.Template) (*models.Template, error)
-	ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int, []*models.Template, error)
+	ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) ([]*models.Template, error)
 	// ListTemplate returns all template
 	ListTemplate(ctx context.Context) ([]*models.Template, error)
 	// ListByGroupID lists all template by group ID
@@ -87,6 +87,6 @@ func (m *manager) ListByIDs(ctx context.Context, ids []uint) ([]*models.Template
 	return m.dao.ListByIDs(ctx, ids)
 }
 
-func (m *manager) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int, []*models.Template, error) {
+func (m *manager) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) ([]*models.Template, error) {
 	return m.dao.ListV2(ctx, query, groupIDs...)
 }

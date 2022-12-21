@@ -190,17 +190,16 @@ func (mr *MockManagerMockRecorder) ListTemplate(ctx interface{}) *gomock.Call {
 }
 
 // ListV2 mocks base method.
-func (m *MockManager) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) (int, []*models1.Template, error) {
+func (m *MockManager) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) ([]*models1.Template, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, query}
 	for _, a := range groupIDs {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListV2", varargs...)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].([]*models1.Template)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret0, _ := ret[0].([]*models1.Template)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ListV2 indicates an expected call of ListV2.
