@@ -1,4 +1,4 @@
-package manager
+package manager_test
 
 import (
 	"context"
@@ -7,11 +7,12 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
-	amanager "github.com/horizoncd/horizon/pkg/application/manager"
 	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	clustermodel "github.com/horizoncd/horizon/pkg/cluster/models"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/horizoncd/horizon/pkg/template/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	"github.com/stretchr/testify/assert"
@@ -19,10 +20,9 @@ import (
 )
 
 var (
-	db             *gorm.DB
-	ctx            context.Context
-	templateMgr    Manager
-	applicationMgr amanager.Manager
+	db     *gorm.DB
+	ctx    context.Context
+	params *managerparam.Manager
 )
 
 func Test(t *testing.T) {
@@ -31,7 +31,7 @@ func Test(t *testing.T) {
 		Description: "java app for test",
 		GroupID:     1,
 	}
-	template1InDB, err := templateMgr.Create(ctx, template1)
+	template1InDB, err := params.TemplateMgr.Create(ctx, template1)
 	assert.Nil(t, err)
 
 	assert.Equal(t, template1.Name, template1InDB.Name)
@@ -44,20 +44,20 @@ func Test(t *testing.T) {
 		GroupID:     2,
 	}
 
-	_, err = templateMgr.Create(ctx, template2)
+	_, err = params.TemplateMgr.Create(ctx, template2)
 	assert.Nil(t, err)
 
-	template2InDB, err := templateMgr.GetByID(ctx, 2)
+	template2InDB, err := params.TemplateMgr.GetByID(ctx, 2)
 	assert.Nil(t, err)
 	assert.Equal(t, template2.Name, template2InDB.Name)
 	assert.Equal(t, template2.Description, template2InDB.Description)
 	assert.Equal(t, template2.WithoutCI, false)
 
-	template2InDB, err = templateMgr.GetByName(ctx, template2.Name)
+	template2InDB, err = params.TemplateMgr.GetByName(ctx, template2.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, template2.Description, template2InDB.Description)
 
-	templates, err := templateMgr.ListTemplate(ctx)
+	templates, err := params.TemplateMgr.ListTemplate(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(templates))
 	assert.Equal(t, template1.Name, templates[0].Name)
@@ -67,7 +67,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, template2.Description, templates[1].Description)
 	assert.Equal(t, 2, int(templates[1].ID))
 
-	templates, err = templateMgr.ListByGroupID(ctx, 2)
+	templates, err = params.TemplateMgr.ListByGroupID(ctx, 2)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(templates))
 	assert.Equal(t, template2.Name, templates[0].Name)
@@ -75,32 +75,69 @@ func Test(t *testing.T) {
 	assert.Equal(t, 2, int(templates[0].ID))
 
 	template2.Description = "changed description"
-	err = templateMgr.UpdateByID(ctx, 2, template2)
+	err = params.TemplateMgr.UpdateByID(ctx, 2, template2)
 	assert.Nil(t, err)
 
-	template2InDB, err = templateMgr.GetByID(ctx, 2)
+	template2InDB, err = params.TemplateMgr.GetByID(ctx, 2)
 	assert.Nil(t, err)
 	assert.Equal(t, template2.Name, template2InDB.Name)
 	assert.Equal(t, template2.Description, template2InDB.Description)
 
-	err = templateMgr.DeleteByID(ctx, 2)
+	templates, err = params.TemplateMgr.ListByGroupIDs(ctx, []uint{1, 2})
+	assert.Nil(t, err)
+	assert.NotNil(t, templates)
+	assert.Equal(t, 2, len(templates))
+
+	templates, err = params.TemplateMgr.ListByGroupIDs(ctx, []uint{1})
+	assert.Nil(t, err)
+	assert.NotNil(t, templates)
+	assert.Equal(t, 1, len(templates))
+	assert.Equal(t, template1.Name, templates[0].Name)
+
+	templates, err = params.TemplateMgr.ListByIDs(ctx, []uint{1, 2})
+	assert.Nil(t, err)
+	assert.NotNil(t, templates)
+	assert.Equal(t, 2, len(templates))
+
+	templates, err = params.TemplateMgr.ListByIDs(ctx, []uint{1})
+	assert.Nil(t, err)
+	assert.NotNil(t, templates)
+	assert.Equal(t, 1, len(templates))
+	assert.Equal(t, template1.Name, templates[0].Name)
+
+	err = params.TemplateMgr.DeleteByID(ctx, 2)
 	assert.Nil(t, err)
 
-	template2InDB, err = templateMgr.GetByID(ctx, 2)
+	template2InDB, err = params.TemplateMgr.GetByID(ctx, 2)
 	assert.NotNil(t, err)
 	assert.Nil(t, template2InDB)
 
 	app := &applicationmodel.Application{
+		Model:    global.Model{ID: 1},
 		Template: template1.Name,
 		Name:     "test",
 	}
-	_, err = applicationMgr.Create(ctx, app, map[string]string{})
+	_, err = params.ApplicationManager.Create(ctx, app, map[string]string{})
 	assert.Nil(t, err)
 
-	apps, _, err := templateMgr.GetRefOfApplication(ctx, 1)
+	cluster := &clustermodel.Cluster{
+		Model:         global.Model{ID: 1},
+		ApplicationID: 1,
+		Name:          "testgroup",
+		Template:      template1.Name,
+	}
+	_, err = params.ClusterMgr.Create(ctx, cluster, nil, nil)
+	assert.Nil(t, err)
+
+	apps, _, err := params.TemplateMgr.GetRefOfApplication(ctx, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(apps))
 	assert.Equal(t, app.Name, apps[0].Name)
+
+	clusters, _, err := params.TemplateMgr.GetRefOfCluster(ctx, 1)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(apps))
+	assert.Equal(t, cluster.Name, clusters[0].Name)
 }
 
 func TestMain(m *testing.M) {
@@ -117,8 +154,7 @@ func TestMain(m *testing.M) {
 		Name: "Jerry",
 	})
 
-	applicationMgr = amanager.New(db)
-	templateMgr = New(db)
+	params = managerparam.InitManager(db)
 
 	os.Exit(m.Run())
 }

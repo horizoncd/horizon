@@ -79,6 +79,23 @@ func TestServiceGetChildByID(t *testing.T) {
 			got.UpdatedAt = tt.want.UpdatedAt
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetChildByID() got = %v, want %v", got, tt.want)
+				return
+			}
+
+			children, err := s.GetChildrenByIDs(ctx, []uint{tt.args.id})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetChildrenByIDs() error = %v, wantErr = %v", err, tt.wantErr)
+				return
+			}
+
+			if len(children) != 1 {
+				t.Errorf("GetChildrenByIDs() returns %v child(ren), but only 1 want", len(children))
+			}
+			got = children[tt.args.id]
+			got.UpdatedAt = tt.want.UpdatedAt
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetChildByIDs() got = %v, want %v", got, tt.want)
+				return
 			}
 		})
 	}

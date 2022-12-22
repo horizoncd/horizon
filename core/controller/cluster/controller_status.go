@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"context"
-	"math"
 	"strings"
 	"time"
 
@@ -30,6 +29,98 @@ const (
 	_notFound = "NotFound"
 )
 
+func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*StatusResponseV2, error) {
+	const op = "cluster controller: get cluster status v2"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &StatusResponseV2{}
+	// status in db has higher priority
+	if cluster.Status != common.ClusterStatusEmpty {
+		resp.Status = cluster.Status
+	}
+
+	params := &cd.GetClusterStateV2Params{
+		Application:  application.Name,
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+	}
+
+	// If cluster not found on argo, check the cluster is freed or has not been published yet,
+	// or the cluster will be "notFound". If response's status field has not been set,
+	// set it with status from argocd.
+	cdStatus, err := c.cd.GetClusterStateV2(ctx, params)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
+			return nil, err
+		}
+		// for not deployed -- free or not published
+		if resp.Status == "" {
+			resp.Status = _notFound
+		}
+	} else {
+		// resp has not been set
+		if resp.Status == "" {
+			resp.Status = cdStatus.Status
+		}
+	}
+
+	return resp, nil
+}
+
+func (c *controller) GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error) {
+	resp := &BuildStatusResponse{}
+
+	// get latest pipelinerun
+	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	if latestPipelinerun != nil {
+		resp.LatestPipelinerun = &LatestPipelinerun{
+			ID:     latestPipelinerun.ID,
+			Action: latestPipelinerun.Action,
+		}
+	}
+
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	if latestPipelinerun == nil ||
+		latestPipelinerun.Action != prmodels.ActionBuildDeploy {
+		resp.RunningTask = &RunningTask{
+			Task: _taskNone,
+		}
+	} else {
+		latestPipelineRunObject, err := c.getLatestPipelineRunObject(ctx, cluster, latestPipelinerun)
+		if err != nil {
+			return nil, err
+		}
+
+		resp.RunningTask = c.getRunningTask(ctx, latestPipelineRunObject)
+		resp.RunningTask.PipelinerunID = latestPipelinerun.ID
+	}
+	return resp, nil
+}
+
+// Deprecated
 func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error) {
 	const op = "cluster controller: get cluster status"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -73,6 +164,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
+	// nolint
 	clusterState, err := c.cd.GetClusterState(ctx, &cd.GetClusterStateParams{
 		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,
@@ -140,7 +232,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		}
 	}
 	if cluster.ExpireSeconds > 0 && latestPipelinerun != nil && cluster.Status == "" {
-		resp.TTLSeconds = calculateClusterTimeToLive(cluster.ExpireSeconds, cluster.UpdatedAt, latestPipelinerun.UpdatedAt)
+		resp.TTLSeconds = willExpireIn(cluster.ExpireSeconds, cluster.UpdatedAt, latestPipelinerun.UpdatedAt)
 	}
 	return resp, nil
 }
@@ -441,23 +533,92 @@ func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName 
 	return &GetClusterPodResponse{Pod: *pod}, nil
 }
 
-func calculateClusterTimeToLive(expireSeconds uint, clusterUpdatedAt time.Time,
-	runUpdatedAt time.Time) *uint {
-	var (
-		latestUpdateAt time.Time
-		expireDate     time.Time
-	)
-	if clusterUpdatedAt.After(runUpdatedAt) {
-		latestUpdateAt = clusterUpdatedAt
-	} else {
-		latestUpdateAt = runUpdatedAt
+func (c *controller) GetResourceTree(ctx context.Context, clusterID uint) (resp *GetResourceTreeResponse, err error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
 	}
-	expireDate = latestUpdateAt.Add(time.Duration(expireSeconds * 1e9))
-	if expireDate.Before(time.Now()) {
-		res := uint(0)
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	resourceTree, err := c.cd.GetResourceTree(ctx, &cd.GetResourceTreeParams{
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+	})
+	if err != nil {
+		return
+	}
+
+	resp = &GetResourceTreeResponse{}
+	resp.Nodes = make(map[string]*ResourceNode, len(resourceTree))
+	for i := range resourceTree {
+		n := ResourceNode{
+			ResourceNode: resourceTree[i].ResourceNode,
+			PodDetail:    resourceTree[i].PodDetail,
+		}
+		resp.Nodes[n.UID] = &n
+	}
+	return
+}
+
+func (c *controller) GetStep(ctx context.Context, clusterID uint) (resp *GetStepResponse, err error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	steps, err := c.cd.GetStep(ctx, &cd.GetStepParams{
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+	})
+	if err != nil {
+		return
+	}
+
+	if steps != nil {
+		resp = &GetStepResponse{
+			Total:        steps.Total,
+			Index:        steps.Index,
+			Replicas:     steps.Replicas,
+			ManualPaused: steps.ManualPaused,
+		}
+	} else {
+		resp = &GetStepResponse{
+			Total:        0,
+			Index:        0,
+			Replicas:     []int{},
+			ManualPaused: false,
+		}
+	}
+	return
+}
+
+func willExpireIn(ttl uint, tms ...time.Time) *uint {
+	var (
+		latestTime time.Time
+		res        uint
+	)
+	for _, tm := range tms {
+		if tm.After(latestTime) {
+			latestTime = tm
+		}
+	}
+
+	expireAt := latestTime.Add(time.Duration(ttl) * time.Second)
+	if expireAt.Before(time.Now()) {
+		res = uint(0)
 		return &res
 	}
-	ttlSeconds := time.Until(expireDate).Seconds()
-	ttlUint := uint(math.Ceil(ttlSeconds))
-	return &ttlUint
+	res = uint(time.Until(expireAt).Seconds())
+	return &res
 }

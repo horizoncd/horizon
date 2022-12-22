@@ -46,14 +46,9 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		LastConfigCommit: lastConfigCommit.Master,
 		ConfigCommit:     lastConfigCommit.Master,
 	})
-	// 2. update restartTime in git repo, and return the newest commit
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return nil, err
-	}
 
-	// 3. update restartTime in git repo, and return the newest commit
-	commit, err := c.clusterGitRepo.UpdateRestartTime(ctx, application.Name, cluster.Name, tr.ChartName)
+	// 2. update restartTime in git repo, and return the newest commit
+	commit, err := c.clusterGitRepo.UpdateRestartTime(ctx, application.Name, cluster.Name, cluster.Template)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +60,7 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		return nil, err
 	}
 
-	// 5. deploy cluster in cd system
+	// 3. deploy cluster in cd system
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
@@ -75,7 +70,7 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	}
 	log.Infof(ctx, "Restart Deployed, pr = %d, commit = %s", prCreated.ID, commit)
 
-	// 6. update status
+	// 4. update status
 	if err := c.updatePRStatus(ctx, prmodels.ActionRestart, prCreated.ID, prmodels.StatusOK, commit); err != nil {
 		return nil, err
 	}
@@ -480,22 +475,10 @@ func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
 	return c.cd.Resume(ctx, &param)
 }
 
-func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
-	const op = "cluster controller: online"
+func (c *controller) Exec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
+	const op = "cluster controller: shell exec"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	return c.exec(ctx, clusterID, r, c.cd.Online)
-}
-
-func (c *controller) Offline(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
-	const op = "cluster controller: offline"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	return c.exec(ctx, clusterID, r, c.cd.Offline)
-}
-
-func (c *controller) exec(ctx context.Context, clusterID uint,
-	r *ExecRequest, execFunc cd.ExecFunc) (_ ExecResponse, err error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -520,17 +503,21 @@ func (c *controller) exec(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	execResp, err := execFunc(ctx, &cd.ExecParams{
+	params := &cd.ShellExecParams{
+		Commands:     r.Commands,
 		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
 		Namespace:    envValue.Namespace,
 		PodList:      r.PodList,
-	})
+	}
+
+	resp, err := c.cd.Exec(ctx, params)
 	if err != nil {
 		return nil, err
 	}
-	return ofExecResp(execResp), nil
+
+	return ofExecResp(resp), nil
 }
 
 func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error) {

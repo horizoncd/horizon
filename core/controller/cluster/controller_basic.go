@@ -185,6 +185,22 @@ func (c *controller) ListClusterWithExpiry(ctx context.Context,
 	return ofClusterWithExpiry(clusterList), err
 }
 
+func (c *controller) clusterWillExpireIn(ctx context.Context, cluster *cmodels.Cluster) (*uint, error) {
+	if cluster.ExpireSeconds == 0 {
+		return nil, nil
+	}
+
+	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, cluster.ID)
+	if err != nil {
+		return nil, err
+	}
+	if latestPipelinerun == nil {
+		return nil, nil
+	}
+
+	return willExpireIn(cluster.ExpireSeconds, cluster.UpdatedAt, latestPipelinerun.UpdatedAt), nil
+}
+
 func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: get cluster"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -202,13 +218,9 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 
 	// 4. get files in git repo
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return nil, err
-	}
 	clusterFiles := &gitrepo.ClusterFiles{}
 	if !isClusterStatusUnstable(cluster.Status) {
-		clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, tr.ChartName)
+		clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
 			return nil, err
 		}
@@ -224,7 +236,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	// 6. get namespace
 	envValue := &gitrepo.EnvValue{}
 	if !isClusterStatusUnstable(cluster.Status) {
-		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
+		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
 			return nil, err
 		}
@@ -251,6 +263,10 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 	clusterResp.CreatedBy = toUser(getUserFromMap(cluster.CreatedBy, userMap))
 	clusterResp.UpdatedBy = toUser(getUserFromMap(cluster.UpdatedBy, userMap))
+	if cluster.Status != common.ClusterStatusFreed &&
+		latestPR != nil {
+		clusterResp.TTLInSeconds, _ = c.clusterWillExpireIn(ctx, cluster)
+	}
 
 	return clusterResp, nil
 }

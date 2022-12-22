@@ -53,7 +53,8 @@ require (
 	k8s.io/helm v2.17.0+incompatible
 	k8s.io/kubectl v0.23.5
 	k8s.io/kubernetes v1.20.10
-	knative.dev/pkg v0.0.0-20200922164940-4bf40ad82aab
+	knative.dev/pkg v0.0.0-20201026165741-2f75016c1368
+	knative.dev/serving v0.18.3
 	sigs.k8s.io/yaml v1.3.0
 )
 

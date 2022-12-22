@@ -36,6 +36,7 @@ var (
 )
 
 // nolint
+//
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/member/service/service_mock.go -package=mock_service
 type Service interface {
 	// CreateMember post a new member

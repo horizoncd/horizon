@@ -57,6 +57,7 @@ type GetClusterResponse struct {
 	Status               string       `json:"status,omitempty"`
 	CreatedAt            time.Time    `json:"createdAt"`
 	UpdatedAt            time.Time    `json:"updatedAt"`
+	TTLInSeconds         *uint        `json:"ttlInSeconds"`
 	CreatedBy            *User        `json:"createdBy,omitempty"`
 	UpdatedBy            *User        `json:"updatedBy,omitempty"`
 }

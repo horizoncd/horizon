@@ -58,12 +58,15 @@ Roles:
           - clusters/restart
           - clusters/rollback
           - clusters/status
+          - clusters/buildstatus
+          - clusters/step
+          - clusters/resourcetree
+          - clusters
           - clusters/members
           - clusters/pipelineruns
           - clusters/terminal
           - clusters/containerlog
-          - clusters/online
-          - clusters/offline
+          - clusters/exec
           - clusters/tags
           - pipelineruns
           - pipelineruns/stop
@@ -174,12 +177,14 @@ Roles:
           - clusters/restart
           - clusters/rollback
           - clusters/status
+          - clusters/buildstatus
+          - clusters/step
+          - clusters/resourcetree
           - clusters/members
           - clusters/pipelineruns
           - clusters/terminal
           - clusters/containerlog
-          - clusters/online
-          - clusters/offline
+          - clusters/exec
           - clusters/tags
           - pipelineruns
           - pipelineruns/stop
@@ -312,12 +317,14 @@ Roles:
           - clusters/restart
           - clusters/rollback
           - clusters/status
+          - clusters/buildstatus
+          - clusters/step
+          - clusters/resourcetree
           - clusters/members
           - clusters/pipelineruns
           - clusters/terminal
           - clusters/containerlog
-          - clusters/online
-          - clusters/offline
+          - clusters/exec
           - clusters/tags
           - pipelineruns
           - pipelineruns/stop
@@ -393,6 +400,9 @@ Roles:
           - clusters
           - clusters/diffs
           - clusters/status
+          - clusters/buildstatus
+          - clusters/step
+          - clusters/resourcetree
           - clusters/members
           - clusters/pipelineruns
           - clusters/containerlog

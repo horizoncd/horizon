@@ -469,6 +469,7 @@ func TestAll(t *testing.T) {
 	t.Run("TestListUserClustersByNameFuzzily", testListUserClustersByNameFuzzily)
 	t.Run("TestListClusterWithExpiry", testListClusterWithExpiry)
 	t.Run("TestControllerFreeOrDeleteClusterFailed", testControllerFreeOrDeleteClusterFailed)
+	t.Run("TestGetClusterStatusV2", testGetClusterStatusV2)
 }
 
 // nolint
@@ -824,6 +825,11 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(clusterStatusResp)
 	t.Logf("%v", string(b))
 
+	buildStatusResp, err := c.GetClusterBuildStatus(ctx, resp.ID)
+	assert.Nil(t, err)
+	b, _ = json.Marshal(buildStatusResp)
+	t.Logf("%v", string(b))
+
 	codeBranch := "master"
 	commitID := "code-commit-id"
 	commitMsg := "code-commit-msg"
@@ -931,22 +937,16 @@ func test(t *testing.T) {
 		},
 	}
 
-	cd.EXPECT().Online(ctx, gomock.Any()).Return(execResp, nil)
-	cd.EXPECT().Offline(ctx, gomock.Any()).Return(execResp, nil)
+	cd.EXPECT().Exec(ctx, gomock.Any()).Return(execResp, nil)
 
 	execRequest := &ExecRequest{
-		PodList: []string{"pod1", "pod2"},
+		PodList:  []string{"pod1", "pod2"},
+		Commands: []string{"echo 'hello, world'"},
 	}
-	onlineResp, err := c.Online(ctx, resp.ID, execRequest)
+	shellResp, err := c.Exec(ctx, resp.ID, execRequest)
 	assert.Nil(t, err)
-	assert.NotNil(t, onlineResp)
-	b, _ = json.Marshal(onlineResp)
-	t.Logf("%s", string(b))
-
-	offlineResp, err := c.Offline(ctx, resp.ID, execRequest)
-	assert.Nil(t, err)
-	assert.NotNil(t, offlineResp)
-	b, _ = json.Marshal(offlineResp)
+	assert.NotNil(t, shellResp)
+	b, _ = json.Marshal(shellResp)
 	t.Logf("%s", string(b))
 
 	clusterGitRepo.EXPECT().GetClusterValueFiles(gomock.Any(), gomock.Any(), gomock.Any()).

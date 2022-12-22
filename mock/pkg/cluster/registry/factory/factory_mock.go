@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	registry "github.com/horizoncd/horizon/pkg/cluster/registry"
 	gomock "github.com/golang/mock/gomock"
+	registry "github.com/horizoncd/horizon/pkg/cluster/registry"
 )
 
 // MockFactory is a mock of Factory interface.

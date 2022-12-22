@@ -44,6 +44,7 @@ var (
 	PodsInK8S                 = sourceType{name: "PodsInK8S"}
 	ReplicasSetInK8S          = sourceType{name: "ReplicasSetInK8S"}
 	DeploymentInK8S           = sourceType{name: "DeploymentInK8S"}
+	ResourceInK8S             = sourceType{name: "ResourceInK8S"}
 	PodEventInK8S             = sourceType{name: "PodEventInK8S"}
 	KubeConfigInK8S           = sourceType{name: "KubeConfigK8S"}
 	GroupFullPath             = sourceType{name: "GroupFullPath"}
@@ -71,6 +72,8 @@ var (
 	// identity provider
 	Oauth2Token           = sourceType{name: "Oauth2Token"}
 	ProviderFromDiscovery = sourceType{name: "ProviderFromDiscovery"}
+
+	StepInWorkload = sourceType{name: "StepInWorkload"}
 )
 
 type HorizonErrNotFound struct {
@@ -228,9 +231,6 @@ var (
 	// tekton
 	ErrTektonInternal = errors.New("tekton internal error")
 
-	// grafana
-	ErrGrafanaNotSupport = errors.New("grafana not support")
-
 	// helm
 	ErrLoadChartArchive = errors.New("failed to load archive")
 
@@ -269,4 +269,9 @@ var (
 
 	ErrSessionNotFound   = errors.New("session not found")
 	ErrSessionSaveFailed = errors.New("failed to save session")
+
+	ErrMethodNotImplemented = errors.New("method not implemented")
+	ErrTopResourceNotFound  = errors.New("top resource in resource tree not found")
+
+	ErrNotSupport = errors.New("not support")
 )

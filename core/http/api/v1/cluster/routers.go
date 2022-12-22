@@ -71,12 +71,8 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			HandlerFunc: api.GetContainerLog,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/online", common.ParamClusterID),
-			HandlerFunc: api.Online,
-		}, {
-			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/offline", common.ParamClusterID),
-			HandlerFunc: api.Offline,
+			Pattern:     fmt.Sprintf("/clusters/:%v/exec", common.ParamClusterID),
+			HandlerFunc: api.Exec,
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/dashboards", common.ParamClusterID),
@@ -120,6 +116,30 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 	}
 
+	apiV2Group := engine.Group("/apis/core/v2")
+	var routesV2 = route.Routes{
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/step", common.ParamClusterID),
+			HandlerFunc: api.GetStep,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/resourcetree", common.ParamClusterID),
+			HandlerFunc: api.GetResourceTree,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/status", common.ParamClusterID),
+			HandlerFunc: api.ClusterStatusV2,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/clusters/:%v/buildstatus", common.ParamClusterID),
+			HandlerFunc: api.ClusterBuildStatus,
+		},
+	}
+
 	frontGroup := engine.Group("/apis/front/v1/clusters")
 	var frontRoutes = route.Routes{
 		{
@@ -153,4 +173,5 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	route.RegisterRoutes(apiGroup, routes)
 	route.RegisterRoutes(frontGroup, frontRoutes)
 	route.RegisterRoutes(internalGroup, internalRoutes)
+	route.RegisterRoutes(apiV2Group, routesV2)
 }
