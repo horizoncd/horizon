@@ -28,6 +28,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/cd/argocd"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/workload/getter"
+	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
 	argocdconf "github.com/horizoncd/horizon/pkg/config/argocd"
 	perror "github.com/horizoncd/horizon/pkg/errors"
@@ -103,14 +104,16 @@ type CD interface {
 }
 
 type cd struct {
-	kubeClientFty kubeclient.Factory
-	factory       argocd.Factory
+	kubeClientFty  kubeclient.Factory
+	factory        argocd.Factory
+	clusterGitRepo gitrepo.ClusterGitRepo
 }
 
-func NewCD(argoCDMapper argocdconf.Mapper) CD {
+func NewCD(clusterGitRepo gitrepo.ClusterGitRepo, argoCDMapper argocdconf.Mapper) CD {
 	return &cd{
-		kubeClientFty: kubeclient.Fty,
-		factory:       argocd.NewFactory(argoCDMapper),
+		kubeClientFty:  kubeclient.Fty,
+		factory:        argocd.NewFactory(argoCDMapper),
+		clusterGitRepo: clusterGitRepo,
 	}
 }
 
@@ -442,6 +445,20 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 
 	status := &ClusterStateV2{
 		Status: string(argoApp.Status.Health.Status),
+	}
+
+	if argoApp.Status.Sync.Status != applicationV1alpha1.SyncStatusCodeSynced {
+		status.Status = string(health.HealthStatusProgressing)
+		return status, nil
+	}
+
+	lastConfigCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, params.Application, params.Cluster)
+	if err != nil {
+		return nil, err
+	}
+	if lastConfigCommit.Master != argoApp.Status.Sync.Revision {
+		status.Status = string(health.HealthStatusProgressing)
+		return status, nil
 	}
 
 	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)

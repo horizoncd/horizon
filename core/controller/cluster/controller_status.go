@@ -38,6 +38,11 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 		return nil, err
 	}
 
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
@@ -50,6 +55,7 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 	}
 
 	params := &cd.GetClusterStateV2Params{
+		Application:  application.Name,
 		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,

@@ -29,6 +29,7 @@ type GetResourceTreeParams struct {
 }
 
 type GetClusterStateV2Params struct {
+	Application  string
 	Environment  string
 	Cluster      string
 	RegionEntity *regionmodels.RegionEntity

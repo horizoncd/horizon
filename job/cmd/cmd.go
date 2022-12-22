@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/config"
 	clusterctl "github.com/horizoncd/horizon/core/controller/cluster"
 	environmentctl "github.com/horizoncd/horizon/core/controller/environment"
@@ -21,11 +22,14 @@ import (
 	"github.com/horizoncd/horizon/job/autofree"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	clustergitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	eventhandlersvc "github.com/horizoncd/horizon/pkg/eventhandler"
 	"github.com/horizoncd/horizon/pkg/eventhandler/wlgenerator"
+	gitlabfty "github.com/horizoncd/horizon/pkg/gitlab/factory"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 	webhooksvc "github.com/horizoncd/horizon/pkg/webhook/service"
@@ -104,9 +108,36 @@ func Run(flags *Flags) {
 	// init context
 	ctx := context.Background()
 
+	gitlabFactory := gitlabfty.NewFactory(coreConfig.GitlabMapper)
+	gitlabGitops, err := gitlabFactory.GetByName(ctx, common.GitlabGitops)
+	if err != nil {
+		panic(err)
+	}
+	// check existence of gitops root group
+	rootGroupPath := coreConfig.GitopsRepoConfig.RootGroupPath
+	rootGroup, err := gitlabGitops.GetGroup(ctx, rootGroupPath)
+	if err != nil {
+		log.Printf("failed to get gitops root group, error: %s, start to create it", err.Error())
+		rootGroup, err = gitlabGitops.CreateGroup(ctx, rootGroupPath, rootGroupPath, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	templateRepo, err := templaterepo.NewRepo(coreConfig.TemplateRepo)
+	if err != nil {
+		panic(err)
+	}
+
+	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
+		coreConfig.GitopsRepoConfig.URLSchema)
+	if err != nil {
+		panic(err)
+	}
+
 	parameter := &param.Param{
 		Manager: manager,
-		Cd:      cd.NewCD(coreConfig.ArgoCDMapper),
+		Cd:      cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper),
 	}
 
 	// init controller

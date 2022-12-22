@@ -11,6 +11,22 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 )
 
+func computeStepHash(rollout *rolloutsv1alpha1.Rollout) string {
+	if rollout.Spec.Strategy.BlueGreen != nil || rollout.Spec.Strategy.Canary == nil {
+		return ""
+	}
+	rolloutStepHasher := fnv.New32a()
+	stepsBytes, err := json.Marshal(rollout.Spec.Strategy.Canary.Steps)
+	if err != nil {
+		panic(err)
+	}
+	_, err = rolloutStepHasher.Write(stepsBytes)
+	if err != nil {
+		panic(err)
+	}
+	return rand.SafeEncodeString(fmt.Sprint(rolloutStepHasher.Sum32()))
+}
+
 type podHashFields struct {
 	InitContainers    []corev1.Container
 	Containers        []corev1.Container
@@ -42,7 +58,7 @@ func assignContainers(containers []corev1.Container) []corev1.Container {
 	return ctrs
 }
 
-func ComputePodSpecHash(spec corev1.PodSpec) string {
+func computePodSpecHash(spec corev1.PodSpec) string {
 	fields := podHashFields{
 		InitContainers: assignContainers(spec.InitContainers),
 		Containers:     assignContainers(spec.Containers),
@@ -51,20 +67,4 @@ func ComputePodSpecHash(spec corev1.PodSpec) string {
 	_ = gob.NewEncoder(rolloutSpecHasher).Encode(fields)
 	fmt.Printf("%#v", fields)
 	return rand.SafeEncodeString(fmt.Sprint(rolloutSpecHasher.Sum32()))
-}
-
-func computeStepHash(rollout *rolloutsv1alpha1.Rollout) string {
-	if rollout.Spec.Strategy.BlueGreen != nil || rollout.Spec.Strategy.Canary == nil {
-		return ""
-	}
-	rolloutStepHasher := fnv.New32a()
-	stepsBytes, err := json.Marshal(rollout.Spec.Strategy.Canary.Steps)
-	if err != nil {
-		panic(err)
-	}
-	_, err = rolloutStepHasher.Write(stepsBytes)
-	if err != nil {
-		panic(err)
-	}
-	return rand.SafeEncodeString(fmt.Sprint(rolloutStepHasher.Sum32()))
 }

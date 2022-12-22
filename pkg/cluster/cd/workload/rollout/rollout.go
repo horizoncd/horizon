@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/kubectl/pkg/polymorphichelpers"
 )
 
 func init() {
@@ -65,7 +66,7 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 		return true, nil
 	}
 
-	labels := instance.Status.Selector
+	labels := polymorphichelpers.MakeLabels(instance.Spec.Template.ObjectMeta.Labels)
 	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
 		List(context.TODO(), metav1.ListOptions{LabelSelector: labels})
 	if err != nil {
@@ -75,9 +76,9 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 	count := 0
 	required := int(*instance.Spec.Replicas)
 
-	templateHashSum := ComputePodSpecHash(instance.Spec.Template.Spec)
+	templateHashSum := computePodSpecHash(instance.Spec.Template.Spec)
 	for _, pod := range pods.Items {
-		hashSum := ComputePodSpecHash(pod.Spec)
+		hashSum := computePodSpecHash(pod.Spec)
 		if templateHashSum != hashSum {
 			continue
 		}
@@ -106,8 +107,9 @@ func (r *rollout) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]
 		return nil, err
 	}
 
+	labels := polymorphichelpers.MakeLabels(instance.Spec.Template.ObjectMeta.Labels)
 	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
-		List(context.TODO(), metav1.ListOptions{LabelSelector: instance.Status.Selector})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: labels})
 	if err != nil {
 		return nil, err
 	}

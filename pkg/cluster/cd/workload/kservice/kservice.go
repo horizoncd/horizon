@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/kubectl/pkg/polymorphichelpers"
 	servicev1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
@@ -66,4 +67,47 @@ func (s *service) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]
 	}
 
 	return pods.Items, nil
+}
+
+func (s *service) IsHealthy(node *v1alpha1.ResourceNode,
+	client *kube.Client) (bool, error) {
+	instance, err := s.getServiceByNode(node, client)
+	if err != nil {
+		return true, err
+	}
+
+	if instance == nil {
+		return true, nil
+	}
+
+	labels := polymorphichelpers.MakeLabels(instance.Spec.Template.ObjectMeta.Labels)
+	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
+		List(context.TODO(), metav1.ListOptions{LabelSelector: labels})
+	if err != nil {
+		return true, err
+	}
+
+	exist := false
+
+	for _, pod := range pods.Items {
+		m := make(map[string]string)
+		for _, container := range pod.Spec.Containers {
+			m[container.Name] = container.Image
+		}
+
+		for _, container := range instance.Spec.Template.Spec.Containers {
+			if image := m[container.Name]; image != container.Image {
+				return false, nil
+			}
+		}
+
+		for k, v := range instance.Spec.Template.ObjectMeta.Annotations {
+			if pod.Annotations[k] != v {
+				continue
+			}
+		}
+		exist = true
+		break
+	}
+	return exist, nil
 }

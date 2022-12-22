@@ -218,13 +218,9 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	}
 
 	// 4. get files in git repo
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return nil, err
-	}
 	clusterFiles := &gitrepo.ClusterFiles{}
 	if !isClusterStatusUnstable(cluster.Status) {
-		clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, tr.ChartName)
+		clusterFiles, err = c.clusterGitRepo.GetCluster(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
 			return nil, err
 		}
@@ -240,7 +236,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 	// 6. get namespace
 	envValue := &gitrepo.EnvValue{}
 	if !isClusterStatusUnstable(cluster.Status) {
-		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
+		envValue, err = c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, cluster.Template)
 		if err != nil {
 			return nil, err
 		}

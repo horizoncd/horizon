@@ -418,7 +418,7 @@ func Run(flags *Flags) {
 		Hook:                 memHook,
 		ApplicationGitRepo:   applicationGitRepo,
 		TemplateSchemaGetter: templateSchemaGetter,
-		Cd:                   cd.NewCD(coreConfig.ArgoCDMapper),
+		Cd:                   cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper),
 		OutputGetter:         outputGetter,
 		TektonFty:            tektonFty,
 		ClusterGitRepo:       clusterGitRepo,
