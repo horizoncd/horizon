@@ -932,11 +932,11 @@ func test(t *testing.T) {
 		},
 	}
 
-	cd.EXPECT().ShellExec(ctx, gomock.Any()).Return(execResp, nil)
+	cd.EXPECT().Exec(ctx, gomock.Any()).Return(execResp, nil)
 
 	execRequest := &ExecRequest{
-		PodList: []string{"pod1", "pod2"},
-		Command: "echo 'hello, world'",
+		PodList:  []string{"pod1", "pod2"},
+		Commands: []string{"echo 'hello, world'"},
 	}
 	shellResp, err := c.Exec(ctx, resp.ID, execRequest)
 	assert.Nil(t, err)
