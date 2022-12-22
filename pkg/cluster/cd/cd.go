@@ -458,6 +458,9 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 	}
 	if lastConfigCommit.Master != argoApp.Status.Sync.Revision {
 		status.Status = string(health.HealthStatusProgressing)
+		log.Warningf(ctx,
+			"current revision(%s) is not consistent with gitops repo commit(%s)",
+			argoApp.Status.Sync.Revision, lastConfigCommit.Master)
 		return status, nil
 	}
 
