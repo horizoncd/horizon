@@ -825,6 +825,11 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(clusterStatusResp)
 	t.Logf("%v", string(b))
 
+	buildStatusResp, err := c.GetClusterBuildStatus(ctx, resp.ID)
+	assert.Nil(t, err)
+	b, _ = json.Marshal(buildStatusResp)
+	t.Logf("%v", string(b))
+
 	codeBranch := "master"
 	commitID := "code-commit-id"
 	commitMsg := "code-commit-msg"
