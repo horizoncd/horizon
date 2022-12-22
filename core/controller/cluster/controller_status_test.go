@@ -7,8 +7,10 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
+	applicationmanangermock "github.com/horizoncd/horizon/mock/pkg/application/manager"
 	cdmock "github.com/horizoncd/horizon/mock/pkg/cluster/cd"
 	clustermanagermock "github.com/horizoncd/horizon/mock/pkg/cluster/manager"
+	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
@@ -22,6 +24,7 @@ import (
 func testGetClusterStatusV2(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	clusterManagerMock := clustermanagermock.NewMockManager(mockCtl)
+	appManagerMock := applicationmanangermock.NewMockManager(mockCtl)
 	mockCD := cdmock.NewMockCD(mockCtl)
 	db, _ := orm.NewSqliteDB("")
 	_ = db.AutoMigrate(&regionmodels.Region{}, &registrymodels.Registry{})
@@ -31,9 +34,10 @@ func testGetClusterStatusV2(t *testing.T) {
 	status := "expectedStatus"
 
 	c := controller{
-		clusterMgr: clusterManagerMock,
-		regionMgr:  manager.RegionMgr,
-		cd:         mockCD,
+		clusterMgr:     clusterManagerMock,
+		applicationMgr: appManagerMock,
+		regionMgr:      manager.RegionMgr,
+		cd:             mockCD,
 	}
 
 	_, err := manager.RegistryManager.Create(ctx, &registrymodels.Registry{
@@ -55,6 +59,9 @@ func testGetClusterStatusV2(t *testing.T) {
 		Return(&clustermodels.Cluster{Status: common.ClusterStatusCreating, RegionName: regionName}, nil)
 	clusterManagerMock.EXPECT().GetByID(gomock.Any(), gomock.Any()).Times(1).
 		Return(&clustermodels.Cluster{Status: common.ClusterStatusEmpty, RegionName: regionName}, nil)
+
+	appManagerMock.EXPECT().GetByID(gomock.Any(), gomock.Any()).Times(3).
+		Return(&applicationmodel.Application{}, nil)
 
 	mockCD.EXPECT().GetClusterStateV2(gomock.Any(), gomock.Any()).Times(1).
 		Return(&cd.ClusterStateV2{Status: status}, nil)
