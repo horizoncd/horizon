@@ -447,6 +447,10 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 		Status: string(argoApp.Status.Health.Status),
 	}
 
+	if status.Status != string(health.HealthStatusHealthy) {
+		return status, nil
+	}
+
 	if argoApp.Status.Sync.Status != applicationV1alpha1.SyncStatusCodeSynced {
 		status.Status = string(health.HealthStatusProgressing)
 		return status, nil
