@@ -1,7 +1,6 @@
-package envtemplate
+package scope
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,16 +10,12 @@ import (
 // RegisterRoutes register routes
 func RegisterRoutes(engine *gin.Engine, api *API) {
 	apiGroup := engine.Group("/apis/core/v2")
+
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/applications/:%v/envtemplates", _applicationIDParam),
-			HandlerFunc: api.Get,
-		},
-		{
-			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/applications/:%v/envtemplates", _applicationIDParam),
-			HandlerFunc: api.Update,
+			Pattern:     "/scopes",
+			HandlerFunc: api.ListScopes,
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)
