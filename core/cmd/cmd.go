@@ -63,7 +63,29 @@ import (
 	"github.com/horizoncd/horizon/core/http/api/v1/scope"
 	"github.com/horizoncd/horizon/core/http/api/v1/tag"
 	"github.com/horizoncd/horizon/core/http/api/v1/template"
+	accessv2 "github.com/horizoncd/horizon/core/http/api/v2/access"
+	accesstokenv2 "github.com/horizoncd/horizon/core/http/api/v2/accesstoken"
+	applicationregionv2 "github.com/horizoncd/horizon/core/http/api/v2/applicationregion"
+	codev2 "github.com/horizoncd/horizon/core/http/api/v2/code"
+	environmentv2 "github.com/horizoncd/horizon/core/http/api/v2/environment"
+	environmentregionv2 "github.com/horizoncd/horizon/core/http/api/v2/environmentregion"
+	eventv2 "github.com/horizoncd/horizon/core/http/api/v2/event"
+	groupv2 "github.com/horizoncd/horizon/core/http/api/v2/group"
+	idpv2 "github.com/horizoncd/horizon/core/http/api/v2/idp"
+	memberv2 "github.com/horizoncd/horizon/core/http/api/v2/member"
+	oauthappv2 "github.com/horizoncd/horizon/core/http/api/v2/oauthapp"
+	oauthserverv2 "github.com/horizoncd/horizon/core/http/api/v2/oauthserver"
+	pipelinerunv2 "github.com/horizoncd/horizon/core/http/api/v2/pipelinerun"
+	regionv2 "github.com/horizoncd/horizon/core/http/api/v2/region"
+	registryv2 "github.com/horizoncd/horizon/core/http/api/v2/registry"
+	rolev2 "github.com/horizoncd/horizon/core/http/api/v2/role"
+	scopev2 "github.com/horizoncd/horizon/core/http/api/v2/scope"
+	tagv2 "github.com/horizoncd/horizon/core/http/api/v2/tag"
 	templatev2 "github.com/horizoncd/horizon/core/http/api/v2/template"
+	templateschematagv2 "github.com/horizoncd/horizon/core/http/api/v2/templateschematag"
+	terminalv2 "github.com/horizoncd/horizon/core/http/api/v2/terminal"
+	userv2 "github.com/horizoncd/horizon/core/http/api/v2/user"
+	webhookv2 "github.com/horizoncd/horizon/core/http/api/v2/webhook"
 	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/core/middleware/auth"
 	logmiddle "github.com/horizoncd/horizon/core/middleware/log"
@@ -412,13 +434,13 @@ func Run(flags *Flags) {
 		rbacSkippers = []middleware.Skipper{
 			middleware.MethodAndPathSkipper("*",
 				regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
-					"(^/apis/core/v1/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)|"+
-					"(^/apis/core/v1/templates$)")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/login/callback")),
-			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/logout")),
-			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/users/login")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/users/self")),
+					"(^/apis/core/v[12]/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)|"+
+					"(^/apis/core/v[12]/templates$)")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/login/callback")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/logout")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/users/self")),
 		}
 
 		// init controller
@@ -453,15 +475,13 @@ func Run(flags *Flags) {
 	)
 
 	var (
-		// init API
+		// init v1 API
 		groupAPI             = group.NewAPI(groupCtl)
 		userAPI              = user.NewAPI(userCtl, store)
 		applicationAPI       = application.NewAPI(applicationCtl)
-		applicationAPIV2     = appv2.NewAPI(applicationCtl)
 		envTemplateAPI       = envtemplate.NewAPI(envTemplateCtl)
 		memberAPI            = member.NewAPI(memberCtl, roleService)
 		clusterAPI           = cluster.NewAPI(clusterCtl)
-		clusterAPIV2         = clusterv2.NewAPI(clusterCtl)
 		prAPI                = pipelinerun.NewAPI(prCtl)
 		environmentAPI       = environment.NewAPI(environmentCtl)
 		regionAPI            = region.NewAPI(regionCtl, tagCtl)
@@ -473,19 +493,46 @@ func Run(flags *Flags) {
 		tagAPI               = tag.NewAPI(tagCtl)
 		templateSchemaTagAPI = templateschematagapi.NewAPI(templateSchemaTagCtl)
 		templateAPI          = template.NewAPI(templateCtl, templateSchemaTagCtl)
-		templateAPIV2        = templatev2.NewAPI(templateCtl, templateSchemaTagCtl)
 		accessAPI            = accessapi.NewAPI(accessCtl)
 		applicationRegionAPI = applicationregion.NewAPI(applicationRegionCtl)
 		oauthAppAPI          = oauthapp.NewAPI(oauthAppCtl)
 		oauthServerAPI       = oauthserver.NewAPI(oauthServerCtl, oauthAppCtl,
 			coreConfig.Oauth.OauthHTMLLocation, scopeService)
-		idpAPI           = idp.NewAPI(idpCtrl, store)
-		buildSchemaAPI   = buildAPI.NewAPI(buildSchemaCtrl)
-		envtemplatev2API = envtemplatev2.NewAPI(envTemplateCtl)
-		accessTokenAPI   = accesstoken.NewAPI(accessTokenCtl, roleService, scopeService)
-		scopeAPI         = scope.NewAPI(scopeCtl)
-		webhookAPI       = webhook.NewAPI(webhookCtl)
-		eventAPI         = event.NewAPI(eventCtl)
+		idpAPI         = idp.NewAPI(idpCtrl, store)
+		accessTokenAPI = accesstoken.NewAPI(accessTokenCtl, roleService, scopeService)
+		scopeAPI       = scope.NewAPI(scopeCtl)
+		webhookAPI     = webhook.NewAPI(webhookCtl)
+		eventAPI       = event.NewAPI(eventCtl)
+
+		// init v2 API
+		accessAPIV2            = accessv2.NewAPI(accessCtl)
+		accessTokenAPIV2       = accesstokenv2.NewAPI(accessTokenCtl, roleService, scopeService)
+		applicationAPIV2       = appv2.NewAPI(applicationCtl)
+		applicationRegionAPIV2 = applicationregionv2.NewAPI(applicationRegionCtl)
+		buildSchemaAPI         = buildAPI.NewAPI(buildSchemaCtrl)
+		clusterAPIV2           = clusterv2.NewAPI(clusterCtl)
+		codeGitAPIV2           = codev2.NewAPI(codeGitCtl)
+		environmentAPIV2       = environmentv2.NewAPI(environmentCtl)
+		environmentRegionAPIV2 = environmentregionv2.NewAPI(environmentregionCtl)
+		envtemplateAPIV2       = envtemplatev2.NewAPI(envTemplateCtl)
+		eventAPIV2             = eventv2.NewAPI(eventCtl)
+		groupAPIV2             = groupv2.NewAPI(groupCtl)
+		idpAPIV2               = idpv2.NewAPI(idpCtrl, store)
+		memberAPIV2            = memberv2.NewAPI(memberCtl, roleService)
+		oauthAppAPIV2          = oauthappv2.NewAPI(oauthAppCtl)
+		oauthServerAPIV2       = oauthserverv2.NewAPI(oauthServerCtl, oauthAppCtl,
+			coreConfig.Oauth.OauthHTMLLocation, scopeService)
+		pipelinerunAPIV2       = pipelinerunv2.NewAPI(prCtl)
+		regionAPIV2            = regionv2.NewAPI(regionCtl, tagCtl)
+		registryAPIV2          = registryv2.NewAPI(registryCtl)
+		roleAPIV2              = rolev2.NewAPI(roleCtl)
+		scopeAPIV2             = scopev2.NewAPI(scopeCtl)
+		tagAPIV2               = tagv2.NewAPI(tagCtl)
+		templateAPIV2          = templatev2.NewAPI(templateCtl, templateSchemaTagCtl)
+		templateSchemaTagAPIV2 = templateschematagv2.NewAPI(templateSchemaTagCtl)
+		terminalAPIV2          = terminalv2.NewAPI(terminalCtl)
+		userAPIV2              = userv2.NewAPI(userCtl, store)
+		webhookAPIV2           = webhookv2.NewAPI(webhookCtl)
 	)
 
 	// init server
@@ -506,11 +553,11 @@ func Run(flags *Flags) {
 		usermiddle.Middleware(parameter, store, coreConfig,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v[12]/terminal")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v1/idps/endpoints")),
-			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v1/users/login"))),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login"))),
 		prehandlemiddle.Middleware(r, manager),
 		auth.Middleware(rbacAuthorizer, rbacSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
@@ -522,14 +569,14 @@ func Run(flags *Flags) {
 	// register routes
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
+
+	// v1
 	group.RegisterRoutes(r, groupAPI)
 	template.RegisterRoutes(r, templateAPI)
 	user.RegisterRoutes(r, userAPI)
 	application.RegisterRoutes(r, applicationAPI)
-	appv2.RegisterRoutes(r, applicationAPIV2)
 	envtemplate.RegisterRoutes(r, envTemplateAPI)
 	cluster.RegisterRoutes(r, clusterAPI)
-	clusterv2.RegisterRoutes(r, clusterAPIV2)
 	pipelinerun.RegisterRoutes(r, prAPI)
 	environment.RegisterRoutes(r, environmentAPI)
 	region.RegisterRoutes(r, regionAPI)
@@ -546,13 +593,39 @@ func Run(flags *Flags) {
 	oauthapp.RegisterRoutes(r, oauthAppAPI)
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
 	idp.RegisterRoutes(r, idpAPI)
-	buildAPI.RegisterRoutes(r, buildSchemaAPI)
-	envtemplatev2.RegisterRoutes(r, envtemplatev2API)
-	templatev2.RegisterRoutes(r, templateAPIV2)
 	accesstoken.RegisterRoutes(r, accessTokenAPI)
 	scope.RegisterRoutes(r, scopeAPI)
 	webhook.RegisterRoutes(r, webhookAPI)
 	event.RegisterRoutes(r, eventAPI)
+
+	// v2
+	accessv2.RegisterRoutes(r, accessAPIV2)
+	accesstokenv2.RegisterRoutes(r, accessTokenAPIV2)
+	appv2.RegisterRoutes(r, applicationAPIV2)
+	applicationregionv2.RegisterRoutes(r, applicationRegionAPIV2)
+	buildAPI.RegisterRoutes(r, buildSchemaAPI)
+	clusterv2.RegisterRoutes(r, clusterAPIV2)
+	codev2.RegisterRoutes(r, codeGitAPIV2)
+	environmentv2.RegisterRoutes(r, environmentAPIV2)
+	environmentregionv2.RegisterRoutes(r, environmentRegionAPIV2)
+	envtemplatev2.RegisterRoutes(r, envtemplateAPIV2)
+	eventv2.RegisterRoutes(r, eventAPIV2)
+	groupv2.RegisterRoutes(r, groupAPIV2)
+	idpv2.RegisterRoutes(r, idpAPIV2)
+	memberv2.RegisterRoutes(r, memberAPIV2)
+	oauthappv2.RegisterRoutes(r, oauthAppAPIV2)
+	oauthserverv2.RegisterRoutes(r, oauthServerAPIV2)
+	pipelinerunv2.RegisterRoutes(r, pipelinerunAPIV2)
+	regionv2.RegisterRoutes(r, regionAPIV2)
+	registryv2.RegisterRoutes(r, registryAPIV2)
+	rolev2.RegisterRoutes(r, roleAPIV2)
+	scopev2.RegisterRoutes(r, scopeAPIV2)
+	tagv2.RegisterRoutes(r, tagAPIV2)
+	templatev2.RegisterRoutes(r, templateAPIV2)
+	templateschematagv2.RegisterRoutes(r, templateSchemaTagAPIV2)
+	terminalv2.RegisterRoutes(r, terminalAPIV2)
+	userv2.RegisterRoutes(r, userAPIV2)
+	webhookv2.RegisterRoutes(r, webhookAPIV2)
 
 	// start cloud event server
 	go runCloudEventServer(
