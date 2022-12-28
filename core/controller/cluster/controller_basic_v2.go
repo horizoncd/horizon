@@ -280,6 +280,16 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 		CreatedBy:      toUser(getUserFromMap(cluster.CreatedBy, userMap)),
 		UpdatedBy:      toUser(getUserFromMap(cluster.UpdatedBy, userMap)),
 	}
+
+	// 8. get latest deployed commit
+	latestPR, err := c.pipelinerunMgr.GetLatestSuccessByClusterID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	if cluster.Status != common.ClusterStatusFreed &&
+		latestPR != nil {
+		getResp.TTLInSeconds, _ = c.clusterWillExpireIn(ctx, cluster)
+	}
 	return getResp, nil
 }
 
