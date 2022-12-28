@@ -160,9 +160,10 @@ type GetClusterResponseV2 struct {
 	Manifest       map[string]interface{}   `json:"manifest"`
 
 	// status and update info
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	CreatedBy *User     `json:"createdBy,omitempty"`
-	UpdatedBy *User     `json:"updatedBy,omitempty"`
+	Status       string    `json:"status"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	CreatedBy    *User     `json:"createdBy,omitempty"`
+	UpdatedBy    *User     `json:"updatedBy,omitempty"`
+	TTLInSeconds *uint     `json:"ttlInSeconds,omitempty"`
 }
