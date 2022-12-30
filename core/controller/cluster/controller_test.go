@@ -834,7 +834,21 @@ func test(t *testing.T) {
 	t.Logf("%v", string(b))
 
 	// v2
-	internalDeployRespV2, err := c.InternalDeployV2(ctx, resp.ID, &InternalDeployRequestV2{
+	// InternalDeployV2 needs a new context with pipelinerunID
+	newCtx := context.WithValue(ctx, common.ContextPipelinerunIDKey(), buildDeployResp.PipelinerunID)
+	clusterGitRepo.EXPECT().UpdatePipelineOutput(newCtx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
+	clusterGitRepo.EXPECT().MergeBranch(newCtx, gomock.Any(), gomock.Any(),
+		gomock.Any()).Return("newest-commit", nil).AnyTimes()
+	clusterGitRepo.EXPECT().GetRepoInfo(newCtx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
+		GitRepoURL: "ssh://xxxx.git",
+		ValueFiles: []string{"file1", "file2"},
+	}).AnyTimes()
+	clusterGitRepo.EXPECT().GetEnvValue(newCtx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.EnvValue{
+		Namespace: "test-1",
+	}, nil).AnyTimes()
+	cd.EXPECT().CreateCluster(newCtx, gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().DeployCluster(newCtx, gomock.Any()).Return(nil).AnyTimes()
+	internalDeployRespV2, err := c.InternalDeployV2(newCtx, resp.ID, &InternalDeployRequestV2{
 		PipelinerunID: buildDeployResp.PipelinerunID,
 		Output:        nil,
 	})
