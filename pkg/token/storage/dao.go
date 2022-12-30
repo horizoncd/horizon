@@ -1,4 +1,4 @@
-package dao
+package storage
 
 import (
 	"context"
@@ -10,29 +10,20 @@ import (
 	"gorm.io/gorm"
 )
 
-type DAO interface {
-	Create(ctx context.Context, token *models.Token) (*models.Token, error)
-	GetByID(ctx context.Context, id uint) (*models.Token, error)
-	GetByCode(ctx context.Context, code string) (*models.Token, error)
-	DeleteByID(ctx context.Context, id uint) error
-	DeleteByCode(ctx context.Context, code string) error
-	DeleteByClientID(ctx context.Context, clientID string) error
-}
-
-type dao struct {
+type storage struct {
 	db *gorm.DB
 }
 
-func NewDAO(db *gorm.DB) DAO {
-	return &dao{db: db}
+func NewStorage(db *gorm.DB) Storage {
+	return &storage{db: db}
 }
 
-func (d *dao) Create(ctx context.Context, token *models.Token) (*models.Token, error) {
+func (d *storage) Create(ctx context.Context, token *models.Token) (*models.Token, error) {
 	result := d.db.WithContext(ctx).Create(token)
 	return token, result.Error
 }
 
-func (d *dao) GetByID(ctx context.Context, id uint) (*models.Token, error) {
+func (d *storage) GetByID(ctx context.Context, id uint) (*models.Token, error) {
 	var token models.Token
 	result := d.db.WithContext(ctx).Model(token).Where("id = ?", id).First(&token)
 	if result.Error != nil {
@@ -44,7 +35,7 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.Token, error) {
 	return &token, nil
 }
 
-func (d *dao) GetByCode(ctx context.Context, code string) (*models.Token, error) {
+func (d *storage) GetByCode(ctx context.Context, code string) (*models.Token, error) {
 	var token models.Token
 	result := d.db.WithContext(ctx).Model(token).Where("code = ?", code).First(&token)
 	if result.Error != nil {
@@ -56,17 +47,17 @@ func (d *dao) GetByCode(ctx context.Context, code string) (*models.Token, error)
 	return &token, nil
 }
 
-func (d *dao) DeleteByID(ctx context.Context, id uint) error {
+func (d *storage) DeleteByID(ctx context.Context, id uint) error {
 	result := d.db.WithContext(ctx).Exec(common.DeleteTokenByID, id)
 	return result.Error
 }
 
-func (d *dao) DeleteByCode(ctx context.Context, code string) error {
+func (d *storage) DeleteByCode(ctx context.Context, code string) error {
 	result := d.db.WithContext(ctx).Exec(common.DeleteByCode, code)
 	return result.Error
 }
 
-func (d *dao) DeleteByClientID(ctx context.Context, clientID string) error {
+func (d *storage) DeleteByClientID(ctx context.Context, clientID string) error {
 	result := d.db.WithContext(ctx).Exec(common.DeleteByClientID, clientID)
 	return result.Error
 }

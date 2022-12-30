@@ -3,8 +3,8 @@ package manager
 import (
 	"context"
 
-	"github.com/horizoncd/horizon/pkg/token/dao"
 	"github.com/horizoncd/horizon/pkg/token/models"
+	"github.com/horizoncd/horizon/pkg/token/storage"
 	"gorm.io/gorm"
 )
 
@@ -17,29 +17,29 @@ type Manager interface {
 }
 
 func New(db *gorm.DB) Manager {
-	return &manager{dao: dao.NewDAO(db)}
+	return &manager{storage: storage.NewStorage(db)}
 }
 
 type manager struct {
-	dao dao.DAO
+	storage storage.Storage
 }
 
 func (m *manager) CreateToken(ctx context.Context, token *models.Token) (*models.Token, error) {
-	return m.dao.Create(ctx, token)
+	return m.storage.Create(ctx, token)
 }
 
 func (m *manager) LoadTokenByID(ctx context.Context, id uint) (*models.Token, error) {
-	return m.dao.GetByID(ctx, id)
+	return m.storage.GetByID(ctx, id)
 }
 
 func (m *manager) LoadTokenByCode(ctx context.Context, code string) (*models.Token, error) {
-	return m.dao.GetByCode(ctx, code)
+	return m.storage.GetByCode(ctx, code)
 }
 
 func (m *manager) RevokeTokenByID(ctx context.Context, id uint) error {
-	return m.dao.DeleteByID(ctx, id)
+	return m.storage.DeleteByID(ctx, id)
 }
 
 func (m *manager) RevokeTokenByClientID(ctx context.Context, clientID string) error {
-	return m.dao.DeleteByClientID(ctx, clientID)
+	return m.storage.DeleteByClientID(ctx, clientID)
 }

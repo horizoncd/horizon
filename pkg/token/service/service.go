@@ -5,7 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	herror "github.com/horizoncd/horizon/core/errors"
+	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/token/generator"
@@ -14,19 +16,17 @@ import (
 )
 
 type Service interface {
-	// CreateUserAccessToken used for personal access Token and resource access Token
-	CreateUserAccessToken(ctx context.Context, name, expiresAtStr string,
+	// CreateAccessToken used for personal access Token and resource access Token
+	CreateAccessToken(ctx context.Context, name, expiresAtStr string,
 		userID uint, scopes []string) (*tokenmodels.Token, error)
-	// CreateInternalAccessToken used for internal component to access horizon api
-	CreateInternalAccessToken(ctx context.Context, name string, expiresIn time.Duration,
-		userID uint, scopes []string) (*tokenmodels.Token, error)
+	CreateJwtToken(subject string, expiresIn time.Duration, options ...ClaimsOption) (string, error)
+	ParseJwtToken(tokenStr string) (Claims, error)
 }
 
-func NewService(manager *managerparam.Manager) Service {
+func NewService(manager *managerparam.Manager, config tokenconfig.Config) Service {
 	return &service{
-		tokenManager:                 manager.TokenManager,
-		userAccessTokenGenerator:     generator.NewUserAccessTokenGenerator(),
-		internalAccessTokenGenerator: generator.NewInternalAccessTokenGenerator(),
+		tokenManager: manager.TokenManager,
+		TokenConfig:  config,
 	}
 }
 
@@ -34,9 +34,10 @@ type service struct {
 	tokenManager                 tokenmanager.Manager
 	userAccessTokenGenerator     generator.AccessTokenCodeGenerator
 	internalAccessTokenGenerator generator.AccessTokenCodeGenerator
+	TokenConfig                  tokenconfig.Config
 }
 
-func (s *service) CreateUserAccessToken(ctx context.Context, name, expiresAtStr string,
+func (s *service) CreateAccessToken(ctx context.Context, name, expiresAtStr string,
 	userID uint, scopes []string) (*tokenmodels.Token, error) {
 	// 1. check expiration date
 	createdAt := time.Now()
@@ -52,7 +53,8 @@ func (s *service) CreateUserAccessToken(ctx context.Context, name, expiresAtStr 
 		expiresIn = expiredAt.Sub(createdAt)
 	}
 	// 2. generate user access token
-	token, err := s.genAccessToken(TypeUserAccessToken, name, userID, scopes, createdAt, expiresIn)
+	gen := generator.NewGeneralAccessTokenGenerator()
+	token, err := s.genAccessToken(gen, name, userID, scopes, createdAt, expiresIn)
 	if err != nil {
 		return nil, err
 	}
@@ -64,42 +66,11 @@ func (s *service) CreateUserAccessToken(ctx context.Context, name, expiresAtStr 
 	return token, nil
 }
 
-func (s *service) CreateInternalAccessToken(ctx context.Context, name string, expiresIn time.Duration,
-	userID uint, scopes []string) (*tokenmodels.Token, error) {
-	// 1. check expiration duration
-	if expiresIn < 0 {
-		return nil, perror.Wrap(herror.ErrParamInvalid, "expiration duration must be greater than 0")
-	}
-	// 2. generate user access token
-	createdAt := time.Now()
-	token, err := s.genAccessToken(TypeInternalAccessToken, name, userID, scopes, createdAt, expiresIn)
-	if err != nil {
-		return nil, err
-	}
-	// 3. create token in db
-	token, err = s.tokenManager.CreateToken(ctx, token)
-	if err != nil {
-		return nil, err
-	}
-	return token, nil
-}
-
-func (s *service) genAccessToken(tokenType TokenType, name string, userID uint,
+func (s *service) genAccessToken(gen generator.AccessTokenCodeGenerator, name string, userID uint,
 	scopes []string, createdAt time.Time, expiresIn time.Duration) (*tokenmodels.Token, error) {
-	var code string
-	switch tokenType {
-	case TypeUserAccessToken:
-		code = s.userAccessTokenGenerator.GenCode(&generator.CodeGenerateInfo{
-			Token: tokenmodels.Token{UserID: userID},
-		})
-	case TypeInternalAccessToken:
-		code = s.internalAccessTokenGenerator.GenCode(&generator.CodeGenerateInfo{
-			Token: tokenmodels.Token{UserID: userID},
-		})
-	default:
-		return nil, perror.Wrapf(herror.ErrTokenInternal,
-			"TokenType not supported, tokenType = %d", tokenType)
-	}
+	code := gen.GenCode(&generator.CodeGenerateInfo{
+		Token: tokenmodels.Token{UserID: userID},
+	})
 	return &tokenmodels.Token{
 		Name:      name,
 		Code:      code,
@@ -108,4 +79,48 @@ func (s *service) genAccessToken(tokenType TokenType, name string, userID uint,
 		ExpiresIn: expiresIn,
 		UserID:    userID,
 	}, nil
+}
+
+func (s *service) CreateJwtToken(subject string, expiresIn time.Duration, options ...ClaimsOption) (string, error) {
+	now := time.Now().UTC()
+	claims := &Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    ClaimsIssuer,
+			Subject:   subject,
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+		},
+	}
+	if expiresIn > 0 {
+		expires := now.Add(expiresIn)
+		claims.ExpiresAt = jwt.NewNumericDate(expires)
+	}
+
+	for _, opt := range options {
+		opt(claims)
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(s.TokenConfig.JwtSigningKey))
+}
+
+// ParseJwtToken parses string and return claims
+func (s *service) ParseJwtToken(tokenStr string) (Claims, error) {
+	var claims Claims
+	_, err := jwt.ParseWithClaims(tokenStr, &claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, perror.Wrapf(herror.ErrTokenInvalid,
+				"unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(s.TokenConfig.JwtSigningKey), nil
+	})
+	if err != nil {
+		return Claims{}, err
+	}
+
+	if claims.Issuer != ClaimsIssuer {
+		return Claims{}, perror.Wrapf(herror.ErrTokenInvalid,
+			"unexpected claims issuer: %v", claims.Issuer)
+	}
+	return claims, nil
 }

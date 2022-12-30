@@ -10,9 +10,9 @@ import (
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
 	"github.com/horizoncd/horizon/pkg/oauth/models"
-	tokendao "github.com/horizoncd/horizon/pkg/token/dao"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
+	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -72,13 +72,13 @@ type Manager interface {
 
 var _ Manager = &OauthManager{}
 
-func NewManager(oauthAppDAO oauthdao.DAO, tokenDAO tokendao.DAO,
+func NewManager(oauthAppDAO oauthdao.DAO, tokenStorage tokenstorage.Storage,
 	gen generator.AuthorizationCodeGenerator,
 	authorizeCodeExpireTime time.Duration,
 	accessTokenExpireTime time.Duration) *OauthManager {
 	return &OauthManager{
 		oauthAppDAO:                oauthAppDAO,
-		tokenDAO:                   tokenDAO,
+		tokenStorage:               tokenStorage,
 		authorizationCodeGenerator: gen,
 		authorizeCodeExpireTime:    authorizeCodeExpireTime,
 		accessTokenExpireTime:      accessTokenExpireTime,
@@ -88,7 +88,7 @@ func NewManager(oauthAppDAO oauthdao.DAO, tokenDAO tokendao.DAO,
 
 type OauthManager struct {
 	oauthAppDAO                oauthdao.DAO
-	tokenDAO                   tokendao.DAO
+	tokenStorage               tokenstorage.Storage
 	authorizationCodeGenerator generator.AuthorizationCodeGenerator
 	authorizeCodeExpireTime    time.Duration
 	accessTokenExpireTime      time.Duration
@@ -144,7 +144,7 @@ func (m *OauthManager) GetOAuthApp(ctx context.Context, clientID string) (*model
 
 func (m *OauthManager) DeleteOAuthApp(ctx context.Context, clientID string) error {
 	// revoke all the token
-	if err := m.tokenDAO.DeleteByClientID(ctx, clientID); err != nil {
+	if err := m.tokenStorage.DeleteByClientID(ctx, clientID); err != nil {
 		return err
 	}
 
@@ -273,7 +273,7 @@ func (m *OauthManager) GenAuthorizeCode(ctx context.Context,
 	}
 
 	authorizationToken := m.NewAuthorizationToken(req)
-	_, err = m.tokenDAO.Create(ctx, authorizationToken)
+	_, err = m.tokenStorage.Create(ctx, authorizationToken)
 	return authorizationToken, err
 }
 
@@ -307,7 +307,7 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 	}
 
 	// get authorize token, and check by it
-	authorizationCodeToken, err := m.tokenDAO.GetByCode(ctx, req.Code)
+	authorizationCodeToken, err := m.tokenStorage.GetByCode(ctx, req.Code)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			return nil, herrors.ErrOAuthAuthorizationCodeNotExist
@@ -317,7 +317,7 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 
 	if err := m.CheckByAuthorizationCode(req, authorizationCodeToken); err != nil {
 		if perror.Cause(err) == herrors.ErrOAuthCodeExpired {
-			if delErr := m.tokenDAO.DeleteByCode(ctx, req.Code); delErr != nil {
+			if delErr := m.tokenStorage.DeleteByCode(ctx, req.Code); delErr != nil {
 				log.Warningf(ctx, "delete expired code error, err = %v", delErr)
 			}
 		}
@@ -326,13 +326,13 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 
 	// new access token and store
 	accessToken := m.NewAccessToken(authorizationCodeToken, req, accessCodeGenerator)
-	_, err = m.tokenDAO.Create(ctx, accessToken)
+	_, err = m.tokenStorage.Create(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}
 
 	// delete authorize code
-	err = m.tokenDAO.DeleteByCode(ctx, req.Code)
+	err = m.tokenStorage.DeleteByCode(ctx, req.Code)
 	if err != nil {
 		log.Warningf(ctx, "Delete Authorization token error, code = %s, error = %v", req.Code, err)
 	}

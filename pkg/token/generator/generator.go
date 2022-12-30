@@ -15,9 +15,6 @@ const (
 	HorizonAppUserToServerAccessTokenPrefix = "hu_"
 	OauthAPPAccessTokenPrefix               = "ho_"
 	AccessTokenPrefix                       = "ha_"
-	// InternalAccessTokenPrefix for internal component access horizon api, such as tekton
-	InternalAccessTokenPrefix = "hi_"
-	// HorizonAppServerToServerAccessTokenPrefix = "hs_"
 )
 
 func NewAuthorizeGenerator() AuthorizationCodeGenerator {
@@ -32,12 +29,8 @@ func NewOauthAccessGenerator() AccessTokenCodeGenerator {
 	return &BasicAccessTokenGenerator{prefix: OauthAPPAccessTokenPrefix}
 }
 
-func NewUserAccessTokenGenerator() AccessTokenCodeGenerator {
-	return &UserAccessTokenGenerator{prefix: AccessTokenPrefix}
-}
-
-func NewInternalAccessTokenGenerator() AccessTokenCodeGenerator {
-	return &UserAccessTokenGenerator{prefix: InternalAccessTokenPrefix}
+func NewGeneralAccessTokenGenerator() AccessTokenCodeGenerator {
+	return &GeneralAccessTokenGenerator{prefix: AccessTokenPrefix}
 }
 
 type AuthorizeGenerator struct{}
@@ -46,7 +39,7 @@ type BasicAccessTokenGenerator struct {
 	prefix string
 }
 
-type UserAccessTokenGenerator struct {
+type GeneralAccessTokenGenerator struct {
 	prefix string
 }
 
@@ -68,7 +61,7 @@ func (g *BasicAccessTokenGenerator) GenCode(info *CodeGenerateInfo) string {
 	return access
 }
 
-func (g *UserAccessTokenGenerator) GenCode(info *CodeGenerateInfo) string {
+func (g *GeneralAccessTokenGenerator) GenCode(info *CodeGenerateInfo) string {
 	buf := bytes.NewBufferString(time.Now().String())
 	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
 	code := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))

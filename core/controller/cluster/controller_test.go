@@ -36,6 +36,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
 	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
+	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
 	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
@@ -625,7 +626,10 @@ func test(t *testing.T) {
 		tagMgr:               tagManager,
 		applicationGitRepo:   applicationGitRepo,
 		eventMgr:             manager.EventManager,
-		tokenSvc:             tokenservice.NewService(manager),
+		tokenSvc: tokenservice.NewService(manager, tokenconfig.Config{
+			JwtSigningKey:         "horizon",
+			CallbackTokenExpireIn: time.Hour * 2,
+		}),
 	}
 
 	commitGetter.EXPECT().GetHTTPLink(gomock.Any()).Return("https://cloudnative.com:22222/demo/springboot-demo", nil).AnyTimes()

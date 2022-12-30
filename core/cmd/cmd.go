@@ -89,10 +89,13 @@ import (
 	"github.com/horizoncd/horizon/core/middleware/auth"
 	logmiddle "github.com/horizoncd/horizon/core/middleware/log"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	tokendao "github.com/horizoncd/horizon/pkg/token/dao"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
+	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
+	"github.com/horizoncd/horizon/pkg/util/kube"
 
 	"github.com/horizoncd/horizon/core/http/api/v1/event"
 	templateschematagapi "github.com/horizoncd/horizon/core/http/api/v1/templateschematag"
@@ -124,7 +127,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/config/pprof"
 	roleconfig "github.com/horizoncd/horizon/pkg/config/role"
 	gitlabfty "github.com/horizoncd/horizon/pkg/gitlab/factory"
-	"github.com/horizoncd/horizon/pkg/grafana"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
@@ -138,7 +140,6 @@ import (
 	templateschemarepo "github.com/horizoncd/horizon/pkg/templaterelease/schema/repo"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
-	"github.com/horizoncd/horizon/pkg/util/kube"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 
 	"github.com/gin-gonic/gin"
@@ -350,8 +351,8 @@ func Run(flags *Flags) {
 	}
 
 	oauthAppDAO := oauthdao.NewDAO(mysqlDB)
-	tokenDAO := tokendao.NewDAO(mysqlDB)
-	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenDAO, generator.NewAuthorizeGenerator(),
+	tokenStorage := tokenstorage.NewStorage(mysqlDB)
+	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
 		coreConfig.Oauth.AuthorizeCodeExpireIn, coreConfig.Oauth.AccessTokenExpireIn)
 
 	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
@@ -410,7 +411,7 @@ func Run(flags *Flags) {
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
-	tokenSvc := tokenservice.NewService(manager)
+	tokenSvc := tokenservice.NewService(manager, coreConfig.TokenConfig)
 
 	// init kube client
 	_, client, err := kube.BuildClient(coreConfig.KubeConfig)
@@ -447,7 +448,7 @@ func Run(flags *Flags) {
 		rbacSkippers = []middleware.Skipper{
 			middleware.MethodAndPathSkipper("*",
 				regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
-					"(^/apis/core/v[12]/roles)|(^/login/oauth/authorize)|(^/login/oauth/access_token)|"+
+					"(^/apis/core/v[12]/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)|"+
 					"(^/apis/core/v[12]/templates$)")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/login/callback")),

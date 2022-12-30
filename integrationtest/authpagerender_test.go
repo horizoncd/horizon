@@ -31,9 +31,9 @@ import (
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/rbac/types"
-	tokendao "github.com/horizoncd/horizon/pkg/token/dao"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
+	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -104,9 +104,9 @@ func TestServer(t *testing.T) {
 	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
-	tokenDAO := tokendao.NewDAO(db)
+	tokenStorage := tokenstorage.NewStorage(db)
 	oauthAppDAO := oauthdao.NewDAO(db)
-	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenDAO, generator.NewAuthorizeGenerator(),
+	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
 		authorizeCodeExpireIn, accessTokenExpireIn)
 	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
 	clientIDGen := func(appType models.AppType) string {

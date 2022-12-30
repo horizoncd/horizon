@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 	callbacks.RegisterCustomCallbacks(db)
 
 	tokenManager = New(db)
-	userAccessTokenGenerator = generator.NewUserAccessTokenGenerator()
+	userAccessTokenGenerator = generator.NewGeneralAccessTokenGenerator()
 	os.Exit(m.Run())
 }
 

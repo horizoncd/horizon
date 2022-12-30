@@ -10,6 +10,7 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
@@ -43,7 +44,11 @@ func TestMain(m *testing.M) {
 
 	manager := managerparam.InitManager(db)
 	tokenManager = manager.TokenManager
-	tokenSvc = NewService(manager)
+	tokenSvc = NewService(manager, tokenconfig.Config{
+		JwtSigningKey:         "UZMccEsEgXA/phl3w/OK1gZU6lhKJIswZqsyfQEPqpc=",
+		CallbackTokenExpireIn: 2 * time.Hour,
+	})
+
 	os.Exit(m.Run())
 }
 
@@ -54,20 +59,22 @@ func TestService(t *testing.T) {
 	scopes := make([]string, 2)
 	scopes = append(scopes, "clusters:read-write")
 	scopes = append(scopes, "applications:read-only")
-	token, err := tokenSvc.CreateUserAccessToken(ctx, name, expiresAtStr, aUser.GetID(), scopes)
+	token, err := tokenSvc.CreateAccessToken(ctx, name, expiresAtStr, aUser.GetID(), scopes)
 	assert.Nil(t, err)
 	tokenInDB, err := tokenManager.LoadTokenByID(ctx, token.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, name, tokenInDB.Name)
 	assert.Equal(t, strings.Join(scopes, " "), tokenInDB.Scope)
 
-	// Create Internal AccessToken
-	expiresIn := time.Hour * 2
-	token, err = tokenSvc.CreateInternalAccessToken(ctx, name, expiresIn, aUser.GetID(), scopes)
+	// Create JWT token
+	jwtToken, err := tokenSvc.CreateJwtToken("tekton", 2*time.Hour,
+		WithUserIDAndPipelinerunID(aUser.GetID(), 12))
 	assert.Nil(t, err)
-	log.Infof(ctx, "%+v", token)
-	tokenInDB, err = tokenManager.LoadTokenByID(ctx, token.ID)
+	log.Infof(ctx, "%s", jwtToken)
+	// Parse JWT token
+	claims, err := tokenSvc.ParseJwtToken(jwtToken)
 	assert.Nil(t, err)
-	assert.Equal(t, name, tokenInDB.Name)
-	assert.Equal(t, expiresIn, tokenInDB.ExpiresIn)
+	log.Infof(ctx, "%+v", claims)
+	log.Infof(ctx, "%v", *claims.PipelinerunID)
+	assert.Equal(t, aUser.GetID(), claims.UserID)
 }

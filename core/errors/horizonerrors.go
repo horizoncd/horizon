@@ -203,9 +203,10 @@ var (
 	// pipelinerun
 
 	// context
-	ErrFailedToGetORM       = errors.New("cannot get the ORM from context")
-	ErrFailedToGetUser      = errors.New("cannot get user from context")
-	ErrFailedToGetRequestID = errors.New("cannot get the requestID from context")
+	ErrFailedToGetORM           = errors.New("cannot get the ORM from context")
+	ErrFailedToGetUser          = errors.New("cannot get user from context")
+	ErrFailedToGetRequestID     = errors.New("cannot get the requestID from context")
+	ErrFailedToGetPipelinerunID = errors.New("cannot get the pipelinerunID from context")
 
 	ErrKubeDynamicCliResponseNotOK = errors.New("response for kube dynamic cli is not 200 OK")
 	ErrKubeExecFailed              = errors.New("kube exec failed")
@@ -278,5 +279,5 @@ var (
 	ErrNotSupport = errors.New("not support")
 
 	// token
-	ErrTokenInternal = errors.New("token internal error")
+	ErrTokenInvalid = errors.New("token is invalid")
 )

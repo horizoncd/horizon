@@ -82,7 +82,7 @@ func (c *controller) CreateResourceAccessToken(ctx context.Context, request Crea
 	}
 	userID = robot.ID
 
-	token, err := c.tokenSvc.CreateUserAccessToken(ctx, request.Name,
+	token, err := c.tokenSvc.CreateAccessToken(ctx, request.Name,
 		request.ExpiresAt, userID, request.Scopes)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (c *controller) CreatePersonalAccessToken(ctx context.Context,
 		return nil, err
 	}
 
-	token, err := c.tokenSvc.CreateUserAccessToken(ctx, request.Name, request.ExpiresAt,
+	token, err := c.tokenSvc.CreateAccessToken(ctx, request.Name, request.ExpiresAt,
 		currentUser.GetID(), request.Scopes)
 	if err != nil {
 		return nil, err

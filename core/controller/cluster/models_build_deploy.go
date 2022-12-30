@@ -1,7 +1,5 @@
 package cluster
 
-import "time"
-
 type BuildDeployRequest struct {
 	Title       string                 `json:"title"`
 	Description string                 `json:"description"`
@@ -35,9 +33,3 @@ type CodeInfo struct {
 	// code history link
 	Link string `json:"link"`
 }
-
-const (
-	TokenNameFormat     = "tekton_callback_%s"
-	TokenExpiresIn      = time.Hour * 2
-	TokenScopeClusterRW = "clusters:read-write"
-)

@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/horizoncd/horizon/pkg/config/token"
 	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
-	tokendao "github.com/horizoncd/horizon/pkg/token/dao"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
+	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -79,14 +80,14 @@ func TestMain(m *testing.M) {
 	authorizeCodeExpireIn := time.Second * 3
 	accessTokenExpireIn := time.Hour * 24
 
-	tokenDAO := tokendao.NewDAO(db)
+	tokenStorage := tokenstorage.NewStorage(db)
 	oauthAppDAO := oauthdao.NewDAO(db)
-	oauthMgr := oauthmanager.NewManager(oauthAppDAO, tokenDAO,
+	oauthMgr := oauthmanager.NewManager(oauthAppDAO, tokenStorage,
 		generator.NewAuthorizeGenerator(), authorizeCodeExpireIn, accessTokenExpireIn)
 
 	parameter := &param.Param{
 		Manager:       manager,
-		TokenSvc:      tokenservice.NewService(manager),
+		TokenSvc:      tokenservice.NewService(manager, token.Config{}),
 		MemberService: memberservice.NewService(roleSvc, oauthMgr, manager),
 	}
 

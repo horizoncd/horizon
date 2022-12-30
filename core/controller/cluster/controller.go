@@ -16,6 +16,7 @@ import (
 	registryfty "github.com/horizoncd/horizon/pkg/cluster/registry/factory"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
+	"github.com/horizoncd/horizon/pkg/config/token"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	environmentregionmapper "github.com/horizoncd/horizon/pkg/environmentregion/manager"
@@ -134,6 +135,7 @@ type controller struct {
 	buildSchema          *build.Schema
 	eventMgr             eventmanager.Manager
 	tokenSvc             tokenservice.Service
+	tokenConfig          token.Config
 }
 
 var _ Controller = (*controller)(nil)
@@ -170,5 +172,6 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		buildSchema:          param.BuildSchema,
 		eventMgr:             param.EventManager,
 		tokenSvc:             param.TokenSvc,
+		tokenConfig:          config.TokenConfig,
 	}
 }

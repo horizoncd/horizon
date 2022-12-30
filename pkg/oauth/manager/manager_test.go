@@ -13,10 +13,10 @@ import (
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
 	"github.com/horizoncd/horizon/pkg/oauth/models"
-	tokendao "github.com/horizoncd/horizon/pkg/token/dao"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
+	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -25,7 +25,7 @@ import (
 
 var (
 	db           *gorm.DB
-	tokenDAO     tokendao.DAO
+	tokenStorage tokenstorage.Storage
 	oauthAppDAO  oauthdao.DAO
 	oauthManager Manager
 	tokenManager tokenmanager.Manager
@@ -309,9 +309,9 @@ func TestMain(m *testing.M) {
 	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
-	tokenDAO = tokendao.NewDAO(db)
+	tokenStorage = tokenstorage.NewStorage(db)
 	oauthAppDAO = oauthdao.NewDAO(db)
-	oauthManager = NewManager(oauthAppDAO, tokenDAO, generator.NewOauthAccessGenerator(),
+	oauthManager = NewManager(oauthAppDAO, tokenStorage, generator.NewOauthAccessGenerator(),
 		authorizeCodeExpireIn, accessTokenExpireIn)
 	tokenManager = tokenmanager.New(db)
 	os.Exit(m.Run())

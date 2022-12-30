@@ -19,6 +19,20 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	const op = "cluster controller: internal deploy v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
+	// auth prID
+	_, err = common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	prIDFromContext, err := common.PipelinerunIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if prIDFromContext != r.PipelinerunID {
+		return nil, perror.Wrapf(herrors.ErrForbidden,
+			"no permission to deploy with pipelineID = %v", r.PipelinerunID)
+	}
+
 	// 1. get pr, and do some validate
 	pr, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
 	if err != nil {
