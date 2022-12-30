@@ -31,10 +31,8 @@ func NewService(manager *managerparam.Manager, config tokenconfig.Config) Servic
 }
 
 type service struct {
-	tokenManager                 tokenmanager.Manager
-	userAccessTokenGenerator     generator.AccessTokenCodeGenerator
-	internalAccessTokenGenerator generator.AccessTokenCodeGenerator
-	TokenConfig                  tokenconfig.Config
+	tokenManager tokenmanager.Manager
+	TokenConfig  tokenconfig.Config
 }
 
 func (s *service) CreateAccessToken(ctx context.Context, name, expiresAtStr string,
