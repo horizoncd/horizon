@@ -77,7 +77,7 @@ func (a *API) GetDiff(c *gin.Context) {
 	resp, err := a.clusterCtl.GetDiff(c, uint(clusterID), refType, ref)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			if e.Source == herrors.ClusterInDB {
+			if e.Source == herrors.ClusterInDB || e.Source == herrors.GitlabResource {
 				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 				return
 			}

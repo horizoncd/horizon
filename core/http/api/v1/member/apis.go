@@ -7,10 +7,14 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/member"
+	herrors "github.com/horizoncd/horizon/core/errors"
 	memberctx "github.com/horizoncd/horizon/pkg/context"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/server/rpcerror"
+	"github.com/horizoncd/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,6 +44,7 @@ func NewAPI(controller member.Controller, rservice role.Service) *API {
 }
 
 func (a *API) CreateGroupMember(c *gin.Context) {
+	op := "member: create group member"
 	resourceIDStr := c.Param(_paramGroupID)
 	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
@@ -67,6 +72,20 @@ func (a *API) CreateGroupMember(c *gin.Context) {
 
 	retMember, err := a.memberCtrl.CreateMember(c, postMember)
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		} else if perror.Cause(err) == herrors.ErrNameConflict {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.ConflictError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}
@@ -74,6 +93,7 @@ func (a *API) CreateGroupMember(c *gin.Context) {
 }
 
 func (a *API) CreateApplicationMember(c *gin.Context) {
+	op := "member: create application member"
 	resourceIDStr := c.Param(_paramApplicationID)
 	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
@@ -101,6 +121,20 @@ func (a *API) CreateApplicationMember(c *gin.Context) {
 
 	retMember, err := a.memberCtrl.CreateMember(c, postMember)
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		} else if perror.Cause(err) == herrors.ErrNameConflict {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.ConflictError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}
@@ -108,6 +142,7 @@ func (a *API) CreateApplicationMember(c *gin.Context) {
 }
 
 func (a *API) CreateApplicationClusterMember(c *gin.Context) {
+	op := "member: create cluster member"
 	resourceIDStr := c.Param(_paramApplicationClusterID)
 	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
@@ -135,6 +170,20 @@ func (a *API) CreateApplicationClusterMember(c *gin.Context) {
 
 	retMember, err := a.memberCtrl.CreateMember(c, postMember)
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		} else if perror.Cause(err) == herrors.ErrNameConflict {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.ConflictError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}
@@ -142,6 +191,7 @@ func (a *API) CreateApplicationClusterMember(c *gin.Context) {
 }
 
 func (a *API) CreateTemplateMember(c *gin.Context) {
+	op := "member: create template member"
 	resourceIDStr := c.Param(_paramTemplateID)
 	uintID, err := strconv.ParseUint(resourceIDStr, 10, 0)
 	if err != nil {
@@ -169,6 +219,20 @@ func (a *API) CreateTemplateMember(c *gin.Context) {
 
 	retMember, err := a.memberCtrl.CreateMember(c, postMember)
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		} else if perror.Cause(err) == herrors.ErrNameConflict {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, postMember)
+			response.AbortWithRPCError(c, rpcerror.ConflictError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}
@@ -176,6 +240,7 @@ func (a *API) CreateTemplateMember(c *gin.Context) {
 }
 
 func (a *API) UpdateMember(c *gin.Context) {
+	op := "member: update"
 	memberIDStr := c.Param(_paramMemberID)
 	uintID, err := strconv.ParseUint(memberIDStr, 10, 0)
 	if err != nil {
@@ -204,6 +269,16 @@ func (a *API) UpdateMember(c *gin.Context) {
 
 	retMember, err := a.memberCtrl.UpdateMember(c, updateMember.ID, updateMember.Role)
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, updateMember)
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, updateMember)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}
@@ -211,6 +286,7 @@ func (a *API) UpdateMember(c *gin.Context) {
 }
 
 func (a *API) DeleteMember(c *gin.Context) {
+	op := "member: delete"
 	memberIDStr := c.Param(_paramMemberID)
 	uintID, err := strconv.ParseUint(memberIDStr, 10, 0)
 	if err != nil {
@@ -220,6 +296,16 @@ func (a *API) DeleteMember(c *gin.Context) {
 	}
 	err = a.memberCtrl.RemoveMember(c, uint(uintID))
 	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			log.WithFiled(c, "op", op).Warningf("err = %+v", err)
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Warningf("err = %+v", err)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
 		response.AbortWithError(c, err)
 		return
 	}
