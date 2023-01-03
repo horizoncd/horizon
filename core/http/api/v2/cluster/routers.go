@@ -55,7 +55,7 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/status", common.ParamClusterID),
-			HandlerFunc: api.ClusterStatusV2,
+			HandlerFunc: api.ClusterStatus,
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/buildstatus", common.ParamClusterID),
