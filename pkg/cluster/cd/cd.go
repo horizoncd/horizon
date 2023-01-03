@@ -23,6 +23,10 @@ import (
 	"net/http"
 	"sync"
 
+	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
+	"github.com/argoproj/gitops-engine/pkg/health"
+	kube2 "github.com/argoproj/gitops-engine/pkg/utils/kube"
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/argocd"
@@ -35,11 +39,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-
-	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
-	rolloutsV1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
-	"github.com/argoproj/gitops-engine/pkg/health"
-	kube2 "github.com/argoproj/gitops-engine/pkg/utils/kube"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,7 +98,11 @@ type CD interface {
 	GetPod(ctx context.Context, params *GetPodParams) (*corev1.Pod, error)
 	GetPodContainers(ctx context.Context, params *GetPodParams) ([]ContainerDetail, error)
 	GetPodEvents(ctx context.Context, params *GetPodEventsParams) ([]Event, error)
-	Exec(ctx context.Context, params *ShellExecParams) (map[string]ExecResp, error)
+	Exec(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
+	// Deprecated
+	Online(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
+	// Deprecated
+	Offline(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 	DeletePods(ctx context.Context, params *DeletePodsParams) (map[string]OperationResult, error)
 }
 
@@ -860,7 +863,59 @@ func (c *cd) GetContainerLog(ctx context.Context, params *GetContainerLogParams)
 	return logStrC, nil
 }
 
-func (c *cd) Exec(ctx context.Context, params *ShellExecParams) (_ map[string]ExecResp, err error) {
+// onlineCommand the location of online.sh in pod is /home/appops/.probe/online-once.sh
+const onlineCommand = `
+export ONLINE_SHELL="/home/appops/.probe/online-once.sh"
+[[ -f "$ONLINE_SHELL" ]] || {
+	echo "there is no online config for this cluster." >&2; exit 1
+}
+
+bash "$ONLINE_SHELL"
+`
+
+// offlineCommand the location of offline.sh in pod is /home/appops/.probe/offline-once.sh
+const offlineCommand = `
+export OFFLINE_SHELL="/home/appops/.probe/offline-once.sh"
+[[ -f "$OFFLINE_SHELL" ]] || {
+	echo "there is no offline config for this cluster." >&2; exit 1
+}
+
+bash "$OFFLINE_SHELL"
+`
+
+// Deprecated
+func (c *cd) Online(ctx context.Context, params *ExecParams) (_ map[string]ExecResp, err error) {
+	return c.exec(ctx, params, onlineCommand)
+}
+
+// Deprecated
+func (c *cd) Offline(ctx context.Context, params *ExecParams) (_ map[string]ExecResp, err error) {
+	return c.exec(ctx, params, offlineCommand)
+}
+
+func (c *cd) exec(ctx context.Context, params *ExecParams, command string) (_ map[string]ExecResp, err error) {
+	const op = "cd: exec"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	config, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	if err != nil {
+		return nil, err
+	}
+	containers := make([]kube.ContainerRef, 0)
+	for _, pod := range params.PodList {
+		containers = append(containers, kube.ContainerRef{
+			Config:        config,
+			KubeClientset: kubeClient.Basic,
+			Namespace:     params.Namespace,
+			Pod:           pod,
+			Container:     params.Cluster,
+		})
+	}
+
+	return executeCommandInPods(ctx, containers, []string{"bash", "-c", command}, nil), nil
+}
+
+func (c *cd) Exec(ctx context.Context, params *ExecParams) (_ map[string]ExecResp, err error) {
 	const op = "cd: shell exec"
 	defer wlog.Start(ctx, op).StopPrint()
 

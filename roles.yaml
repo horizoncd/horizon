@@ -67,6 +67,8 @@ Roles:
           - clusters/terminal
           - clusters/containerlog
           - clusters/exec
+          - clusters/online
+          - clusters/offline
           - clusters/tags
           - pipelineruns
           - pipelineruns/stop
@@ -185,6 +187,8 @@ Roles:
           - clusters/terminal
           - clusters/containerlog
           - clusters/exec
+          - clusters/online
+          - clusters/offline
           - clusters/tags
           - pipelineruns
           - pipelineruns/stop
@@ -325,6 +329,8 @@ Roles:
           - clusters/terminal
           - clusters/containerlog
           - clusters/exec
+          - clusters/online
+          - clusters/offline
           - clusters/tags
           - pipelineruns
           - pipelineruns/stop

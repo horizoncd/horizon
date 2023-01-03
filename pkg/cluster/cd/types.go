@@ -110,7 +110,7 @@ type GetContainerLogParams struct {
 	TailLines   int
 }
 
-type ShellExecParams struct {
+type ExecParams struct {
 	Commands     []string
 	Environment  string
 	Cluster      string
@@ -132,7 +132,7 @@ type OperationResult struct {
 	Error  error
 }
 
-type ExecFunc func(ctx context.Context, params *ShellExecParams) (map[string]ExecResp, error)
+type ExecFunc func(ctx context.Context, params *ExecParams) (map[string]ExecResp, error)
 
 type containerList struct {
 	name       string

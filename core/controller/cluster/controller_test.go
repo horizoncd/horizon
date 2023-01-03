@@ -937,12 +937,27 @@ func test(t *testing.T) {
 		},
 	}
 
+	cd.EXPECT().Online(ctx, gomock.Any()).Return(execResp, nil)
+	cd.EXPECT().Offline(ctx, gomock.Any()).Return(execResp, nil)
 	cd.EXPECT().Exec(ctx, gomock.Any()).Return(execResp, nil)
 
 	execRequest := &ExecRequest{
 		PodList:  []string{"pod1", "pod2"},
 		Commands: []string{"echo 'hello, world'"},
 	}
+
+	onlineResp, err := c.Online(ctx, resp.ID, execRequest)
+	assert.Nil(t, err)
+	assert.NotNil(t, onlineResp)
+	b, _ = json.Marshal(onlineResp)
+	t.Logf("%s", string(b))
+
+	offlineResp, err := c.Offline(ctx, resp.ID, execRequest)
+	assert.Nil(t, err)
+	assert.NotNil(t, offlineResp)
+	b, _ = json.Marshal(offlineResp)
+	t.Logf("%s", string(b))
+
 	shellResp, err := c.Exec(ctx, resp.ID, execRequest)
 	assert.Nil(t, err)
 	assert.NotNil(t, shellResp)

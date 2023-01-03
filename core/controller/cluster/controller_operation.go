@@ -475,8 +475,63 @@ func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
 	return c.cd.Resume(ctx, &param)
 }
 
+// Deprecated
+func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
+	const op = "cluster controller: online"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	return c.exec(ctx, clusterID, r, c.cd.Online)
+}
+
+// Deprecated
+func (c *controller) Offline(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
+	const op = "cluster controller: offline"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	return c.exec(ctx, clusterID, r, c.cd.Offline)
+}
+
+func (c *controller) exec(ctx context.Context, clusterID uint,
+	r *ExecRequest, execFunc cd.ExecFunc) (_ ExecResponse, err error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
+	if err != nil {
+		return nil, err
+	}
+
+	execResp, err := execFunc(ctx, &cd.ExecParams{
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+		Namespace:    envValue.Namespace,
+		PodList:      r.PodList,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ofExecResp(execResp), nil
+}
+
 func (c *controller) Exec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
-	const op = "cluster controller: shell exec"
+	const op = "cluster controller: exec"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -503,7 +558,7 @@ func (c *controller) Exec(ctx context.Context, clusterID uint, r *ExecRequest) (
 		return nil, err
 	}
 
-	params := &cd.ShellExecParams{
+	params := &cd.ExecParams{
 		Commands:     r.Commands,
 		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,
