@@ -71,6 +71,10 @@ type Controller interface {
 
 	// Deprecated: GetClusterStatus
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
+	// Deprecated
+	Online(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
+	// Deprecated
+	Offline(ctx context.Context, clusterID uint, r *ExecRequest) (ExecResponse, error)
 	Exec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error)
 
 	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)

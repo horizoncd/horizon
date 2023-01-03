@@ -70,6 +70,16 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/clusters/:%v/containerlog", common.ParamClusterID),
 			HandlerFunc: api.GetContainerLog,
 		}, {
+			Method: http.MethodPost,
+			// Deprecated
+			Pattern:     fmt.Sprintf("/clusters/:%v/online", common.ParamClusterID),
+			HandlerFunc: api.Online,
+		}, {
+			Method: http.MethodPost,
+			// Deprecated
+			Pattern:     fmt.Sprintf("/clusters/:%v/offline", common.ParamClusterID),
+			HandlerFunc: api.Offline,
+		}, {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/exec", common.ParamClusterID),
 			HandlerFunc: api.Exec,
