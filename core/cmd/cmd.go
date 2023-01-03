@@ -95,15 +95,12 @@ import (
 	clustergitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
-	"github.com/horizoncd/horizon/pkg/cmdb"
 	oauthconfig "github.com/horizoncd/horizon/pkg/config/oauth"
 	"github.com/horizoncd/horizon/pkg/config/pprof"
 	roleconfig "github.com/horizoncd/horizon/pkg/config/role"
 	gitlabfty "github.com/horizoncd/horizon/pkg/gitlab/factory"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
-	"github.com/horizoncd/horizon/pkg/hook"
-	"github.com/horizoncd/horizon/pkg/hook/handler"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	"github.com/horizoncd/horizon/pkg/oauth/generate"
 	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
@@ -327,16 +324,6 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	handlers := make([]hook.EventHandler, 0)
-	if coreConfig.CmdbConfig.Enabled {
-		cmdbController := cmdb.NewController(coreConfig.CmdbConfig)
-		cmdbHandler := handler.NewCMDBEventHandler(cmdbController)
-		handlers = append(handlers, cmdbHandler)
-	}
-	memHook := hook.NewInMemHook(2000, handlers...)
-	go memHook.Process()
-	common.ElegantExit(memHook)
-
 	oauthAppStore := oauthstore.NewOauthAppStore(mysqlDB)
 	oauthTokenStore := oauthstore.NewTokenStore(mysqlDB)
 	oauthManager := oauthmanager.NewManager(oauthAppStore, oauthTokenStore,
@@ -415,7 +402,6 @@ func Run(flags *Flags) {
 		UserSvc:              userSvc,
 		RoleService:          roleService,
 		ScopeService:         scopeService,
-		Hook:                 memHook,
 		ApplicationGitRepo:   applicationGitRepo,
 		TemplateSchemaGetter: templateSchemaGetter,
 		Cd:                   cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper),

@@ -22,7 +22,6 @@ import (
 	emvregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	"github.com/horizoncd/horizon/pkg/hook/hook"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
@@ -501,7 +500,6 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
-	c.postHook(ctx, hook.CreateCluster, ret)
 
 	return ret, nil
 }
@@ -840,7 +838,6 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		}); err != nil {
 			log.Warningf(newctx, "failed to create event, err: %s", err.Error())
 		}
-		c.postHook(newctx, hook.DeleteCluster, cluster.Name)
 	}()
 
 	return nil

@@ -152,7 +152,6 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		pipelineMgr:          param.PipelineMgr,
 		tektonFty:            param.TektonFty,
 		registryFty:          registryfty.Fty,
-		hook:                 param.Hook,
 		userManager:          param.UserManager,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
