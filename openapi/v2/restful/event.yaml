@@ -1,0 +1,47 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Webhook-Restful
+  description: Restful API About Event
+  version: 1.0.0
+servers:
+  - url: "http://localhost:8080/"
+paths:
+  /apis/core/v1/supportevents:
+    get:
+      tags:
+        - event
+      operationId: listSupportEvents
+      summary: list supported events
+      responses:
+        "200":
+          description: Succuss
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupportEvents"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    SupportEvents:
+      type: object
+      properties:
+        applications:
+          $ref: "#/components/schemas/Actions"
+        clusters:
+          $ref: "#/components/schemas/Actions"
+    Actions:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          description:
+            type: string

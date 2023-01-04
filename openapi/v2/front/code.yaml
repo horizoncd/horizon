@@ -1,0 +1,86 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Code-Front
+  description: Front API About Terminal
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v1/code/listbranch:
+    parameters:
+      - name: giturl
+        in: query
+        description: giturl the the code repo
+        required: true
+      - name: filter
+        in: query
+        description: the filter
+        required: false
+      - name: pageNumber
+        in: query
+        description: the page number
+        required: false
+      - name: pageSize
+        in: query
+        description: the page size of per page
+    get:
+      tags:
+        - code
+      operationId: listbranch
+      summary: list the branches if git a repo
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v1/code/listtag:
+    parameters:
+      - name: giturl
+        in: query
+        description: giturl the the code repo
+        required: true
+      - name: filter
+        in: query
+        description: the filter
+        required: false
+      - name: pageNumber
+        in: query
+        description: the page number
+        required: false
+      - name: pageSize
+        in: query
+        description: the page size of per page
+    get:
+      tags:
+        - code
+      operationId: listtag
+      summary: list the git repo tags
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

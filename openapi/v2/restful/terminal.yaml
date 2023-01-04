@@ -1,0 +1,36 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Member-Restful
+  description: Restful API About Terminal
+  version: 1.0.0
+servers:
+  - url: 'ws://localhost:8080/'
+paths:
+  /apis/core/v1/clusters/{clusterID}/shell?podName={podName}&containerName={containerName}:
+    parameters:
+      - name: clusterID
+        in: path
+        description: cluster id
+        required: true
+      - name: podName
+        in: query
+        required: true
+        description: pod name
+      - name: containerName
+        in: query
+        required: true
+        description: container name
+    get:
+      tags:
+        - terminal
+      operationId: getShell
+      summary: get a shell associated with specified cluster container
+      responses:
+        '200':
+          description: Succuss
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

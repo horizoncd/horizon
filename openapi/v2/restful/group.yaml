@@ -1,0 +1,227 @@
+openapi: 3.0.1
+info:
+  title: Horizon-group-restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/groups:
+    post:
+      tags:
+        - group
+      operationId: createGroup
+      summary: create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewGroup"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupID"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/groups/{groupID}:
+    parameters:
+      - name: groupID
+        in: path
+    get:
+      tags:
+        - group
+      operationId: getGroupDetail
+      summary: get the detail of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "../front/group.yaml#/components/schemas/GroupChild"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - group
+      operationId: updateGroupDetail
+      summary: update detail of a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - group
+      operationId: deleteGroup
+      summary: delete a group
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/groups/{groupID}/groups:
+    parameters:
+      - name: groupID
+        in: path
+    get:
+      tags:
+        - group
+      operationId: getSubgroups
+      summary: get subgroups of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/groups/{groupID}/regionselectors:
+    parameters:
+      - name: groupID
+        in: path
+    put:
+      tags:
+        - group
+      operationId: setRegionselectors
+      summary: set regionSelector of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/groups/{groupID}/transfer?groupID={groupID}:
+    parameters:
+      - name: groupID
+        in: path
+      - name: groupID
+        in: query
+    put:
+      tags:
+        - group
+      operationId: transferGroup
+      summary: transfer a group under another parent group
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    NewGroup:
+      type: object
+      required:
+        - name
+        - path
+      properties:
+        name:
+          $ref: '#/components/schemas/GroupName'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        parantID:
+          $ref: '#/components/schemas/GroupID'
+    Group:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/GroupID'
+        name:
+          $ref: '#/components/schemas/GroupName'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        parentID:
+          $ref: '#/components/schemas/GroupID'
+        updatedAt:
+          $ref: "common.yaml#/components/schemas/Date"
+        fullName:
+          $ref: '#/components/schemas/GroupFullName'
+        fullPath:
+          $ref: '#/components/schemas/GroupFullPath'
+
+    GroupID:
+      type: integer
+      format: int64
+      description: the parent id of the subgroup, if not provided, a root group
+
+    GroupName:
+      type: string
+      maxLength: 64
+      description: the group Name
+
+    GroupFullName:
+      type: string
+      maxLenth: 2048
+      description: the group FullName
+
+    GroupFullPath:
+      type: string
+      maxLenth: 2048
+      description: the group FullName
+
+    GroupPath:
+      type: string
+      maxLength: 128
+      description: the group path
+
+
+    GroupDescription:
+      type: string
+      maxLength: 1024
+      description: the group description
+
+
+

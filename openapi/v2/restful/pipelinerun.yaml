@@ -1,0 +1,142 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Pipelinerun-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/pipelineruns/{pipelinerunID}/stop:
+    parameters:
+      - name: pipelinerunID
+        in: query
+        description: the pipelinerun ID
+        required: true
+    post:
+      tags:
+        - pipelinerun
+      operationId: stopPipelinerun
+      summary: |
+        Stop the running pipelinerun for a cluster.
+        If there is no running pipelinerun, do nothing and return success.
+        A cluster can only have one running pipelinerun.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/pipelineruns/{pipelinerunID}/log:
+    parameters:
+      - name: pipelinerunID
+        in: query
+        description: the pipelinerun ID
+        required: true
+    get:
+      tags:
+        - pipelinerun
+      operationId: getPipelineRunLog
+      summary: |
+        Get the specified pipelinerun's log for a cluster.
+      responses:
+        "200":
+          description: Success
+          content:
+            text/plain:
+              schema:
+                example: |
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/pipelineruns/{pipelinerunID}:
+    parameters:
+      - name: pipelinerunID
+        in: query
+        description: the pipelinerun ID
+        required: true
+    get:
+      tags:
+        - pipelinerun
+      operationId: getPipelinerun
+      summary: |
+        Get the specified pipelinerun for a cluster.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":
+                      {
+                          "id":3,
+                          "title":"Feature123",
+                          "description":"release big rocket",
+                          "action":"builddeploy",
+                          "status":"StatusCreated",
+                          "gitURL":"ssh://git@cloudnative.com:22222/app/app-demo.git",
+                          "gitBranch":"master",
+                          "gitCommit":"4234324dsdjasljl43",
+                          "imageURL":"",
+                          "lastConfigCommit":"4234324dsdjasljl43",
+                          "configCommit":"4234324dsdjasljl43",
+                          "startedAt":"2021-11-07 11:19:54",
+                          "finishedAt":"2021-11-07 11:19:54",
+                          "canRollback": false,
+                          "createBy":{
+                            "userID":0,
+                            "userName":"123"
+                          }
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/pipelineruns/{pipelinerunID}/diffs:
+    parameters:
+      - name: pipelinerunID
+        in: query
+        description: the pipelinerun ID
+        required: true
+    get:
+      tags:
+        - pipelinerun
+      operationId: getPipelineRunDiff
+      summary: |
+        Get the specified pipelinerun's diff for a cluster.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "codeInfo":{
+                              "Branch": "master"
+                              "CommitMsg": "last commit msg"
+                              "CommitID":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
+                              "Link": https://g.hz.netease.com/music-cloud-native/horizon/horizon/-/commits/feature/applications
+                          },
+                          "configDiff ": {
+                            "from": "6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
+                            "to": "6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
+                            "diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: music-cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
+                          }
+                      }
+                  }

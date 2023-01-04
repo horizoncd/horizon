@@ -1,0 +1,172 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Environments-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/environments:
+    get:
+      tags:
+        - environment
+      operationId: listEnvironments
+      summary: list environments
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Environment'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - environment
+      operationId: createEnvironment
+      summary: create a environment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Environment"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                data:
+                  type: integer
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/environments/{environmentID}:
+    parameters:
+      - name: environmentID
+        in: path
+    get:
+      tags:
+        - environment
+      operationId: getEnvironment
+      summary: get a environment
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - environment
+      operationId: updateEnvironment
+      summary: update a environment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Environment'
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - environment
+      operationId: deleteEnvironment
+      summary: delete a environment
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/environments/{environment}/regions:
+    get:
+      tags:
+        - environment
+      operationId: listRegions
+      summary: list regions of a environment
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":[
+                          {
+                              "name": "yq",
+                              "displayName": "义桥",
+                              "disabled": false,
+                              "isDefault": true
+                          },
+                          {
+                              "name": "dg",
+                              "displayName": "东冠",
+                              "disabled": false,
+                              "isDefault": false
+                          },
+                          {
+                              "name": "eks",
+                              "displayName": "海外EKS",
+                              "disabled": false,
+                              "isDefault": false
+                          }
+                      ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    Environment:
+      type: object
+      required:
+        - id
+        - name
+        - displayName
+        - autoFree
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        displayName:
+          type: string
+        autoFree:
+          type: boolean

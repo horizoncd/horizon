@@ -1,0 +1,169 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Region-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/regions:
+    get:
+      tags:
+        - region
+      operationId: listRegions
+      summary: list regions
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Region'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - region
+      operationId: createRegion
+      summary: create a region
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Region"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                data:
+                  type: integer
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/regions/{regionID}:
+    parameters:
+      - name: regionID
+        in: path
+    get:
+      tags:
+        - region
+      operationId: getRegion
+      summary: get a region
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Region'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - region
+      operationId: updateRegion
+      summary: update a region
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Region'
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - region
+      operationId: deleteRegion
+      summary: delete a region
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    Region:
+      type: object
+      required:
+        - id
+        - name
+        - displayName
+        - server
+        - certificate
+        - ingressDomain
+        - prometheusURL
+        - disabled
+        - registryID
+        - registry
+        - tags
+        - tags
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        displayName:
+          type: string
+        server:
+          type: string
+        certificate:
+          type: string
+        ingressDomain:
+          type: string
+        prometheusURL:
+          $ref: "common.yaml#/components/schemas/URL"
+        disabled:
+          type: boolean
+        registryID:
+          type: integer
+        registry:
+          type: object
+          properties:
+            name:
+              type: string
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+        createdAt:
+          $ref: "common.yaml#/components/schemas/Date"
+        updatedAt:
+          $ref: "common.yaml#/components/schemas/Date"
+

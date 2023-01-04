@@ -1,0 +1,176 @@
+openapi: 3.0.3
+info:
+  title: Horizon-OAuth
+  description: Horizon-OAuth
+  version: 1.0.0
+servers:
+  - url: "https://localhost:8080"
+paths:
+  /login/oauth/authorize:
+    get:
+      description: Issue an Authorization Request， ref oauth 2.0 Protocol Flow, https://datatracker.ietf.org/doc/html/rfc6749#section-1.2
+      tags:
+        - oauth
+      parameters:
+        - name: client_id
+          in: query
+          description: the oauth app client_id
+          required: true
+          schema:
+            type: string
+        - name: redirect_url
+          in: query
+          description: the oauth redirect url after grant
+          schema:
+            $ref: "common.yaml#/components/schemas/URL"
+          required: true
+        - name: state
+          in: query
+          description: This should contain a random string to protect against forgery attacks and could contain any other arbitrary data.
+          required: true
+          schema:
+            type: string
+        - name: scope
+          in: query
+          description: A space delimited list of scopes.
+            current supprt ["applications:read-only", "applications:read-write", "clusters:read-only", "clusters:read-write"]
+            defaults to an empty is ["applications:read-write", "clusters:read-write"]
+            refer https://docs.popo.netease.com/lingxi/188cc9677632447c86b2981052daf026#EneQ-1653471285656
+          required: false
+          schema:
+            type: string
+      operationId: requestHorizonUserIdentity
+      summary: Request a user's Horizon identity
+      responses:
+        "200":
+          description: "if not grant, return a grant html page"
+        "302":
+          description: "case1: if not login, redirect to login page; case2: if granted, return grant html page"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      description: Grant Authorization Request by Horizon User
+      tags:
+        - oauth
+      operationId: requestHorizonUserIdentity
+      summary: Request a user's Horizon identity
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RequestHorizonUserIdentityForm"
+      responses:
+        "302":
+          description: "with http response location in header; location is the redirect_url with code and state"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /login/oauth/access_token:
+    post:
+      description: get an Access Token baed on the used granted Authorization code
+      tags:
+        - oauth
+      operationId: retrieveHorizonUserAccessToken
+      summary: retrieve access Token from horizon
+      requestBody:
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RetrieveHorizonUserAccessTokenForm"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+                example: |
+                  {
+                    "access_token": "",
+                    "expires_in": 28800,
+                    "scope": "",
+                    "token_type": "bearer"
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    RetrieveHorizonUserAccessTokenForm:
+      type: object
+      required:
+        - client_id
+        - client_secret
+        - code
+        - redirect_uri
+        - state
+      properties:
+        client_id:
+          $ref: "#/components/schemas/Client_ID"
+        client_secret:
+          type: string
+        code:
+          type: string
+          description: "the authorize code get from Authorization Request"
+        redirect_uri:
+          $ref: "common.yaml#/components/schemas/URL"
+        state:
+          $ref: "#/components/schemas/State"
+
+    RequestHorizonUserIdentityForm:
+      type: object
+      required:
+        - client_id
+        - redirect_url
+        - state
+      properties:
+        client_id:
+          $ref: "#/components/schemas/Client_ID"
+        redirect_url:
+          $ref: "#/components/schemas/Redirect_URL"
+        state:
+          $ref: "#/components/schemas/State"
+        scope:
+          description: A space delimited list of scopes.
+          type: string
+
+    Token:
+      type: object
+      properties:
+        access_token:
+          $ref: "#/components/schemas/Access_Token"
+        expires_in:
+          description: "The lifetime in seconds of the access token."
+          type: number
+          format: uint64
+        scope:
+          type: string
+
+    Access_Token:
+      type: string
+      description: The access token issued by the authorization server.
+
+    Client_ID:
+      type: string
+      description: the horizon app client_id
+
+    Redirect_URL:
+      description: the oauth redirect url after grant
+      $ref: "common.yaml#/components/schemas/URL"
+
+    State:
+      description: This should contain a random string to protect against forgery attacks and could contain any other arbitrary data.
+      type: string

@@ -1,0 +1,74 @@
+components:
+  parameters:
+    pageNumber:
+      name: pageNumber
+      in: query
+    pageSize:
+      name: pageSize
+      in: query
+
+  schemas:
+    PageParams:
+      type: object
+      properties:
+        current:
+          type: number
+        pageSize:
+          type: number
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestID:
+          type: string
+
+    resourceType:
+      type: string
+      enum:
+        - group
+        - application
+        - applicationInstance
+
+    Date:
+      type: string
+      format: date
+      pattern: full-date
+
+
+    URL:
+      type: string
+      format: uri
+
+    Description:
+      type: string
+      maxLength: 1024
+      description: the  description
+
+    ID:
+      type: integer
+      format: uint64
+
+    GroupID:
+      type: integer
+      format: int64
+      description: the parent id of the subgroup, if not provided, a root group
+
+    User:
+      type: object
+      properties:
+        name:
+          type: string
+          description: the name of user
+        email:
+          type: string]
+          description: the e-mail address of user
+        id:
+          type: integer
+          description: the id of user

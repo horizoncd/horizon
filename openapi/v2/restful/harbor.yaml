@@ -1,0 +1,134 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Registry-Restful
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v1/registries:
+    get:
+      tags:
+        - registry
+      operationId: listRegistry
+      summary: list registries
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Registry'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - registry
+      operationId: createRegistry
+      summary: create a registry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Registry"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                data:
+                  type: integer
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/registries/{registryID}:
+    parameters:
+      - name: registryID
+        in: path
+    get:
+      tags:
+        - registry
+      operationId: getRegistry
+      summary: get a registry
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registry'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - registry
+      operationId: updateRegistry
+      summary: update a registry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Registry'
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - registry
+      operationId: deleteRegistry
+      summary: delete a registry
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    Registry:
+      type: object
+      required:
+        - id
+        - name
+        - server
+        - token
+        - preheatPolicyID
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        server:
+          type: string
+        token:
+          type: string
+        preheatPolicyID:
+          type: integer
+
