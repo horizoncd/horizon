@@ -16,6 +16,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/models"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,7 @@ func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
-		&tagmodels.Tag{}, &membermodels.Member{},
+		&tagmodels.Tag{}, &membermodels.Member{}, &regionmodels.Region{},
 		&trmodels.TemplateRelease{}); err != nil {
 		panic(err)
 	}
@@ -55,8 +56,14 @@ func Test(t *testing.T) {
 	appMgr := manager.ApplicationManager
 	clusterMgr := manager.ClusterMgr
 	templateReleaseMgr := manager.TemplateReleaseManager
+	regionMgr := manager.RegionMgr
 
 	// init data
+	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+		Name: "test",
+	})
+	assert.Nil(t, err)
+
 	application, err := appMgr.Create(ctx, &appmodels.Application{
 		GroupID:         uint(1),
 		Name:            "app",
@@ -74,6 +81,7 @@ func Test(t *testing.T) {
 		Name:            "cluster",
 		Template:        "javaapp",
 		TemplateRelease: "v1.2.0",
+		RegionName:      region.Name,
 	}, nil, nil)
 	assert.Nil(t, err)
 
@@ -204,6 +212,7 @@ func Test(t *testing.T) {
 	cluster2, err := clusterMgr.Create(ctx, &models.Cluster{
 		ApplicationID: application.ID,
 		Name:          "cluster2",
+		RegionName:    region.Name,
 	}, nil, nil)
 	assert.Nil(t, err)
 

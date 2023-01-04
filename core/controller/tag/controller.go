@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/lib/q"
 	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
@@ -85,7 +86,9 @@ func (c *controller) ListSubResourceTags(ctx context.Context, resourceType strin
 
 	var results []*models.Tag
 	if resourceType == common.ResourceApplication {
-		_, clusters, err := c.clusterMgr.ListByApplicationID(ctx, resourceID)
+		query := q.New(q.KeyWords{common.ParamApplicationID: resourceID})
+		query.WithoutPagination = true
+		_, clusters, err := c.clusterMgr.List(ctx, query)
 		if err != nil {
 			return nil, err
 		}
