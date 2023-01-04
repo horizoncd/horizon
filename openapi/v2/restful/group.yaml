@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info:
   title: Horizon-group-restful
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/groups:
+  /apis/core/v2/groups:
     post:
       tags:
         - group
@@ -30,14 +30,13 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/groups/{groupID}:
+  /apis/core/v2/groups/{groupID}:
     parameters:
-      - name: groupID
-        in: path
+      - $ref: 'common.yaml#/components/parameters/paramGroupID'
     get:
       tags:
         - group
-      operationId: getGroupDetail
+      operationId: getGroup
       summary: get the detail of a group
       responses:
         '200':
@@ -55,7 +54,7 @@ paths:
     put:
       tags:
         - group
-      operationId: updateGroupDetail
+      operationId: updateGroup
       summary: update detail of a group
       requestBody:
         required: true
@@ -69,7 +68,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Group'
+                $ref: '#/components/schemas/UpdateGroup'
         default:
           description: Unexpected error
           content:
@@ -90,11 +89,12 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/groups/{groupID}/groups:
-    parameters:
-      - name: groupID
-        in: path
+  /apis/core/v2/groups/{groupID}/groups:
     get:
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/paramGroupID'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
       tags:
         - group
       operationId: getSubgroups
@@ -114,34 +114,61 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/groups/{groupID}/regionselectors:
-    parameters:
-      - name: groupID
-        in: path
-    put:
+    post:
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/paramGroupID'
       tags:
         - group
-      operationId: setRegionselectors
-      summary: set regionSelector of a group
+      operationId: createSubGroup
+      summary: create a sub group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewGroup"
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Group'
+                $ref: "#/components/schemas/GroupID"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/groups/{groupID}/transfer?groupID={groupID}:
+  /apis/core/v2/groups/{groupID}/regionselectors:
     parameters:
-      - name: groupID
-        in: path
+      - $ref: 'common.yaml#/components/parameters/paramGroupID'
+    put:
+      tags:
+        - group
+      operationId: setRegionSelectors
+      summary: set regionSelector of a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegionSelectors'
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/groups/{groupID}/transfer:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramGroupID'
       - name: groupID
         in: query
+        required: true
     put:
       tags:
         - group
@@ -172,6 +199,19 @@ components:
           $ref: '#/components/schemas/GroupDescription'
         parentID:
           $ref: '#/components/schemas/GroupID'
+        VisibilityLevel:
+          $ref: '#/components/schemas/GroupVisibilityLevel'
+    UpdateGroup:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/GroupName'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        VisibilityLevel:
+          $ref: '#/components/schemas/GroupVisibilityLevel'
     Group:
       type: object
       properties:
@@ -195,6 +235,20 @@ components:
           $ref: '#/components/schemas/GroupFullName'
         fullPath:
           $ref: '#/components/schemas/GroupFullPath'
+    RegionSelectors:
+      type: array
+      items:
+        $ref: '#/components/schemas/RegionSelector'
+
+    RegionSelector:
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/Key'
+        values:
+          $ref: '#/components/schemas/Values'
+        operator:
+          $ref: '#/components/schemas/Operator'
 
     GroupID:
       type: integer
@@ -221,7 +275,6 @@ components:
       maxLength: 128
       description: the group path
 
-
     GroupDescription:
       type: string
       maxLength: 1024
@@ -234,6 +287,19 @@ components:
     GrouptraversalIDs:
       type: string
       description: traversal IDs of group in resource tree
+
+    Key:
+      type: string
+    Values:
+      type: array
+      items:
+        $ref: '#/components/schemas/Value'
+    Value:
+      type: string
+    Operator:
+      type: string
+      default: "in"
+
 
 
 

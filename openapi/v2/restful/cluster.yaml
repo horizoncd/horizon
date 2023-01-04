@@ -5,6 +5,1059 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
+  /apis/core/v2/applications/{applicationID}/clusters?environment={environment}&filter={filter}&pageNumber={pageNumber}&pageSize={pageSize}&tagSelector={tagSelector}:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramApplicationID'
+      - $ref: 'common.yaml#/components/parameters/queryEnvironment'
+        required: false
+      - $ref: 'common.yaml#/components/parameters/queryFilter'
+      - $ref: 'common.yaml#/components/parameters/pageSize'
+      - $ref: 'common.yaml#/components/parameters/pageNumber'
+      - name: tagSelector
+        in: query
+        description: |
+          filter clusters by tags, support operators: =, in, the comma separator acts as a logical AND (&&) operator. For example, if we want to filter clusters by tags(a equals to A and b equals to c or d), the tagSelector is "a=b,b in (c,d)"
+    get:
+      tags:
+        - cluster
+      operationId: listClustersByApplication
+      summary: List clusters of a specified application
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "total":2,
+                          "items":[
+                              {
+                                  "id":3028,
+                                  "name":"yufeng-helloworld-online",
+                                  "scope":{
+                                      "environment":"dev",
+                                      "region":"hz",
+                                      "regionDisplayName":"hangzhou"
+                                  },
+                                  "template":{
+                                      "name":"javaapp",
+                                      "release":"v1.1.0"
+                                  },
+                                  "git": {
+                                      "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                                      "httpURL": "https://cloudnative.com/app/app-demo"
+                                  },
+                                  "createdAt":"2021-12-15T21:17:20+08:00",
+                                  "updatedAt":"2021-12-15T21:17:20+08:00",
+                                  "fullName":"others/yufeng-helloworld/yufeng-helloworld-online",
+                                  "fullPath":"/others/yufeng-helloworld/yufeng-helloworld-online"
+                              },
+                              {
+                                  "id":2412,
+                                  "name":"yufeng-tomtest-online",
+                                  "scope":{
+                                      "environment":"dev",
+                                      "region":"hz",
+                                      "regionDisplayName":"hangzhou"
+                                  },
+                                  "template":{
+                                      "name":"javaapp",
+                                      "release":"v1.1.0"
+                                  },
+                                  "git": {
+                                      "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                                      "httpURL": "https://cloudnative.com/app/app-demo"
+                                  },
+                                  "createdAt":"2021-12-15T12:26:41+08:00",
+                                  "updatedAt":"2021-12-15T13:14:20+08:00",
+                                  "fullName":"ggjs/yufeng-tomtest/yufeng-tomtest-online",
+                                  "fullPath":"/ggjs/yufeng-tomtest/yufeng-tomtest-online"
+                              }
+                          ]
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/applications/{applicationID}/clusters?scope={scope}&extraOwner={extraOwner}:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramApplicationID'
+      - name: scope
+        in: query
+        description: scope is environment/region, this value can not be edited after created.
+        required: true
+      - name: extraOwner
+        in: query
+        description: extra owner's email
+        required: false
+    post:
+      tags:
+        - cluster
+      operationId: createCluster
+      summary: Create a cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "//name":"name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
+                    "name":"cluster",
+                    "description":"xxxxxxxxxxxx",
+                    "expireTime":"48h0m0s",
+                    "git":{
+                        "url":"ssh://git@cloud.com:22222/music-cloud-native/horizon/horizon.git",
+                        "//branch":"branch can be edited",
+                        "//tag":"tag can be edited",
+                        "//commit":"commit can be edited",
+                        "branch":"develop"
+                    },
+                    "//tags": "tags is an array constructed by key-value pairs, key and value are must be string, and must be 63 characters or less, beginning and ending with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between. ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$ ",
+                    "tags": [
+                      {
+                        "key": "rpc.tag",
+                        "value": "qa-abc"
+                      }, {
+                        "key": "dubble.tag",
+                        "value": "qa-abc"
+                      }
+                    ],
+                    "buildConfig":{
+                        "buildInfo": {
+                            "buildTool": "ant",
+                            "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.netease.music:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+                        },
+                        "buildType": "netease-normal",
+                        "environment": "javaapp_jdk17",
+                        "language": "java"
+                    },
+                    "templateInfo":{
+                        "name":"javaapp",
+                        "release":"v1.1.0"
+                    },
+                    "templateConfig":{
+                        "app":{
+                            "spec":{
+                                "replicas":1,
+                                "resource":"small"
+                            },
+                            "strategy":{
+                                "stepsTotal":1,
+                                "pauseType":"first"
+                            },
+                            "envs":[
+                                {
+                                    "name":"jvmExtra",
+                                    "value":"-Dserver.port=8080"
+                                }
+                            ],
+                            "health":{
+                                "check":"/api/test",
+                                "status":"/health/status",
+                                "online":"/health/online",
+                                "offline":"/health/offline",
+                                "port":8080
+                            }
+                        }
+                    }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/clusters/{clusterID}:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    put:
+      tags:
+        - cluster
+      operationId: updateCluster
+      summary: Update a cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "description":"xxxxxxxxxxxx",
+                    "expireTime":"24h0m0s",
+                    "environment":"test",
+                    "//git": "git params can be edited",
+                    "git":{
+                        "url":"ssh://git@cloud.com:22222/music-cloud-native/horizon/horizon.git",
+                        "subfolder":"/",
+                        "branch":"develop"
+                    },
+                    "buildConfig":{
+                        "buildInfo": {
+                            "buildTool": "ant",
+                            "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.netease.music:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+                        },
+                        "buildType": "netease-normal",
+                        "environment": "javaapp_jdk17",
+                        "language": "java"
+                    },
+                    "templateInfo":{
+                        "name":"javaapp",
+                        "release":"v1.1.0"
+                    },
+                    "templateConfig":{
+                        "app":{
+                            "spec":{
+                                "replicas":1,
+                                "resource":"small"
+                            },
+                            "strategy":{
+                                "stepsTotal":1,
+                                "pauseType":"first"
+                            },
+                            "envs":[
+                                {
+                                    "name":"jvmExtra",
+                                    "value":"-Dserver.port=8080"
+                                }
+                            ],
+                            "health":{
+                                "check":"/api/test",
+                                "status":"/health/status",
+                                "online":"/health/online",
+                                "offline":"/health/offline",
+                                "port":8080
+                            }
+                        }
+                    }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - cluster
+      operationId: getCluster
+      summary: Get a cluster
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "applicationName":"app",
+                          "applicationID":2,
+                          "id":1,
+                          "name":"cluster",
+                          "fullPath": "/a/b/c",
+                          "description":"xxxxxxxxxxxx",
+                          "expireTime":"48h0m0s",
+                          "priority":"P0",
+                          "git":{
+                              "url":"ssh://git@cloud.com:22222/music-cloud-native/horizon/horizon.git",
+                              "subfolder":"/",
+                              "branch":"develop"
+                          },
+                          "scope":{
+                              "environment":"test",
+                              "region":"hz"
+                          },
+                          "createdAt": "2021-12-02T11:29:01+08:00",
+                          "updatedAt": "2021-12-02T11:29:01+08:00",
+                          "createdBy": {
+                            "id": 1,
+                            "name": "tony",
+                            "email": "tony@corp.com"
+                          },
+                          "updatedBy": {
+                             "id": 1,
+                             "name": "tony",
+                             "email": "tony@corp.com"
+                           },
+                          "status": "Freeing",
+                          "ttlInSeconds": 3600,
+                          "manifest": {
+                              "version": "0.0.2"
+                          },
+                          "buildConfig":{
+                              "buildInfo": {
+                                  "buildTool": "ant",
+                                  "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.netease.music:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
+                              },
+                              "buildType": "netease-normal",
+                              "environment": "javaapp_jdk17",
+                              "language": "java"
+                          },
+                          "templateInfo":{
+                              "name":"javaapp",
+                              "release":"v1.1.0"
+                          },
+                          "templateConfig":{
+                              "app":{
+                                  "spec":{
+                                      "replicas":1,
+                                      "resource":"small"
+                                  },
+                                  "strategy":{
+                                      "stepsTotal":1,
+                                      "pauseType":"first"
+                                  },
+                                  "envs":[
+                                      {
+                                          "name":"jvmExtra",
+                                          "value":"-Dserver.port=8080"
+                                      }
+                                  ],
+                                  "health":{
+                                      "check":"/api/test",
+                                      "status":"/health/status",
+                                      "online":"/health/online",
+                                      "offline":"/health/offline",
+                                      "port":8080
+                                  }
+                              }
+                          }
+                      }
+                  }
+    delete:
+      tags:
+        - cluster
+      operationId: deleteCluster
+      summary: Delete a cluster
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/free:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    post:
+      tags:
+        - cluster
+      operationId: freeCluster
+      summary: Free a cluster
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/builddeploy:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    post:
+      tags:
+        - cluster
+      operationId: builddeploy
+      summary: |
+        Build and deploy for a cluster.
+        This operation will create a pipelinerun for cluster.
+        A cluster can only has one running pipelinerun.
+        Return error if there exists a running pipelinerun already.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "title": "1.1 release",
+                    "description": "xxxxxxxxxxxxxxx",
+                    "git": {
+                        "branch": "develop"
+                    }
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//pipelinerunID": "pipelinerun record id",
+                      "pipelinerunID": 1000
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/deploy:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    post:
+      tags:
+        - cluster
+      operationId: deploy
+      summary: |
+        Deploy for a cluster with no build.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "title": "1.1 release",
+                    "description": "xxxxxxxxxxxxxxx"
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//pipelinerunID": "pipelinerun record id",
+                      "pipelinerunID": 1000
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/rollback:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    post:
+      tags:
+        - cluster
+      operationId: rollback
+      summary: Rollback a cluster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "//pipelinerunID":"the pipelinerunID to rollback",
+                    "pipelinerunID": 1000
+                }
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//pipelinerunID": "pipelinerun record id",
+                      "pipelinerunID": 1000
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/restart:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    post:
+      tags:
+        - cluster
+      operationId: restart
+      summary: Restart a cluster
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "//pipelinerunID": "pipelinerun record id",
+                      "pipelinerunID": 1000
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/next:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    post:
+      tags:
+        - cluster
+      operationId: nextCluster
+      summary: |
+        Promote a cluster to next step.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/clusters/{clusterID}/promote:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    post:
+      tags:
+        - cluster
+      operationId: promoteCluster
+      summary: |
+        Promote a cluster to skip all steps.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/clusters/{clusterID}/pause:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    post:
+      tags:
+        - cluster
+      operationId: pauseCluster
+      summary: |
+        Pause a cluster.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/clusters/{clusterID}/resume:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    post:
+      tags:
+        - cluster
+      operationId: resumeCluster
+      summary: |
+        Resume a paused cluster.
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/diffs:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+      - name: targetBranch
+        in: query
+        required: false
+      - name: targetCommit
+        in: query
+        required: false
+      - name: targetTag
+        in: query
+        required: false
+    get:
+      tags:
+        - cluster
+      operationId: diffsOfCode
+      summary: |
+        Get code diffs of a cluster,
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "codeInfo":{
+                              "Branch": "master"
+                              "CommitMsg": "last commit msg"
+                              "CommitID":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
+                              "Link": https://cloud.com/music-cloud-native/horizon/horizon/-/commits/feature/applications
+                          },
+                          "configDiff ":"diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: music-cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/containerlog:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+      - name: podName
+        in: query
+        description: name of pod
+        required: true
+      - name: containerName
+        in: query
+        description: name of container
+        required: true
+      - name: tailLines
+        in: query
+        description: lines of log
+        required: false
+    get:
+      tags:
+        - cluster
+      operationId: getContainerLog
+      summary: Get log of a cluster container
+      responses:
+        "200":
+          description: Success
+          content:
+            text/plain:
+              schema:
+                example: |
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+                  xxxxxxxxxxxx
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/pods:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+      - name: podName
+        in: query
+        description: name of pod
+        schema:
+          type: string
+        required: true
+    delete:
+      tags:
+        - cluster
+      operationId: deletePods
+      summary: delete pods of cluster
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                    "data": {
+                      "pod1": {
+                        "result": true
+                      },
+                      "pod2": {
+                        "result": false,
+                        "errorMsg": "why do we failed to delete this pod"
+                      }
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/events:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+      - name: podName
+        in: query
+        description: name of pod
+        schema:
+          type: string
+        required: true
+    get:
+      tags:
+        - cluster
+      operationId: getPodEvents
+      summary: get events of pod
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data": [
+                          {
+                              "eventTimestamp": null,
+                              "message": "Successfully assigned test-1/sph-xxxx-78dd96647c-szj2g to k8s1.cloudnative.org",
+                              "reason": "Scheduled",
+                              "type": "Normal"
+                          },
+                          {
+                              "count": 1,
+                              "eventTimestamp": "2021-11-24T12:54:10Z",
+                              "message": "Started container sph-xxxx",
+                              "reason": "Started",
+                              "type": "Normal"
+                          }
+                      ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/outputs:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    get:
+      tags:
+        - cluster
+      operationId: getClusterOutputs
+      summary: get cluster outputs
+      responses:
+        "200":
+          description: Success
+          content:
+            application/yaml:
+              schema:
+                example: |
+                  SyncDomainName:
+                    Description: the sync domain of the the
+                    Value: horizon.com
+                  DebugPort:
+                    Description: the debug port
+                    Value: 1000
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/pod:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+      - name: podName
+        in: query
+        description: name of pod
+        schema:
+          type: string
+        required: true
+    get:
+      tags:
+        - cluster
+      operationId: getClusterPod
+      summary: get cluster Pod with complete info from k8s
+      responses:
+        "200":
+          description: Success
+          content:
+            application/yaml:
+              schema:
+                example: |
+                  {
+                      "data": {
+                          "metadata": {
+                              "name": "sph-test-6f94ff78bb-g6xr6",
+                              "generateName": "sph-test-6f94ff78bb-",
+                              "namespace": "dev-1",
+                              "selfLink": "/api/v2/namespaces/dev-1/pods/sph-test-6f94ff78bb-g6xr6",
+                              "uid": "61c18122-a49c-47bc-ad6f-8ae2152adc4a",
+                              "resourceVersion": "476600208",
+                              "creationTimestamp": "2022-07-27T09:46:38Z",
+                              "labels": {
+                                  "cloudnative.com/application": "sph",
+                                  "cloudnative.com/cluster": "sph-test",
+                                  "cloudnative.com/environment": "dev",
+                                  "rollouts-pod-template-hash": "6f94ff78bb"
+                              },
+                          },
+                          "spec": {
+                              "volumes": [],
+                              "initContainers": [],
+                              "containers": [
+                                  {
+                                      "name": "sph-test",
+                                      "image": "harbor.com/cloudnative-template/javaapp:v1.2.0",
+                                      "env": [],
+                                      "resources": {
+                                          "limits": {
+                                              "cpu": "1",
+                                              "ephemeral-storage": "60Gi",
+                                              "memory": "2Gi"
+                                          },
+                                          "requests": {
+                                              "cpu": "250m",
+                                              "ephemeral-storage": "128Mi",
+                                              "memory": "769Mi"
+                                          }
+                                      },
+                                      "volumeMounts": [],
+                                      "terminationMessagePath": "/dev/termination-log",
+                                      "terminationMessagePolicy": "File",
+                                      "imagePullPolicy": "IfNotPresent",
+                                      "securityContext": {
+                                          "capabilities": {
+                                              "add": [
+                                                  "SYS_PTRACE"
+                                              ]
+                                          },
+                                          "runAsUser": 10001,
+                                          "runAsGroup": 10001
+                                      }
+                                  }
+                              ],
+                          }
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/dashboards:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+    get:
+      tags:
+        - cluster
+      operationId: getGrafanaDashboards
+      summary: get cluster's grafana dashboards
+      responses:
+        "200":
+          description: Success
+          content:
+            application/yaml:
+              schema:
+                example: |
+                  {
+                      "data": {
+                          "host:": "",
+                          "params": {
+                              "kiosk": "iframe"
+                          },
+                          dashboards: [{
+                              title: "",
+                              uid: "",
+                              tags: [
+                                  "default"
+                              ]
+                          }]
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters/{clusterID}/containers:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramClusterID'
+      - name: podName
+        in: query
+        description: name of pod
+        schema:
+          type: string
+        required: true
+    get:
+      tags:
+        - cluster
+      operationId: getContainers
+      summary: get containers in a pod
+      responses:
+        "200":
+          description: Success
+          content:
+            application/yaml:
+              schema:
+                example: |
+                  {
+                    "data":[
+                      {
+                        "name": "javaapp-demo-3",
+                        "image": "hxxx",
+                        "env": [
+                          {
+                            "name": "mainClassName",
+                            "value": "com.example.demo.DemoApplication"
+                          }
+                        ],
+                        "commands": null,
+                        "args": null,
+                        "volumeMounts": [
+                          {
+                            "name": "artifacts",
+                            "readOnly": false,
+                            "mountPath": "/artifacts",
+                            "subPath": "",
+                            "volume": {
+                              "name": "artifacts",
+                              "emptyDir": {}
+                            }
+                          }
+                        ],
+                        "securityContext": {
+                          "capabilities": {
+                            "add": [
+                              "SYS_PTRACE"
+                            ]
+                          },
+                          "runAsUser": 10001,
+                          "runAsGroup": 10001
+                        },
+                        "status": {
+                          "name": "javaapp-demo-3",
+                          "state": {
+                            "running": {
+                              "startedAt": "2023-01-05T03:05:57Z"
+                            }
+                          },
+                          "started": true
+                        },
+                        "livenessProbe": {},
+                        "readinessProbe": {},
+                        "startupProbe": {}
+                      }
+                    ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/clusters:
+    get:
+      description: list cluster
+      operationId: listClusters
+      parameters:
+        - name: userID
+          in: query
+          schema:
+            type: number
+        - name: applicationID
+          in: query
+          schema:
+            type: number
+        - name: filter
+          in: query
+          schema:
+            type: string
+        - name: environment
+          in: query
+          schema:
+            type: string
+        - name: tagSelector
+          in: query
+          schema:
+            type: string
+        - name: template
+          description: template name
+          in: query
+          schema:
+            type: string
+        - name: release
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: |
+                {
+                  "data": {
+                    "total": 140,
+                    "items": [
+                      {
+                        "id": 58694,
+                        "name": "sph-sphtesttt",
+                        "description": "",
+                        "scope": {
+                          "environment": "dev",
+                          "region": "hz-dev2",
+                          "regionDisplayName": "hangzhou"
+                        },
+                        "template": {
+                          "name": "javaapp",
+                          "release": "v0.0.0-sph-rc1"
+                        },
+                        "git": {
+                          "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                          "httpURL": "https://cloudnative.com:22222/app/app-demo"
+                        },
+                        "createdAt": "2022-09-21T11:03:56+08:00",
+                        "updatedAt": "2022-10-18T19:40:06+08:00",
+                        "fullName": "gjq-test/sph/sph/sph-sphtesttt",
+                        "fullPath": "/gjq-test/sph/sph/sph-sphtesttt"
+                      }
+                    ]
+                  }
+                }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
   /apis/core/v2/cluster/{clusterID}/step:
     parameters:
       - name: clusterID
@@ -16,7 +1069,7 @@ paths:
     get:
       tags:
         - cluster
-      operationID: getClusterStep
+      operationId: getClusterStep
       summary: Get step when releasing a cluster by canary release
       description: |
         Get step when releasing a cluster by canary release, only works for argoproj.io.rollout
@@ -61,7 +1114,7 @@ paths:
     get:
       tags:
         - cluster
-      operationID: getClusterResourceTree
+      operationId: getClusterResourceTree
       summary: Get resource from k8s in tree format
       description:
         Get resource from k8s in tree format, pod will has a extra field 'podDetail'
@@ -202,7 +1255,7 @@ paths:
     get:
       tags:
         - cluster
-      operationID: getClusterBuildStatus
+      operationId: getClusterBuildStatus
       summary: Get build status
       description:
         check whether a building task is running.
@@ -232,7 +1285,7 @@ paths:
                           task:
                             type: string
                             description: task running currently
-  /apis/core/v2/cluster/{clusterID/status:
+  /apis/core/v2/clusters/{clusterID}/status:
     parameters:
       - name: clusterID
         in: path
@@ -243,7 +1296,7 @@ paths:
     get:
       tags:
         - cluster
-      operationID: getClusterStatus
+      operationId: getClusterStatus
       summary: Get status
       description:
         "check the status of current cluster: healthy, creating, progressing, suspended, manualPaused, notHealthy, notFound, freeing, freed, deleting"

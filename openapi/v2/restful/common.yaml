@@ -12,6 +12,35 @@ components:
     paramResourceID:
       name: resourceID
       in: path
+    paramApplicationID:
+      name: applicationID
+      in: path
+      description: application id
+      required: true
+    paramClusterID:
+      name: clusterID
+      in: path
+      description: cluster id
+      required: true
+    paramPipelinerunID:
+      name: pipelinerunID
+      in: path
+      description: pipelinerun id
+      required: true
+    paramGroupID:
+      name: groupID
+      in: path
+      description: group id
+      schema:
+        type: integer
+        format: int64
+      required: true
+    queryEnvironment:
+      name: environment
+      in: query
+    queryFilter:
+      name: filter
+      in: query
 
   schemas:
     PageParams:
