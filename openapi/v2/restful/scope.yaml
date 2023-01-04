@@ -1,0 +1,34 @@
+openapi: 3.0.1
+info:
+  title: Horizon Scope Restful
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/scopes:
+    get:
+      tags:
+        - scope
+      description: list scopes
+      operationId: listScopes
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "tags":[
+                              {
+                                  "name":"applications:read-write",
+                                  "desc":""
+                              },
+                              {
+                                  "name":"clusters:read-only",
+                                  "desc":""
+                              },
+                          ]
+                      }
+                  }

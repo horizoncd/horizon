@@ -1,0 +1,32 @@
+openapi: 3.0.1
+info:
+  title: Horizon Build Front
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v2/buildschema:
+    get:
+      tags:
+        - build
+      description: get build schema
+      operationId: getBuildSchema
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "jsonSchema":{},
+                          "uiSchema":{}
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

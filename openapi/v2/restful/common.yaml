@@ -6,6 +6,12 @@ components:
     pageSize:
       name: pageSize
       in: query
+    paramResourceType:
+      name: resourceType
+      in: path
+    paramResourceID:
+      name: resourceID
+      in: path
 
   schemas:
     PageParams:

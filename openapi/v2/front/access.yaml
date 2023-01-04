@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info:
   title: Horizon Access Front
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v1/accessreview:
+  /apis/front/v2/accessreview:
     post:
       tags:
         - user
@@ -21,15 +21,15 @@ paths:
               {
                   "apis": [
                       {
-                          "url": "/apis/core/v1/applications/xx/clusters?scope=test/hz",
+                          "url": "/apis/core/v2/applications/xx/clusters?scope=test/hz",
                           "method": "POST"
                       },
                       {
-                          "url": "/apis/core/v1/applications/xx/clusters?scope=dev/hz",
+                          "url": "/apis/core/v2/applications/xx/clusters?scope=dev/hz",
                           "method": "POST"
                       },
                       {
-                          "url": "/apis/core/v1/clusters/xx/shell",
+                          "url": "/apis/core/v2/clusters/xx/shell",
                           "method": "GET"
                       }
                   ]
@@ -45,19 +45,19 @@ paths:
               example: |
                 {
                     "data": {
-                        "/apis/core/v1/applications/xx/clusters?scope=dev/hz": {
+                        "/apis/core/v2/applications/xx/clusters?scope=dev/hz": {
                             "POST": {
                                 "allowed": false,
                                 "reason": ""
                             }
                         },
-                        "/apis/core/v1/applications/xx/clusters?scope=test/hz": {
+                        "/apis/core/v2/applications/xx/clusters?scope=test/hz": {
                             "POST": {
                                 "allowed": true,
                                 "reason": ""
                             }
                         },
-                        "/apis/core/v1/clusters/xx/shell": {
+                        "/apis/core/v2/clusters/xx/shell": {
                             "GET": {
                                 "allowed": false,
                                 "reason": ""

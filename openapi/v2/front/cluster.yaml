@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info:
   title: Horizon Cluster Front
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v1/clusters/{clusterName}:
+  /apis/front/v2/clusters/{clusterName}:
     get:
       tags:
         - cluster
@@ -14,6 +14,7 @@ paths:
       parameters:
         - name: clusterName
           in: path
+          description: name of cluster
       responses:
         '200':
           description: Success
@@ -31,7 +32,7 @@ paths:
                               "release":"v1.1.0"
                           },
                           "git":{
-                              "url":"ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+                              "url":"ssh://git@cloudnative.com:22222/horizon/horizon.git",
                               "subfolder":"/",
                               "branch":"develop"
                           },
@@ -46,59 +47,21 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/front/v1/clusters/{clusterID}/log:
+
+  /apis/front/v2/clusters/searchclusters?filter={filter}&userID={userID}&environment={environment}&template={template}&templateRelease={templateRelease}&applicationID={applicationID}&tagSelector={tagSelector}&pageNumber={pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - cluster
-      description: get cluster's latest pipelinerun log
-      operationId: getClusterLatestLog
-      parameters:
-        - name: clusterID
-          in: path
-      responses:
-        '200':
-          description: Success
-          content:
-            text/plain:
-              schema:
-                example: |
-                  xxxxxxxxxxxx
-                  xxxxxxxxxxxx
-                  xxxxxxxxxxxx
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-  /apis/front/v1/clusters/{clusterID}/stop:
-    post:
-      tags:
-        - cluster
-      description: stop pipelinerun for cluster
-      operationId: stopPipelienrunForCluster
-      parameters:
-        - name: clusterID
-          in: path
-      responses:
-        '200':
-          description: Success
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-  /apis/front/v1/clusters/searchclusters?filter={filter}&pageNumber=${pageNumber}&pageSize={pageSize}:
-    get:
-      tags:
-        - cluster
-      description: search clusters by name fuzzily
+      description: search clusters by environment, template, tag, application and fuzzy name
       operationId: searchClusters
       parameters:
-        - name: filter
-          in: query
-          description: "part of name for fuzzy matching"
+        - $ref: 'common.yaml#/components/parameters/filter'
+        - $ref: 'common.yaml#/components/parameters/userID'
+        - $ref: 'common.yaml#/components/parameters/environment'
+        - $ref: 'common.yaml#/components/parameters/template'
+        - $ref: 'common.yaml#/components/parameters/templateRelease'
+        - $ref: 'common.yaml#/components/parameters/applicationID'
+        - $ref: 'common.yaml#/components/parameters/tagSelector'
         - $ref: 'common.yaml#/components/parameters/pageNumber'
         - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
@@ -108,6 +71,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/listClustersResp'
+              example: |
+                {
+                    "data":{
+                        "total":2,
+                        "items":[
+                            {
+                                "id":3028,
+                                "name":"yufeng-helloworld-online",
+                                "scope":{
+                                    "environment":"dev",
+                                    "region":"hz",
+                                    "regionDisplayName":"hangzhou"
+                                },
+                                "template":{
+                                    "name":"javaapp",
+                                    "release":"v1.1.0"
+                                },
+                                "git": {
+                                  "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                                  "httpURL": "https://cloudnative.com/app/app-demo"
+                                },
+                                "createdAt":"2021-12-15T21:17:20+08:00",
+                                "updatedAt":"2021-12-15T21:17:20+08:00",
+                                "fullName":"others/yufeng-helloworld/yufeng-helloworld-online",
+                                "fullPath":"/others/yufeng-helloworld/yufeng-helloworld-online"
+                            },
+                            {
+                                "id":2412,
+                                "name":"yufeng-tomtest-online",
+                                "scope":{
+                                    "environment":"dev",
+                                    "region":"hz",
+                                    "regionDisplayName":"hangzhou"
+                                },
+                                "template":{
+                                    "name":"javaapp",
+                                    "release":"v1.1.0"
+                                },
+                                "git": {
+                                  "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                                  "httpURL": "https://cloudnative.com/app/app-demo"
+                                },
+                                "createdAt":"2021-12-15T12:26:41+08:00",
+                                "updatedAt":"2021-12-15T13:14:20+08:00",
+                                "fullName":"ggjs/yufeng-tomtest/yufeng-tomtest-online",
+                                "fullPath":"/ggjs/yufeng-tomtest/yufeng-tomtest-online"
+                            }
+                        ]
+                    }
+                }
         default:
           description: Unexpected error
           content:
@@ -115,21 +128,19 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/front/v1/clusters/searchmyclusters?filter={filter}&environment={environment}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v2/clusters/searchmyclusters?filter={filter}&userID={userID}&environment={environment}&template={template}&templateRelease={templateRelease}&applicationID={applicationID}&tagSelector={tagSelector}&pageNumber={pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - cluster
-      description: search my clusters by name fuzzily
+      description: search my clusters by environment, template, tag, application and fuzzy name
       operationId: searchMyClusters
       parameters:
-        - name: filter
-          in: query
-          description: "part of name for fuzzy matching"
-          required: false
-        - name: environment
-          in: query
-          description: environment name
-          required: false
+        - $ref: 'common.yaml#/components/parameters/filter'
+        - $ref: 'common.yaml#/components/parameters/environment'
+        - $ref: 'common.yaml#/components/parameters/template'
+        - $ref: 'common.yaml#/components/parameters/templateRelease'
+        - $ref: 'common.yaml#/components/parameters/applicationID'
+        - $ref: 'common.yaml#/components/parameters/tagSelector'
         - $ref: 'common.yaml#/components/parameters/pageNumber'
         - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
@@ -138,56 +149,57 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "total":2,
-                          "items":[
-                              {
-                                  "id":3028,
-                                  "name":"yufeng-helloworld-online",
-                                  "scope":{
-                                      "environment":"dev",
-                                      "region":"hz",
-                                      "regionDisplayName":"杭州"
-                                  },
-                                  "template":{
-                                      "name":"javaapp",
-                                      "release":"v1.1.0"
-                                  },
-                                  "git": {
-                                    "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
-                                    "httpURL": "https://cloudnative.com/app/app-demo"
-                                  },
-                                  "createdAt":"2021-12-15T21:17:20+08:00",
-                                  "updatedAt":"2021-12-15T21:17:20+08:00",
-                                  "fullName":"其他/yufeng-helloworld/yufeng-helloworld-online",
-                                  "fullPath":"/others/yufeng-helloworld/yufeng-helloworld-online"
-                              },
-                              {
-                                  "id":2412,
-                                  "name":"yufeng-tomtest-online",
-                                  "scope":{
-                                      "environment":"dev",
-                                      "region":"hz",
-                                      "regionDisplayName":"杭州"
-                                  },
-                                  "template":{
-                                      "name":"javaapp",
-                                      "release":"v1.1.0"
-                                  },
-                                  "git": {
-                                    "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
-                                    "httpURL": "https://cloudnative.com/app/app-demo"
-                                  },
-                                  "createdAt":"2021-12-15T12:26:41+08:00",
-                                  "updatedAt":"2021-12-15T13:14:20+08:00",
-                                  "fullName":"公共技术/yufeng-tomtest/yufeng-tomtest-online",
-                                  "fullPath":"/ggjs/yufeng-tomtest/yufeng-tomtest-online"
-                              }
-                          ]
-                      }
-                  }
+                $ref: '#/components/schemas/listClustersResp'
+              example: |
+                {
+                    "data":{
+                        "total":2,
+                        "items":[
+                            {
+                                "id":3028,
+                                "name":"yufeng-helloworld-online",
+                                "scope":{
+                                    "environment":"dev",
+                                    "region":"hz",
+                                    "regionDisplayName":"hangzhou"
+                                },
+                                "template":{
+                                    "name":"javaapp",
+                                    "release":"v1.1.0"
+                                },
+                                "git": {
+                                  "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                                  "httpURL": "https://cloudnative.com/app/app-demo"
+                                },
+                                "createdAt":"2021-12-15T21:17:20+08:00",
+                                "updatedAt":"2021-12-15T21:17:20+08:00",
+                                "fullName":"others/yufeng-helloworld/yufeng-helloworld-online",
+                                "fullPath":"/others/yufeng-helloworld/yufeng-helloworld-online"
+                            },
+                            {
+                                "id":2412,
+                                "name":"yufeng-tomtest-online",
+                                "scope":{
+                                    "environment":"dev",
+                                    "region":"hz",
+                                    "regionDisplayName":"hangzhou"
+                                },
+                                "template":{
+                                    "name":"javaapp",
+                                    "release":"v1.1.0"
+                                },
+                                "git": {
+                                  "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
+                                  "httpURL": "https://cloudnative.com/app/app-demo"
+                                },
+                                "createdAt":"2021-12-15T12:26:41+08:00",
+                                "updatedAt":"2021-12-15T13:14:20+08:00",
+                                "fullName":"ggjs/yufeng-tomtest/yufeng-tomtest-online",
+                                "fullPath":"/ggjs/yufeng-tomtest/yufeng-tomtest-online"
+                            }
+                        ]
+                    }
+                }
         default:
           description: Unexpected error
           content:
@@ -212,10 +224,16 @@ components:
           $ref: '#/components/schemas/id'
         name:
           $ref: '#/components/schemas/name'
+        description:
+          $ref: '#/components/schemas/description'
         scope:
           $ref: '#/components/schemas/scope'
-        environment:
-          $ref: '#/components/schemas/environment'
+        template:
+          $ref: '#/components/schemas/template'
+        git:
+          $ref: '#/components/schemas/git'
+        tags:
+          $ref: '#/components/schemas/tags'
         createdAt:
           $ref: '#/components/schemas/createdAt'
         updatedAt:
@@ -231,6 +249,9 @@ components:
     name:
       type: string
       description: name of cluster
+    description:
+      type: string
+      description: description of cluster
     environment:
       type: string
       description: name of environment
@@ -263,6 +284,35 @@ components:
     templateRelease:
       type: string
       description: release version of template
+    git:
+      type: object
+      properties:
+        sshURL:
+          $ref: '#/components/schemas/sshURL'
+        httpURL:
+          $ref: '#/components/schemas/httpURL'
+    sshURL:
+      type: string
+      description: ssh url of git repository
+    httpURL:
+      type: string
+      description: http url of git repository
+    tags:
+      type: array
+      items:
+        $ref: '#/components/schemas/tag'
+    tag:
+      type: object
+      description: tag of cluster
+      properties:
+        key:
+          $ref: '#/components/schemas/key'
+        value:
+          $ref: '#/components/schemas/value'
+    key:
+      type: string
+    value:
+      type: string
     createdAt:
       type: string
       description: creation time of cluster, contains the timezone

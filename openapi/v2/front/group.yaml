@@ -1,19 +1,19 @@
 openapi: 3.0.1
 info:
   title: Horizon-group-front
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v1/groups?fullPath={fullPath}:
+  /apis/front/v2/groups?fullPath={fullPath}&type={type}:
     get:
       tags:
         - group
       operationId: queryGroups
       summary: query group by fullPath
       parameters:
-        - name: fullPath
-          in: query
+        - $ref: 'common.yaml#/components/parameters/fullPath'
+        - $ref: 'common.yaml#/components/parameters/type'
       responses:
         '200':
           description: Success
@@ -29,7 +29,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/front/v1/groups/authedgroups:
+  /apis/front/v2/groups/authedgroups:
     get:
       tags:
         - group
@@ -50,7 +50,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/front/v1/groups/searchgroups?groupID={groupID}&filter={filter}:
+  /apis/front/v2/groups/searchgroups?groupID={groupID}&filter={filter}&pageNumber={pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
@@ -58,10 +58,10 @@ paths:
       summary: search subGroups
       operationId: searchGroups
       parameters:
-        - name: groupID
-          in: query
-        - name: filter
-          in: query
+        - $ref: 'common.yaml#/components/parameters/groupID'
+        - $ref: 'common.yaml#/components/parameters/filter'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
         '200':
           description: Success
@@ -79,7 +79,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/front/v1/groups/searchchildren?groupID={groupID}&filter={filter}:
+  /apis/front/v2/groups/searchchildren?groupID={groupID}&filter={filter}&pageNumber={pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
@@ -87,10 +87,10 @@ paths:
       summary: search children
       operationId: searchChildren
       parameters:
-        - name: groupID
-          in: query
-        - name: filter
-          in: query
+        - $ref: 'common.yaml#/components/parameters/groupID'
+        - $ref: 'common.yaml#/components/parameters/filter'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
         '200':
           description: Success
@@ -108,15 +108,15 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/front/v1/groups/children?groupID={groupID}&pageNumber=${pageNumber}&pageSize={pageSize}:
+  /apis/front/v2/groups/children?groupID={groupID}&pageNumber=${pageNumber}&pageSize={pageSize}:
     get:
       tags:
         - group
-      operationId: queryGroupChildren
-      summary: query children of a group
+      operationId: getGroupChildren
+      summary: get children of a group
       parameters:
         - name: groupID
-          in: query
+          in: path
         - $ref: 'common.yaml#/components/parameters/pageNumber'
         - $ref: 'common.yaml#/components/parameters/pageSize'
       responses:
@@ -147,6 +147,8 @@ components:
           type: string
         description:
           type: string
+        visibilityLevel:
+          type: string
         path:
           type: string
         fullName:
@@ -157,14 +159,14 @@ components:
           $ref: '#/components/schemas/GroupChildType'
         childrenCount:
           type: integer
-        Children:
+        traversalIDs:
+          type: string
+        children:
           type: array
           items:
             $ref: '#/components/schemas/GroupChild'
         parentID:
           type: integer
-        createdAt:
-          $ref: "../restful/common.yaml#/components/schemas/Date"
         updatedAt:
           $ref: "../restful/common.yaml#/components/schemas/Date"
 

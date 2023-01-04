@@ -170,7 +170,7 @@ components:
           $ref: '#/components/schemas/GroupPath'
         description:
           $ref: '#/components/schemas/GroupDescription'
-        parantID:
+        parentID:
           $ref: '#/components/schemas/GroupID'
     Group:
       type: object
@@ -183,6 +183,10 @@ components:
           $ref: '#/components/schemas/GroupPath'
         description:
           $ref: '#/components/schemas/GroupDescription'
+        visibilityLevel:
+          $ref: '#/components/schemas/GroupVisibilityLevel'
+        traversalIDs:
+          $ref: '#/components/schemas/GrouptraversalIDs'
         parentID:
           $ref: '#/components/schemas/GroupID'
         updatedAt:
@@ -204,12 +208,12 @@ components:
 
     GroupFullName:
       type: string
-      maxLenth: 2048
+      maxLength: 2048
       description: the group FullName
 
     GroupFullPath:
       type: string
-      maxLenth: 2048
+      maxLength: 2048
       description: the group FullName
 
     GroupPath:
@@ -222,6 +226,14 @@ components:
       type: string
       maxLength: 1024
       description: the group description
+
+    GroupVisibilityLevel:
+      type: string
+      description: visibility level of group
+
+    GrouptraversalIDs:
+      type: string
+      description: traversal IDs of group in resource tree
 
 
 
