@@ -13,7 +13,6 @@ import (
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	"github.com/horizoncd/horizon/pkg/hook/hook"
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
@@ -157,7 +156,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 		UpdatedAt:     updateClusterResp.UpdatedAt,
 	}
 
-	// 12. hook
+	// 12. record event
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: common.ResourceCluster,
@@ -167,7 +166,6 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
-	c.postHook(ctx, hook.CreateCluster, ret)
 
 	// 12. customize response
 	return ret, nil

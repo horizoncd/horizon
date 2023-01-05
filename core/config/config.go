@@ -8,7 +8,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/config/argocd"
 	"github.com/horizoncd/horizon/pkg/config/authenticate"
 	"github.com/horizoncd/horizon/pkg/config/autofree"
-	"github.com/horizoncd/horizon/pkg/config/cmdb"
 	"github.com/horizoncd/horizon/pkg/config/db"
 	"github.com/horizoncd/horizon/pkg/config/eventhandler"
 	"github.com/horizoncd/horizon/pkg/config/git"
@@ -39,7 +38,6 @@ type Config struct {
 	TektonMapper           tekton.Mapper           `yaml:"tektonMapper"`
 	TemplateRepo           templaterepo.Repo       `yaml:"templateRepo"`
 	AccessSecretKeys       authenticate.KeysConfig `yaml:"accessSecretKeys"`
-	CmdbConfig             cmdb.Config             `yaml:"cmdbConfig"`
 	GrafanaConfig          grafana.Config          `yaml:"grafanaConfig"`
 	Oauth                  oauth.Server            `yaml:"oauth"`
 	AutoFreeConfig         autofree.Config         `yaml:"autoFree"`

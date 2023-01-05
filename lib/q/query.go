@@ -20,9 +20,14 @@ type Query struct {
 	PageNumber int
 	// Page size
 	PageSize int
+	// Without pagination
+	WithoutPagination bool
 }
 
 func (q *Query) Limit() int {
+	if q.WithoutPagination {
+		return -1
+	}
 	if q.PageSize < 1 {
 		q.PageSize = common.DefaultPageSize
 	}
@@ -30,6 +35,9 @@ func (q *Query) Limit() int {
 }
 
 func (q *Query) Offset() int {
+	if q.WithoutPagination {
+		return 0
+	}
 	if q.PageSize < 1 {
 		q.PageSize = common.DefaultPageSize
 	}

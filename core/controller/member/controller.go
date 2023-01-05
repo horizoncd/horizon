@@ -2,13 +2,10 @@ package member
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"strconv"
 
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	"github.com/horizoncd/horizon/pkg/param"
-	"github.com/horizoncd/horizon/pkg/util/errors"
 )
 
 type Controller interface {
@@ -38,96 +35,60 @@ type controller struct {
 }
 
 func (c *controller) CreateMember(ctx context.Context, postMember *PostMember) (*Member, error) {
-	const op = "group *controller: create group member"
-
 	member, err := c.memberService.CreateMember(ctx, CovertPostMember(postMember))
 	if err != nil {
-		switch err {
-		case memberservice.ErrMemberExist:
-			return nil, errors.E(op, http.StatusBadRequest, err.Error())
-		case memberservice.ErrGrantHighRole:
-			return nil, errors.E(op, http.StatusBadRequest, err.Error())
-		case memberservice.ErrNotPermitted:
-			return nil, errors.E(op, http.StatusBadRequest, err.Error())
-		default:
-			return nil, errors.E(op, http.StatusInternalServerError, err.Error())
-		}
+		return nil, err
 	}
 	retMember, err := c.convertHelper.ConvertMember(ctx, member)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+		return nil, err
 	}
 	return retMember, nil
 }
 
 func (c *controller) UpdateMember(ctx context.Context, id uint, role string) (*Member, error) {
-	const op = "group *controller: update group member"
-
 	member, err := c.memberService.UpdateMember(ctx, id, role)
 	if err != nil {
-		switch err {
-		case memberservice.ErrMemberExist:
-			return nil, errors.E(op, http.StatusBadRequest, err.Error())
-		case memberservice.ErrGrantHighRole:
-			fallthrough
-		case memberservice.ErrNotPermitted:
-			return nil, errors.E(op, http.StatusForbidden, err.Error())
-		default:
-			return nil, errors.E(op, http.StatusInternalServerError, err.Error())
-		}
+		return nil, err
 	}
 	retMember, err := c.convertHelper.ConvertMember(ctx, member)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+		return nil, err
 	}
 	return retMember, nil
 }
 
 func (c *controller) RemoveMember(ctx context.Context, id uint) error {
-	const op = "group controller: remove group member"
-	err := c.memberService.RemoveMember(ctx, id)
-	if err != nil {
-		switch err {
-		case memberservice.ErrMemberNotExist:
-			return errors.E(op, http.StatusNotFound, err.Error())
-		case memberservice.ErrNotPermitted:
-			fallthrough
-		case memberservice.ErrRemoveHighRole:
-			return errors.E(op, http.StatusForbidden, err.Error())
-		}
-	}
-	return nil
+	return c.memberService.RemoveMember(ctx, id)
 }
 
 func (c *controller) ListMember(ctx context.Context, resourceType string, id uint) ([]Member, error) {
-	op := errors.Op(fmt.Sprintf("group *controller: list %s member", resourceType))
 	members, err := c.memberService.ListMember(ctx, resourceType, id)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+		return nil, err
 	}
 	if members == nil || len(members) < 1 {
 		return nil, nil
 	}
 	retMembers, err := c.convertHelper.ConvertMembers(ctx, members)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+		return nil, err
 	}
 	return retMembers, nil
 }
 
 func (c *controller) GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*Member, error) {
-	op := errors.Op(fmt.Sprintf("group *controller: get %s member", resourceType))
 	strID := strconv.FormatUint(uint64(resourceID), 10)
 	member, err := c.memberService.GetMemberOfResource(ctx, resourceType, strID)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+		return nil, err
 	}
 	if member == nil {
 		return nil, nil
 	}
 	retMember, err := c.convertHelper.ConvertMember(ctx, member)
 	if err != nil {
-		return nil, errors.E(op, http.StatusInternalServerError, err.Error())
+		return nil, err
 	}
 	return retMember, nil
 }

@@ -98,7 +98,6 @@ const (
 	GroupQueryByID            = "select * from tb_group where id = ? and deleted_ts = 0"
 	GroupQueryByIDs           = "select * from tb_group where id in ? and deleted_ts = 0"
 	GroupQueryByPaths         = "select * from tb_group where path in ? and deleted_ts = 0"
-	GroupQueryByNameFuzzily   = "select * from tb_group where name like ? and deleted_ts = 0"
 	GroupQueryByIDNameFuzzily = "select * from tb_group " +
 		"where traversal_ids like ? and name like ? and deleted_ts = 0"
 	GroupAll                      = "select * from tb_group where deleted_ts = 0"

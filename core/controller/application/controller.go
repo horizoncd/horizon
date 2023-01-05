@@ -22,7 +22,6 @@ import (
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
-	"github.com/horizoncd/horizon/pkg/hook/hook"
 	"github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param"
@@ -77,7 +76,6 @@ type controller struct {
 	groupSvc             groupsvc.Service
 	templateReleaseMgr   trmanager.Manager
 	clusterMgr           clustermanager.Manager
-	hook                 hook.Hook
 	userSvc              usersvc.Service
 	memberManager        member.Manager
 	eventMgr             eventmanager.Manager
@@ -98,7 +96,6 @@ func NewController(param *param.Param) Controller {
 		groupSvc:             param.GroupSvc,
 		templateReleaseMgr:   param.TemplateReleaseManager,
 		clusterMgr:           param.ClusterMgr,
-		hook:                 param.Hook,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
 		eventMgr:             param.EventManager,
@@ -195,16 +192,6 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 	return resp, err
 }
 
-func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
-	if c.hook != nil {
-		event := hook.Event{
-			EventType: eventType,
-			Event:     content,
-		}
-		go c.hook.Push(ctx, event)
-	}
-}
-
 func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	request *CreateApplicationRequest) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: create application"
@@ -289,7 +276,6 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
-	c.postHook(ctx, hook.CreateApplication, ret)
 
 	return ret, nil
 }
@@ -405,8 +391,6 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
-
-	c.postHook(ctx, hook.CreateApplication, ret)
 
 	return ret, nil
 }
@@ -567,7 +551,7 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 		return err
 	}
 
-	// 4. send hook
+	// 4. record event
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: common.ResourceApplication,
@@ -577,7 +561,6 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 	}); err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
-	c.postHook(ctx, hook.DeleteApplication, app.Name)
 
 	return nil
 }

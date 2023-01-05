@@ -28,6 +28,7 @@ type Manager interface {
 	List(ctx context.Context, query *q.Query, appIDs ...uint) (int, []*models.ClusterWithRegion, error)
 	ListByApplicationID(ctx context.Context, applicationID uint) (int, []*models.ClusterWithRegion, error)
 	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*models.Cluster, error)
+	GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name string) ([]*models.Cluster, error)
 }
 
 func New(db *gorm.DB) Manager {
@@ -94,6 +95,10 @@ func (m *manager) CheckClusterExists(ctx context.Context, cluster string) (bool,
 
 func (m *manager) List(ctx context.Context, query *q.Query, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
 	return m.dao.List(ctx, query, true, appIDs...)
+}
+
+func (m *manager) GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name string) ([]*models.Cluster, error) {
+	return m.dao.GetByNameFuzzily(ctx, name, true)
 }
 
 func (m *manager) ListByApplicationID(ctx context.Context,

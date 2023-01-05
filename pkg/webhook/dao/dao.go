@@ -23,7 +23,8 @@ type DAO interface {
 	DeleteWebhook(ctx context.Context, id uint) error
 	CreateWebhookLog(ctx context.Context, wl *models.WebhookLog) (*models.WebhookLog, error)
 	CreateWebhookLogs(ctx context.Context, wls []*models.WebhookLog) ([]*models.WebhookLog, error)
-	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query) ([]*models.WebhookLogWithEventInfo, int64, error)
+	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query,
+		resources map[string][]uint) ([]*models.WebhookLogWithEventInfo, int64, error)
 	ListWebhookLogsByStatus(ctx context.Context, wID uint,
 		status string) ([]*models.WebhookLog, error)
 	ListWebhookLogsByMap(ctx context.Context,
@@ -105,7 +106,6 @@ func (d *dao) ListWebhookOfResources(ctx context.Context,
 	if result := statement.
 		Find(&ws).
 		Offset(-1).
-		Limit(-1).
 		Count(&count); result.Error != nil {
 		return nil, count, herrors.NewErrGetFailed(herrors.WebhookInDB, result.Error.Error())
 	}
@@ -157,52 +157,43 @@ func (d *dao) CreateWebhookLogs(ctx context.Context,
 }
 
 func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
-	query *q.Query) ([]*models.WebhookLogWithEventInfo, int64, error) {
+	query *q.Query, resources map[string][]uint) ([]*models.WebhookLogWithEventInfo, int64, error) {
 	var (
 		logs  []*models.WebhookLogWithEventInfo
 		count int64
 	)
 
-	resourceTableMap := map[string]string{
-		common.ResourceGroup:       "tb_group",
-		common.ResourceApplication: "tb_application",
-		common.ResourceCluster:     "tb_cluster",
-	}
-
-	// TODO: simplify
-	getStatementByResource := func(resourceType string) *gorm.DB {
-		stm := d.db.Table("tb_webhook_log l").
-			Joins("join tb_event e on l.event_id=e.id").
-			Joins(fmt.Sprintf("join %s r on e.resource_id=r.id", resourceTableMap[resourceType])).
-			Where("l.webhook_id=?", wID).
-			Where("e.resource_type=?", resourceType).
-			Select("l.*, e.resource_type, e.resource_id, e.event_type, r.name as resource_name")
-		if query != nil {
-			if v, ok := query.Keywords[common.Filter].(string); ok {
-				stm.Where("r.name = ?", v)
-			}
-			if v, ok := query.Keywords[common.EventType].(string); ok {
-				stm.Where("e.event_type = ?", v)
-			}
+	stm := d.db.Table("tb_webhook_log l").
+		Joins("join tb_event e on l.event_id=e.id").
+		Where("l.webhook_id=?", wID).
+		Select("l.*, e.resource_type, e.resource_id, e.event_type")
+	if query != nil {
+		if v, ok := query.Keywords[common.EventType].(string); ok {
+			stm = stm.Where("e.event_type = ?", v)
 		}
-		return stm
 	}
 
-	statement := d.db.Raw("? union ? union ?",
-		getStatementByResource(common.ResourceGroup),
-		getStatementByResource(common.ResourceApplication),
-		getStatementByResource(common.ResourceCluster),
-	)
-
-	if result := d.db.WithContext(ctx).Raw("select *"+
-		" from (?) as w order by created_at desc limit ? offset ?",
-		statement, query.Limit(), query.Offset()).Scan(&logs); result.Error != nil {
-		return nil, count, herrors.NewErrGetFailed(herrors.WebhookLogInDB, result.Error.Error())
+	if len(resources) > 0 {
+		var resourceCondition *gorm.DB
+		for resourceType, resourceIDs := range resources {
+			if resourceCondition == nil {
+				resourceCondition = d.db.WithContext(context.Background()).
+					Where("e.resource_type = ? and e.resource_id in ?", resourceType, resourceIDs)
+			}
+			resourceCondition = resourceCondition.
+				Or("e.resource_type = ? and e.resource_id in ?", resourceType, resourceIDs)
+		}
+		stm.Where(resourceCondition)
 	}
 
-	if result := d.db.WithContext(ctx).Raw("select count(1) from (?) as w",
-		statement).Scan(&count); result.Error != nil {
-		return nil, count, herrors.NewErrGetFailed(herrors.WebhookLogInDB, result.Error.Error())
+	if result := stm.
+		Order("e.created_at desc").
+		Offset(query.Offset()).
+		Limit(query.Limit()).
+		Scan(&logs).
+		Offset(-1).
+		Count(&count); result.Error != nil {
+		return nil, 0, herrors.NewErrGetFailed(herrors.WebhookLogInDB, result.Error.Error())
 	}
 
 	return logs, count, nil

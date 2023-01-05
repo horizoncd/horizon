@@ -126,6 +126,21 @@ func (mr *MockManagerMockRecorder) GetByName(ctx, clusterName interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockManager)(nil).GetByName), ctx, clusterName)
 }
 
+// GetByNameFuzzilyIncludeSoftDelete mocks base method.
+func (m *MockManager) GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name string) ([]*models.Cluster, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByNameFuzzilyIncludeSoftDelete", ctx, name)
+	ret0, _ := ret[0].([]*models.Cluster)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByNameFuzzilyIncludeSoftDelete indicates an expected call of GetByNameFuzzilyIncludeSoftDelete.
+func (mr *MockManagerMockRecorder) GetByNameFuzzilyIncludeSoftDelete(ctx, name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByNameFuzzilyIncludeSoftDelete", reflect.TypeOf((*MockManager)(nil).GetByNameFuzzilyIncludeSoftDelete), ctx, name)
+}
+
 // List mocks base method.
 func (m *MockManager) List(ctx context.Context, query *q.Query, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
 	m.ctrl.T.Helper()

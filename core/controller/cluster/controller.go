@@ -22,7 +22,6 @@ import (
 	grafanaservice "github.com/horizoncd/horizon/pkg/grafana"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
-	"github.com/horizoncd/horizon/pkg/hook/hook"
 	"github.com/horizoncd/horizon/pkg/member"
 	"github.com/horizoncd/horizon/pkg/param"
 	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
@@ -117,7 +116,6 @@ type controller struct {
 	envRegionMgr         environmentregionmapper.Manager
 	regionMgr            regionmanager.Manager
 	groupSvc             groupsvc.Service
-	hook                 hook.Hook
 	pipelinerunMgr       prmanager.Manager
 	pipelineMgr          pipelinemanager.Manager
 	tektonFty            factory.Factory
@@ -156,7 +154,6 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		pipelineMgr:          param.PipelineMgr,
 		tektonFty:            param.TektonFty,
 		registryFty:          registryfty.Fty,
-		hook:                 param.Hook,
 		userManager:          param.UserManager,
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
@@ -167,15 +164,5 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		grafanaConfig:        config.GrafanaConfig,
 		buildSchema:          param.BuildSchema,
 		eventMgr:             param.EventManager,
-	}
-}
-
-func (c *controller) postHook(ctx context.Context, eventType hook.EventType, content interface{}) {
-	if c.hook != nil {
-		event := hook.Event{
-			EventType: eventType,
-			Event:     content,
-		}
-		go c.hook.Push(ctx, event)
 	}
 }

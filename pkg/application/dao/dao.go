@@ -29,7 +29,7 @@ type DAO interface {
 	GetByName(ctx context.Context, name string) (*models.Application, error)
 	GetByNamesUnderGroup(ctx context.Context, groupID uint, names []string) ([]*models.Application, error)
 	// GetByNameFuzzily get applications that fuzzily matching the given name
-	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
+	GetByNameFuzzily(ctx context.Context, name string, includeSoftDelete bool) ([]*models.Application, error)
 	// CountByGroupID get the count of the records matching the given groupID
 	CountByGroupID(ctx context.Context, groupID uint) (int64, error)
 	Create(ctx context.Context, application *models.Application,
@@ -61,10 +61,15 @@ func (d *dao) CountByGroupID(ctx context.Context, groupID uint) (int64, error) {
 	return count, result.Error
 }
 
-func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error) {
+func (d *dao) GetByNameFuzzily(ctx context.Context, name string,
+	includeSoftDelete bool) ([]*models.Application, error) {
 	var applications []*models.Application
-	result := d.db.WithContext(ctx).Raw(common.ApplicationQueryByFuzzily, fmt.Sprintf("%%%s%%", name)).Scan(&applications)
 
+	statement := d.db.Unscoped().WithContext(ctx).Where("name like ?", fmt.Sprintf("%%%s%%", name))
+	if !includeSoftDelete {
+		statement.Where("deleted_ts = 0")
+	}
+	result := statement.Find(&applications)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, herrors.NewErrNotFound(herrors.ApplicationInDB, result.Error.Error())

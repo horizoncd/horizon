@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -25,14 +26,6 @@ import (
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
-)
-
-var (
-	ErrMemberExist    = errors.New("MemberExist")     // "Member Exist"
-	ErrNotPermitted   = errors.New("NotPermitted")    // "Not Permitted"
-	ErrMemberNotExist = errors.New("MemberNotExist")  // "Member not exists"
-	ErrGrantHighRole  = errors.New("GrantHigherRole") // "Grant higher role"
-	ErrRemoveHighRole = errors.New("RemoveHighRole")  // "Remove higher role"
 )
 
 // nolint
@@ -103,7 +96,7 @@ func (s *service) RequirePermissionEqualOrHigher(ctx context.Context, role,
 		return err
 	}
 	if userMemberInfo == nil {
-		return ErrNotPermitted
+		return herror.ErrNoPrivilege
 	}
 
 	comResult, err := s.roleService.RoleCompare(ctx, userMemberInfo.Role, role)
@@ -111,7 +104,7 @@ func (s *service) RequirePermissionEqualOrHigher(ctx context.Context, role,
 		return err
 	}
 	if comResult == roleservice.RoleSmaller {
-		return ErrNotPermitted
+		return herror.ErrNoPrivilege
 	}
 	return nil
 }
@@ -173,8 +166,9 @@ func (s *service) getPipelinerunMember(ctx context.Context, pipelinerunID uint) 
 		return nil, err
 	}
 	if pipeline == nil {
-		log.Warningf(ctx, "pipeline do not found, pipelineID = %d", pipelinerunID)
-		return nil, ErrMemberNotExist
+		msg := fmt.Sprintf("pipeline do not found, pipelineID = %d", pipelinerunID)
+		log.Warningf(ctx, msg)
+		return nil, herror.NewErrNotFound(herror.MemberInfoInDB, msg)
 	}
 	return s.getMember(ctx, common.ResourceCluster,
 		pipeline.ClusterID, models.MemberUser, currentUser.GetID())
@@ -186,8 +180,9 @@ func (s *service) listPipelinerunMember(ctx context.Context, pipelinerunID uint)
 		return nil, err
 	}
 	if pipeline == nil {
-		log.Warningf(ctx, "pipeline do not found, pipelineID = %d", pipelinerunID)
-		return nil, ErrMemberNotExist
+		msg := fmt.Sprintf("pipeline do not found, pipelineID = %d", pipelinerunID)
+		log.Warningf(ctx, msg)
+		return nil, herror.NewErrNotFound(herror.MemberInfoInDB, msg)
 	}
 	return s.ListMember(ctx, common.ResourceApplication,
 		pipeline.ClusterID)
@@ -268,7 +263,7 @@ func (s *service) RemoveMember(ctx context.Context, memberID uint) error {
 		return err
 	}
 	if memberItem == nil {
-		return ErrMemberNotExist
+		return herror.NewErrNotFound(herror.MemberInfoInDB, fmt.Sprintf("member %d does not exist", memberID))
 	}
 
 	// 2. check if the grant current user can remove the member
@@ -296,7 +291,7 @@ func (s *service) UpdateMember(ctx context.Context, memberID uint, role string) 
 		return nil, err
 	}
 	if memberItem == nil {
-		return nil, ErrMemberNotExist
+		return nil, herror.NewErrNotFound(herror.MemberInfoInDB, fmt.Sprintf("member %d does not exist", memberID))
 	}
 
 	// 2. check if the current user have the permission to update the role

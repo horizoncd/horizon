@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/horizoncd/horizon/core/common"
+	herror "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
 	applicationmanagermock "github.com/horizoncd/horizon/mock/pkg/application/manager"
 	clustermanagermock "github.com/horizoncd/horizon/mock/pkg/cluster/manager"
@@ -18,6 +19,7 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	memberctx "github.com/horizoncd/horizon/pkg/context"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	groupModels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
@@ -194,7 +196,7 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 		Role:         "maintainer",
 	}
 	_, err = s.CreateMember(ctx, postMemberCat2)
-	assert.Equal(t, err, ErrNotPermitted)
+	assert.Equal(t, perror.Cause(err), herror.ErrNoPrivilege)
 
 	// create member exist  auto change to update role
 	roleMockService.EXPECT().RoleCompare(ctx, gomock.Any(), gomock.Any()).Return(
@@ -243,7 +245,8 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 	// update member not exist
 	var memberIDNotExist uint = 123233434
 	member, err = s.UpdateMember(ctx, memberIDNotExist, "owner")
-	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
+	_, ok := perror.Cause(err).(*herror.HorizonErrNotFound)
+	assert.True(t, ok)
 
 	// update member correct
 	groupManager.EXPECT().GetByID(gomock.Any(),
@@ -265,7 +268,8 @@ func TestCreateAndUpdateGroupMember(t *testing.T) {
 
 	// remove member not exist
 	err = s.RemoveMember(ctx, memberIDNotExist)
-	assert.Equal(t, err.Error(), ErrMemberNotExist.Error())
+	_, ok = perror.Cause(err).(*herror.HorizonErrNotFound)
+	assert.True(t, ok)
 
 	// remove member ok
 	groupManager.EXPECT().GetByID(gomock.Any(),
