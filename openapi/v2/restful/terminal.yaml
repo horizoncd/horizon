@@ -6,7 +6,7 @@ info:
 servers:
   - url: 'ws://localhost:8080/'
 paths:
-  /apis/core/v1/clusters/{clusterID}/shell?podName={podName}&containerName={containerName}:
+  /apis/core/v2/clusters/{clusterID}/shell?podName={podName}&containerName={containerName}:
     parameters:
       - name: clusterID
         in: path

@@ -6,11 +6,22 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/groups/{groupID}/members:
+  /apis/core/v2/{resourceType}/{resourceID}/members:
     parameters:
-      - name: groupID
+      - name: resourceType
         in: path
-        description: group id
+        description: type of target resource
+        required: true
+        enum:
+          [
+            "groups",
+            "applications",
+            "clusters",
+            "templates",
+          ]
+      - name: resourceID
+        in: path
+        description: id of target resource
         required: true
     post:
       tags:
@@ -52,7 +63,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/members/{memberid}:
+  /apis/core/v2/members/{memberid}:
     parameters:
       - name: memberid
         in: path

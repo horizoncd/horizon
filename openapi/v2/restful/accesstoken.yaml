@@ -6,7 +6,7 @@ info:
 servers:
   - url: "http://localhost:8080/"
 paths:
-  /apis/core/v1/{resourceType}/{resourceID}/accesstokens:
+  /apis/core/v2/{resourceType}/{resourceID}/accesstokens:
     parameters:
       - name: resourceType
         in: path
@@ -64,7 +64,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/accesstokens:
+  /apis/core/v2/accesstokens:
     post:
       tags:
         - accesstoken
@@ -109,7 +109,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/accesstokens/${id}:
+  /apis/core/v2/accesstokens/${id}:
     delete:
       tags:
         - accesstoken
@@ -153,6 +153,8 @@ definitions:
           type: string
           enum:
             [
+              "groups:read-only",
+              "groups:read-write",
               "applications:read-only",
               "applications:read-write",
               "clusters:read-only",
