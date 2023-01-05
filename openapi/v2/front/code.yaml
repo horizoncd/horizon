@@ -1,8 +1,8 @@
 openapi: 3.0.1
 info:
   title: Horizon-Code-Front
-  description: Front API About Terminal
-  version: 1.0.0
+  description: Front API About Code
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
@@ -10,7 +10,7 @@ paths:
     parameters:
       - name: giturl
         in: query
-        description: giturl the the code repo
+        description: giturl of the code repo
         required: true
       - name: filter
         in: query
@@ -22,12 +22,13 @@ paths:
         required: false
       - name: pageSize
         in: query
-        description: the page size of per page
+        description: the size of per page
+        required: false
     get:
       tags:
         - code
       operationId: listbranch
-      summary: list the branches if git a repo
+      summary: list branches of the code repo
       responses:
         '200':
           description: Success
@@ -49,7 +50,7 @@ paths:
     parameters:
       - name: giturl
         in: query
-        description: giturl the the code repo
+        description: giturl of the code repo
         required: true
       - name: filter
         in: query
@@ -61,7 +62,8 @@ paths:
         required: false
       - name: pageSize
         in: query
-        description: the page size of per page
+        description: the size of per page
+        required: false
     get:
       tags:
         - code
