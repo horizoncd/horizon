@@ -81,7 +81,7 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 
 	templateHashSum := computePodSpecHash(instance.Spec.Template.Spec)
 	for _, pod := range pods.Items {
-		if instance.Status.Phase != "Running" {
+		if pod.Status.Phase != "Running" {
 			continue
 		}
 		hashSum := computePodSpecHash(pod.Spec)
