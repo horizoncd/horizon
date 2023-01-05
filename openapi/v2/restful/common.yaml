@@ -107,3 +107,42 @@ components:
         id:
           type: integer
           description: the id of user
+
+    userList:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: The total number of users that match the filter.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/user'
+
+    user:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The unique ID of the user.
+        name:
+          type: string
+          description: The unique name of the user.
+        fullName:
+          type: string
+          description: The full name of the user.
+        email:
+          type: string
+          description: The email address of the user.
+        isAdmin:
+          type: boolean
+          description: Whether the user is an administrator.
+        isBanned:
+          type: boolean
+          description: Whether the user is banned.
+        updatedAt:
+          type: string
+          description: The date and time at which the user was last updated.
+        createdAt:
+          type: string
+          description: The date and time at which the user was created.

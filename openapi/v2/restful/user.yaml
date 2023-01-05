@@ -41,7 +41,8 @@ paths:
           description: Success
           content:
             application/json:
-              $ref: 'schema.yaml#/components/schemas/userList'
+              schema: 
+                $ref: 'common.yaml#/components/schemas/userList'
 
   /apis/core/v2/users/{id}:
     get:
@@ -59,7 +60,8 @@ paths:
           description: Success
           content:
             application/json:
-              $ref: 'schema.yaml#/components/schemas/user'
+              schema: 
+                $ref: 'common.yaml#/components/schemas/user'
     put:
       tags:
         - user
@@ -88,7 +90,7 @@ paths:
           description: Success
           content:
             application/json:
-              $ref: 'schema.yaml#/components/schemas/user'
+              $ref: 'common.yaml#/components/schemas/user'
 
   /apis/core/v2/users/self:
     get:
@@ -100,7 +102,7 @@ paths:
           description: Success
           content:
             application/json:
-              $ref: 'schema.yaml#/components/schemas/user'
+              $ref: 'common.yaml#/components/schemas/user'
 
   /apis/core/v2/users/{id}/links:
     get:

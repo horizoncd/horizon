@@ -3,7 +3,7 @@ info:
   title: Horizon-login
   version: 1.0.0
 servers:
-  - url: 'http://horizon.mockserver.org/'
+  - url: 'localhost:8080/'
 paths:
   /api/v1/login:
     post:

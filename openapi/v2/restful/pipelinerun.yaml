@@ -122,12 +122,12 @@ paths:
                               "Branch": "master"
                               "CommitMsg": "last commit msg"
                               "CommitID":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
-                              "Link": https://g.hz.netease.com/music-cloud-native/horizon/horizon/-/commits/feature/applications
+                              "Link": https://horizon.com/cloud-native/horizon/horizon/-/commits/feature/applications
                           },
                           "configDiff ": {
                             "from": "6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
                             "to": "6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
-                            "diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: music-cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
+                            "diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
                           }
                       }
                   }

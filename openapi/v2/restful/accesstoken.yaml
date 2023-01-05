@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: Horizon-AccessToken-Restful
   description: Restful API About Access Token
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: "http://localhost:8080/"
 paths:

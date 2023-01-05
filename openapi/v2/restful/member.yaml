@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: Horizon-Member-Restful
   description: Restful API About Member
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
