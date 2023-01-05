@@ -46,6 +46,8 @@ type Manager interface {
 	GetByPaths(ctx context.Context, paths []string) ([]*models.Group, error)
 	// GetByNameFuzzily get groups that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	// GetByNameFuzzilyIncludeSoftDelete get groups that fuzzily matching the given name
+	GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name string) ([]*models.Group, error)
 	// GetByIDNameFuzzily get groups that fuzzily matching the given name and id
 	GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error)
 	// GetAll return all the groups
@@ -121,7 +123,11 @@ func (m manager) GetByIDs(ctx context.Context, ids []uint) ([]*models.Group, err
 }
 
 func (m manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
-	return m.groupDAO.GetByNameFuzzily(ctx, name)
+	return m.groupDAO.GetByNameFuzzily(ctx, name, false)
+}
+
+func (m manager) GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name string) ([]*models.Group, error) {
+	return m.groupDAO.GetByNameFuzzily(ctx, name, true)
 }
 
 func (m manager) GetAll(ctx context.Context) ([]*models.Group, error) {

@@ -29,6 +29,7 @@ type DAO interface {
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	List(ctx context.Context, query *q.Query, withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error)
 	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*models.Cluster, error)
+	GetByNameFuzzily(ctx context.Context, name string, includeSoftDelete bool) ([]*models.Cluster, error)
 }
 
 type dao struct {
@@ -342,4 +343,22 @@ func (d *dao) ListClusterWithExpiry(ctx context.Context,
 		return nil, herrors.NewErrListFailed(herrors.ClusterInDB, result.Error.Error())
 	}
 	return clusters, nil
+}
+
+func (d *dao) GetByNameFuzzily(ctx context.Context, name string, includeSoftDelete bool) ([]*models.Cluster, error) {
+	var clusters []*models.Cluster
+
+	statement := d.db.Unscoped().WithContext(ctx).Where("name like ?", fmt.Sprintf("%%%s%%", name))
+	if !includeSoftDelete {
+		statement.Where("deleted_ts = 0")
+	}
+	result := statement.Find(&clusters)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.ClusterInDB, result.Error.Error())
+		}
+		return nil, herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
+	}
+
+	return clusters, result.Error
 }

@@ -23,7 +23,8 @@ type DAO interface {
 	DeleteWebhook(ctx context.Context, id uint) error
 	CreateWebhookLog(ctx context.Context, wl *models.WebhookLog) (*models.WebhookLog, error)
 	CreateWebhookLogs(ctx context.Context, wls []*models.WebhookLog) ([]*models.WebhookLog, error)
-	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query) ([]*models.WebhookLogWithEventInfo, int64, error)
+	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query,
+		resources map[string][]uint) ([]*models.WebhookLogWithEventInfo, int64, error)
 	ListWebhookLogsByStatus(ctx context.Context, wID uint,
 		status string) ([]*models.WebhookLog, error)
 	ListWebhookLogsByMap(ctx context.Context,
@@ -104,8 +105,7 @@ func (d *dao) ListWebhookOfResources(ctx context.Context,
 
 	if result := statement.
 		Find(&ws).
-		Offset(0).
-		Limit(-1).
+		Offset(-1).
 		Count(&count); result.Error != nil {
 		return nil, count, herrors.NewErrGetFailed(herrors.WebhookInDB, result.Error.Error())
 	}
@@ -157,7 +157,7 @@ func (d *dao) CreateWebhookLogs(ctx context.Context,
 }
 
 func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
-	query *q.Query) ([]*models.WebhookLogWithEventInfo, int64, error) {
+	query *q.Query, resources map[string][]uint) ([]*models.WebhookLogWithEventInfo, int64, error) {
 	var (
 		logs  []*models.WebhookLogWithEventInfo
 		count int64
@@ -173,12 +173,25 @@ func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
 		}
 	}
 
+	if len(resources) > 0 {
+		var resourceCondition *gorm.DB
+		for resourceType, resourceIDs := range resources {
+			if resourceCondition == nil {
+				resourceCondition = d.db.WithContext(context.Background()).
+					Where("e.resource_type = ? and e.resource_id in ?", resourceType, resourceIDs)
+			}
+			resourceCondition = resourceCondition.
+				Or("e.resource_type = ? and e.resource_id in ?", resourceType, resourceIDs)
+		}
+		stm.Where(resourceCondition)
+	}
+
 	if result := stm.
+		Order("e.created_at desc").
 		Offset(query.Offset()).
 		Limit(query.Limit()).
 		Scan(&logs).
-		Offset(0).
-		Limit(-1).
+		Offset(-1).
 		Count(&count); result.Error != nil {
 		return nil, 0, herrors.NewErrGetFailed(herrors.WebhookLogInDB, result.Error.Error())
 	}

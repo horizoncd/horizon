@@ -31,7 +31,7 @@ type DAO interface {
 	// GetByID get a group by id
 	GetByID(ctx context.Context, id uint) (*models.Group, error)
 	// GetByNameFuzzily get groups that fuzzily matching the given name
-	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error)
+	GetByNameFuzzily(ctx context.Context, name string, includeSoftDelete bool) ([]*models.Group, error)
 	// GetByIDNameFuzzily get groups that fuzzily matching the given name and id
 	GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*models.Group, error)
 	// GetByIDs get groups by ids
@@ -219,10 +219,13 @@ func (d *dao) CheckPathUnique(ctx context.Context, group *models.Group) error {
 	return nil
 }
 
-func (d *dao) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Group, error) {
+func (d *dao) GetByNameFuzzily(ctx context.Context, name string, includeSoftDelete bool) ([]*models.Group, error) {
 	var groups []*models.Group
-	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByNameFuzzily, fmt.Sprintf("%%%s%%", name)).Scan(&groups)
-
+	statement := d.db.Unscoped().WithContext(ctx).Where("name like ?", fmt.Sprintf("%%%s%%", name))
+	if !includeSoftDelete {
+		statement.Where("deleted_ts = 0")
+	}
+	result := statement.Find(&groups)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.GroupInDB, result.Error.Error())
 	}

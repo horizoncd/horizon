@@ -21,8 +21,9 @@ type Manager interface {
 	GetByIDs(ctx context.Context, ids []uint) ([]*models.Application, error)
 	GetByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Application, error)
 	GetByName(ctx context.Context, name string) (*models.Application, error)
-	// GetByNameFuzzily get applications that fuzzily matching the given name
 	GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error)
+	// GetByNameFuzzily get applications that fuzzily matching the given name
+	GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name string) ([]*models.Application, error)
 	Create(ctx context.Context, application *models.Application,
 		extraMembers map[string]string) (*models.Application, error)
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
@@ -46,7 +47,11 @@ type manager struct {
 }
 
 func (m *manager) GetByNameFuzzily(ctx context.Context, name string) ([]*models.Application, error) {
-	return m.applicationDAO.GetByNameFuzzily(ctx, name)
+	return m.applicationDAO.GetByNameFuzzily(ctx, name, false)
+}
+
+func (m *manager) GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name string) ([]*models.Application, error) {
+	return m.applicationDAO.GetByNameFuzzily(ctx, name, true)
 }
 
 func (m *manager) GetByID(ctx context.Context, id uint) (*models.Application, error) {

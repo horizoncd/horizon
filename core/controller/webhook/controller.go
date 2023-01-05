@@ -145,7 +145,39 @@ func (c *controller) ListWebhookLogs(ctx context.Context, wID uint,
 	const op = "wehook controller: list log"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	webhookLogs, total, err := c.webhookMgr.ListWebhookLogs(ctx, wID, query)
+	resources := map[string][]uint{}
+
+	if filter, ok := query.Keywords[common.Filter].(string); ok {
+		groups, err := c.groupMgr.GetByNameFuzzilyIncludeSoftDelete(ctx, filter)
+		if err != nil {
+			return nil, 0, err
+		}
+		for _, group := range groups {
+			resources[common.ResourceGroup] = append(resources[common.ResourceGroup], group.ID)
+		}
+
+		apps, err := c.applicationMgr.GetByNameFuzzilyIncludeSoftDelete(ctx, filter)
+		if err != nil {
+			return nil, 0, err
+		}
+		for _, app := range apps {
+			resources[common.ResourceApplication] = append(resources[common.ResourceGroup], app.ID)
+		}
+
+		clusters, err := c.clusterMgr.GetByNameFuzzilyIncludeSoftDelete(ctx, filter)
+		if err != nil {
+			return nil, 0, err
+		}
+		for _, cluster := range clusters {
+			resources[common.ResourceCluster] = append(resources[common.ResourceCluster], cluster.ID)
+		}
+
+		if len(resources) == 0 {
+			return nil, 0, nil
+		}
+	}
+
+	webhookLogs, total, err := c.webhookMgr.ListWebhookLogs(ctx, wID, query, resources)
 	if err != nil {
 		return nil, total, err
 	}
