@@ -1,6 +1,6 @@
 openapi: 3.0.1
 info:
-  title: Horizon-Environment-Registry-Restful
+  title: Horizon-Environment-Region-Restful
   version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
@@ -25,7 +25,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/EnvironmentRegistry'
+                      $ref: '#/components/schemas/EnvironmentRegion'
         default:
           description: Unexpected error
           content:
@@ -42,7 +42,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostEnvironmentRegistry"
+              $ref: "#/components/schemas/PostEnvironmentRegion"
       responses:
         "200":
           description: Success
@@ -99,7 +99,7 @@ paths:
 
 components:
   schemas:
-    PostEnvironmentRegistry:
+    PostEnvironmentRegion:
       type: object
       required:
         - environmentName
@@ -109,9 +109,9 @@ components:
           type: string
         regionName:
           type: string
-    EnvironmentRegistry:
+    EnvironmentRegion:
       allOf:
-        - $ref: "#/components/schemas/PostEnvironmentRegistry"
+        - $ref: "#/components/schemas/PostEnvironmentRegion"
         - type: object
           required:
             - id
