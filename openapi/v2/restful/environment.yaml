@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info:
-  title: Horizon-Environments-Restful
-  version: 1.0.0
+  title: Horizon-Environment-Restful
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/environments:
+  /apis/core/v2/environments:
     get:
       tags:
         - environment
@@ -17,10 +17,11 @@ paths:
           content:
             application/json:
               schema:
-                data:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/Environment'
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Environment'
         default:
           description: Unexpected error
           content:
@@ -37,15 +38,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Environment"
+              $ref: "#/components/schemas/PostEnvironment"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                data:
-                  type: integer
+                properties:
+                  data:
+                    type: integer
         default:
           description: Unexpected error
           content:
@@ -53,7 +55,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/environments/{environmentID}:
+  /apis/core/v2/environments/{environmentID}:
     parameters:
       - name: environmentID
         in: path
@@ -85,7 +87,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Environment'
+              $ref: '#/components/schemas/PutEnvironment'
       responses:
         '200':
           description: Success
@@ -110,63 +112,39 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/environments/{environment}/regions:
-    get:
-      tags:
-        - environment
-      operationId: listRegions
-      summary: list regions of a environment
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                example: |
-                  {
-                      "data":[
-                          {
-                              "name": "yq",
-                              "displayName": "义桥",
-                              "disabled": false,
-                              "isDefault": true
-                          },
-                          {
-                              "name": "dg",
-                              "displayName": "东冠",
-                              "disabled": false,
-                              "isDefault": false
-                          },
-                          {
-                              "name": "eks",
-                              "displayName": "海外EKS",
-                              "disabled": false,
-                              "isDefault": false
-                          }
-                      ]
-                  }
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
 components:
   schemas:
-    Environment:
+    PutEnvironment:
       type: object
       required:
-        - id
-        - name
         - displayName
         - autoFree
       properties:
-        id:
-          type: integer
-        name:
-          type: string
         displayName:
           type: string
         autoFree:
           type: boolean
+    PostEnvironment:
+      allOf:
+        - $ref: "#/components/schemas/PutEnvironment"
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+    Environment:
+      allOf:
+        - $ref: "#/components/schemas/PostEnvironment"
+        - type: object
+          required:
+            - id
+            - createdAt
+            - updatedAt
+          properties:
+            id:
+              type: integer
+            createdAt:
+              $ref: "common.yaml#/components/schemas/Date"
+            updatedAt:
+              $ref: "common.yaml#/components/schemas/Date"

@@ -6,11 +6,11 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v1/code/listbranch:
+  /apis/front/v2/code/listbranch:
     parameters:
       - name: giturl
         in: query
-        description: giturl of the code repo
+        description: url of the code repo
         required: true
       - name: filter
         in: query
@@ -46,11 +46,11 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/front/v1/code/listtag:
+  /apis/front/v2/code/listtag:
     parameters:
       - name: giturl
         in: query
-        description: giturl of the code repo
+        description: url of the code repo
         required: true
       - name: filter
         in: query
@@ -68,7 +68,7 @@ paths:
       tags:
         - code
       operationId: listtag
-      summary: list the git repo tags
+      summary: list tags of the git repo
       responses:
         '200':
           description: Success

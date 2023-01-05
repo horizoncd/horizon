@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info:
   title: Horizon-Region-Restful
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/regions:
+  /apis/core/v2/regions:
     get:
       tags:
         - region
@@ -17,10 +17,11 @@ paths:
           content:
             application/json:
               schema:
-                data:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/Region'
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Region'
         default:
           description: Unexpected error
           content:
@@ -37,15 +38,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Region"
+              $ref: "#/components/schemas/PostRegion"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                data:
-                  type: integer
+                properties:
+                  data:
+                    type: integer
         default:
           description: Unexpected error
           content:
@@ -53,7 +55,32 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/regions/{regionID}:
+  /apis/core/v2/regions/{regionID}/tags:
+    parameters:
+      - name: regionID
+        in: path
+    get:
+      tags:
+        - region
+      operationId: listRegionTags
+      summary: list tags of the region
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tag"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/regions/{regionID}:
     parameters:
       - name: regionID
         in: path
@@ -85,7 +112,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Region'
+              $ref: '#/components/schemas/PutRegion'
       responses:
         '200':
           description: Success
@@ -112,26 +139,17 @@ paths:
 
 components:
   schemas:
-    Region:
+    PostRegion:
       type: object
       required:
-        - id
         - name
         - displayName
         - server
         - certificate
         - ingressDomain
         - prometheusURL
-        - disabled
         - registryID
-        - registry
-        - tags
-        - tags
-        - createdAt
-        - updatedAt
       properties:
-        id:
-          type: integer
         name:
           type: string
         displayName:
@@ -144,26 +162,46 @@ components:
           type: string
         prometheusURL:
           $ref: "common.yaml#/components/schemas/URL"
-        disabled:
-          type: boolean
         registryID:
           type: integer
-        registry:
-          type: object
+    PutRegion:
+      allOf:
+        - $ref: "#/components/schemas/PostRegion"
+        - type: object
+          required:
+            - disabled
           properties:
-            name:
-              type: string
-        tags:
-          type: array
-          items:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-        createdAt:
-          $ref: "common.yaml#/components/schemas/Date"
-        updatedAt:
-          $ref: "common.yaml#/components/schemas/Date"
+            disabled:
+              type: boolean
+    Tag:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+    Region:
+      allOf:
+        - $ref: "#/components/schemas/PostRegion"
+        - type: object
+          required:
+            - id
+            - registry
+            - tags
+            - createdAt
+            - updatedAt
+          properties:
+            registry:
+              type: object
+              properties:
+                name:
+                  type: string
+            tags:
+              type: array
+              items:
+                $ref: "#/components/schemas/Tag"
+            createdAt:
+              $ref: "common.yaml#/components/schemas/Date"
+            updatedAt:
+              $ref: "common.yaml#/components/schemas/Date"
 

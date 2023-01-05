@@ -18,7 +18,8 @@ type Controller interface {
 	DeleteByID(ctx context.Context, id uint) error
 	GetByID(ctx context.Context, id uint) (*Environment, error)
 	GetByName(ctx context.Context, name string) (*Environment, error)
-	// ListEnabledRegionsByEnvironment deprecated, will be removed later. list regions by the environment that are enabled
+	// ListEnabledRegionsByEnvironment will be removed later. list regions by the environment that are enabled
+	// Deprecated
 	ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (regionmodels.RegionParts, error)
 }
 

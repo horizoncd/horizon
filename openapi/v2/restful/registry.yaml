@@ -1,11 +1,11 @@
 openapi: 3.0.1
 info:
   title: Horizon-Registry-Restful
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/registries:
+  /apis/core/v2/registries:
     get:
       tags:
         - registry
@@ -17,10 +17,11 @@ paths:
           content:
             application/json:
               schema:
-                data:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/Registry'
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Registry'
         default:
           description: Unexpected error
           content:
@@ -37,15 +38,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Registry"
+              $ref: "#/components/schemas/PostRegistry"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                data:
-                  type: integer
+                properties:
+                  data:
+                    type: integer
         default:
           description: Unexpected error
           content:
@@ -53,7 +55,31 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/registries/{registryID}:
+  /apis/core/v2/registries/kinds:
+    get:
+      tags:
+        - registry
+      operationId: getRegistryKinds
+      summary: get kinds of registries
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/registries/{registryID}:
     parameters:
       - name: registryID
         in: path
@@ -85,7 +111,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Registry'
+              $ref: '#/components/schemas/PutRegistry'
       responses:
         '200':
           description: Success
@@ -112,14 +138,15 @@ paths:
 
 components:
   schemas:
-    Registry:
+    PostRegistry:
       type: object
       required:
-        - id
         - name
         - server
         - token
-        - preheatPolicyID
+        - insecureSkipTLSVerify
+        - path
+        - kind
       properties:
         id:
           type: integer
@@ -129,6 +156,28 @@ components:
           type: string
         token:
           type: string
-        preheatPolicyID:
-          type: integer
+        insecureSkipTLSVerify:
+          type: boolean
+        path:
+          type: string
+        kind:
+          type: string
+    PutRegistry:
+      allOf:
+        - $ref: "#/components/schemas/PostRegistry"
+    Registry:
+      allOf:
+        - $ref: "#/components/schemas/PostRegistry"
+        - type: object
+          required:
+            - id
+            - createdAt
+            - updatedAt
+          properties:
+            id:
+              type: integer
+            createdAt:
+              $ref: "common.yaml#/components/schemas/Date"
+            updatedAt:
+              $ref: "common.yaml#/components/schemas/Date"
 
