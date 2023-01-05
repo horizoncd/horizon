@@ -74,10 +74,16 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 	}
 
 	count := 0
-	required := int(*instance.Spec.Replicas)
+	required := 0
+	if instance.Spec.Replicas != nil {
+		required = int(*instance.Spec.Replicas)
+	}
 
 	templateHashSum := computePodSpecHash(instance.Spec.Template.Spec)
 	for _, pod := range pods.Items {
+		if instance.Status.Phase != "Running" {
+			continue
+		}
 		hashSum := computePodSpecHash(pod.Spec)
 		if templateHashSum != hashSum {
 			continue
@@ -98,7 +104,10 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 		return false, nil
 	}
 
-	return int(*instance.Status.CurrentStepIndex) == len(instance.Spec.Strategy.Canary.Steps), nil
+	if instance.Status.CurrentStepIndex != nil {
+		return int(*instance.Status.CurrentStepIndex) == len(instance.Spec.Strategy.Canary.Steps), nil
+	}
+	return true, nil
 }
 
 func (r *rollout) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
