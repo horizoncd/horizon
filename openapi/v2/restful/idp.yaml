@@ -1,0 +1,235 @@
+openapi: 3.0.1
+info:
+  title: Horizon-IDP-Restful
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/idps:
+    get:
+      tags:
+        - idp
+      operationID: listIDPs
+      summary: list all idp.
+      description: |
+        list all idp.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                          description: id of idp in horizon
+                        displayName:
+                          type: string
+                          description: name displayed to user
+                        name:
+                          type: string
+                          description: unique name in db
+                        authorizationEndpoint:
+                          type: string
+                          description: server endpoint that the client application contacts to obtain authorization from the resource owner (the user)
+                        tokenEndpoint:
+                          type: string
+                          description: server endpoint that the client application contacts to obtain an access token
+                        userinfoEndpoint:
+                          type: string
+                          description: server endpoint in the OAuth 2.0 authorization framework that the client application can use to obtain additional information about the resource owner (the user)
+                        issuer:
+                          type: string
+                          description: An issuer is an entity that issues security tokens, such as access tokens, refresh tokens, and ID tokens
+                        scopes:
+                          type: string
+                          description: Scope is used by the authorization server to determine whether to grant the client's request for access
+                        tokenEndpointAuthMethod:
+                          type: string
+                          description: The token endpoint auth method is the method that the client application uses to authenticate itself at the token endpoint
+                        clientID:
+                          type: string
+                          description: A client ID is a unique string that is assigned to a client application by the authorization server
+                        clientSecret:
+                          type: string
+                          description: A client secret is a confidential string that is assigned to a client application by the authorization server
+                        createdAt:
+                          type: string
+                          description: creation time of IDP
+                        updatedAt:
+                          type: string
+                          description: update time of IDP
+    post:
+      tags:
+        - idp
+      summary: Create a new identity provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The unique name of the identity provider.
+                displayName:
+                  type: string
+                  description: The display name of the identity provider.
+                discovery:
+                  type: string
+                  description: The URL of the identity provider's OpenID Connect discovery document.
+                authorizationEndpoint:
+                  type: string
+                  description: The URL of the identity provider's authorization endpoint.
+                tokenEndpoint:
+                  type: string
+                  description: The URL of the identity provider's token endpoint.
+                issuer:
+                  type: string
+                  description: The URL of the identity provider's issuer.
+                tokenEndpointAuthMethod:
+                  type: string
+                  description: The method used by the client to authenticate itself at the token endpoint.
+                clientID:
+                  type: string
+                  description: The client ID assigned to the client by the identity provider.
+                clientSecret:
+                  type: string
+                  description: The client secret assigned to the client by the identity provider.
+                scopes:
+                  type: string
+                  description: The scopes that the client is authorized to request.
+      responses:
+        200:
+          description: Success
+
+  /apis/core/v2/idps/discovery:
+    post:
+      tags:
+        - idp
+      operationID: getDiscovery
+      summary: Discover identity provider endpoints and issuer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fromUrl:
+                  type: string
+                  description: The URL of the identity provider's OpenID Connect discovery document.
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      authorizationEndpoint:
+                        type: string
+                        description: The URL of the identity provider's authorization endpoint.
+                      tokenEndpoint:
+                        type: string
+                        description: The URL of the identity provider's token endpoint.
+                      issuer:
+                        type: string
+                        description: The URL of the identity provider's issuer.
+
+  /apis/core/v2/idps/{idpID}:
+    parameters:
+      - name: idpID
+        in: path
+        description: id of an IDP
+        required: true
+        schema:
+          type: integer
+    get:
+      tags:
+        - idp
+      operationID: getIDPbyID
+      summary: Retrieve an identity provider by ID
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: The unique ID of the identity provider.
+                      displayName:
+                        type: string
+                        description: The display name of the identity provider.
+                      name:
+                        type: string
+                        description: The unique name of the identity provider.
+                      authorizationEndpoint:
+                        type: string
+                        description: The URL of the identity provider's authorization endpoint.
+                      tokenEndpoint:
+                        type: string
+                        description: The URL of the identity
+    put:
+      tags:
+        - idp
+      operationID: updateIDP
+      summary:  Update an identity provider by ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The unique name of the identity provider.
+                displayName:
+                  type: string
+                  description: The display name of the identity provider.
+                discovery:
+                  type: string
+                  description: The URL of the identity provider's OpenID Connect discovery document.
+                authorizationEndpoint:
+                  type: string
+                  description: The URL of the identity provider's authorization endpoint.
+                tokenEndpoint:
+                  type: string
+                  description: The URL of the identity provider's token endpoint.
+                issuer:
+                  type: string
+                  description: The URL of the identity provider's issuer.
+                tokenEndpointAuthMethod:
+                  type: string
+      responses:
+        200:
+          description: Success
+    delete:
+      tags:
+        - idp
+      summary: Delete an identity provider by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Success

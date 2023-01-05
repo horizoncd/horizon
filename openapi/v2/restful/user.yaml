@@ -1,0 +1,196 @@
+openapi: 3.0.2
+info:
+  version: 2.0.0
+  title: User Management API
+  description: This API allows clients to retrieve and search for users in the system.
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/users:
+    get:
+      tags:
+        - user
+      summary: Search for users
+      parameters:
+        - name: filter
+          in: query
+          required: false
+          schema:
+            type: string
+            description: A string to filter the results by.
+        - name: pageNumber
+          in: query
+          required: false
+          schema:
+            type: integer
+            description: The page number of the results.
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            description: The number of items to include on each page of the results.
+        - name: userType
+          in: query
+          required: false
+          schema:
+            type: integer
+            description: The type of user to include in the results.
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              $ref: 'schema.yaml#/components/schemas/userList'
+
+  /apis/core/v2/users/{id}:
+    get:
+      tags:
+        - user
+      summary: Retrieve a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              $ref: 'schema.yaml#/components/schemas/user'
+    put:
+      tags:
+        - user
+      summary: Update a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isBanned:
+                  type: boolean
+                  description: Whether the user should be banned.
+                isAdmin:
+                  type: boolean
+                  description: Whether the user should be made an administrator.
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              $ref: 'schema.yaml#/components/schemas/user'
+
+  /apis/core/v2/users/self:
+    get:
+      tags:
+        - user
+      summary: Retrieve a data for your self
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              $ref: 'schema.yaml#/components/schemas/user'
+
+  /apis/core/v2/users/{id}/links:
+    get:
+      tags:
+        - link
+        - user
+      summary: Retrieve links for a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: The unique ID of the link.
+                        sub:
+                          type: string
+                          description: The unique subject identifier of the user in the identity provider's system.
+                        idpId:
+                          type: integer
+                          description: The unique ID of the identity provider.
+                        userId:
+                          type: integer
+                          description: The unique ID of the user in the system.
+                        name:
+                          type: string
+                          description: The name of the user.
+                        email:
+                          type: string
+                          description: The email address of the user.
+                        unlinkable:
+                          type: boolean
+                          description: Whether the link can be unlinked by the user.
+
+  /apis/core/v2/links/{id}:
+    delete:
+      tags:
+        - link
+        - user
+      summary: Delete a link by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: The unique ID of the link.
+                      sub:
+                        type: string
+                        description: The unique subject identifier of the user in the identity provider's system.
+                      idpId:
+                        type: integer
+                        description: The unique ID of the identity provider.
+                      userId:
+                        type: integer
+                        description: The unique ID of the user in the system.
+                      name:
+                        type: string
+                        description: The name of the user.
+                      email:
+                        type: string
+                        description: The email address of the user.
+                      unlinkable:
+                        type: boolean
+                        description: Whether the link can be unlinked by the user.
+

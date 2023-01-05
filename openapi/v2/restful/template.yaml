@@ -1,19 +1,170 @@
-openapi: 3.0.1
+openapi: 3.0.2
 info:
   title: Horizon-Template-Restful
-  description: Restful API About Template
-  version: 1.0.0
+  description: Restful API for managing templates
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/templates:
+  /apis/core/v2/groups/{groupID}/templates:
+    parameters:
+      - name: groupID
+        in: path
+        description: id of group
+        required: true
+        schema:
+          type: number
+    post:
+      tags:
+        - template
+      operationId: createTemplate
+      summary: Create a template under specified group by group ID
+      description: |
+        Create a template under specified group by group ID. User must create a release when creating template, or the template would be useless.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                repository:
+                  type: string
+                token:
+                  type: string
+                release:
+                  type: object
+                  properties:
+                    tag:
+                      type: string
+                    isRecommend:
+                      type: boolean
+                    description:
+                      type: string
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/templates:
     get:
       tags:
         - template
+      summary: Retrieve a list of templates
       operationId: listTemplates
-      summary: List all templates
+      parameters:
+        - name: userID
+          description: The ID of the user to filter by
+          in: query
+          schema:
+            type: integer
+        - name: groupID
+          description: The ID of the group to filter by
+          in: query
+          schema:
+            type: number
+        - name: filter
+          description: The name of the template to filter by
+          in: query
+          schema:
+            type: string
+        - name: pageNumber
+          description: The page number to retrieve
+          in: query
+          schema:
+            type: number
+        - name: pageSize
+          description: The number of items per page
+          in: query
+          schema:
+            type: number
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        description: The total number of templates that match the provided filters.
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: The unique ID of the template.
+                            name:
+                              type: string
+                              description: The name of the template.
+                            chartName:
+                              type: string
+                              description: The name of the chart associated with the template.
+                            description:
+                              type: string
+                              description: A description of the template.
+                            repository:
+                              type: string
+                              description: The repository where the template is stored.
+                            group:
+                              type: integer
+                              description: The group associated with the template.
+                            onlyOwner:
+                              type: boolean
+                              description: Whether the template is only visible to the owner.
+                            createdAt:
+                              type: string
+                              description: The timestamp of when the template was created.
+                              format: date-time
+                            updatedAt:
+                              type: string
+                              description: The timestamp of when the template was last updated.
+                              format: date-time
+                            createdBy:
+                              type: integer
+                              description: The ID of the user who created the template.
+                            updatedBy:
+                              type: integer
+                              description: The ID of the user who last updated the template.
+
+
+  /apis/core/v2/templates/{template}:
+    parameters:
+      - name: template
+        in: path
+        description: id of template
+        required: true
+        schema:
+          type: integer
+
+    get:
+      tags:
+        - template
+      operationId: getTemplate
+      summary: Get the specified template
       description: |
-        List all available templates.
+        Get the specified template by template ID.
       responses:
         '200':
           description: Success
@@ -22,16 +173,65 @@ paths:
               schema:
                 properties:
                   data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          description: the template name
-                        description:
-                          type: string
-                          description: the template description
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: id of template
+                      name:
+                        type: string
+                        description: the name of template
+                      description:
+                        type: string
+                        description: description of template
+                      repository:
+                        type: string
+                        description: user-set gitlab url of tempalte
+                      group:
+                        type: integer
+                        description: which group template belongs to
+                      createBy:
+                        type: integer
+                        description: the creator of the template
+                      updateBy:
+                        type: integer
+                        description: the user who updated the template
+                        default:
+                          description: Unexpected error
+                          content:
+                            application/json:
+                              schema:
+                                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - template
+      operationId: updateTemplate
+      summary: Update the specified template
+      description: |
+        Update the specified template by template ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                repository:
+                  type: string
+                  description: gitlab url of template repo
+                token:
+                  type: string
+                  description: gitlab token to access the template repo
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+
         default:
           description: Unexpected error
           content:
@@ -39,37 +239,256 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/templates/{template}/releases/{release}/schema:
-    parameters:
-      - name: template
-        in: path
-        description: name of template
-        required: true
-        schema:
-          type: string
-      - name: release
-        in: path
-        description: release name of template
-        required: true
-        schema:
-          type: string
-      - name: clusterID
-        in: query
-        required: false
-        description: where we edit cluster config, use it when update cluster config
-        schema:
-          type: integer
-    # - name: env
-    #   in: query
-    #   required: false
-    #   description: todo
-    # - name: type
-    #   in: query
-    #   required: false
-    #   description: todo
-    get:
+    delete:
       tags:
         - template
+      operationId: deleteTemplate
+      summary: Delete the specified template
+      description: |
+        Delete the specified template by template ID.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+    post:
+      tags:
+        - release
+      operationId: createRelease
+      summary: Create release for specified template by template ID
+      description: |
+        Create release for specified template by template ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tag:
+                  type: string
+                  description: tag in gitlab, it will also be release name
+                isRecommend:
+                  type: boolean
+                description:
+                  type: string
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+
+  /apis/core/v2/templates/{templateID}/releases:
+    parameters:
+      - name: templateID
+        in: path
+        description: id of template
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - release
+      operationId: listTemplateReleases
+      summary: List releases for a specified template
+      description: |
+        List releases for a specified template. Maybe there are so many releases
+        for a template, but this API will only return 3 recently releases. And the most
+        recently release is the most recommended release.
+      responses:
+        '200':
+
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: the template release name
+                        description:
+                          type: string
+                          description: the template release description
+                        recommended:
+                          type: boolean
+                          description: is the most recommended release
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+
+  /apis/core/v2/templatereleases/{release}:
+    parameters:
+      - name: release
+        in: path
+        description: id of release
+        required: true
+        schema:
+          type: number
+    get:
+      tags:
+        - release
+      operationId: getRelease
+      summary: Get the specified release by release ID
+      description: |
+        Get the specified release by release ID.
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: the template release name
+                      description:
+                        type: string
+                        description: the template release description
+                      recommended:
+                        type: boolean
+                        description: is the most recommended release
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+    put:
+      tags:
+        - release
+      operationId: updateRelease
+      summary: Get the specified release by release ID
+      description: |
+        Get the specified release by release ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isRecommend:
+                  type: boolean
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+    delete:
+      tags:
+        - release
+      operationId: deleteRelease
+      summary: Delete the specified release by release ID
+      description: |
+        Delete the specified release by release ID.
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/templatereleases/{release}/sync:
+    parameters:
+      - name: release
+        in: path
+        description: id of release
+        required: true
+        schema:
+          type: number
+    post:
+      tags:
+        - release
+      operationId: syncReleaseToRepo
+      summary: Upload the specified release to repo(such as harbor)
+      description: |
+        Upload the specified release to repo(such as harbor).
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/templatereleases/{releaseID}/schema:
+    parameters:
+      - name: releaseID
+        in: path
+        description: id of release
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - release
       operationId: getTemplateInputSchema
       summary: Get input schema for a specified template
       description: |
@@ -328,441 +747,3 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-
-  /apis/core/v1/templates/{template}:
-    parameters:
-      - name: template
-        in: path
-        description: id of template
-        required: true
-        schema:
-          type: integer
-
-    get:
-      tags:
-        - template
-      operationId: getTemplate
-      summary: Get the specified template
-      description: |
-        Get the specified template by template ID.
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        description: id of template
-                      name:
-                        type: string
-                        description: the name of template
-                      description:
-                        type: string
-                        description: description of template
-                      repository:
-                        type: string
-                        description: user-set gitlab url of tempalte
-                      group:
-                        type: integer
-                        description: which group template belongs to
-                      createBy:
-                        type: integer
-                        description: the creator of the template
-                      updateBy:
-                        type: integer
-                        description: the user who updated the template
-                        default:
-                          description: Unexpected error
-                          content:
-                            application/json:
-                              schema:
-                                $ref: "common.yaml#/components/schemas/Error"
-    put:
-      tags:
-        - template
-      operationId: updateTemplate
-      summary: Update the specified template
-      description: |
-        Update the specified template by template ID.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                repository:
-                  type: string
-                  description: gitlab url of template repo
-                token:
-                  type: string
-                  description: gitlab token to access the template repo
-                description:
-                  type: string
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-    delete:
-      tags:
-        - template
-      operationId: deleteTemplate
-      summary: Delete the specified template
-      description: |
-        Delete the specified template by template ID.
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-    post:
-      tags:
-        - release
-      operationId: createRelease
-      summary: Create release for specified template by template ID
-      description: |
-        Create release for specified template by template ID.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                tag:
-                  type: string
-                  description: tag in gitlab, it will also be release name
-                isRecommend:
-                  type: boolean
-                description:
-                  type: string
-
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-
-  /apis/core/v1/templates/{template}/releases:
-    parameters:
-      - name: template
-        in: path
-        description: name or id of template
-        required: true
-        schema:
-          type: string
-    get:
-      tags:
-        - release
-      operationId: listTemplateReleases
-      summary: List releases for a specified template
-      description: |
-        List releases for a specified template. Maybe there are so many releases
-        for a template, but this API will only return 3 recently releases. And the most
-        recently release is the most recommended release.
-      responses:
-        '200':
-
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          description: the template release name
-                        description:
-                          type: string
-                          description: the template release description
-                        recommended:
-                          type: boolean
-                          description: is the most recommended release
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-  /apis/core/v1/groups/{group}/templates:
-    parameters:
-      - name: group
-        in: path
-        description: id of group
-        required: true
-        schema:
-          type: number
-    post:
-      tags:
-        - template
-      operationId: createTemplate
-      summary: Create a template under specified group by group ID
-      description: |
-        Create a template under specified group by group ID. User must create a release when creating template, or the template would be useless.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                description:
-                  type: string
-                repository:
-                  type: string
-                token:
-                  type: string
-                release:
-                  type: object
-                  properties:
-                    tag:
-                      type: string
-                    isRecommend:
-                      type: boolean
-                    description:
-                      type: string
-
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-  /apis/core/v1/templatereleases/{release}:
-    parameters:
-      - name: release
-        in: path
-        description: id of release
-        required: true
-        schema:
-          type: number
-    get:
-      tags:
-        - release
-      operationId: getRelease
-      summary: Get the specified release by release ID
-      description: |
-        Get the specified release by release ID.
-
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                        description: the template release name
-                      description:
-                        type: string
-                        description: the template release description
-                      recommended:
-                        type: boolean
-                        description: is the most recommended release
-
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-    put:
-      tags:
-        - release
-      operationId: updateRelease
-      summary: Get the specified release by release ID
-      description: |
-        Get the specified release by release ID.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                isRecommend:
-                  type: boolean
-                description:
-                  type: string
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-
-
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-    delete:
-      tags:
-        - release
-      operationId: deleteRelease
-      summary: Delete the specified release by release ID
-      description: |
-        Delete the specified release by release ID.
-
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-
-
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-
-  /apis/core/v1/templatereleases/{release}/sync:
-    parameters:
-      - name: release
-        in: path
-        description: id of release
-        required: true
-        schema:
-          type: number
-    post:
-      tags:
-        - release
-      operationId: syncReleaseToRepo
-      summary: Upload the specified release to repo(such as harbor)
-      description: |
-        Upload the specified release to repo(such as harbor).
-
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-
-
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v2/templates:
-    get:
-      description: list templates
-      operationId: listTemplates
-      parameters:
-        - name: userID
-          in: query
-          schema:
-            type: number
-        - name: groupID
-          in: query
-          schema:
-            type: number
-        - name: filter
-          in: query
-          schema:
-            type: string
-        - name: pageNumber
-          in: query
-          schema:
-            type: number
-        - name: pageSize
-          in: query
-          schema:
-            type: number
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                example: |
-                  {
-                    "data": {
-                      "total": 20,
-                      "items": [
-                        {
-                          "id": 120,
-                          "name": "sdfasd",
-                          "chartName": "61-sdfasd",
-                          "description": "",
-                          "repository": "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon-template/helm-template/dockerfile.git",
-                          "group": 61,
-                          "onlyOwner": true,
-                          "createdAt": "2022-09-09T15:23:44+08:00",
-                          "updatedAt": "2022-09-09T15:31:07+08:00",
-                          "createdBy": 2,
-                          "updatedBy": 2
-                        }
-                      ]
-                    }
-                  }

@@ -13,10 +13,6 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	apiGroup := engine.Group(fmt.Sprintf("/apis/core/v2/groups/:%s/templates", _groupParam))
 	routes := route.Routes{
 		{
-			Method:      http.MethodGet,
-			HandlerFunc: api.ListTemplatesByGroupID,
-		},
-		{
 			Method:      http.MethodPost,
 			HandlerFunc: api.CreateTemplate,
 		},
@@ -28,12 +24,6 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		{
 			Method:      http.MethodGet,
 			HandlerFunc: api.List,
-		},
-		{
-			Method: http.MethodGet,
-			// TODO: remove this api
-			Pattern:     fmt.Sprintf("/:%v/releases/:%v/schema", _templateParam, _releaseParam),
-			HandlerFunc: api.GetTemplateSchema,
 		},
 		{
 			Method:      http.MethodGet,

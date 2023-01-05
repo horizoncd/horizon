@@ -1,38 +1,47 @@
 openapi: 3.0.1
 info:
   title: Horizon-Cluster-Tag-Restful
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/core/v1/clusters/{clusterID}/tags:
+  /apis/core/v2/clusters/{clusterID}/tags:
     parameters:
       - name: clusterID
         in: path
-        description: cluster id
+        description: The ID of the cluster
         required: true
     get:
       tags:
         - tag
       operationId: listClusterTags
       summary: List tags of a specified cluster
+      parameters:
+        - name: queryParam
+          in: query
+          description: A query parameter
+          schema:
+            type: string
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "tags":[
-                              {
-                                  "key":"rpc.tag",
-                                  "value":"qa-abc"
-                              }
-                          ]
-                      }
-                  }
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            value:
+                              type: string
         default:
           description: Unexpected error
           content:
@@ -44,22 +53,31 @@ paths:
         - tag
       operationId: updateClusterTags
       summary: Create or update cluster tags
+      parameters:
+        - name: pathParam
+          in: path
+          description: A path parameter
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "data":{
-                        "tags":[
-                            {
-                                "key":"rpc.tag",
-                                "value":"qa-abc"
-                            }
-                        ]
-                    }
-                }
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    tags:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          value:
+                            type: string
       responses:
         "200":
           description: Success
@@ -69,11 +87,11 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/clusters/{clusterID}/templateschematags:
+  /apis/core/v2/clusters/{clusterID}/templateschematags:
     parameters:
       - name: clusterID
         in: path
-        description: cluster id
+        description: The ID of the cluster
         required: true
     get:
       tags:
@@ -86,17 +104,20 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "tags":[
-                              {
-                                  "key":"rpc.tag",
-                                  "value":"qa-abc"
-                              }
-                          ]
-                      }
-                  }
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            value:
+                              type: string
         default:
           description: Unexpected error
           content:
@@ -108,22 +129,31 @@ paths:
         - tag
       operationId: updateClusterTemplateSchemaTags
       summary: Create or update cluster Template schema tags
+      parameters:
+        - name: pathParam
+          in: path
+          description: A path parameter
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "data":{
-                        "tags":[
-                            {
-                                "key":"rpc.tag",
-                                "value":"qa-abc"
-                            }
-                        ]
-                    }
-                }
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    tags:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          value:
+                            type: string
       responses:
         "200":
           description: Success
@@ -133,3 +163,4 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+
