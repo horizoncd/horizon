@@ -3,7 +3,6 @@ package cluster
 import (
 	"time"
 
-	"github.com/horizoncd/horizon/core/common"
 	controllertag "github.com/horizoncd/horizon/core/controller/tag"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
@@ -211,7 +210,7 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 }
 
 type GitResponse struct {
-	SSHURL  string `json:"sshURL"`
+	GitURL  string `json:"gitURL"`
 	HTTPURL string `json:"httpURL"`
 }
 
@@ -241,8 +240,7 @@ func ofCluster(cluster *models.Cluster) *ListClusterResponse {
 			Release: cluster.TemplateRelease,
 		},
 		Git: &GitResponse{
-			SSHURL:  cluster.GitURL,
-			HTTPURL: common.InternalSSHToHTTPURL(cluster.GitURL),
+			GitURL: cluster.GitURL,
 		},
 		CreatedAt: cluster.CreatedAt,
 		UpdatedAt: cluster.UpdatedAt,

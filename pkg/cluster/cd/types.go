@@ -166,13 +166,15 @@ type ClusterStateV2 struct {
 	Status string `json:"status"`
 }
 
-// ClusterState 集群状态信息
+// ClusterState cluster state
 type ClusterState struct {
 	// Status:
-	// Processing(正在部署)；Healthy(部署完成)
-	// Suspended(已暂停)；Degraded(已降级)
-	// Missing(Rollout或Deployment还尚未部署到业务集群)
-	// Unknown(集群健康评估失败，无法获悉当前的部署状态)
+	// Processing
+	// Healthy
+	// Suspended
+	// Degraded
+	// Missing
+	// Unknown
 	Status health.HealthStatusCode `json:"status,omitempty" yaml:"status,omitempty"`
 
 	// Step
@@ -187,7 +189,7 @@ type ClusterState struct {
 	// PodTemplateHash
 	PodTemplateHash string `json:"podTemplateHash,omitempty" yaml:"podTemplateHash,omitempty"`
 
-	// PodTemplateHashKey 在 Deployment 或 Rollout 对象中的 label 的 key
+	// PodTemplateHashKey label key from Deployment or Rollout
 	PodTemplateHashKey string `json:"podTemplateHashKey,omitempty" yaml:"podTemplateHashKey,omitempty"`
 
 	// Revision the desired revision

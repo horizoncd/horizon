@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
-	"github.com/horizoncd/horizon/pkg/cluster/code"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
+	"github.com/horizoncd/horizon/pkg/git"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -191,7 +191,7 @@ func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref s
 	}
 
 	// 3. get code commit
-	var commit *code.Commit
+	var commit *git.Commit
 	if ref != "" {
 		commit, err = c.commitGetter.GetCommit(ctx, cluster.GitURL, refType, ref)
 		if err != nil {
@@ -204,18 +204,17 @@ func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref s
 	if err != nil {
 		return nil, err
 	}
-	return ofClusterDiff(cluster.GitURL, refType, ref, commit, diff), nil
+	return c.ofClusterDiff(cluster.GitURL, refType, ref, commit, diff)
 }
 
-func ofClusterDiff(gitURL, refType, ref string, commit *code.Commit, diff string) *GetDiffResponse {
+func (c *controller) ofClusterDiff(gitURL, refType, ref string, commit *git.Commit, diff string) (
+	*GetDiffResponse, error) {
 	var codeInfo *CodeInfo
 
-	// TODO: support any git repository
 	if commit != nil {
-		var historyLink string
-		if strings.HasPrefix(gitURL, common.InternalGitSSHPrefix) {
-			httpURL := common.InternalSSHToHTTPURL(gitURL)
-			historyLink = httpURL + common.CommitHistoryMiddle + ref
+		historyLink, err := c.commitGetter.GetCommitHistoryLink(gitURL, ref)
+		if err != nil {
+			return nil, err
 		}
 		codeInfo = &CodeInfo{
 			CommitID:  commit.ID,
@@ -233,5 +232,5 @@ func ofClusterDiff(gitURL, refType, ref string, commit *code.Commit, diff string
 	return &GetDiffResponse{
 		CodeInfo:   codeInfo,
 		ConfigDiff: diff,
-	}
+	}, nil
 }

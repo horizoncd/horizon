@@ -14,6 +14,7 @@ require (
 	github.com/go-redis/redis/v8 v8.3.3
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang/mock v1.6.0
+	github.com/google/go-github/v41 v41.0.0
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/sessions v1.2.0

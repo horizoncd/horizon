@@ -361,7 +361,7 @@ func Test(t *testing.T) {
 				Release: "v1.0.0",
 			},
 			Git: &codemodels.Git{
-				URL:       "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+				URL:       "ssh://git@cloudnative.com:22222/music-cloud-native/horizon/horizon.git",
 				Subfolder: "/",
 				Branch:    "develop",
 			},
@@ -395,7 +395,7 @@ func Test(t *testing.T) {
 				Release: "v1.0.0",
 			},
 			Git: &codemodels.Git{
-				URL:       "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+				URL:       "ssh://git@cloudnative.com:22222/music-cloud-native/horizon/horizon.git",
 				Subfolder: "/",
 				Branch:    "develop",
 			},
@@ -515,7 +515,7 @@ func TestV2(t *testing.T) {
 		Description: Description,
 		Priority:    &P0,
 		Git: &codemodels.Git{
-			URL:       "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+			URL:       "ssh://git@cloudnative.com:22222/music-cloud-native/horizon/horizon.git",
 			Subfolder: "/",
 			Branch:    "develop",
 		},

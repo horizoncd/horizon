@@ -117,7 +117,7 @@ func testList(t *testing.T) {
 		&tmodels.Template{
 			Name:       "javaapp",
 			ChartName:  "7-javaapp_test3",
-			Repository: "https://g.hz.netease.com/music-cloud-native/horizon/horizon.git",
+			Repository: "https://cloudnative.com/music-cloud-native/horizon/horizon.git",
 		}, nil,
 	)
 	templateMgr.EXPECT().GetByName(gomock.Any(), "javaapp").Return(
@@ -126,7 +126,7 @@ func testList(t *testing.T) {
 			Name:       "javaapp",
 			OnlyOwner:  &onlyOwnerTrue,
 			ChartName:  "7-javaapp_test3",
-			Repository: "https://g.hz.netease.com/music-cloud-native/horizon/horizon",
+			Repository: "https://cloudnative.com/music-cloud-native/horizon/horizon",
 		}, nil,
 	)
 

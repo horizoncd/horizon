@@ -247,8 +247,7 @@ func getRevision(rs *appsv1.ReplicaSet) string {
 }
 
 // CompareRevision
-// rs1 版本更加新的话，则返回true，否则返回false
-// 注意：仅仅通过 CreationTimestamp 是无法判断最新版本的，尤其是当 集群进行回滚操作。
+// return true if rs1 is the newer one, return false otherwise.
 func CompareRevision(ctx context.Context, rs1, rs2 *appsv1.ReplicaSet) bool {
 	revision1 := getRevision(rs1)
 	revision2 := getRevision(rs2)
@@ -264,9 +263,6 @@ func CompareRevision(ctx context.Context, rs1, rs2 *appsv1.ReplicaSet) bool {
 	}
 
 	if revision1 == "" || revision2 == "" || !hasSameOwnerRef {
-		// 如果它们属于不同的Deployment或Rollout，或
-		// 如果某个revision不存在，
-		// 则使用 CreationTimestamp 进行比较
 		return rs2.CreationTimestamp.Before(&rs1.CreationTimestamp)
 	}
 
@@ -406,8 +402,6 @@ func getResumePatchStr() string {
 
 // computeRolloutStepHash returns a hash value calculated from the Rollout's steps. The hash will
 // be safe encoded to avoid bad words.
-// source code ref:
-// g.hz.netease.com/music-cloud-native/kubernetes/argo-rollouts/-/blob/develop/utils/conditions/conditions.go#L240
 func computeRolloutStepHash(rollout *rolloutsV1alpha1.Rollout) string {
 	if rollout.Spec.Strategy.BlueGreen != nil || rollout.Spec.Strategy.Canary == nil {
 		return ""

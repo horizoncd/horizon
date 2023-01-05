@@ -11,6 +11,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/config/cmdb"
 	"github.com/horizoncd/horizon/pkg/config/db"
 	"github.com/horizoncd/horizon/pkg/config/eventhandler"
+	"github.com/horizoncd/horizon/pkg/config/git"
 	"github.com/horizoncd/horizon/pkg/config/gitlab"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
 	"github.com/horizoncd/horizon/pkg/config/oauth"
@@ -45,6 +46,7 @@ type Config struct {
 	KubeConfig             string                  `yaml:"kubeconfig"`
 	WebhookConfig          webhook.Config          `yaml:"webhook"`
 	EventHandlerConfig     eventhandler.Config     `yaml:"eventHandler"`
+	CodeGitRepos           []*git.Repo             `yaml:"gitRepos"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {

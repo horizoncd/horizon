@@ -32,14 +32,16 @@ import (
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	clustercd "github.com/horizoncd/horizon/pkg/cluster/cd"
-	"github.com/horizoncd/horizon/pkg/cluster/code"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
+	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/pkg/git"
+	"github.com/horizoncd/horizon/pkg/git/gitlab"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
@@ -72,8 +74,8 @@ var (
 	pr                                    *v1beta1.PipelineRun
 	applicationSchema, pipelineSchema     map[string]interface{}
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}
-
-	applicationSchemaJSON = `{
+	commitGetter                          codemodels.GitGetter
+	applicationSchemaJSON                 = `{
     "type":"object",
     "properties":{
         "app":{
@@ -368,7 +370,7 @@ var (
                                 "terminated":{
                                     "exitCode":0,
                                     "reason":"Completed",
-                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.cloudnative.com/ndp-gjq/test-music-docker:helloworld-b1f57848-20210624143634 ssh://git@g.hz.netease.com:22222/demo/springboot-demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
+                                    "message":"[{\"key\":\"properties\",\"value\":\"harbor.cloudnative.com/test-music-docker:helloworld-b1f57848-20210624143634 ssh://git@cloudnative.com:22222/demo/springboot-demo.git helloworld b1f578488e3123e97ec00b671db143fb8f0abecf\",\"type\":\"TaskRunResult\"}]",
                                     "startedAt":"2021-06-24T06:36:34Z",
                                     "finishedAt":"2021-06-24T06:36:42Z",
                                     "containerID":"docker://9189624ad3981fd738ec5bf286f1fc5b688d71128b9827820ebc2541b2801dae"
@@ -454,6 +456,13 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	commitGetter, _ = codemodels.NewGitGetter(ctx, []*gitconfig.Repo{
+		{
+			Kind:  gitlab.Kind,
+			URL:   "https://cloudnative.com",
+			Token: "123456",
+		},
+	})
 	os.Exit(m.Run())
 }
 
@@ -614,6 +623,7 @@ func test(t *testing.T) {
 		eventMgr:             manager.EventManager,
 	}
 
+	commitGetter.EXPECT().GetHTTPLink(gomock.Any()).Return("https://cloudnative.com:22222/demo/springboot-demo", nil).AnyTimes()
 	tagManager.EXPECT().ListByResourceTypeIDs(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	applicationGitRepo.EXPECT().GetApplication(ctx, gomock.Any(), gomock.Any()).
 		Return(&appgitrepo.GetResponse{
@@ -682,7 +692,7 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.FullPath, "/group/app/app-cluster")
 	t.Logf("%v", resp.ExpireTime)
 
-	UpdateGitURL := "ssh://git@g.hz.netease.com:22222/demo/springboot-demo.git"
+	UpdateGitURL := "ssh://git@cloudnative.com:22222/demo/springboot-demo.git"
 	updateClusterRequest := &UpdateClusterRequest{
 		Base: &Base{
 			Description: "new description",
@@ -780,7 +790,7 @@ func test(t *testing.T) {
 	tekton.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("abc", nil)
 	tekton.EXPECT().GetPipelineRunByID(ctx, gomock.Any()).Return(pr, nil).AnyTimes()
 
-	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&code.Commit{
+	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&git.Commit{
 		ID:      "code-commit-id",
 		Message: "msg",
 	}, nil)
@@ -834,7 +844,8 @@ func test(t *testing.T) {
 	commitID := "code-commit-id"
 	commitMsg := "code-commit-msg"
 	configDiff := "config-diff"
-	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&code.Commit{
+	commitGetter.EXPECT().GetCommitHistoryLink(gomock.Any(), gomock.Any()).Return("https://cloudnative.com:22222/demo/springboot-demo/-/commits/" + codeBranch, nil).AnyTimes()
+	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&git.Commit{
 		ID:      commitID,
 		Message: commitMsg,
 	}, nil)
@@ -844,12 +855,13 @@ func test(t *testing.T) {
 	getdiffResp, err := c.GetDiff(ctx, resp.ID, codemodels.GitRefTypeBranch, codeBranch)
 	assert.Nil(t, err)
 
+	link, _ := commitGetter.GetCommitHistoryLink(UpdateGitURL, codeBranch)
 	assert.Equal(t, &GetDiffResponse{
 		CodeInfo: &CodeInfo{
 			Branch:    codeBranch,
 			CommitID:  commitID,
 			CommitMsg: commitMsg,
-			Link:      common.InternalSSHToHTTPURL(UpdateGitURL) + common.CommitHistoryMiddle + codeBranch,
+			Link:      link,
 		},
 		ConfigDiff: configDiff,
 	}, getdiffResp)

@@ -153,7 +153,7 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 			Name:            name,
 			EnvironmentName: devEnv.Name,
 			RegionName:      "hzListClusterWithExpiry",
-			GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+			GitURL:          "ssh://git@cloudnative.com:22222/music-cloud-native/horizon/horizon.git",
 			Status:          "",
 			ExpireSeconds:   uint((i + 1) * secondsInOneDay),
 			Model: global.Model{

@@ -22,11 +22,11 @@ import (
 	usermock "github.com/horizoncd/horizon/mock/pkg/user/manager"
 	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	"github.com/horizoncd/horizon/pkg/cluster/code"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	clustermodel "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
 	envmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
+	"github.com/horizoncd/horizon/pkg/git"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
@@ -144,11 +144,13 @@ func TestGetDiff(t *testing.T) {
 
 	var pipelineID uint = 99854
 	var clusterID uint = 3213
-	gitURL := "ssh://git@g.hz.netease.com:22222/demo/springboot-demo.git"
+	gitURL := "ssh://git@cloudnative.com:22222/demo/springboot-demo.git"
 	gitBranch := "master"
 	gitCommit := "12388508504390230802832"
 	configCommit := "123123"
 	lastConfigCommit := "23232"
+	mockCommitGetter.EXPECT().GetCommitHistoryLink(gomock.Any(), gomock.Any()).
+		Return("https://cloudnative.com:22222/demo/springboot-demo/-/commits/"+gitCommit, nil).AnyTimes()
 	mockPipelineManager.EXPECT().GetByID(ctx, pipelineID).Return(&models.Pipelinerun{
 		ID:               0,
 		ClusterID:        clusterID,
@@ -174,7 +176,7 @@ func TestGetDiff(t *testing.T) {
 
 	commitMsg := "hello world"
 	mockCommitGetter.EXPECT().GetCommit(ctx, gitURL, codemodels.GitRefTypeCommit, gitCommit).
-		Return(&code.Commit{
+		Return(&git.Commit{
 			ID:      gitCommit,
 			Message: commitMsg,
 		}, nil)
@@ -188,12 +190,13 @@ func TestGetDiff(t *testing.T) {
 	body, _ := json.Marshal(resp)
 	t.Logf("response = %s", string(body))
 
+	link, _ := mockCommitGetter.GetCommitHistoryLink(gitURL, gitCommit)
 	expectResp := &GetDiffResponse{
 		CodeInfo: &CodeInfo{
 			Branch:    gitBranch,
 			CommitID:  gitCommit,
 			CommitMsg: commitMsg,
-			Link:      common.InternalSSHToHTTPURL(gitURL) + common.CommitHistoryMiddle + gitCommit,
+			Link:      link,
 		},
 		ConfigDiff: &ConfigDiff{
 			From: lastConfigCommit,
