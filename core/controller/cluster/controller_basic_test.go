@@ -87,6 +87,7 @@ func testListClusterByNameFuzzily(t *testing.T) {
 		groupManager:   manager.GroupManager,
 		memberManager:  manager.MemberManager,
 		eventMgr:       manager.EventManager,
+		commitGetter:   commitGetter,
 	}
 
 	resps, count, err := c.List(ctx, &q.Query{Keywords: q.KeyWords{common.ClusterQueryName: "fuzzilyCluster"}})
@@ -157,7 +158,7 @@ func testListUserClustersByNameFuzzily(t *testing.T) {
 			Name:            name,
 			EnvironmentName: "testUserClustersFuzzily",
 			RegionName:      "hzUserClustersFuzzily",
-			GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+			GitURL:          "ssh://git@cloudnative.com:22222/music-cloud-native/horizon/horizon.git",
 		}, nil, nil)
 		assert.Nil(t, err)
 		assert.NotNil(t, cluster)
@@ -203,6 +204,7 @@ func testListUserClustersByNameFuzzily(t *testing.T) {
 		groupManager:   manager.GroupManager,
 		memberManager:  manager.MemberManager,
 		eventMgr:       manager.EventManager,
+		commitGetter:   commitGetter,
 	}
 
 	resps, count, err := c.List(ctx,
@@ -247,7 +249,7 @@ func testListClusterWithExpiry(t *testing.T) {
 		Name:            "clusterWithExpiry",
 		EnvironmentName: "testListClusterWithExpiry",
 		RegionName:      "hzListClusterWithExpiry",
-		GitURL:          "ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git",
+		GitURL:          "ssh://git@cloudnative.com:22222/music-cloud-native/horizon/horizon.git",
 		Status:          "",
 		ExpireSeconds:   secondsInOneDay,
 	}

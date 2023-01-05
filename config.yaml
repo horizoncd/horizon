@@ -17,17 +17,15 @@ redisConfig:
   address: ""
   password: ""
   db: 1
-oidcConfig:
-  userHeader: X-HORIZON-OIDC-USER
-  fullNameHeader: X-HORIZON-OIDC-FULLNAME
-  emailHeader: X-HORIZON-OIDC-EMAIL
-  oidcIDHeader: X-HORIZON-OIDC-ID
-  oidcTypeHeader: X-HORIZON-OIDC-TYPE
+gitRepos:
+  - kind: gitlab
+    url: https://gitlab.com
+    token:
+  - kind: github
+    url: https://github.com
+    token:
 gitlabMapper:
   template:
-    httpURL: ""
-    token: ""
-  code:
     httpURL: ""
     token: ""
   gitops:

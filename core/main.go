@@ -8,6 +8,10 @@ import (
 	// for image registry
 	_ "github.com/horizoncd/horizon/pkg/cluster/registry/harbor"
 
+	_ "github.com/horizoncd/horizon/pkg/git"
+	_ "github.com/horizoncd/horizon/pkg/git/github"
+	_ "github.com/horizoncd/horizon/pkg/git/gitlab"
+
 	// for template repo
 	_ "github.com/horizoncd/horizon/pkg/templaterepo/chartmuseumbase"
 

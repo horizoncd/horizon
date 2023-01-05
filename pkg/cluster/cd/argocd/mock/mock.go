@@ -100,7 +100,7 @@ func (argoServer *ArgoServer) GetRepository(w http.ResponseWriter, r *http.Reque
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`
 {
-    "repo":"ssh://git@g.hz.netease.com:22222/music-cloud-native-robot-dev/unit-test-repo.git",
+    "repo":"ssh://git@cloudnative.com:22222/music-cloud-native-robot-dev/unit-test-repo.git",
     "connectionState":{
         "status":"Successful",
         "message":"",
@@ -116,10 +116,10 @@ func (argoServer *ArgoServer) GetRepository(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`
 {
-  "repo": "ssh://git@g.hz.netease.com:22222/music-cloud-native-robot-dev/unit-test-repo.git",
+  "repo": "ssh://git@cloudnative.com:22222/music-cloud-native-robot-dev/unit-test-repo.git",
   "connectionState": {
     "status": "Failed",
-    "message": "Unable Get \"ssh://git@g.hz.netease.com:22222/xx.git/index.yaml\": unsupported protocol scheme \"ssh\"",
+    "message": "Unable Get \"ssh://git@cloudnative.com:22222/xx.git/index.yaml\": unsupported protocol scheme \"ssh\"",
     "attemptedAt": "2020-11-17T11:45:56Z"
   },
   "type": "git"

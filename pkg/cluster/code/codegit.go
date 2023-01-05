@@ -5,127 +5,115 @@ import (
 	"regexp"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
-	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/xanzy/go-gitlab"
+	"github.com/horizoncd/horizon/pkg/git"
 )
 
-// TODO: git connector (support all kinds of git code repo)
-
-// GitGetter interface to get commit for user code
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/code/mock_codegit.go -package=mock_code
 type GitGetter interface {
 	// GetCommit to get commit of a branch/tag/commitID for a specified git URL
-	// gitURL is a ssh url, looks like: ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git
-	GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*Commit, error)
-	ListBranch(ctx context.Context, gitURL string, params *SearchParams) ([]string, error)
-	ListTag(ctx context.Context, gitURL string, params *SearchParams) ([]string, error)
+	GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*git.Commit, error)
+	ListBranch(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error)
+	ListTag(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error)
+	GetHTTPLink(gitURL string) (string, error)
+	GetCommitHistoryLink(gitURL string, commit string) (string, error)
 }
 
 var _ GitGetter = (*gitGetter)(nil)
 
+var regexHost = regexp.MustCompile(`^(?:https?:)?(?://)?(?:[^@\n]+@)?([^:/\n]+)`)
+
 type gitGetter struct {
-	gitlabLib gitlablib.Interface
+	gitMap map[string]git.Helper
 }
 
 // NewGitGetter new a GitGetter instance
-func NewGitGetter(ctx context.Context, gitlabLib gitlablib.Interface) (GitGetter, error) {
+func NewGitGetter(ctx context.Context, repos []*gitconfig.Repo) (GitGetter, error) {
+	gitMap := map[string]git.Helper{}
+	for _, repo := range repos {
+		host, err := extractHostFromURL(repo.URL)
+		if err != nil {
+			return nil, err
+		}
+		helper, err := git.NewHelper(ctx, repo)
+		if err != nil {
+			return nil, err
+		}
+		gitMap[host] = helper
+	}
 	return &gitGetter{
-		gitlabLib: gitlabLib,
+		gitMap: gitMap,
 	}, nil
 }
 
-func (g *gitGetter) ListBranch(ctx context.Context, gitURL string, params *SearchParams) ([]string, error) {
-	pid, err := extractProjectPathFromURL(gitURL)
+func (g *gitGetter) ListBranch(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
+	helper, err := g.getGitHelper(gitURL)
 	if err != nil {
 		return nil, err
 	}
-	listParam := &gitlab.ListBranchesOptions{
-		ListOptions: gitlab.ListOptions{
-			Page:    params.PageNumber,
-			PerPage: params.PageSize,
-		},
-		Search: &params.Filter,
-	}
-	branches, err := g.gitlabLib.ListBranch(ctx, pid, listParam)
-	if err != nil {
-		return nil, err
-	}
-	branchNames := make([]string, 0)
-	for _, branch := range branches {
-		branchNames = append(branchNames, branch.Name)
-	}
-	return branchNames, nil
+
+	return helper.ListBranch(ctx, gitURL, params)
 }
 
-func (g *gitGetter) ListTag(ctx context.Context, gitURL string, params *SearchParams) ([]string, error) {
-	pid, err := extractProjectPathFromURL(gitURL)
+func (g *gitGetter) ListTag(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
+	helper, err := g.getGitHelper(gitURL)
 	if err != nil {
 		return nil, err
 	}
-	listParam := &gitlab.ListTagsOptions{
-		ListOptions: gitlab.ListOptions{
-			Page:    params.PageNumber,
-			PerPage: params.PageSize,
-		},
-		Search: &params.Filter,
-	}
-	tags, err := g.gitlabLib.ListTag(ctx, pid, listParam)
-	if err != nil {
-		return nil, err
-	}
-	tagNames := make([]string, 0)
-	for _, tag := range tags {
-		tagNames = append(tagNames, tag.Name)
-	}
-	return tagNames, nil
+
+	return helper.ListTag(ctx, gitURL, params)
 }
 
-func (g *gitGetter) GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*Commit, error) {
-	pid, err := extractProjectPathFromURL(gitURL)
+func (g *gitGetter) GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*git.Commit, error) {
+	helper, err := g.getGitHelper(gitURL)
 	if err != nil {
 		return nil, err
 	}
 
-	switch refType {
-	case GitRefTypeCommit:
-		commit, err := g.gitlabLib.GetCommit(ctx, pid, ref)
-		if err != nil {
-			return nil, err
-		}
-		return &Commit{
-			ID:      commit.ID,
-			Message: commit.Message,
-		}, nil
-	case GitRefTypeTag:
-		tag, err := g.gitlabLib.GetTag(ctx, pid, ref)
-		if err != nil {
-			return nil, err
-		}
-		return &Commit{
-			ID:      tag.Commit.ID,
-			Message: tag.Commit.Message,
-		}, nil
-	case GitRefTypeBranch:
-		branch, err := g.gitlabLib.GetBranch(ctx, pid, ref)
-		if err != nil {
-			return nil, err
-		}
-		return &Commit{
-			ID:      branch.Commit.ID,
-			Message: branch.Commit.Message,
-		}, nil
-	default:
-		return nil, perror.Wrapf(herrors.ErrParamInvalid, "git ref type %s is invalid", refType)
-	}
+	return helper.GetCommit(ctx, gitURL, refType, ref)
 }
 
-// extractProjectPathFromURL extract gitlab project path from ssh url.
-// ssh url looks like: ssh://git@g.hz.netease.com:22222/music-cloud-native/horizon/horizon.git
-func extractProjectPathFromURL(gitURL string) (string, error) {
-	pattern := regexp.MustCompile(`^(?:http(?:s?)|ssh)://.+?/(.+?)(?:.git)?$`)
-	matches := pattern.FindStringSubmatch(gitURL)
+func (g *gitGetter) GetHTTPLink(gitURL string) (string, error) {
+	if gitURL == "" {
+		return "", nil
+	}
+	helper, err := g.getGitHelper(gitURL)
+	if err != nil {
+		return "", err
+	}
+	return helper.GetHTTPLink(gitURL)
+}
+
+func (g *gitGetter) GetCommitHistoryLink(gitURL string, commit string) (string, error) {
+	if gitURL == "" || commit == "" {
+		return "", nil
+	}
+	helper, err := g.getGitHelper(gitURL)
+	if err != nil {
+		return "", err
+	}
+	return helper.GetCommitHistoryLink(gitURL, commit)
+}
+
+func (g *gitGetter) getGitHelper(gitURL string) (git.Helper, error) {
+	host, err := extractHostFromURL(gitURL)
+	if err != nil {
+		return nil, err
+	}
+
+	var ok bool
+	var h git.Helper
+	if h, ok = g.gitMap[host]; !ok {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "no git repo corresponding to url: %v", gitURL)
+	}
+	return h, nil
+}
+
+func extractHostFromURL(gitURL string) (string, error) {
+	matches := regexHost.FindStringSubmatch(gitURL)
 	if len(matches) != 2 {
-		return "", perror.Wrapf(herrors.ErrParamInvalid, "error to extract project path from git ssh url: %v", gitURL)
+		return "", perror.Wrapf(herrors.ErrParamInvalid, "error to extract host from url: %v", gitURL)
 	}
 	return matches[1], nil
 }

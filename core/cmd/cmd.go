@@ -301,11 +301,6 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	gitlabCode, err := gitlabFactory.GetByName(ctx, common.GitlabCode)
-	if err != nil {
-		panic(err)
-	}
-
 	gitlabTemplate, err := gitlabFactory.GetByName(ctx, common.GitlabTemplate)
 	if err != nil {
 		panic(err)
@@ -318,7 +313,7 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	gitGetter, err := code.NewGitGetter(ctx, gitlabCode)
+	gitGetter, err := code.NewGitGetter(ctx, coreConfig.CodeGitRepos)
 	if err != nil {
 		panic(err)
 	}

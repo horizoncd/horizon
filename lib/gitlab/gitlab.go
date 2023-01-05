@@ -63,7 +63,7 @@ type Interface interface {
 	// See https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch for more information.
 	GetBranch(ctx context.Context, pid interface{}, branch string) (*gitlab.Branch, error)
 
-	// GetBranch get tag of the specified project.
+	// GetTag get tag of the specified project.
 	// The pid can be the project's ID or relative path such as fist/second.
 	// see https://docs.gitlab.com/ee/api/tags.html#get-a-single-repository-tag for more information
 	GetTag(ctx context.Context, pid interface{}, tag string) (_ *gitlab.Tag, err error)

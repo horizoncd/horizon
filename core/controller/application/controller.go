@@ -621,7 +621,7 @@ func validateGit(b Base) error {
 }
 
 func validateGitURL(gitURL string) error {
-	re := `^ssh://.+[.]git$`
+	re := `^(?:git|ssh|https?|git@[-\w.]+):(//)?(.*?)(\.git)(/?|#[-\d\w._]+?)$`
 	pattern := regexp.MustCompile(re)
 	if !pattern.MatchString(gitURL) {
 		return perror.Wrap(herrors.ErrParamInvalid,

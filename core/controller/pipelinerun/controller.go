@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
 	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	"github.com/horizoncd/horizon/pkg/cluster/code"
@@ -175,10 +173,9 @@ func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDif
 		if err != nil {
 			return nil, err
 		}
-		var historyLink string
-		if strings.HasPrefix(pipelinerun.GitURL, common.InternalGitSSHPrefix) {
-			httpURL := common.InternalSSHToHTTPURL(pipelinerun.GitURL)
-			historyLink = httpURL + common.CommitHistoryMiddle + pipelinerun.GitCommit
+		historyLink, err := c.commitGetter.GetCommitHistoryLink(pipelinerun.GitURL, pipelinerun.GitCommit)
+		if err != nil {
+			return nil, err
 		}
 		codeDiff = &CodeInfo{
 			CommitID:  pipelinerun.GitCommit,

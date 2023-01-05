@@ -86,8 +86,7 @@ const (
 )
 
 const (
-	GroupCore  = "core"
-	GroupFront = "front"
+	GroupCore = "core"
 )
 
 const (
@@ -104,7 +103,6 @@ const (
 )
 
 const (
-	GitlabCode     = "code"
 	GitlabGitops   = "gitops"
 	GitlabTemplate = "template"
 )

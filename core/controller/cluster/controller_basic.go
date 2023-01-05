@@ -125,7 +125,15 @@ func (c *controller) ListByApplication(ctx context.Context,
 		return 0, nil, err
 	}
 
-	return count, ofClustersWithEnvRegionTags(clustersWithEnvAndRegion, tags), nil
+	clusters := ofClustersWithEnvRegionTags(clustersWithEnvAndRegion, tags)
+	for _, cluster := range clusters {
+		cluster.Git.HTTPURL, err = c.commitGetter.GetHTTPLink(cluster.Git.GitURL)
+		if err != nil {
+			return 0, nil, err
+		}
+	}
+
+	return count, clusters, nil
 }
 
 func (c *controller) getFullResponses(ctx context.Context,
@@ -150,8 +158,13 @@ func (c *controller) getFullResponses(ctx context.Context,
 		}
 		fullPath := fmt.Sprintf("%v/%v", application.FullPath, cluster.Name)
 		fullName := fmt.Sprintf("%v/%v", application.FullName, cluster.Name)
+		response := ofCluster(cluster)
+		response.Git.HTTPURL, err = c.commitGetter.GetHTTPLink(response.Git.GitURL)
+		if err != nil {
+			return nil, err
+		}
 		responses = append(responses, &ListClusterWithFullResponse{
-			ofCluster(cluster),
+			response,
 			fullName,
 			fullPath,
 		})
