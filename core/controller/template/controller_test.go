@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -17,9 +16,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/lib/orm"
-	gitlablibmock "github.com/horizoncd/horizon/mock/lib/gitlab"
+	gitmock "github.com/horizoncd/horizon/mock/pkg/git"
 	groupmanagermock "github.com/horizoncd/horizon/mock/pkg/group/manager"
 	membermock "github.com/horizoncd/horizon/mock/pkg/member/manager"
 	tmock "github.com/horizoncd/horizon/mock/pkg/template/manager"
@@ -29,9 +27,12 @@ import (
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	config "github.com/horizoncd/horizon/pkg/config/templaterepo"
 	hctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/git"
+	"github.com/horizoncd/horizon/pkg/git/gitlab"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
@@ -46,7 +47,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterepo/chartmuseumbase"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
-	gitlabapi "github.com/xanzy/go-gitlab"
 	"gorm.io/gorm"
 )
 
@@ -168,40 +168,50 @@ func testList(t *testing.T) {
 
 	templateReleaseMgr.EXPECT().UpdateByID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	gitlabLib := gitlablibmock.NewMockInterface(mockCtl)
+	gitlabLib := gitmock.NewMockHelper(mockCtl)
 
-	gitlabLib.EXPECT().
-		GetRepositoryArchive(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).Times(6)
+	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&git.Tag{ShortID: "test3", Name: "", ArchiveData: []byte{}}, nil).Times(1)
+	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(1)
+	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(1)
+	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&git.Tag{ShortID: "test3", Name: "", ArchiveData: []byte{}}, nil).Times(1)
+	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(1)
+	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(1)
 
-	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[0]).
-		Return(&gitlabapi.Tag{
-			Commit: &gitlabapi.Commit{ShortID: "test"},
-		}, nil)
-	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[1]).
-		Return(&gitlabapi.Tag{
-			Commit: &gitlabapi.Commit{ShortID: "test"},
-		}, nil)
-	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[2]).
-		Return(&gitlabapi.Tag{
-			Commit: &gitlabapi.Commit{ShortID: "test3"},
-		}, nil).Times(1)
+	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[0]).
+	//	Return(&gitlabapi.Tag{
+	//		Commit: &gitlabapi.Commit{ShortID: "test"},
+	//	}, nil)
+	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[1]).
+	//	Return(&gitlabapi.Tag{
+	//		Commit: &gitlabapi.Commit{ShortID: "test"},
+	//	}, nil)
+	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[2]).
+	//	Return(&gitlabapi.Tag{
+	//		Commit: &gitlabapi.Commit{ShortID: "test3"},
+	//	}, nil).Times(1)
 
-	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[0]).
-		Return(&gitlabapi.Tag{
-			Commit: &gitlabapi.Commit{ShortID: "test"},
-		}, nil)
-	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[1]).
-		Return(&gitlabapi.Tag{
-			Commit: &gitlabapi.Commit{ShortID: "test"},
-		}, nil)
-	gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[2]).
-		Return(nil, errors.New("test")).Times(1)
+	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[0]).
+	//	Return(&gitlabapi.Tag{
+	//		Commit: &gitlabapi.Commit{ShortID: "test"},
+	//	}, nil)
+	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[1]).
+	//	Return(&gitlabapi.Tag{
+	//		Commit: &gitlabapi.Commit{ShortID: "test"},
+	//	}, nil)
+	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[2]).
+	//	Return(nil, errors.New("test")).Times(1)
 
 	ctl := &controller{
 		templateMgr:        templateMgr,
 		templateReleaseMgr: templateReleaseMgr,
 		groupMgr:           groupMgr,
-		gitlabLib:          gitlabLib,
+		gitgetter:          gitlabLib,
 		memberSvc:          memberService,
 		memberMgr:          memberMgr,
 	}
@@ -673,12 +683,13 @@ func createController(t *testing.T) Controller {
 
 	URL, err := url.Parse(repoConfig.TemplateRepo)
 	assert.Nil(t, err)
-	gitlabLib, err := gitlab.New(repoConfig.TemplateRepoToken,
-		fmt.Sprintf("%s://%s", URL.Scheme, URL.Host), "")
+
+	gitlabLib, err := gitlab.New(ctx, &gitconfig.Repo{Kind: "gitlab",
+		URL: fmt.Sprintf("%s://%s", URL.Scheme, URL.Host), Token: repoConfig.TemplateRepoToken})
 	assert.Nil(t, err)
 
 	ctl := &controller{
-		gitlabLib:            gitlabLib,
+		gitgetter:            gitlabLib,
 		templateRepo:         repo,
 		groupMgr:             mgr.GroupManager,
 		templateMgr:          mgr.TemplateMgr,

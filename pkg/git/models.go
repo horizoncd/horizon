@@ -6,6 +6,12 @@ const (
 	GitRefTypeCommit = "commit"
 )
 
+type Tag struct {
+	ShortID     string
+	Name        string
+	ArchiveData []byte
+}
+
 type Commit struct {
 	ID      string
 	Message string

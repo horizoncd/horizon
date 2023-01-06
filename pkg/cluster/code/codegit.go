@@ -18,6 +18,7 @@ type GitGetter interface {
 	ListTag(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error)
 	GetHTTPLink(gitURL string) (string, error)
 	GetCommitHistoryLink(gitURL string, commit string) (string, error)
+	GetTagArchive(ctx context.Context, gitURL, tagName string) (*git.Tag, error)
 }
 
 var _ GitGetter = (*gitGetter)(nil)
@@ -94,6 +95,14 @@ func (g *gitGetter) GetCommitHistoryLink(gitURL string, commit string) (string, 
 		return "", err
 	}
 	return helper.GetCommitHistoryLink(gitURL, commit)
+}
+
+func (g *gitGetter) GetTagArchive(ctx context.Context, gitURL, tagName string) (*git.Tag, error) {
+	helper, err := g.getGitHelper(gitURL)
+	if err != nil {
+		return nil, err
+	}
+	return helper.GetTagArchive(ctx, gitURL, tagName)
 }
 
 func (g *gitGetter) getGitHelper(gitURL string) (git.Helper, error) {

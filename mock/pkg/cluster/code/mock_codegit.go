@@ -80,6 +80,21 @@ func (mr *MockGitGetterMockRecorder) GetHTTPLink(gitURL interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHTTPLink", reflect.TypeOf((*MockGitGetter)(nil).GetHTTPLink), gitURL)
 }
 
+// GetTagArchive mocks base method.
+func (m *MockGitGetter) GetTagArchive(ctx context.Context, gitURL, tagName string) (*git.Tag, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTagArchive", ctx, gitURL, tagName)
+	ret0, _ := ret[0].(*git.Tag)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTagArchive indicates an expected call of GetTagArchive.
+func (mr *MockGitGetterMockRecorder) GetTagArchive(ctx, gitURL, tagName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTagArchive", reflect.TypeOf((*MockGitGetter)(nil).GetTagArchive), ctx, gitURL, tagName)
+}
+
 // ListBranch mocks base method.
 func (m *MockGitGetter) ListBranch(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
 	m.ctrl.T.Helper()
