@@ -4,9 +4,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/code"
-	codegetter "github.com/horizoncd/horizon/pkg/cluster/code"
+	"github.com/horizoncd/horizon/pkg/git"
 	"github.com/horizoncd/horizon/pkg/server/request"
 	"github.com/horizoncd/horizon/pkg/server/response"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 const (
@@ -34,12 +35,13 @@ func (a *API) ListBranch(c *gin.Context) {
 	}
 	filter := c.Query(common.Filter)
 
-	branches, err := a.codeCtl.ListBranch(c, gitURL, &codegetter.SearchParams{
+	branches, err := a.codeCtl.ListBranch(c, gitURL, &git.SearchParams{
 		Filter:     filter,
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
 	})
 	if err != nil {
+		log.Errorf(c, "List branch error: %+v", err)
 		response.AbortWithError(c, err)
 		return
 	}
@@ -59,7 +61,7 @@ func (a *API) ListTag(c *gin.Context) {
 	}
 	filter := c.Query(common.Filter)
 
-	tags, err := a.codeCtl.ListTag(c, gitURL, &codegetter.SearchParams{
+	tags, err := a.codeCtl.ListTag(c, gitURL, &git.SearchParams{
 		Filter:     filter,
 		PageNumber: pageNumber,
 		PageSize:   pageSize,

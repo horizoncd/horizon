@@ -279,11 +279,11 @@ components:
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: "common.yaml#/components/components/User"
+          $ref: "common.yaml#/components/schemas/User"
         updatedAt:
           $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: "common.yaml#/components/components/User"
+          $ref: "common.yaml#/components/schemas/User"
 
     WebhookLogSummary:
       type: object
@@ -301,11 +301,11 @@ components:
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: "common.yaml#/components/components/User"
+          $ref: "common.yaml#/components/schemas/User"
         updatedAt:
           $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: "common.yaml#/components/components/User"
+          $ref: "common.yaml#/components/schemas/User"
 
     WebhookLog:
       type: object
@@ -323,11 +323,11 @@ components:
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: "common.yaml#/components/components/User"
+          $ref: "common.yaml#/components/schemas/User"
         updatedAt:
           $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: "common.yaml#/components/components/User"
+          $ref: "common.yaml#/components/schemas/User"
         requestHeaders:
           type: string
           description: "request header"

@@ -74,7 +74,6 @@ import (
 	idpv2 "github.com/horizoncd/horizon/core/http/api/v2/idp"
 	memberv2 "github.com/horizoncd/horizon/core/http/api/v2/member"
 	oauthappv2 "github.com/horizoncd/horizon/core/http/api/v2/oauthapp"
-	oauthserverv2 "github.com/horizoncd/horizon/core/http/api/v2/oauthserver"
 	pipelinerunv2 "github.com/horizoncd/horizon/core/http/api/v2/pipelinerun"
 	regionv2 "github.com/horizoncd/horizon/core/http/api/v2/region"
 	registryv2 "github.com/horizoncd/horizon/core/http/api/v2/registry"
@@ -520,8 +519,6 @@ func Run(flags *Flags) {
 		idpAPIV2               = idpv2.NewAPI(idpCtrl, store)
 		memberAPIV2            = memberv2.NewAPI(memberCtl, roleService)
 		oauthAppAPIV2          = oauthappv2.NewAPI(oauthAppCtl)
-		oauthServerAPIV2       = oauthserverv2.NewAPI(oauthServerCtl, oauthAppCtl,
-			coreConfig.Oauth.OauthHTMLLocation, scopeService)
 		pipelinerunAPIV2       = pipelinerunv2.NewAPI(prCtl)
 		regionAPIV2            = regionv2.NewAPI(regionCtl, tagCtl)
 		registryAPIV2          = registryv2.NewAPI(registryCtl)
