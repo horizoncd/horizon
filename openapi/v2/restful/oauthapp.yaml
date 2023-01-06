@@ -6,7 +6,7 @@ info:
 servers:
   - url: 'http://localhost:8080'
 paths:
-  /apis/core/v1/groups/{groupID}/oauthapps:
+  /apis/core/v2/groups/{groupID}/oauthapps:
     parameters:
       - name: groupID
         in: path
@@ -23,14 +23,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateOauthAppRequest"
+              type: object
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateOauthAppRequest"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AppBasicInfo"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AppBasicInfo"
         default:
           description: Unexpected error
           content:
@@ -48,20 +54,23 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AppBasicInfo"
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AppBasicInfo"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/oauthapps/{appID}:
+  /apis/core/v2/oauthapps/{appID}:
     get:
       tags:
         - app
-      summary: get a oauth app
+      summary: get an oauth app
       operationId: getapp
       responses:
         "200":
@@ -69,7 +78,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AppBasicInfo"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AppBasicInfo"
         default:
           description:  Unexpected error
           content:
@@ -84,10 +96,6 @@ paths:
       responses:
         "200":
           description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AppBasicInfo"
         default:
           description:  Unexpected error
           content:
@@ -104,21 +112,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AppBasicInfo"
+              type: object
+              properties:
+                data:
+                  $ref: "#/components/schemas/AppBasicInfo"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AppBasicInfo"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AppBasicInfo"
         default:
           description:  Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/oauthapps/{appID}/clientsecret:
+
+  /apis/core/v2/oauthapps/{appID}/clientsecret:
     get:
       tags:
         - app
@@ -130,16 +145,19 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ClientSecret"
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ClientSecret"
         default:
           description:  Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-    put:
+    post:
       tags:
         - app
       operationId: generateClientSecret
@@ -150,7 +168,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientSecret"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ClientSecret"
         default:
           description: Unexpected error
           content:
@@ -158,7 +179,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v1/oauthapps/{appID}/clientsecret/{secretID}:
+  /apis/core/v2/oauthapps/{appID}/clientsecret/{secretID}:
     delete:
       tags:
         - app
@@ -167,10 +188,6 @@ paths:
       responses:
         "200":
           description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ClientSecret"
         default:
           description: Unexpected error
           content:
@@ -183,6 +200,10 @@ components:
   schemas:
     CreateOauthAppRequest:
       type: object
+      required:
+        - name
+        - homeURL
+        - redirectURL
       properties:
         name:
           $ref: '#/components/schemas/appName'
@@ -207,13 +228,19 @@ components:
         clientID:
           type: string
           format: uuid
+          description: the oauth2.0 client id
         redirectURL:
           $ref: "common.yaml#/components/schemas/URL"
+        updateAt:
+          type: string
+          format: DateTime
+        updateBy:
+          type: integer
 
     appName:
       type: string
       maxLength: 2048
-      description: the group FullName
+      description: the app FullName
 
 
     ClientSecret:

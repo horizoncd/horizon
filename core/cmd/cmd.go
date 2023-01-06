@@ -614,7 +614,6 @@ func Run(flags *Flags) {
 	idpv2.RegisterRoutes(r, idpAPIV2)
 	memberv2.RegisterRoutes(r, memberAPIV2)
 	oauthappv2.RegisterRoutes(r, oauthAppAPIV2)
-	oauthserverv2.RegisterRoutes(r, oauthServerAPIV2)
 	pipelinerunv2.RegisterRoutes(r, pipelinerunAPIV2)
 	regionv2.RegisterRoutes(r, regionAPIV2)
 	registryv2.RegisterRoutes(r, registryAPIV2)

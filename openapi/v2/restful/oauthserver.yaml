@@ -33,9 +33,9 @@ paths:
         - name: scope
           in: query
           description: A space delimited list of scopes.
-            current supprt ["applications:read-only", "applications:read-write", "clusters:read-only", "clusters:read-write"]
-            defaults to an empty is ["applications:read-write", "clusters:read-write"]
-            refer https://docs.popo.netease.com/lingxi/188cc9677632447c86b2981052daf026#EneQ-1653471285656
+            current default support ["groups:read-only", "groups:read-write","applications:read-only", "applications:read-write", "clusters:read-only", "clusters:read-write"]
+            defaults to an empty ["applications:read-write", "clusters:read-write"]
+            the Project installer can change  the default scopes
           required: false
           schema:
             type: string
@@ -56,8 +56,8 @@ paths:
       description: Grant Authorization Request by Horizon User
       tags:
         - oauth
-      operationId: requestHorizonUserIdentity
-      summary: Request a user's Horizon identity
+      operationId: GrantHorizonUserIdentity
+      summary: Grant a user's Horizon identity
       requestBody:
         required: true
         content:
@@ -76,7 +76,7 @@ paths:
 
   /login/oauth/access_token:
     post:
-      description: get an Access Token baed on the used granted Authorization code
+      description: get an Access Token based on the used granted Authorization code
       tags:
         - oauth
       operationId: retrieveHorizonUserAccessToken
@@ -94,13 +94,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Token"
-                example: |
-                  {
-                    "access_token": "",
-                    "expires_in": 28800,
-                    "scope": "",
-                    "token_type": "bearer"
-                  }
         default:
           description: Unexpected error
           content:
@@ -116,12 +109,12 @@ components:
         - client_secret
         - code
         - redirect_uri
-        - state
       properties:
         client_id:
           $ref: "#/components/schemas/Client_ID"
         client_secret:
           type: string
+          description: the secret of and oauth app
         code:
           type: string
           description: "the authorize code get from Authorization Request"
@@ -157,6 +150,8 @@ components:
           type: number
           format: uint64
         scope:
+          type: string
+        token_type:
           type: string
 
     Access_Token:
