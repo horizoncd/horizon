@@ -12,7 +12,14 @@ paths:
         in: path
         description: resource type
         required: true
-        enum: ["groups", "applications", "clusters"]
+        schema:
+          enum: ["groups", "applications", "clusters"]
+      - name: resourceID
+        in: path
+        description: resource id
+        required: true
+        schema:
+          type: integer
     post:
       tags:
         - webhook
@@ -59,6 +66,8 @@ paths:
         in: path
         description: webhook id
         required: true
+        schema:
+          type: integer
     put:
       tags:
         - webhook
@@ -120,6 +129,8 @@ paths:
         in: path
         description: webhook id
         required: true
+        schema:
+          type: integer
     get:
       tags:
         - webhook
@@ -146,6 +157,8 @@ paths:
         in: path
         description: webhook log id
         required: true
+        schema:
+          type: integer
     get:
       tags:
         - webhook
@@ -172,6 +185,8 @@ paths:
         in: path
         description: webhook log id
         required: true
+        schema:
+          type: integer
     get:
       tags:
         - webhook
@@ -210,7 +225,6 @@ components:
           $ref: "#/components/schemas/Secret"
         triggers:
           $ref: "#/components/schemas/Triggers"
-
     Webhook:
       type: object
       properties:
@@ -227,7 +241,7 @@ components:
         secret:
           $ref: "#/components/schemas/Secret"
         trigger:
-          $ref: "#/components/schemas/Trigger"
+          $ref: "#/components/schemas/Triggers"
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
@@ -282,32 +296,32 @@ components:
           $ref: "#/components/schemas/User"
         requestHeaders:
           type: string
-          description: ""
+          description: "request header"
         requestData:
           type: string
-          description: ""
+          description: "request data"
         responseHeaders:
           type: string
-          description: ""
+          description: "response header"
         responseBody:
           type: string
-          description: ""
-
+          description: "response body"
     Enabled:
       type: boolean
-      description: if webhook enabled
+      description: whether to enable webhook
+    ID:
+      type: integer
     URL:
       type: string
-      description:
+      description: "url of webhook"
     SslVerifyEnabled:
       type: boolean
-      description:
+      description: "whether to enable ssl verify"
     Description:
       type: string
-      description:
     Secret:
       type: string
-      description:
+      description: "secret is used to pass authentication of webhook receiver"
     Triggers:
       type: array
       items:
@@ -328,13 +342,17 @@ components:
       description: "conditions to trigger this webhook"
     CreatedAt:
       type: string
-      description:
+      description: "creation time"
     UpdatedAt:
       type: string
-      description:
+      description: "update time"
     ErrorMessage:
       type: string
-      description:
+      description: "error message"
+    Status:
+      type: string
+      description: "status of webhook log"
+      enum: ["waiting", "ok", "failed"]
     User:
       type: object
       properties:

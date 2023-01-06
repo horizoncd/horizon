@@ -127,4 +127,28 @@ func Test(t *testing.T) {
 
 	err = c.DeleteWebhook(ctx, w.ID)
 	assert.Nil(t, err)
+
+	event := eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			EventType: eventmodels.ApplicationCreated,
+		},
+	}
+
+	ok, err := CheckIfEventMatch(&webhookmodels.Webhook{
+		Triggers: eventmodels.Any,
+	}, &event)
+	assert.Nil(t, err)
+	assert.Equal(t, true, ok)
+
+	ok, err = CheckIfEventMatch(&webhookmodels.Webhook{
+		Triggers: eventmodels.ApplicationCreated,
+	}, &event)
+	assert.Nil(t, err)
+	assert.Equal(t, true, ok)
+
+	ok, err = CheckIfEventMatch(&webhookmodels.Webhook{
+		Triggers: eventmodels.ClusterBuildDeployed,
+	}, &event)
+	assert.Nil(t, err)
+	assert.Equal(t, false, ok)
 }
