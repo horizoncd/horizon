@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/url"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,6 +16,7 @@ import (
 	"github.com/horizoncd/horizon/lib/q"
 	hctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/git"
 	gmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupModels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/group/service"
@@ -34,7 +33,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/horizoncd/horizon/pkg/util/permission"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	gitlabapi "github.com/xanzy/go-gitlab"
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
 
@@ -73,7 +71,7 @@ type Controller interface {
 }
 
 type controller struct {
-	gitlabLib            gitlab.Interface
+	gitgetter            git.Helper
 	templateRepo         templaterepo.TemplateRepo
 	groupMgr             gmanager.Manager
 	templateMgr          tmanager.Manager
@@ -88,7 +86,7 @@ var _ Controller = (*controller)(nil)
 // NewController initializes a new controller
 func NewController(param *param.Param, gitlabLib gitlab.Interface, repo templaterepo.TemplateRepo) Controller {
 	return &controller{
-		gitlabLib:            gitlabLib,
+		gitgetter:            param.GitGetter,
 		templateMgr:          param.TemplateMgr,
 		templateReleaseMgr:   param.TemplateReleaseManager,
 		templateSchemaGetter: param.TemplateSchemaGetter,
@@ -589,16 +587,16 @@ func (c *controller) CreateRelease(ctx context.Context,
 	}
 
 	if syncToRepo, ok := ctx.Value(hctx.ReleaseSyncToRepo).(bool); !ok || (ok && syncToRepo) {
-		tag, chartBytes, err := c.getTag(ctx, template.Repository, template.ChartName, release.Name)
+		tag, err := c.getTag(ctx, template.Repository, template.ChartName, release.Name)
 		if err != nil {
 			return nil, err
 		}
-		chartVersion := fmt.Sprintf(common.ChartVersionFormat, release.Name, tag.Commit.ShortID)
-		err = c.syncReleaseToRepo(chartBytes, template.ChartName, chartVersion)
+		chartVersion := fmt.Sprintf(common.ChartVersionFormat, release.Name, tag.ShortID)
+		err = c.syncReleaseToRepo(tag.ArchiveData, template.ChartName, chartVersion)
 		if err != nil {
 			return nil, err
 		}
-		release.CommitID = tag.Commit.ShortID
+		release.CommitID = tag.ShortID
 		release.SyncStatus = trmodels.StatusSucceed
 		release.ChartVersion = chartVersion
 	} else {
@@ -790,16 +788,16 @@ func (c *controller) SyncReleaseToRepo(ctx context.Context, releaseID uint) erro
 		return err
 	}
 
-	tag, chartBytes, err := c.getTag(ctx, template.Repository, template.ChartName, release.Name)
+	tag, err := c.getTag(ctx, template.Repository, template.ChartName, release.Name)
 	if err != nil {
 		return err
 	}
-	chartVersion := fmt.Sprintf(common.ChartVersionFormat, release.Name, tag.Commit.ShortID)
-	err = c.syncReleaseToRepo(chartBytes, template.ChartName, chartVersion)
+	chartVersion := fmt.Sprintf(common.ChartVersionFormat, release.Name, tag.ShortID)
+	err = c.syncReleaseToRepo(tag.ArchiveData, template.ChartName, chartVersion)
 	if err != nil {
-		_ = c.handleReleaseSyncStatus(ctx, release, tag.Commit.ShortID, err.Error())
+		_ = c.handleReleaseSyncStatus(ctx, release, tag.ShortID, err.Error())
 	} else {
-		_ = c.handleReleaseSyncStatus(ctx, release, tag.Commit.ShortID, "")
+		_ = c.handleReleaseSyncStatus(ctx, release, tag.ShortID, "")
 	}
 	return err
 }
@@ -820,32 +818,13 @@ func (c *controller) handleReleaseSyncStatus(ctx context.Context,
 }
 
 func (c *controller) getTag(ctx context.Context, repository,
-	name, tag string) (*gitlabapi.Tag, []byte, error) {
-	URL, err := url.Parse(repository)
-	if err != nil || repository == "" {
-		return nil, nil, perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("failed to parse gitlab url: %s", err))
-	}
-
-	pidPattern := regexp.MustCompile(`^/(.+?)(?:\.git)?$`)
-	matches := pidPattern.FindStringSubmatch(URL.Path)
-	if len(matches) != 2 {
-		return nil, nil, perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("failed to parse gitlab url: %s", err))
-	}
-
-	pid := matches[1]
-
-	chartBytes, err := c.gitlabLib.GetRepositoryArchive(ctx, pid, tag)
+	name, tag string) (*git.Tag, error) {
+	tagDetail, err := c.gitgetter.GetTagArchive(ctx, repository, tag)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	t, err := c.gitlabLib.GetTag(ctx, pid, tag)
-	if err != nil {
-		return nil, nil, err
-	}
-	return t, chartBytes, nil
+	return tagDetail, nil
 }
 
 func (c *controller) checkStatusForReleases(ctx context.Context,
@@ -870,12 +849,12 @@ func (c *controller) checkStatusForRelease(ctx context.Context,
 		return release, nil
 	}
 
-	tag, _, err := c.getTag(ctx, template.Repository, release.ChartName, release.Name)
+	tag, err := c.getTag(ctx, template.Repository, release.ChartName, release.Name)
 	if err != nil {
 		release.SyncStatus = trmodels.StatusUnknown
 		return release, err
 	}
-	if tag.Commit.ShortID != release.CommitID {
+	if tag.ShortID != release.CommitID {
 		release.SyncStatus = trmodels.StatusOutOfSync
 	}
 	return release, nil

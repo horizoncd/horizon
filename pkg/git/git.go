@@ -10,6 +10,8 @@ import (
 )
 
 // Helper interface to do git operations
+//
+//go:generate mockgen -source=$GOFILE -destination=../../mock/pkg/git/git_mock.go -package=mock_git
 type Helper interface {
 	// GetCommit to get commit of a branch/tag/commitID for a specified git URL
 	GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*Commit, error)
@@ -17,6 +19,7 @@ type Helper interface {
 	ListTag(ctx context.Context, gitURL string, params *SearchParams) ([]string, error)
 	GetHTTPLink(gitURL string) (string, error)
 	GetCommitHistoryLink(gitURL string, commit string) (string, error)
+	GetTagArchive(ctx context.Context, gitURL, tagName string) (*Tag, error)
 }
 
 type Constructor func(ctx context.Context, config *git.Repo) (Helper, error)

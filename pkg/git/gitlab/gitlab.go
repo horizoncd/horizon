@@ -3,6 +3,8 @@ package gitlab
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"regexp"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
@@ -18,7 +20,7 @@ func init() {
 	git.Register(Kind, New)
 }
 
-type helper struct {
+type Helper struct {
 	client gitlablib.Interface
 	url    string
 }
@@ -29,13 +31,50 @@ func New(ctx context.Context, config *gitconfig.Repo) (git.Helper, error) {
 		return nil, err
 	}
 
-	return &helper{
+	return &Helper{
 		client: gitlabLib,
 		url:    config.URL,
 	}, nil
 }
 
-func (h helper) GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*git.Commit, error) {
+func (h Helper) GetTagArchive(ctx context.Context, gitURL, tagName string) (*git.Tag, error) {
+	URL, err := url.Parse(gitURL)
+	if err != nil || gitURL == "" {
+		return nil, perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("failed to parse gitlab url: %s", err))
+	}
+
+	pidPattern := regexp.MustCompile(`^/(.+?)(?:\.git)?$`)
+	matches := pidPattern.FindStringSubmatch(URL.Path)
+	if len(matches) != 2 {
+		return nil, perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("failed to parse gitlab url: %s", err))
+	}
+
+	pid := matches[1]
+
+	archiveData, err := h.client.GetRepositoryArchive(ctx, pid, tagName)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := h.client.GetTag(ctx, pid, tagName)
+	if err != nil {
+		return nil, err
+	}
+	shortID := ""
+	if t.Commit != nil {
+		shortID = t.Commit.ID
+	}
+
+	return &git.Tag{
+		ShortID:     shortID,
+		Name:        tagName,
+		ArchiveData: archiveData,
+	}, nil
+}
+
+func (h Helper) GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*git.Commit, error) {
 	pid, err := git.ExtractProjectPathFromURL(gitURL)
 	if err != nil {
 		return nil, err
@@ -73,7 +112,7 @@ func (h helper) GetCommit(ctx context.Context, gitURL string, refType string, re
 	}
 }
 
-func (h helper) ListBranch(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
+func (h Helper) ListBranch(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
 	pid, err := git.ExtractProjectPathFromURL(gitURL)
 	if err != nil {
 		return nil, err
@@ -96,7 +135,7 @@ func (h helper) ListBranch(ctx context.Context, gitURL string, params *git.Searc
 	return branchNames, nil
 }
 
-func (h helper) ListTag(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
+func (h Helper) ListTag(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
 	pid, err := git.ExtractProjectPathFromURL(gitURL)
 	if err != nil {
 		return nil, err
@@ -119,7 +158,7 @@ func (h helper) ListTag(ctx context.Context, gitURL string, params *git.SearchPa
 	return tagNames, nil
 }
 
-func (h helper) GetHTTPLink(gitURL string) (string, error) {
+func (h Helper) GetHTTPLink(gitURL string) (string, error) {
 	pid, err := git.ExtractProjectPathFromURL(gitURL)
 	if err != nil {
 		return "", err
@@ -128,7 +167,7 @@ func (h helper) GetHTTPLink(gitURL string) (string, error) {
 	return fmt.Sprintf("%s/%s", h.url, pid), nil
 }
 
-func (h helper) GetCommitHistoryLink(gitURL string, commit string) (string, error) {
+func (h Helper) GetCommitHistoryLink(gitURL string, commit string) (string, error) {
 	httpLink, err := h.GetHTTPLink(gitURL)
 	if err != nil {
 		return "", err

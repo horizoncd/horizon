@@ -14,6 +14,7 @@ var (
 	TLS                       = sourceType{name: "TLS"}
 	GitlabClient              = sourceType{name: "GitlabClient"}
 	GitlabResource            = sourceType{name: "GitlabResource"}
+	GithubResource            = sourceType{name: "GithubResource"}
 	ClusterInDB               = sourceType{name: "ClusterInDB"}
 	ClusterStateInArgo        = sourceType{name: "ClusterStateInArgo"}
 	TagInDB                   = sourceType{name: "TagInDB"}

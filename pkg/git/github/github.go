@@ -1,8 +1,11 @@
 package github
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v41/github"
@@ -19,7 +22,7 @@ func init() {
 	git.Register(Kind, New)
 }
 
-type helper struct {
+type Helper struct {
 	client *github.Client
 	url    string
 }
@@ -31,10 +34,47 @@ func New(ctx context.Context, config *gitconfig.Repo) (git.Helper, error) {
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 
-	return &helper{client: client, url: config.URL}, nil
+	return &Helper{client: client, url: config.URL}, nil
 }
 
-func (h helper) GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*git.Commit, error) {
+func (h Helper) GetTagArchive(ctx context.Context, gitURL, tagName string) (*git.Tag, error) {
+	pattern := regexp.MustCompile(`^(?:https://|git@)github.com[:/]([^/]+)/([^/]+?)(?:\.git)?$`)
+	matches := pattern.FindAllStringSubmatch(gitURL, -1)
+	if len(matches) == 0 || len(matches[0]) < 3 {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "git url is incorrect: git url = %s", gitURL)
+	}
+	owner, repo := matches[0][1], matches[0][2]
+	ref, respRef, err := h.client.Git.GetRef(ctx, owner, repo, fmt.Sprintf("tags/%s", tagName))
+	if err != nil {
+		return nil, perror.Wrapf(herrors.NewErrGetFailed(herrors.GithubResource,
+			" failed to get ref"), "failed to get tag from github: err = %v", err)
+	}
+	defer respRef.Body.Close()
+	gitObject := ref.GetObject()
+
+	req, err := http.NewRequest("GET",
+		fmt.Sprintf("https://api.github.com/repos/%s/%s/tarball/%s", owner, repo, tagName), nil)
+	if err != nil {
+		return nil, perror.Wrapf(herrors.ErrHTTPRequestFailed, "failed to create request: err = %v", err)
+	}
+	buf := bytes.Buffer{}
+	_, err = h.client.Do(ctx, req, &buf)
+	if err != nil {
+		return nil, perror.Wrapf(herrors.ErrHTTPRequestFailed, "failed to get tag: err = %v", err)
+	}
+	archiveData := buf.Bytes()
+	sha := ""
+	if gitObject.SHA != nil {
+		sha = *gitObject.SHA
+	}
+	return &git.Tag{
+		ShortID:     sha,
+		Name:        tagName,
+		ArchiveData: archiveData,
+	}, nil
+}
+
+func (h Helper) GetCommit(ctx context.Context, gitURL string, refType string, ref string) (*git.Commit, error) {
 	pid, err := git.ExtractProjectPathFromURL(gitURL)
 	if err != nil {
 		return nil, err
@@ -91,7 +131,7 @@ func (h helper) GetCommit(ctx context.Context, gitURL string, refType string, re
 	}
 }
 
-func (h helper) ListBranch(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
+func (h Helper) ListBranch(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
 	pid, err := git.ExtractProjectPathFromURL(gitURL)
 	if err != nil {
 		return nil, err
@@ -115,7 +155,7 @@ func (h helper) ListBranch(ctx context.Context, gitURL string, params *git.Searc
 	return branchNames, nil
 }
 
-func (h helper) ListTag(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
+func (h Helper) ListTag(ctx context.Context, gitURL string, params *git.SearchParams) ([]string, error) {
 	pid, err := git.ExtractProjectPathFromURL(gitURL)
 	if err != nil {
 		return nil, err
@@ -136,7 +176,7 @@ func (h helper) ListTag(ctx context.Context, gitURL string, params *git.SearchPa
 	return tagNames, nil
 }
 
-func (h helper) GetHTTPLink(gitURL string) (string, error) {
+func (h Helper) GetHTTPLink(gitURL string) (string, error) {
 	pid, err := git.ExtractProjectPathFromURL(gitURL)
 	if err != nil {
 		return "", err
@@ -145,7 +185,7 @@ func (h helper) GetHTTPLink(gitURL string) (string, error) {
 	return fmt.Sprintf("%s/%s", h.url, pid), nil
 }
 
-func (h helper) GetCommitHistoryLink(gitURL string, commit string) (string, error) {
+func (h Helper) GetCommitHistoryLink(gitURL string, commit string) (string, error) {
 	httpLink, err := h.GetHTTPLink(gitURL)
 	if err != nil {
 		return "", err
