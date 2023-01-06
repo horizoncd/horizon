@@ -12,7 +12,14 @@ paths:
         in: path
         description: resource type
         required: true
-        enum: ["groups", "applications", "clusters"]
+        schema:
+          enum: ["groups", "applications", "clusters"]
+      - name: resourceID
+        in: path
+        description: resource id
+        required: true
+        schema:
+          type: integer
     post:
       tags:
         - webhook
@@ -27,6 +34,13 @@ paths:
       responses:
         "200":
           description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
         default:
           description: Unexpected error
           content:
@@ -44,9 +58,17 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Webhook"
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        $ref: "#/components/schemas/Webhook"
+                      total:
+                        type: integer
+                        description: total count of webhooks
         default:
           description: Unexpected error
           content:
@@ -59,6 +81,8 @@ paths:
         in: path
         description: webhook id
         required: true
+        schema:
+          type: integer
     put:
       tags:
         - webhook
@@ -75,7 +99,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Webhook"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
         default:
           description: Unexpected error
           content:
@@ -93,7 +120,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Webhook"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
         default:
           description: Unexpected error
           content:
@@ -102,7 +132,7 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     delete:
       tags:
-        - member
+        - webhook
       operationId: deleteWebhook
       summary: delete a webhook
       responses:
@@ -120,6 +150,8 @@ paths:
         in: path
         description: webhook id
         required: true
+        schema:
+          type: integer
     get:
       tags:
         - webhook
@@ -131,9 +163,18 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/WebhookLogSummary"
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/WebhookLogSummary"
+                      total:
+                        type: integer
+                        description: "total count of webhook logs"
         default:
           description: Unexpected error
           content:
@@ -146,6 +187,8 @@ paths:
         in: path
         description: webhook log id
         required: true
+        schema:
+          type: integer
     get:
       tags:
         - webhook
@@ -157,9 +200,11 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/WebhookLog"
+                type: object
+                properties:
+                  data:
+                    type: "object"
+                    $ref: "#/components/schemas/WebhookLog"
         default:
           description: Unexpected error
           content:
@@ -172,6 +217,8 @@ paths:
         in: path
         description: webhook log id
         required: true
+        schema:
+          type: integer
     get:
       tags:
         - webhook
@@ -183,9 +230,10 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/WebhookLog"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WebhookLog"
         default:
           description: Unexpected error
           content:
@@ -210,9 +258,9 @@ components:
           $ref: "#/components/schemas/Secret"
         triggers:
           $ref: "#/components/schemas/Triggers"
-
     Webhook:
       type: object
+      required: [url, triggers]
       properties:
         id:
           $ref: "#/components/schemas/ID"
@@ -227,15 +275,15 @@ components:
         secret:
           $ref: "#/components/schemas/Secret"
         trigger:
-          $ref: "#/components/schemas/Trigger"
+          $ref: "#/components/schemas/Triggers"
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/components/User"
         updatedAt:
           $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/components/User"
 
     WebhookLogSummary:
       type: object
@@ -253,11 +301,11 @@ components:
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/components/User"
         updatedAt:
           $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/components/User"
 
     WebhookLog:
       type: object
@@ -275,39 +323,39 @@ components:
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/components/User"
         updatedAt:
           $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/components/User"
         requestHeaders:
           type: string
-          description: ""
+          description: "request header"
         requestData:
           type: string
-          description: ""
+          description: "request data"
         responseHeaders:
           type: string
-          description: ""
+          description: "response header"
         responseBody:
           type: string
-          description: ""
-
+          description: "response body"
     Enabled:
       type: boolean
-      description: if webhook enabled
+      description: whether to enable webhook
+    ID:
+      type: integer
     URL:
       type: string
-      description:
+      description: "url of webhook"
     SslVerifyEnabled:
       type: boolean
-      description:
+      description: "whether to enable ssl verify"
     Description:
       type: string
-      description:
     Secret:
       type: string
-      description:
+      description: "secret is used to pass authentication of webhook receiver"
     Triggers:
       type: array
       items:
@@ -328,19 +376,14 @@ components:
       description: "conditions to trigger this webhook"
     CreatedAt:
       type: string
-      description:
+      description: "creation time"
     UpdatedAt:
       type: string
-      description:
+      description: "update time"
     ErrorMessage:
       type: string
-      description:
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        email:
-          type: string
+      description: "error message"
+    Status:
+      type: string
+      description: "status of webhook log"
+      enum: ["waiting", "ok", "failed"]
