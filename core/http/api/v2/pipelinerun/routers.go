@@ -37,22 +37,5 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 		},
 	}
 
-	// get cluster latest pipelinerun log
-	// stop pipelinerun for cluster
-	// only used for overmind
-	frontGroup := engine.Group("/apis/front/v2")
-	var frontRoutes = route.Routes{
-		{
-			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/clusters/:%v/log", _clusterParam),
-			HandlerFunc: api.LatestLogForCluster,
-		}, {
-			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/stop", _clusterParam),
-			HandlerFunc: api.StopPipelinerunForCluster,
-		},
-	}
-
 	route.RegisterRoutes(apiGroup, routes)
-	route.RegisterRoutes(frontGroup, frontRoutes)
 }

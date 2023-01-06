@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/terminal"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
@@ -18,7 +17,6 @@ const (
 	_clusterIDParam     = "clusterID"
 	_podNameQuery       = "podName"
 	_containerNameQuery = "containerName"
-	_terminalIDParam    = "terminalID"
 )
 
 type API struct {
@@ -64,43 +62,5 @@ func (a *API) CreateShell(c *gin.Context) {
 	// we are currently reconnecting to open a new session,
 	// so the session can be directly generated and passed in the current interface, the user has no perception
 	c.Request.URL.Path = fmt.Sprintf("/apis/core/v2/0/%s/websocket", sessionID)
-	sockJS.ServeHTTP(c.Writer, c.Request)
-}
-
-func (a *API) CreateTerminal(c *gin.Context) {
-	const op = "terminal: create terminal"
-	clusterIDStr := c.Param(_clusterIDParam)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-	podName := c.Query(_podNameQuery)
-	containerName := c.Query(_containerNameQuery)
-
-	terminalIDResp, err := a.terminalCtl.GetTerminalID(c, uint(clusterID), podName, containerName)
-	if err != nil {
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithError(c, err)
-		return
-	}
-	response.SuccessWithData(c, terminalIDResp)
-}
-
-func (a *API) ConnectTerminal(c *gin.Context) {
-	const op = "terminal: connect terminal"
-	sessionID := c.Param(_terminalIDParam)
-	sockJS, err := a.terminalCtl.GetSockJSHandler(c, sessionID)
-	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			if e.Source == herrors.ClusterInDB || e.Source == herrors.PodsInK8S {
-				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-				return
-			}
-		}
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithError(c, err)
-		return
-	}
 	sockJS.ServeHTTP(c.Writer, c.Request)
 }

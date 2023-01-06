@@ -17,7 +17,6 @@ import (
 const (
 	_pipelinerunIDParam = "pipelinerunID"
 	_clusterIDParam     = "clusterID"
-	_clusterParam       = "cluster"
 	_canRollbackParam   = "canRollback"
 )
 
@@ -44,21 +43,6 @@ func (a *API) Log(c *gin.Context) {
 			LogBytes: []byte(errors.Message(err)),
 		}
 		a.writeLog(c, l)
-		return
-	}
-	a.writeLog(c, l)
-}
-
-func (a *API) LatestLogForCluster(c *gin.Context) {
-	clusterIDStr := c.Param(_clusterParam)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-	l, err := a.prCtl.GetClusterLatestLog(c, uint(clusterID))
-	if err != nil {
-		response.AbortWithError(c, err)
 		return
 	}
 	a.writeLog(c, l)
@@ -167,21 +151,6 @@ func (a *API) Stop(c *gin.Context) {
 		return
 	}
 	err = a.prCtl.StopPipelinerun(c, uint(pipelinerunID))
-	if err != nil {
-		response.AbortWithError(c, err)
-		return
-	}
-	response.Success(c)
-}
-
-func (a *API) StopPipelinerunForCluster(c *gin.Context) {
-	clusterIDStr := c.Param(_clusterParam)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-	err = a.prCtl.StopPipelinerunForCluster(c, uint(clusterID))
 	if err != nil {
 		response.AbortWithError(c, err)
 		return
