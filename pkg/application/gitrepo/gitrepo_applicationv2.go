@@ -19,7 +19,7 @@ import (
 
 const (
 	_filePathManifest = "manifest.yaml"
-	_branchMaster     = "master"
+	_branchMaster     = "main"
 
 	_filePathApplication = "application.yaml"
 	_filePathPipeline    = "pipeline.yaml"
