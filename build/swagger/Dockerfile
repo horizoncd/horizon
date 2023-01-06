@@ -22,7 +22,7 @@ RUN cp /openapi/build.sh /openapi/v1/restful/build.sh && cd /openapi/v1/restful 
     cp /openapi/build.sh /openapi/v2/restful/build.sh && cd /openapi/v2/restful && bash build.sh && \
     cp /openapi/build.sh /openapi/v2/front/build.sh && cd /openapi/v2/front && bash build.sh && \
     cp /openapi/v2/restful/swagger.json /openapi/restful-v2.0.0.json && \
-    cp /openapi/v2/front/swagger.json /openapi/front-v2.0.0.json && \
+    cp /openapi/v2/front/swagger.json /openapi/front-v2.0.0.json
 
 RUN chown -R $USER:$GROUP /openapi
 
