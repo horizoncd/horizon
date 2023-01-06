@@ -550,7 +550,7 @@ func Run(flags *Flags) {
 		usermiddle.Middleware(parameter, store, coreConfig,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v[12]/terminal")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
