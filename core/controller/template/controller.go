@@ -40,7 +40,7 @@ import (
 
 type Controller interface {
 	// ListV2 lists all template available
-	ListV2(ctx context.Context, query *q.Query, withFullPath bool) (int, Templates, error)
+	ListV2(ctx context.Context, query *q.Query, withFullPath bool) (Templates, error)
 	// ListTemplate list all template available
 	ListTemplate(ctx context.Context) (Templates, error)
 	// ListTemplateRelease list all releases of the specified template
@@ -99,7 +99,7 @@ func NewController(param *param.Param, gitlabLib gitlab.Interface, repo template
 	}
 }
 
-func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bool) (int, Templates, error) {
+func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bool) (Templates, error) {
 	var (
 		groupIDs []uint
 		err      error
@@ -109,19 +109,19 @@ func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bo
 		if query.Keywords[common.TemplateQueryByUser] != nil {
 			if userID, ok := query.Keywords[common.TemplateQueryByUser].(uint); ok {
 				if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
-					return 0, nil, err
+					return nil, err
 				}
 				// get groups authorized to current user
 				groupIDs, err = c.memberMgr.ListResourceOfMemberInfoByRole(
 					ctx, membermodels.TypeGroup, userID, role.Owner)
 				if err != nil {
-					return 0, nil, perror.WithMessage(err, "failed to list group resource of current user")
+					return nil, perror.WithMessage(err, "failed to list group resource of current user")
 				}
 
 				// get these groups' subGroups
 				subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
 				if err != nil {
-					return 0, nil, perror.WithMessage(err, "failed to get groups")
+					return nil, perror.WithMessage(err, "failed to get groups")
 				}
 
 				groupIDs = nil
@@ -129,7 +129,7 @@ func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bo
 					var member *membermodels.Member
 					if member, err = c.memberMgr.Get(ctx, membermodels.TypeGroup,
 						group.ID, membermodels.MemberUser, userID); err != nil {
-						return 0, nil, err
+						return nil, err
 					}
 					if member == nil || member.Role == role.Owner {
 						groupIDs = append(groupIDs, group.ID)
@@ -142,41 +142,47 @@ func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bo
 			if !c.groupMgr.IsRootGroup(ctx, groupID) {
 				group, err := c.groupMgr.GetByID(ctx, groupID)
 				if err != nil {
-					return 0, nil, err
+					return nil, err
 				}
 				IDStrs := strings.Split(group.TraversalIDs, ",")
 				var groupIDs []uint
 				for _, idStr := range IDStrs {
 					id, err := strconv.ParseUint(idStr, 10, 64)
 					if err != nil {
-						return 0, nil, perror.Wrapf(
+						return nil, perror.Wrapf(
 							herrors.ErrParamInvalid,
 							"failed to parse traversal ID\n"+
 								"id = %s\nerr = %v", idStr, err)
 					}
 					groupIDs = append(groupIDs, uint(id))
 				}
-				if groupID, ok := query.Keywords[common.TemplateQueryByGroup].(uint); ok {
+				if groupID, ok := query.Keywords[common.TemplateQueryByGroups].(uint); ok {
 					groupIDs = append(groupIDs, groupID)
 				}
-				query.Keywords[common.TemplateQueryByGroup] = groupIDs
+				query.Keywords[common.TemplateQueryByGroups] = groupIDs
 			}
 		}
 	}
 
-	total, templates, err := c.templateMgr.ListV2(ctx, query, groupIDs...)
+	templates, err := c.templateMgr.ListV2(ctx, query, groupIDs...)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
-	tpls := toTemplates(templates)
+	var tpls Templates
+	for _, template := range templates {
+		if c.checkHasOnlyOwnerPermissionForTemplate(ctx, template) {
+			tpls = append(tpls, toTemplate(template))
+		}
+	}
+
 	if withFullPath {
 		tpls, err = c.addFullPath(ctx, tpls)
 		if err != nil {
-			return 0, nil, err
+			return nil, err
 		}
 	}
-	return total, tpls, nil
+	return tpls, nil
 }
 
 // ListTemplate TODO: remove this, keep it for api callers

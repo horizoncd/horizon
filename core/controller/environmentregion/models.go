@@ -43,8 +43,3 @@ type CreateEnvironmentRegionRequest struct {
 	EnvironmentName string `json:"environmentName"`
 	RegionName      string `json:"regionName"`
 }
-
-type UpdateEnvironmentRegionRequest struct {
-	IsDefault bool `json:"isDefault"`
-	Disabled  bool `json:"disabled"`
-}

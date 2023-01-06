@@ -1,0 +1,389 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Webhook-Restful
+  description: Restful API About Webhook
+  version: 1.0.0
+servers:
+  - url: "http://localhost:8080/"
+paths:
+  /apis/core/v1/{resourceType}/{resourceID}/webhooks:
+    parameters:
+      - name: resourceType
+        in: path
+        description: resource type
+        required: true
+        schema:
+          enum: ["groups", "applications", "clusters"]
+      - name: resourceID
+        in: path
+        description: resource id
+        required: true
+        schema:
+          type: integer
+    post:
+      tags:
+        - webhook
+      operationId: createWebhook
+      summary: create a webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrUpdateWebhook"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - webhook
+      operationId: listWebhooks
+      summary: list webhooks
+      responses:
+        "200":
+          description: Succuss
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        $ref: "#/components/schemas/Webhook"
+                      total:
+                        type: integer
+                        description: total count of webhooks
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/webhooks/{webhookID}:
+    parameters:
+      - name: webhookID
+        in: path
+        description: webhook id
+        required: true
+        schema:
+          type: integer
+    put:
+      tags:
+        - webhook
+      operationId: updateWebhook
+      summary: update a webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrUpdateWebhook"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - webhook
+      operationId: getWebhook
+      summary: get a webhook
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - webhook
+      operationId: deleteWebhook
+      summary: delete a webhook
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/webhooks/{webhookID}/logs:
+    parameters:
+      - name: webhookID
+        in: path
+        description: webhook id
+        required: true
+        schema:
+          type: integer
+    get:
+      tags:
+        - webhook
+      operationId: listWebhookLogs
+      summary: list logs of webhook
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/WebhookLogSummary"
+                      total:
+                        type: integer
+                        description: "total count of webhook logs"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/webhooklogs/{webhookLogID}:
+    parameters:
+      - name: webhookLogID
+        in: path
+        description: webhook log id
+        required: true
+        schema:
+          type: integer
+    get:
+      tags:
+        - webhook
+      operationId: getWebhookLog
+      summary: get a webhook log
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: "object"
+                    $ref: "#/components/schemas/WebhookLog"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v1/webhooklogs/{webhookLogID}/resend:
+    parameters:
+      - name: webhookLogID
+        in: path
+        description: webhook log id
+        required: true
+        schema:
+          type: integer
+    get:
+      tags:
+        - webhook
+      operationId: ResendWebhook
+      summary: resend a webhook log
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WebhookLog"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    CreateOrUpdateWebhook:
+      type: object
+      required: [url, triggers]
+      properties:
+        enabled:
+          $ref: "#/components/schemas/Enabled"
+        url:
+          $ref: "#/components/schemas/URL"
+        sslVerifyEnabled:
+          $ref: "#/components/schemas/SslVerifyEnabled"
+        description:
+          $ref: "#/components/schemas/Description"
+        secret:
+          $ref: "#/components/schemas/Secret"
+        triggers:
+          $ref: "#/components/schemas/Triggers"
+    Webhook:
+      type: object
+      required: [url, triggers]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        enabled:
+          $ref: "#/components/schemas/Enabled"
+        url:
+          $ref: "#/components/schemas/URL"
+        sslVerifyEnabled:
+          $ref: "#/components/schemas/SslVerifyEnabled"
+        description:
+          $ref: "#/components/schemas/Description"
+        secret:
+          $ref: "#/components/schemas/Secret"
+        trigger:
+          $ref: "#/components/schemas/Triggers"
+        createdAt:
+          $ref: "#/components/schemas/CreatedAt"
+        createdBy:
+          $ref: "common.yaml#/components/schemas/User"
+        updatedAt:
+          $ref: "#/components/schemas/UpdatedAt"
+        updatedBy:
+          $ref: "common.yaml#/components/schemas/User"
+
+    WebhookLogSummary:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        webhookID:
+          $ref: "#/components/schemas/ID"
+        url:
+          $ref: "#/components/schemas/URL"
+        status:
+          $ref: "#/components/schemas/Status"
+        errorMessage:
+          $ref: "#/components/schemas/ErrorMessage"
+        createdAt:
+          $ref: "#/components/schemas/CreatedAt"
+        createdBy:
+          $ref: "common.yaml#/components/schemas/User"
+        updatedAt:
+          $ref: "#/components/schemas/UpdatedAt"
+        updatedBy:
+          $ref: "common.yaml#/components/schemas/User"
+
+    WebhookLog:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        webhookID:
+          $ref: "#/components/schemas/ID"
+        url:
+          $ref: "#/components/schemas/URL"
+        status:
+          $ref: "#/components/schemas/Status"
+        errorMessage:
+          $ref: "#/components/schemas/ErrorMessage"
+        createdAt:
+          $ref: "#/components/schemas/CreatedAt"
+        createdBy:
+          $ref: "common.yaml#/components/schemas/User"
+        updatedAt:
+          $ref: "#/components/schemas/UpdatedAt"
+        updatedBy:
+          $ref: "common.yaml#/components/schemas/User"
+        requestHeaders:
+          type: string
+          description: "request header"
+        requestData:
+          type: string
+          description: "request data"
+        responseHeaders:
+          type: string
+          description: "response header"
+        responseBody:
+          type: string
+          description: "response body"
+    Enabled:
+      type: boolean
+      description: whether to enable webhook
+    ID:
+      type: integer
+    URL:
+      type: string
+      description: "url of webhook"
+    SslVerifyEnabled:
+      type: boolean
+      description: "whether to enable ssl verify"
+    Description:
+      type: string
+    Secret:
+      type: string
+      description: "secret is used to pass authentication of webhook receiver"
+    Triggers:
+      type: array
+      items:
+        type: string
+        enum:
+          [
+            "*",
+            clusters_created,
+            clusters_deployed,
+            clusters_builddeployed,
+            clusters_rollbacked,
+            clusters_freed,
+            clusters_deleted,
+            applications_created,
+            applications_deleted,
+            applications_transfered,
+          ]
+      description: "conditions to trigger this webhook"
+    CreatedAt:
+      type: string
+      description: "creation time"
+    UpdatedAt:
+      type: string
+      description: "update time"
+    ErrorMessage:
+      type: string
+      description: "error message"
+    Status:
+      type: string
+      description: "status of webhook log"
+      enum: ["waiting", "ok", "failed"]

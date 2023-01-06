@@ -1,0 +1,177 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Cluster-Tag-Restful
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/{resourceType}/{resourceID}/tags:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramResourceID'
+      - $ref: 'common.yaml#/components/parameters/paramResourceType'
+    get:
+      tags:
+        - tag
+      operationId: listTags
+      summary: List tags of a specified resource
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "tags":[
+                              {
+                                  "key":"rpc.tag",
+                                  "value":"qa-abc"
+                              }
+                          ]
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - tag
+      operationId: updateTags
+      summary: Create or update tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                {
+                    "data":{
+                        "tags":[
+                            {
+                                "key":"rpc.tag",
+                                "value":"qa-abc"
+                            }
+                        ]
+                    }
+                }
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/{resourceType}/{resourceID}/subresourcetags:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramResourceID'
+      - $ref: 'common.yaml#/components/parameters/paramResourceType'
+    get:
+      tags:
+        - tag
+      operationId: listSubresourceTags
+      summary: List sub resource tags
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":{
+                          "tags":[
+                              {
+                                  "key":"rpc.tag",
+                                  "value":"qa-abc"
+                              }
+                          ]
+                      }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/clusters/{clusterID}/templateschematags:
+    parameters:
+      - name: clusterID
+        in: path
+        description: The ID of the cluster
+        required: true
+    get:
+      tags:
+        - tag
+      operationId: listClusterTemplateSchemaTags
+      summary: List template schema tags of a specified cluster
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            value:
+                              type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - tag
+      operationId: updateClusterTemplateSchemaTags
+      summary: Create or update cluster Template schema tags
+      parameters:
+        - name: pathParam
+          in: path
+          description: A path parameter
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    tags:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          value:
+                            type: string
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

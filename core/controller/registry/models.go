@@ -53,7 +53,6 @@ type CreateRegistryRequest struct {
 }
 
 type UpdateRegistryRequest struct {
-	ID                    uint   `json:"id"`
 	Name                  string `json:"name"`
 	Server                string `json:"server"`
 	Token                 string `json:"token"`

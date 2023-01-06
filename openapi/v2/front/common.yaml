@@ -1,0 +1,65 @@
+components:
+  parameters:
+    pageNumber:
+      name: pageNumber
+      in: query
+    pageSize:
+      name: pageSize
+      in: query
+    applicationID:
+      name: applicationID
+      in: query
+    groupID:
+      name: groupID
+      in: query
+    userID:
+      name: userID
+      in: query
+    filter:
+      name: filter
+      in: query
+      description: "part of name for fuzzy matching"
+    template:
+      name: template
+      in: query
+      description: "template of application"
+    templateRelease:
+      name: templateRelease
+      in: query
+      description: "template release of application"
+    environment:
+      name: environment
+      in: query
+    tagSelector:
+      name: tagSelector
+      in: query
+    fullPath:
+      name: fullPath
+      in: query
+      description: "fullPath of resource"
+    type:
+      name: type
+      in: query
+      description: "type of resource"
+
+  schemas:
+    PageParams:
+      type: object
+      properties:
+        current:
+          type: number
+        pageSize:
+          type: number
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string

@@ -1,0 +1,183 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Registry-Restful
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/registries:
+    get:
+      tags:
+        - registry
+      operationId: listRegistry
+      summary: list registries
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Registry'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - registry
+      operationId: createRegistry
+      summary: create a registry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostRegistry"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: integer
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/registries/kinds:
+    get:
+      tags:
+        - registry
+      operationId: getRegistryKinds
+      summary: get kinds of registries
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/registries/{registryID}:
+    parameters:
+      - name: registryID
+        in: path
+    get:
+      tags:
+        - registry
+      operationId: getRegistry
+      summary: get a registry
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registry'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - registry
+      operationId: updateRegistry
+      summary: update a registry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutRegistry'
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - registry
+      operationId: deleteRegistry
+      summary: delete a registry
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    PostRegistry:
+      type: object
+      required:
+        - name
+        - server
+        - token
+        - insecureSkipTLSVerify
+        - path
+        - kind
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        server:
+          type: string
+        token:
+          type: string
+        insecureSkipTLSVerify:
+          type: boolean
+        path:
+          type: string
+        kind:
+          type: string
+    PutRegistry:
+      allOf:
+        - $ref: "#/components/schemas/PostRegistry"
+    Registry:
+      allOf:
+        - $ref: "#/components/schemas/PostRegistry"
+        - type: object
+          required:
+            - id
+            - createdAt
+            - updatedAt
+          properties:
+            id:
+              type: integer
+            createdAt:
+              $ref: "common.yaml#/components/schemas/Date"
+            updatedAt:
+              $ref: "common.yaml#/components/schemas/Date"
+

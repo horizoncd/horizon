@@ -1,0 +1,150 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Environment-Restful
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/environments:
+    get:
+      tags:
+        - environment
+      operationId: listEnvironments
+      summary: list environments
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Environment'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - environment
+      operationId: createEnvironment
+      summary: create a environment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostEnvironment"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: integer
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/environments/{environmentID}:
+    parameters:
+      - name: environmentID
+        in: path
+    get:
+      tags:
+        - environment
+      operationId: getEnvironment
+      summary: get a environment
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - environment
+      operationId: updateEnvironment
+      summary: update a environment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutEnvironment'
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - environment
+      operationId: deleteEnvironment
+      summary: delete a environment
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    PutEnvironment:
+      type: object
+      required:
+        - displayName
+        - autoFree
+      properties:
+        displayName:
+          type: string
+        autoFree:
+          type: boolean
+    PostEnvironment:
+      allOf:
+        - $ref: "#/components/schemas/PutEnvironment"
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+    Environment:
+      allOf:
+        - $ref: "#/components/schemas/PostEnvironment"
+        - type: object
+          required:
+            - id
+            - createdAt
+            - updatedAt
+          properties:
+            id:
+              type: integer
+            createdAt:
+              $ref: "common.yaml#/components/schemas/Date"
+            updatedAt:
+              $ref: "common.yaml#/components/schemas/Date"

@@ -1,8 +1,10 @@
 package common
 
 const (
+	TemplateQueryWithoutCI        = "withoutCI"
 	TemplateQueryByUser           = "userID"
+	TemplateQueryByGroup          = "groupID"
 	TemplateQueryByGroupRecursive = "groupIDRecursive"
-	TemplateQueryByGroup          = "templateGroupID"
+	TemplateQueryByGroups         = "templateGroupIDs"
 	TemplateQueryName             = "filter"
 )

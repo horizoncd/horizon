@@ -1,0 +1,78 @@
+openapi: 3.0.1
+info:
+  title: Horizon Application Region Restful
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/applications/{applicationID}/defaultregions:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramApplicationID'
+    get:
+      tags:
+        - application
+      operationId: getApplicationDefaultRegions
+      summary: get default regions for an application
+      description: |
+        There are different regions for different environments. If the region of an environment is not exists,
+        return the default region of this environment.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data": [
+                          {
+                              "environment": "test",
+                              "region": "hz-test"
+                          },
+                          {
+                              "environment": "pre",
+                              "region": "hz"
+                          }
+                      ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - application
+      operationId: updateApplicationDefaultRegions
+      summary: update the default regions for an application.
+      description: |
+        Update the default regions for an application.
+        The update operation using database upsert function, if the environment exists for this application,
+        it will update the region, and if not, it will add this environment-region pair for this application.
+        The most import, if the request body is empty, it will delete all environment-region pairs for this application.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              example: |
+                [
+                    {
+                        "environment": "test",
+                        "region": "hz-test"
+                    },
+                    {
+                        "environment": "pre",
+                        "region": "hz"
+                    }
+                ]
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

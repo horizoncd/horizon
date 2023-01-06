@@ -1,0 +1,51 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Webhook-Restful
+  description: Restful API About Event
+  version: 1.0.0
+servers:
+  - url: "http://localhost:8080/"
+paths:
+  /apis/core/v2/supportevents:
+    get:
+      tags:
+        - event
+      operationId: listSupportEvents
+      summary: list supported events
+      responses:
+        "200":
+          description: Succuss
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportEvents"
+                example: |
+                  {
+                    "data": {
+                      "applications_created": "New application is created",
+                      "applications_deleted": "Application is deleted",
+                      "applications_transferred": "Application is transferred to another group",
+                      "clusters_builddeployed": "Cluster has completed a build task and triggered a deploy task",
+                      "clusters_created": "New cluster is created",
+                      "clusters_deleted": "Cluster is deleted",
+                      "clusters_deployed": "Cluster has triggered a ",
+                      "clusters_freed": "Cluster has been freed",
+                      "clusters_rollbacked": "Cluster has triggered a rollback task"
+                    }
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    SupportEvents:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties:
+            type: string
+            description: "description of scope"

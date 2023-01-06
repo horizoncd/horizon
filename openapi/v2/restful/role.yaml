@@ -1,0 +1,56 @@
+openapi: 3.0.1
+info:
+  title: Horizon Role Restful
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/roles:
+    get:
+      tags:
+        - role
+      description: list roles
+      operationId: listRoles
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                example: |
+                  {
+                      "data":[
+                          {
+                              "name":"pe",
+                              "desc":"",
+                              "rules":[
+                                  {
+                                      "verbs":[
+                                          "create",
+                                          "get",
+                                          "update"
+                                      ],
+                                      "apiGroups":[
+                                          "core"
+                                      ],
+                                      "resources":[
+                                          "applications",
+                                          "groups/applications"
+                                      ],
+                                      "scopes":[
+                                          "*"
+                                      ],
+                                      "nonResourceURLs":[
+                                          "*"
+                                      ]
+                                  }
+                              ]
+                          }
+                      ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"

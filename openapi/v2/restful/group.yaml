@@ -1,0 +1,305 @@
+openapi: 3.0.1
+info:
+  title: Horizon-group-restful
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/groups:
+    post:
+      tags:
+        - group
+      operationId: createGroup
+      summary: create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewGroup"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupID"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/groups/{groupID}:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramGroupID'
+    get:
+      tags:
+        - group
+      operationId: getGroup
+      summary: get the detail of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "../front/group.yaml#/components/schemas/GroupChild"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    put:
+      tags:
+        - group
+      operationId: updateGroup
+      summary: update detail of a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateGroup'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    delete:
+      tags:
+        - group
+      operationId: deleteGroup
+      summary: delete a group
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/groups/{groupID}/groups:
+    get:
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/paramGroupID'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+      tags:
+        - group
+      operationId: getSubgroups
+      summary: get subgroups of a group
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/paramGroupID'
+      tags:
+        - group
+      operationId: createSubGroup
+      summary: create a sub group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewGroup"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupID"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/groups/{groupID}/regionselectors:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramGroupID'
+    put:
+      tags:
+        - group
+      operationId: setRegionSelectors
+      summary: set regionSelector of a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegionSelectors'
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/groups/{groupID}/transfer:
+    parameters:
+      - $ref: 'common.yaml#/components/parameters/paramGroupID'
+      - name: groupID
+        in: query
+        required: true
+    put:
+      tags:
+        - group
+      operationId: transferGroup
+      summary: transfer a group under another parent group
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    NewGroup:
+      type: object
+      required:
+        - name
+        - path
+      properties:
+        name:
+          $ref: '#/components/schemas/GroupName'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        parentID:
+          $ref: '#/components/schemas/GroupID'
+        VisibilityLevel:
+          $ref: '#/components/schemas/GroupVisibilityLevel'
+    UpdateGroup:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/GroupName'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        VisibilityLevel:
+          $ref: '#/components/schemas/GroupVisibilityLevel'
+    Group:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/GroupID'
+        name:
+          $ref: '#/components/schemas/GroupName'
+        path:
+          $ref: '#/components/schemas/GroupPath'
+        description:
+          $ref: '#/components/schemas/GroupDescription'
+        visibilityLevel:
+          $ref: '#/components/schemas/GroupVisibilityLevel'
+        traversalIDs:
+          $ref: '#/components/schemas/GrouptraversalIDs'
+        parentID:
+          $ref: '#/components/schemas/GroupID'
+        updatedAt:
+          $ref: "common.yaml#/components/schemas/Date"
+        fullName:
+          $ref: '#/components/schemas/GroupFullName'
+        fullPath:
+          $ref: '#/components/schemas/GroupFullPath'
+    RegionSelectors:
+      type: array
+      items:
+        $ref: '#/components/schemas/RegionSelector'
+
+    RegionSelector:
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/Key'
+        values:
+          $ref: '#/components/schemas/Values'
+        operator:
+          $ref: '#/components/schemas/Operator'
+
+    GroupID:
+      type: integer
+      format: int64
+      description: the parent id of the subgroup, if not provided, a root group
+
+    GroupName:
+      type: string
+      maxLength: 64
+      description: the group Name
+
+    GroupFullName:
+      type: string
+      maxLength: 2048
+      description: the group FullName
+
+    GroupFullPath:
+      type: string
+      maxLength: 2048
+      description: the group FullName
+
+    GroupPath:
+      type: string
+      maxLength: 128
+      description: the group path
+
+    GroupDescription:
+      type: string
+      maxLength: 1024
+      description: the group description
+
+    GroupVisibilityLevel:
+      type: string
+      description: visibility level of group
+
+    GrouptraversalIDs:
+      type: string
+      description: traversal IDs of group in resource tree
+
+    Key:
+      type: string
+    Values:
+      type: array
+      items:
+        $ref: '#/components/schemas/Value'
+    Value:
+      type: string
+    Operator:
+      type: string
+      default: "in"
+
+
+
+

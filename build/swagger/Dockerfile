@@ -15,10 +15,14 @@ RUN addgroup --gid $GROUP_ID $GROUP && adduser -h /home/$USER -u $USER_ID -G $GR
 COPY ./openapi /openapi
 COPY ./build/swagger/build.sh /openapi
 
-RUN cp /openapi/build.sh /openapi/restful/build.sh && cd /openapi/restful && bash build.sh && \
-    cp /openapi/build.sh /openapi/front/build.sh && cd /openapi/front && bash build.sh && \
-    cp /openapi/restful/swagger.json /openapi/restful.json && cp /openapi/restful/common.yaml /openapi/common.yaml && \
-    cp /openapi/front/swagger.json /openapi/front.json
+RUN cp /openapi/build.sh /openapi/v1/restful/build.sh && cd /openapi/v1/restful && bash build.sh && \
+    cp /openapi/build.sh /openapi/v1/front/build.sh && cd /openapi/v1/front && bash build.sh && \
+    cp /openapi/v1/restful/swagger.json /openapi/restful-v1.0.0.json  && \
+    cp /openapi/v1/front/swagger.json /openapi/front-v1.0.0.json && \
+    cp /openapi/build.sh /openapi/v2/restful/build.sh && cd /openapi/v2/restful && bash build.sh && \
+    cp /openapi/build.sh /openapi/v2/front/build.sh && cd /openapi/v2/front && bash build.sh && \
+    cp /openapi/v2/restful/swagger.json /openapi/restful-v2.0.0.json && \
+    cp /openapi/v2/front/swagger.json /openapi/front-v2.0.0.json
 
 RUN chown -R $USER:$GROUP /openapi
 

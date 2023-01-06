@@ -1,0 +1,69 @@
+openapi: 3.0.1
+info:
+  title: Horizon Access Front
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v2/accessreview:
+    post:
+      tags:
+        - user
+      description: review access for apis
+      operationId: reviewAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  $ref: "#/components/schemas/ReviewReq"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    $ref: "#/components/schemas/ReviewResp"
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    ReviewReq:
+      type: array
+      items:
+        $ref: '#/components/schemas/ReviewReqItem'
+    ReviewReqItem:
+      type: object
+      properties:
+        url:
+          type: string
+          description: url of api
+        method:
+          type: string
+          description: method of api
+    ReviewResp:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          type: object
+          properties:
+            allowed:
+              type: boolean
+              description: review result
+            reason:
+              type: string
+              description: reason for review result

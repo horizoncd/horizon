@@ -1,0 +1,180 @@
+openapi: 3.0.1
+info:
+  title: Horizon-group-front
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/front/v2/groups?fullPath={fullPath}&type={type}:
+    get:
+      tags:
+        - group
+      operationId: queryGroups
+      summary: query group by fullPath
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/fullPath'
+        - $ref: 'common.yaml#/components/parameters/type'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/GroupChild"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v2/groups/authedgroups:
+    get:
+      tags:
+        - group
+      operationId: listAuthedGroups
+      summary: list all the groups that authed by the current user (group owner\maintainer)
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "../restful/group.yaml#/components/schemas/Group"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v2/groups/searchgroups?groupID={groupID}&filter={filter}&pageNumber={pageNumber}&pageSize={pageSize}:
+    get:
+      tags:
+        - group
+      description: search subGroups of a group
+      summary: search subGroups
+      operationId: searchGroups
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/groupID'
+        - $ref: 'common.yaml#/components/parameters/filter'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupChild'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v2/groups/searchchildren?groupID={groupID}&filter={filter}&pageNumber={pageNumber}&pageSize={pageSize}:
+    get:
+      tags:
+        - group
+      description: search children of a group
+      summary: search children
+      operationId: searchChildren
+      parameters:
+        - $ref: 'common.yaml#/components/parameters/groupID'
+        - $ref: 'common.yaml#/components/parameters/filter'
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupChild'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+  /apis/front/v2/groups/children?groupID={groupID}&pageNumber=${pageNumber}&pageSize={pageSize}:
+    get:
+      tags:
+        - group
+      operationId: getGroupChildren
+      summary: get children of a group
+      parameters:
+        - name: groupID
+          in: path
+        - $ref: 'common.yaml#/components/parameters/pageNumber'
+        - $ref: 'common.yaml#/components/parameters/pageSize'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupChild'
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    GroupChild:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        visibilityLevel:
+          type: string
+        path:
+          type: string
+        fullName:
+          type: string
+        fullPath:
+          type: string
+        type:
+          $ref: '#/components/schemas/GroupChildType'
+        childrenCount:
+          type: integer
+        traversalIDs:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupChild'
+        parentID:
+          type: integer
+        updatedAt:
+          $ref: "../restful/common.yaml#/components/schemas/Date"
+
+    GroupChildType:
+      type: string
+      enum:
+        - group
+        - application
+
+
+

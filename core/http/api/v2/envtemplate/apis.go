@@ -25,6 +25,24 @@ func NewAPI(envTemplateCtl envtemplate.Controller) *API {
 	}
 }
 
+func (a *API) Get(c *gin.Context) {
+	appIDStr := c.Param(_applicationIDParam)
+	appID, err := strconv.ParseUint(appIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	env := c.Query(_envParam)
+
+	var res *envtemplate.GetEnvTemplateResponse
+	if res, err = a.envTemplateCtl.GetEnvTemplate(c, uint(appID), env); err != nil {
+		response.AbortWithError(c, err)
+		return
+	}
+	response.SuccessWithData(c, res)
+}
+
 func (a *API) Update(c *gin.Context) {
 	appIDStr := c.Param(_applicationIDParam)
 	appID, err := strconv.ParseUint(appIDStr, 10, 0)

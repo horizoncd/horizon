@@ -1,0 +1,148 @@
+components:
+  parameters:
+    pageNumber:
+      name: pageNumber
+      in: query
+    pageSize:
+      name: pageSize
+      in: query
+    paramResourceType:
+      name: resourceType
+      in: path
+    paramResourceID:
+      name: resourceID
+      in: path
+    paramApplicationID:
+      name: applicationID
+      in: path
+      description: application id
+      required: true
+    paramClusterID:
+      name: clusterID
+      in: path
+      description: cluster id
+      required: true
+    paramPipelinerunID:
+      name: pipelinerunID
+      in: path
+      description: pipelinerun id
+      required: true
+    paramGroupID:
+      name: groupID
+      in: path
+      description: group id
+      schema:
+        type: integer
+        format: int64
+      required: true
+    queryEnvironment:
+      name: environment
+      in: query
+    queryFilter:
+      name: filter
+      in: query
+
+  schemas:
+    PageParams:
+      type: object
+      properties:
+        current:
+          type: number
+        pageSize:
+          type: number
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestID:
+          type: string
+
+    resourceType:
+      type: string
+      enum:
+        - group
+        - application
+        - applicationInstance
+
+    Date:
+      type: string
+      format: date
+      pattern: full-date
+
+
+    URL:
+      type: string
+      format: uri
+
+    Description:
+      type: string
+      maxLength: 1024
+      description: the  description
+
+    ID:
+      type: integer
+      format: uint64
+
+    GroupID:
+      type: integer
+      format: int64
+      description: the parent id of the subgroup, if not provided, a root group
+
+    User:
+      type: object
+      properties:
+        name:
+          type: string
+          description: the name of user
+        email:
+          type: string]
+          description: the e-mail address of user
+        id:
+          type: integer
+          description: the id of user
+
+    userList:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: The total number of users that match the filter.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/user'
+
+    user:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The unique ID of the user.
+        name:
+          type: string
+          description: The unique name of the user.
+        fullName:
+          type: string
+          description: The full name of the user.
+        email:
+          type: string
+          description: The email address of the user.
+        isAdmin:
+          type: boolean
+          description: Whether the user is an administrator.
+        isBanned:
+          type: boolean
+          description: Whether the user is banned.
+        updatedAt:
+          type: string
+          description: The date and time at which the user was last updated.
+        createdAt:
+          type: string
+          description: The date and time at which the user was created.

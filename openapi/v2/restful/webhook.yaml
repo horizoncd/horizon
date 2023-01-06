@@ -2,11 +2,11 @@ openapi: 3.0.1
 info:
   title: Horizon-Webhook-Restful
   description: Restful API About Webhook
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: "http://localhost:8080/"
 paths:
-  /apis/core/v1/{resourceType}/{resourceID}/webhooks:
+  /apis/core/v2/{resourceType}/{resourceID}/webhooks:
     parameters:
       - name: resourceType
         in: path
@@ -34,6 +34,13 @@ paths:
       responses:
         "200":
           description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
         default:
           description: Unexpected error
           content:
@@ -51,16 +58,24 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Webhook"
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        $ref: "#/components/schemas/Webhook"
+                      total:
+                        type: integer
+                        description: total count of webhooks
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/webhooks/{webhookID}:
+  /apis/core/v2/webhooks/{webhookID}:
     parameters:
       - name: webhookID
         in: path
@@ -84,7 +99,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Webhook"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
         default:
           description: Unexpected error
           content:
@@ -102,7 +120,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Webhook"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
         default:
           description: Unexpected error
           content:
@@ -111,7 +132,7 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
     delete:
       tags:
-        - member
+        - webhook
       operationId: deleteWebhook
       summary: delete a webhook
       responses:
@@ -123,7 +144,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/webhooks/{webhookID}/logs:
+  /apis/core/v2/webhooks/{webhookID}/logs:
     parameters:
       - name: webhookID
         in: path
@@ -142,16 +163,25 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/WebhookLogSummary"
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/WebhookLogSummary"
+                      total:
+                        type: integer
+                        description: "total count of webhook logs"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/webhooklogs/{webhookLogID}:
+  /apis/core/v2/webhooklogs/{webhookLogID}:
     parameters:
       - name: webhookLogID
         in: path
@@ -170,16 +200,18 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/WebhookLog"
+                type: object
+                properties:
+                  data:
+                    type: "object"
+                    $ref: "#/components/schemas/WebhookLog"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v1/webhooklogs/{webhookLogID}/resend:
+  /apis/core/v2/webhooklogs/{webhookLogID}/resend:
     parameters:
       - name: webhookLogID
         in: path
@@ -198,9 +230,10 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/WebhookLog"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WebhookLog"
         default:
           description: Unexpected error
           content:
@@ -227,6 +260,7 @@ components:
           $ref: "#/components/schemas/Triggers"
     Webhook:
       type: object
+      required: [url, triggers]
       properties:
         id:
           $ref: "#/components/schemas/ID"
@@ -245,11 +279,11 @@ components:
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/schemas/User"
         updatedAt:
           $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/schemas/User"
 
     WebhookLogSummary:
       type: object
@@ -267,11 +301,11 @@ components:
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/schemas/User"
         updatedAt:
           $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/schemas/User"
 
     WebhookLog:
       type: object
@@ -289,11 +323,11 @@ components:
         createdAt:
           $ref: "#/components/schemas/CreatedAt"
         createdBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/schemas/User"
         updatedAt:
           $ref: "#/components/schemas/UpdatedAt"
         updatedBy:
-          $ref: "#/components/schemas/User"
+          $ref: "common.yaml#/components/schemas/User"
         requestHeaders:
           type: string
           description: "request header"
@@ -353,12 +387,3 @@ components:
       type: string
       description: "status of webhook log"
       enum: ["waiting", "ok", "failed"]
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        email:
-          type: string

@@ -1,0 +1,130 @@
+openapi: 3.0.1
+info:
+  title: Horizon-Environment-Region-Restful
+  version: 2.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /apis/core/v2/environmentregions:
+    get:
+      parameters:
+        - name: environmentName
+          in: query
+          required: false
+      tags:
+        - environmentregions
+      operationId: listEnvironmentRegions
+      summary: list environmentRegions
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EnvironmentRegion'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    post:
+      tags:
+        - environmentregions
+      operationId: createEnvironmentregions
+      summary: create a environmentRegion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostEnvironmentRegion"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: integer
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/environmentregions/{environmentRegionID}/setdefault:
+    parameters:
+      - name: environmentRegionID
+        in: path
+    delete:
+      tags:
+        - environmentregions
+      operationId: setDefaultEnvironmentregion
+      summary: set the environmentRegion to be default one
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/environmentregions/{environmentRegionID}:
+    parameters:
+      - name: environmentRegionID
+        in: path
+    delete:
+      tags:
+        - environmentregions
+      operationId: deleteEnvironmentregions
+      summary: delete the environmentRegion
+      responses:
+        '200':
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    PostEnvironmentRegion:
+      type: object
+      required:
+        - environmentName
+        - regionName
+      properties:
+        environmentName:
+          type: string
+        regionName:
+          type: string
+    EnvironmentRegion:
+      allOf:
+        - $ref: "#/components/schemas/PostEnvironmentRegion"
+        - type: object
+          required:
+            - id
+            - regionDisplayName
+            - isDefault
+            - disabled
+          properties:
+            id:
+              type: integer
+            regionDisplayName:
+              type: string
+            isDefault:
+              type: boolean
+            disabled:
+              type: boolean
+
