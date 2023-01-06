@@ -26,7 +26,7 @@ type Query struct {
 
 func (q *Query) Limit() int {
 	if q.WithoutPagination {
-		return -1
+		return common.MaxItems
 	}
 	if q.PageSize < 1 {
 		q.PageSize = common.DefaultPageSize
