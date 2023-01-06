@@ -153,6 +153,11 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Pattern:     fmt.Sprintf("/:%v/deploy", common.ParamClusterID),
 			HandlerFunc: api.InternalDeploy,
 		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%v/status", common.ParamClusterID),
+			HandlerFunc: api.InternalClusterStatus,
+		},
 	}
 
 	route.RegisterRoutes(apiV2Group, apiV2Routes)

@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -14,6 +15,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
+
+const JWTTokenHeader = "X-Horizon-JWT-Token"
 
 func (a *API) BuildDeploy(c *gin.Context) {
 	op := "cluster: build deploy"
@@ -218,20 +221,24 @@ func (a *API) InternalDeploy(c *gin.Context) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
-	pipelinerunIDStr := c.Param(common.ParamPipelinerunID)
-	pipelinerunID, err := strconv.ParseUint(pipelinerunIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
 
-	var request interface{}
+	var request *cluster.InternalDeployRequestV2
 	if err := c.ShouldBindJSON(&request); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
-	resp, err := a.clusterCtl.InternalDeployV2(c, uint(clusterID), uint(pipelinerunID), request)
+
+	tokenString := c.Request.Header.Get(JWTTokenHeader)
+	if tokenString == "" {
+		response.AbortWithUnauthorized(c, common.Unauthorized,
+			"jwt token is empty!")
+		return
+	}
+	var ctx context.Context = c
+	ctx = common.WithContextJWTTokenString(ctx, tokenString)
+
+	resp, err := a.clusterCtl.InternalDeployV2(ctx, uint(clusterID), request)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.ClusterInDB {
@@ -243,11 +250,58 @@ func (a *API) InternalDeploy(c *gin.Context) {
 				return
 			}
 		}
+		if perror.Cause(err) == herrors.ErrTokenInvalid {
+			log.WithFiled(c, "op", op).Errorf("%+v", err)
+			response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
+			return
+		}
+		if perror.Cause(err) == herrors.ErrForbidden {
+			log.WithFiled(c, "op", op).Errorf("%+v", err)
+			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(err.Error()))
+			return
+		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 
+	response.SuccessWithData(c, resp)
+}
+
+func (a *API) InternalClusterStatus(c *gin.Context) {
+	op := "cluster: internal cluster status"
+
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	tokenString := c.Request.Header.Get(JWTTokenHeader)
+	if tokenString == "" {
+		response.AbortWithUnauthorized(c, common.Unauthorized,
+			"jwt token is empty!")
+	}
+	var ctx context.Context = c
+	ctx = common.WithContextJWTTokenString(ctx, tokenString)
+
+	// nolint
+	resp, err := a.clusterCtl.InternalGetClusterStatus(ctx, uint(clusterID))
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrTokenInvalid {
+			log.WithFiled(c, "op", op).Errorf("%+v", err)
+			response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithError(c, err)
+		return
+	}
 	response.SuccessWithData(c, resp)
 }
 

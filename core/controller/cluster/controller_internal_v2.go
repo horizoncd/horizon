@@ -3,13 +3,17 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
+	usermodel "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
@@ -19,16 +23,22 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	const op = "cluster controller: internal deploy v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
+	// auth jwt token
+	claims, user, err := c.authJWTToken(ctx)
+	if err != nil {
+		return nil, perror.Wrapf(herrors.ErrTokenInvalid, "%v", err.Error())
+	}
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:     user.Name,
+		FullName: user.FullName,
+		ID:       user.ID,
+		Email:    user.Email,
+		Admin:    user.Admin,
+	})
+
 	// auth prID
-	_, err = common.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	prIDFromContext, err := common.PipelinerunIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if prIDFromContext != r.PipelinerunID {
+	if claims.PipelinerunID == nil ||
+		*claims.PipelinerunID != r.PipelinerunID {
 		return nil, perror.Wrapf(herrors.ErrForbidden,
 			"no permission to deploy with pipelineID = %v", r.PipelinerunID)
 	}
@@ -151,4 +161,41 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		PipelinerunID: pr.ID,
 		Commit:        commit,
 	}, nil
+}
+
+func (c *controller) authJWTToken(ctx context.Context) (*tokenservice.Claims, *usermodel.User, error) {
+	jwtTokenString, err := common.JWTTokenStringFromContext(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	claims, err := c.tokenSvc.ParseJWTToken(jwtTokenString)
+	if err != nil {
+		return nil, nil, err
+	}
+	userID, err := strconv.ParseUint(claims.Subject, 10, 64)
+	if err != nil {
+		return nil, nil, err
+	}
+	user, err := c.userManager.GetUserByID(ctx, uint(userID))
+	if err != nil {
+		return nil, nil, err
+	}
+	return &claims, user, nil
+}
+
+func (c *controller) InternalGetClusterStatus(ctx context.Context,
+	clusterID uint) (_ *GetClusterStatusResponse, err error) {
+	// auth jwt token
+	_, user, err := c.authJWTToken(ctx)
+	if err != nil {
+		return nil, perror.Wrapf(herrors.ErrTokenInvalid, "%v", err.Error())
+	}
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:     user.Name,
+		FullName: user.FullName,
+		ID:       user.ID,
+		Email:    user.Email,
+		Admin:    user.Admin,
+	})
+	return c.GetClusterStatus(ctx, clusterID)
 }

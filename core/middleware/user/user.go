@@ -26,7 +26,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
-	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	"github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -42,8 +41,6 @@ const (
 	HTTPHeaderDate        = "Date"
 
 	NotAuthHeader = "X-OIDC-Redirect-To"
-
-	InternalCallbackHeader = "X-Horizon-Internal"
 )
 
 // Middleware check user is exists in db. If not, add user into db.
@@ -70,26 +67,7 @@ func Middleware(param *param.Param, store sessions.Store,
 			return
 		}
 
-		// 2. internal callback auth if "X-Horizon-Internal" header exists
-		user, err = internalCallbackAuthn(c, param.TokenSvc, param.UserManager)
-		if err != nil {
-			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(err.Error()))
-			return
-		}
-
-		if user != nil {
-			c.Set(common.UserContextKey(), &userauth.DefaultInfo{
-				Name:     user.Name,
-				FullName: user.FullName,
-				ID:       user.ID,
-				Email:    user.Email,
-				Admin:    user.Admin,
-			})
-			c.Next()
-			return
-		}
-
-		// 3. token auth request ( get user by token)
+		// 2. token auth request ( get user by token)
 		if _, err := common.GetToken(c); err == nil {
 			c.Next()
 			return
@@ -269,25 +247,4 @@ func SignRequest(ctx context.Context, request *http.Request, publicKey string, s
 	log.Debugf(ctx, "publicKey:%v, signature:\n%v", publicKey, signature)
 
 	return publicKey + ":" + signature
-}
-
-func internalCallbackAuthn(c *gin.Context, tokenSvc tokenservice.Service,
-	userMgr usermanager.Manager) (*models.User, error) {
-	r := c.Request
-	tokenString := r.Header.Get(InternalCallbackHeader)
-	if tokenString == "" {
-		return nil, nil
-	}
-	claims, err := tokenSvc.ParseJwtToken(tokenString)
-	if err != nil {
-		return nil, err
-	}
-	user, err := userMgr.GetUserByID(c, claims.UserID)
-	if err != nil {
-		return nil, err
-	}
-	if claims.PipelinerunID != nil {
-		c.Set(common.ContextPipelinerunIDKey(), *claims.PipelinerunID)
-	}
-	return user, err
 }

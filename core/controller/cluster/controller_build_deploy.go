@@ -95,9 +95,8 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 3. generate a JWT token for tekton callback
-	subject := fmt.Sprintf("tekton_callback:%s", strconv.Itoa(int(prCreated.ID)))
-	token, err := c.tokenSvc.CreateJwtToken(subject, c.tokenConfig.CallbackTokenExpireIn,
-		tokensvc.WithUserIDAndPipelinerunID(currentUser.GetID(), prCreated.ID))
+	token, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(currentUser.GetID())),
+		c.tokenConfig.CallbackTokenExpireIn, tokensvc.WithPipelinerunID(prCreated.ID))
 	if err != nil {
 		return nil, err
 	}

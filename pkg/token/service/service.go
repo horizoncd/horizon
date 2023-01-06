@@ -19,8 +19,8 @@ type Service interface {
 	// CreateAccessToken used for personal access Token and resource access Token
 	CreateAccessToken(ctx context.Context, name, expiresAtStr string,
 		userID uint, scopes []string) (*tokenmodels.Token, error)
-	CreateJwtToken(subject string, expiresIn time.Duration, options ...ClaimsOption) (string, error)
-	ParseJwtToken(tokenStr string) (Claims, error)
+	CreateJWTToken(subject string, expiresIn time.Duration, options ...ClaimsOption) (string, error)
+	ParseJWTToken(tokenStr string) (Claims, error)
 }
 
 func NewService(manager *managerparam.Manager, config tokenconfig.Config) Service {
@@ -79,7 +79,7 @@ func (s *service) genAccessToken(gen generator.AccessTokenCodeGenerator, name st
 	}, nil
 }
 
-func (s *service) CreateJwtToken(subject string, expiresIn time.Duration, options ...ClaimsOption) (string, error) {
+func (s *service) CreateJWTToken(subject string, expiresIn time.Duration, options ...ClaimsOption) (string, error) {
 	now := time.Now().UTC()
 	claims := &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -102,8 +102,8 @@ func (s *service) CreateJwtToken(subject string, expiresIn time.Duration, option
 	return token.SignedString([]byte(s.TokenConfig.JwtSigningKey))
 }
 
-// ParseJwtToken parses string and return claims
-func (s *service) ParseJwtToken(tokenStr string) (Claims, error) {
+// ParseJWTToken parses string and return claims
+func (s *service) ParseJWTToken(tokenStr string) (Claims, error) {
 	var claims Claims
 	_, err := jwt.ParseWithClaims(tokenStr, &claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

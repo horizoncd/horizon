@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -67,14 +68,16 @@ func TestService(t *testing.T) {
 	assert.Equal(t, strings.Join(scopes, " "), tokenInDB.Scope)
 
 	// Create JWT token
-	jwtToken, err := tokenSvc.CreateJwtToken("tekton", 2*time.Hour,
-		WithUserIDAndPipelinerunID(aUser.GetID(), 12))
+	jwtToken, err := tokenSvc.CreateJWTToken(strconv.Itoa(int(aUser.GetID())), 2*time.Hour,
+		WithPipelinerunID(12))
 	assert.Nil(t, err)
 	log.Infof(ctx, "%s", jwtToken)
 	// Parse JWT token
-	claims, err := tokenSvc.ParseJwtToken(jwtToken)
+	claims, err := tokenSvc.ParseJWTToken(jwtToken)
 	assert.Nil(t, err)
 	log.Infof(ctx, "%+v", claims)
 	log.Infof(ctx, "%v", *claims.PipelinerunID)
-	assert.Equal(t, aUser.GetID(), claims.UserID)
+	userID, err := strconv.ParseUint(claims.Subject, 10, 64)
+	assert.Nil(t, err)
+	assert.Equal(t, aUser.GetID(), uint(userID))
 }

@@ -98,6 +98,7 @@ type Controller interface {
 	// InternalDeployV2 deploy only used by internal system
 	InternalDeployV2(ctx context.Context, clusterID uint,
 		r *InternalDeployRequestV2) (_ *InternalDeployResponseV2, err error)
+	InternalGetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
 	GetClusterStatusV2(ctx context.Context, clusterID uint) (_ *StatusResponseV2, err error)
 	GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error)
 	GetResourceTree(ctx context.Context, clusterID uint) (*GetResourceTreeResponse, error)
