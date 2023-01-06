@@ -17,16 +17,25 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "jsonSchema":{},
-                          "uiSchema":{}
-                      }
-                  }
+                type: object
+                properties:
+                  data:
+                    type: object
+                    $ref: "#/components/schemas/Schema"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    Schema:
+      type: object
+      properties:
+        jsonSchema:
+          type: object
+          additionalProperties: true
+        uiSchema:
+          type: object
+          additionalProperties: true

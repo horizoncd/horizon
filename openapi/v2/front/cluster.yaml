@@ -15,32 +15,20 @@ paths:
         - name: clusterName
           in: path
           description: name of cluster
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "id":1,
-                          "name":"cluster",
-                          "description":"xxxxxxxxxxxx",
-                          "template":{
-                              "name":"javaapp",
-                              "release":"v1.1.0"
-                          },
-                          "git":{
-                              "url":"ssh://git@cloudnative.com:22222/horizon/horizon.git",
-                              "subfolder":"/",
-                              "branch":"develop"
-                          },
-                          "createdAt": "2021-12-02T11:29:01+08:00",
-                          "updatedAt": "2021-12-02T11:29:01+08:00",
-                          "fullPath": "/a/b/c"
-                      }
-                  }
+                type: object
+                properties:
+                  data:
+                    type: object
+                    $ref: "#/components/schemas/GetClusterByNameResponse"
         default:
           description: Unexpected error
           content:
@@ -70,57 +58,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/listClustersResp'
-              example: |
-                {
-                    "data":{
-                        "total":2,
-                        "items":[
-                            {
-                                "id":3028,
-                                "name":"yufeng-helloworld-online",
-                                "scope":{
-                                    "environment":"dev",
-                                    "region":"hz",
-                                    "regionDisplayName":"hangzhou"
-                                },
-                                "template":{
-                                    "name":"javaapp",
-                                    "release":"v1.1.0"
-                                },
-                                "git": {
-                                  "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
-                                  "httpURL": "https://cloudnative.com/app/app-demo"
-                                },
-                                "createdAt":"2021-12-15T21:17:20+08:00",
-                                "updatedAt":"2021-12-15T21:17:20+08:00",
-                                "fullName":"others/yufeng-helloworld/yufeng-helloworld-online",
-                                "fullPath":"/others/yufeng-helloworld/yufeng-helloworld-online"
-                            },
-                            {
-                                "id":2412,
-                                "name":"yufeng-tomtest-online",
-                                "scope":{
-                                    "environment":"dev",
-                                    "region":"hz",
-                                    "regionDisplayName":"hangzhou"
-                                },
-                                "template":{
-                                    "name":"javaapp",
-                                    "release":"v1.1.0"
-                                },
-                                "git": {
-                                  "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
-                                  "httpURL": "https://cloudnative.com/app/app-demo"
-                                },
-                                "createdAt":"2021-12-15T12:26:41+08:00",
-                                "updatedAt":"2021-12-15T13:14:20+08:00",
-                                "fullName":"ggjs/yufeng-tomtest/yufeng-tomtest-online",
-                                "fullPath":"/ggjs/yufeng-tomtest/yufeng-tomtest-online"
-                            }
-                        ]
-                    }
-                }
+                type: object
+                properties:
+                  data:
+                    type: object
+                    $ref: '#/components/schemas/listClustersResp'
         default:
           description: Unexpected error
           content:
@@ -149,57 +91,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/listClustersResp'
-              example: |
-                {
-                    "data":{
-                        "total":2,
-                        "items":[
-                            {
-                                "id":3028,
-                                "name":"yufeng-helloworld-online",
-                                "scope":{
-                                    "environment":"dev",
-                                    "region":"hz",
-                                    "regionDisplayName":"hangzhou"
-                                },
-                                "template":{
-                                    "name":"javaapp",
-                                    "release":"v1.1.0"
-                                },
-                                "git": {
-                                  "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
-                                  "httpURL": "https://cloudnative.com/app/app-demo"
-                                },
-                                "createdAt":"2021-12-15T21:17:20+08:00",
-                                "updatedAt":"2021-12-15T21:17:20+08:00",
-                                "fullName":"others/yufeng-helloworld/yufeng-helloworld-online",
-                                "fullPath":"/others/yufeng-helloworld/yufeng-helloworld-online"
-                            },
-                            {
-                                "id":2412,
-                                "name":"yufeng-tomtest-online",
-                                "scope":{
-                                    "environment":"dev",
-                                    "region":"hz",
-                                    "regionDisplayName":"hangzhou"
-                                },
-                                "template":{
-                                    "name":"javaapp",
-                                    "release":"v1.1.0"
-                                },
-                                "git": {
-                                  "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
-                                  "httpURL": "https://cloudnative.com/app/app-demo"
-                                },
-                                "createdAt":"2021-12-15T12:26:41+08:00",
-                                "updatedAt":"2021-12-15T13:14:20+08:00",
-                                "fullName":"ggjs/yufeng-tomtest/yufeng-tomtest-online",
-                                "fullPath":"/ggjs/yufeng-tomtest/yufeng-tomtest-online"
-                            }
-                        ]
-                    }
-                }
+                type: object
+                properties:
+                  data:
+                    type: object
+                    $ref: '#/components/schemas/listClustersResp'
         default:
           description: Unexpected error
           content:
@@ -208,6 +104,25 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
 components:
   schemas:
+    GetClusterByNameResponse:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/id'
+        name:
+          $ref: '#/components/schemas/name'
+        description:
+          $ref: '#/components/schemas/description'
+        template:
+          $ref: '#/components/schemas/template'
+        git:
+          $ref: '#/components/schemas/git'
+        createdAt:
+          $ref: '#/components/schemas/createdAt'
+        updatedAt:
+          $ref: '#/components/schemas/updatedAt'
+        fullPath:
+          $ref: '#/components/schemas/fullPath'
     listClustersResp:
       type: object
       properties:

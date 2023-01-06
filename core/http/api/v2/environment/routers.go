@@ -30,10 +30,6 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodDelete,
 			Pattern:     fmt.Sprintf("/:%v", _environmentParam),
 			HandlerFunc: api.Delete,
-		}, {
-			Method:      http.MethodGet,
-			Pattern:     fmt.Sprintf("/:%v/regions", _environmentParam),
-			HandlerFunc: api.ListEnabledRegionsByEnvironment,
 		},
 	}
 
