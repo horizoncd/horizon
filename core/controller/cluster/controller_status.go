@@ -29,60 +29,6 @@ const (
 	_notFound = "NotFound"
 )
 
-func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*StatusResponseV2, error) {
-	const op = "cluster controller: get cluster status v2"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
-	if err != nil {
-		return nil, err
-	}
-
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, err
-	}
-
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := &StatusResponseV2{}
-	// status in db has higher priority
-	if cluster.Status != common.ClusterStatusEmpty {
-		resp.Status = cluster.Status
-	}
-
-	params := &cd.GetClusterStateV2Params{
-		Application:  application.Name,
-		Environment:  cluster.EnvironmentName,
-		Cluster:      cluster.Name,
-		RegionEntity: regionEntity,
-	}
-
-	// If cluster not found on argo, check the cluster is freed or has not been published yet,
-	// or the cluster will be "notFound". If response's status field has not been set,
-	// set it with status from argocd.
-	cdStatus, err := c.cd.GetClusterStateV2(ctx, params)
-	if err != nil {
-		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
-			return nil, err
-		}
-		// for not deployed -- free or not published
-		if resp.Status == "" {
-			resp.Status = _notFound
-		}
-	} else {
-		// resp has not been set
-		if resp.Status == "" {
-			resp.Status = cdStatus.Status
-		}
-	}
-
-	return resp, nil
-}
-
 func (c *controller) GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error) {
 	resp := &BuildStatusResponse{}
 
