@@ -125,92 +125,72 @@ paths:
                                   { "group": "argoproj.io", "kind": "Rollout", "namespace": "online-64", "name": "for-argocd-error", "uid": "737218b7-1d44-427b-9f5d-0e5d99bee0d1" }
                             podDetail:
                               type: object
-                              description: shortcut of a pod manifest, exist only if resource is a pod
-                              example: |
-                                {
-                                "metadata": {
-                                  "name": "for-argocd-error-789bfb66db-bwznf",
-                                  "namespace": "online-64",
-                                  "creationTimestamp": "2023-01-04T07:23:31Z",
-                                  "deletionTimestamp": null,
-                                  "labels": {
-                                    "cloudnative.music.netease.com/application": "for-argocd",
-                                    "cloudnative.music.netease.com/cluster": "for-argocd-error",
-                                    "cloudnative.music.netease.com/environment": "online",
-                                    "rollouts-pod-template-hash": "789bfb66db"
-                                  },
-                                  "annotations": {
-                                    "cloudnative.music.netease.com/git-branch": "master",
-                                    "cloudnative.music.netease.com/git-commit": "6d1801216c9fbd62415a0b8663c6736f71a7f688",
-                                    "cloudnative.music.netease.com/git-url": "git@github.com:demo/demo.git",
-                                    "cloudnative.music.netease.com/http-probe.sh": "http_probe(){\n  local FUNC=\"$1\" URL=\"$2\" RETRY=\"$3\" SLEEP=\"$4\" \\\n        TIMEOUT=\"$5\" SLEEP_WHEN_SUCCEED=\"$6\"  BASEDIR=\"$7\" \\\n        PROBE_RESULT_DIR=\"${PROBE_RESULT_DIR:-\".probe-result\"}\"\n  local RESP_BODY_FILE=\"$BASEDIR/$PROBE_RESULT_DIR/$FUNC.res\" ERROR_FILE=\"$BASEDIR/$PROBE_RESULT_DIR/$FUNC.err\" && \\\n       { [[ ! -d \"$BASEDIR/$PROBE_RESULT_DIR\" ]] && mkdir -p \"$BASEDIR/$PROBE_RESULT_DIR\"; }\n  local CHECK_STATUS BODY ERROR\n  for ((i=1;i<=\"$RETRY\";i++)); do\n    rm -f \"$RESP_BODY_FILE\" \"$ERROR_FILE\"\n    CHECK_STATUS=\"$(curl -ksSL -w '%{http_code}' -m \"$TIMEOUT\" \"$URL\" -o \"$RESP_BODY_FILE\" 2>\"$ERROR_FILE\")\"\n    [[ \"$CHECK_STATUS\" == 20* ]] && echo \"$FUNC ok!\" && {\n      if [[ ! -z \"$SLEEP_WHEN_SUCCEED\" ]]; then\n        echo \"sleep \"$SLEEP_WHEN_SUCCEED\"s before \"$FUNC\" return ...\" && sleep \"$SLEEP_WHEN_SUCCEED\" \n      fi\n      return 0\n    } \n    ((\"$i\"<\"$RETRY\")) && sleep \"$SLEEP\"\n  done\n  echo \"$FUNC failed after $RETRY times retry ...\"\n  [[ -f \"$RESP_BODY_FILE\" ]] && {\n    BODY=\"$(cat \"$RESP_BODY_FILE\" | uniq)\"; [[ ! -z \"$BODY\" ]] && echo \"http code is: $CHECK_STATUS; response body is: $BODY\"\n  }\n  [[ -f \"$ERROR_FILE\" ]] && {\n    ERROR=\"$(cat \"$ERROR_FILE\" | uniq)\"; [[ ! -z \"$ERROR\" ]] && echo \"error is: $ERROR\"\n  }\n  return 1\n}\n",
-                                    "cloudnative.music.netease.com/user-restart-time": "2023-01-03 17:42:41",
-                                    "kubernetes.io/psp": "global",
-                                    "network.netease.com/kubernetes.ippool.name": "default"
-                                  }
-                                },
-                                "spec": {
-                                  "initContainers": [
-                                    {
-                                      "name": "artifacts",
-                                      "image": "harbor.mock.org/horizon/for-argocd/for-argocd-error:master-6d180121-20230104152306"
-                                    }
-                                  ],
-                                  "containers": [
-                                    {
-                                      "name": "for-argocd-error",
-                                      "image": "harbor.mock.org/cloudnative-template/javaapp:v1.2.3"
-                                    }
-                                  ]
-                                },
-                                "status": {
-                                  "phase": "Running",
-                                  "conditions": [
-                                    {
-                                      "type": "Initialized",
-                                      "status": "True",
-                                      "lastProbeTime": null,
-                                      "lastTransitionTime": "2023-01-04T07:23:35Z"
-                                    },
-                                    {
-                                      "type": "Ready",
-                                      "status": "True",
-                                      "lastProbeTime": null,
-                                      "lastTransitionTime": "2023-01-04T07:23:36Z"
-                                    },
-                                    {
-                                      "type": "ContainersReady",
-                                      "status": "True",
-                                      "lastProbeTime": null,
-                                      "lastTransitionTime": "2023-01-04T07:23:36Z"
-                                    },
-                                    {
-                                      "type": "PodScheduled",
-                                      "status": "True",
-                                      "lastProbeTime": null,
-                                      "lastTransitionTime": "2023-01-04T07:23:31Z"
-                                    }
-                                  ],
-                                  "podIP": "10.124.132.80",
-                                  "containerStatuses": [
-                                    {
-                                      "name": "for-argocd-error",
-                                      "state": {
-                                        "running": {
-                                          "startedAt": "2023-01-04T07:23:36Z"
-                                        }
-                                      },
-                                      "lastState": {},
-                                      "ready": true,
-                                      "restartCount": 0,
-                                      "image": "harbor.mock.org/cloudnative-template/javaapp:v1.2.3",
-                                      "imageID": "docker-pullable://harbor.mock.org/cloudnative-template/javaapp@sha256:5ca759a6739eecd77162d917f45e72f25efb1fea1ef1aa8a0615474b8002cead",
-                                      "containerID": "docker://057c8adc7f9fa494e3a23a42136fc35874e92f9ef50eeabf84459f1c022e4078",
-                                      "started": true
-                                    }
-                                  ]
-                                }
-                              }
+                              description: Shortcut of a pod manifest, exists only if resource is a pod
+                              properties:
+                                metadata:
+                                  type: object
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                    creationTimestamp:
+                                      type: string
+                                      format: date-time
+                                    deletionTimestamp:
+                                      type: string
+                                      format: date-time
+                                    labels:
+                                      type: object
+                                    annotations:
+                                      type: object
+                                spec:
+                                  type: object
+                                  properties:
+                                    containers:
+                                      type: array
+                                      items:
+                                        type: object
+                                        properties:
+                                          name:
+                                            type: string
+                                          image:
+                                            type: string
+                                          imagePullPolicy:
+                                            type: string
+                                          ports:
+                                            type: array
+                                            items:
+                                              type: object
+                                              properties:
+                                                containerPort:
+                                                  type: integer
+                                                protocol:
+                                                  type: string
+                                          resources:
+                                            type: object
+                                          volumeMounts:
+                                            type: array
+                                            items:
+                                              type: object
+                                              properties:
+                                                name:
+                                                  type: string
+                                                mountPath:
+                                                  type: string
+                                    volumes:
+                                      type: array
+                                      items:
+                                        type: object
+                                        properties:
+                                          name:
+                                            type: string
+                                          persistentVolumeClaim:
+                                            type: object
+                                            properties:
+                                              claimName:
+                                                type: string
+
   /apis/core/v2/cluster/{clusterID}/buildstatus:
     parameters:
       - name: clusterID
