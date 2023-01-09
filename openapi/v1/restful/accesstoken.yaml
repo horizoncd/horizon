@@ -30,14 +30,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/definitions/CreateResourceScopedAccessTokenReq"
+              $ref: "#/components/schemas/CreateResourceScopedAccessTokenReq"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/definitions/CreateResourceScopedAccessTokenResp"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreateResourceScopedAccessTokenResp"
         default:
           description: Unexpected error
           content:
@@ -55,9 +58,16 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/definitions/AccessTokenDetailWithRole"
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        $ref: "#/components/schemas/AccessTokenDetailWithRole"
+                      total:
+                        type: integer
         default:
           description: Unexpected error
           content:
@@ -75,14 +85,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/definitions/CreatePersonalAccessTokenReq"
+              $ref: "#/components/schemas/CreatePersonalAccessTokenReq"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/definitions/CreatePersonalAccessTokenResp"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreatePersonalAccessTokenResp"
         default:
           description: Unexpected error
           content:
@@ -100,9 +113,16 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/definitions/AccessTokenDetail"
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        $ref: "#/components/schemas/AccessTokenDetail"
+                      total:
+                        type: integer
         default:
           description: Unexpected error
           content:
@@ -124,68 +144,71 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-definitions:
-  Role:
-    type: object
-    properties:
-      role:
-        type: string
-        enum: ["pe", "owner", "developer", "guest"]
-  TokenCode:
-    type: object
-    properties:
-      code:
-        type: string
-        description: "You could use it to pass authentication when calling the api. When using it, you need to put it in the request header Authorization: Bearer $token for use"
-  AccessTokenBasicInfo:
-    type: object
-    required: [name, expiresAt, role, scopes]
-    properties:
-      name:
-        type: string
-        description: "name of token"
-      expiresAt:
-        type: string
-        description: "expiration date of token, need to follow the format of 'YYYY-MM-DD' or 'never'"
-      scopes:
-        type: array
-        items:
+components:
+  schemas:
+    Role:
+      type: object
+      properties:
+        role:
           type: string
-          enum:
-            [
-              "applications:read-only",
-              "applications:read-write",
-              "clusters:read-only",
-              "clusters:read-write",
-            ]
-        description: "permisson scopes"
-  CreateResourceScopedAccessTokenReq:
-    allOf:
-      - $ref: "#/definitions/AccessTokenBasicInfo"
-      - $ref: "#/definitions/Role"
-  CreatePersonalAccessTokenReq:
-    allOf:
-      - $ref: "#/definitions/AccessTokenBasicInfo"
-  AccessTokenDetail:
-    allOf:
-      - $ref: "#/definitions/AccessTokenBasicInfo"
-      - type: object
-        properties:
-          createdAt:
+          enum: ["pe", "owner", "developer", "guest"]
+    TokenCode:
+      type: object
+      properties:
+        code:
+          type: string
+          description: "You could use it to pass authentication when calling the api. When using it, you need to put it in the request header Authorization: Bearer $token for use"
+    AccessTokenBasicInfo:
+      type: object
+      required: [name, expiresAt, role, scopes]
+      properties:
+        name:
+          type: string
+          description: "name of token"
+        expiresAt:
+          type: string
+          description: "expiration date of token, need to follow the format of 'YYYY-MM-DD' or 'never'"
+        scopes:
+          type: array
+          items:
             type: string
-          createdBy:
-            $ref: "common.yaml#/components/components/User"
-          id:
-            type: integer
-  AccessTokenDetailWithRole:
-    allOf:
-      - $ref: "#/definitions/AccessTokenDetail"
-      - $ref: "#/definitions/Role"
-  CreatePersonalAccessTokenResp:
-    allOf:
-      - $ref: "#/definitions/AccessTokenDetail"
-      - $ref: "#/definitions/TokenCode"
-  CreateResourceScopedAccessTokenResp:
-    allOf:
-      - $ref: "#/definitions/AccessTokenDetailWithRole"
-      - $ref: "#/definitions/TokenCode"
+            enum:
+              [
+                "groups:read-only",
+                "groups:read-write",
+                "applications:read-only",
+                "applications:read-write",
+                "clusters:read-only",
+                "clusters:read-write",
+              ]
+          description: "permisson scopes"
+    CreateResourceScopedAccessTokenReq:
+      allOf:
+        - $ref: "#/components/schemas/AccessTokenBasicInfo"
+        - $ref: "#/components/schemas/Role"
+    CreatePersonalAccessTokenReq:
+      allOf:
+        - $ref: "#/components/schemas/AccessTokenBasicInfo"
+    AccessTokenDetail:
+      allOf:
+        - $ref: "#/components/schemas/AccessTokenBasicInfo"
+        - type: object
+          properties:
+            createdAt:
+              type: string
+            createdBy:
+              $ref: "common.yaml#/components/schemas/User"
+            id:
+              type: integer
+    AccessTokenDetailWithRole:
+      allOf:
+        - $ref: "#/components/schemas/AccessTokenDetail"
+        - $ref: "#/components/schemas/Role"
+    CreatePersonalAccessTokenResp:
+      allOf:
+        - $ref: "#/components/schemas/AccessTokenDetail"
+        - $ref: "#/components/schemas/TokenCode"
+    CreateResourceScopedAccessTokenResp:
+      allOf:
+        - $ref: "#/components/schemas/AccessTokenDetailWithRole"
+        - $ref: "#/components/schemas/TokenCode"

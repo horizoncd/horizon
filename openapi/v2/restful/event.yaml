@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: Horizon-Webhook-Restful
   description: Restful API About Event
-  version: 1.0.0
+  version: 2.0.0
 servers:
   - url: "http://localhost:8080/"
 paths:
@@ -18,7 +18,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SupportEvents"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SupportEvents"
                 example: |
                   {
                     "data": {
@@ -43,9 +46,6 @@ components:
   schemas:
     SupportEvents:
       type: object
-      properties:
-        data:
-          type: object
-          additionalProperties:
-            type: string
-            description: "description of scope"
+      additionalProperties:
+        type: string
+        description: "description of scope"

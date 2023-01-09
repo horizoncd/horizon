@@ -4,7 +4,7 @@ info:
   description: Restful API About Member
   version: 2.0.0
 servers:
-  - url: 'http://localhost:8080/'
+  - url: "http://localhost:8080/"
 paths:
   /apis/core/v2/{resourceType}/{resourceID}/members:
     parameters:
@@ -12,17 +12,15 @@ paths:
         in: path
         description: type of target resource
         required: true
-        enum:
-          [
-            "groups",
-            "applications",
-            "clusters",
-            "templates",
-          ]
+        schema:
+          type: string
+          enum: ["groups", "applications", "clusters", "templates"]
       - name: resourceID
         in: path
         description: id of target resource
         required: true
+        schema:
+          type: integer
     post:
       tags:
         - member
@@ -33,7 +31,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PostMember'
+              $ref: "#/components/schemas/PostMember"
       responses:
         "200":
           description: Success
@@ -42,33 +40,42 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "common.yaml#/components/schemas/Error"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Member"
     get:
       tags:
         - member
       operationId: listGroupMember
       summary: list a group member
       responses:
-        '200':
+        "200":
           description: Succuss
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Member'
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        $ref: "#/components/schemas/Member"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v2/members/{memberid}:
+  /apis/core/v2/members/{memberID}:
     parameters:
-      - name: memberid
+      - name: memberID
         in: path
-        description: group id
+        description: member id
         required: true
+        schema:
+          type: integer
     put:
       tags:
         - member
@@ -78,14 +85,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PutMember'
+              $ref: "#/components/schemas/PutMember"
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Member'
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Member"
         default:
           description: Unexpected error
           content:
@@ -98,7 +108,7 @@ paths:
       operationId: deleteMember
       summary: delete a member
       responses:
-        '200':
+        "200":
           description: Success
         default:
           description: Unexpected error
@@ -110,53 +120,53 @@ components:
   schemas:
     PostMember:
       type: object
-      required: [ resourceType, resourceID, memberType, memberNameID, role ]
+      required: [resourceType, resourceID, memberType, memberNameID, role]
       properties:
         resourceType:
-          $ref: '#/components/schemas/PostMember'
+          $ref: "#/components/schemas/PostMember"
         resourceID:
-          $ref: '#/components/schemas/ResourceID'
+          $ref: "#/components/schemas/ResourceID"
         memberType:
-          $ref: '#/components/schemas/MemberType'
+          $ref: "#/components/schemas/MemberType"
         memberNameID:
-          $ref: '#/components/schemas/MemberNameID'
+          $ref: "#/components/schemas/MemberNameID"
         role:
-          $ref: '#/components/schemas/Role'
+          $ref: "#/components/schemas/Role"
 
     PutMember:
       type: object
-      required: [ role ]
+      required: [role]
       properties:
         role:
-          $ref: '#/components/schemas/Role'
+          $ref: "#/components/schemas/Role"
 
     Member:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/MemberEntryID'
+          $ref: "#/components/schemas/MemberEntryID"
         memberName:
-          $ref: '#/components/schemas/MemberName'
+          $ref: "#/components/schemas/MemberName"
         memberNameID:
-          $ref: '#/components/schemas/MemberNameID'
+          $ref: "#/components/schemas/MemberNameID"
         memberType:
-          $ref: '#/components/schemas/MemberType'
+          $ref: "#/components/schemas/MemberType"
         resourceID:
-          $ref: '#/components/schemas/ResourceID'
+          $ref: "#/components/schemas/ResourceID"
         resourceName:
-          $ref: '#/components/schemas/ResourceName'
+          $ref: "#/components/schemas/ResourceName"
         resourcePath:
-          $ref: '#/components/schemas/ResourcePath'
+          $ref: "#/components/schemas/ResourcePath"
         resourceType:
-          $ref: '#/components/schemas/ResourceType'
+          $ref: "#/components/schemas/ResourceType"
         grantTime:
           $ref: "common.yaml#/components/schemas/Date"
         grantedBy:
-          $ref: '#/components/schemas/GrantedBy'
+          $ref: "#/components/schemas/GrantedBy"
         grantorName:
-          $ref: '#/components/schemas/GrantorName'
+          $ref: "#/components/schemas/GrantorName"
         role:
-          $ref: '#/components/schemas/Role'
+          $ref: "#/components/schemas/Role"
 
     MemberEntryID:
       type: integer
@@ -173,7 +183,7 @@ components:
     MemberType:
       type: integer
       format: uint8
-      enum: [ 0, 1 ]
+      enum: [0, 1]
       description: 0 for user, 1 for group
     ResourceID:
       type: integer
@@ -187,7 +197,7 @@ components:
       description: full path of resource
     ResourceType:
       type: string
-      enum: [ "group", "application", "cluster" ]
+      enum: ["group", "application", "cluster"]
       description: add member to such resource
     GrantedBy:
       type: integer
@@ -198,5 +208,5 @@ components:
       description: name of user who grant this member
     Role:
       type: string
-      enum: [ "owner", "maintainer", "developer", "reporter", "guest" ]
+      enum: ["owner", "maintainer", "developer", "reporter", "guest"]
       description: the member role
