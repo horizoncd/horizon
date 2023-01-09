@@ -92,7 +92,7 @@ func NewRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
 }
 
 func (h *Repo) GetLoc() string {
-	return fmt.Sprintf("%s://%s/chartrepo/%s", h.host.Scheme, h.host.Host, url.PathEscape(h.repoName))
+	return fmt.Sprintf("%s://%s", h.host.Scheme, h.host.Host)
 }
 
 func (h *Repo) UploadChart(chartPkg *chart.Chart) error {

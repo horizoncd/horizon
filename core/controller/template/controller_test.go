@@ -183,30 +183,6 @@ func testList(t *testing.T) {
 	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(1)
 
-	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[0]).
-	//	Return(&gitlabapi.Tag{
-	//		Commit: &gitlabapi.Commit{ShortID: "test"},
-	//	}, nil)
-	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[1]).
-	//	Return(&gitlabapi.Tag{
-	//		Commit: &gitlabapi.Commit{ShortID: "test"},
-	//	}, nil)
-	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[2]).
-	//	Return(&gitlabapi.Tag{
-	//		Commit: &gitlabapi.Commit{ShortID: "test3"},
-	//	}, nil).Times(1)
-
-	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[0]).
-	//	Return(&gitlabapi.Tag{
-	//		Commit: &gitlabapi.Commit{ShortID: "test"},
-	//	}, nil)
-	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[1]).
-	//	Return(&gitlabapi.Tag{
-	//		Commit: &gitlabapi.Commit{ShortID: "test"},
-	//	}, nil)
-	// gitlabLib.EXPECT().GetTag(gomock.Any(), "music-cloud-native/horizon/horizon", tags[2]).
-	//	Return(nil, errors.New("test")).Times(1)
-
 	ctl := &controller{
 		templateMgr:        templateMgr,
 		templateReleaseMgr: templateReleaseMgr,
