@@ -286,7 +286,6 @@ func (a *API) InternalClusterStatus(c *gin.Context) {
 	var ctx context.Context = c
 	ctx = common.WithContextJWTTokenString(ctx, tokenString)
 
-	// nolint
 	resp, err := a.clusterCtl.InternalGetClusterStatus(ctx, uint(clusterID))
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {

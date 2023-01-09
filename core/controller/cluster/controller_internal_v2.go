@@ -24,7 +24,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// auth jwt token
-	claims, user, err := c.authJWTToken(ctx)
+	claims, user, err := c.retrieveClaimsAndUser(ctx)
 	if err != nil {
 		return nil, perror.Wrapf(herrors.ErrTokenInvalid, "%v", err.Error())
 	}
@@ -163,7 +163,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}, nil
 }
 
-func (c *controller) authJWTToken(ctx context.Context) (*tokenservice.Claims, *usermodel.User, error) {
+func (c *controller) retrieveClaimsAndUser(ctx context.Context) (*tokenservice.Claims, *usermodel.User, error) {
 	jwtTokenString, err := common.JWTTokenStringFromContext(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -186,7 +186,7 @@ func (c *controller) authJWTToken(ctx context.Context) (*tokenservice.Claims, *u
 func (c *controller) InternalGetClusterStatus(ctx context.Context,
 	clusterID uint) (_ *GetClusterStatusResponse, err error) {
 	// auth jwt token
-	_, user, err := c.authJWTToken(ctx)
+	_, user, err := c.retrieveClaimsAndUser(ctx)
 	if err != nil {
 		return nil, perror.Wrapf(herrors.ErrTokenInvalid, "%v", err.Error())
 	}
