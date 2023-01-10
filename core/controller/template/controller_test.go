@@ -585,6 +585,9 @@ var repoConfig *RepoConfig
 
 func Test(t *testing.T) {
 	templateRepos := os.Getenv(EnvTemplateRepos)
+	if templateRepos == "" {
+		return
+	}
 
 	configs := make([]RepoConfig, 0)
 

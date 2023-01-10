@@ -33,6 +33,10 @@ var repoConfig *RepoConfig
 
 func Test(t *testing.T) {
 	templateRepos := os.Getenv(EnvTemplateRepos)
+	if templateRepos == "" {
+		return
+	}
+
 	configs := make([]RepoConfig, 0)
 
 	if err := json.Unmarshal([]byte(templateRepos), &configs); err != nil {
@@ -42,7 +46,7 @@ func Test(t *testing.T) {
 	for _, cfg := range configs {
 		repoConfig = &cfg
 
-		t.Run(fmt.Sprintf("TestRepo_%s", repoConfig.Kind), TestRepo)
+		t.Run(fmt.Sprintf("TestRepo_%s", repoConfig.Kind), testRepo)
 	}
 }
 
@@ -63,7 +67,7 @@ func createRepo(t *testing.T) templaterepo.TemplateRepo {
 	return repo
 }
 
-func TestRepo(t *testing.T) {
+func testRepo(t *testing.T) {
 	repo := createRepo(t)
 
 	name := "test"

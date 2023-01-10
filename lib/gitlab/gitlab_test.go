@@ -85,12 +85,15 @@ func TestMain(m *testing.M) {
 
 	rootGroupName = p.RootGroupName
 	rootGroupID = p.RootGroupID
+	if rootGroupName != "" && rootGroupID == 0 {
+		return
+	}
 
 	os.Exit(m.Run())
 }
 
 func Test(t *testing.T) {
-	groupName := "group"
+	groupName := "horion-unittest-group"
 	groupPath := fmt.Sprintf("%v/%v", rootGroupName, groupName)
 
 	projectName := "project"

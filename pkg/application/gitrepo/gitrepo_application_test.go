@@ -36,7 +36,7 @@ export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
 {
 	"token": "xxx",
 	"baseURL": "http://cicd.mockserver.org",
-	"rootGroupName": "xxx",
+	"rootGroupName": "xxx"
 }
 EOF
 )"
@@ -44,11 +44,16 @@ go test -v ./pkg/application/gitrepo
 
 NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this test.
 
+
+NOTE: if your gitlab default branch is main.
+set the env 'defaultBranch' to main
 */
+
 // nolint
 var (
-	ctx context.Context
-	g   gitlablib.Interface
+	ctx           context.Context
+	g             gitlablib.Interface
+	defaultBranch string
 
 	rootGroupName string
 	rootGroup     *gitlab.Group
@@ -146,6 +151,10 @@ func testInit() {
 	if err := json.Unmarshal([]byte(param), &p); err != nil {
 		panic(err)
 	}
+	defaultBranch = os.Getenv("defaultBranch")
+	if defaultBranch == "" {
+		defaultBranch = "master"
+	}
 
 	g, err = gitlablib.New(p.Token, p.BaseURL, "")
 	if err != nil {
@@ -180,7 +189,7 @@ func testInit() {
 
 func TestV2(t *testing.T) {
 	testInit()
-	r, err := NewApplicationGitlabRepo(ctx, rootGroup, g)
+	r, err := NewApplicationGitlabRepo(ctx, rootGroup, g, defaultBranch)
 	assert.Nil(t, err)
 
 	defer func() {

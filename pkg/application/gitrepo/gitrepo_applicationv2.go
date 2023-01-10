@@ -19,7 +19,6 @@ import (
 
 const (
 	_filePathManifest = "manifest.yaml"
-	_branchMaster     = "master"
 
 	_filePathApplication = "application.yaml"
 	_filePathPipeline    = "pipeline.yaml"
@@ -53,12 +52,13 @@ type gitRepo struct {
 	gitlabLib                  gitlablib.Interface
 	applicationsGroup          *gitlab.Group
 	recyclingApplicationsGroup *gitlab.Group
+	defaultBranch              string
 }
 
 var _ ApplicationGitRepo = &gitRepo{}
 
 func NewApplicationGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
-	gitlabLib gitlablib.Interface) (ApplicationGitRepo, error) {
+	gitlabLib gitlablib.Interface, defaultBranch string) (ApplicationGitRepo, error) {
 	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _applications)
 	if err != nil {
 		return nil, err
@@ -72,6 +72,7 @@ func NewApplicationGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 		gitlabLib:                  gitlabLib,
 		applicationsGroup:          applicationsGroup,
 		recyclingApplicationsGroup: recyclingApplicationsGroup,
+		defaultBranch:              defaultBranch,
 	}, nil
 }
 
@@ -91,7 +92,8 @@ func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application stri
 
 	var envProjectExists = false
 	pid := fmt.Sprintf("%v/%v/%v", g.applicationsGroup.FullPath, application, environmentRepoName)
-	_, err = g.gitlabLib.GetProject(ctx, pid)
+	var project *gitlab.Project
+	project, err = g.gitlabLib.GetProject(ctx, pid)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
@@ -108,12 +110,16 @@ func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application stri
 				return err
 			}
 		}
-		_, err = g.gitlabLib.CreateProject(ctx, environmentRepoName, parentGroup.ID)
+		project, err = g.gitlabLib.CreateProject(ctx, environmentRepoName, parentGroup.ID)
 		if err != nil {
 			return err
 		}
 	} else {
 		envProjectExists = true
+	}
+	if project.DefaultBranch != g.defaultBranch {
+		return perror.Wrap(herrors.ErrGitLabDefaultBranchNotMatch,
+			fmt.Sprintf("expect %s, not got %s", g.defaultBranch, project.DefaultBranch))
 	}
 
 	// 2. if env template repo exists, the gitlab action is update, else the action is create
@@ -184,7 +190,7 @@ func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application stri
 		Application: req.TemplateConf,
 		Pipeline:    req.BuildConf,
 	})
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, g.defaultBranch, commitMsg, nil, actions); err != nil {
 		return err
 	}
 	return nil
@@ -211,9 +217,9 @@ func (g gitRepo) GetApplication(ctx context.Context, application, environment st
 		}
 	}
 
-	manifestBytes, err1 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathManifest)
-	buildConfBytes, err2 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
-	templateConfBytes, err3 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
+	manifestBytes, err1 := g.gitlabLib.GetFile(ctx, pid, g.defaultBranch, _filePathManifest)
+	buildConfBytes, err2 := g.gitlabLib.GetFile(ctx, pid, g.defaultBranch, _filePathPipeline)
+	templateConfBytes, err3 := g.gitlabLib.GetFile(ctx, pid, g.defaultBranch, _filePathApplication)
 	for _, err := range []error{err1, err2, err3} {
 		if err != nil {
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
