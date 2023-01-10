@@ -211,7 +211,7 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		cancelFunc()
 	}()
 	AutoReleaseExpiredClusterJob(ctx, &autofree.Config{
-		AccountID:     0,
+		AccountID:     1,
 		JobInterval:   1 * time.Second,
 		BatchInterval: 0 * time.Second,
 		BatchSize:     20,

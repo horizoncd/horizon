@@ -551,12 +551,12 @@ func testListTemplate(t *testing.T) {
 	ctx = context.WithValue(ctx, hctx.ReleaseSyncToRepo, false)
 	createChart(t, ctl, 0)
 
-	templates, err = ctl.ListTemplateByGroupID(ctx, 1, false)
+	templates, err = ctl.ListTemplateByGroupID(ctx, 1, true)
 	_, ok = perror.Cause(err).(*herrors.HorizonErrNotFound)
 	assert.True(t, ok)
 	assert.Equal(t, 0, len(templates))
 
-	templates, err = ctl.ListTemplateByGroupID(ctx, 0, false)
+	templates, err = ctl.ListTemplateByGroupID(ctx, 0, true)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(templates))
 

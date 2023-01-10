@@ -37,6 +37,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/models"
 	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
+	"github.com/horizoncd/horizon/pkg/environment/service"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
@@ -486,7 +487,8 @@ func test(t *testing.T) {
 	// for test
 	conf := config.Config{}
 	param := param.Param{
-		Manager: managerparam.InitManager(nil),
+		AutoFreeSvc: service.New([]string{"test", "dev"}),
+		Manager:     managerparam.InitManager(nil),
 	}
 	NewController(&conf, &param)
 
@@ -609,6 +611,7 @@ func test(t *testing.T) {
 		envMgr:               envMgr,
 		envRegionMgr:         envRegionMgr,
 		regionMgr:            regionMgr,
+		autoFreeSvc:          param.AutoFreeSvc,
 		groupSvc:             groupservice.NewService(manager),
 		pipelinerunMgr:       manager.PipelinerunMgr,
 		tektonFty:            tektonFty,
@@ -1183,7 +1186,8 @@ func testV2(t *testing.T) {
 	// for test
 	conf := config.Config{}
 	param := param.Param{
-		Manager: managerparam.InitManager(nil),
+		AutoFreeSvc: service.New([]string{"dev", "test"}),
+		Manager:     managerparam.InitManager(nil),
 	}
 	NewController(&conf, &param)
 	templateName := "rollout"
@@ -1262,6 +1266,7 @@ func testV2(t *testing.T) {
 		groupSvc:             groupservice.NewService(manager),
 		pipelinerunMgr:       manager.PipelinerunMgr,
 		userManager:          manager.UserManager,
+		autoFreeSvc:          param.AutoFreeSvc,
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		applicationGitRepo:   applicationGitRepo,

@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 
 func Test(t *testing.T) {
 	param := &param.Param{
-		AutoFreeSvc: service.New([]string{"dev"}),
+		AutoFreeSvc: service.New([]string{}),
 		Manager:     manager,
 	}
 	regionCtl := region.NewController(param)
