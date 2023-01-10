@@ -24,6 +24,7 @@ import (
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/config/autofree"
 	emodel "github.com/horizoncd/horizon/pkg/environment/models"
+	"github.com/horizoncd/horizon/pkg/environment/service"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	"github.com/horizoncd/horizon/pkg/errors"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
@@ -110,8 +111,9 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	cd := cdmock.NewMockCD(mockCtl)
 	conf := &coreconfig.Config{}
 	parameter := &param.Param{
-		Manager: manager,
-		Cd:      cd,
+		AutoFreeSvc: service.New([]string{"dev"}),
+		Manager:     manager,
+		Cd:          cd,
 	}
 	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
 	parameter.PipelinerunMgr = mockPipelineManager
@@ -128,7 +130,6 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	devID, err := envCtl.Create(ctx, &environmentctl.CreateEnvironmentRequest{
 		Name:        "dev",
 		DisplayName: "DEV",
-		AutoFree:    true,
 	})
 	assert.Nil(t, err)
 	devEnv, err := envCtl.GetByID(ctx, devID)
@@ -138,7 +139,6 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	onlineID, err := envCtl.Create(ctx, &environmentctl.CreateEnvironmentRequest{
 		Name:        "online",
 		DisplayName: "ONLINE",
-		AutoFree:    false,
 	})
 	assert.Nil(t, err)
 	onlineEnv, err := envCtl.GetByID(ctx, onlineID)
@@ -211,8 +211,7 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		cancelFunc()
 	}()
 	AutoReleaseExpiredClusterJob(ctx, &autofree.Config{
-		AccountIDP:    "netease",
-		Account:       "horizon@noreply.com",
+		AccountID:     0,
 		JobInterval:   1 * time.Second,
 		BatchInterval: 0 * time.Second,
 		BatchSize:     20,

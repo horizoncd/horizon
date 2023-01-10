@@ -944,11 +944,7 @@ func (c *controller) toExpireSeconds(ctx context.Context, expireTime string, env
 			return 0, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 		expireSeconds = uint(duration.Seconds())
-		envEntity, err := c.envMgr.GetByName(ctx, environment)
-		if err != nil {
-			return 0, err
-		}
-		if !envEntity.AutoFree && expireSeconds > 0 {
+		if !c.autoFreeSvc.IsAutoFree(environment) && expireSeconds > 0 {
 			log.Warningf(ctx, "%v environment dose not support auto-free, but expireSeconds are %v",
 				environment, expireSeconds)
 			expireSeconds = 0

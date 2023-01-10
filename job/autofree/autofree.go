@@ -20,7 +20,7 @@ import (
 func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Manager,
 	clusterCtr clusterctl.Controller, prCtr prctl.Controller, envCtr environmentctl.Controller) {
 	// verify account
-	user, err := userMgr.GetUserByIDP(ctx, jobConfig.Account, jobConfig.AccountIDP)
+	user, err := userMgr.GetUserByID(ctx, jobConfig.AccountID)
 	if err != nil {
 		log.Errorf(ctx, "failed to verify operator, err: %v", err.Error())
 		panic(err)

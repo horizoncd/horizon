@@ -21,7 +21,6 @@ type CreateTemplateRequest struct {
 	Description          string `json:"description"`
 	Repository           string `json:"repository"`
 	OnlyOwner            bool   `json:"onlyOwner"`
-	WithoutCI            bool   `json:"withoutCI"`
 }
 
 func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.Template, error) {
@@ -39,7 +38,6 @@ func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		Description: c.Description,
 		Repository:  c.Repository,
 		OnlyOwner:   &c.OnlyOwner,
-		WithoutCI:   c.WithoutCI,
 	}
 	return t, nil
 }

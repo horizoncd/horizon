@@ -10,6 +10,7 @@ import (
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/environment/models"
+	"github.com/horizoncd/horizon/pkg/environment/service"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
@@ -39,9 +40,11 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	regionCtl := region.NewController(&param.Param{
-		Manager: manager,
-	})
+	param := &param.Param{
+		AutoFreeSvc: service.New([]string{"dev"}),
+		Manager:     manager,
+	}
+	regionCtl := region.NewController(param)
 	_, err := regionCtl.Create(ctx, &region.CreateRegionRequest{
 		Name:        "hz",
 		DisplayName: "HZ",
@@ -53,9 +56,7 @@ func Test(t *testing.T) {
 		DisplayName: "HZ",
 	})
 	assert.Nil(t, err)
-	ctl := NewController(&param.Param{
-		Manager: manager,
-	})
+	ctl := NewController(param)
 	envs, err := ctl.ListEnvironments(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(envs))
@@ -63,7 +64,6 @@ func Test(t *testing.T) {
 	devID, err := ctl.Create(ctx, &CreateEnvironmentRequest{
 		Name:        "dev",
 		DisplayName: "DEV",
-		AutoFree:    false,
 	})
 	assert.Nil(t, err)
 	env, err := ctl.GetByID(ctx, devID)
@@ -84,7 +84,6 @@ func Test(t *testing.T) {
 
 	err = ctl.UpdateByID(ctx, devID, &UpdateEnvironmentRequest{
 		DisplayName: "DEV-update",
-		AutoFree:    true,
 	})
 	assert.Nil(t, err)
 
@@ -93,5 +92,4 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(envs))
 	assert.Equal(t, "dev", envs[0].Name)
 	assert.Equal(t, "DEV-update", envs[0].DisplayName)
-	assert.Equal(t, true, envs[0].AutoFree)
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/horizoncd/horizon/pkg/environment/models"
+	"github.com/horizoncd/horizon/pkg/environment/service"
 )
 
 type Environment struct {
@@ -18,20 +19,20 @@ type Environment struct {
 type Environments []*Environment
 
 // ofEnvironmentModels []*models.Environment to []*Environment
-func ofEnvironmentModels(envs []*models.Environment) Environments {
+func ofEnvironmentModels(envs []*models.Environment, autoFreeSvc *service.AutoFreeSVC) Environments {
 	environments := make(Environments, 0)
 	for _, env := range envs {
-		environments = append(environments, ofEnvironmentModel(env))
+		environments = append(environments, ofEnvironmentModel(env, autoFreeSvc.IsAutoFree(env.Name)))
 	}
 	return environments
 }
 
-func ofEnvironmentModel(env *models.Environment) *Environment {
+func ofEnvironmentModel(env *models.Environment, isAutoFree bool) *Environment {
 	return &Environment{
 		ID:          env.ID,
 		Name:        env.Name,
 		DisplayName: env.DisplayName,
-		AutoFree:    env.AutoFree,
+		AutoFree:    isAutoFree,
 		CreatedAt:   env.CreatedAt,
 		UpdatedAt:   env.UpdatedAt,
 	}
@@ -40,10 +41,8 @@ func ofEnvironmentModel(env *models.Environment) *Environment {
 type CreateEnvironmentRequest struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
-	AutoFree    bool   `json:"autoFree"`
 }
 
 type UpdateEnvironmentRequest struct {
 	DisplayName string `json:"displayName"`
-	AutoFree    bool   `json:"autoFree"`
 }

@@ -590,12 +590,10 @@ func test(t *testing.T) {
 	env, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
 		Name:        "dev",
 		DisplayName: "开发",
-		AutoFree:    true,
 	})
 	env, err = envMgr.CreateEnvironment(ctx, &envmodels.Environment{
 		Name:        "test",
 		DisplayName: "开发",
-		AutoFree:    true,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, env)
@@ -844,7 +842,7 @@ func test(t *testing.T) {
 	commitID := "code-commit-id"
 	commitMsg := "code-commit-msg"
 	configDiff := "config-diff"
-	commitGetter.EXPECT().GetCommitHistoryLink(gomock.Any(), gomock.Any()).Return("https://cloudnative.com:22222/demo/springboot-demo/-/commits/" + codeBranch, nil).AnyTimes()
+	commitGetter.EXPECT().GetCommitHistoryLink(gomock.Any(), gomock.Any()).Return("https://cloudnative.com:22222/demo/springboot-demo/-/commits/"+codeBranch, nil).AnyTimes()
 	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&git.Commit{
 		ID:      commitID,
 		Message: commitMsg,
