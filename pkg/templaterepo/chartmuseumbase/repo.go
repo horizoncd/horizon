@@ -47,6 +47,7 @@ type Stat struct {
 }
 
 type Repo struct {
+	kind     string
 	prefix   string
 	host     *url.URL
 	token    string
@@ -81,6 +82,7 @@ func NewRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
 	}
 
 	return &Repo{
+		kind:     config.Kind,
 		repoName: config.RepoName,
 		prefix:   prefix,
 		host:     host,
@@ -92,6 +94,9 @@ func NewRepo(config config.Repo) (templaterepo.TemplateRepo, error) {
 }
 
 func (h *Repo) GetLoc() string {
+	if h.kind == kindHarbor {
+		return fmt.Sprintf("%s://%s/chartrepo/%s", h.host.Scheme, h.host.Host, url.PathEscape(h.repoName))
+	}
 	return fmt.Sprintf("%s://%s", h.host.Scheme, h.host.Host)
 }
 
