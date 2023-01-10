@@ -170,18 +170,12 @@ func testList(t *testing.T) {
 
 	gitlabLib := gitmock.NewMockHelper(mockCtl)
 
-	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(&git.Tag{ShortID: "test3", Name: "", ArchiveData: []byte{}}, nil).Times(1)
-	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(1)
-	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(1)
-	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(&git.Tag{ShortID: "test3", Name: "", ArchiveData: []byte{}}, nil).Times(1)
-	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(1)
-	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(1)
+	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), "v1.0.2").
+		Return(&git.Tag{ShortID: "test3", Name: "", ArchiveData: []byte{}}, nil).Times(2)
+	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), "v1.0.1").
+		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(2)
+	gitlabLib.EXPECT().GetTagArchive(gomock.Any(), gomock.Any(), "v1.0.0").
+		Return(&git.Tag{ShortID: "test", Name: "", ArchiveData: []byte{}}, nil).Times(2)
 
 	ctl := &controller{
 		templateMgr:        templateMgr,
