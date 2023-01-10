@@ -38,9 +38,10 @@ import (
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile  string
-	Environment string
-	LogLevel    string
+	ConfigFile              string
+	Environment             string
+	LogLevel                string
+	GitOpsRepoDefaultBranch string
 }
 
 // ParseFlags parses agent CLI flags.
@@ -55,6 +56,10 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
+
+	flag.StringVar(
+		&flags.GitOpsRepoDefaultBranch, "gitOpsRepoDefaultBranch", "master",
+		"configure gitops git engine default branch")
 
 	flag.Parse()
 	return &flags
@@ -130,7 +135,7 @@ func Run(flags *Flags) {
 	}
 
 	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
-		coreConfig.GitopsRepoConfig.URLSchema)
+		coreConfig.GitopsRepoConfig.URLSchema, flags.GitOpsRepoDefaultBranch)
 	if err != nil {
 		panic(err)
 	}

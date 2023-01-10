@@ -215,9 +215,10 @@ var (
 	ErrS3PutObjFailed = errors.New("s3 put obj failed")
 	ErrS3GetObjFailed = errors.New("s3 get obj failed")
 
-	ErrGitlabInternal         = errors.New("gitlab internal")
-	ErrGitlabMRNotReady       = errors.New("gitlab mr is not ready and cannot be merged")
-	ErrGitlabResourceNotFound = errors.New("gitlab resource not found")
+	ErrGitlabInternal              = errors.New("gitlab internal")
+	ErrGitlabMRNotReady            = errors.New("gitlab mr is not ready and cannot be merged")
+	ErrGitlabResourceNotFound      = errors.New("gitlab resource not found")
+	ErrGitLabDefaultBranchNotMatch = errors.New("gitlab default branch do not match")
 
 	// git
 	ErrBranchAndCommitEmpty      = errors.New("branch and commit cannot be empty at the same time")

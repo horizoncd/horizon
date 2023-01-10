@@ -15,7 +15,6 @@ import (
 	gitlablibmock "github.com/horizoncd/horizon/mock/lib/gitlab"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	pkgcommon "github.com/horizoncd/horizon/pkg/common"
 	gitlabconfig "github.com/horizoncd/horizon/pkg/config/gitlab"
 	config "github.com/horizoncd/horizon/pkg/config/templaterepo"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
@@ -31,12 +30,45 @@ import (
 go test -v ./pkg/cluster/gitrepo
 
 NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this test.
+
+env name is GITLAB_PARAMS_FOR_TEST, and the value is a json string, look like:
+{
+	"token": "xxx",
+	"baseURL": "http://cicd.mockserver.org",
+	"rootGroupName": "xxx",
+	"rootGroupID": xxx
+}
+
+1. token is used for auth, see https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html for more information.
+2. baseURL is the basic URL for gitlab.
+3. rootGroupName is a root group, our unit tests will do some operations under this group.
+4. rootGroupID is the ID for this root group.
+
+
+You can run this unit test just like this:
+
+export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
+{
+	"token": "xxx",
+	"baseURL": "http://cicd.mockserver.org",
+	"rootGroupName": "xxx"
+}
+EOF
+)"
+go test -v ./pkg/application/gitrepo
+
+NOTE: when there is no GITLAB_PARAMS_FOR_TEST environment variable, skip this test.
+
+
+NOTE: if your gitlab default branch is main.
+set the env 'defaultBranch' to main
 */
 
 // nolint
 var (
-	ctx context.Context
-	g   gitlablib.Interface
+	ctx           context.Context
+	g             gitlablib.Interface
+	defaultBranch string
 
 	sshURL        string
 	rootGroupName string
@@ -94,6 +126,11 @@ func TestMain(m *testing.M) {
 		return
 	}
 
+	defaultBranch = os.Getenv("defaultBranch")
+	if defaultBranch == "" {
+		defaultBranch = "master"
+	}
+
 	var p *Param
 	if err := json.Unmarshal([]byte(param), &p); err != nil {
 		panic(err)
@@ -126,7 +163,7 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) {
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
 
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema, defaultBranch)
 	assert.Nil(t, err)
 
 	application := "app"
@@ -246,7 +283,7 @@ func Test(t *testing.T) {
 
 func TestV2(t *testing.T) {
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema, defaultBranch)
 	assert.Nil(t, err)
 
 	application := "appv2"
@@ -377,7 +414,7 @@ func TestHardDeleteCluster(t *testing.T) {
 		BaseParams: baseParams,
 	}
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema, defaultBranch)
 	assert.Nil(t, err)
 	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
@@ -396,12 +433,12 @@ func TestGetClusterValueFile(t *testing.T) {
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
 	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{}, gitlabmockLib,
-		gitlabconfig.HTTPURLSchema)
+		gitlabconfig.HTTPURLSchema, defaultBranch)
 	assert.Nil(t, err)
 
 	// 1. test gitlab get file error
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(),
-		pkgcommon.GitDefaultBranch, gomock.Any()).Return(
+		defaultBranch, gomock.Any()).Return(
 		nil, errors.New("gitlab getFile error")).Times(5)
 	clusterValueFiles, err := clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
 		"app", "cluster")
@@ -409,7 +446,7 @@ func TestGetClusterValueFile(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// 2. test gitlab return ok
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), pkgcommon.GitDefaultBranch, gomock.Any()).Return(
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), defaultBranch, gomock.Any()).Return(
 		[]byte("cluster: xxx"), nil).Times(5)
 	clusterValueFiles, err = clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
 		"app", "cluster")
@@ -417,10 +454,10 @@ func TestGetClusterValueFile(t *testing.T) {
 	assert.NotNil(t, clusterValueFiles)
 
 	// 3. test gitlab return 404
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), pkgcommon.GitDefaultBranch, gomock.Any()).Return(
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), defaultBranch, gomock.Any()).Return(
 		[]byte("cluster: xxx"), nil).Times(4)
 	var herr = herrors.NewErrNotFound(herrors.GitlabResource, "test")
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), pkgcommon.GitDefaultBranch, gomock.Any()).Return(
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), defaultBranch, gomock.Any()).Return(
 		nil, herr).Times(1)
 
 	clusterValueFile1, err := clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
@@ -453,7 +490,8 @@ java:
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{}, gitlabmockLib, gitlabconfig.HTTPURLSchema)
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{},
+		gitlabmockLib, gitlabconfig.HTTPURLSchema, defaultBranch)
 	assert.Nil(t, err)
 
 	expectedOutput := `java:
