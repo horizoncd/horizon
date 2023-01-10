@@ -2,6 +2,7 @@ package kservice
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -87,7 +88,11 @@ func (s *service) IsHealthy(node *v1alpha1.ResourceNode,
 		return true, err
 	}
 
-	exist := false
+	annos := instance.Spec.Template.ObjectMeta.Annotations
+	min, _ := strconv.Atoi(annos["autoscaling.knative.dev/minScale"])
+	max, _ := strconv.Atoi(annos["autoscaling.knative.dev/maxScale"])
+
+	count := 0
 
 	for _, pod := range pods.Items {
 		m := make(map[string]string)
@@ -106,8 +111,10 @@ func (s *service) IsHealthy(node *v1alpha1.ResourceNode,
 				continue
 			}
 		}
-		exist = true
-		break
+		count++
+		if count < min || count > max {
+			break
+		}
 	}
-	return exist, nil
+	return count >= min && count <= max, nil
 }
