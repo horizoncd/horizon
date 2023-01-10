@@ -273,13 +273,11 @@ func (h *helper) CreateProject(ctx context.Context, name string, groupID int) (_
 	const op = "gitlab: create project"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	defaultBranch := "master"
 	project, rsp, err := h.client.Projects.CreateProject(&gitlab.CreateProjectOptions{
 		InitializeWithReadme: func() *bool { b := true; return &b }(),
 		Name:                 &name,
 		Path:                 &name,
 		NamespaceID:          &groupID,
-		DefaultBranch:        &defaultBranch,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
