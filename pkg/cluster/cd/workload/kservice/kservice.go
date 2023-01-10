@@ -112,7 +112,7 @@ func (s *service) IsHealthy(node *v1alpha1.ResourceNode,
 			}
 		}
 		count++
-		if count < min || count > max {
+		if count > max {
 			break
 		}
 	}
