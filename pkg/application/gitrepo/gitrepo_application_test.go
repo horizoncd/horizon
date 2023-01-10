@@ -36,7 +36,7 @@ export GITLAB_PARAMS_FOR_TEST="$(cat <<\EOF
 {
 	"token": "xxx",
 	"baseURL": "http://cicd.mockserver.org",
-	"rootGroupName": "xxx",
+	"rootGroupName": "xxx"
 }
 EOF
 )"

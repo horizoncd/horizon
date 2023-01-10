@@ -19,7 +19,6 @@ import (
 
 const (
 	_filePathManifest = "manifest.yaml"
-	_branchMaster     = "master"
 
 	_filePathApplication = "application.yaml"
 	_filePathPipeline    = "pipeline.yaml"
@@ -184,7 +183,7 @@ func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application stri
 		Application: req.TemplateConf,
 		Pipeline:    req.BuildConf,
 	})
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, _branchMaster, commitMsg, nil, actions); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, pkgcommon.GitDefaultBranch, commitMsg, nil, actions); err != nil {
 		return err
 	}
 	return nil
@@ -211,9 +210,9 @@ func (g gitRepo) GetApplication(ctx context.Context, application, environment st
 		}
 	}
 
-	manifestBytes, err1 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathManifest)
-	buildConfBytes, err2 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathPipeline)
-	templateConfBytes, err3 := g.gitlabLib.GetFile(ctx, pid, _branchMaster, _filePathApplication)
+	manifestBytes, err1 := g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitDefaultBranch, _filePathManifest)
+	buildConfBytes, err2 := g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitDefaultBranch, _filePathPipeline)
+	templateConfBytes, err3 := g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitDefaultBranch, _filePathApplication)
 	for _, err := range []error{err1, err2, err3} {
 		if err != nil {
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {

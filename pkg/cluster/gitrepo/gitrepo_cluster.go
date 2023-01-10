@@ -150,7 +150,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	wg.Add(3)
 	go func() {
 		defer wg.Done()
-		pipelineBytes, err1 = g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFilePipeline)
+		pipelineBytes, err1 = g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitOpsBranch, common.GitopsFilePipeline)
 		if err1 != nil {
 			return
 		}
@@ -161,7 +161,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	}()
 	go func() {
 		defer wg.Done()
-		applicationBytes, err2 = g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFileApplication)
+		applicationBytes, err2 = g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitOpsBranch, common.GitopsFileApplication)
 		if err2 != nil {
 			return
 		}
@@ -172,7 +172,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	}()
 	go func() {
 		defer wg.Done()
-		manifestBytes, err3 = g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFileManifest)
+		manifestBytes, err3 = g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitOpsBranch, common.GitopsFileManifest)
 		if err3 != nil {
 			return
 		}
@@ -300,7 +300,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 		go func(index int) {
 			defer wg.Done()
 			cases[index].retBytes, cases[index].err = g.gitlabLib.GetFile(ctx, pid,
-				common.GitopsBranchMaster, cases[index].fileName)
+				pkgcommon.GitDefaultBranch, cases[index].fileName)
 			if cases[index].err != nil {
 				log.Warningf(ctx, "get file %s error, err = %s", cases[index].fileName, cases[index].err.Error())
 			}
@@ -367,7 +367,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 
 	// 3. create gitops branch from master
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, params.Application.Name, params.Cluster)
-	if _, err := g.gitlabLib.CreateBranch(ctx, pid, common.GitopsBranchGitops, common.GitopsBranchMaster); err != nil {
+	if _, err := g.gitlabLib.CreateBranch(ctx, pid, pkgcommon.GitOpsBranch, pkgcommon.GitDefaultBranch); err != nil {
 		return err
 	}
 
@@ -475,7 +475,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 		Pipeline:    params.PipelineJSONBlob,
 	})
 
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, pkgcommon.GitOpsBranch, commitMsg, nil, actions); err != nil {
 		return err
 	}
 
@@ -590,7 +590,7 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 		Application: params.ApplicationJSONBlob,
 		Pipeline:    params.PipelineJSONBlob,
 	})
-	if _, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions); err != nil {
+	if _, err := g.gitlabLib.WriteFiles(ctx, pid, pkgcommon.GitOpsBranch, commitMsg, nil, actions); err != nil {
 		return err
 	}
 
@@ -646,7 +646,7 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 
 	var compare *gitlab.Compare
 	if from == nil || to == nil {
-		compare, err = g.gitlabLib.Compare(ctx, pid, common.GitopsBranchMaster, common.GitopsBranchGitops, nil)
+		compare, err = g.gitlabLib.Compare(ctx, pid, pkgcommon.GitDefaultBranch, pkgcommon.GitOpsBranch, nil)
 	} else {
 		compare, err = g.gitlabLib.Compare(ctx, pid, *from, *to, nil)
 	}
@@ -671,11 +671,11 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 	removeSourceBranch := false
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
-	title := fmt.Sprintf("git merge %v, id = %d", common.GitopsBranchGitops, prID)
+	title := fmt.Sprintf("git merge %v, id = %d", pkgcommon.GitOpsBranch, prID)
 
 	var mr *gitlab.MergeRequest
-	mrs, err := g.gitlabLib.ListMRs(ctx, pid, common.GitopsBranchGitops,
-		common.GitopsBranchMaster, common.GitopsMergeRequestStateOpen)
+	mrs, err := g.gitlabLib.ListMRs(ctx, pid, pkgcommon.GitOpsBranch,
+		pkgcommon.GitDefaultBranch, common.GitopsMergeRequestStateOpen)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to list merge requests")
 	}
@@ -688,7 +688,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 		// (source,target), caused we can't merge anymore)
 		if len(mrs) >= 2 {
 			log.Warningf(ctx, "there %d mrs for (src:%s, des:%s), here will kill redundant mrs",
-				len(mrs), common.GitopsBranchGitops, common.GitopsBranchMaster)
+				len(mrs), pkgcommon.GitOpsBranch, pkgcommon.GitDefaultBranch)
 			for i := 1; i < len(mrs); i++ {
 				_, err := g.gitlabLib.CloseMR(ctx, pid, mrs[i].IID)
 				if err != nil {
@@ -698,7 +698,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 		}
 	} else {
 		// create new mr
-		mr, err = g.gitlabLib.CreateMR(ctx, pid, common.GitopsBranchGitops, common.GitopsBranchMaster, title)
+		mr, err = g.gitlabLib.CreateMR(ctx, pid, pkgcommon.GitOpsBranch, pkgcommon.GitDefaultBranch, title)
 		if err != nil {
 			return "", perror.WithMessage(err, "failed to create new merge request")
 		}
@@ -713,7 +713,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 
 func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*pkgcommon.Manifest, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFileManifest)
+	content, err := g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitOpsBranch, common.GitopsFileManifest)
 	if err != nil {
 		return nil, err
 	}
@@ -738,7 +738,7 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 	template string) (interface{}, error) {
 	ret := make(map[string]interface{})
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFilePipelineOutput)
+	content, err := g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitOpsBranch, common.GitopsFilePipelineOutput)
 	if err != nil {
 		return nil, perror.WithMessage(err, "failed to get gitlab file")
 	}
@@ -761,7 +761,7 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 func (g *clusterGitRepo) getPipelineOutput(ctx context.Context,
 	application, cluster string) (map[string]map[string]interface{}, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFilePipelineOutput)
+	content, err := g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitOpsBranch, common.GitopsFilePipelineOutput)
 	if err != nil {
 		return nil, err
 	}
@@ -848,7 +848,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	}, pipelineOutput)
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	commit, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions)
+	commit, err := g.gitlabLib.WriteFiles(ctx, pid, pkgcommon.GitOpsBranch, commitMsg, nil, actions)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to write gitlab files")
 	}
@@ -859,7 +859,7 @@ func (g *clusterGitRepo) GetRestartTime(ctx context.Context, application, cluste
 	template string) (string, error) {
 	ret := make(map[string]map[string]string)
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchMaster, common.GitopsFileRestart)
+	content, err := g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitDefaultBranch, common.GitopsFileRestart)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to get gitlab file")
 	}
@@ -914,7 +914,7 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 	}, nil)
 
 	// update in GitopsBranchMaster directly
-	commit, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchMaster, commitMsg, nil, actions)
+	commit, err := g.gitlabLib.WriteFiles(ctx, pid, pkgcommon.GitDefaultBranch, commitMsg, nil, actions)
 	if err != nil {
 		return "", err
 	}
@@ -935,11 +935,11 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		branchMaster, err1 = g.gitlabLib.GetBranch(ctx, pid, common.GitopsBranchMaster)
+		branchMaster, err1 = g.gitlabLib.GetBranch(ctx, pid, pkgcommon.GitDefaultBranch)
 	}()
 	go func() {
 		defer wg.Done()
-		branchGitops, err2 = g.gitlabLib.GetBranch(ctx, pid, common.GitopsBranchGitops)
+		branchGitops, err2 = g.gitlabLib.GetBranch(ctx, pid, pkgcommon.GitOpsBranch)
 	}()
 	wg.Wait()
 
@@ -974,7 +974,7 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
-	bytes, err := g.gitlabLib.GetFile(ctx, pid, common.GitopsBranchGitops, common.GitopsFileEnv)
+	bytes, err := g.gitlabLib.GetFile(ctx, pid, pkgcommon.GitOpsBranch, common.GitopsFileEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -1063,7 +1063,7 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 		Commit: commit,
 	})
 
-	newCommit, err := g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions)
+	newCommit, err := g.gitlabLib.WriteFiles(ctx, pid, pkgcommon.GitOpsBranch, commitMsg, nil, actions)
 	if err != nil {
 		return "", err
 	}
@@ -1120,7 +1120,7 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 		}(tags),
 	})
 
-	_, err = g.gitlabLib.WriteFiles(ctx, pid, common.GitopsBranchGitops, commitMsg, nil, actions)
+	_, err = g.gitlabLib.WriteFiles(ctx, pid, pkgcommon.GitOpsBranch, commitMsg, nil, actions)
 	if err != nil {
 		return err
 	}

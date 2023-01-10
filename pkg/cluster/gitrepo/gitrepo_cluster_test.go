@@ -15,6 +15,7 @@ import (
 	gitlablibmock "github.com/horizoncd/horizon/mock/lib/gitlab"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	pkgcommon "github.com/horizoncd/horizon/pkg/common"
 	gitlabconfig "github.com/horizoncd/horizon/pkg/config/gitlab"
 	config "github.com/horizoncd/horizon/pkg/config/templaterepo"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
@@ -400,7 +401,7 @@ func TestGetClusterValueFile(t *testing.T) {
 
 	// 1. test gitlab get file error
 	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(),
-		common.GitopsBranchMaster, gomock.Any()).Return(
+		pkgcommon.GitDefaultBranch, gomock.Any()).Return(
 		nil, errors.New("gitlab getFile error")).Times(5)
 	clusterValueFiles, err := clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
 		"app", "cluster")
@@ -408,7 +409,7 @@ func TestGetClusterValueFile(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// 2. test gitlab return ok
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), common.GitopsBranchMaster, gomock.Any()).Return(
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), pkgcommon.GitDefaultBranch, gomock.Any()).Return(
 		[]byte("cluster: xxx"), nil).Times(5)
 	clusterValueFiles, err = clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
 		"app", "cluster")
@@ -416,10 +417,10 @@ func TestGetClusterValueFile(t *testing.T) {
 	assert.NotNil(t, clusterValueFiles)
 
 	// 3. test gitlab return 404
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), common.GitopsBranchMaster, gomock.Any()).Return(
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), pkgcommon.GitDefaultBranch, gomock.Any()).Return(
 		[]byte("cluster: xxx"), nil).Times(4)
 	var herr = herrors.NewErrNotFound(herrors.GitlabResource, "test")
-	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), common.GitopsBranchMaster, gomock.Any()).Return(
+	gitlabmockLib.EXPECT().GetFile(gomock.Any(), gomock.Any(), pkgcommon.GitDefaultBranch, gomock.Any()).Return(
 		nil, herr).Times(1)
 
 	clusterValueFile1, err := clusterGitRepoInstance.GetClusterValueFiles(context.TODO(),
