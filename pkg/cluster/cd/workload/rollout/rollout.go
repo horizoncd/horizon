@@ -93,11 +93,6 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 				continue
 			}
 		}
-		for k, v := range instance.Spec.Template.ObjectMeta.Labels {
-			if pod.Annotations[k] != v {
-				continue
-			}
-		}
 		count++
 	}
 	if count != required {
