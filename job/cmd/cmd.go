@@ -15,7 +15,6 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/config"
 	clusterctl "github.com/horizoncd/horizon/core/controller/cluster"
-	environmentctl "github.com/horizoncd/horizon/core/controller/environment"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
 	"github.com/horizoncd/horizon/core/http/health"
 	ginlogmiddle "github.com/horizoncd/horizon/core/middleware/ginlog"
@@ -147,9 +146,8 @@ func Run(flags *Flags) {
 
 	// init controller
 	var (
-		clusterCtl     = clusterctl.NewController(&config.Config{}, parameter)
-		prCtl          = prctl.NewController(parameter)
-		environmentCtl = environmentctl.NewController(parameter)
+		clusterCtl = clusterctl.NewController(&config.Config{}, parameter)
+		prCtl      = prctl.NewController(parameter)
 	)
 
 	// init kube client
@@ -170,7 +168,7 @@ func Run(flags *Flags) {
 	// automatically release expired clusters
 	go func() {
 		autofree.AutoReleaseExpiredClusterJob(cancellableCtx, &coreConfig.AutoFreeConfig,
-			parameter.UserManager, clusterCtl, prCtl, environmentCtl)
+			parameter.UserManager, clusterCtl, prCtl)
 	}()
 
 	// start event handler service to generate webhook log by events

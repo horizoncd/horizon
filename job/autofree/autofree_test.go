@@ -11,7 +11,6 @@ import (
 	usercommon "github.com/horizoncd/horizon/core/common"
 	coreconfig "github.com/horizoncd/horizon/core/config"
 	clusterctl "github.com/horizoncd/horizon/core/controller/cluster"
-	environmentctl "github.com/horizoncd/horizon/core/controller/environment"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
 	xrequestid "github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -118,7 +117,6 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
 	parameter.PipelinerunMgr = mockPipelineManager
 	clrCtl := clusterctl.NewController(conf, parameter)
-	envCtl := environmentctl.NewController(parameter)
 	prCtl := prctl.NewController(parameter)
 
 	// init data
@@ -126,32 +124,13 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	// User
 	createUser(t)
 
-	// environment
-	devID, err := envCtl.Create(ctx, &environmentctl.CreateEnvironmentRequest{
-		Name:        "dev",
-		DisplayName: "DEV",
-	})
-	assert.Nil(t, err)
-	devEnv, err := envCtl.GetByID(ctx, devID)
-	assert.Nil(t, err)
-	assert.Equal(t, "DEV", devEnv.DisplayName)
-
-	onlineID, err := envCtl.Create(ctx, &environmentctl.CreateEnvironmentRequest{
-		Name:        "online",
-		DisplayName: "ONLINE",
-	})
-	assert.Nil(t, err)
-	onlineEnv, err := envCtl.GetByID(ctx, onlineID)
-	assert.Nil(t, err)
-	assert.Equal(t, "ONLINE", onlineEnv.DisplayName)
-
 	// ListClusterWithExpiry
 	for i := 0; i < 7; i++ {
 		name := "clusterWithExpiry" + strconv.Itoa(i)
 		cluster := &clustermodels.Cluster{
 			ApplicationID:   uint(1),
 			Name:            name,
-			EnvironmentName: devEnv.Name,
+			EnvironmentName: "dev",
 			RegionName:      "hzListClusterWithExpiry",
 			GitURL:          "ssh://git@cloudnative.com:22222/music-cloud-native/horizon/horizon.git",
 			Status:          "",
@@ -161,12 +140,12 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 			},
 		}
 		if i == 3 {
-			cluster.EnvironmentName = onlineEnv.Name
+			cluster.EnvironmentName = "online"
 		}
 		if i == 6 {
 			cluster.UpdatedAt = time.Now()
 		}
-		cluster, err = manager.ClusterMgr.Create(ctx, cluster, nil, nil)
+		cluster, err := manager.ClusterMgr.Create(ctx, cluster, nil, nil)
 		assert.Nil(t, err)
 		assert.NotNil(t, cluster)
 
@@ -216,5 +195,5 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		BatchInterval: 0 * time.Second,
 		BatchSize:     20,
 		SupportedEnvs: []string{"dev"},
-	}, manager.UserManager, clrCtl, prCtl, envCtl)
+	}, manager.UserManager, clrCtl, prCtl)
 }

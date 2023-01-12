@@ -6,7 +6,6 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	clusterctl "github.com/horizoncd/horizon/core/controller/cluster"
-	environmentctl "github.com/horizoncd/horizon/core/controller/environment"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/q"
@@ -18,7 +17,7 @@ import (
 )
 
 func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Manager,
-	clusterCtr clusterctl.Controller, prCtr prctl.Controller, envCtr environmentctl.Controller) {
+	clusterCtr clusterctl.Controller, prCtr prctl.Controller) {
 	// verify account
 	user, err := userMgr.GetUserByID(ctx, jobConfig.AccountID)
 	if err != nil {
@@ -45,7 +44,7 @@ func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Confi
 			// nolint
 			ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
 			log.Infof(ctx, "auto-free job starts to execute, rid: %v", rid)
-			process(ctx, jobConfig, clusterCtr, prCtr, envCtr)
+			process(ctx, jobConfig, clusterCtr, prCtr)
 		case <-ctx.Done():
 			return
 		}
@@ -53,7 +52,7 @@ func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Confi
 }
 
 func process(ctx context.Context, jobConfig *autofree.Config, clusterCtr clusterctl.Controller,
-	prCtr prctl.Controller, envCtr environmentctl.Controller) {
+	prCtr prctl.Controller) {
 	op := "job: cluster auto-free"
 	query := &q.Query{
 		PageNumber: common.DefaultPageNumber,
@@ -96,8 +95,7 @@ func process(ctx context.Context, jobConfig *autofree.Config, clusterCtr cluster
 							clr.EnvironmentName, clr.Name, clr.ExpireSeconds)
 					return false
 				}()
-				environment, err := envCtr.GetByName(ctx, clr.EnvironmentName)
-				if !supported || err != nil || !environment.AutoFree {
+				if !supported || err != nil {
 					return false, err
 				}
 				return true, nil
