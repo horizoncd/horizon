@@ -37,7 +37,8 @@ type (
 	// ArgoCD interact with ArgoCD Server
 	ArgoCD interface {
 		// AssembleArgoApplication assemble application by params
-		AssembleArgoApplication(name, namespace, gitRepoURL, server string, valueFiles []string, targetRevision string) *Application
+		AssembleArgoApplication(name, namespace, gitRepoURL, server string,
+			valueFiles []string, targetRevision string) *Application
 
 		// CreateApplication create an application in argoCD
 		CreateApplication(ctx context.Context, manifest []byte) error
