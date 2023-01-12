@@ -9,6 +9,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
+	"github.com/horizoncd/horizon/pkg/util/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -87,13 +88,16 @@ func (s *service) IsHealthy(node *v1alpha1.ResourceNode,
 	if err != nil {
 		return true, err
 	}
+	log.Debugf(context.TODO(), "[knative service: %v] pods count = %v", instance.Name, len(pods.Items))
 
 	annos := instance.Spec.Template.ObjectMeta.Annotations
 	min, _ := strconv.Atoi(annos["autoscaling.knative.dev/minScale"])
 	max, _ := strconv.Atoi(annos["autoscaling.knative.dev/maxScale"])
+	log.Debugf(context.TODO(), "[knative service: %v] minScale = %v, maxScale = %v", instance.Name, min, max)
 
 	count := 0
 
+OUTTER:
 	for _, pod := range pods.Items {
 		m := make(map[string]string)
 		for _, container := range pod.Spec.Containers {
@@ -102,13 +106,20 @@ func (s *service) IsHealthy(node *v1alpha1.ResourceNode,
 
 		for _, container := range instance.Spec.Template.Spec.Containers {
 			if image := m[container.Name]; image != container.Image {
-				return false, nil
+				log.Debugf(context.TODO(),
+					"[knative service: %v] expect container(%v)'s image = %v, pod(%v) container(%v)'s image = %v",
+					instance.Name, container.Name, image, pod.Name, container.Name, container.Image)
+				continue OUTTER
 			}
 		}
 
 		for k, v := range instance.Spec.Template.ObjectMeta.Annotations {
 			if pod.Annotations[k] != v {
-				continue
+				log.Debugf(context.TODO(),
+					"[knative service: %v] expect annotation(%v) = %v, pod(%v) annotation(%v) = %v",
+					instance.Name, k, v,
+					pod.Name, k, pod.Annotations[k])
+				continue OUTTER
 			}
 		}
 		count++
@@ -116,5 +127,8 @@ func (s *service) IsHealthy(node *v1alpha1.ResourceNode,
 			break
 		}
 	}
+	log.Debugf(context.TODO(),
+		"[knative service: %v] count = %v, min = %v, max = %v",
+		instance.Name, count, min, max)
 	return count >= min && count <= max, nil
 }

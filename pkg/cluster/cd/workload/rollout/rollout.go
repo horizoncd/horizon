@@ -83,6 +83,7 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 	log.Debugf(context.TODO(), "[workload rollout: %v]: required replicas = %v", node.Name, required)
 
 	templateHashSum := computePodSpecHash(instance.Spec.Template.Spec)
+OUTTER:
 	for _, pod := range pods.Items {
 		if pod.Status.Phase != "Running" {
 			log.Debugf(context.TODO(), "[workload rollout: %v]: pod(%v) is not Running", node.Name, pod.Name)
@@ -96,7 +97,7 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 		for k, v := range instance.Spec.Template.ObjectMeta.Annotations {
 			if pod.Annotations[k] != v {
 				log.Debugf(context.TODO(), "[workload rollout: %v]: pod(%v)'s annotation is not matched", node.Name, pod.Name)
-				continue
+				continue OUTTER
 			}
 		}
 		count++
