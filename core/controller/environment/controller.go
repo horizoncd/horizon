@@ -5,6 +5,7 @@ import (
 
 	environmentmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	"github.com/horizoncd/horizon/pkg/environment/models"
+	"github.com/horizoncd/horizon/pkg/environment/service"
 	envregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
 	"github.com/horizoncd/horizon/pkg/param"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
@@ -27,6 +28,7 @@ var _ Controller = (*controller)(nil)
 
 func NewController(param *param.Param) Controller {
 	return &controller{
+		autoFreeSvc:  param.AutoFreeSvc,
 		envMgr:       param.EnvMgr,
 		envRegionMgr: param.EnvRegionMgr,
 		regionMgr:    param.RegionMgr,
@@ -37,6 +39,7 @@ type controller struct {
 	envMgr       environmentmanager.Manager
 	envRegionMgr envregionmanager.Manager
 	regionMgr    regionmanager.Manager
+	autoFreeSvc  *service.AutoFreeSVC
 }
 
 func (c *controller) GetByID(ctx context.Context, id uint) (*Environment, error) {
@@ -45,7 +48,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*Environment, error)
 		return nil, err
 	}
 
-	return ofEnvironmentModel(environment), nil
+	return ofEnvironmentModel(environment, c.autoFreeSvc.WhetherSupported(environment.Name)), nil
 }
 
 func (c *controller) GetByName(ctx context.Context, name string) (*Environment, error) {
@@ -53,14 +56,13 @@ func (c *controller) GetByName(ctx context.Context, name string) (*Environment, 
 	if err != nil {
 		return nil, err
 	}
-	return ofEnvironmentModel(environment), nil
+	return ofEnvironmentModel(environment, c.autoFreeSvc.WhetherSupported(environment.Name)), nil
 }
 
 func (c *controller) Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error) {
 	environment, err := c.envMgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        request.Name,
 		DisplayName: request.DisplayName,
-		AutoFree:    request.AutoFree,
 	})
 	if err != nil {
 		return 0, err
@@ -71,7 +73,6 @@ func (c *controller) Create(ctx context.Context, request *CreateEnvironmentReque
 func (c *controller) UpdateByID(ctx context.Context, id uint, request *UpdateEnvironmentRequest) error {
 	return c.envMgr.UpdateByID(ctx, id, &models.Environment{
 		DisplayName: request.DisplayName,
-		AutoFree:    request.AutoFree,
 	})
 }
 
@@ -81,7 +82,7 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 		return nil, err
 	}
 
-	return ofEnvironmentModels(envs), nil
+	return ofEnvironmentModels(envs, c.autoFreeSvc), nil
 }
 
 func (c *controller) ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (

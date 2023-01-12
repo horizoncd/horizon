@@ -8,6 +8,7 @@ import (
 	clustergitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
+	"github.com/horizoncd/horizon/pkg/environment/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
 	"github.com/horizoncd/horizon/pkg/hook/hook"
@@ -29,6 +30,7 @@ type Param struct {
 
 	OauthManager oauthmanager.Manager
 	// service
+	AutoFreeSvc    *service.AutoFreeSVC
 	MemberService  memberservice.Service
 	ApplicationSvc applicationservice.Service
 	ClusterSvc     clusterservice.Service

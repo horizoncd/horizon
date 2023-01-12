@@ -17,6 +17,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
+	"github.com/horizoncd/horizon/pkg/environment/service"
 	environmentregionmapper "github.com/horizoncd/horizon/pkg/environmentregion/manager"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	grafanaservice "github.com/horizoncd/horizon/pkg/grafana"
@@ -108,6 +109,7 @@ type controller struct {
 	commitGetter         code.GitGetter
 	cd                   cd.CD
 	applicationMgr       appmanager.Manager
+	autoFreeSvc          *service.AutoFreeSVC
 	applicationSvc       applicationservice.Service
 	templateReleaseMgr   trmanager.Manager
 	templateSchemaGetter templateschema.Getter
@@ -145,6 +147,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		applicationSvc:       param.ApplicationSvc,
 		templateReleaseMgr:   param.TemplateReleaseManager,
 		templateSchemaGetter: param.TemplateSchemaGetter,
+		autoFreeSvc:          param.AutoFreeSvc,
 		outputGetter:         param.OutputGetter,
 		envMgr:               param.EnvMgr,
 		envRegionMgr:         param.EnvRegionMgr,

@@ -42,7 +42,6 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, environment *models.Envir
 
 	// set displayName and autoFree
 	environmentInDB.DisplayName = environment.DisplayName
-	environmentInDB.AutoFree = environment.AutoFree
 	res := d.db.WithContext(ctx).Save(&environmentInDB)
 	if res.Error != nil {
 		return herrors.NewErrUpdateFailed(herrors.EnvironmentInDB, res.Error.Error())

@@ -555,6 +555,8 @@ func (c *controller) CreateTemplate(ctx context.Context,
 	}
 	template.ChartName = template.Name
 	template.GroupID = groupID
+	// should always be true
+	template.WithoutCI = true
 
 	template, err = c.templateMgr.Create(ctx, template)
 	if err != nil {
@@ -836,17 +838,18 @@ func (c *controller) getTag(ctx context.Context, repository,
 func (c *controller) checkStatusForReleases(ctx context.Context,
 	template *models.Template, releases []*trmodels.TemplateRelease) []*trmodels.TemplateRelease {
 	var wg sync.WaitGroup
+	res := make([]*trmodels.TemplateRelease, len(releases))
 
-	for i, release := range releases {
-		wg.Add(1)
+	wg.Add(len(releases))
+	for i := range releases {
 		go func(index int, r *trmodels.TemplateRelease) {
-			releases[index], _ = c.checkStatusForRelease(ctx, template, r)
+			res[index], _ = c.checkStatusForRelease(ctx, template, r)
 			wg.Done()
-		}(i, release)
+		}(i, releases[i])
 	}
 	wg.Wait()
 
-	return releases
+	return res
 }
 
 func (c *controller) checkStatusForRelease(ctx context.Context,

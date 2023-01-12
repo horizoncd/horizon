@@ -9,7 +9,6 @@ type Environment struct {
 
 	Name        string
 	DisplayName string
-	AutoFree    bool
 	CreatedBy   uint
 	UpdatedBy   uint
 }

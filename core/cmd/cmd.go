@@ -89,6 +89,7 @@ import (
 	"github.com/horizoncd/horizon/core/middleware/auth"
 	logmiddle "github.com/horizoncd/horizon/core/middleware/log"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/pkg/environment/service"
 
 	"github.com/horizoncd/horizon/core/http/api/v1/event"
 	templateschematagapi "github.com/horizoncd/horizon/core/http/api/v1/templateschematag"
@@ -378,6 +379,8 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
+	autoFreeSvc := service.New(coreConfig.AutoFreeConfig.SupportedEnvs)
+
 	// init build schema controller
 	readJSONFileFunc := func(filePath string) map[string]interface{} {
 		fileFd, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
@@ -417,6 +420,7 @@ func Run(flags *Flags) {
 	parameter := &param.Param{
 		Manager:              manager,
 		OauthManager:         oauthManager,
+		AutoFreeSvc:          autoFreeSvc,
 		MemberService:        mservice,
 		ApplicationSvc:       applicationSvc,
 		ClusterSvc:           clusterSvc,
