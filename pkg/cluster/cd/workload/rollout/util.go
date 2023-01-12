@@ -65,6 +65,5 @@ func computePodSpecHash(spec corev1.PodSpec) string {
 	}
 	rolloutSpecHasher := fnv.New32a()
 	_ = gob.NewEncoder(rolloutSpecHasher).Encode(fields)
-	fmt.Printf("%#v", fields)
 	return rand.SafeEncodeString(fmt.Sprint(rolloutSpecHasher.Sum32()))
 }
