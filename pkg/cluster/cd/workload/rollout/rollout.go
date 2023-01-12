@@ -10,6 +10,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
+	"github.com/horizoncd/horizon/pkg/util/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -72,34 +73,43 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 	if err != nil {
 		return true, err
 	}
+	log.Debugf(context.TODO(), "[workload rollout: %v]: list pods: count = %v", node.Name, len(pods.Items))
 
 	count := 0
 	required := 0
 	if instance.Spec.Replicas != nil {
 		required = int(*instance.Spec.Replicas)
 	}
+	log.Debugf(context.TODO(), "[workload rollout: %v]: required replicas = %v", node.Name, required)
 
 	templateHashSum := computePodSpecHash(instance.Spec.Template.Spec)
 	for _, pod := range pods.Items {
 		if pod.Status.Phase != "Running" {
+			log.Debugf(context.TODO(), "[workload rollout: %v]: pod(%v) is not Running", node.Name, pod.Name)
 			continue
 		}
 		hashSum := computePodSpecHash(pod.Spec)
 		if templateHashSum != hashSum {
+			log.Debugf(context.TODO(), "[workload rollout: %v]: pod(%v)'s hash is not matched", node.Name, pod.Name)
 			continue
 		}
 		for k, v := range instance.Spec.Template.ObjectMeta.Annotations {
 			if pod.Annotations[k] != v {
+				log.Debugf(context.TODO(), "[workload rollout: %v]: pod(%v)'s annotation is not matched", node.Name, pod.Name)
 				continue
 			}
 		}
 		count++
 	}
 	if count != required {
+		log.Debugf(context.TODO(), "[workload rollout: %v]: required %v, has %v", node.Name, required, count)
 		return false, nil
 	}
 
 	if instance.Status.CurrentStepIndex != nil {
+		log.Debugf(context.TODO(),
+			"[workload rollout: %v]: current step = %v, total steps = %v",
+			node.Name, *instance.Status.CurrentStepIndex, instance.Spec.Strategy.Canary.Steps)
 		return int(*instance.Status.CurrentStepIndex) == len(instance.Spec.Strategy.Canary.Steps), nil
 	}
 	return true, nil
