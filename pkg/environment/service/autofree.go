@@ -14,7 +14,7 @@ func New(envsWithAutoFreeArr []string) *AutoFreeSVC {
 	}
 }
 
-func (s *AutoFreeSVC) IsAutoFree(env string) bool {
+func (s *AutoFreeSVC) WhetherSupported(env string) bool {
 	_, ok := s.envsWithAutoFree[env]
 	return ok
 }

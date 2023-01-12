@@ -22,7 +22,7 @@ type Environments []*Environment
 func ofEnvironmentModels(envs []*models.Environment, autoFreeSvc *service.AutoFreeSVC) Environments {
 	environments := make(Environments, 0)
 	for _, env := range envs {
-		environments = append(environments, ofEnvironmentModel(env, autoFreeSvc.IsAutoFree(env.Name)))
+		environments = append(environments, ofEnvironmentModel(env, autoFreeSvc.WhetherSupported(env.Name)))
 	}
 	return environments
 }

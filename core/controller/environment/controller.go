@@ -48,7 +48,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*Environment, error)
 		return nil, err
 	}
 
-	return ofEnvironmentModel(environment, c.autoFreeSvc.IsAutoFree(environment.Name)), nil
+	return ofEnvironmentModel(environment, c.autoFreeSvc.WhetherSupported(environment.Name)), nil
 }
 
 func (c *controller) GetByName(ctx context.Context, name string) (*Environment, error) {
@@ -56,7 +56,7 @@ func (c *controller) GetByName(ctx context.Context, name string) (*Environment, 
 	if err != nil {
 		return nil, err
 	}
-	return ofEnvironmentModel(environment, c.autoFreeSvc.IsAutoFree(environment.Name)), nil
+	return ofEnvironmentModel(environment, c.autoFreeSvc.WhetherSupported(environment.Name)), nil
 }
 
 func (c *controller) Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error) {
