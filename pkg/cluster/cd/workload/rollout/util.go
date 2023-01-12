@@ -45,7 +45,6 @@ func assignContainers(containers []corev1.Container) []corev1.Container {
 			Command:    container.Command,
 			Args:       container.Args,
 			WorkingDir: container.WorkingDir,
-			Ports:      container.Ports,
 		}
 		for _, env := range container.Env {
 			ctr.Env = append(ctr.Env, corev1.EnvVar{
