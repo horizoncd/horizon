@@ -141,7 +141,7 @@ func Run(flags *Flags) {
 
 	parameter := &param.Param{
 		Manager: manager,
-		Cd:      cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper),
+		Cd:      cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper, flags.GitOpsRepoDefaultBranch),
 	}
 
 	// init controller

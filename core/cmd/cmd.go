@@ -430,7 +430,7 @@ func Run(flags *Flags) {
 		ScopeService:         scopeService,
 		ApplicationGitRepo:   applicationGitRepo,
 		TemplateSchemaGetter: templateSchemaGetter,
-		Cd:                   cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper),
+		Cd:                   cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper, flags.GitOpsRepoDefaultBranch),
 		OutputGetter:         outputGetter,
 		TektonFty:            tektonFty,
 		ClusterGitRepo:       clusterGitRepo,

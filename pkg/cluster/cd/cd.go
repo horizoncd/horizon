@@ -110,13 +110,15 @@ type cd struct {
 	kubeClientFty  kubeclient.Factory
 	factory        argocd.Factory
 	clusterGitRepo gitrepo.ClusterGitRepo
+	targetRevision string
 }
 
-func NewCD(clusterGitRepo gitrepo.ClusterGitRepo, argoCDMapper argocdconf.Mapper) CD {
+func NewCD(clusterGitRepo gitrepo.ClusterGitRepo, argoCDMapper argocdconf.Mapper, targetRevision string) CD {
 	return &cd{
 		kubeClientFty:  kubeclient.Fty,
 		factory:        argocd.NewFactory(argoCDMapper),
 		clusterGitRepo: clusterGitRepo,
+		targetRevision: targetRevision,
 	}
 }
 
@@ -138,7 +140,7 @@ func (c *cd) CreateCluster(ctx context.Context, params *CreateClusterParams) (er
 		return err
 	}
 	var argoApplication = argo.AssembleArgoApplication(params.Cluster, params.Namespace,
-		params.GitRepoURL, params.RegionEntity.Server, params.ValueFiles)
+		params.GitRepoURL, params.RegionEntity.Server, params.ValueFiles, c.targetRevision)
 
 	manifest, err := json.Marshal(argoApplication)
 	if err != nil {

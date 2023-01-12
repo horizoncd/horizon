@@ -37,7 +37,7 @@ type (
 	// ArgoCD interact with ArgoCD Server
 	ArgoCD interface {
 		// AssembleArgoApplication assemble application by params
-		AssembleArgoApplication(name, namespace, gitRepoURL, server string, valueFiles []string) *Application
+		AssembleArgoApplication(name, namespace, gitRepoURL, server string, valueFiles []string, targetRevision string) *Application
 
 		// CreateApplication create an application in argoCD
 		CreateApplication(ctx context.Context, manifest []byte) error
@@ -183,7 +183,8 @@ var (
 	}
 )
 
-func (h *helper) AssembleArgoApplication(name, namespace, gitRepoURL, server string, valueFiles []string) *Application {
+func (h *helper) AssembleArgoApplication(name, namespace, gitRepoURL, server string,
+	valueFiles []string, targetRevision string) *Application {
 	const finalizer = "resources-finalizer.argocd.argoproj.io"
 	const apiVersion = "argoproj.io/v1alpha1"
 	const kind = "Application"
@@ -201,7 +202,7 @@ func (h *helper) AssembleArgoApplication(name, namespace, gitRepoURL, server str
 			Source: ApplicationSource{
 				RepoURL:        gitRepoURL,
 				Path:           ".",
-				TargetRevision: "master",
+				TargetRevision: targetRevision,
 				Helm: &ApplicationSourceHelm{
 					ValueFiles: valueFiles,
 				},
