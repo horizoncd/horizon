@@ -1,15 +1,14 @@
 package accesstoken
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 
 	"github.com/horizoncd/horizon/core/common"
 	herror "github.com/horizoncd/horizon/core/errors"
@@ -20,9 +19,6 @@ import (
 	membermanager "github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
-	"github.com/horizoncd/horizon/pkg/oauth/generate"
-	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
-	oauthmodels "github.com/horizoncd/horizon/pkg/oauth/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
@@ -44,7 +40,8 @@ type Controller interface {
 type controller struct {
 	userMgr        usermanager.Manager
 	accessTokenMgr accesstokenmanager.Manager
-	oauthMgr       oauthmanager.Manager
+	tokenMgr       tokenmanager.Manager
+	tokenSvc       tokenservice.Service
 	memberSvc      memberservice.Service
 	memberMgr      membermanager.Manager
 }
@@ -53,7 +50,8 @@ func NewController(param *param.Param) Controller {
 	return &controller{
 		userMgr:        param.UserManager,
 		accessTokenMgr: param.AccessTokenManager,
-		oauthMgr:       param.OauthManager,
+		tokenMgr:       param.TokenManager,
+		tokenSvc:       param.TokenSvc,
 		memberSvc:      param.MemberService,
 		memberMgr:      param.MemberManager,
 	}
@@ -84,11 +82,8 @@ func (c *controller) CreateResourceAccessToken(ctx context.Context, request Crea
 	}
 	userID = robot.ID
 
-	token, err := generateToken(request.Name, request.ExpiresAt, userID, request.Scopes)
-	if err != nil {
-		return nil, err
-	}
-	token, err = c.accessTokenMgr.CreateAccessToken(ctx, token)
+	token, err := c.tokenSvc.CreateAccessToken(ctx, request.Name,
+		request.ExpiresAt, userID, request.Scopes)
 	if err != nil {
 		return nil, err
 	}
@@ -129,13 +124,8 @@ func (c *controller) CreatePersonalAccessToken(ctx context.Context,
 		return nil, err
 	}
 
-	token, err := generateToken(request.Name, request.ExpiresAt,
+	token, err := c.tokenSvc.CreateAccessToken(ctx, request.Name, request.ExpiresAt,
 		currentUser.GetID(), request.Scopes)
-	if err != nil {
-		return nil, err
-	}
-
-	token, err = c.accessTokenMgr.CreateAccessToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +224,7 @@ func (c *controller) ListResourceAccessTokens(ctx context.Context, resourceType 
 }
 
 func (c *controller) RevokePersonalAccessToken(ctx context.Context, id uint) error {
-	token, err := c.accessTokenMgr.GetAccessToken(ctx, id)
+	token, err := c.tokenMgr.LoadTokenByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -259,11 +249,11 @@ func (c *controller) RevokePersonalAccessToken(ctx context.Context, id uint) err
 	}
 
 	// 2. delete token
-	return c.accessTokenMgr.DeleteAccessToken(ctx, id)
+	return c.tokenMgr.RevokeTokenByID(ctx, id)
 }
 
 func (c *controller) RevokeResourceAccessToken(ctx context.Context, id uint) error {
-	token, err := c.accessTokenMgr.GetAccessToken(ctx, id)
+	token, err := c.tokenMgr.LoadTokenByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -308,7 +298,7 @@ func (c *controller) RevokeResourceAccessToken(ctx context.Context, id uint) err
 	}
 
 	// 2. delete token
-	if err := c.accessTokenMgr.DeleteAccessToken(ctx, id); err != nil {
+	if err := c.tokenMgr.RevokeTokenByID(ctx, id); err != nil {
 		return err
 	}
 
@@ -326,37 +316,6 @@ func generateRobot(token, resourceType string, resourceID uint) *usermodels.User
 		Email:    email,
 		UserType: usermodels.UserTypeRobot,
 	}
-}
-
-func generateCode(userID uint) string {
-	buf := bytes.NewBufferString(time.Now().String())
-	buf.WriteString(strconv.Itoa(int(userID)))
-	code := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))
-	code = generate.AccessTokenPrefix + strings.ToUpper(strings.TrimRight(code, "="))
-	return code
-}
-
-func generateToken(name, expiresAtStr string, userID uint, scopes []string) (*oauthmodels.Token, error) {
-	createdAt := time.Now()
-	expiredIn := time.Duration(0)
-	if expiresAtStr != NeverExpire {
-		expiredAt, err := time.Parse(ExpiresAtFormat, expiresAtStr)
-		if err != nil {
-			return nil, perror.Wrapf(herror.ErrParamInvalid, "invalid expiration time, error: %s", err.Error())
-		}
-		if !expiredAt.After(createdAt) {
-			return nil, perror.Wrap(herror.ErrParamInvalid, "expiration time must be later than current time")
-		}
-		expiredIn = expiredAt.Sub(createdAt)
-	}
-	return &oauthmodels.Token{
-		Name:      name,
-		Code:      generateCode(userID),
-		Scope:     strings.Join(scopes, " "),
-		CreatedAt: createdAt,
-		ExpiresIn: expiredIn,
-		UserID:    userID,
-	}, nil
 }
 
 func parseExpiredAt(startTime time.Time, expiresIn time.Duration) string {

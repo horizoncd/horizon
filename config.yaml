@@ -87,3 +87,7 @@ oauth:
   authorizeCodeExpireIn: 10m
   accessTokenExpireIn: 24h
 
+tokenConfig:
+  jwtSigningKey: ""
+  callbackTokenExpireIn: 2h
+

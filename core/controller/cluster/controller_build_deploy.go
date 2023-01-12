@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/git"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	tokensvc "github.com/horizoncd/horizon/pkg/token/service"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 
@@ -64,7 +66,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 1. update image in git repo
+	// 1. assemble artifact imageURL
 	imageURL := assembleImageURL(regionEntity, application.Name, cluster.Name, gitRef, commit.ID)
 
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
@@ -92,7 +94,14 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 3. create pipelinerun in k8s
+	// 3. generate a JWT token for tekton callback
+	token, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(currentUser.GetID())),
+		c.tokenConfig.CallbackTokenExpireIn, tokensvc.WithPipelinerunID(prCreated.ID))
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. create pipelinerun in k8s
 	tektonClient, err := c.tektonFty.GetTekton(cluster.EnvironmentName)
 	if err != nil {
 		return nil, err
@@ -134,6 +143,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		Region:           cluster.RegionName,
 		RegionID:         regionEntity.ID,
 		Template:         cluster.Template,
+		Token:            token,
 	})
 	if err != nil {
 		return nil, err

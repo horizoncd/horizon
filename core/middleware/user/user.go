@@ -48,6 +48,7 @@ const (
 func Middleware(param *param.Param, store sessions.Store,
 	config *coreconfig.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
+		// 1. aksk auth if operator header exists
 		user, err := akskAuthn(c, config.AccessSecretKeys, param.UserManager)
 		if err != nil {
 			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(err.Error()))
@@ -116,7 +117,6 @@ func akskAuthn(c *gin.Context, keys authenticate.KeysConfig, userMgr usermanager
 	r := c.Request
 	log.Infof(c, "request url path: %v", r.URL)
 
-	// no operator header, skip this middleware
 	operator := r.Header.Get(HTTPHeaderOperator)
 	if operator == "" {
 		return nil, nil

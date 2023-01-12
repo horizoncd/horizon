@@ -3,30 +3,54 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
+	usermodel "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
-func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,
-	r interface{}) (_ *InternalDeployResponse, err error) {
+func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
+	r *InternalDeployRequestV2) (_ *InternalDeployResponseV2, err error) {
 	const op = "cluster controller: internal deploy v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
+	// auth jwt token
+	claims, user, err := c.retrieveClaimsAndUser(ctx)
+	if err != nil {
+		return nil, perror.Wrapf(herrors.ErrTokenInvalid, "%v", err.Error())
+	}
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:     user.Name,
+		FullName: user.FullName,
+		ID:       user.ID,
+		Email:    user.Email,
+		Admin:    user.Admin,
+	})
+
+	// auth prID
+	if claims.PipelinerunID == nil ||
+		*claims.PipelinerunID != r.PipelinerunID {
+		return nil, perror.Wrapf(herrors.ErrForbidden,
+			"no permission to deploy with pipelineID = %v", r.PipelinerunID)
+	}
+
 	// 1. get pr, and do some validate
-	pr, err := c.pipelinerunMgr.GetByID(ctx, pipelinerunID)
+	pr, err := c.pipelinerunMgr.GetByID(ctx, r.PipelinerunID)
 	if err != nil {
 		return nil, err
 	}
 	if pr == nil || pr.ClusterID != clusterID {
 		return nil, herrors.NewErrNotFound(herrors.Pipelinerun,
-			fmt.Sprintf("cannot find the pipelinerun with id: %v", pipelinerunID))
+			fmt.Sprintf("cannot find the pipelinerun with id: %v", r.PipelinerunID))
 	}
 
 	// 2. get some relevant models
@@ -44,9 +68,9 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipel
 	if err != nil {
 		return nil, err
 	}
-	log.Infof(ctx, "pipeline %v output content: %v", pipelinerunID, r)
+	log.Infof(ctx, "pipeline %v output content: %+v", r.PipelinerunID, r.Output)
 	commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
-		tr.ChartName, r)
+		tr.ChartName, r.Output)
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}
@@ -133,8 +157,45 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint, pipel
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
-	return &InternalDeployResponse{
+	return &InternalDeployResponseV2{
 		PipelinerunID: pr.ID,
 		Commit:        commit,
 	}, nil
+}
+
+func (c *controller) retrieveClaimsAndUser(ctx context.Context) (*tokenservice.Claims, *usermodel.User, error) {
+	jwtTokenString, err := common.JWTTokenStringFromContext(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	claims, err := c.tokenSvc.ParseJWTToken(jwtTokenString)
+	if err != nil {
+		return nil, nil, err
+	}
+	userID, err := strconv.ParseUint(claims.Subject, 10, 64)
+	if err != nil {
+		return nil, nil, err
+	}
+	user, err := c.userManager.GetUserByID(ctx, uint(userID))
+	if err != nil {
+		return nil, nil, err
+	}
+	return &claims, user, nil
+}
+
+func (c *controller) InternalGetClusterStatus(ctx context.Context,
+	clusterID uint) (_ *GetClusterStatusResponse, err error) {
+	// auth jwt token
+	_, user, err := c.retrieveClaimsAndUser(ctx)
+	if err != nil {
+		return nil, perror.Wrapf(herrors.ErrTokenInvalid, "%v", err.Error())
+	}
+	ctx = common.WithContext(ctx, &userauth.DefaultInfo{
+		Name:     user.Name,
+		FullName: user.FullName,
+		ID:       user.ID,
+		Email:    user.Email,
+		Admin:    user.Admin,
+	})
+	return c.GetClusterStatus(ctx, clusterID)
 }

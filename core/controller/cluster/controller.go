@@ -16,6 +16,7 @@ import (
 	registryfty "github.com/horizoncd/horizon/pkg/cluster/registry/factory"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
+	"github.com/horizoncd/horizon/pkg/config/token"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	environmentregionmapper "github.com/horizoncd/horizon/pkg/environmentregion/manager"
@@ -33,6 +34,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterelease/output"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	templateschematagmanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usersvc "github.com/horizoncd/horizon/pkg/user/service"
 )
@@ -94,8 +96,9 @@ type Controller interface {
 	GetClusterV2(ctx context.Context, clusterID uint) (*GetClusterResponseV2, error)
 	UpdateClusterV2(ctx context.Context, clusterID uint, r *UpdateClusterRequestV2, mergePatch bool) error
 	// InternalDeployV2 deploy only used by internal system
-	InternalDeployV2(ctx context.Context, clusterID uint, pipelinerunID uint,
-		r interface{}) (_ *InternalDeployResponse, err error)
+	InternalDeployV2(ctx context.Context, clusterID uint,
+		r *InternalDeployRequestV2) (_ *InternalDeployResponseV2, err error)
+	InternalGetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
 	GetClusterStatusV2(ctx context.Context, clusterID uint) (_ *StatusResponseV2, err error)
 	GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error)
 	GetResourceTree(ctx context.Context, clusterID uint) (*GetResourceTreeResponse, error)
@@ -132,6 +135,8 @@ type controller struct {
 	grafanaConfig        grafana.Config
 	buildSchema          *build.Schema
 	eventMgr             eventmanager.Manager
+	tokenSvc             tokenservice.Service
+	tokenConfig          token.Config
 }
 
 var _ Controller = (*controller)(nil)
@@ -167,5 +172,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		grafanaConfig:        config.GrafanaConfig,
 		buildSchema:          param.BuildSchema,
 		eventMgr:             param.EventManager,
+		tokenSvc:             param.TokenSvc,
+		tokenConfig:          config.TokenConfig,
 	}
 }

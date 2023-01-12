@@ -206,6 +206,7 @@ var (
 	ErrFailedToGetORM       = errors.New("cannot get the ORM from context")
 	ErrFailedToGetUser      = errors.New("cannot get user from context")
 	ErrFailedToGetRequestID = errors.New("cannot get the requestID from context")
+	ErrFailedToGetJWTToken  = errors.New("cannot get the jwt token from context")
 
 	ErrKubeDynamicCliResponseNotOK = errors.New("response for kube dynamic cli is not 200 OK")
 	ErrKubeExecFailed              = errors.New("kube exec failed")
@@ -276,4 +277,7 @@ var (
 	ErrTopResourceNotFound  = errors.New("top resource in resource tree not found")
 
 	ErrNotSupport = errors.New("not support")
+
+	// token
+	ErrTokenInvalid = errors.New("token is invalid")
 )

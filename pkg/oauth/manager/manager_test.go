@@ -11,9 +11,12 @@ import (
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/oauth/generate"
+	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
 	"github.com/horizoncd/horizon/pkg/oauth/models"
-	"github.com/horizoncd/horizon/pkg/oauth/store"
+	"github.com/horizoncd/horizon/pkg/token/generator"
+	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
+	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
+	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -21,11 +24,12 @@ import (
 )
 
 var (
-	db            *gorm.DB
-	tokenStore    store.TokenStore
-	oauthAppStore store.OauthAppStore
-	oauthManager  Manager
-	aUser         userauth.User = &userauth.DefaultInfo{
+	db           *gorm.DB
+	tokenStorage tokenstorage.Storage
+	oauthAppDAO  oauthdao.DAO
+	oauthManager Manager
+	tokenManager tokenmanager.Manager
+	aUser        userauth.User = &userauth.DefaultInfo{
 		Name:     "alias",
 		FullName: "alias",
 		ID:       32,
@@ -38,7 +42,7 @@ var (
 	accessTokenExpireIn   = time.Hour * 24
 )
 
-func CheckOAuthApp(req *CreateOAuthAppReq, app *models.OauthApp) bool {
+func checkOAuthApp(req *CreateOAuthAppReq, app *models.OauthApp) bool {
 	if (req.Name == app.Name) && (req.RedirectURI == app.RedirectURL) &&
 		(req.HomeURL == app.HomeURL) && (req.Desc == app.Desc) &&
 		(req.OwnerType == app.OwnerType) && (req.OwnerID == app.OwnerID) &&
@@ -61,7 +65,7 @@ func TestOauthAppBasic(t *testing.T) {
 	oauthApp, err := oauthManager.CreateOauthApp(ctx, createReq)
 	assert.Nil(t, err)
 	assert.NotNil(t, oauthApp)
-	assert.True(t, CheckOAuthApp(createReq, oauthApp))
+	assert.True(t, checkOAuthApp(createReq, oauthApp))
 
 	oauthRetApp, err := oauthManager.GetOAuthApp(ctx, oauthApp.ClientID)
 	assert.Nil(t, err)
@@ -109,7 +113,7 @@ func TestClientSecretBasic(t *testing.T) {
 	oauthApp, err := oauthManager.CreateOauthApp(ctx, createReq)
 	assert.Nil(t, err)
 	assert.NotNil(t, oauthApp)
-	assert.True(t, CheckOAuthApp(createReq, oauthApp))
+	assert.True(t, checkOAuthApp(createReq, oauthApp))
 
 	defer func() {
 		err = oauthManager.DeleteOAuthApp(ctx, oauthApp.ClientID)
@@ -141,7 +145,7 @@ func TestClientSecretBasic(t *testing.T) {
 		}
 	}
 }
-func checkAuthorizeToken(req *AuthorizeGenerateRequest, token *models.Token) bool {
+func checkAuthorizeToken(req *AuthorizeGenerateRequest, token *tokenmodels.Token) bool {
 	if req.ClientID == token.ClientID &&
 		req.Scope == token.Scope &&
 		req.RedirectURL == token.RedirectURI &&
@@ -152,7 +156,8 @@ func checkAuthorizeToken(req *AuthorizeGenerateRequest, token *models.Token) boo
 	return false
 }
 
-func checkAccessToken(codeReq *AuthorizeGenerateRequest, req *AccessTokenGenerateRequest, token *models.Token) bool {
+func checkAccessToken(codeReq *AuthorizeGenerateRequest,
+	req *AccessTokenGenerateRequest, token *tokenmodels.Token) bool {
 	if token.Code != req.Code &&
 		token.ClientID == req.ClientID &&
 		token.RedirectURI == req.RedirectURL &&
@@ -177,7 +182,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 	oauthApp, err := oauthManager.CreateOauthApp(ctx, createReq)
 	assert.Nil(t, err)
 	assert.NotNil(t, oauthApp)
-	assert.True(t, CheckOAuthApp(createReq, oauthApp))
+	assert.True(t, checkOAuthApp(createReq, oauthApp))
 
 	defer func() {
 		err = oauthManager.DeleteOAuthApp(ctx, oauthApp.ClientID)
@@ -214,7 +219,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 		RedirectURL:  codeToken.RedirectURI,
 		Request:      nil,
 	}
-	accessCodeGen := generate.NewHorizonAppUserToServerAccessGenerate()
+	accessCodeGen := generator.NewHorizonAppUserToServerAccessGenerator()
 
 	case1Request := *accessTokenRequest
 	case1Request.ClientSecret = "err-secret"
@@ -280,7 +285,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 	assert.NotNil(t, accessToken)
 	assert.True(t, checkAccessToken(authorizaGenerateReq2, &case6Request, accessToken))
 
-	returnToken, err := oauthManager.LoadAccessToken(ctx, accessToken.Code)
+	returnToken, err := tokenManager.LoadTokenByCode(ctx, accessToken.Code)
 	assert.Nil(t, err)
 	// assert.NotNil(t, returnToken)
 	// assert.Equal(t, returnToken, accessToken)
@@ -288,8 +293,8 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 	returnToken.CreatedAt = accessToken.CreatedAt
 	assert.True(t, reflect.DeepEqual(returnToken, accessToken))
 
-	assert.Nil(t, oauthManager.RevokeAllAccessToken(ctx, accessToken.ClientID))
-	_, err = oauthManager.LoadAccessToken(ctx, accessToken.Code)
+	assert.Nil(t, tokenManager.RevokeTokenByClientID(ctx, accessToken.ClientID))
+	_, err = tokenManager.LoadTokenByCode(ctx, accessToken.Code)
 	assert.NotNil(t, err)
 	if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 		assert.Fail(t, "error is not found")
@@ -298,16 +303,16 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	db, _ = orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&models.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
+	if err := db.AutoMigrate(&tokenmodels.Token{}, &models.OauthApp{}, &models.OauthClientSecret{}); err != nil {
 		panic(err)
 	}
 	db = db.WithContext(context.WithValue(context.Background(), common.UserContextKey(), aUser))
 	callbacks.RegisterCustomCallbacks(db)
 
-	tokenStore = store.NewTokenStore(db)
-	oauthAppStore = store.NewOauthAppStore(db)
-	oauthManager = NewManager(oauthAppStore, tokenStore, generate.NewAuthorizeGenerate(),
+	tokenStorage = tokenstorage.NewStorage(db)
+	oauthAppDAO = oauthdao.NewDAO(db)
+	oauthManager = NewManager(oauthAppDAO, tokenStorage, generator.NewOauthAccessGenerator(),
 		authorizeCodeExpireIn, accessTokenExpireIn)
-
+	tokenManager = tokenmanager.New(db)
 	os.Exit(m.Run())
 }

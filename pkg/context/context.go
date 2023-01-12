@@ -15,3 +15,5 @@ var TemplateListSelfOnly = &contextKey{}
 var TemplateListRecursively = &contextKey{}
 
 var ReleaseSyncToRepo = &contextKey{}
+
+var JWTTokenString = &contextKey{}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -36,6 +37,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
 	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
+	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
 	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
@@ -58,6 +60,8 @@ import (
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	gitlabschema "github.com/horizoncd/horizon/pkg/templaterelease/schema/gitlab"
 	tagmodel "github.com/horizoncd/horizon/pkg/templateschematag/models"
+	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
 	v1 "k8s.io/api/core/v1"
@@ -431,7 +435,8 @@ func TestMain(m *testing.M) {
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&registrymodels.Registry{}, eventmodels.Event{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{}, &eventmodels.Event{},
-		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &envmodels.Environment{}); err != nil {
+		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{},
+		&envmodels.Environment{}, &tokenmodels.Token{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -622,6 +627,10 @@ func test(t *testing.T) {
 		tagMgr:               tagManager,
 		applicationGitRepo:   applicationGitRepo,
 		eventMgr:             manager.EventManager,
+		tokenSvc: tokenservice.NewService(manager, tokenconfig.Config{
+			JwtSigningKey:         "horizon",
+			CallbackTokenExpireIn: time.Hour * 2,
+		}),
 	}
 
 	commitGetter.EXPECT().GetHTTPLink(gomock.Any()).Return("https://cloudnative.com:22222/demo/springboot-demo", nil).AnyTimes()
@@ -826,9 +835,36 @@ func test(t *testing.T) {
 	t.Logf("%v", string(b))
 
 	// v2
-	internalDeployResp, err = c.InternalDeployV2(ctx, resp.ID, buildDeployResp.PipelinerunID, nil)
+	// InternalDeployV2 needs a new context with jwt token string
+	user, err := common.UserFromContext(ctx)
 	assert.Nil(t, err)
-	b, _ = json.Marshal(internalDeployResp)
+	_, err = c.userManager.Create(ctx, &usermodels.User{
+		Name: user.GetName(),
+	})
+	assert.Nil(t, err)
+	token, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(user.GetID())), time.Hour,
+		tokenservice.WithPipelinerunID(buildDeployResp.PipelinerunID))
+	assert.Nil(t, err)
+	newCtx := common.WithContextJWTTokenString(ctx, token)
+
+	clusterGitRepo.EXPECT().UpdatePipelineOutput(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
+	clusterGitRepo.EXPECT().MergeBranch(gomock.Any(), gomock.Any(), gomock.Any(),
+		gomock.Any()).Return("newest-commit", nil).AnyTimes()
+	clusterGitRepo.EXPECT().GetRepoInfo(gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
+		GitRepoURL: "ssh://xxxx.git",
+		ValueFiles: []string{"file1", "file2"},
+	}).AnyTimes()
+	clusterGitRepo.EXPECT().GetEnvValue(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.EnvValue{
+		Namespace: "test-1",
+	}, nil).AnyTimes()
+	cd.EXPECT().CreateCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	cd.EXPECT().DeployCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	internalDeployRespV2, err := c.InternalDeployV2(newCtx, resp.ID, &InternalDeployRequestV2{
+		PipelinerunID: buildDeployResp.PipelinerunID,
+		Output:        nil,
+	})
+	assert.Nil(t, err)
+	b, _ = json.Marshal(internalDeployRespV2)
 	t.Logf("%v", string(b))
 
 	clusterStatusResp, err := c.GetClusterStatus(ctx, resp.ID)

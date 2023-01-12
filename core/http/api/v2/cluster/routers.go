@@ -150,8 +150,13 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 	internalV2Routes := route.Routes{
 		{
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/:%v/deploy/:%v", common.ParamClusterID, common.ParamPipelinerunID),
+			Pattern:     fmt.Sprintf("/:%v/deploy", common.ParamClusterID),
 			HandlerFunc: api.InternalDeploy,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     fmt.Sprintf("/:%v/status", common.ParamClusterID),
+			HandlerFunc: api.InternalClusterStatus,
 		},
 	}
 

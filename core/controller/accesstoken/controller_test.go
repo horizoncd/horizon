@@ -7,6 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/horizoncd/horizon/pkg/config/token"
+	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
+	"github.com/horizoncd/horizon/pkg/token/generator"
+	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
+	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -18,10 +24,7 @@ import (
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
-	"github.com/horizoncd/horizon/pkg/oauth/generate"
 	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
-	oauthmodels "github.com/horizoncd/horizon/pkg/oauth/models"
-	"github.com/horizoncd/horizon/pkg/oauth/store"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
@@ -62,7 +65,7 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(
 		&usermodels.User{},
 		&membermodels.Member{},
-		&oauthmodels.Token{},
+		&tokenmodels.Token{},
 		&groupmodels.Group{},
 		&applicationmodels.Application{},
 	); err != nil {
@@ -77,13 +80,14 @@ func TestMain(m *testing.M) {
 	authorizeCodeExpireIn := time.Second * 3
 	accessTokenExpireIn := time.Hour * 24
 
-	tokenStore := store.NewTokenStore(db)
-	oauthAppStore := store.NewOauthAppStore(db)
-	oauthMgr := oauthmanager.NewManager(oauthAppStore, tokenStore,
-		generate.NewAuthorizeGenerate(), authorizeCodeExpireIn, accessTokenExpireIn)
+	tokenStorage := tokenstorage.NewStorage(db)
+	oauthAppDAO := oauthdao.NewDAO(db)
+	oauthMgr := oauthmanager.NewManager(oauthAppDAO, tokenStorage,
+		generator.NewAuthorizeGenerator(), authorizeCodeExpireIn, accessTokenExpireIn)
 
-	param := &param.Param{
+	parameter := &param.Param{
 		Manager:       manager,
+		TokenSvc:      tokenservice.NewService(manager, token.Config{}),
 		MemberService: memberservice.NewService(roleSvc, oauthMgr, manager),
 	}
 
@@ -108,7 +112,7 @@ func TestMain(m *testing.M) {
 	}
 	commonResourceID = group.ID
 
-	c = NewController(param)
+	c = NewController(parameter)
 
 	os.Exit(m.Run())
 }

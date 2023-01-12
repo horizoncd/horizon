@@ -51,6 +51,7 @@ import (
 	"github.com/horizoncd/horizon/core/http/api/v1/environment"
 	"github.com/horizoncd/horizon/core/http/api/v1/environmentregion"
 	"github.com/horizoncd/horizon/core/http/api/v1/envtemplate"
+	"github.com/horizoncd/horizon/core/http/api/v1/event"
 	"github.com/horizoncd/horizon/core/http/api/v1/group"
 	"github.com/horizoncd/horizon/core/http/api/v1/idp"
 	"github.com/horizoncd/horizon/core/http/api/v1/member"
@@ -80,18 +81,20 @@ import (
 	rolev2 "github.com/horizoncd/horizon/core/http/api/v2/role"
 	scopev2 "github.com/horizoncd/horizon/core/http/api/v2/scope"
 	tagv2 "github.com/horizoncd/horizon/core/http/api/v2/tag"
-	templatev2 "github.com/horizoncd/horizon/core/http/api/v2/template"
 	templateschematagv2 "github.com/horizoncd/horizon/core/http/api/v2/templateschematag"
 	terminalv2 "github.com/horizoncd/horizon/core/http/api/v2/terminal"
 	userv2 "github.com/horizoncd/horizon/core/http/api/v2/user"
 	webhookv2 "github.com/horizoncd/horizon/core/http/api/v2/webhook"
 	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/core/middleware/auth"
-	logmiddle "github.com/horizoncd/horizon/core/middleware/log"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/pkg/environment/service"
+	"github.com/horizoncd/horizon/pkg/grafana"
+	"github.com/horizoncd/horizon/pkg/token/generator"
+	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
+	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
+	"github.com/horizoncd/horizon/pkg/util/kube"
 
-	"github.com/horizoncd/horizon/core/http/api/v1/event"
 	templateschematagapi "github.com/horizoncd/horizon/core/http/api/v1/templateschematag"
 	terminalapi "github.com/horizoncd/horizon/core/http/api/v1/terminal"
 	"github.com/horizoncd/horizon/core/http/api/v1/user"
@@ -99,9 +102,11 @@ import (
 	appv2 "github.com/horizoncd/horizon/core/http/api/v2/application"
 	buildAPI "github.com/horizoncd/horizon/core/http/api/v2/build"
 	envtemplatev2 "github.com/horizoncd/horizon/core/http/api/v2/envtemplate"
+	templatev2 "github.com/horizoncd/horizon/core/http/api/v2/template"
 	"github.com/horizoncd/horizon/core/http/health"
 	"github.com/horizoncd/horizon/core/http/metrics"
 	ginlogmiddle "github.com/horizoncd/horizon/core/middleware/ginlog"
+	logmiddle "github.com/horizoncd/horizon/core/middleware/log"
 	metricsmiddle "github.com/horizoncd/horizon/core/middleware/metrics"
 	prehandlemiddle "github.com/horizoncd/horizon/core/middleware/prehandle"
 	regionmiddle "github.com/horizoncd/horizon/core/middleware/region"
@@ -121,13 +126,11 @@ import (
 	"github.com/horizoncd/horizon/pkg/config/pprof"
 	roleconfig "github.com/horizoncd/horizon/pkg/config/role"
 	gitlabfty "github.com/horizoncd/horizon/pkg/gitlab/factory"
-	"github.com/horizoncd/horizon/pkg/grafana"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
-	"github.com/horizoncd/horizon/pkg/oauth/generate"
+	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
 	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
 	scopeservice "github.com/horizoncd/horizon/pkg/oauth/scope"
-	oauthstore "github.com/horizoncd/horizon/pkg/oauth/store"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/rbac"
@@ -136,7 +139,6 @@ import (
 	templateschemarepo "github.com/horizoncd/horizon/pkg/templaterelease/schema/repo"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
-	"github.com/horizoncd/horizon/pkg/util/kube"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 
 	"github.com/gin-gonic/gin"
@@ -347,10 +349,10 @@ func Run(flags *Flags) {
 		panic(err)
 	}
 
-	oauthAppStore := oauthstore.NewOauthAppStore(mysqlDB)
-	oauthTokenStore := oauthstore.NewTokenStore(mysqlDB)
-	oauthManager := oauthmanager.NewManager(oauthAppStore, oauthTokenStore,
-		generate.NewAuthorizeGenerate(), coreConfig.Oauth.AuthorizeCodeExpireIn, coreConfig.Oauth.AccessTokenExpireIn)
+	oauthAppDAO := oauthdao.NewDAO(mysqlDB)
+	tokenStorage := tokenstorage.NewStorage(mysqlDB)
+	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
+		coreConfig.Oauth.AuthorizeCodeExpireIn, coreConfig.Oauth.AccessTokenExpireIn)
 
 	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
 	if err != nil {
@@ -408,6 +410,7 @@ func Run(flags *Flags) {
 	applicationSvc := applicationservice.NewService(groupSvc, manager)
 	clusterSvc := clusterservice.NewService(applicationSvc, manager)
 	userSvc := userservice.NewService(manager)
+	tokenSvc := tokenservice.NewService(manager, coreConfig.TokenConfig)
 
 	// init kube client
 	_, client, err := kube.BuildClient(coreConfig.KubeConfig)
@@ -426,6 +429,7 @@ func Run(flags *Flags) {
 		ClusterSvc:           clusterSvc,
 		GroupSvc:             groupSvc,
 		UserSvc:              userSvc,
+		TokenSvc:             tokenSvc,
 		RoleService:          roleService,
 		ScopeService:         scopeService,
 		ApplicationGitRepo:   applicationGitRepo,
@@ -563,6 +567,7 @@ func Run(flags *Flags) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/internal/v2/.*")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login"))),
 		prehandlemiddle.Middleware(r, manager),
