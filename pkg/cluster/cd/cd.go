@@ -498,6 +498,7 @@ func (c *cd) GetClusterStateV2(ctx context.Context,
 				if err != nil {
 					return true
 				}
+				log.Debugf(ctx, "[cd get status v2] node(%v) kind(%v) isHealthy(%v)", node.Name, node.Kind, nodeHealthy)
 				isHealthy = isHealthy && nodeHealthy
 				return isHealthy
 			})
