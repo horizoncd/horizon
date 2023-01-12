@@ -93,7 +93,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test(t *testing.T) {
-	groupName := "horion-unittest-group"
+	groupName := "horizon-unittest-group"
 	groupPath := fmt.Sprintf("%v/%v", rootGroupName, groupName)
 
 	projectName := "project"
