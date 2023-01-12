@@ -19,49 +19,12 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "data":{
-                        "application":{
-                            "app":{
-                                "spec":{
-                                    "replicas":1,
-                                    "resource":"small"
-                                },
-                                "strategy":{
-                                    "stepsTotal":1,
-                                    "pauseType":"first"
-                                },
-                                "envs": [
-                                    {
-                                        "name": "jvmExtra",
-                                        "value": "-Dserver.port=8888"
-                                    },
-                                    {
-                                        "name": "xmx",
-                                        "value": "1024"
-                                    }
-                                ],
-                                "health":{
-                                    "check":"/api/test",
-                                    "status":"/health/status",
-                                    "online":"/health/online",
-                                    "offline":"/health/offline",
-                                    "port":8080
-                                }
-                            }
-                        },
-                        "pipeline": {
-                            "buildInfo": {
-                              "buildTool": "ant",
-                              "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.horizon:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
-                            },
-                            "buildType": "horizon-normal",
-                            "environment": "javaapp_jdk17",
-                            "language": "java"
-                        }
-                    }
-                }
+              type: object
+              properties:
+                application:
+                  $ref: "#/components/schemas/application"
+                pipeline:
+                  $ref: "#/components/schemas/pipeline"
       responses:
         "200":
           description: Success
@@ -83,52 +46,28 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "application":{
-                              "app":{
-                                  "spec":{
-                                      "replicas":1,
-                                      "resource":"small"
-                                  },
-                                  "strategy":{
-                                      "stepsTotal":1,
-                                      "pauseType":"first"
-                                  },
-                                  "envs": [
-                                      {
-                                          "name": "jvmExtra",
-                                          "value": "-Dserver.port=8888"
-                                      },
-                                      {
-                                          "name": "xmx",
-                                          "value": "1024"
-                                      }
-                                  ],
-                                  "health":{
-                                      "check":"/api/test",
-                                      "status":"/health/status",
-                                      "online":"/health/online",
-                                      "offline":"/health/offline",
-                                      "port":8080
-                                  }
-                              }
-                          },
-                          "pipeline": {
-                              "buildInfo": {
-                                "buildTool": "ant",
-                                "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.horizon:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
-                              },
-                              "buildType": "horizon-normal",
-                              "environment": "javaapp_jdk17",
-                              "language": "java"
-                          }
-                      }
-                  }
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      application:
+                        $ref: "#/components/schemas/application"
+                      pipeline:
+                        $ref: "#/components/schemas/pipeline"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    application:
+      type: object
+      description: template config of application
+      additionalProperties: true
+    pipeline:
+      type: object
+      description: build config of application
+      additionalProperties: true
+

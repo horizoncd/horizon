@@ -23,7 +23,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupID"
+                properties:
+                  data:
+                    $ref: "#/components/schemas/GroupID"
         default:
           description: Unexpected error
           content:
@@ -44,7 +46,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../front/group.yaml#/components/schemas/GroupChild"
+                properties:
+                  data:
+                    $ref: "../front/group.yaml#/components/schemas/GroupChild"
         default:
           description: Unexpected error
           content:
@@ -68,7 +72,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateGroup'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UpdateGroup'
         default:
           description: Unexpected error
           content:
@@ -105,9 +111,11 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Group'
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Group'
         default:
           description: Unexpected error
           content:
@@ -133,7 +141,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupID"
+                properties:
+                  data:
+                    $ref: "#/components/schemas/GroupID"
         default:
           description: Unexpected error
           content:
@@ -166,9 +176,6 @@ paths:
   /apis/core/v2/groups/{groupID}/transfer:
     parameters:
       - $ref: 'common.yaml#/components/parameters/paramGroupID'
-      - name: groupID
-        in: query
-        required: true
     put:
       tags:
         - group

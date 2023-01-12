@@ -68,30 +68,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GetPipelineRunResp"
-                example: |
-                  {
-                      "data":
-                      {
-                          "id":3,
-                          "title":"Feature123",
-                          "description":"release big rocket",
-                          "action":"builddeploy",
-                          "status":"StatusCreated",
-                          "gitURL":"ssh://git@cloudnative.com:22222/app/app-demo.git",
-                          "gitBranch":"master",
-                          "gitCommit":"4234324dsdjasljl43",
-                          "imageURL":"",
-                          "lastConfigCommit":"4234324dsdjasljl43",
-                          "configCommit":"4234324dsdjasljl43",
-                          "startedAt":"2021-11-07 11:19:54",
-                          "finishedAt":"2021-11-07 11:19:54",
-                          "canRollback": false,
-                          "createBy":{
-                            "userID":0,
-                            "userName":"123"
-                          }
-                      }
-                  }
         default:
           description: Unexpected error
           content:
@@ -115,22 +91,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PipelineRunDiff"
-                example: |
-                  {
-                      "data":{
-                          "codeInfo":{
-                              "Branch": "master"
-                              "CommitMsg": "last commit msg"
-                              "CommitID":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
-                              "Link": https://horizon.com/cloud-native/horizon/horizon/-/commits/feature/applications
-                          },
-                          "configDiff ": {
-                            "from": "6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
-                            "to": "6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
-                            "diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
-                          }
-                      }
-                  }
         default:
           description: Unexpected error
           content:
@@ -160,34 +120,16 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                    "total": 1,
-                    "items": [
-                      {
-                        "id": 1245735,
-                        "title": "rg",
-                        "description": "",
-                        "action": "builddeploy",
-                        "status": "ok",
-                        "gitURL": "ssh://git@cloudnative.com:22222/xxx/springboot-demo.git",
-                        "gitBranch": "jdk17",
-                        "gitCommit": "da1a46ebfc9e48c7c4af4b89fe35bb209cd89883",
-                        "imageURL": "",
-                        "lastConfigCommit": "00e049bb2dc6f6ccee06e508e8a7c5f9ce71e875",
-                        "configCommit": "5deefff34944b4780ae3c040bfeec29211904756",
-                        "createdAt": "2022-12-30T12:03:01+08:00",
-                        "updatedAt": "2022-12-30T12:03:38+08:00",
-                        "startedAt": "2022-12-30T12:03:01+08:00",
-                        "finishedAt": "2022-12-30T12:03:37+08:00",
-                        "canRollback": false,
-                        "createdBy": {
-                          "userID": 667,
-                          "userName": "admin"
-                        }
-                      }
-                    ]
-                  }
+                type: object
+                properties:
+                  data:
+                    properties:
+                      total:
+                        type: integer
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/PipelineRun"
         default:
           description: Unexpected error
           content:

@@ -22,19 +22,11 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data": [
-                          {
-                              "environment": "test",
-                              "region": "hz-test"
-                          },
-                          {
-                              "environment": "pre",
-                              "region": "hz"
-                          }
-                      ]
-                  }
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Region"
         default:
           description: Unexpected error
           content:
@@ -56,17 +48,9 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                [
-                    {
-                        "environment": "test",
-                        "region": "hz-test"
-                    },
-                    {
-                        "environment": "pre",
-                        "region": "hz"
-                    }
-                ]
+              type: array
+              items:
+                $ref: "#/components/schemas/Region"
       responses:
         "200":
           description: Success
@@ -76,3 +60,12 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    Region:
+      type: object
+      properties:
+        environment:
+          type: string
+        region:
+          type: string
