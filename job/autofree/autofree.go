@@ -95,7 +95,7 @@ func process(ctx context.Context, jobConfig *autofree.Config, clusterCtr cluster
 							clr.EnvironmentName, clr.Name, clr.ExpireSeconds)
 					return false
 				}()
-				if !supported || err != nil {
+				if !supported {
 					return false, err
 				}
 				return true, nil
