@@ -1,3 +1,19 @@
+/*
+Copyright 2014 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package auth
 
 import (
@@ -8,7 +24,7 @@ import (
 
 // attention: authorization is refers to the kubernetes rbac
 // we just copy core struct and logics from the kubernetes code
-// and do same modify
+// and do some modify
 
 // Attributes is an interface used by an Authorizer to get information about a request
 // that is used to make an authorization decision.
