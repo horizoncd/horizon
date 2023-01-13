@@ -192,6 +192,44 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
 components:
   schemas:
+    GroupChild:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        visibilityLevel:
+          type: string
+        path:
+          type: string
+        fullName:
+          type: string
+        fullPath:
+          type: string
+        type:
+          $ref: '#/components/schemas/GroupChildType'
+        childrenCount:
+          type: integer
+        traversalIDs:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupChild'
+        parentID:
+          type: integer
+        updatedAt:
+          $ref: "common.yaml#/components/schemas/Date"
+
+    GroupChildType:
+      type: string
+      enum:
+        - group
+        - application
+
     NewGroup:
       type: object
       required:

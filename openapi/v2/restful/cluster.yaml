@@ -725,6 +725,8 @@ paths:
 
   /apis/core/v2/clusters:
     get:
+      tags:
+        - cluster
       description: list cluster
       operationId: listClusters
       parameters:
@@ -1062,6 +1064,8 @@ paths:
     parameters:
       - $ref: "common.yaml#/components/parameters/paramClusterID"
     post:
+      tags:
+        - cluster
       operationId: execClusterCommand
       summary: Execute a command in specified pods in a cluster
       requestBody:
