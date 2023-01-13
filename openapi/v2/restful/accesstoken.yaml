@@ -37,7 +37,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CreateResourceScopedAccessTokenResp"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreateResourceScopedAccessTokenResp"
         default:
           description: Unexpected error
           content:
@@ -55,9 +58,16 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AccessTokenDetailWithRole"
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        $ref: "#/components/schemas/AccessTokenDetailWithRole"
+                      total:
+                        type: integer
         default:
           description: Unexpected error
           content:
@@ -82,7 +92,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CreatePersonalAccessTokenResp"
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreatePersonalAccessTokenResp"
         default:
           description: Unexpected error
           content:
@@ -100,9 +113,16 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AccessTokenDetail"
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        $ref: "#/components/schemas/AccessTokenDetail"
+                      total:
+                        type: integer
         default:
           description: Unexpected error
           content:
@@ -124,7 +144,7 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
-components: 
+components:
   schemas:
     Role:
       type: object

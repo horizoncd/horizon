@@ -3,14 +3,11 @@ info:
   title: Horizon-Pipelinerun-Restful
   version: 1.0.0
 servers:
-  - url: 'http://localhost:8080/'
+  - url: "http://localhost:8080/"
 paths:
   /apis/core/v1/pipelineruns/{pipelinerunID}/stop:
     parameters:
-      - name: pipelinerunID
-        in: query
-        description: the pipelinerun ID
-        required: true
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
     post:
       tags:
         - pipelinerun
@@ -27,14 +24,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "common.yaml#/components/schemas/Error"
+                type: object
+                properties:
+                  data:
+                    $ref: "common.yaml#/components/schemas/Error"
 
   /apis/core/v1/pipelineruns/{pipelinerunID}/log:
     parameters:
-      - name: pipelinerunID
-        in: query
-        description: the pipelinerun ID
-        required: true
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
     get:
       tags:
         - pipelinerun
@@ -60,22 +57,23 @@ paths:
 
   /apis/core/v1/pipelineruns/{pipelinerunID}:
     parameters:
-      - name: pipelinerunID
-        in: query
-        description: the pipelinerun ID
-        required: true
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
     get:
       tags:
         - pipelinerun
       operationId: getPipelinerun
       summary: |
-        Get the specified pipelinerun for a cluster.
+        Get the specified pipelinerun.
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PipelineRun"
                 example: |
                   {
                       "data":
@@ -106,24 +104,26 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+
   /apis/core/v1/pipelineruns/{pipelinerunID}/diffs:
     parameters:
-      - name: pipelinerunID
-        in: query
-        description: the pipelinerun ID
-        required: true
+      - $ref: "common.yaml#/components/parameters/paramPipelinerunID"
     get:
       tags:
         - pipelinerun
       operationId: getPipelineRunDiff
       summary: |
-        Get the specified pipelinerun's diff for a cluster.
+        Get the specified pipelinerun's diff
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PipelineRunDiff"
                 example: |
                   {
                       "data":{
@@ -131,12 +131,168 @@ paths:
                               "Branch": "master"
                               "CommitMsg": "last commit msg"
                               "CommitID":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
-                              "Link": https://g.hz.netease.com/music-cloud-native/horizon/horizon/-/commits/feature/applications
+                              "Link": https://horizon.com/cloud-native/horizon/horizon/-/commits/feature/applications
                           },
                           "configDiff ": {
                             "from": "6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
                             "to": "6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
-                            "diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: music-cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
+                            "diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
                           }
                       }
                   }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v1/clusters/:%v/pipelineruns:
+    parameters:
+      - $ref: "common.yaml#/components/parameters/paramClusterID"
+      - $ref: "common.yaml#/components/parameters/pageNumber"
+      - $ref: "common.yaml#/components/parameters/pageSize"
+      - name: canRollback
+        in: query
+        schema:
+          type: boolean
+        description: whether the pipelinerun can rollback
+    get:
+      tags:
+        - pipelinerun
+      operationId: getClusterPipelineRuns
+      summary: |
+        Get pipelineruns of a cluster.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        $ref: "#/components/schemas/PipelineRun"
+                      total:
+                        type: integer
+                example: |
+                  {
+                    "total": 1,
+                    "items": [
+                      {
+                        "id": 1245735,
+                        "title": "rg",
+                        "description": "",
+                        "action": "builddeploy",
+                        "status": "ok",
+                        "gitURL": "ssh://git@cloudnative.com:22222/xxx/springboot-demo.git",
+                        "gitBranch": "jdk17",
+                        "gitCommit": "da1a46ebfc9e48c7c4af4b89fe35bb209cd89883",
+                        "imageURL": "",
+                        "lastConfigCommit": "00e049bb2dc6f6ccee06e508e8a7c5f9ce71e875",
+                        "configCommit": "5deefff34944b4780ae3c040bfeec29211904756",
+                        "createdAt": "2022-12-30T12:03:01+08:00",
+                        "updatedAt": "2022-12-30T12:03:38+08:00",
+                        "startedAt": "2022-12-30T12:03:01+08:00",
+                        "finishedAt": "2022-12-30T12:03:37+08:00",
+                        "canRollback": false,
+                        "createdBy": {
+                          "userID": 667,
+                          "userName": "admin"
+                        }
+                      }
+                    ]
+                  }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    PipelineRun:
+      type: object
+      properties:
+        action:
+          type: string
+          description: "action of pipelinerun"
+          enum: ["builddeploy", "deploy", "restart", "rollback"]
+        canRollback:
+          type: boolean
+          description: "whether this pipelinerun can be specified to rollback"
+        configCommit:
+          type: string
+          description: "commit of config repository"
+        createdAt:
+          type: string
+        createdBy:
+          $ref: "common.yaml#/components/schemas/User"
+        description:
+          type: string
+        finishedAt:
+          type: string
+        gitBranch:
+          type: string
+          description: branch of source code
+        gitCommit:
+          type: string
+          description: commit of source code
+        gitURL:
+          type: string
+          description: url of source code
+        id:
+          type: integer
+        imageURL:
+          type: string
+          description: full url of image
+        lastConfigCommit:
+          type: string
+          description: "last commit of config repository"
+        startedAt:
+          type: string
+          description: "start time of pipelinerun"
+        status:
+          type: string
+          enum: ["ok", "waiting", "failed", "canceled"]
+        title:
+          type: string
+          description: "title of pipelinerun"
+        updatedAt:
+          type: string
+          description: "update time of pipelinerun"
+    PipelineRunDiff:
+      type: object
+      properties:
+        codeInfo:
+          type: object
+          properties:
+            branch:
+              type: string
+              description: "branch of source code"
+            commitID:
+              type: string
+              description: "latest commit id of source code"
+            commitMsg:
+              type: string
+              description: "lastest commit message of source code"
+            link:
+              type: string
+              description: "link of lastest commit"
+        codeDiff:
+          type: object
+          properties:
+            diff:
+              type: string
+              description: "changed content of this pipelinerun"
+            from:
+              type: string
+              description: "the last commit before the change"
+            to:
+              type: string
+              description: "the last commit after the change"

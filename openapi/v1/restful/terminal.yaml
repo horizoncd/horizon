@@ -4,7 +4,7 @@ info:
   description: Restful API About Terminal
   version: 1.0.0
 servers:
-  - url: 'ws://localhost:8080/'
+  - url: 'wss://localhost:8080/'
 paths:
   /apis/core/v1/clusters/{clusterID}/shell?podName={podName}&containerName={containerName}:
     parameters:
@@ -12,14 +12,20 @@ paths:
         in: path
         description: cluster id
         required: true
+        schema:
+          type: integer
       - name: podName
         in: query
         required: true
         description: pod name
+        schema:
+          type: string
       - name: containerName
         in: query
         required: true
         description: container name
+        schema:
+          type: string
     get:
       tags:
         - terminal
