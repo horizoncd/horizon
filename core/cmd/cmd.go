@@ -12,7 +12,6 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/config"
 	accessctl "github.com/horizoncd/horizon/core/controller/access"
 	accesstokenctl "github.com/horizoncd/horizon/core/controller/accesstoken"
@@ -88,6 +87,7 @@ import (
 	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/core/middleware/auth"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
+	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/token/generator"
@@ -125,7 +125,6 @@ import (
 	oauthconfig "github.com/horizoncd/horizon/pkg/config/oauth"
 	"github.com/horizoncd/horizon/pkg/config/pprof"
 	roleconfig "github.com/horizoncd/horizon/pkg/config/role"
-	gitlabfty "github.com/horizoncd/horizon/pkg/gitlab/factory"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
@@ -293,9 +292,8 @@ func Run(flags *Flags) {
 	manager := managerparam.InitManager(mysqlDB)
 	// init service
 	ctx := context.Background()
-	gitlabFactory := gitlabfty.NewFactory(coreConfig.GitlabMapper)
 
-	gitlabGitops, err := gitlabFactory.GetByName(ctx, common.GitlabGitops)
+	gitlabGitops, err := gitlablib.New(coreConfig.GitopsRepoConfig.Token, coreConfig.GitopsRepoConfig.URL)
 	if err != nil {
 		panic(err)
 	}
@@ -323,12 +321,7 @@ func Run(flags *Flags) {
 	}
 
 	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
-		coreConfig.GitopsRepoConfig.URLSchema, flags.GitOpsRepoDefaultBranch)
-	if err != nil {
-		panic(err)
-	}
-
-	gitlabTemplate, err := gitlabFactory.GetByName(ctx, common.GitlabTemplate)
+		flags.GitOpsRepoDefaultBranch)
 	if err != nil {
 		panic(err)
 	}
@@ -462,7 +455,7 @@ func Run(flags *Flags) {
 		envTemplateCtl       = envtemplatectl.NewController(parameter)
 		clusterCtl           = clusterctl.NewController(coreConfig, parameter)
 		prCtl                = prctl.NewController(parameter)
-		templateCtl          = templatectl.NewController(parameter, gitlabTemplate, templateRepo)
+		templateCtl          = templatectl.NewController(parameter, templateRepo)
 		roleCtl              = roltctl.NewController(parameter)
 		terminalCtl          = terminalctl.NewController(parameter)
 		codeGitCtl           = codectl.NewController(gitGetter)

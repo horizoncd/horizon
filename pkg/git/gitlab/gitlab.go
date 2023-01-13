@@ -26,7 +26,7 @@ type Helper struct {
 }
 
 func New(ctx context.Context, config *gitconfig.Repo) (git.Helper, error) {
-	gitlabLib, err := gitlablib.New(config.Token, config.URL, "")
+	gitlabLib, err := gitlablib.New(config.Token, config.URL)
 	if err != nil {
 		return nil, err
 	}

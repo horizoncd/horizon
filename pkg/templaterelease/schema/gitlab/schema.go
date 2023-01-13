@@ -7,16 +7,11 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	gitlabfty "github.com/horizoncd/horizon/pkg/gitlab/factory"
-	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/templaterelease/schema"
-	templateschemamanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
-
-const _gitlabName = "control"
 
 const (
 	// json schema file path
@@ -27,31 +22,14 @@ const (
 	_applicationUISchemaPath = "schema/application.ui.schema.json"
 )
 
-// params
 const (
-	ClusterIDKey    string = "clusterID"
-	ResourceTypeKey string = "resourceType"
+	ClusterIDKey string = "clusterID"
 )
 
 type getter struct {
-	gitlabLib            gitlablib.Interface
-	templateMgr          tmanager.Manager
-	templateReleaseMgr   trmanager.Manager
-	templateSchemaTagMgr templateschemamanager.Manager
-}
-
-func NewSchemaGetter(ctx context.Context, gitlabFty gitlabfty.Factory,
-	manager *managerparam.Manager) (schema.Getter, error) {
-	gitlabLib, err := gitlabFty.GetByName(ctx, _gitlabName)
-	if err != nil {
-		return nil, err
-	}
-	return &getter{
-		gitlabLib:            gitlabLib,
-		templateMgr:          manager.TemplateMgr,
-		templateReleaseMgr:   manager.TemplateReleaseManager,
-		templateSchemaTagMgr: manager.TemplateSchemaTagManager,
-	}, nil
+	gitlabLib          gitlablib.Interface
+	templateMgr        tmanager.Manager
+	templateReleaseMgr trmanager.Manager
 }
 
 func (g *getter) GetTemplateSchema(ctx context.Context,

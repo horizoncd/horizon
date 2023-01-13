@@ -78,7 +78,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	g, err = New(p.Token, p.BaseURL, "")
+	g, err = New(p.Token, p.BaseURL)
 	if err != nil {
 		panic(err)
 	}

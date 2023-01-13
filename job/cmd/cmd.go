@@ -12,19 +12,18 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/config"
 	clusterctl "github.com/horizoncd/horizon/core/controller/cluster"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
 	"github.com/horizoncd/horizon/core/http/health"
 	ginlogmiddle "github.com/horizoncd/horizon/core/middleware/ginlog"
 	"github.com/horizoncd/horizon/job/autofree"
+	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
 	clustergitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	eventhandlersvc "github.com/horizoncd/horizon/pkg/eventhandler"
 	"github.com/horizoncd/horizon/pkg/eventhandler/wlgenerator"
-	gitlabfty "github.com/horizoncd/horizon/pkg/gitlab/factory"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
@@ -112,8 +111,7 @@ func Run(flags *Flags) {
 	// init context
 	ctx := context.Background()
 
-	gitlabFactory := gitlabfty.NewFactory(coreConfig.GitlabMapper)
-	gitlabGitops, err := gitlabFactory.GetByName(ctx, common.GitlabGitops)
+	gitlabGitops, err := gitlablib.New(coreConfig.GitopsRepoConfig.Token, coreConfig.GitopsRepoConfig.URL)
 	if err != nil {
 		panic(err)
 	}
@@ -134,7 +132,7 @@ func Run(flags *Flags) {
 	}
 
 	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
-		coreConfig.GitopsRepoConfig.URLSchema, flags.GitOpsRepoDefaultBranch)
+		flags.GitOpsRepoDefaultBranch)
 	if err != nil {
 		panic(err)
 	}
