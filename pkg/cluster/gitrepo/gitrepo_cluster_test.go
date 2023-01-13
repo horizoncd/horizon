@@ -15,7 +15,6 @@ import (
 	gitlablibmock "github.com/horizoncd/horizon/mock/lib/gitlab"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	gitlabconfig "github.com/horizoncd/horizon/pkg/config/gitlab"
 	config "github.com/horizoncd/horizon/pkg/config/templaterepo"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
@@ -138,7 +137,7 @@ func TestMain(m *testing.M) {
 
 	sshURL = "ssh://gitlab.com"
 
-	g, err = gitlablib.New(p.Token, p.BaseURL, sshURL)
+	g, err = gitlablib.New(p.Token, p.BaseURL)
 	if err != nil {
 		panic(err)
 	}
@@ -163,7 +162,7 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) {
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
 
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema, defaultBranch)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch)
 	assert.Nil(t, err)
 
 	application := "app"
@@ -283,7 +282,7 @@ func Test(t *testing.T) {
 
 func TestV2(t *testing.T) {
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema, defaultBranch)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch)
 	assert.Nil(t, err)
 
 	application := "appv2"
@@ -414,7 +413,7 @@ func TestHardDeleteCluster(t *testing.T) {
 		BaseParams: baseParams,
 	}
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, gitlabconfig.HTTPURLSchema, defaultBranch)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch)
 	assert.Nil(t, err)
 	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
@@ -432,8 +431,8 @@ func TestGetClusterValueFile(t *testing.T) {
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
-	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{}, gitlabmockLib,
-		gitlabconfig.HTTPURLSchema, defaultBranch)
+	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{},
+		gitlabmockLib, defaultBranch)
 	assert.Nil(t, err)
 
 	// 1. test gitlab get file error
@@ -491,7 +490,7 @@ java:
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
 	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{},
-		gitlabmockLib, gitlabconfig.HTTPURLSchema, defaultBranch)
+		gitlabmockLib, defaultBranch)
 	assert.Nil(t, err)
 
 	expectedOutput := `java:

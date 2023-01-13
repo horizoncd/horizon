@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -32,7 +31,6 @@ type Config struct {
 	PProf                  pprof.Config            `yaml:"pprofConfig"`
 	DBConfig               db.Config               `yaml:"dbConfig"`
 	SessionConfig          session.Config          `yaml:"sessionConfig"`
-	GitlabMapper           gitlab.Mapper           `yaml:"gitlabMapper"`
 	GitopsRepoConfig       gitlab.GitopsRepoConfig `yaml:"gitopsRepoConfig"`
 	ArgoCDMapper           argocd.Mapper           `yaml:"argoCDMapper"`
 	RedisConfig            redis.Redis             `yaml:"redisConfig"`
@@ -77,18 +75,6 @@ func LoadConfig(configFilePath string) (*Config, error) {
 		}
 	}
 	config.TektonMapper = newTektonMapper
-
-	// use http schema by default
-	if config.GitopsRepoConfig.URLSchema == "" {
-		config.GitopsRepoConfig.URLSchema = gitlab.HTTPURLSchema
-	}
-
-	// validte gitops repo schema value
-	if config.GitopsRepoConfig.URLSchema != gitlab.HTTPURLSchema &&
-		config.GitopsRepoConfig.URLSchema != gitlab.SSHURLSchema {
-		return nil, fmt.Errorf("gitops repo urlSchema not valid: %s, valid values: [http, ssh]",
-			config.GitopsRepoConfig.URLSchema)
-	}
 
 	if config.EventHandlerConfig.BatchEventsCount <= 0 {
 		config.EventHandlerConfig.BatchEventsCount = 5

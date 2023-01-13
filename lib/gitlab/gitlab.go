@@ -141,8 +141,6 @@ type Interface interface {
 	// GitLab API docs: https://docs.gitlab.com/ce/api/repositories.html#get-file-archive
 	GetRepositoryArchive(ctx context.Context, pid interface{}, sha string) ([]byte, error)
 
-	GetSSHURL(ctx context.Context) string
-
 	GetHTTPURL(ctx context.Context) string
 
 	GetCreatedGroup(ctx context.Context, parentID int, parentPath string, name string) (*gitlab.Group, error)
@@ -173,11 +171,10 @@ func (a FileAction) toFileActionValuePtr() *gitlab.FileActionValue {
 type helper struct {
 	client  *gitlab.Client
 	httpURL string
-	sshURL  string
 }
 
 // New an instance of Gitlab
-func New(token, httpURL, sshURL string) (Interface, error) {
+func New(token, httpURL string) (Interface, error) {
 	client, err := gitlab.NewClient(token,
 		gitlab.WithBaseURL(httpURL),
 		gitlab.WithHTTPClient(&http.Client{
@@ -191,7 +188,6 @@ func New(token, httpURL, sshURL string) (Interface, error) {
 	return &helper{
 		client:  client,
 		httpURL: httpURL,
-		sshURL:  sshURL,
 	}, nil
 }
 
@@ -566,10 +562,6 @@ func (h *helper) GetRepositoryArchive(ctx context.Context, pid interface{}, sha 
 		return nil, parseError(resp, err)
 	}
 	return archive, nil
-}
-
-func (h *helper) GetSSHURL(ctx context.Context) string {
-	return h.sshURL
 }
 
 // GetHTTPURL implements Interface

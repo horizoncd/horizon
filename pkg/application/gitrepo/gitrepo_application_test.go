@@ -156,7 +156,7 @@ func testInit() {
 		defaultBranch = "master"
 	}
 
-	g, err = gitlablib.New(p.Token, p.BaseURL, "")
+	g, err = gitlablib.New(p.Token, p.BaseURL)
 	if err != nil {
 		panic(err)
 	}

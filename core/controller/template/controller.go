@@ -12,7 +12,6 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/lib/q"
 	hctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
@@ -84,7 +83,7 @@ type controller struct {
 var _ Controller = (*controller)(nil)
 
 // NewController initializes a new controller
-func NewController(param *param.Param, gitlabLib gitlab.Interface, repo templaterepo.TemplateRepo) Controller {
+func NewController(param *param.Param, repo templaterepo.TemplateRepo) Controller {
 	return &controller{
 		gitgetter:            param.GitGetter,
 		templateMgr:          param.TemplateMgr,

@@ -24,17 +24,10 @@ gitRepos:
   - kind: github
     url: https://github.com
     token:
-gitlabMapper:
-  template:
-    httpURL: ""
-    token: ""
-  gitops:
-    httpURL: ""
-    sshURL: ""
-    token: ""
 gitopsRepoConfig:
   rootGroupPath: ""
-  urlSchema: http
+  url:
+  token:
 templateRepo:
   kind: "harbor"
   host: ""

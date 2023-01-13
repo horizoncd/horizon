@@ -12,7 +12,6 @@ import (
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/application/models"
 	pkgcommon "github.com/horizoncd/horizon/pkg/common"
-	gitlabconfig "github.com/horizoncd/horizon/pkg/config/gitlab"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
@@ -113,13 +112,12 @@ type clusterGitRepo struct {
 	clustersGroup          *gitlab.Group
 	recyclingClustersGroup *gitlab.Group
 	templateRepo           templaterepo.TemplateRepo
-	repoURLSchema          string
 	defaultBranch          string
 }
 
 func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 	templateRepo templaterepo.TemplateRepo,
-	gitlabLib gitlablib.Interface, repoURLSchema, defaultBranch string) (ClusterGitRepo, error) {
+	gitlabLib gitlablib.Interface, defaultBranch string) (ClusterGitRepo, error) {
 	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, common.GitopsGroupClusters)
 	if err != nil {
 		return nil, err
@@ -134,7 +132,6 @@ func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 		clustersGroup:          clustersGroup,
 		recyclingClustersGroup: recyclingClustersGroup,
 		templateRepo:           templateRepo,
-		repoURLSchema:          repoURLSchema,
 		defaultBranch:          defaultBranch,
 	}, nil
 }
@@ -960,9 +957,6 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 
 func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo {
 	repoURL := g.gitlabLib.GetHTTPURL(ctx)
-	if g.repoURLSchema == gitlabconfig.SSHURLSchema {
-		repoURL = g.gitlabLib.GetSSHURL(ctx)
-	}
 	return &RepoInfo{
 		GitRepoURL: fmt.Sprintf("%v/%v/%v/%v.git", repoURL, g.clustersGroup.FullPath, application, cluster),
 		ValueFiles: []string{common.GitopsFileApplication, common.GitopsFilePipelineOutput,
