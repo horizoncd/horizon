@@ -20,17 +20,11 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "tags":[
-                              {
-                                  "key":"rpc.tag",
-                                  "value":"qa-abc"
-                              }
-                          ]
-                      }
-                  }
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/tag"
         default:
           description: Unexpected error
           content:
@@ -47,17 +41,9 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "data":{
-                        "tags":[
-                            {
-                                "key":"rpc.tag",
-                                "value":"qa-abc"
-                            }
-                        ]
-                    }
-                }
+              type: array
+              items:
+                $ref: "#/components/schemas/tag"
       responses:
         "200":
           description: Success
@@ -82,17 +68,11 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "tags":[
-                              {
-                                  "key":"rpc.tag",
-                                  "value":"qa-abc"
-                              }
-                          ]
-                      }
-                  }
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/tag"
         default:
           description: Unexpected error
           content:
@@ -101,10 +81,7 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
   /apis/core/v2/clusters/{clusterID}/templateschematags:
     parameters:
-      - name: clusterID
-        in: path
-        description: The ID of the cluster
-        required: true
+      - $ref: "common.yaml#/components/parameters/paramClusterID"
     get:
       tags:
         - tag
@@ -124,12 +101,7 @@ paths:
                       tags:
                         type: array
                         items:
-                          type: object
-                          properties:
-                            key:
-                              type: string
-                            value:
-                              type: string
+                          $ref: "#/components/schemas/tag"
         default:
           description: Unexpected error
           content:
@@ -142,30 +114,20 @@ paths:
       operationId: updateClusterTemplateSchemaTags
       summary: Create or update cluster Template schema tags
       parameters:
-        - name: pathParam
-          in: path
-          description: A path parameter
-          schema:
-            type: string
+        - $ref: "common.yaml#/components/parameters/paramClusterID"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                data:
-                  type: object
-                  properties:
-                    tags:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          key:
-                            type: string
-                          value:
-                            type: string
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
       responses:
         "200":
           description: Success
@@ -175,3 +137,12 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    tag:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string

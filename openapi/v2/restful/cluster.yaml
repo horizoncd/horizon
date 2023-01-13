@@ -15,6 +15,8 @@ paths:
       - $ref: 'common.yaml#/components/parameters/pageNumber'
       - name: tagSelector
         in: query
+        schema:
+          type: string
         description: |
           filter clusters by tags, support operators: =, in, the comma separator acts as a logical AND (&&) operator. For example, if we want to filter clusters by tags(a equals to A and b equals to c or d), the tagSelector is "a=b,b in (c,d)"
     get:
@@ -28,56 +30,13 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "total":2,
-                          "items":[
-                              {
-                                  "id":3028,
-                                  "name":"yufeng-helloworld-online",
-                                  "scope":{
-                                      "environment":"dev",
-                                      "region":"hz",
-                                      "regionDisplayName":"hangzhou"
-                                  },
-                                  "template":{
-                                      "name":"javaapp",
-                                      "release":"v1.1.0"
-                                  },
-                                  "git": {
-                                      "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
-                                      "httpURL": "https://cloudnative.com/app/app-demo"
-                                  },
-                                  "createdAt":"2021-12-15T21:17:20+08:00",
-                                  "updatedAt":"2021-12-15T21:17:20+08:00",
-                                  "fullName":"others/yufeng-helloworld/yufeng-helloworld-online",
-                                  "fullPath":"/others/yufeng-helloworld/yufeng-helloworld-online"
-                              },
-                              {
-                                  "id":2412,
-                                  "name":"yufeng-tomtest-online",
-                                  "scope":{
-                                      "environment":"dev",
-                                      "region":"hz",
-                                      "regionDisplayName":"hangzhou"
-                                  },
-                                  "template":{
-                                      "name":"javaapp",
-                                      "release":"v1.1.0"
-                                  },
-                                  "git": {
-                                      "sshURL": "ssh://git@cloudnative.com:22222/app/app-demo.git",
-                                      "httpURL": "https://cloudnative.com/app/app-demo"
-                                  },
-                                  "createdAt":"2021-12-15T12:26:41+08:00",
-                                  "updatedAt":"2021-12-15T13:14:20+08:00",
-                                  "fullName":"ggjs/yufeng-tomtest/yufeng-tomtest-online",
-                                  "fullPath":"/ggjs/yufeng-tomtest/yufeng-tomtest-online"
-                              }
-                          ]
-                      }
-                  }
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ListClusterResponse"
         default:
           description: Unexpected error
           content:
@@ -91,11 +50,15 @@ paths:
       - name: scope
         in: query
         description: scope is environment/region, this value can not be edited after created.
+        schema:
+          type: string
         required: true
       - name: extraOwner
         in: query
         description: extra owner's email
         required: false
+        schema:
+          type: string
     post:
       tags:
         - cluster
@@ -106,71 +69,16 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "//name":"name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
-                    "name":"cluster",
-                    "description":"xxxxxxxxxxxx",
-                    "expireTime":"48h0m0s",
-                    "git":{
-                        "url":"ssh://git@cloud.com:22222/cloud-native/horizon/horizon.git",
-                        "//branch":"branch can be edited",
-                        "//tag":"tag can be edited",
-                        "//commit":"commit can be edited",
-                        "branch":"develop"
-                    },
-                    "//tags": "tags is an array constructed by key-value pairs, key and value are must be string, and must be 63 characters or less, beginning and ending with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between. ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$ ",
-                    "tags": [
-                      {
-                        "key": "rpc.tag",
-                        "value": "qa-abc"
-                      }, {
-                        "key": "dubble.tag",
-                        "value": "qa-abc"
-                      }
-                    ],
-                    "buildConfig":{
-                        "buildInfo": {
-                            "buildTool": "ant",
-                            "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.horizon:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
-                        },
-                        "buildType": "horizon-normal",
-                        "environment": "javaapp_jdk17",
-                        "language": "java"
-                    },
-                    "templateInfo":{
-                        "name":"javaapp",
-                        "release":"v1.1.0"
-                    },
-                    "templateConfig":{
-                        "app":{
-                            "spec":{
-                                "replicas":1,
-                                "resource":"small"
-                            },
-                            "strategy":{
-                                "stepsTotal":1,
-                                "pauseType":"first"
-                            },
-                            "envs":[
-                                {
-                                    "name":"jvmExtra",
-                                    "value":"-Dserver.port=8080"
-                                }
-                            ],
-                            "health":{
-                                "check":"/api/test",
-                                "status":"/health/status",
-                                "online":"/health/online",
-                                "offline":"/health/offline",
-                                "port":8080
-                            }
-                        }
-                    }
-                }
+              $ref: "#/components/schemas/CreateClusterRequestV2"
       responses:
         "200":
           description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreateClusterResponseV2"
         default:
           description: Unexpected error
           content:
@@ -190,56 +98,7 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "description":"xxxxxxxxxxxx",
-                    "expireTime":"24h0m0s",
-                    "environment":"test",
-                    "//git": "git params can be edited",
-                    "git":{
-                        "url":"ssh://git@cloud.com:22222/cloud-native/horizon/horizon.git",
-                        "subfolder":"/",
-                        "branch":"develop"
-                    },
-                    "buildConfig":{
-                        "buildInfo": {
-                            "buildTool": "ant",
-                            "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.horizon:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
-                        },
-                        "buildType": "horizon-normal",
-                        "environment": "javaapp_jdk17",
-                        "language": "java"
-                    },
-                    "templateInfo":{
-                        "name":"javaapp",
-                        "release":"v1.1.0"
-                    },
-                    "templateConfig":{
-                        "app":{
-                            "spec":{
-                                "replicas":1,
-                                "resource":"small"
-                            },
-                            "strategy":{
-                                "stepsTotal":1,
-                                "pauseType":"first"
-                            },
-                            "envs":[
-                                {
-                                    "name":"jvmExtra",
-                                    "value":"-Dserver.port=8080"
-                                }
-                            ],
-                            "health":{
-                                "check":"/api/test",
-                                "status":"/health/status",
-                                "online":"/health/online",
-                                "offline":"/health/offline",
-                                "port":8080
-                            }
-                        }
-                    }
-                }
+              $ref: "#/components/schemas/UpdateClusterRequestV2"
       responses:
         "200":
           description: Success
@@ -260,83 +119,15 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "applicationName":"app",
-                          "applicationID":2,
-                          "id":1,
-                          "name":"cluster",
-                          "fullPath": "/a/b/c",
-                          "description":"xxxxxxxxxxxx",
-                          "expireTime":"48h0m0s",
-                          "priority":"P0",
-                          "git":{
-                              "url":"ssh://git@cloud.com:22222/cloud-native/horizon/horizon.git",
-                              "subfolder":"/",
-                              "branch":"develop"
-                          },
-                          "scope":{
-                              "environment":"test",
-                              "region":"hz"
-                          },
-                          "createdAt": "2021-12-02T11:29:01+08:00",
-                          "updatedAt": "2021-12-02T11:29:01+08:00",
-                          "createdBy": {
-                            "id": 1,
-                            "name": "tony",
-                            "email": "tony@corp.com"
-                          },
-                          "updatedBy": {
-                             "id": 1,
-                             "name": "tony",
-                             "email": "tony@corp.com"
-                           },
-                          "status": "Freeing",
-                          "ttlInSeconds": 3600,
-                          "manifest": {
-                              "version": "0.0.2"
-                          },
-                          "buildConfig":{
-                              "buildInfo": {
-                                  "buildTool": "ant",
-                                  "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.horizon:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
-                              },
-                              "buildType": "horizon-normal",
-                              "environment": "javaapp_jdk17",
-                              "language": "java"
-                          },
-                          "templateInfo":{
-                              "name":"javaapp",
-                              "release":"v1.1.0"
-                          },
-                          "templateConfig":{
-                              "app":{
-                                  "spec":{
-                                      "replicas":1,
-                                      "resource":"small"
-                                  },
-                                  "strategy":{
-                                      "stepsTotal":1,
-                                      "pauseType":"first"
-                                  },
-                                  "envs":[
-                                      {
-                                          "name":"jvmExtra",
-                                          "value":"-Dserver.port=8080"
-                                      }
-                                  ],
-                                  "health":{
-                                      "check":"/api/test",
-                                      "status":"/health/status",
-                                      "online":"/health/online",
-                                      "offline":"/health/offline",
-                                      "port":8080
-                                  }
-                              }
-                          }
-                      }
-                  }
+                properties:
+                  data:
+                    $ref: "#/components/schemas/GetClusterResponseV2"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
     delete:
       tags:
         - cluster
@@ -387,27 +178,16 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "title": "1.1 release",
-                    "description": "xxxxxxxxxxxxxxx",
-                    "git": {
-                        "branch": "develop"
-                    }
-                }
+              $ref: "#/components/schemas/BuildDeployRequest"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                example: |
-                  {
-                    "data": {
-                      "//pipelinerunID": "pipelinerun record id",
-                      "pipelinerunID": 1000
-                    }
-                  }
+                properties: 
+                  data:
+                    $ref: "#/components/schemas/PipelinerunIDResponse"
         default:
           description: Unexpected error
           content:
@@ -429,24 +209,16 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "title": "1.1 release",
-                    "description": "xxxxxxxxxxxxxxx"
-                }
+              $ref: "#/components/schemas/DeployRequest"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                example: |
-                  {
-                    "data": {
-                      "//pipelinerunID": "pipelinerun record id",
-                      "pipelinerunID": 1000
-                    }
-                  }
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PipelinerunIDResponse"
         default:
           description: Unexpected error
           content:
@@ -467,24 +239,16 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "//pipelinerunID":"the pipelinerunID to rollback",
-                    "pipelinerunID": 1000
-                }
+              $ref: "#/components/schemas/RollbackRequest"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                example: |
-                  {
-                    "data": {
-                      "//pipelinerunID": "pipelinerun record id",
-                      "pipelinerunID": 1000
-                    }
-                  }
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PipelinerunIDResponse"
         default:
           description: Unexpected error
           content:
@@ -506,13 +270,9 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                    "data": {
-                      "//pipelinerunID": "pipelinerun record id",
-                      "pipelinerunID": 1000
-                    }
-                  }
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PipelinerunIDResponse"
         default:
           description: Unexpected error
           content:
@@ -598,12 +358,18 @@ paths:
       - $ref: 'common.yaml#/components/parameters/paramClusterID'
       - name: targetBranch
         in: query
+        schema:
+          type: string
         required: false
       - name: targetCommit
         in: query
+        schema:
+          type: string
         required: false
       - name: targetTag
         in: query
+        schema:
+          type: string
         required: false
     get:
       tags:
@@ -617,18 +383,9 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "codeInfo":{
-                              "Branch": "master"
-                              "CommitMsg": "last commit msg"
-                              "CommitID":"6cb5e13a2d3c59f2283fc6b52771729691aa9fc3"
-                              "Link": https://cloud.com/cloud-native/horizon/horizon/-/commits/feature/applications
-                          },
-                          "configDiff ":"diff":"@@ -1,7 +1,7 @@\n metadata:\n   name: web-api\n   namespace: cicd\n-  charVersion: v2.7.3\n+  charVersion: v2.7.4\n \n replicaCount: 2\n \n"
-                      }
-                  }
+                properties:
+                  data:
+                    $ref: "#/components/schemas/GetDiffResponse"
         default:
           description: Unexpected error
           content:
@@ -641,14 +398,20 @@ paths:
       - $ref: 'common.yaml#/components/parameters/paramClusterID'
       - name: podName
         in: query
+        schema:
+          type: string
         description: name of pod
         required: true
       - name: containerName
         in: query
+        schema:
+          type: string
         description: name of container
         required: true
       - name: tailLines
         in: query
+        schema:
+          type: string
         description: lines of log
         required: false
     get:
@@ -693,18 +456,9 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                    "data": {
-                      "pod1": {
-                        "result": true
-                      },
-                      "pod2": {
-                        "result": false,
-                        "errorMsg": "why do we failed to delete this pod"
-                      }
-                    }
-                  }
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BatchResponse"
         default:
           description: Unexpected error
           content:
@@ -882,22 +636,9 @@ paths:
           content:
             application/yaml:
               schema:
-                example: |
-                  {
-                      "data": {
-                          "host:": "",
-                          "params": {
-                              "kiosk": "iframe"
-                          },
-                          dashboards: [{
-                              title: "",
-                              uid: "",
-                              tags: [
-                                  "default"
-                              ]
-                          }]
-                      }
-                  }
+                properties:
+                  data:
+                    $ref: "#/components/schemas/GetGrafanaDashboardsResponse"
         default:
           description: Unexpected error
           content:
@@ -984,6 +725,8 @@ paths:
 
   /apis/core/v2/clusters:
     get:
+      tags:
+        - cluster
       description: list cluster
       operationId: listClusters
       parameters:
@@ -1319,11 +1062,10 @@ paths:
 
   /apis/core/v2/clusters/{clusterID}/exec:
     parameters:
-      - name: clusterID
-        in: path
-        description: The ID of the cluster
-        required: true
+      - $ref: "common.yaml#/components/parameters/paramClusterID"
     post:
+      tags:
+        - cluster
       operationId: execClusterCommand
       summary: Execute a command in specified pods in a cluster
       requestBody:
@@ -1366,3 +1108,395 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+
+components:
+  schemas:
+    ID:
+      type: integer
+      format: int64
+      description: id of cluster
+    Name:
+      type: string
+      description: name of cluster
+    Description:
+      type: string
+      description: description
+    Environment:
+      type: string
+      description: name of environment
+    Region:
+      type: string
+      description: name of region
+    RegionDisplayName:
+      type: string
+      description: display name of region
+    Scope:
+      type: object
+      description: scope of cluster, including environment and region
+      properties:
+        environment:
+          $ref: '#/components/schemas/Environment'
+        region:
+          $ref: '#/components/schemas/Region'
+        regionDisplayName:
+          $ref: '#/components/schemas/RegionDisplayName'
+    Template:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/TemplateName'
+        release:
+          $ref: '#/components/schemas/TemplateRelease'
+    TemplateName:
+      type: string
+      description: name of template
+    TemplateRelease:
+      type: string
+      description: release version of template
+    URL:
+      type: string
+    Subfolder:
+      type: string
+    Branch:
+      type: string
+    GitTag:
+      type: string
+    Commit:
+      type: string
+    Git:
+      type: object
+      properties:
+        url:
+          $ref: "#/components/schemas/URL"
+        subfolder:
+          $ref: "#/components/schemas/Subfolder"
+        branch:
+          $ref: "#/components/schemas/Branch"
+        tag:
+          $ref: "#/components/schemas/GitTag"
+        commit:
+          $ref: "#/components/schemas/Commit"
+    GitResponse:
+      type: object
+      properties:
+        sshURL:
+          $ref: '#/components/schemas/SSHURL'
+        httpURL:
+          $ref: '#/components/schemas/HTTPURL'
+    SSHURL:
+      type: string
+      description: ssh url of git repository
+    HTTPURL:
+      type: string
+      description: http url of git repository
+    Tags:
+      type: array
+      items:
+        $ref: '#/components/schemas/Tag'
+    Tag:
+      type: object
+      description: tag of cluster
+      properties:
+        key:
+          $ref: '#/components/schemas/Key'
+        value:
+          $ref: '#/components/schemas/Value'
+    Key:
+      type: string
+    Value:
+      type: string
+    CreatedAt:
+      $ref: "common.yaml#/components/schemas/Date"
+    UpdatedAt:
+      $ref: "common.yaml#/components/schemas/Date"
+    Priority:
+      type: string
+    ExpireTime:
+      type: string
+    BuildConfig:
+      type: object
+      additionalProperties: true
+    Manifest:
+      type: object
+      additionalProperties: true
+    TemplateConfig:
+      type: object
+      additionalProperties: true
+    TemplateInfo:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/TemplateName"
+        release:
+          $ref: "#/components/schemas/TemplateRelease"
+    ExtraMembers:
+      type: object
+      additionalProperties:
+        type: string
+    FullPath:
+      type: string
+    FullName:
+      type: string
+    ApplicationID:
+      type: integer
+    ApplicationName:
+      type: string
+    Application:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ApplicationID"
+        name:
+          $ref: "#/components/schemas/ApplicationName"
+
+    ListClusterResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        name:
+          $ref: "#/components/schemas/Name"
+        description:
+          $ref: "#/components/schemas/Description"
+        scope:
+          $ref: "#/components/schemas/Scope"
+        template:
+          $ref: "#/components/schemas/Template"
+        git:
+          $ref: "#/components/schemas/GitResponse"
+        tags:
+          $ref: "#/components/schemas/Tags"
+        createdAt:
+          $ref: "#/components/schemas/CreatedAt"
+        updatedAt:
+          $ref: "#/components/schemas/UpdatedAt"
+
+    CreateClusterRequestV2:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/Name"
+        description:
+          $ref: "#/components/schemas/Description"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        expireTime:
+          $ref: "#/components/schemas/ExpireTime"
+        git:
+          $ref: "#/components/schemas/Git"
+        tags:
+          $ref: "#/components/schemas/Tags"
+        buildConfig:
+          $ref: "#/components/schemas/BuildConfig"
+        templateInfo:
+          $ref: "#/components/schemas/TemplateInfo"
+        templateConfig:
+          $ref: "#/components/schemas/TemplateConfig"
+        extraMembers:
+          $ref: "#/components/schemas/ExtraMembers"
+
+    CreateClusterResponseV2:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        name:
+          $ref: "#/components/schemas/Name"
+        fullPath:
+          $ref: "#/components/schemas/FullPath"
+        applicationID:
+          $ref: "#/components/schemas/ApplicationID"
+        scope:
+          $ref: "#/components/schemas/Scope"
+        application:
+          $ref: "#/components/schemas/Application"
+        createdAt:
+          $ref: "#/components/schemas/CreatedAt"
+        updatedAt:
+          $ref: "#/components/schemas/UpdatedAt"
+
+    UpdateClusterRequestV2:
+      type: object
+      properties:
+        description:
+          $ref: "#/components/schemas/Description"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        expireTime:
+          $ref: "#/components/schemas/ExpireTime"
+        environment:
+          $ref: "#/components/schemas/Environment"
+        region:
+          $ref: "#/components/schemas/Region"
+        git:
+          $ref: "#/components/schemas/Git"
+        buildConfig:
+          $ref: "#/components/schemas/BuildConfig"
+        templateInfo:
+          $ref: "#/components/schemas/TemplateInfo"
+        templateConfig:
+          $ref: "#/components/schemas/TemplateConfig"
+
+    GetClusterResponseV2:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        name:
+          $ref: "#/components/schemas/Name"
+        description:
+          $ref: "#/components/schemas/Description"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        expireTime:
+          $ref: "#/components/schemas/ExpireTime"
+        scope:
+          $ref: "#/components/schemas/Scope"
+        fullPath:
+          $ref: "#/components/schemas/FullPath"
+        applicationID:
+          $ref: "#/components/schemas/ApplicationID"
+        applicationName:
+          $ref: "#/components/schemas/ApplicationName"
+        tags:
+          $ref: "#/components/schemas/Tags"
+        git:
+          $ref: "#/components/schemas/Git"
+        buildConfig:
+          $ref: "#/components/schemas/BuildConfig"
+        templateInfo:
+          $ref: "#/components/schemas/TemplateInfo"
+        templateConfig:
+          $ref: "#/components/schemas/TemplateConfig"
+        manifest:
+          $ref: "#/components/schemas/Manifest"
+        status:
+          type: string
+        ttlInSeconds:
+          type: integer
+        createdAt:
+          $ref: "#/components/schemas/CreatedAt"
+        updatedAt:
+          $ref: "#/components/schemas/UpdatedAt"
+        createdBy:
+          $ref: "common.yaml#/components/schemas/User"
+        updatedBy:
+          $ref: "common.yaml#/components/schemas/User"
+
+    BuildDeployRequestGit:
+      type: object
+      properties:
+        branch:
+          $ref: "#/components/schemas/Branch"
+        tag:
+          $ref: "#/components/schemas/GitTag"
+        commit:
+          $ref: "#/components/schemas/Commit"
+
+    Title:
+      type: string
+
+    BuildDeployRequest:
+      type: object
+      properties:
+        title:
+          $ref: "#/components/schemas/Title"
+        description:
+          $ref: "#/components/schemas/Description"
+        git:
+          $ref: "#/components/schemas/BuildDeployRequestGit"
+
+    PipelinerunID:
+      type: integer
+
+    PipelinerunIDResponse:
+      type: object
+      properties:
+        pipelinerunID:
+          $ref: "#/components/schemas/PipelinerunID"
+  
+    DeployRequest:
+      type: object
+      properties:
+        title:
+          $ref: "#/components/schemas/Title"
+        description:
+          $ref: "#/components/schemas/Description"
+
+    RollbackRequest:
+      type: object
+      properties:
+        pipelinerunID:
+          $ref: "#/components/schemas/PipelinerunID"
+
+    CodeInfo:
+      type: object
+      properties:
+        branch:
+          $ref: "#/components/schemas/Branch"
+        tag:
+          $ref: "#/components/schemas/GitTag"
+        commitID:
+          $ref: "#/components/schemas/Commit"
+        commitMsg:
+          type: string
+          description: commit message
+        Link:
+          type: string
+          description: code history link
+
+    GetDiffResponse:
+      type: object
+      properties:
+        codeInfo:
+          $ref: "#/components/schemas/CodeInfo"
+        ConfigDiff:
+          type: string
+
+    Result:
+      type: boolean
+    Error:
+      type: object
+    ErrorMsg:
+      type: string
+
+    OperationResult:
+      type: object
+      properties:
+        result:
+          $ref: "#/components/schemas/Result"
+        error:
+          $ref: "#/components/schemas/Error"
+        errorMsg:
+          $ref: "#/components/schemas/ErrorMsg"
+
+    BatchResponse:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/OperationResult"
+
+    DashBoard:
+      type: object
+      properties:
+        title:
+          $ref: "#/components/schemas/Title"
+        uid:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    GetGrafanaDashboardsResponse:
+      type: object
+      properties:
+        host:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+        dashboards:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashBoard"

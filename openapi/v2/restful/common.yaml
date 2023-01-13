@@ -41,6 +41,13 @@ components:
     queryFilter:
       name: filter
       in: query
+    queryGroupID:
+      name: groupID
+      in: query
+      description: group id
+      schema:
+        type: integer
+        format: int64
 
   schemas:
     PageParams:
@@ -102,7 +109,7 @@ components:
           type: string
           description: the name of user
         email:
-          type: string]
+          type: string
           description: the e-mail address of user
         id:
           type: integer

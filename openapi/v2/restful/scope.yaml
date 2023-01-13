@@ -17,18 +17,14 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "tags":[
-                              {
-                                  "name":"applications:read-write",
-                                  "desc":""
-                              },
-                              {
-                                  "name":"clusters:read-only",
-                                  "desc":""
-                              },
-                          ]
-                      }
-                  }
+                properties:
+                  data:
+                    type: array
+                    items:
+                      properties:
+                        name:
+                          type: string
+                          description: name of scope
+                        desc:
+                          type: string
+                          description: description of scope

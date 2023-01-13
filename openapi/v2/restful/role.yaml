@@ -17,40 +17,63 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":[
-                          {
-                              "name":"pe",
-                              "desc":"",
-                              "rules":[
-                                  {
-                                      "verbs":[
-                                          "create",
-                                          "get",
-                                          "update"
-                                      ],
-                                      "apiGroups":[
-                                          "core"
-                                      ],
-                                      "resources":[
-                                          "applications",
-                                          "groups/applications"
-                                      ],
-                                      "scopes":[
-                                          "*"
-                                      ],
-                                      "nonResourceURLs":[
-                                          "*"
-                                      ]
-                                  }
-                              ]
-                          }
-                      ]
-                  }
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Role"
+
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    Verbs:
+      type: array
+      items:
+        type: string
+    APIGroups:
+      type: array
+      items:
+        type: string
+    Resources:
+      type: array
+      items:
+        type: string
+    Scopes:
+      type: array
+      items:
+        type: string
+    NonResourceURLs:
+      type: array
+      items:
+        type: string
+    PolicyRules:
+      type: object
+      properties:
+        verbs:
+          $ref: "#/components/schemas/Verbs"
+        apiGroups:
+          $ref: "#/components/schemas/APIGroups"
+        resources:
+          $ref: "#/components/schemas/Resources"
+        scopes:
+          $ref: "#/components/schemas/Scopes"
+        nonResourceURLs:
+          $ref: "#/components/schemas/NonResourceURLs"
+    Role:
+      type: object
+      properties:
+        name:
+          type: string
+          description: name of role
+        desc:
+          type: string
+          description: desc of role
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyRules"

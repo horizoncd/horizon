@@ -24,74 +24,16 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "//name":"name is unique in the whole system, should satisfy the regex pattern: ^[a-z][a-z0-9-]*[a-z]$. And the length of name must less than 53",
-                    "name":"app",
-                    "description":"xxxxxxxxxxxx",
-                    "priority":"P0",
-                    "git":{
-                        "url":"ssh://git@cloudnative.com:22222/cloud-native/horizon/horizon.git",
-                        "subfolder":"/",
-                        "branch":"develop"
-                    },
-                    "buildConfig":{
-                        "buildInfo": {
-                            "buildTool": "ant",
-                            "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.horizon:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
-                        },
-                        "buildType": "java-normal",
-                        "environment": "javaapp_jdk17",
-                        "language": "java"
-                    },
-                    "templateInfo":{
-                        "name":"javaapp",
-                        "release":"v1.1.0"
-                    },
-                    "templateConfig":{
-                        "app":{
-                            "spec":{
-                                "replicas":1,
-                                "resource":"small"
-                            },
-                            "strategy":{
-                                "stepsTotal":1,
-                                "pauseType":"first"
-                            },
-                            "envs":[
-                                {
-                                    "name":"jvmExtra",
-                                    "value":"-Dserver.port=8080"
-                                }
-                            ],
-                            "health":{
-                                "check":"/api/test",
-                                "status":"/health/status",
-                                "online":"/health/online",
-                                "offline":"/health/offline",
-                                "port":8080
-                            }
-                        }
-                    }
-                }
+              $ref: "#/components/schemas/CreateOrUpdateApplicationRequestV2"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "id": 1,
-                          "name":"app",
-                          "groupID":1000,
-                          "fullPath": "/a/b/c",
-                          "priority":"P0",
-                          "createdAt":"2022-10-14T11:51:24+08:00",
-                          "updatedAt":"2022-10-18T21:42:28+08:00"
-                      }
-                  }
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreateApplicationResponseV2"
         default:
           description: Unexpected error
           content:
@@ -111,54 +53,7 @@ paths:
         content:
           application/json:
             schema:
-              example: |
-                {
-                    "description":"xxxxxxxxxxxx",
-                    "priority":"P0",
-                    "git":{
-                        "url":"ssh://git@cloudnative.com:22222/cloud-native/horizon/horizon.git",
-                        "subfolder":"/",
-                        "branch":"develop"
-                    },
-                    "buildConfig":{
-                        "buildInfo": {
-                            "buildTool": "ant",
-                            "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.horizon:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
-                        },
-                        "buildType": "horizon-normal",
-                        "environment": "javaapp_jdk17",
-                        "language": "java"
-                    },
-                    "templateInfo":{
-                        "name":"javaapp",
-                        "release":"v1.1.0"
-                    },
-                    "templateConfig":{
-                        "app":{
-                            "spec":{
-                                "replicas":1,
-                                "resource":"small"
-                            },
-                            "strategy":{
-                                "stepsTotal":1,
-                                "pauseType":"first"
-                            },
-                            "envs":[
-                                {
-                                    "name":"jvmExtra",
-                                    "value":"-Dserver.port=8080"
-                                }
-                            ],
-                            "health":{
-                                "check":"/api/test",
-                                "status":"/health/status",
-                                "online":"/health/online",
-                                "offline":"/health/offline",
-                                "port":8080
-                            }
-                        }
-                    }
-                }
+              $ref: "#/components/schemas/CreateOrUpdateApplicationRequestV2"
       responses:
         "200":
           description: Success
@@ -179,65 +74,9 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":{
-                          "id": 1,
-                          "name":"app",
-                          "groupID":1000,
-                          "fullPath": "/a/b/c",
-                          "description":"xxxxxxxxxxxx",
-                          "priority":"P0",
-                          "createdAt": "2022-10-14T11:51:24+08:00",
-                          "updatedAt": "2022-10-18T21:42:28+08:00",
-                          "git":{
-                              "url":"ssh://git@cloudnative.com:22222/cloud-native/horizon/horizon.git",
-                              "subfolder":"/",
-                              "branch":"develop"
-                          },
-                          "manifest":{
-                              "version":"0.0.2"
-                          },
-                          "buildConfig":{
-                              "buildInfo": {
-                                  "buildTool": "ant",
-                                  "buildxml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"groovy\" value=\"groovy\"/>\n    <property name=\"python\" value=\"python\"/>\n    <property name=\"mvn\" value=\"mvnJDK17\" />\n    <property name=\"src.dir\" value=\"src/main/java\"/>\n    <property name=\"resources.dir\" value=\"src/main/resources\"/>\n    <property name=\"dist.dir\" value=\"target\"/>\n    <property name=\"compress.dir\" value=\"compressed\"/>\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n    <property name=\"artifact.dir\" value=\"${baseline.dir}/compressed\"/>\n    <property name=\"conf.dir\" value=\"${baseline.dir}/conf\"/>\n    <property environment=\"env\"/>\n    <available property=\"folderexist\" file=\"${conf.dir}\" type=\"dir\"/>\n    <property name=\"module\" value=\"demo\"/>\n\n    <target name=\"package\">\n        <mkdir dir=\"${compress.dir}\"/>\n        <exec dir=\"${baseline.dir}\" executable=\"${mvn}\" failonerror=\"true\">\n            <arg line=\"package com.horizon:jib-maven-plugin:3.2.2:dockerBuild -Dmaven.test.skip=true -T 4 -Djib.from.image=${env.BASE_IMAGE} -Djib.to.image=${env.TARGET_IMAGE} -Djib.extraDirectories.paths=compressed -Djib.extraDirectories.into=/artifacts -Djib.container.appRoot=/artifacts -Djib.allowInsecureRegistries=true\" />\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
-                              },
-                              "buildType": "horizon-normal",
-                              "environment": "javaapp_jdk17",
-                              "language": "java"
-                          },
-                          "templateInfo":{
-                              "name":"javaapp",
-                              "release":"v1.1.0"
-                          },
-                          "templateConfig":{
-                              "app":{
-                                  "spec":{
-                                      "replicas":1,
-                                      "resource":"small"
-                                  },
-                                  "strategy":{
-                                      "stepsTotal":1,
-                                      "pauseType":"first"
-                                  },
-                                  "envs":[
-                                      {
-                                          "name":"jvmExtra",
-                                          "value":"-Dserver.port=8080"
-                                      }
-                                  ],
-                                  "health":{
-                                      "check":"/api/test",
-                                      "status":"/health/status",
-                                      "online":"/health/online",
-                                      "offline":"/health/offline",
-                                      "port":8080
-                                  }
-                              }
-                          }
-                      }
-                  }
+                properties:
+                  data:
+                    $ref: "#/components/schemas/GetApplicationResponseV2"
         default:
           description: Unexpected error
           content:
@@ -261,10 +100,7 @@ paths:
   /apis/core/v2/applications/{applicationID}/transfer:
     parameters:
       - $ref: 'common.yaml#/components/parameters/paramApplicationID'
-      - name: groupID
-        in: query
-        description: The id of the group that the application transfers to.
-        required: true
+      - $ref: "common.yaml#/components/parameters/queryGroupID"
     put:
       tags:
         - application
@@ -285,7 +121,9 @@ paths:
       - name: env
         in: query
         description: environment name
-        required: env
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - application
@@ -297,23 +135,11 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                      "data":[
-                          {
-                              "name": "hz",
-                              "displayName": "hangzhou",
-                              "disabled": false,
-                              "isDefault": true
-                          },
-                          {
-                              "name": "bj",
-                              "displayName": "beijing",
-                              "disabled": false,
-                              "isDefault": false
-                          }
-                      ]
-                  }
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RegionPart"
         default:
           description: Unexpected error
           content:
@@ -331,6 +157,8 @@ paths:
         - $ref: 'common.yaml#/components/parameters/pageNumber'
         - $ref: 'common.yaml#/components/parameters/pageSize'
         - name: cluster
+          schema:
+            type: string
           in: query
       responses:
         '200':
@@ -338,116 +166,11 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                    "data":
-                      {
-                        "total": 3,
-                        "items":
-                          [
-                            {
-                              "application": "sph",
-                              "cluster": "sph-sphtesttt",
-                              "pipeline": "horizon-pipeline",
-                              "result": "ok",
-                              "duration": 38,
-                              "tasks":
-                                [
-                                  {
-                                    "task": "build",
-                                    "result": "ok",
-                                    "duration": 26,
-                                    "steps":
-                                      [
-                                        {
-                                          "step": "git",
-                                          "result": "ok",
-                                          "duration": 0
-                                        },
-                                        {
-                                          "step": "compile",
-                                          "result": "ok",
-                                          "duration": 6
-                                        },
-                                        {
-                                          "step": "image",
-                                          "result": "ok",
-                                          "duration": 14
-                                        }
-                                      ]
-                                  },
-                                  {
-                                    "task": "deploy",
-                                    "result": "ok",
-                                    "duration": 12,
-                                    "steps":
-                                      [
-                                        {
-                                          "step": "deploy",
-                                          "result": "ok",
-                                          "duration": 6
-                                        }
-                                      ]
-                                  }
-                                ],
-                              "startedAt": "2022-09-21T11:05:26+08:00"
-                            },
-                            {
-                              "application": "sph",
-                              "cluster": "sph-sphtesttt",
-                              "pipeline": "horizon-pipeline",
-                              "result": "failed",
-                              "duration": 8,
-                              "tasks":
-                                [
-                                  {
-                                    "task": "build",
-                                    "result": "failed",
-                                    "duration": 8,
-                                    "steps":
-                                      [
-                                        {
-                                          "step": "git",
-                                          "result": "ok",
-                                          "duration": 0
-                                        },
-                                        {
-                                          "step": "compile",
-                                          "result": "failed",
-                                          "duration": 0
-                                        }
-                                      ]
-                                  }
-                                ],
-                              "startedAt": "2022-09-21T11:04:58+08:00"
-                            },
-                            {
-                              "application": "sph",
-                              "cluster": "sph-sphtesttt",
-                              "pipeline": "horizon-pipeline",
-                              "result": "failed",
-                              "duration": 7,
-                              "tasks":
-                                [
-                                  {
-                                    "task": "jib-build",
-                                    "result": "failed",
-                                    "duration": 7,
-                                    "steps":
-                                      [
-                                        {
-                                          "step": "jib-compile",
-                                          "result": "failed",
-                                          "duration": 1
-                                        }
-                                      ]
-                                  }
-                                ],
-                              "startedAt": "2022-09-21T11:04:01+08:00"
-                            }
-                          ]
-                      }
-                  }
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PipelineStats"
         default:
           description: Unexpected error
           content:
@@ -456,6 +179,8 @@ paths:
                 $ref: "common.yaml#/components/schemas/Error"
   /apis/core/v2/applications:
     get:
+      tags:
+        - application
       description: list applications
       operationId: listApplications
       parameters:
@@ -493,26 +218,254 @@ paths:
           content:
             application/json:
               schema:
-                example: |
-                  {
-                    "data": {
-                      "total": 69,
-                      "items": [
-                        {
-                          "fullPath": "/horizon/tomv2v2",
-                          "fullName": "horizon/tomv2v2",
-                          "name": "tomv2v2",
-                          "id": 193,
-                          "groupID": 59,
-                          "createdAt": "2022-10-14T11:51:24+08:00",
-                          "updatedAt": "2022-10-18T21:42:28+08:00"
-                        }
-                      ]
-                    }
-                  }
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      items:
+                        $ref: "#/components/schemas/ListApplicationResponse"
         default:
           description: Unexpected error
           content:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+components:
+  schemas:
+    ID:
+      type: integer
+    Name:
+      type: string
+    Description:
+      type: string
+    Priority:
+      type: string
+    URL:
+      type: string
+    Subfolder:
+      type: string
+    Branch:
+      type: string
+    Tag:
+      type: string
+    Commit:
+      type: string
+    TemplateName:
+      type: string
+    Release:
+      type: string
+    FullPath:
+      type: string
+    FullName:
+      type: string
+    GroupID:
+      type: integer
+    DisplayName:
+      type: string
+    Disabled:
+      type: boolean
+    IsDefault:
+      type: boolean
+    CreatedAt:
+      $ref: "common.yaml#/components/schemas/Date"
+    UpdatedAt:
+      $ref: "common.yaml#/components/schemas/Date"
+    Git:
+      type: object
+      properties:
+        url:
+          $ref: "#/components/schemas/URL"
+        subfolder:
+          $ref: "#/components/schemas/Subfolder"
+        branch:
+          $ref: "#/components/schemas/Branch"
+        tag:
+          $ref: "#/components/schemas/Tag"
+        commit:
+          $ref: "#/components/schemas/Commit"
+    BuildConfig:
+      type: object
+      additionalProperties: true
+    Manifest:
+      type: object
+      additionalProperties: true
+    TemplateConfig:
+      type: object
+      additionalProperties: true
+    TemplateInfo:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/TemplateName"
+        release:
+          $ref: "#/components/schemas/Release"
+    ExtraMembers:
+      type: object
+      additionalProperties:
+        type: string
+
+    CreateOrUpdateApplicationRequestV2:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/Name"
+        description:
+          $ref: "#/components/schemas/Description"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        git:
+          $ref: "#/components/schemas/Git"
+        buildConfig:
+          $ref: "#/components/schemas/BuildConfig"
+        templateInfo:
+          $ref: "#/components/schemas/TemplateInfo"
+        templateConfig:
+          $ref: "#/components/schemas/TemplateConfig"
+        extraMembers:
+          $ref: "#/components/schemas/ExtraMembers"
+
+    CreateApplicationResponseV2:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        name:
+          $ref: "#/components/schemas/Name"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        fullPath:
+          $ref: "#/components/schemas/FullPath"
+        groupID:
+          $ref: "#/components/schemas/GroupID"
+        createdAt:
+          $ref: "#/components/schemas/CreatedAt"
+        updatedAt:
+          $ref: "#/components/schemas/UpdatedAt"
+
+    GetApplicationResponseV2:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        name:
+          $ref: "#/components/schemas/Name"
+        description:
+          $ref: "#/components/schemas/Description"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        git:
+          $ref: "#/components/schemas/Git"
+        buildConfig:
+          $ref: "#/components/schemas/BuildConfig"
+        templateInfo:
+          $ref: "#/components/schemas/TemplateInfo"
+        templateConfig:
+          $ref: "#/components/schemas/TemplateConfig"
+        manifest:
+          $ref: "#/components/schemas/Manifest"
+        fullPath:
+          $ref: "#/components/schemas/FullPath"
+        groupID:
+          $ref: "#/components/schemas/GroupID"
+        createdAt:
+          $ref: "#/components/schemas/CreatedAt"
+        updatedAt:
+          $ref: "#/components/schemas/UpdatedAt"
+
+    ListApplicationResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        name:
+          $ref: "#/components/schemas/Name"
+        fullPath:
+          $ref: "#/components/schemas/FullPath"
+        fullName:
+          $ref: "#/components/schemas/FullName"
+        groupID:
+          $ref: "#/components/schemas/GroupID"
+        createdAt:
+          $ref: "#/components/schemas/CreatedAt"
+        updatedAt:
+          $ref: "#/components/schemas/UpdatedAt"
+
+    RegionPart:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/Name"
+        displayName:
+          $ref: "#/components/schemas/DisplayName"
+        disabled:
+          $ref: "#/components/schemas/Disabled"
+        isDefault:
+          $ref: "#/components/schemas/IsDefault"
+
+    Step:
+      type: string
+    Task:
+      type: string
+    Result:
+      type: string
+    Duration:
+      type: integer
+
+    StepStats:
+      type: object
+      properties:
+        step:
+          $ref: "#/components/schemas/Step"
+        result:
+          $ref: "#/components/schemas/Result"
+        duration:
+          $ref: "#/components/schemas/Duration"
+
+    TaskStats:
+      type: object
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+        result:
+          $ref: "#/components/schemas/Result"
+        duration:
+          $ref: "#/components/schemas/Duration"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/StepStats"
+
+    PipelinerunID:
+      type: integer
+    Application:
+      type: string
+    Cluster:
+      type: string
+    Pipeline:
+      type: string
+    StartedAt:
+      $ref: "common.yaml#/components/schemas/Date"
+
+    PipelineStats:
+      type: object
+      properties:
+        pipelinerunID:
+          $ref: "#/components/schemas/PipelinerunID"
+        application:
+          $ref: "#/components/schemas/Application"
+        cluster:
+          $ref: "#/components/schemas/Cluster"
+        pipeline:
+          $ref: "#/components/schemas/Pipeline"
+        result:
+          $ref: "#/components/schemas/Result"
+        duration:
+          $ref: "#/components/schemas/Duration"
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskStats"
+        startedAt:
+          $ref: "#/components/schemas/StartedAt"
