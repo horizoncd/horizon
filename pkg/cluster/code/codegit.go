@@ -54,7 +54,7 @@ func NewGitGetter(ctx context.Context, repos []*gitconfig.Repo) (GitGetter, erro
 			githubConfigured = true
 		}
 	}
-	if githubConfigured == false {
+	if !githubConfigured {
 		helper, _ := git.NewHelper(ctx, &gitconfig.Repo{
 			Kind: github.Kind,
 			URL:  githubURL,
