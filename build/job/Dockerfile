@@ -5,7 +5,7 @@ WORKDIR /horizon
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o bin/app -ldflags '-s -w' ./job/main.go
 
-FROM alpine/alpine:3.9 AS runtime
+FROM alpine:3.9 AS runtime
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
     apk update && apk add bash curl git && \
