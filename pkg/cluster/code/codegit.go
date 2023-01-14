@@ -8,6 +8,7 @@ import (
 	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/git"
+	"github.com/horizoncd/horizon/pkg/git/github"
 )
 
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/code/mock_codegit.go -package=mock_code
@@ -25,6 +26,11 @@ var _ GitGetter = (*gitGetter)(nil)
 
 var regexHost = regexp.MustCompile(`^(?:https?:)?(?://)?(?:[^@\n]+@)?([^:/\n]+)`)
 
+const (
+	githubHost = "github.com"
+	githubURL  = "https://github.com"
+)
+
 type gitGetter struct {
 	gitMap map[string]git.Helper
 }
@@ -32,6 +38,8 @@ type gitGetter struct {
 // NewGitGetter new a GitGetter instance
 func NewGitGetter(ctx context.Context, repos []*gitconfig.Repo) (GitGetter, error) {
 	gitMap := map[string]git.Helper{}
+	// Check if GitHub has been configured, and add it if not.
+	githubConfigured := false
 	for _, repo := range repos {
 		host, err := extractHostFromURL(repo.URL)
 		if err != nil {
@@ -42,6 +50,16 @@ func NewGitGetter(ctx context.Context, repos []*gitconfig.Repo) (GitGetter, erro
 			return nil, err
 		}
 		gitMap[host] = helper
+		if host == githubHost {
+			githubConfigured = true
+		}
+	}
+	if githubConfigured == false {
+		helper, _ := git.NewHelper(ctx, &gitconfig.Repo{
+			Kind: github.Kind,
+			URL:  githubURL,
+		})
+		gitMap[githubHost] = helper
 	}
 	return &gitGetter{
 		gitMap: gitMap,

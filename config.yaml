@@ -17,13 +17,7 @@ redisConfig:
   address: ""
   password: ""
   db: 1
-gitRepos:
-  - kind: gitlab
-    url: https://gitlab.com
-    token:
-  - kind: github
-    url: https://github.com
-    token:
+gitRepos: []
 gitopsRepoConfig:
   rootGroupPath: ""
   url:

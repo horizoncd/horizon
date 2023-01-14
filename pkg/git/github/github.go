@@ -28,6 +28,10 @@ type Helper struct {
 }
 
 func New(ctx context.Context, config *gitconfig.Repo) (git.Helper, error) {
+	if config.Token == "" {
+		return &Helper{client: github.NewClient(nil), url: config.URL}, nil
+	}
+
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: config.Token},
 	)
