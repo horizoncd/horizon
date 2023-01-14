@@ -135,7 +135,7 @@ type Param struct {
 }
 
 // nolint
-func testInit() {
+func testInit() error {
 	var err error
 
 	ctx = context.WithValue(context.Background(), common.UserContextKey(), &userauth.DefaultInfo{
@@ -145,7 +145,7 @@ func testInit() {
 	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
 
 	if param == "" {
-		return
+		return fmt.Errorf("Env not found")
 	}
 	var p *Param
 	if err := json.Unmarshal([]byte(param), &p); err != nil {
@@ -185,10 +185,15 @@ func testInit() {
 	if err := json.Unmarshal([]byte(applicationJSONStr2), &applicationJSONBlob2); err != nil {
 		panic(err)
 	}
+	return nil
 }
 
 func TestV2(t *testing.T) {
-	testInit()
+	err := testInit()
+	if err != nil {
+		return
+	}
+
 	r, err := NewApplicationGitlabRepo(ctx, rootGroup, g, defaultBranch)
 	assert.Nil(t, err)
 
