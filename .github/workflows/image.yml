@@ -25,6 +25,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: ./${{ matrix.components }}/Dockerfile
+          file: ./build/${{ matrix.components }}/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/horizon-${{ matrix.components }}:${{ github.ref_name }}
