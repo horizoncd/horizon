@@ -1,4 +1,4 @@
-FROM golang/golang:1.15.3 AS builder
+FROM golang:1.15.3 AS builder
 COPY . /horizon
 
 WORKDIR /horizon
