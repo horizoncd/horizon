@@ -1,6 +1,6 @@
 <img src="image/readme/horizon.svg">
 
-[![license](https://img.shields.io/hexpm/l/plug)]() [![version](https://img.shields.io/badge/horizon-v2.0.0-yellow)]()
+[![license](https://img.shields.io/hexpm/l/plug)]() [![version](https://img.shields.io/badge/horizon-v2.0.1-yellow)]()
 
 # Horizon
 
