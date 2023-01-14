@@ -121,7 +121,6 @@ func TestMain(m *testing.M) {
 
 	param := os.Getenv("GITLAB_PARAMS_FOR_TEST")
 	if param == "" {
-		os.Exit(m.Run())
 		return
 	}
 
