@@ -91,9 +91,9 @@ Within NetEase Cloud Music, the platform team delivers a variety of service temp
 
 ## To start using Horizon
 
-- Follow the [installation guide](https://horizoncd.github.io/tutorials/how-to-install).
-- Getting started by [deploying your first workload](https://horizoncd.github.io/tutorials/how-to-deploy-your-first-workload).
-- See other documentations on [horizoncd.github.io](https://horizoncd.github.io/user-guide/common-user/group).
+- Follow the [installation guide](https://horizoncd.github.io/docs/tutorials/how-to-install).
+- Getting started by [deploying your first workload](https://horizoncd.github.io/docs/tutorials/how-to-deploy-your-first-workload).
+- See other documentations on [horizoncd.github.io](https://horizoncd.github.io/docs/user-guide/common-user/group).
 
 ## Contributions
 
