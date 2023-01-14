@@ -3,7 +3,7 @@ COPY . /horizon
 
 WORKDIR /horizon
 
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o bin/app -ldflags '-s -w' ./job/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o bin/app -ldflags '-s -w' ./job/main.go
 
 FROM alpine/alpine:3.9 AS runtime
 
