@@ -13,7 +13,7 @@ Horizon is a cloud-native application Continues Delivery (CD) platform. Platform
 3. **multi-cloud** : Horizon provide a consistent application platform to manage multi-cloud, hybrid cloud.
 4. **infrastructure agnostic** ：horizon doesn't limit the kind of workload. the basic kubernetes workloads and self defined [CR](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) are all supported.
 5. **efficiency** ：platform team can quickly make an end to end best practice workload delivery based on Horizon template.
-6. **Production-Grade**：Within [NetEase Cloud Music](https://music.163.com/) about thousands of developer use horizon to deploy workload every.
+6. **Production-Grade**：Within [NetEase Cloud Music](https://music.163.com/) about thousands of developer use horizon to deploy workload everyday.
 
 ## Features
 
