@@ -4,7 +4,7 @@
 
 # Horizon
 
-Horizon is a cloud-native application Continues Delivery (CD) platform. Platform team can let the developers deploy their code to cloud and kubernetes easily, efficiency and with best practice. Horizon is inspired by ArgoCD and AWS Proton.
+Horizon is a cloud-native application Continues Delivery (CD) platform. Platform team can let the developers deploy their code and MiddleWares to cloud and kubernetes easily, efficiency and with best practice. Horizon is inspired by ArgoCD and AWS Proton.
 
 ## Why Horizon
 
