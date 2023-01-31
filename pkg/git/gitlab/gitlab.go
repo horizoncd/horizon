@@ -64,7 +64,7 @@ func (h Helper) GetTagArchive(ctx context.Context, gitURL, tagName string) (*git
 	}
 	shortID := ""
 	if t.Commit != nil {
-		shortID = t.Commit.ID
+		shortID = t.Commit.ShortID
 	}
 
 	return &git.Tag{
