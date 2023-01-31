@@ -3,57 +3,58 @@ module github.com/horizoncd/horizon
 go 1.15
 
 require (
-	github.com/Masterminds/goutils v1.1.1 // indirect
+	cloud.google.com/go/container v1.13.0 // indirect
+	cloud.google.com/go/monitoring v1.12.0 // indirect
+	cloud.google.com/go/trace v1.8.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/argoproj/argo-cd v1.8.7
 	github.com/argoproj/argo-rollouts v1.0.7
 	github.com/argoproj/gitops-engine v0.3.3
-	github.com/aws/aws-sdk-go v1.38.49
+	github.com/aws/aws-sdk-go v1.43.16
 	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-redis/redis/v8 v8.3.3
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/golang/mock v1.6.0
+	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20230130144813-da1008fb1ac8 // indirect
 	github.com/google/go-github/v41 v41.0.0
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/sessions v1.2.0
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/igm/sockjs-go v3.0.2+incompatible // indirect
-	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/johannesboyne/gofakes3 v0.0.0-20210819161434-5c8dfcfe5310
 	github.com/mozillazg/go-pinyin v0.18.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.12.1
 	github.com/rbcervilla/redisstore/v8 v8.1.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 	github.com/satori/go.uuid v1.2.0
-	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/sirupsen/logrus v1.9.0
+	github.com/stretchr/testify v1.8.1
 	github.com/tektoncd/cli v0.3.1-0.20201026154019-cb027b2293d7
 	github.com/tektoncd/pipeline v0.17.1-0.20201027063619-b7badedd0f65
 	github.com/tektoncd/triggers v0.8.2-0.20201007153255-cb1879311818
 	github.com/xanzy/go-gitlab v0.50.4
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	golang.org/x/net v0.1.0
+	golang.org/x/oauth2 v0.1.0
 	gopkg.in/igm/sockjs-go.v3 v3.0.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/driver/sqlite v1.1.5
 	gorm.io/gorm v1.21.15
 	gorm.io/plugin/prometheus v0.0.0-20210820101226-2a49866f83ee
 	gorm.io/plugin/soft_delete v1.0.3
-	helm.sh/helm/v3 v3.1.1
-	k8s.io/api v0.23.5
-	k8s.io/apimachinery v0.23.5
-	k8s.io/cli-runtime v0.23.5
+	helm.sh/helm/v3 v3.10.3
+	k8s.io/api v0.25.3
+	k8s.io/apimachinery v0.25.3
+	k8s.io/cli-runtime v0.25.2
 	k8s.io/client-go v11.0.1-0.20190816222228-6d55c1b1f1ca+incompatible
 	k8s.io/helm v2.17.0+incompatible
-	k8s.io/kubectl v0.23.5
+	k8s.io/kubectl v0.25.2
 	k8s.io/kubernetes v1.20.10
 	knative.dev/pkg v0.0.0-20201026165741-2f75016c1368
 	knative.dev/serving v0.18.3
