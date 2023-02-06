@@ -15,7 +15,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
 	"github.com/horizoncd/horizon/pkg/util/log"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

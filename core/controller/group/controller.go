@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-yaml/yaml"
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
@@ -25,6 +24,7 @@ import (
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"gopkg.in/yaml.v3"
 )
 
 const (

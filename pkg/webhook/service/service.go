@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-yaml/yaml"
+	"gopkg.in/yaml.v3"
 
 	webhookconfig "github.com/horizoncd/horizon/pkg/config/webhook"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"

@@ -3,7 +3,6 @@ module github.com/horizoncd/horizon
 go 1.15
 
 require (
-	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/argoproj/argo-cd v1.8.7
 	github.com/argoproj/argo-rollouts v1.0.7
@@ -12,7 +11,6 @@ require (
 	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-redis/redis/v8 v8.3.3
-	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v41 v41.0.0
@@ -21,7 +19,6 @@ require (
 	github.com/gorilla/sessions v1.2.0
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/igm/sockjs-go v3.0.2+incompatible // indirect
-	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/johannesboyne/gofakes3 v0.0.0-20210819161434-5c8dfcfe5310
 	github.com/mozillazg/go-pinyin v0.18.0
 	github.com/pkg/errors v0.9.1
@@ -40,8 +37,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/igm/sockjs-go.v3 v3.0.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
-	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/driver/sqlite v1.1.5
 	gorm.io/gorm v1.21.15
@@ -77,6 +73,7 @@ replace (
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.20.10
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.20.10
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.20.10
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.20.10
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.20.10
 	k8s.io/kubectl => k8s.io/kubectl v0.20.10

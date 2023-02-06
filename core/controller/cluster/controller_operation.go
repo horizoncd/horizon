@@ -682,14 +682,10 @@ func (c *controller) updateTagsFromFile(ctx context.Context,
 			if err != nil {
 				return err
 			}
-			midMap := file.Content[release.ChartName].(map[interface{}]interface{})
-			tagsMap := midMap[common.GitopsKeyTags].(map[interface{}]interface{})
+			midMap := file.Content[release.ChartName].(map[string]interface{})
+			tagsMap := midMap[common.GitopsKeyTags].(map[string]interface{})
 			tags := make([]*tmodels.Tag, 0, len(tagsMap))
 			for k, v := range tagsMap {
-				key, ok := k.(string)
-				if !ok {
-					continue
-				}
 				value, ok := v.(string)
 				if !ok {
 					continue
@@ -697,7 +693,7 @@ func (c *controller) updateTagsFromFile(ctx context.Context,
 				tags = append(tags, &tmodels.Tag{
 					ResourceID:   cluster.ID,
 					ResourceType: common.ResourceCluster,
-					Key:          key,
+					Key:          k,
 					Value:        value,
 				})
 			}

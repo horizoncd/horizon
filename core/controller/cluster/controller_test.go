@@ -66,10 +66,10 @@ import (
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/go-yaml/yaml"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"gopkg.in/yaml.v3"
 )
 
 // nolint

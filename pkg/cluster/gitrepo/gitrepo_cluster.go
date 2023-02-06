@@ -22,7 +22,7 @@ import (
 	timeutil "github.com/horizoncd/horizon/pkg/util/time"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"github.com/xanzy/go-gitlab"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	kyaml "sigs.k8s.io/yaml"
 )
 

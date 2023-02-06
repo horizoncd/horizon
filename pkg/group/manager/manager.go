@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-yaml/yaml"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	applicationdao "github.com/horizoncd/horizon/pkg/application/dao"
@@ -17,6 +16,7 @@ import (
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	regiondao "github.com/horizoncd/horizon/pkg/region/dao"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
 

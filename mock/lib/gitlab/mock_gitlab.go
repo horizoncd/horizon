@@ -316,20 +316,6 @@ func (mr *MockInterfaceMockRecorder) GetRepositoryArchive(ctx, pid, sha interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepositoryArchive", reflect.TypeOf((*MockInterface)(nil).GetRepositoryArchive), ctx, pid, sha)
 }
 
-// GetSSHURL mocks base method.
-func (m *MockInterface) GetSSHURL(ctx context.Context) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSSHURL", ctx)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetSSHURL indicates an expected call of GetSSHURL.
-func (mr *MockInterfaceMockRecorder) GetSSHURL(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSSHURL", reflect.TypeOf((*MockInterface)(nil).GetSSHURL), ctx)
-}
-
 // GetTag mocks base method.
 func (m *MockInterface) GetTag(ctx context.Context, pid interface{}, tag string) (*gitlab0.Tag, error) {
 	m.ctrl.T.Helper()
