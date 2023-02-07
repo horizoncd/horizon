@@ -69,7 +69,7 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 
 	labels := polymorphichelpers.MakeLabels(instance.Spec.Template.ObjectMeta.Labels)
 	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
-		List(context.TODO(), metav1.ListOptions{LabelSelector: labels})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: labels, ResourceVersion: "0"})
 	if err != nil {
 		return true, err
 	}
@@ -128,7 +128,7 @@ func (r *rollout) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]
 
 	labels := polymorphichelpers.MakeLabels(instance.Spec.Template.ObjectMeta.Labels)
 	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
-		List(context.TODO(), metav1.ListOptions{LabelSelector: labels})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: labels, ResourceVersion: "0"})
 	if err != nil {
 		return nil, err
 	}

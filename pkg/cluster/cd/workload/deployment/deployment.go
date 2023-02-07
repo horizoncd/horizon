@@ -60,7 +60,8 @@ func (d *deployment) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) 
 
 	selector := instance.Spec.Selector
 	pods, err := client.Basic.CoreV1().Pods(instance.ObjectMeta.Namespace).List(context.TODO(), metav1.ListOptions{
-		LabelSelector: polymorphichelpers.MakeLabels(selector.MatchLabels),
+		LabelSelector:   polymorphichelpers.MakeLabels(selector.MatchLabels),
+		ResourceVersion: "0",
 	})
 	if err != nil {
 		return nil, err
