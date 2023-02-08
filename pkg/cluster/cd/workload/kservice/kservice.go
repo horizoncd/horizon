@@ -63,7 +63,7 @@ func (s *service) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]
 
 	selector := metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: instance.Spec.Template.Labels})
 	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
-		List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: selector, ResourceVersion: "0"})
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (s *service) IsHealthy(node *v1alpha1.ResourceNode,
 
 	labels := polymorphichelpers.MakeLabels(instance.Spec.Template.ObjectMeta.Labels)
 	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
-		List(context.TODO(), metav1.ListOptions{LabelSelector: labels})
+		List(context.TODO(), metav1.ListOptions{LabelSelector: labels, ResourceVersion: "0"})
 	if err != nil {
 		return true, err
 	}
