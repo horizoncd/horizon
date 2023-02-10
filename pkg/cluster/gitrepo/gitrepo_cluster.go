@@ -1,6 +1,7 @@
 package gitrepo
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -1285,7 +1286,10 @@ func assembleTags(templateName string,
 }
 
 func marshal(b *[]byte, err *error, data interface{}) {
-	*b, *err = yaml.Marshal(data)
+	buf := bytes.NewBuffer(*b)
+	encoder := yaml.NewEncoder(buf)
+	encoder.SetIndent(2)
+	*err = encoder.Encode(data)
 	if (*err) != nil {
 		*err = perror.Wrap(herrors.ErrParamInvalid, (*err).Error())
 	}

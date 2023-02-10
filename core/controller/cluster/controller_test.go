@@ -1013,17 +1013,16 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(shellResp)
 	t.Logf("%s", string(b))
 
+	valueFile := gitrepo.ClusterValueFile{
+		FileName: common.GitopsFileTags,
+	}
+	err = yaml.Unmarshal([]byte(`javaapp:
+  tags: 
+    test_key: test_value`), &valueFile.Content)
+	assert.Nil(t, err)
+
 	clusterGitRepo.EXPECT().GetClusterValueFiles(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return([]gitrepo.ClusterValueFile{
-			{
-				FileName: common.GitopsFileTags,
-				Content: map[interface{}]interface{}{
-					"javaapp": map[interface{}]interface{}{
-						common.GitopsKeyTags: map[interface{}]interface{}{"test_key": "test_value"},
-					},
-				},
-			},
-		}, nil)
+		Return([]gitrepo.ClusterValueFile{valueFile}, nil)
 	// test rollback
 	clusterGitRepo.EXPECT().Rollback(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("rollback-commit", nil).AnyTimes()
@@ -1494,13 +1493,16 @@ syncDomainName:
 
 	renderObect, err := c.GetClusterOutput(context.TODO(), 123)
 	assert.Nil(t, err)
-	out, err := yaml.Marshal(renderObect)
+	builder := &strings.Builder{}
+	encoder := yaml.NewEncoder(builder)
+	encoder.SetIndent(2)
+	err = encoder.Encode(renderObect)
 	assert.Nil(t, err)
 	var ExpectOutPutStr = `syncDomainName:
   Description: sync domain name
   Value: app-cluster-demo.cloudnative.com
 `
-	assert.Equal(t, string(out), ExpectOutPutStr)
+	assert.Equal(t, ExpectOutPutStr, builder.String())
 }
 
 var envValue = `
