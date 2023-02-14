@@ -22,7 +22,7 @@ jobs:
           flavor: |
             latest=false
           images: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/loggie
+            ${{ secrets.DOCKERHUB_USERNAME }}/horizon-${{ matrix.components }}
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-,enable=${{ github.ref_type == 'branch' }}
