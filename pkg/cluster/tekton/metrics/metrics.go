@@ -19,6 +19,7 @@ const (
 	_task        = "task"
 	_result      = "result"
 	_template    = "template"
+	_application = "application"
 	_namespace   = "horizon"
 	_subsystem   = ""
 )
@@ -31,19 +32,19 @@ func init() {
 		Name:    prometheus.BuildFQName(_namespace, _subsystem, "pipelinerun_duration_seconds"),
 		Help:    "PipelineRun duration info",
 		Buckets: buckets,
-	}, []string{_environment, _template, _pipeline, _result})
+	}, []string{_environment, _application, _template, _pipeline, _result})
 
 	_trHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    prometheus.BuildFQName(_namespace, _subsystem, "taskrun_duration_seconds"),
 		Help:    "Taskrun duration info",
 		Buckets: buckets,
-	}, []string{_environment, _template, _pipeline, _result, _task})
+	}, []string{_environment, _application, _template, _pipeline, _result, _task})
 
 	_stepHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    prometheus.BuildFQName(_namespace, _subsystem, "step_duration_seconds"),
 		Help:    "Step duration info",
 		Buckets: buckets,
-	}, []string{_environment, _template, _pipeline, _result, _task, _step})
+	}, []string{_environment, _application, _template, _pipeline, _result, _task, _step})
 }
 
 func Observe(results *PipelineResults, data *global.HorizonMetaData) {
@@ -56,6 +57,7 @@ func Observe(results *PipelineResults, data *global.HorizonMetaData) {
 
 	_prHistogram.With(prometheus.Labels{
 		_environment: data.Environment,
+		_application: data.Application,
 		_template:    data.Template,
 		_pipeline:    prMetadata.Pipeline,
 		_result:      prResult.Result,
@@ -64,6 +66,7 @@ func Observe(results *PipelineResults, data *global.HorizonMetaData) {
 	for _, trResult := range trResults {
 		_trHistogram.With(prometheus.Labels{
 			_environment: data.Environment,
+			_application: data.Application,
 			_template:    data.Template,
 			_pipeline:    prMetadata.Pipeline,
 			_task:        trResult.Task,
@@ -74,6 +77,7 @@ func Observe(results *PipelineResults, data *global.HorizonMetaData) {
 	for _, stepResult := range stepResults {
 		_stepHistogram.With(prometheus.Labels{
 			_environment: data.Environment,
+			_application: data.Application,
 			_template:    data.Template,
 			_step:        stepResult.Step,
 			_pipeline:    prMetadata.Pipeline,
