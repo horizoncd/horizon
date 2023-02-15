@@ -8,7 +8,7 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func TestYamlTemplate(t *testing.T) { // nolint

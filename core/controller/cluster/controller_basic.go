@@ -32,7 +32,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 
 	"github.com/Masterminds/sprig"
-	"github.com/go-yaml/yaml"
+	"gopkg.in/yaml.v3"
 	kyaml "sigs.k8s.io/yaml"
 )
 
@@ -339,7 +339,7 @@ func RenderOutputObject(outPutStr, templateName string,
 		if clusterValueFile.Content != nil {
 			if content, ok := clusterValueFile.Content[templateName]; ok {
 				// if content is empty or {}, continue
-				if contentMap, ok := content.(map[interface{}]interface{}); !ok || len(contentMap) == 0 {
+				if contentMap, ok := content.(map[string]interface{}); !ok || len(contentMap) == 0 {
 					continue
 				}
 				binaryContent, err := yaml.Marshal(content)

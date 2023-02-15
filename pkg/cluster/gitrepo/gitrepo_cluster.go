@@ -1,6 +1,7 @@
 package gitrepo
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,7 +23,7 @@ import (
 	timeutil "github.com/horizoncd/horizon/pkg/util/time"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"github.com/xanzy/go-gitlab"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	kyaml "sigs.k8s.io/yaml"
 )
 
@@ -1285,7 +1286,10 @@ func assembleTags(templateName string,
 }
 
 func marshal(b *[]byte, err *error, data interface{}) {
-	*b, *err = yaml.Marshal(data)
+	buf := bytes.NewBuffer(*b)
+	encoder := yaml.NewEncoder(buf)
+	encoder.SetIndent(2)
+	*err = encoder.Encode(data)
 	if (*err) != nil {
 		*err = perror.Wrap(herrors.ErrParamInvalid, (*err).Error())
 	}

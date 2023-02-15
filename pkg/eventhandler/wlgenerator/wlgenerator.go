@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-yaml/yaml"
+	"gopkg.in/yaml.v3"
 
 	"github.com/horizoncd/horizon/core/common"
 	webhookctl "github.com/horizoncd/horizon/core/controller/webhook"
