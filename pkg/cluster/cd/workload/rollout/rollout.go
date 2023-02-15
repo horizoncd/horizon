@@ -85,10 +85,6 @@ func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 	templateHashSum := computePodSpecHash(instance.Spec.Template.Spec)
 OUTTER:
 	for _, pod := range pods.Items {
-		if dt := pod.ObjectMeta.DeletionTimestamp; dt != nil {
-			log.Debugf(context.TODO(), "[workload rollout: %v]: pod(%v) is terminating", node.Name, pod.Name)
-			continue
-		}
 		if pod.Status.Phase != "Running" {
 			log.Debugf(context.TODO(), "[workload rollout: %v]: pod(%v) is not Running", node.Name, pod.Name)
 			continue
