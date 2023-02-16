@@ -1286,11 +1286,13 @@ func assembleTags(templateName string,
 }
 
 func marshal(b *[]byte, err *error, data interface{}) {
-	buf := bytes.NewBuffer(*b)
+	buf := bytes.NewBuffer(make([]byte, 0))
 	encoder := yaml.NewEncoder(buf)
 	encoder.SetIndent(2)
 	*err = encoder.Encode(data)
 	if (*err) != nil {
 		*err = perror.Wrap(herrors.ErrParamInvalid, (*err).Error())
+	} else {
+		*b = buf.Bytes()
 	}
 }
