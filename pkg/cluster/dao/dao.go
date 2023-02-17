@@ -251,6 +251,14 @@ func (d *dao) List(ctx context.Context,
 				statement = statement.Where("c.template = ?", v)
 			case common.ClusterQueryByRelease:
 				statement = statement.Where("c.template_release = ?", v)
+			case common.ClusterQueryIsFavorite:
+				isFavoriteInter := query.Keywords[common.ClusterQueryIsFavorite]
+				isFavorite := isFavoriteInter.(bool)
+				if isFavorite {
+					statement = statement.Where("c.id in (select resource_id from tb_collection where resource_type = 'cluster')")
+				} else {
+					statement = statement.Where("c.id not in (select resource_id from tb_collection where resource_type = 'cluster')")
+				}
 			}
 		}
 		statement = statement.Where("c.deleted_ts = 0")
@@ -287,7 +295,7 @@ func (d *dao) List(ctx context.Context,
 		return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, res.Error.Error())
 	}
 
-	statement = d.db.Raw("select * from (?) as apps order by updated_at desc limit ? offset ?",
+	statement = d.db.Raw("select * from (?) as clsuters order by updated_at desc limit ? offset ?",
 		statement, query.Limit(), query.Offset())
 	res = statement.Scan(&clusters)
 	if res.Error != nil {

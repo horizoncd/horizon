@@ -108,6 +108,11 @@ func (a *API) List(c *gin.Context) {
 		keywords[common.TemplateQueryWithoutCI] = withoutCI
 	}
 
+	withRelease := c.Query(common.TemplateQueryWithRelease)
+	if withRelease != "" {
+		keywords[common.TemplateQueryWithRelease] = withRelease
+	}
+
 	userIDStr := c.Query(common.TemplateQueryByUser)
 	if userIDStr != "" {
 		userID, err := strconv.ParseUint(userIDStr, 10, 0)

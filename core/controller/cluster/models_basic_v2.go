@@ -167,3 +167,7 @@ type GetClusterResponseV2 struct {
 	UpdatedBy    *User     `json:"updatedBy,omitempty"`
 	TTLInSeconds *uint     `json:"ttlInSeconds,omitempty"`
 }
+
+type WhetherLike struct {
+	IsFavorite bool `json:"isFavorite"`
+}

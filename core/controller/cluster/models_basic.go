@@ -222,6 +222,7 @@ type ListClusterResponse struct {
 	Scope       *Scope                `json:"scope"`
 	Template    *Template             `json:"template"`
 	Git         *GitResponse          `json:"git"`
+	IsFavorite  *bool                 `json:"isFavorite"`
 	CreatedAt   time.Time             `json:"createdAt"`
 	UpdatedAt   time.Time             `json:"updatedAt"`
 	Tags        []*tagmodels.TagBasic `json:"tags,omitempty"`
@@ -243,8 +244,9 @@ func ofCluster(cluster *models.Cluster) *ListClusterResponse {
 		Git: &GitResponse{
 			GitURL: cluster.GitURL,
 		},
-		CreatedAt: cluster.CreatedAt,
-		UpdatedAt: cluster.UpdatedAt,
+		IsFavorite: cluster.IsFavorite,
+		CreatedAt:  cluster.CreatedAt,
+		UpdatedAt:  cluster.UpdatedAt,
 	}
 }
 

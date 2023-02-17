@@ -21,6 +21,8 @@ const (
 	ClusterQueryEnd           = "end"
 	ClusterQueryExtraOwner    = "extraOwner"
 	ClusterQueryHard          = "hard"
+	ClusterQueryIsFavorite    = "isFavorite"
+	ClusterQueryWithFavorite  = "withFavorite"
 )
 
 const (

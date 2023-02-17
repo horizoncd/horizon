@@ -15,6 +15,7 @@ import (
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	registryfty "github.com/horizoncd/horizon/pkg/cluster/registry/factory"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
+	collectionmanager "github.com/horizoncd/horizon/pkg/collection/manager"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
 	"github.com/horizoncd/horizon/pkg/config/template"
 	"github.com/horizoncd/horizon/pkg/config/token"
@@ -106,6 +107,7 @@ type Controller interface {
 	GetStep(ctx context.Context, clusterID uint) (resp *GetStepResponse, err error)
 	// Deprecated: for internal usage, v1 to v2
 	Upgrade(ctx context.Context, clusterID uint) error
+	Like(ctx context.Context, clusterID uint, like *WhetherLike) (err error)
 }
 
 type controller struct {
@@ -141,6 +143,7 @@ type controller struct {
 	tokenSvc              tokenservice.Service
 	tokenConfig           token.Config
 	templateUpgradeMapper template.UpgradeMapper
+	collectionManager     collectionmanager.Manager
 }
 
 var _ Controller = (*controller)(nil)
@@ -179,5 +182,6 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		tokenSvc:              param.TokenSvc,
 		tokenConfig:           config.TokenConfig,
 		templateUpgradeMapper: config.TemplateUpgradeMapper,
+		collectionManager:     param.CollectionMgr,
 	}
 }

@@ -16,6 +16,7 @@ type Cluster struct {
 	GitSubfolder    string
 	GitRef          string
 	GitRefType      string
+	IsFavorite      *bool
 	Template        string
 	TemplateRelease string
 	Status          string

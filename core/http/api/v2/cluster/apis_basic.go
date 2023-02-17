@@ -54,6 +54,21 @@ func parseContext(c *gin.Context) *q.Query {
 		keywords[common.ParamApplicationID] = applicationID
 	}
 
+	withFavorite := c.Query(common.ClusterQueryWithFavorite)
+	if withFavorite != "" {
+		keywords[common.ClusterQueryWithFavorite] = withFavorite
+	}
+
+	isFavoriteStr := c.Query(common.ClusterQueryIsFavorite)
+	if isFavoriteStr != "" {
+		isFavorite, err := strconv.ParseBool(isFavoriteStr)
+		if err != nil {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return nil
+		}
+		keywords[common.ClusterQueryIsFavorite] = isFavorite
+	}
+
 	filter := c.Query(common.ClusterQueryName)
 	if filter != "" {
 		keywords[common.ClusterQueryName] = filter
@@ -439,4 +454,33 @@ func (a *API) GetByName(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, resp)
+}
+
+func (a *API) SetFavorite(c *gin.Context) {
+	op := "cluster: like"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	var whetherLike cluster.WhetherLike
+	if err := c.ShouldBindJSON(&whetherLike); err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestBody,
+			fmt.Sprintf("request body is invalid, err: %v", err))
+		return
+	}
+
+	err = a.clusterCtl.Like(c, uint(clusterID), &whetherLike)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.Success(c)
 }
