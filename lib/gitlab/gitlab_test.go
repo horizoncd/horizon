@@ -197,8 +197,39 @@ func Test(t *testing.T) {
 			FilePath: "c",
 			Content:  "this is content for c",
 		},
+		{
+			Action:   FileCreate,
+			FilePath: "old_name.yaml",
+			Content:  "this is a yaml file for testing rename and delete file",
+		},
 	}
-	commit, err := g.WriteFiles(ctx, pid, newBranch, "commit", &startBranch, actions)
+	commit, err := g.WriteFiles(ctx, pid, newBranch, "commit to create file",
+		&startBranch, actions)
+	assert.Nil(t, err)
+	b, _ = json.Marshal(commit)
+	t.Logf(string(b))
+
+	commit, err = g.WriteFiles(ctx, pid, newBranch, "commit to rename file",
+		&startBranch, []CommitAction{
+			{
+				Action:       FileMove,
+				FilePath:     "new_dir/new_name.yaml",
+				PreviousPath: "old_name.yaml",
+			},
+		},
+	)
+	assert.Nil(t, err)
+	b, _ = json.Marshal(commit)
+	t.Logf(string(b))
+
+	commit, err = g.WriteFiles(ctx, pid, newBranch, "commit to delete file",
+		&startBranch, []CommitAction{
+			{
+				Action:   FileDelete,
+				FilePath: "new_dir/new_name.yaml",
+			},
+		},
+	)
 	assert.Nil(t, err)
 	b, _ = json.Marshal(commit)
 	t.Logf(string(b))

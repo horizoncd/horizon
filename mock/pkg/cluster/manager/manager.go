@@ -207,3 +207,18 @@ func (mr *MockManagerMockRecorder) UpdateByID(ctx, id, cluster interface{}) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByID", reflect.TypeOf((*MockManager)(nil).UpdateByID), ctx, id, cluster)
 }
+
+// UpdateTemplateByID mocks base method.
+func (m *MockManager) UpdateTemplateByID(ctx context.Context, id uint, template, release string) (*models.Cluster, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTemplateByID", ctx, id, template, release)
+	ret0, _ := ret[0].(*models.Cluster)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateTemplateByID indicates an expected call of UpdateTemplateByID.
+func (mr *MockManagerMockRecorder) UpdateTemplateByID(ctx, id, template, release interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTemplateByID", reflect.TypeOf((*MockManager)(nil).UpdateTemplateByID), ctx, id, template, release)
+}

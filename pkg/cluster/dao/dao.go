@@ -25,6 +25,7 @@ type DAO interface {
 	GetByID(ctx context.Context, id uint, includeSoftDelete bool) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
+	UpdateTemplateByID(ctx context.Context, id uint, template, release string) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	List(ctx context.Context, query *q.Query, withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error)
@@ -160,6 +161,34 @@ func (d *dao) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) 
 		clusterInDB.EnvironmentName = cluster.EnvironmentName
 		clusterInDB.RegionName = cluster.RegionName
 		clusterInDB.ExpireSeconds = cluster.ExpireSeconds
+
+		// 3. save cluster after updated
+		if err := tx.Save(&clusterInDB).Error; err != nil {
+			return herrors.NewErrUpdateFailed(herrors.ClusterInDB, err.Error())
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return &clusterInDB, nil
+}
+
+func (d *dao) UpdateTemplateByID(ctx context.Context, id uint,
+	template, release string) (*models.Cluster, error) {
+	var clusterInDB models.Cluster
+	if err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 1. get cluster in db first
+		result := tx.Raw(sqlcommon.ClusterQueryByID, id).Scan(&clusterInDB)
+		if result.Error != nil {
+			return herrors.NewErrGetFailed(herrors.ClusterInDB, result.Error.Error())
+		}
+		if result.RowsAffected == 0 {
+			return herrors.NewErrNotFound(herrors.ClusterInDB, "row affected = 0")
+		}
+		// 2. update template and release
+		clusterInDB.Template = template
+		clusterInDB.TemplateRelease = release
 
 		// 3. save cluster after updated
 		if err := tx.Save(&clusterInDB).Error; err != nil {

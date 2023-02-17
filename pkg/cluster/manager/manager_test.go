@@ -248,6 +248,11 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.False(t, notExists)
 
+	cluster, err = mgr.UpdateTemplateByID(ctx, cluster.ID, "rollout", "v1.2.3")
+	assert.Nil(t, err)
+	assert.Equal(t, cluster.Template, "rollout")
+	assert.Equal(t, cluster.TemplateRelease, "v1.2.3")
+
 	err = mgr.DeleteByID(ctx, cluster.ID)
 	assert.Nil(t, err)
 

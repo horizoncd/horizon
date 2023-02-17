@@ -8,6 +8,7 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
@@ -144,7 +145,8 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		// freed cluster is allowed to deploy without diff
 		commit = configCommit.Master
 	} else {
-		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, prCreated.ID)
+		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name,
+			gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &prCreated.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -229,7 +231,7 @@ func (c *controller) Rollback(ctx context.Context,
 	if pipelinerun.Action == prmodels.ActionRestart || pipelinerun.Status != string(prmodels.StatusOK) ||
 		pipelinerun.ConfigCommit == "" {
 		return nil, perror.Wrapf(herrors.ErrParamInvalid,
-			"the pipelinerun with id: %v can not be rollbacked", r.PipelinerunID)
+			"the pipelinerun with id: %v can not be rolled back", r.PipelinerunID)
 	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -272,7 +274,13 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	// 4. rollback cluster config in git repo and update status
+	// 4. update restart time in gitops branch
+	err = c.mergeDefaultBranchIntoGitOps(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. rollback cluster config in git repo and update status
 	newConfigCommit, err := c.clusterGitRepo.Rollback(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
 	if err != nil {
 		return nil, err
@@ -282,8 +290,9 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	// 5. merge branch & update config commit and status
-	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, prCreated.ID)
+	// 6. merge branch & update config commit and status
+	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name,
+		gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &prCreated.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +305,8 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	if err := c.updateTagsFromFile(ctx, application, cluster); err != nil {
+	// 7. update tags and template in db
+	if err := c.updateTagsAndTemplateFromFile(ctx, application, cluster); err != nil {
 		return nil, err
 	}
 
@@ -669,19 +679,31 @@ func (c *controller) updatePRStatus(ctx context.Context, action string, prID uin
 	return nil
 }
 
-func (c *controller) updateTagsFromFile(ctx context.Context,
+func (c *controller) updateTagsAndTemplateFromFile(ctx context.Context,
 	application *amodels.Application, cluster *cmodels.Cluster) error {
 	files, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return err
 	}
 
+	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return err
+	}
+	release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
+		templateFromFile.Name, templateFromFile.Release)
+	if err != nil {
+		return err
+	}
+
+	// update template
+	_, err = c.clusterMgr.UpdateTemplateByID(ctx, cluster.ID, release.TemplateName, release.Name)
+	if err != nil {
+		return err
+	}
+
 	for _, file := range files {
 		if file.FileName == common.GitopsFileTags {
-			release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-			if err != nil {
-				return err
-			}
 			midMap := file.Content[release.ChartName].(map[string]interface{})
 			tagsMap := midMap[common.GitopsKeyTags].(map[string]interface{})
 			tags := make([]*tmodels.Tag, 0, len(tagsMap))
@@ -698,6 +720,24 @@ func (c *controller) updateTagsFromFile(ctx context.Context,
 				})
 			}
 			return c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, cluster.ID, tags)
+		}
+	}
+	return nil
+}
+
+func (c *controller) mergeDefaultBranchIntoGitOps(ctx context.Context, application, cluster string) error {
+	gitOpsBranch := gitrepo.GitOpsBranch
+	defaultBranch := c.clusterGitRepo.DefaultBranch()
+	diff, err := c.clusterGitRepo.CompareConfig(ctx, application, cluster,
+		&gitOpsBranch, &defaultBranch)
+	if err != nil {
+		return err
+	}
+	if diff != "" {
+		_, err = c.clusterGitRepo.MergeBranch(ctx, application,
+			cluster, defaultBranch, gitOpsBranch, nil)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

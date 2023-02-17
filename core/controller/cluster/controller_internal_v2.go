@@ -9,6 +9,7 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
@@ -94,7 +95,8 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}
 
 	// 5. merge branch from gitops to master  and update status
-	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, pr.ID)
+	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name,
+		gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &pr.ID)
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}

@@ -16,6 +16,7 @@ import (
 	registryfty "github.com/horizoncd/horizon/pkg/cluster/registry/factory"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
+	"github.com/horizoncd/horizon/pkg/config/template"
 	"github.com/horizoncd/horizon/pkg/config/token"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	"github.com/horizoncd/horizon/pkg/environment/service"
@@ -103,76 +104,80 @@ type Controller interface {
 	GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error)
 	GetResourceTree(ctx context.Context, clusterID uint) (*GetResourceTreeResponse, error)
 	GetStep(ctx context.Context, clusterID uint) (resp *GetStepResponse, err error)
+	// Upgrade is used internally to upgrade the cluster version
+	Upgrade(ctx context.Context, clusterID uint) error
 }
 
 type controller struct {
-	clusterMgr           clustermanager.Manager
-	clusterGitRepo       gitrepo.ClusterGitRepo
-	applicationGitRepo   appgitrepo.ApplicationGitRepo
-	commitGetter         code.GitGetter
-	cd                   cd.CD
-	applicationMgr       appmanager.Manager
-	autoFreeSvc          *service.AutoFreeSVC
-	applicationSvc       applicationservice.Service
-	templateReleaseMgr   trmanager.Manager
-	templateSchemaGetter templateschema.Getter
-	outputGetter         output.Getter
-	envMgr               envmanager.Manager
-	envRegionMgr         environmentregionmapper.Manager
-	regionMgr            regionmanager.Manager
-	groupSvc             groupsvc.Service
-	pipelinerunMgr       prmanager.Manager
-	pipelineMgr          pipelinemanager.Manager
-	tektonFty            factory.Factory
-	registryFty          registryfty.Factory
-	userManager          usermanager.Manager
-	userSvc              usersvc.Service
-	memberManager        member.Manager
-	groupManager         groupmanager.Manager
-	schemaTagManager     templateschematagmanager.Manager
-	tagMgr               tagmanager.Manager
-	grafanaService       grafanaservice.Service
-	grafanaConfig        grafana.Config
-	buildSchema          *build.Schema
-	eventMgr             eventmanager.Manager
-	tokenSvc             tokenservice.Service
-	tokenConfig          token.Config
+	clusterMgr            clustermanager.Manager
+	clusterGitRepo        gitrepo.ClusterGitRepo
+	applicationGitRepo    appgitrepo.ApplicationGitRepo
+	commitGetter          code.GitGetter
+	cd                    cd.CD
+	applicationMgr        appmanager.Manager
+	autoFreeSvc           *service.AutoFreeSVC
+	applicationSvc        applicationservice.Service
+	templateReleaseMgr    trmanager.Manager
+	templateSchemaGetter  templateschema.Getter
+	outputGetter          output.Getter
+	envMgr                envmanager.Manager
+	envRegionMgr          environmentregionmapper.Manager
+	regionMgr             regionmanager.Manager
+	groupSvc              groupsvc.Service
+	pipelinerunMgr        prmanager.Manager
+	pipelineMgr           pipelinemanager.Manager
+	tektonFty             factory.Factory
+	registryFty           registryfty.Factory
+	userManager           usermanager.Manager
+	userSvc               usersvc.Service
+	memberManager         member.Manager
+	groupManager          groupmanager.Manager
+	schemaTagManager      templateschematagmanager.Manager
+	tagMgr                tagmanager.Manager
+	grafanaService        grafanaservice.Service
+	grafanaConfig         grafana.Config
+	buildSchema           *build.Schema
+	eventMgr              eventmanager.Manager
+	tokenSvc              tokenservice.Service
+	tokenConfig           token.Config
+	templateUpgradeMapper template.UpgradeMapper
 }
 
 var _ Controller = (*controller)(nil)
 
 func NewController(config *config.Config, param *param.Param) Controller {
 	return &controller{
-		clusterMgr:           param.ClusterMgr,
-		clusterGitRepo:       param.ClusterGitRepo,
-		applicationGitRepo:   param.ApplicationGitRepo,
-		commitGetter:         param.GitGetter,
-		cd:                   param.Cd,
-		applicationMgr:       param.ApplicationManager,
-		applicationSvc:       param.ApplicationSvc,
-		templateReleaseMgr:   param.TemplateReleaseManager,
-		templateSchemaGetter: param.TemplateSchemaGetter,
-		autoFreeSvc:          param.AutoFreeSvc,
-		outputGetter:         param.OutputGetter,
-		envMgr:               param.EnvMgr,
-		envRegionMgr:         param.EnvRegionMgr,
-		regionMgr:            param.RegionMgr,
-		groupSvc:             param.GroupSvc,
-		pipelinerunMgr:       param.PipelinerunMgr,
-		pipelineMgr:          param.PipelineMgr,
-		tektonFty:            param.TektonFty,
-		registryFty:          registryfty.Fty,
-		userManager:          param.UserManager,
-		userSvc:              param.UserSvc,
-		memberManager:        param.MemberManager,
-		groupManager:         param.GroupManager,
-		schemaTagManager:     param.ClusterSchemaTagMgr,
-		tagMgr:               param.TagManager,
-		grafanaService:       param.GrafanaService,
-		grafanaConfig:        config.GrafanaConfig,
-		buildSchema:          param.BuildSchema,
-		eventMgr:             param.EventManager,
-		tokenSvc:             param.TokenSvc,
-		tokenConfig:          config.TokenConfig,
+		clusterMgr:            param.ClusterMgr,
+		clusterGitRepo:        param.ClusterGitRepo,
+		applicationGitRepo:    param.ApplicationGitRepo,
+		commitGetter:          param.GitGetter,
+		cd:                    param.Cd,
+		applicationMgr:        param.ApplicationManager,
+		applicationSvc:        param.ApplicationSvc,
+		templateReleaseMgr:    param.TemplateReleaseManager,
+		templateSchemaGetter:  param.TemplateSchemaGetter,
+		autoFreeSvc:           param.AutoFreeSvc,
+		outputGetter:          param.OutputGetter,
+		envMgr:                param.EnvMgr,
+		envRegionMgr:          param.EnvRegionMgr,
+		regionMgr:             param.RegionMgr,
+		groupSvc:              param.GroupSvc,
+		pipelinerunMgr:        param.PipelinerunMgr,
+		pipelineMgr:           param.PipelineMgr,
+		tektonFty:             param.TektonFty,
+		registryFty:           registryfty.Fty,
+		userManager:           param.UserManager,
+		userSvc:               param.UserSvc,
+		memberManager:         param.MemberManager,
+		groupManager:          param.GroupManager,
+		schemaTagManager:      param.ClusterSchemaTagMgr,
+		tagMgr:                param.TagManager,
+		grafanaService:        param.GrafanaService,
+		grafanaConfig:         config.GrafanaConfig,
+		buildSchema:           param.BuildSchema,
+		eventMgr:              param.EventManager,
+		tokenSvc:              param.TokenSvc,
+		tokenConfig:           config.TokenConfig,
+		templateUpgradeMapper: config.TemplateUpgradeMapper,
 	}
 }

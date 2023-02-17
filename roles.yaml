@@ -1,443 +1,545 @@
-RolePriorityRankDesc: [pe,owner,maintainer,guest]
+RolePriorityRankDesc: [pe,owner,maintainer,tagger,guest]
 DefaultRole: guest
 Roles:
-  - name: owner
-    desc: owner为组/应用/集群的拥有者,拥有最高权限
-    rules:
-      - apiGroups:
-          - core
-        resources:
-          - applications
-          - groups/applications
-          - applications/members
-          - applications/envtemplates
-          - applications/defaultregions
-          - applications/transfer
-          - applications/selectableregions
-          - applications/subresourcetags
-          - applications/webhooks
-        verbs:
-          - "*"
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - groups
-          - groups/members
-          - groups/groups
-          - groups/transfer
-          - groups/webhooks
-        verbs:
-          - "*"
-        scopes:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - groups/oauthapps
-          - oauthapps
-          - oauthapps/clientsecret
-        verbs:
-          - "*"
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - applications/clusters
-          - clusters
-          - clusters/builddeploy
-          - clusters/deploy
-          - clusters/diffs
-          - clusters/next
-          - clusters/restart
-          - clusters/rollback
-          - clusters/status
-          - clusters/buildstatus
-          - clusters/step
-          - clusters/resourcetree
-          - clusters
-          - clusters/members
-          - clusters/pipelineruns
-          - clusters/terminal
-          - clusters/containerlog
-          - clusters/exec
-          - clusters/online
-          - clusters/offline
-          - clusters/tags
-          - pipelineruns
-          - pipelineruns/stop
-          - pipelineruns/log
-          - pipelineruns/diffs
-          - clusters/dashboards
-          - clusters/pods
-          - clusters/pod
-          - clusters/free
-          - clusters/events
-          - clusters/outputs
-          - clusters/promote
-          - clusters/shell
-          - clusters/pause
-          - clusters/resume
-          - clusters/containers
-          - clusters/webhooks
-        verbs:
-          - "*"
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - clusters/templateschematags
-        verbs:
-          - get
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - groups/templates
-          - templates/releases
-          - templates
-          - templates/members
-          - templatereleases/members
-          - templatereleases
-          - templatereleases/sync
-          - templatereleases/schema
-        verbs:
-          - "*"
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - webhooks
-          - webhooks/logs
-          - webhooklogs
-          - webhooklogs/retry
-        verbs:
-          - "*"
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-  - name: maintainer
-    desc: maintainer为组/应用/集群的管理者，拥有除删除资源之外的其他权限，并且也可以进行成员管理
-    rules:
-      - apiGroups:
-          - core
-        resources:
-          - applications
-          - groups/applications
-          - applications/members
-          - applications/envtemplates
-          - applications/defaultregions
-          - applications/transfer
-          - applications/selectableregions
-          - applications/subresourcetags
-        verbs:
-          - create
-          - get
-          - update
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - groups
-          - groups/members
-          - groups/groups
-          - groups/transfer
-        verbs:
-          - get
-          - create
-          - update
-        scopes:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - applications/clusters
-          - clusters
-          - clusters/builddeploy
-          - clusters/deploy
-          - clusters/diffs
-          - clusters/next
-          - clusters/restart
-          - clusters/rollback
-          - clusters/status
-          - clusters/buildstatus
-          - clusters/step
-          - clusters/resourcetree
-          - clusters/members
-          - clusters/pipelineruns
-          - clusters/terminal
-          - clusters/containerlog
-          - clusters/exec
-          - clusters/online
-          - clusters/offline
-          - clusters/tags
-          - pipelineruns
-          - pipelineruns/stop
-          - pipelineruns/log
-          - pipelineruns/diffs
-          - clusters/dashboards
-          - clusters/pods
-          - clusters/pod
-          - clusters/free
-          - clusters/events
-          - clusters/outputs
-          - clusters/promote
-          - clusters/shell
-          - clusters/pause
-          - clusters/resume
-          - clusters/containers
-        verbs:
-          - create
-          - get
-          - update
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - clusters/templateschematags
-        verbs:
-          - get
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - clusters/pods
-        verbs:
-          - delete
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - groups/oauthapps
-          - oauthapps
-          - oauthapps/clientsecret
-          - templates/releases
-          - templatereleases/schema
-          - groups/templates
-          - templatereleases
-          - templates
-        verbs:
-          - get
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - templates/members
-          - templatereleases/members
-        verbs:
-          - get
-          - update
-          - create
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-  - name: pe
-    desc: pe为应用/集群的管理者，拥有除删除资源之外的其他权限，并且也可以进行成员管理。破格修改资源上限等
-    rules:
-      - apiGroups:
-          - core
-        resources:
-          - applications
-          - groups/applications
-          - applications/members
-          - applications/envtemplates
-          - applications/defaultregions
-          - applications/transfer
-          - applications/selectableregions
-        verbs:
-          - create
-          - get
-          - update
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - groups
-          - groups/members
-          - groups/groups
-          - groups/transfer
-          - groups/regionselectors
-        verbs:
-          - get
-          - create
-          - update
-        scopes:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - templates/releases
-          - templatereleases/schema
-          - groups/templates
-          - templates
-          - templatereleases
-        verbs:
-          - get
-        scopes:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - applications/clusters
-          - clusters/builddeploy
-          - clusters/deploy
-          - clusters/diffs
-          - clusters/next
-          - clusters/restart
-          - clusters/rollback
-          - clusters/status
-          - clusters/buildstatus
-          - clusters/step
-          - clusters/resourcetree
-          - clusters/members
-          - clusters/pipelineruns
-          - clusters/terminal
-          - clusters/containerlog
-          - clusters/exec
-          - clusters/online
-          - clusters/offline
-          - clusters/tags
-          - pipelineruns
-          - pipelineruns/stop
-          - pipelineruns/log
-          - pipelineruns/diffs
-          - clusters/dashboards
-          - clusters/pods
-          - clusters/free
-          - clusters/templateschematags
-          - clusters/events
-          - clusters/outputs
-          - clusters/promote
-          - clusters/shell
-          - clusters/pause
-          - clusters/resume
-          - clusters/containers
-          - templates/members
-          - templatereleases/members
-        verbs:
-          - create
-          - get
-          - update
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - clusters
-        scopes:
-          - '*'
-        verbs:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - groups/oauthapps
-          - oauthapps
-          - oauthapps/clientsecret
-        verbs:
-          - get
-        scopes:
-          - "*"
-        nonResourceURLs:
-          - "*"
-  - name: guest
-    desc: guest为只读人员，拥有组/应用/项目的只读权限，以及测试环境集群创建的权限
-    rules:
-      - apiGroups:
-          - core
-        resources:
-          - groups
-          - groups/members
-          - groups/groups
-          - groups/oauthapps
-          - groups/templates
-          - templates
-          - templatereleases
-          - templatereleases/schema
-          - templates/releases
-          - templates/members
-          - templatereleases/members
-          - oauthapps
-          - oauthapps/clientsecret
-          - applications
-          - groups/applications
-          - applications/clusters
-          - applications/members
-          - applications/envtemplates
-          - applications/defaultregions
-          - applications/selectableregions
-          - clusters
-          - clusters/diffs
-          - clusters/status
-          - clusters/buildstatus
-          - clusters/step
-          - clusters/resourcetree
-          - clusters/members
-          - clusters/pipelineruns
-          - clusters/containerlog
-          - clusters/tags
-          - pipelineruns
-          - pipelineruns/log
-          - pipelineruns/diffs
-          - clusters/dashboards
-          - clusters/pods
-          - clusters/events
-          - clusters/outputs
-          - clusters/templateschematags
-          - clusters/containers
-        verbs:
-          - get
-        scopes:
-          - "*"
-      - apiGroups:
-          - core
-        resources:
-          - applications/clusters
-        verbs:
-          - create
-          - get
-          - update
-        scopes:
-          - "test/*"
-          - "reg/*"
-          - "perf/*"
-          - "pre/*"
-        nonResourceURLs:
-          - "*"
+- name: owner
+  desc: the owner of the group/application/cluster, having the highest authority
+  rules:
+    - apiGroups:
+        - core
+      resources:
+        - applications
+        - groups/applications
+        - applications/members
+        - applications/envtemplates
+        - applications/defaultregions
+        - applications/transfer
+        - applications/selectableregions
+        - applications/subresourcetags
+        - applications/pipelinestats
+        - applications/webhooks
+      verbs:
+        - "*"
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups
+        - groups/members
+        - groups/groups
+        - groups/transfer
+        - groups/webhooks
+      verbs:
+        - "*"
+      scopes:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups/oauthapps
+        - oauthapps
+        - oauthapps/clientsecret
+      verbs:
+        - "*"
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - applications/clusters
+        - clusters
+        - clusters/builddeploy
+        - clusters/deploy
+        - clusters/upgrade
+        - clusters/diffs
+        - clusters/next
+        - clusters/restart
+        - clusters/rollback
+        - clusters/status
+        - clusters/buildstatus
+        - clusters/step
+        - clusters/resourcetree
+        - clusters/members
+        - clusters/pipelineruns
+        - clusters/terminal
+        - clusters/containerlog
+        - clusters/exec
+        - clusters/online
+        - clusters/offline
+        - clusters/tags
+        - pipelineruns
+        - pipelineruns/stop
+        - pipelineruns/log
+        - pipelineruns/diffs
+        - clusters/dashboards
+        - clusters/pods
+        - clusters/pod
+        - clusters/free
+        - clusters/events
+        - clusters/outputs
+        - clusters/promote
+        - clusters/shell
+        - clusters/pause
+        - clusters/resume
+        - clusters/containers
+        - clusters/webhooks
+      verbs:
+        - "*"
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - clusters/templateschematags
+      verbs:
+        - get
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups/templates
+        - templates/releases
+        - templates
+        - templates/members
+        - templatereleases/members
+        - templatereleases
+        - templatereleases/sync
+        - templatereleases/schema
+      verbs:
+        - "*"
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups/accesstokens
+        - applications/accesstokens
+        - clusters/accesstokens
+        - personalaccesstokens
+        - accesstokens
+      verbs:
+        - "*"
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - webhooks
+        - webhooks/logs
+        - webhooklogs
+        - webhooklogs/resend
+      verbs:
+        - "*"
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+- name: maintainer
+  desc: | 
+    the maintainer of the group/application/cluster, having the permissions except deleting resources,
+    can also perform member management
+  rules:
+    - apiGroups:
+        - core
+      resources:
+        - applications
+        - groups/applications
+        - applications/members
+        - applications/envtemplates
+        - applications/defaultregions
+        - applications/transfer
+        - applications/selectableregions
+        - applications/subresourcetags
+        - applications/pipelinestats
+      verbs:
+        - create
+        - get
+        - update
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups
+        - groups/members
+        - groups/groups
+        - groups/transfer
+      verbs:
+        - get
+        - create
+        - update
+      scopes:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - applications/clusters
+        - clusters
+        - clusters/builddeploy
+        - clusters/deploy
+        - clusters/upgrade
+        - clusters/diffs
+        - clusters/next
+        - clusters/restart
+        - clusters/rollback
+        - clusters/status
+        - clusters/buildstatus
+        - clusters/step
+        - clusters/resourcetree
+        - clusters/members
+        - clusters/pipelineruns
+        - clusters/terminal
+        - clusters/containerlog
+        - clusters/exec
+        - clusters/online
+        - clusters/offline
+        - clusters/tags
+        - pipelineruns
+        - pipelineruns/stop
+        - pipelineruns/log
+        - pipelineruns/diffs
+        - clusters/dashboards
+        - clusters/pods
+        - clusters/pod
+        - clusters/free
+        - clusters/events
+        - clusters/outputs
+        - clusters/promote
+        - clusters/shell
+        - clusters/pause
+        - clusters/resume
+        - clusters/containers
+      verbs:
+        - create
+        - get
+        - update
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - clusters/templateschematags
+      verbs:
+        - get
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - clusters/pods
+      verbs:
+        - delete
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups/oauthapps
+        - oauthapps
+        - oauthapps/clientsecret
+        - templates/releases
+        - templatereleases/schema
+        - groups/templates
+        - templatereleases
+        - templates
+      verbs:
+        - get
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - templates/members
+        - templatereleases/members
+      verbs:
+        - get
+        - update
+        - create
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - templatereleases
+        - templates
+      verbs:
+        - get
+        - create
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups/accesstokens
+        - applications/accesstokens
+        - clusters/accesstokens
+        - personalaccesstokens
+        - accesstokens
+      verbs:
+        - "*"
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+- name: tagger
+  desc: the tag maintainer of cluster, only used internally to update jvm parameters.
+  rules:
+    - apiGroups:
+        - core
+      resources:
+        - clusters/tags
+      verbs:
+        - create
+        - get
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+- name: pe
+  desc: |
+    the PE of application/cluster, having the permissions except deleting resources,
+    can perform member management and modify of resource caps.
+  rules:
+    - apiGroups:
+        - core
+      resources:
+        - applications
+        - groups/applications
+        - applications/members
+        - applications/envtemplates
+        - applications/defaultregions
+        - applications/transfer
+        - applications/selectableregions
+        - applications/subresourcetags
+        - applications/pipelinestats
+        - applications/accesstokens
+      verbs:
+        - create
+        - get
+        - update
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups
+        - groups/members
+        - groups/groups
+        - groups/transfer
+        - groups/regionselectors
+        - groups/accesstokens
+      verbs:
+        - get
+        - create
+        - update
+      scopes:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - templates/releases
+        - groups/templates
+        - templatereleases/schema
+        - templates
+        - templatereleases
+      verbs:
+        - get
+      scopes:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - applications/clusters
+        - clusters/builddeploy
+        - clusters/deploy
+        - clusters/upgrade
+        - clusters/diffs
+        - clusters/next
+        - clusters/restart
+        - clusters/rollback
+        - clusters/status
+        - clusters/buildstatus
+        - clusters/step
+        - clusters/resourcetree
+        - clusters/members
+        - clusters/pipelineruns
+        - clusters/terminal
+        - clusters/containerlog
+        - clusters/exec
+        - clusters/online
+        - clusters/offline
+        - clusters/tags
+        - pipelineruns
+        - pipelineruns/stop
+        - pipelineruns/log
+        - pipelineruns/diffs
+        - clusters/dashboards
+        - clusters/pods
+        - clusters/pod
+        - clusters/free
+        - clusters/templateschematags
+        - clusters/events
+        - clusters/outputs
+        - clusters/promote
+        - clusters/shell
+        - clusters/pause
+        - clusters/resume
+        - clusters/containers
+        - clusters/accesstokens
+        - templates/members
+        - templatereleases/members
+      verbs:
+        - create
+        - get
+        - update
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - clusters
+        - clusters/pods
+        - groups/accesstokens
+        - applications/accesstokens
+        - clusters/accesstokens
+      scopes:
+        - '*'
+      verbs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups/oauthapps
+        - oauthapps
+        - oauthapps/clientsecret
+      verbs:
+        - get
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - groups/accesstokens
+        - applications/accesstokens
+        - clusters/accesstokens
+        - personalccesstokens
+        - accesstokens
+      verbs:
+        - "*"
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"
+- name: guest
+  desc: |
+    the guest, have read-only permissions for groups/applications/projects,
+    as well as permissions for test environment cluster creation.
+  rules:
+    - apiGroups:
+        - core
+      resources:
+        - groups
+        - groups/members
+        - groups/groups
+        - groups/templates
+        - templates
+        - templatereleases
+        - templatereleases/schema
+        - templates/releases
+        - templates/members
+        - templatereleases/members
+        - applications
+        - groups/applications
+        - applications/clusters
+        - applications/members
+        - applications/envtemplates
+        - applications/defaultregions
+        - applications/selectableregions
+        - applications/pipelinestats
+        - applications/subresourcetags
+        - clusters
+        - clusters/diffs
+        - clusters/status
+        - clusters/buildstatus
+        - clusters/step
+        - clusters/resourcetree
+        - clusters/members
+        - clusters/pipelineruns
+        - clusters/containerlog
+        - clusters/tags
+        - pipelineruns
+        - pipelineruns/log
+        - pipelineruns/diffs
+        - clusters/dashboards
+        - clusters/pods
+        - clusters/pod
+        - clusters/events
+        - clusters/outputs
+        - clusters/templateschematags
+        - clusters/containers
+        - groups/accesstokens
+        - applications/accesstokens
+        - clusters/accesstokens
+        - personalaccesstokens
+      verbs:
+        - get
+      scopes:
+        - "*"
+    - apiGroups:
+        - core
+      resources:
+        - applications/clusters
+      verbs:
+        - create
+        - get
+        - update
+      scopes:
+        - "test/*"
+        - "reg/*"
+        - "perf/*"
+        - "pre/*"
+    - apiGroups:
+        - core
+      resources:
+        - groups/oauthapps
+        - oauthapps
+        - oauthapps/clientsecret
+      verbs:
+        - get
+      scopes:
+        - "*"
+      nonResourceURLs:
+        - "*"

@@ -124,6 +124,10 @@ func RegisterRoutes(engine *gin.Engine, api *API) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/containers", common.ParamClusterID),
 			HandlerFunc: api.GetContainers,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     fmt.Sprintf("/clusters/:%v/upgrade", common.ParamClusterID),
+			HandlerFunc: api.Upgrade,
 		},
 	}
 

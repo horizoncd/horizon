@@ -65,6 +65,20 @@ func (mr *MockClusterGitRepoMockRecorder) CreateCluster(ctx, params interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockClusterGitRepo)(nil).CreateCluster), ctx, params)
 }
 
+// DefaultBranch mocks base method.
+func (m *MockClusterGitRepo) DefaultBranch() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DefaultBranch")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// DefaultBranch indicates an expected call of DefaultBranch.
+func (mr *MockClusterGitRepoMockRecorder) DefaultBranch() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DefaultBranch", reflect.TypeOf((*MockClusterGitRepo)(nil).DefaultBranch))
+}
+
 // DeleteCluster mocks base method.
 func (m *MockClusterGitRepo) DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error {
 	m.ctrl.T.Helper()
@@ -92,6 +106,21 @@ func (m *MockClusterGitRepo) GetCluster(ctx context.Context, application, cluste
 func (mr *MockClusterGitRepoMockRecorder) GetCluster(ctx, application, cluster, templateName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCluster", reflect.TypeOf((*MockClusterGitRepo)(nil).GetCluster), ctx, application, cluster, templateName)
+}
+
+// GetClusterTemplate mocks base method.
+func (m *MockClusterGitRepo) GetClusterTemplate(ctx context.Context, application, cluster string) (*gitrepo.ClusterTemplate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClusterTemplate", ctx, application, cluster)
+	ret0, _ := ret[0].(*gitrepo.ClusterTemplate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetClusterTemplate indicates an expected call of GetClusterTemplate.
+func (mr *MockClusterGitRepoMockRecorder) GetClusterTemplate(ctx, application, cluster interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterTemplate", reflect.TypeOf((*MockClusterGitRepo)(nil).GetClusterTemplate), ctx, application, cluster)
 }
 
 // GetClusterValueFiles mocks base method.
@@ -198,18 +227,18 @@ func (mr *MockClusterGitRepoMockRecorder) HardDeleteCluster(ctx, application, cl
 }
 
 // MergeBranch mocks base method.
-func (m *MockClusterGitRepo) MergeBranch(ctx context.Context, application, cluster string, prID uint) (string, error) {
+func (m *MockClusterGitRepo) MergeBranch(ctx context.Context, application, cluster, sourceBranch, targetBranch string, prID *uint) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MergeBranch", ctx, application, cluster, prID)
+	ret := m.ctrl.Call(m, "MergeBranch", ctx, application, cluster, sourceBranch, targetBranch, prID)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // MergeBranch indicates an expected call of MergeBranch.
-func (mr *MockClusterGitRepoMockRecorder) MergeBranch(ctx, application, cluster, prID interface{}) *gomock.Call {
+func (mr *MockClusterGitRepoMockRecorder) MergeBranch(ctx, application, cluster, sourceBranch, targetBranch, prID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeBranch", reflect.TypeOf((*MockClusterGitRepo)(nil).MergeBranch), ctx, application, cluster, prID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeBranch", reflect.TypeOf((*MockClusterGitRepo)(nil).MergeBranch), ctx, application, cluster, sourceBranch, targetBranch, prID)
 }
 
 // Rollback mocks base method.
@@ -283,4 +312,19 @@ func (m *MockClusterGitRepo) UpdateTags(ctx context.Context, application, cluste
 func (mr *MockClusterGitRepoMockRecorder) UpdateTags(ctx, application, cluster, templateName, tags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTags", reflect.TypeOf((*MockClusterGitRepo)(nil).UpdateTags), ctx, application, cluster, templateName, tags)
+}
+
+// UpgradeCluster mocks base method.
+func (m *MockClusterGitRepo) UpgradeCluster(ctx context.Context, param *gitrepo.UpgradeValuesParam) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpgradeCluster", ctx, param)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpgradeCluster indicates an expected call of UpgradeCluster.
+func (mr *MockClusterGitRepoMockRecorder) UpgradeCluster(ctx, param interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeCluster", reflect.TypeOf((*MockClusterGitRepo)(nil).UpgradeCluster), ctx, param)
 }

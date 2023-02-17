@@ -612,3 +612,32 @@ func (a *API) Resume(c *gin.Context) {
 	}
 	response.Success(c)
 }
+
+func (a *API) Upgrade(c *gin.Context) {
+	const op = "cluster: upgrade"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		err = perror.Wrap(err, "failed to parse cluster id")
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
+		return
+	}
+
+	err = a.clusterCtl.Upgrade(c, uint(clusterID))
+	if err != nil {
+		err = perror.Wrap(err, "failed to upgrade cluster")
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.Success(c)
+}
