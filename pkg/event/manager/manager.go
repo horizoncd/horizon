@@ -98,15 +98,19 @@ func (m *manager) GetEvent(ctx context.Context, id uint) (*models.Event, error) 
 }
 
 var supportedEvents = map[string]string{
-	models.ApplicationCreated:    "New application is created",
-	models.ApplicationDeleted:    "Application is deleted",
-	models.ApplicationTransfered: "Application is transferred to another group",
-	models.ClusterCreated:        "New cluster is created",
-	models.ClusterDeleted:        "Cluster is deleted",
-	models.ClusterBuildDeployed:  "Cluster has completed a build task and triggered a deploy task",
-	models.ClusterDeployed:       "Cluster has triggered a ",
-	models.ClusterRollbacked:     "Cluster has triggered a rollback task",
-	models.ClusterFreed:          "Cluster has been freed",
+	models.ApplicationCreated:     "New application has been created",
+	models.ApplicationDeleted:     "Application has been deleted",
+	models.ApplicationTransfered:  "Application has been transferred to another group",
+	models.ApplicationUpdated:     "Application has been updated",
+	models.ClusterCreated:         "New cluster is created",
+	models.ClusterDeleted:         "Cluster has been deleted",
+	models.ClusterUpdated:         "Cluster has been updated",
+	models.ClusterBuildDeployed:   "Cluster has completed a build task and triggered a deploy task",
+	models.ClusterDeployed:        "Cluster has triggered a deploying task",
+	models.ClusterRollbacked:      "Cluster has triggered a rollback task",
+	models.ClusterFreed:           "Cluster has been freed",
+	models.ClusterRestarted:       "Cluster has been restarted",
+	models.ClusterPodsRescheduled: "Pods has been deleted to reschedule",
 }
 
 func (m *manager) ListSupportEvents() map[string]string {

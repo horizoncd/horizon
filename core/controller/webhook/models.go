@@ -56,6 +56,7 @@ type LogSummary struct {
 	ResourceName string                `json:"resourceName"`
 	ResourceID   uint                  `json:"resourceID"`
 	EventType    string                `json:"eventType"`
+	Extra        *string               `json:"extra"`
 	ErrorMessage string                `json:"errorMessage"`
 	CreatedAt    time.Time             `json:"createdAt"`
 	CreatedBy    *usermodels.UserBasic `json:"createdBy,omitempty"`

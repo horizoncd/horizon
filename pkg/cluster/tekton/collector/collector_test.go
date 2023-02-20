@@ -191,7 +191,6 @@ const _layout = "2006-01-02T15:04:05Z"
 
 func parseTime(str string) *metav1.Time {
 	t, _ := time.Parse(_layout, str)
-	t.Local()
 	mt := metav1.NewTime(t.Local())
 	return &mt
 }

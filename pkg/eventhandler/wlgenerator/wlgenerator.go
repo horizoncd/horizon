@@ -41,6 +41,7 @@ type MessageContent struct {
 	Cluster     *ClusterInfo          `json:"cluster,omitempty"`
 	EventType   string                `json:"eventType,omitempty"`
 	User        *usermodels.UserBasic `json:"user,omitempty"`
+	Extra       *string               `json:"extra,omitempty"`
 }
 
 type ResourceCommonInfo struct {
@@ -183,6 +184,7 @@ func (w *WebhookLogGenerator) makeRequestBody(ctx context.Context, dep *messageD
 		WebhookID: dep.webhook.ID,
 		EventType: string(dep.event.EventType),
 		User:      usermodels.ToUser(user),
+		Extra:     dep.event.EventSummary.Extra,
 	}
 
 	if dep.event.ResourceType == common.ResourceApplication &&

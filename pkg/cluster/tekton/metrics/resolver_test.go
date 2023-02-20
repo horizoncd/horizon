@@ -655,7 +655,6 @@ func Test_durationSeconds(t *testing.T) {
 
 func parseTime(str string) *metav1.Time {
 	t, _ := time.Parse(_layout, str)
-	t.Local()
 	mt := metav1.NewTime(t.Local())
 	return &mt
 }

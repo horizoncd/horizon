@@ -46,4 +46,5 @@ type WebhookLogWithEventInfo struct {
 	ResourceType string
 	ResourceName string
 	ResourceID   uint
+	Extra        *string
 }
