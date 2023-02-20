@@ -305,8 +305,17 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	// 7. update tags and template in db
-	if err := c.updateTagsAndTemplateFromFile(ctx, application, cluster); err != nil {
+	// 7. update template and tags in db
+	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return nil, err
+	}
+	cluster, err = c.clusterMgr.UpdateTemplateByID(ctx, cluster.ID,
+		templateFromFile.Name, templateFromFile.Release)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.updateTagsFromFile(ctx, application, cluster); err != nil {
 		return nil, err
 	}
 
@@ -679,31 +688,19 @@ func (c *controller) updatePRStatus(ctx context.Context, action string, prID uin
 	return nil
 }
 
-func (c *controller) updateTagsAndTemplateFromFile(ctx context.Context,
+func (c *controller) updateTagsFromFile(ctx context.Context,
 	application *amodels.Application, cluster *cmodels.Cluster) error {
 	files, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return err
 	}
 
-	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
-	if err != nil {
-		return err
-	}
-	release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
-		templateFromFile.Name, templateFromFile.Release)
-	if err != nil {
-		return err
-	}
-
-	// update template
-	_, err = c.clusterMgr.UpdateTemplateByID(ctx, cluster.ID, release.TemplateName, release.Name)
-	if err != nil {
-		return err
-	}
-
 	for _, file := range files {
 		if file.FileName == common.GitopsFileTags {
+			release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+			if err != nil {
+				return err
+			}
 			midMap := file.Content[release.ChartName].(map[string]interface{})
 			tagsMap := midMap[common.GitopsKeyTags].(map[string]interface{})
 			tags := make([]*tmodels.Tag, 0, len(tagsMap))
