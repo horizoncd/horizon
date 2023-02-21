@@ -659,6 +659,66 @@ func (c *controller) GetGrafanaDashBoard(ctx context.Context, clusterID uint) (*
 	}, nil
 }
 
+// Deprecated: Upgrade v1 to v2
+func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
+	const op = "cluster controller: upgrade to v2"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	// 1. validate infos
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return err
+	}
+	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return err
+	}
+
+	// 2. match target template
+	targetTemplate, ok := c.templateUpgradeMapper[templateFromFile.Name]
+	if !ok {
+		return perror.Wrapf(herrors.ErrParamInvalid,
+			"cluster template %s does not support upgrade", templateFromFile.Name)
+	}
+	targetRelease, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
+		targetTemplate.Name, targetTemplate.Release)
+	if err != nil {
+		return err
+	}
+
+	// 3. sync gitops branch if restarts occur
+	err = c.syncGitOpsBranch(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return err
+	}
+
+	// 4. upgrade git repo files to v2
+	_, err = c.clusterGitRepo.UpgradeCluster(ctx, &gitrepo.UpgradeValuesParam{
+		Application:   application.Name,
+		Cluster:       cluster.Name,
+		Template:      templateFromFile,
+		TargetRelease: targetRelease,
+		BuildConfig:   &targetTemplate.BuildConfig,
+	})
+	if err != nil {
+		return err
+	}
+
+	// 5. update template in db
+	// TODO(zhuxu): remove strong dependencies on db updates, just print an err log when updates fail
+	cluster.Template = targetRelease.TemplateName
+	cluster.TemplateRelease = targetRelease.Name
+	_, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *controller) updatePRStatus(ctx context.Context, action string, prID uint,
 	pState prmodels.PipelineStatus, revision string) error {
 	var err error
@@ -772,21 +832,20 @@ func (c *controller) manifestVersionChanged(ctx context.Context, application,
 	return currentManifest.Version != targetManifest.Version, nil
 }
 
-/*
-Deprecated: for internal usage
-syncGitOpsBranch syncs gitOps branch with default branch to avoid merge conflicts.
-Restart updates time in restart.yaml in default branch. When other actions update
-template prefix in gitOps branch, there are merge conflicts in restart.yaml because
-usual context lines of 'git diff' are three. Ref: https://git-scm.com/docs/git-diff
-For example:
-<<<<<<< HEAD
-javaapp:
-  restartTime: "2025-02-19 10:24:52"
-=======
-rollout:
-  restartTime: "2025-02-14 12:12:07"
->>>>>>> gitops
-*/
+// Deprecated: for internal usage
+// syncGitOpsBranch syncs gitOps branch with default branch to avoid merge conflicts.
+// Restart updates time in restart.yaml in default branch. When other actions update
+// template prefix in gitOps branch, there are merge conflicts in restart.yaml because
+// usual context lines of 'git diff' are three. Ref: https://git-scm.com/docs/git-diff
+// For example:
+//
+//  <<<<<<< HEAD
+//  javaapp:
+//    restartTime: "2025-02-19 10:24:52"
+//  =======
+//  rollout:
+//    restartTime: "2025-02-14 12:12:07"
+//  >>>>>>> gitops
 func (c *controller) syncGitOpsBranch(ctx context.Context, application, cluster string) error {
 	gitOpsBranch := gitrepo.GitOpsBranch
 	defaultBranch := c.clusterGitRepo.DefaultBranch()

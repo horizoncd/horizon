@@ -23,7 +23,6 @@ type Manager interface {
 	GetByIDIncludeSoftDelete(ctx context.Context, id uint) (*models.Cluster, error)
 	GetByName(ctx context.Context, clusterName string) (*models.Cluster, error)
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
-	UpdateTemplateByID(ctx context.Context, id uint, template, release string) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
 	List(ctx context.Context, query *q.Query, appIDs ...uint) (int, []*models.ClusterWithRegion, error)
@@ -84,11 +83,6 @@ func (m *manager) GetByName(ctx context.Context, clusterName string) (*models.Cl
 
 func (m *manager) UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error) {
 	return m.dao.UpdateByID(ctx, id, cluster)
-}
-
-func (m *manager) UpdateTemplateByID(ctx context.Context, id uint, template,
-	release string) (*models.Cluster, error) {
-	return m.dao.UpdateTemplateByID(ctx, id, template, release)
 }
 
 func (m *manager) DeleteByID(ctx context.Context, id uint) error {
