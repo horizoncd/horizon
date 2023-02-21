@@ -17,6 +17,7 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	templateconfig "github.com/horizoncd/horizon/pkg/config/template"
 	config "github.com/horizoncd/horizon/pkg/config/templaterepo"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
@@ -230,6 +231,11 @@ func Test(t *testing.T) {
 	assert.Equal(t, template.Name, templateName)
 	assert.Equal(t, template.Release, "v1.0.0")
 
+	_, err = r.GetManifest(ctx, application, cluster, nil)
+	assert.NotNil(t, err)
+	_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
+	assert.True(t, ok)
+
 	commit, err := r.GetConfigCommit(ctx, application, cluster)
 	assert.Nil(t, err)
 	t.Logf("%v", commit)
@@ -340,6 +346,10 @@ func TestV2(t *testing.T) {
 	assert.NotNil(t, files.ApplicationJSONBlob)
 	assert.Nil(t, files.PipelineJSONBlob)
 	t.Logf("%+v", files)
+
+	manifest, err := r.GetManifest(ctx, application, cluster, nil)
+	assert.Nil(t, err)
+	assert.Equal(t, manifest.Version, common.MetaVersion2)
 
 	// do not update Region \ update Version \ application yaml \ add pipeline
 	baseParams.RegionEntity = nil

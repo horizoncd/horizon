@@ -39,8 +39,8 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 		return err
 	}
 
-	// 3. merge default branch into gitops branch if restarts occur
-	err = c.mergeDefaultBranchIntoGitOps(ctx, application.Name, cluster.Name)
+	// 3. sync gitops branch if restarts occur
+	err = c.syncGitOpsBranch(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return err
 	}
@@ -58,6 +58,7 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 	}
 
 	// 5. update template in db
+	// TODO(zhuxu): remove strong dependencies on db updates, just print an err log when updates fail
 	_, err = c.clusterMgr.UpdateTemplateByID(ctx, clusterID, targetRelease.TemplateName, targetRelease.Name)
 	if err != nil {
 		return err

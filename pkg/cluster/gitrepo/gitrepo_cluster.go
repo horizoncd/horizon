@@ -106,6 +106,7 @@ type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
 	GetClusterValueFiles(ctx context.Context,
 		application, cluster string) ([]ClusterValueFile, error)
+	// GetClusterTemplate parses cluster's template name and release from GitopsFileChart
 	GetClusterTemplate(ctx context.Context, application, cluster string) (*ClusterTemplate, error)
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
@@ -128,12 +129,16 @@ type ClusterGitRepo interface {
 	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
 	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
 	GetEnvValue(ctx context.Context, application, cluster, templateName string) (*EnvValue, error)
+	// Rollback rolls gitOps branch back to a specific commit if there are diffs
 	Rollback(ctx context.Context, application, cluster, commit string) (string, error)
 	UpdateTags(ctx context.Context, application, cluster, templateName string,
 		tags []*tagmodels.Tag) error
 	DefaultBranch() string
-	// UpgradeCluster is used internally to upgrade the cluster version
+	// Deprecated: for internal usage, v1 to v2
 	UpgradeCluster(ctx context.Context, param *UpgradeValuesParam) (string, error)
+	// GetManifest returns manifest with specific revision, defaults to gitops branch
+	GetManifest(ctx context.Context, application,
+		cluster string, commit *string) (*pkgcommon.Manifest, error)
 }
 type clusterGitRepo struct {
 	gitlabLib              gitlablib.Interface
@@ -783,9 +788,19 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster,
 	return mr.MergeCommitSHA, nil
 }
 
-func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*pkgcommon.Manifest, error) {
+func (g *clusterGitRepo) GetManifest(ctx context.Context, application,
+	cluster string, commit *string) (*pkgcommon.Manifest, error) {
+	const op = "cluster git repo: get manifest"
+	defer wlog.Start(ctx, op).StopPrint()
+
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, common.GitopsFileManifest)
+	var content []byte
+	var err error
+	if commit != nil {
+		content, err = g.gitlabLib.GetFile(ctx, pid, *commit, common.GitopsFileManifest)
+	} else {
+		content, err = g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, common.GitopsFileManifest)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1075,74 +1090,26 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	}
 	if compare.Diffs == nil {
 		return "", perror.Wrapf(herrors.ErrParamInvalid,
-			"commit dose not support rollback, commit = %s", commit)
+			"dose not support empty rollback, rollback commit = %s", commit)
 	}
-
-	readFile := func(fileName string) ([]byte, error) {
-		return g.gitlabLib.GetFile(ctx, pid, commit, fileName)
-	}
-
-	var wg sync.WaitGroup
 
 	type actionCase struct {
-		diff   gitlab.Diff
-		action gitlablib.CommitAction
+		action *gitlablib.CommitAction
 		err    error
 	}
-
-	revertAction := func(oneCase *actionCase) {
-		defer wg.Done()
-
-		diff := oneCase.diff
-		if diff.DeletedFile {
-			oneCase.action = gitlablib.CommitAction{
-				Action:   gitlablib.FileDelete,
-				FilePath: diff.OldPath,
-			}
-			return
-		}
-		if diff.NewFile {
-			file, err := readFile(diff.NewPath)
-			if err != nil {
-				oneCase.err = err
-			} else {
-				oneCase.action = gitlablib.CommitAction{
-					Action:   gitlablib.FileCreate,
-					FilePath: diff.NewPath,
-					Content:  string(file),
-				}
-			}
-			return
-		}
-		if diff.RenamedFile {
-			oneCase.action = gitlablib.CommitAction{
-				Action:       gitlablib.FileMove,
-				FilePath:     diff.NewPath,
-				PreviousPath: diff.OldPath,
-			}
-			return
-		}
-		file, err := readFile(diff.NewPath)
-		if err != nil {
-			oneCase.err = err
-		} else {
-			oneCase.action = gitlablib.CommitAction{
-				Action:   gitlablib.FileUpdate,
-				FilePath: diff.NewPath,
-				Content:  string(file),
-			}
-		}
-	}
-	var cases []*actionCase
+	var cases []actionCase
+	var wg sync.WaitGroup
+	wg.Add(len(compare.Diffs))
 	for _, diff := range compare.Diffs {
-		cases = append(cases, &actionCase{
-			diff: *diff,
-		})
-	}
-
-	wg.Add(len(cases))
-	for _, oneCase := range cases {
-		revertAction(oneCase)
+		// generate a commit action for rollback based on diff
+		func() {
+			defer wg.Done()
+			action, err := g.revertAction(ctx, application, cluster, commit, *diff)
+			cases = append(cases, actionCase{
+				action: action,
+				err:    err,
+			})
+		}()
 	}
 
 	var actions []gitlablib.CommitAction
@@ -1150,7 +1117,7 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 		if oneCase.err != nil {
 			return "", oneCase.err
 		}
-		actions = append(actions, oneCase.action)
+		actions = append(actions, *oneCase.action)
 	}
 
 	commitMsg := angular.CommitMessage("cluster", angular.Subject{
@@ -1657,6 +1624,91 @@ func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
 			},
 		},
 	}, nil
+}
+
+// revertAction generates a commit action based on the diff to simulate 'git revert'
+// ref: https://git-scm.com/docs/git-revert
+// an example of all types of file changes:
+// "diffs": [
+// 	{
+// 		"old_path": "Chart_bak.yaml",
+// 		"new_path": "Chart.yaml",
+// 		"new_file": false,
+// 		"renamed_file": true,  // Chart.yaml is renamed to Chart_bak.yaml in gitOps branch
+// 		"deleted_file": false,
+// 		"diff": ""
+// 	}, {
+// 		"old_path": "README.md",
+// 		"new_path": "README.md",
+// 		"new_file": true, // README.md is deleted in gitOps branch
+// 		"renamed_file": false,
+// 		"deleted_file": false,
+// 		"diff": "..."
+// 	}, {
+// 		"old_path": "application.yaml", // application.yaml is updated in gitOps branch
+// 		"new_path": "application.yaml",
+// 		"new_file": false,
+// 		"renamed_file": false,
+// 		"deleted_file": false,
+// 		"diff": "..."
+// 	}, {
+// 		"old_path": "new_file.yaml",
+// 		"new_path": "new_file.yaml",
+// 		"new_file": false,
+// 		"renamed_file": false,
+// 		"deleted_file": true, // new_file.yaml is created in gitOps branch
+// 		"diff": "..."
+// 	}
+// ]
+func (g *clusterGitRepo) revertAction(ctx context.Context, application, cluster,
+	commit string, diff gitlab.Diff) (*gitlablib.CommitAction, error) {
+	if diff.DeletedFile {
+		// file is deleted from gitops branch to the commit
+		return &gitlablib.CommitAction{
+			Action:   gitlablib.FileDelete,
+			FilePath: diff.OldPath,
+		}, nil
+	}
+	if diff.NewFile {
+		// file is created from gitops branch to the commit
+		file, err := g.readFile(ctx, application, cluster, diff.NewPath, &commit)
+		if err != nil {
+			return nil, err
+		}
+		return &gitlablib.CommitAction{
+			Action:   gitlablib.FileCreate,
+			FilePath: diff.NewPath,
+			Content:  string(file),
+		}, nil
+	}
+	if diff.RenamedFile {
+		// file is renamed from gitops branch to the commit
+		return &gitlablib.CommitAction{
+			Action:       gitlablib.FileMove,
+			FilePath:     diff.NewPath,
+			PreviousPath: diff.OldPath,
+		}, nil
+	}
+	// file is updated from gitops branch to the commit if flags are all false
+	file, err := g.readFile(ctx, application, cluster, diff.NewPath, &commit)
+	if err != nil {
+		return nil, err
+	}
+	return &gitlablib.CommitAction{
+		Action:   gitlablib.FileUpdate,
+		FilePath: diff.NewPath,
+		Content:  string(file),
+	}, nil
+}
+
+// readFile gets file for specific revision, defaults to gitOps branch
+func (g *clusterGitRepo) readFile(ctx context.Context, application, cluster,
+	fileName string, commit *string) ([]byte, error) {
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
+	if commit != nil {
+		return g.gitlabLib.GetFile(ctx, pid, *commit, fileName)
+	}
+	return g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, fileName)
 }
 
 func renameTemplateName(name string) string {

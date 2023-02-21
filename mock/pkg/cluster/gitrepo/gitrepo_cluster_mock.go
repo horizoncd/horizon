@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	gitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
+	common "github.com/horizoncd/horizon/pkg/common"
 	models "github.com/horizoncd/horizon/pkg/tag/models"
 )
 
@@ -166,6 +167,21 @@ func (m *MockClusterGitRepo) GetEnvValue(ctx context.Context, application, clust
 func (mr *MockClusterGitRepoMockRecorder) GetEnvValue(ctx, application, cluster, templateName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnvValue", reflect.TypeOf((*MockClusterGitRepo)(nil).GetEnvValue), ctx, application, cluster, templateName)
+}
+
+// GetManifest mocks base method.
+func (m *MockClusterGitRepo) GetManifest(ctx context.Context, application, cluster string, commit *string) (*common.Manifest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManifest", ctx, application, cluster, commit)
+	ret0, _ := ret[0].(*common.Manifest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetManifest indicates an expected call of GetManifest.
+func (mr *MockClusterGitRepoMockRecorder) GetManifest(ctx, application, cluster, commit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifest", reflect.TypeOf((*MockClusterGitRepo)(nil).GetManifest), ctx, application, cluster, commit)
 }
 
 // GetPipelineOutput mocks base method.

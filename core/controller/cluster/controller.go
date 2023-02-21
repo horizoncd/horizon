@@ -104,7 +104,7 @@ type Controller interface {
 	GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error)
 	GetResourceTree(ctx context.Context, clusterID uint) (*GetResourceTreeResponse, error)
 	GetStep(ctx context.Context, clusterID uint) (resp *GetStepResponse, err error)
-	// Upgrade is used internally to upgrade the cluster version
+	// Deprecated: for internal usage, v1 to v2
 	Upgrade(ctx context.Context, clusterID uint) error
 }
 
