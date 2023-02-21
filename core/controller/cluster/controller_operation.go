@@ -772,20 +772,21 @@ func (c *controller) manifestVersionChanged(ctx context.Context, application,
 	return currentManifest.Version != targetManifest.Version, nil
 }
 
-// Deprecated: for internal usage
-// syncGitOpsBranch syncs gitOps branch with default branch to avoid merge conflicts.
-// Restart updates time in restart.yaml in default branch. When other actions update
-// template prefix in gitOps branch, there are merge conflicts in restart.yaml because
-// usual context lines of 'git diff' are three. Ref: https://git-scm.com/docs/git-diff
-// For example:
-//
-// <<<<<<< HEAD
-// javaapp:
-//   restartTime: "2025-02-19 10:24:52"
-// =======
-// rollout:
-//   restartTime: "2025-02-14 12:12:07"
-// >>>>>>> gitops
+/*
+Deprecated: for internal usage
+syncGitOpsBranch syncs gitOps branch with default branch to avoid merge conflicts.
+Restart updates time in restart.yaml in default branch. When other actions update
+template prefix in gitOps branch, there are merge conflicts in restart.yaml because
+usual context lines of 'git diff' are three. Ref: https://git-scm.com/docs/git-diff
+For example:
+<<<<<<< HEAD
+javaapp:
+  restartTime: "2025-02-19 10:24:52"
+=======
+rollout:
+  restartTime: "2025-02-14 12:12:07"
+>>>>>>> gitops
+*/
 func (c *controller) syncGitOpsBranch(ctx context.Context, application, cluster string) error {
 	gitOpsBranch := gitrepo.GitOpsBranch
 	defaultBranch := c.clusterGitRepo.DefaultBranch()

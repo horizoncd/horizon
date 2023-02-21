@@ -9,6 +9,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
+// Deprecated: Upgrade v1 to v2
 func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 	const op = "cluster controller: upgrade to v2"
 	defer wlog.Start(ctx, op).StopPrint()
