@@ -27,7 +27,7 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 		return err
 	}
 
-	// 2. match target templateFromFile
+	// 2. match target template
 	targetTemplate, ok := c.templateUpgradeMapper[templateFromFile.Name]
 	if !ok {
 		return perror.Wrapf(herror.ErrParamInvalid,
@@ -59,7 +59,9 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 
 	// 5. update template in db
 	// TODO(zhuxu): remove strong dependencies on db updates, just print an err log when updates fail
-	_, err = c.clusterMgr.UpdateTemplateByID(ctx, clusterID, targetRelease.TemplateName, targetRelease.Name)
+	cluster.Template = targetRelease.TemplateName
+	cluster.TemplateRelease = targetRelease.Name
+	_, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
 		return err
 	}

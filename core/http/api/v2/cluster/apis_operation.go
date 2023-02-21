@@ -613,6 +613,7 @@ func (a *API) Resume(c *gin.Context) {
 	response.Success(c)
 }
 
+// Deprecated: for internal usage
 func (a *API) Upgrade(c *gin.Context) {
 	const op = "cluster: upgrade"
 	clusterIDStr := c.Param(common.ParamClusterID)

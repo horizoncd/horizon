@@ -1033,6 +1033,8 @@ func test(t *testing.T) {
 			Name:    resp.Template.Name,
 			Release: resp.Template.Release,
 		}, nil).AnyTimes()
+	clusterGitRepo.EXPECT().GetManifest(ctx, application.Name, resp.Name, gomock.Any()).
+		Return(nil, herrors.NewErrNotFound(herrors.GitlabResource, "")).Times(2)
 	// update status to 'ok'
 	err = manager.PipelinerunMgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
 		Result: string(prmodels.StatusOK),

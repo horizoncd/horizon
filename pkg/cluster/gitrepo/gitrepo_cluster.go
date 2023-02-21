@@ -85,6 +85,7 @@ type ClusterTemplate struct {
 	Release string
 }
 
+// Deprecated: for internal usage
 type UpgradeValuesParam struct {
 	Application   string
 	Cluster       string
@@ -1102,9 +1103,10 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	wg.Add(len(compare.Diffs))
 	for _, diff := range compare.Diffs {
 		// generate a commit action for rollback based on diff
-		func() {
+		diff := *diff
+		go func() {
 			defer wg.Done()
-			action, err := g.revertAction(ctx, application, cluster, commit, *diff)
+			action, err := g.revertAction(ctx, application, cluster, commit, diff)
 			cases = append(cases, actionCase{
 				action: action,
 				err:    err,
@@ -1212,10 +1214,10 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 		param.Application, param.Cluster)
 
 	type upgradeValueBytes struct {
-		fileName string
-		in       []byte
-		out      []byte
-		err      error
+		fileName      string
+		sourceBytes   []byte
+		upgradedBytes []byte
+		err           error
 	}
 
 	cases := []*upgradeValueBytes{
@@ -1245,12 +1247,13 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 	// 1. read files
 	var wgReadFile sync.WaitGroup
 	wgReadFile.Add(len(cases))
-	readFile := func(oneCase *upgradeValueBytes) {
-		defer wgReadFile.Done()
-		oneCase.in, oneCase.err = g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, oneCase.fileName)
-	}
-	for _, oneCase := range cases {
-		go readFile(oneCase)
+	for i := range cases {
+		i := i
+		go func() {
+			defer wgReadFile.Done()
+			cases[i].sourceBytes, cases[i].err = g.readFile(ctx, param.Application,
+				param.Cluster, cases[i].fileName, nil)
+		}()
 	}
 	wgReadFile.Wait()
 	for _, oneCase := range cases {
@@ -1271,18 +1274,16 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 		}
 	}
 
-	// 2. upgrade value bytes
-	var wgUpdateValue sync.WaitGroup
-	wgUpdateValue.Add(len(cases))
-
-	updateChartValue := func(oneCase *upgradeValueBytes) {
-		defer wgUpdateValue.Done()
-
-		var chart Chart
-		err := yaml.Unmarshal(oneCase.in, &chart)
+	updateChartValue := func(sourceBytes []byte) ([]byte, error) {
+		var (
+			upgradedBytes []byte
+			err           error
+			chart         Chart
+		)
+		err = yaml.Unmarshal(sourceBytes, &chart)
 		if err != nil {
-			oneCase.err = perror.Wrapf(herrors.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.fileName)
-			return
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFileChart, err.Error())
 		}
 		// update template
 		if len(chart.Dependencies) > 0 {
@@ -1293,23 +1294,24 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 				Repository: dep.Repository,
 			}
 		}
-
-		marshal(&oneCase.out, &oneCase.err, &chart)
+		marshal(&upgradedBytes, &err, &chart)
+		return upgradedBytes, err
 	}
-	updateBaseValue := func(oneCase *upgradeValueBytes) {
-		defer wgUpdateValue.Done()
-
+	updateBaseValue := func(sourceBytes []byte) ([]byte, error) {
+		var (
+			upgradedBytes []byte
+			err           error
+		)
 		valueMap := make(map[string]map[string]*BaseValue)
-		err := yaml.Unmarshal(oneCase.in, &valueMap)
+		err = yaml.Unmarshal(sourceBytes, &valueMap)
 		if err != nil {
-			oneCase.err = perror.Wrapf(herrors.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.fileName)
-			return
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFileBase, err.Error())
 		}
 		baseValue, ok := valueMap[param.Template.Name][common.GitopsBaseValueNamespace]
 		if !ok {
-			oneCase.err = perror.Wrapf(herrors.ErrParamInvalid,
-				"value parent err, file = %s, parent = %s", oneCase.fileName, param.Template.Name)
-			return
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"value parent err, file = %s, parent = %s", common.GitopsFileBase, param.Template.Name)
 		}
 		baseValue.Template = &BaseValueTemplate{
 			Name:    param.TargetRelease.TemplateName,
@@ -1319,34 +1321,40 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 		retMap[param.TargetRelease.TemplateName] = map[string]*BaseValue{
 			common.GitopsBaseValueNamespace: baseValue,
 		}
-		marshal(&oneCase.out, &oneCase.err, &retMap)
+		marshal(&upgradedBytes, &err, &retMap)
+		return upgradedBytes, err
 	}
-	assembleManifest := func(oneCase *upgradeValueBytes) {
-		defer wgUpdateValue.Done()
-
-		var err error
-		marshal(&oneCase.out, &err, &pkgcommon.Manifest{Version: common.MetaVersion2})
+	assembleManifest := func() ([]byte, error) {
+		var (
+			upgradedBytes []byte
+			err           error
+		)
+		marshal(&upgradedBytes, &err, &pkgcommon.Manifest{Version: common.MetaVersion2})
 		if err != nil {
 			log.Errorf(ctx, "marshal manifest error, err = %s", err.Error())
 		}
+		return upgradedBytes, nil
 	}
-	updatePipelineValue := func(oneCase *upgradeValueBytes) {
-		defer wgUpdateValue.Done()
-
-		if oneCase.in == nil {
-			return
+	updatePipelineValue := func(sourceBytes []byte) ([]byte, error) {
+		if sourceBytes == nil {
+			return nil, nil
 		}
 
-		var inMap map[string]map[string]interface{}
-		err = yaml.Unmarshal(oneCase.in, &inMap)
+		var (
+			inMap         map[string]map[string]interface{}
+			upgradedBytes []byte
+			err           error
+		)
+		err = yaml.Unmarshal(sourceBytes, &inMap)
 		if err != nil {
-			oneCase.err = perror.Wrapf(herrors.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.fileName)
-			return
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFilePipeline, err.Error())
 		}
 		antScript, ok := inMap[param.Template.Name]["buildxml"]
 		if !ok {
-			oneCase.err = perror.Wrapf(herrors.ErrParamInvalid, "file value parent err, file = %s", oneCase.fileName)
-			return
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"value parent err, file = %s, parent = %s",
+				common.GitopsFilePipeline, param.Template.Name)
 		}
 		retMap := map[string]map[string]interface{}{
 			PipelineValueParent: {
@@ -1359,25 +1367,29 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 				"language":    param.BuildConfig.Language,
 			},
 		}
-		marshal(&oneCase.out, &oneCase.err, &retMap)
+		marshal(&upgradedBytes, &err, &retMap)
+		return upgradedBytes, err
 	}
-	updateApplicationValue := func(oneCase *upgradeValueBytes) {
-		defer wgUpdateValue.Done()
-
-		if oneCase.in == nil {
-			return
+	updateApplicationValue := func(sourceBytes []byte) ([]byte, error) {
+		if sourceBytes == nil {
+			return nil, nil
 		}
-		var inMap map[string]map[string]interface{}
-		err = yaml.Unmarshal(oneCase.in, &inMap)
+
+		var (
+			inMap         map[string]map[string]interface{}
+			upgradedBytes []byte
+			err           error
+		)
+		err = yaml.Unmarshal(sourceBytes, &inMap)
 		if err != nil {
-			oneCase.err = perror.Wrapf(herrors.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.fileName)
-			return
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFileApplication, err.Error())
 		}
 		midMap, ok := inMap[param.Template.Name]
 		if !ok {
-			oneCase.err = perror.Wrapf(herrors.ErrParamInvalid, "value parent err, file = %s, parent = %s",
-				oneCase.fileName, param.Template.Name)
-			return
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"value parent err, file = %s, parent = %s",
+				common.GitopsFileApplication, param.Template.Name)
 		}
 		// convert params to envs
 		func() {
@@ -1400,46 +1412,74 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 		}()
 		retMap := make(map[string]map[string]interface{})
 		retMap[param.TargetRelease.TemplateName] = midMap
-		marshal(&oneCase.out, &oneCase.err, &retMap)
+		marshal(&upgradedBytes, &err, &retMap)
+		return upgradedBytes, err
 	}
-	updateValueParent := func(oneCase *upgradeValueBytes) {
-		defer wgUpdateValue.Done()
-
-		if oneCase.in == nil {
-			return
+	updateValueParent := func(fileName string, sourceBytes []byte) ([]byte, error) {
+		if sourceBytes == nil {
+			return nil, nil
 		}
-		var inMap map[string]interface{}
-		err := yaml.Unmarshal(oneCase.in, &inMap)
+
+		var (
+			inMap         map[string]interface{}
+			upgradedBytes []byte
+			err           error
+		)
+		err = yaml.Unmarshal(sourceBytes, &inMap)
 		if err != nil {
-			oneCase.err = perror.Wrapf(herrors.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.fileName)
-			return
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", fileName, err.Error())
 		}
 		valueMap, ok := inMap[param.Template.Name]
 		if !ok {
-			oneCase.err = perror.Wrapf(herrors.ErrParamInvalid, "value file prefix err, file = %s", oneCase.fileName)
-			return
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"value parent err, file = %s, parent = %s", fileName, param.Template.Name)
 		}
 		retMap := map[string]interface{}{
 			param.TargetRelease.TemplateName: valueMap,
 		}
-		marshal(&oneCase.out, &oneCase.err, &retMap)
+		marshal(&upgradedBytes, &err, &retMap)
+		return upgradedBytes, err
 	}
 
-	for _, oneCase := range cases {
-		switch oneCase.fileName {
+	// 2. upgrade value bytes
+	var wgUpdateValue sync.WaitGroup
+	wgUpdateValue.Add(len(cases))
+	for i := range cases {
+		i := i
+		switch cases[i].fileName {
 		case common.GitopsFileChart:
-			go updateChartValue(oneCase)
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err = updateChartValue(cases[i].sourceBytes)
+			}()
 		case common.GitopsFileBase:
-			go updateBaseValue(oneCase)
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err = updateBaseValue(cases[i].sourceBytes)
+			}()
 		case common.GitopsFileManifest:
-			go assembleManifest(oneCase)
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, _ = assembleManifest()
+			}()
 		case common.GitopsFilePipeline:
-			go updatePipelineValue(oneCase)
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err = updatePipelineValue(cases[i].sourceBytes)
+			}()
 		case common.GitopsFileApplication:
-			go updateApplicationValue(oneCase)
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err = updateApplicationValue(cases[i].sourceBytes)
+			}()
 		default:
 			// update value parent
-			go updateValueParent(oneCase)
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err =
+					updateValueParent(cases[i].fileName, cases[i].sourceBytes)
+			}()
 		}
 	}
 	wgUpdateValue.Wait()
@@ -1451,11 +1491,11 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 			if oneCase.err != nil {
 				return "", oneCase.err
 			}
-			if oneCase.in != nil {
+			if oneCase.sourceBytes != nil {
 				gitActions = append(gitActions, gitlablib.CommitAction{
 					Action:   gitlablib.FileUpdate,
 					FilePath: oneCase.fileName,
-					Content:  string(oneCase.out),
+					Content:  string(oneCase.upgradedBytes),
 				})
 			}
 		} else {
@@ -1463,13 +1503,13 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 				gitActions = append(gitActions, gitlablib.CommitAction{
 					Action:   gitlablib.FileCreate,
 					FilePath: oneCase.fileName,
-					Content:  string(oneCase.out),
+					Content:  string(oneCase.upgradedBytes),
 				})
 			} else {
 				gitActions = append(gitActions, gitlablib.CommitAction{
 					Action:   gitlablib.FileUpdate,
 					FilePath: oneCase.fileName,
-					Content:  string(oneCase.out),
+					Content:  string(oneCase.upgradedBytes),
 				})
 			}
 		}
