@@ -1670,37 +1670,37 @@ func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
 // ref: https://git-scm.com/docs/git-revert
 // an example of all types of file changes:
 //
-//  "diffs": [
-//  	{
-//  		"old_path": "Chart_bak.yaml",
-//  		"new_path": "Chart.yaml",
-//  		"new_file": false,
-//  		"renamed_file": true,  // Chart.yaml is renamed to Chart_bak.yaml in gitOps branch
-//  		"deleted_file": false,
-//  		"diff": ""
-//  	}, {
-//  		"old_path": "README.md",
-//  		"new_path": "README.md",
-//  		"new_file": true, // README.md is deleted in gitOps branch
-//  		"renamed_file": false,
-//  		"deleted_file": false,
-//  		"diff": "..."
-//  	}, {
-//  		"old_path": "application.yaml", // application.yaml is updated in gitOps branch
-//  		"new_path": "application.yaml",
-//  		"new_file": false,
-//  		"renamed_file": false,
-//  		"deleted_file": false,
-//  		"diff": "..."
-//  	}, {
-//  		"old_path": "new_file.yaml",
-//  		"new_path": "new_file.yaml",
-//  		"new_file": false,
-//  		"renamed_file": false,
-//  		"deleted_file": true, // new_file.yaml is created in gitOps branch
-//  		"diff": "..."
-//  	}
-//  ]
+//	"diffs": [
+//		{
+//			"old_path": "Chart_bak.yaml",
+//			"new_path": "Chart.yaml",
+//			"new_file": false,
+//			"renamed_file": true,  // Chart.yaml is renamed to Chart_bak.yaml in gitOps branch
+//			"deleted_file": false,
+//			"diff": ""
+//		}, {
+//			"old_path": "README.md",
+//			"new_path": "README.md",
+//			"new_file": true, // README.md is deleted in gitOps branch
+//			"renamed_file": false,
+//			"deleted_file": false,
+//			"diff": "..."
+//		}, {
+//			"old_path": "application.yaml", // application.yaml is updated in gitOps branch
+//			"new_path": "application.yaml",
+//			"new_file": false,
+//			"renamed_file": false,
+//			"deleted_file": false,
+//			"diff": "..."
+//		}, {
+//			"old_path": "new_file.yaml",
+//			"new_path": "new_file.yaml",
+//			"new_file": false,
+//			"renamed_file": false,
+//			"deleted_file": true, // new_file.yaml is created in gitOps branch
+//			"diff": "..."
+//		}
+//	]
 func (g *clusterGitRepo) revertAction(ctx context.Context, application, cluster,
 	commit string, diff gitlab.Diff) (*gitlablib.CommitAction, error) {
 	if diff.DeletedFile {
