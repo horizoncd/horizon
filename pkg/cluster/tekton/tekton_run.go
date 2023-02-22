@@ -43,7 +43,9 @@ func (t *Tekton) CreatePipelineRun(ctx context.Context, pr *PipelineRun) (eventI
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != http.StatusCreated {
+	// From Tekton Trigger v0.15.0, the EventListener will always respond with a 202 Accepted response code.
+	// Please refer: https://github.com/tektoncd/triggers/releases/tag/v0.15.0.
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusAccepted {
 		message := common.Response(ctx, resp)
 		return "", perror.Wrapf(herrors.ErrHTTPRespNotAsExpected, "statusCode = %d, message = %s", resp.StatusCode, message)
 	}
