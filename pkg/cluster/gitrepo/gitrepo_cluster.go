@@ -1098,21 +1098,22 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 		action *gitlablib.CommitAction
 		err    error
 	}
-	var cases []actionCase
+	cases := make([]actionCase, len(compare.Diffs))
 	var wg sync.WaitGroup
-	wg.Add(len(compare.Diffs))
-	for _, diff := range compare.Diffs {
+	for i := range compare.Diffs {
+		i := i
+		wg.Add(1)
 		// generate a commit action for rollback based on diff
-		diff := *diff
 		go func() {
 			defer wg.Done()
-			action, err := g.revertAction(ctx, application, cluster, commit, diff)
-			cases = append(cases, actionCase{
+			action, err := g.revertAction(ctx, application, cluster, commit, *compare.Diffs[i])
+			cases[i] = actionCase{
 				action: action,
 				err:    err,
-			})
+			}
 		}()
 	}
+	wg.Wait()
 
 	var actions []gitlablib.CommitAction
 	for _, oneCase := range cases {
