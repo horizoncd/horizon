@@ -92,17 +92,17 @@ Within NetEase Cloud Music, the platform team delivers a variety of service temp
 
 ## To start using Horizon
 
-- Follow the [installation guide](https://horizoncd.github.io/docs/tutorials/how-to-install).
-- Getting started by [deploying your first workload](https://horizoncd.github.io/docs/tutorials/how-to-deploy-your-first-workload).
-- See other documentations on [horizoncd.github.io](https://horizoncd.github.io/docs/user-guide/common-user/group).
+* Follow the [installation guide](https://horizoncd.github.io/docs/tutorials/how-to-install).
+* Getting started by [deploying your first workload](https://horizoncd.github.io/docs/tutorials/how-to-deploy-your-first-workload).
+* See other documentations on [horizoncd.github.io](https://horizoncd.github.io/docs/user-guide/common-user/group).
 
 ## Contributions
 
 We welcome contributions from the community! Here are some ways you can help make this project better:
 
-- **Report bugs and request new features** by opening an issue in our [issue tracker](https://github.com/horizoncd/horizon/issues).
-- **Submit code contributions** by opening a pull request. Before submitting, please make sure to follow our [contribution guidelines](./CONTRIBUTING.md) and [code of conduct](https://github.com/horizoncd/horizon/CODE_OF_CONDUCT.md).
-- **Improve documentation** by suggesting changes or submitting pull requests.
+* **Report bugs and request new features** by opening an issue in our [issue tracker](https://github.com/horizoncd/horizon/issues).
+* **Submit code contributions** by opening a pull request. Before submitting, please make sure to follow our [contribution guidelines](./CONTRIBUTING.md) and [code of conduct](https://github.com/horizoncd/horizon/CODE_OF_CONDUCT.md).
+* **Improve documentation** by suggesting changes or submitting pull requests.
 
 Thank you to all of our [contributors](https://github.com/horizoncd/horizon/contributors) for helping to make this project a success!
 
@@ -110,7 +110,8 @@ Thank you to all of our [contributors](https://github.com/horizoncd/horizon/cont
 
 You can contact with us by the following ways:
 
-- [Discussions](https://github.com/horizoncd/horizon/discussions)
-- WeChat Group  
+* [Discussions](https://github.com/horizoncd/horizon/discussions)
+* [Slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1pv55jkv6-vVke4zRSXntXLzeVVB4FLA)
+* WeChat Group  
   
-  ![wachat](image/readme/wechat.png)
+  ![wachat](image/readme/wechat.jpg)
