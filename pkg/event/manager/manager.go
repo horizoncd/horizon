@@ -102,7 +102,7 @@ var supportedEvents = map[string]string{
 	models.ApplicationDeleted:     "Application has been deleted",
 	models.ApplicationTransfered:  "Application has been transferred to another group",
 	models.ApplicationUpdated:     "Application has been updated",
-	models.ClusterCreated:         "New cluster is created",
+	models.ClusterCreated:         "New cluster has been created",
 	models.ClusterDeleted:         "Cluster has been deleted",
 	models.ClusterUpdated:         "Cluster has been updated",
 	models.ClusterBuildDeployed:   "Cluster has completed a build task and triggered a deploy task",
