@@ -13,6 +13,10 @@ func IntPtr(i int) *int {
 	return &i
 }
 
+func UintPtr(i uint) *uint {
+	return &i
+}
+
 func BoolPtr(b bool) *bool {
 	return &b
 }

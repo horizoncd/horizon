@@ -15,12 +15,15 @@ import (
 	gitlablibmock "github.com/horizoncd/horizon/mock/lib/gitlab"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	templateconfig "github.com/horizoncd/horizon/pkg/config/template"
 	config "github.com/horizoncd/horizon/pkg/config/templaterepo"
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	"github.com/horizoncd/horizon/pkg/templaterepo/chartmuseumbase"
+	utilcommon "github.com/horizoncd/horizon/pkg/util/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/xanzy/go-gitlab"
 )
@@ -223,6 +226,16 @@ func Test(t *testing.T) {
 	assert.Equal(t, files.PipelineJSONBlob, pipelineJSONBlob)
 	assert.Equal(t, files.ApplicationJSONBlob, applicationJSONBlob)
 
+	template, err := r.GetClusterTemplate(ctx, application, cluster)
+	assert.Nil(t, err)
+	assert.Equal(t, template.Name, templateName)
+	assert.Equal(t, template.Release, "v1.0.0")
+
+	_, err = r.GetManifest(ctx, application, cluster, nil)
+	assert.NotNil(t, err)
+	_, ok := perror.Cause(err).(*herrors.HorizonErrNotFound)
+	assert.True(t, ok)
+
 	commit, err := r.GetConfigCommit(ctx, application, cluster)
 	assert.Nil(t, err)
 	t.Logf("%v", commit)
@@ -243,7 +256,8 @@ func Test(t *testing.T) {
 	assert.NotNil(t, repoInfo)
 	t.Logf("%v", repoInfo)
 
-	com, err := r.MergeBranch(ctx, application, cluster, 123)
+	com, err := r.MergeBranch(ctx, application, cluster,
+		GitOpsBranch, r.DefaultBranch(), utilcommon.UintPtr(123))
 	assert.Nil(t, err)
 	t.Logf("%v", com)
 
@@ -333,6 +347,10 @@ func TestV2(t *testing.T) {
 	assert.Nil(t, files.PipelineJSONBlob)
 	t.Logf("%+v", files)
 
+	manifest, err := r.GetManifest(ctx, application, cluster, nil)
+	assert.Nil(t, err)
+	assert.Equal(t, manifest.Version, common.MetaVersion2)
+
 	// do not update Region \ update Version \ application yaml \ add pipeline
 	baseParams.RegionEntity = nil
 	baseParams.TemplateRelease.ChartVersion = "v2.0.0"
@@ -377,6 +395,93 @@ func TestV2(t *testing.T) {
 	assert.NotNil(t, files.Manifest)
 	assert.NotNil(t, files.ApplicationJSONBlob)
 	assert.NotNil(t, files.PipelineJSONBlob)
+}
+
+func TestUpgradeToV2(t *testing.T) {
+	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch)
+	assert.Nil(t, err)
+
+	application := "appUpgrade"
+	cluster := "clusterUpgrade"
+
+	baseParams := &BaseParams{
+		Cluster:             cluster,
+		PipelineJSONBlob:    pipelineJSONBlob,
+		ApplicationJSONBlob: applicationJSONBlob,
+		TemplateRelease: &trmodels.TemplateRelease{
+			TemplateName: templateName,
+			ChartName:    templateName,
+			ChartVersion: "v1.0.0",
+		},
+		Application: &appmodels.Application{
+			GroupID:  10,
+			Name:     application,
+			Priority: "P0",
+		},
+		Environment: "test",
+		RegionEntity: &regionmodels.RegionEntity{
+			Region: &regionmodels.Region{
+				Name:        "hz",
+				DisplayName: "HZ",
+				Server:      "https://k8s.com",
+			},
+			Registry: &registrymodels.Registry{
+				Server: "https://harbor.com",
+			},
+		},
+	}
+	createParams := &CreateClusterParams{
+		BaseParams: baseParams,
+	}
+	defer func() {
+		_ = r.DeleteCluster(ctx, application, cluster, 1)
+		_ = g.DeleteProject(ctx, fmt.Sprintf("%v/%v/%v/%v-%v", rootGroupName,
+			"recycling-clusters", application, cluster, 1))
+	}()
+
+	err = r.CreateCluster(ctx, createParams)
+	assert.Nil(t, err)
+	files, err := r.GetCluster(ctx, application, cluster, templateName)
+	t.Logf("%+v", files)
+	assert.Nil(t, err)
+	assert.Nil(t, files.Manifest)
+	assert.NotNil(t, files.ApplicationJSONBlob)
+	assert.NotNil(t, files.PipelineJSONBlob)
+	t.Logf("%+v", files)
+	template, err := r.GetClusterTemplate(ctx, application, cluster)
+	assert.Nil(t, err)
+	assert.Equal(t, template.Name, templateName)
+	assert.Equal(t, template.Release, "v1.0.0")
+	targetTemplate := "rollout"
+	targetRelease := "v1.2.0"
+	upgradeCommit, err := r.UpgradeCluster(ctx, &UpgradeValuesParam{
+		Application: application,
+		Cluster:     cluster,
+		Template:    template,
+		TargetRelease: &trmodels.TemplateRelease{
+			TemplateName: targetTemplate,
+			ChartName:    targetTemplate,
+			ChartVersion: targetRelease,
+		},
+		BuildConfig: &templateconfig.BuildConfig{
+			Language:    "java",
+			Environment: "javaapp",
+		},
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, upgradeCommit)
+	files, err = r.GetCluster(ctx, application, cluster, templateName)
+	t.Logf("%+v", files)
+	assert.Nil(t, err)
+	assert.NotNil(t, files.Manifest)
+	assert.NotNil(t, files.ApplicationJSONBlob)
+	assert.NotNil(t, files.PipelineJSONBlob)
+	t.Logf("%+v", files)
+	template, err = r.GetClusterTemplate(ctx, application, cluster)
+	assert.Nil(t, err)
+	assert.Equal(t, template.Name, targetTemplate)
+	assert.Equal(t, template.Release, targetRelease)
 }
 
 func TestHardDeleteCluster(t *testing.T) {

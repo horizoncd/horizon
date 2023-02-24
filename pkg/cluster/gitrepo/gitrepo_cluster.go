@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -13,12 +14,14 @@ import (
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/application/models"
 	pkgcommon "github.com/horizoncd/horizon/pkg/common"
+	"github.com/horizoncd/horizon/pkg/config/template"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/horizoncd/horizon/pkg/util/angular"
+	utilcommon "github.com/horizoncd/horizon/pkg/util/common"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	timeutil "github.com/horizoncd/horizon/pkg/util/time"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
@@ -77,6 +80,26 @@ type ClusterCommit struct {
 	Gitops string
 }
 
+type ClusterTemplate struct {
+	Name    string
+	Release string
+}
+
+// Deprecated: for internal usage
+type UpgradeValuesParam struct {
+	Application   string
+	Cluster       string
+	Template      *ClusterTemplate
+	TargetRelease *trmodels.TemplateRelease
+	BuildConfig   *template.BuildConfig
+}
+
+type ReadFileParam struct {
+	Bytes    []byte
+	Err      error
+	FileName string
+}
+
 // nolint
 //
 //go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/cluster/gitrepo/gitrepo_cluster_mock.go -package=mock_gitrepo
@@ -84,6 +107,8 @@ type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
 	GetClusterValueFiles(ctx context.Context,
 		application, cluster string) ([]ClusterValueFile, error)
+	// GetClusterTemplate parses cluster's template name and release from GitopsFileChart
+	GetClusterTemplate(ctx context.Context, application, cluster string) (*ClusterTemplate, error)
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
 	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
@@ -91,8 +116,9 @@ type ClusterGitRepo interface {
 	// CompareConfig compare config of `from` commit with `to` commit.
 	// if `from` or `to` is nil, compare the master branch with gitops branch
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
-	// MergeBranch merge gitops branch to master branch, and return master branch's newest commit
-	MergeBranch(ctx context.Context, application, cluster string, prID uint) (string, error)
+	// MergeBranch merge branch and return target branch's newest commit
+	MergeBranch(ctx context.Context, application, cluster, sourceBranch,
+		targetBranch string, prID *uint) (_ string, err error)
 	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (interface{}, error)
 	UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
 		pipelineOutput interface{}) (string, error)
@@ -104,9 +130,16 @@ type ClusterGitRepo interface {
 	GetConfigCommit(ctx context.Context, application, cluster string) (*ClusterCommit, error)
 	GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo
 	GetEnvValue(ctx context.Context, application, cluster, templateName string) (*EnvValue, error)
+	// Rollback rolls gitOps branch back to a specific commit if there are diffs
 	Rollback(ctx context.Context, application, cluster, commit string) (string, error)
 	UpdateTags(ctx context.Context, application, cluster, templateName string,
 		tags []*tagmodels.Tag) error
+	DefaultBranch() string
+	// Deprecated: for internal usage, v1 to v2
+	UpgradeCluster(ctx context.Context, param *UpgradeValuesParam) (string, error)
+	// GetManifest returns manifest with specific revision, defaults to gitops branch
+	GetManifest(ctx context.Context, application,
+		cluster string, commit *string) (*pkgcommon.Manifest, error)
 }
 type clusterGitRepo struct {
 	gitlabLib              gitlablib.Interface
@@ -277,21 +310,17 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 
 	// 1. get  value file from git
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	cases := []struct {
-		retBytes []byte
-		err      error
-		fileName string
-	}{
+	cases := []ReadFileParam{
 		{
-			fileName: common.GitopsFileBase,
+			FileName: common.GitopsFileBase,
 		}, {
-			fileName: common.GitopsFileEnv,
+			FileName: common.GitopsFileEnv,
 		}, {
-			fileName: common.GitopsFileApplication,
+			FileName: common.GitopsFileApplication,
 		}, {
-			fileName: common.GitopsFileTags,
+			FileName: common.GitopsFileTags,
 		}, {
-			fileName: common.GitopsFileSRE,
+			FileName: common.GitopsFileSRE,
 		},
 	}
 
@@ -300,20 +329,21 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 	for i := 0; i < len(cases); i++ {
 		go func(index int) {
 			defer wg.Done()
-			cases[index].retBytes, cases[index].err = g.gitlabLib.GetFile(ctx, pid,
-				g.defaultBranch, cases[index].fileName)
-			if cases[index].err != nil {
-				log.Warningf(ctx, "get file %s error, err = %s", cases[index].fileName, cases[index].err.Error())
+			cases[index].Bytes, cases[index].Err = g.gitlabLib.GetFile(ctx, pid,
+				g.defaultBranch, cases[index].FileName)
+			if cases[index].Err != nil {
+				log.Warningf(ctx, "get file %s error, err = %s",
+					cases[index].FileName, cases[index].Err.Error())
 			}
 		}(i)
 	}
 	wg.Wait()
 
 	for i := 0; i < len(cases); i++ {
-		if cases[i].err != nil {
-			if _, ok := perror.Cause(cases[i].err).(*herrors.HorizonErrNotFound); !ok {
-				log.Errorf(ctx, "get cluster value file error, err = %s", cases[i].err.Error())
-				return nil, cases[i].err
+		if cases[i].Err != nil {
+			if _, ok := perror.Cause(cases[i].Err).(*herrors.HorizonErrNotFound); !ok {
+				log.Errorf(ctx, "get cluster value file error, err = %s", cases[i].Err.Error())
+				return nil, cases[i].Err
 			}
 		}
 	}
@@ -321,20 +351,20 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 	// 2. check yaml format ok
 	var clusterValueFiles []ClusterValueFile
 	for _, oneCase := range cases {
-		if oneCase.err != nil {
-			if _, ok := perror.Cause(oneCase.err).(*herrors.HorizonErrNotFound); ok {
+		if oneCase.Err != nil {
+			if _, ok := perror.Cause(oneCase.Err).(*herrors.HorizonErrNotFound); ok {
 				continue
 			}
 		}
 		var out map[interface{}]interface{}
-		err = yaml.Unmarshal(oneCase.retBytes, &out)
+		err = yaml.Unmarshal(oneCase.Bytes, &out)
 		if err != nil {
-			err = perror.Wrapf(herrors.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.fileName)
+			err = perror.Wrapf(herrors.ErrParamInvalid, "yaml Unmarshal err, file = %s", oneCase.FileName)
 			break
 		}
 
 		clusterValueFiles = append(clusterValueFiles, ClusterValueFile{
-			FileName: oneCase.fileName,
+			FileName: oneCase.FileName,
 			Content:  out,
 		})
 	}
@@ -345,6 +375,49 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 	return clusterValueFiles, nil
 }
 
+func (g *clusterGitRepo) GetClusterTemplate(ctx context.Context, application,
+	cluster string) (*ClusterTemplate, error) {
+	const op = "cluster git repo: get cluster template"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	// 1. get Chart file from git
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
+	file, err := g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, common.GitopsFileChart)
+	if err != nil {
+		return nil, err
+	}
+	var chart Chart
+	err = yaml.Unmarshal(file, &chart)
+	if err != nil {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid,
+			"yaml Unmarshal err, file = %s", common.GitopsFileChart)
+	}
+
+	for _, dependency := range chart.Dependencies {
+		if dependency.Name != "" && dependency.Version != "" {
+			// extract release
+			releaseName, err := func() (string, error) {
+				pattern := regexp.MustCompile("-([a-z0-9])+$")
+				b := []byte(dependency.Version)
+				loc := pattern.FindIndex(b)
+				if len(loc) == 0 {
+					return "", perror.Wrapf(herrors.ErrParamInvalid,
+						"failed to extract release from chart")
+				}
+				return string(b[0:loc[0]]), nil
+			}()
+			if err != nil {
+				return nil, err
+			}
+			return &ClusterTemplate{
+				Name:    dependency.Name,
+				Release: releaseName,
+			}, nil
+		}
+	}
+	return nil, perror.Wrapf(herrors.ErrParamInvalid,
+		"failed to get cluster template from chart")
+}
 func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
 	const op = "cluster git repo: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -666,17 +739,21 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 	return diffStr, nil
 }
 
-func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster string,
-	prID uint) (_ string, err error) {
-	mergeCommitMsg := "git merge gitops"
+func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster,
+	sourceBranch, targetBranch string, prID *uint) (_ string, err error) {
 	removeSourceBranch := false
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
-	title := fmt.Sprintf("git merge %v, id = %d", GitOpsBranch, prID)
+	var title string
+	if prID != nil {
+		title = fmt.Sprintf("git merge %v into %v, prID = %d", sourceBranch, targetBranch, prID)
+	} else {
+		title = fmt.Sprintf("git merge %v into %v", sourceBranch, targetBranch)
+	}
 
 	var mr *gitlab.MergeRequest
-	mrs, err := g.gitlabLib.ListMRs(ctx, pid, GitOpsBranch,
-		g.defaultBranch, common.GitopsMergeRequestStateOpen)
+	mrs, err := g.gitlabLib.ListMRs(ctx, pid, sourceBranch,
+		targetBranch, common.GitopsMergeRequestStateOpen)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to list merge requests")
 	}
@@ -689,7 +766,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 		// (source,target), caused we can't merge anymore)
 		if len(mrs) >= 2 {
 			log.Warningf(ctx, "there %d mrs for (src:%s, des:%s), here will kill redundant mrs",
-				len(mrs), GitOpsBranch, g.defaultBranch)
+				len(mrs), sourceBranch, targetBranch)
 			for i := 1; i < len(mrs); i++ {
 				_, err := g.gitlabLib.CloseMR(ctx, pid, mrs[i].IID)
 				if err != nil {
@@ -699,22 +776,32 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster s
 		}
 	} else {
 		// create new mr
-		mr, err = g.gitlabLib.CreateMR(ctx, pid, GitOpsBranch, g.defaultBranch, title)
+		mr, err = g.gitlabLib.CreateMR(ctx, pid, sourceBranch, targetBranch, title)
 		if err != nil {
 			return "", perror.WithMessage(err, "failed to create new merge request")
 		}
 	}
 
-	mr, err = g.gitlabLib.AcceptMR(ctx, pid, mr.IID, &mergeCommitMsg, &removeSourceBranch)
+	mr, err = g.gitlabLib.AcceptMR(ctx, pid, mr.IID, &title, &removeSourceBranch)
 	if err != nil {
 		return "", perror.WithMessage(err, "failed to accept merge request")
 	}
 	return mr.MergeCommitSHA, nil
 }
 
-func (g *clusterGitRepo) GetManifest(ctx context.Context, application, cluster string) (*pkgcommon.Manifest, error) {
+func (g *clusterGitRepo) GetManifest(ctx context.Context, application,
+	cluster string, commit *string) (*pkgcommon.Manifest, error) {
+	const op = "cluster git repo: get manifest"
+	defer wlog.Start(ctx, op).StopPrint()
+
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
-	content, err := g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, common.GitopsFileManifest)
+	var content []byte
+	var err error
+	if commit != nil {
+		content, err = g.gitlabLib.GetFile(ctx, pid, *commit, common.GitopsFileManifest)
+	} else {
+		content, err = g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, common.GitopsFileManifest)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -914,7 +1001,7 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 		Cluster:  angular.StringPtr(cluster),
 	}, nil)
 
-	// update in GitopsBranchMaster directly
+	// update in defaultBranch directly
 	commit, err := g.gitlabLib.WriteFiles(ctx, pid, g.defaultBranch, commitMsg, nil, actions)
 	if err != nil {
 		return "", err
@@ -997,58 +1084,43 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
-	// 1. get cluster files of the specified commit
-	// the files contains: GitopsFilePipeline, GitopsFileApplication, GitopsFileBase, GitopsFilePipelineOutput
-	var err1, err2, err3, err4, err5, err6 error
-	var applicationBytes, pipelineBytes, baseValueBytes, pipelineOutPutBytes, tagsBytes, chartBytes []byte
-	var wgReadFile sync.WaitGroup
-	wgReadFile.Add(6)
-	readFile := func(b *[]byte, err *error, filePath string) {
-		defer wgReadFile.Done()
-		bytes, e := g.gitlabLib.GetFile(ctx, pid, commit, filePath)
-		*b = bytes
-		*err = e
+	// compare commit straight diffs
+	compare, err := g.gitlabLib.Compare(ctx, pid, GitOpsBranch, commit, utilcommon.BoolPtr(true))
+	if err != nil {
+		return "", err
 	}
-	go readFile(&pipelineBytes, &err1, common.GitopsFilePipeline)
-	go readFile(&applicationBytes, &err2, common.GitopsFileApplication)
-	go readFile(&baseValueBytes, &err3, common.GitopsFileBase)
-	go readFile(&pipelineOutPutBytes, &err4, common.GitopsFilePipelineOutput)
-	go readFile(&tagsBytes, &err5, common.GitopsFileTags)
-	go readFile(&chartBytes, &err6, common.GitopsFileChart)
-	wgReadFile.Wait()
+	if compare.Diffs == nil {
+		return "", perror.Wrapf(herrors.ErrParamInvalid,
+			"dose not support empty rollback, rollback commit = %s", commit)
+	}
 
-	for _, err := range []error{err1, err2, err3, err4, err6} {
-		if err != nil {
-			return "", err
+	type actionCase struct {
+		action *gitlablib.CommitAction
+		err    error
+	}
+	cases := make([]actionCase, len(compare.Diffs))
+	var wg sync.WaitGroup
+	for i := range compare.Diffs {
+		i := i
+		wg.Add(1)
+		// generate a commit action for rollback based on diff
+		go func() {
+			defer wg.Done()
+			action, err := g.revertAction(ctx, application, cluster, commit, *compare.Diffs[i])
+			cases[i] = actionCase{
+				action: action,
+				err:    err,
+			}
+		}()
+	}
+	wg.Wait()
+
+	var actions []gitlablib.CommitAction
+	for _, oneCase := range cases {
+		if oneCase.err != nil {
+			return "", oneCase.err
 		}
-	}
-
-	actions := []gitlablib.CommitAction{
-		{
-			Action:   gitlablib.FileUpdate,
-			FilePath: common.GitopsFilePipeline,
-			Content:  string(pipelineBytes),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: common.GitopsFileApplication,
-			Content:  string(applicationBytes),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: common.GitopsFileBase,
-			Content:  string(baseValueBytes),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: common.GitopsFilePipelineOutput,
-			Content:  string(pipelineOutPutBytes),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: common.GitopsFileTags,
-			Content:  string(tagsBytes),
-		}, {
-			Action:   gitlablib.FileUpdate,
-			FilePath: common.GitopsFileChart,
-			Content:  string(chartBytes),
-		},
+		actions = append(actions, *oneCase.action)
 	}
 
 	commitMsg := angular.CommitMessage("cluster", angular.Subject{
@@ -1124,6 +1196,344 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 	}
 
 	return nil
+}
+
+func (g *clusterGitRepo) DefaultBranch() string {
+	return g.defaultBranch
+}
+
+func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
+	param *UpgradeValuesParam) (string, error) {
+	const op = "cluster git repo: upgrade cluster"
+	defer wlog.Start(ctx, op).StopPrint()
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath,
+		param.Application, param.Cluster)
+
+	type upgradeValueBytes struct {
+		fileName      string
+		sourceBytes   []byte
+		upgradedBytes []byte
+		err           error
+	}
+
+	cases := []*upgradeValueBytes{
+		{
+			fileName: common.GitopsFileBase,
+		}, {
+			fileName: common.GitopsFileEnv,
+		}, {
+			fileName: common.GitopsFileApplication,
+		}, {
+			fileName: common.GitopsFileTags,
+		}, {
+			fileName: common.GitopsFileSRE,
+		}, {
+			fileName: common.GitopsFilePipeline,
+		}, {
+			fileName: common.GitopsFilePipelineOutput,
+		}, {
+			fileName: common.GitopsFileChart,
+		}, {
+			fileName: common.GitopsFileRestart,
+		}, {
+			fileName: common.GitopsFileManifest,
+		},
+	}
+
+	// 1. read files
+	var wgReadFile sync.WaitGroup
+	wgReadFile.Add(len(cases))
+	for i := range cases {
+		i := i
+		go func() {
+			defer wgReadFile.Done()
+			cases[i].sourceBytes, cases[i].err = g.readFile(ctx, param.Application,
+				param.Cluster, cases[i].fileName, nil)
+		}()
+	}
+	wgReadFile.Wait()
+	for _, oneCase := range cases {
+		if oneCase.fileName != common.GitopsFileManifest {
+			if oneCase.err != nil {
+				log.Errorf(ctx, "get cluster value file error, file = %s, err = %s",
+					oneCase.fileName, oneCase.err.Error())
+				return "", oneCase.err
+			}
+		} else {
+			if oneCase.err != nil {
+				if _, ok := perror.Cause(oneCase.err).(*herrors.HorizonErrNotFound); !ok {
+					log.Errorf(ctx, "get cluster value file error, file = %s, err = %s",
+						oneCase.fileName, oneCase.err.Error())
+					return "", oneCase.err
+				}
+			}
+		}
+	}
+
+	updateChartValue := func(sourceBytes []byte) ([]byte, error) {
+		var (
+			upgradedBytes []byte
+			err           error
+			chart         Chart
+		)
+		err = yaml.Unmarshal(sourceBytes, &chart)
+		if err != nil {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFileChart, err.Error())
+		}
+		// update template
+		if len(chart.Dependencies) > 0 {
+			dep := chart.Dependencies[0]
+			chart.Dependencies[0] = Dependency{
+				Name:       param.TargetRelease.ChartName,
+				Version:    param.TargetRelease.ChartVersion,
+				Repository: dep.Repository,
+			}
+		}
+		marshal(&upgradedBytes, &err, &chart)
+		return upgradedBytes, err
+	}
+	updateBaseValue := func(sourceBytes []byte) ([]byte, error) {
+		var (
+			upgradedBytes []byte
+			err           error
+		)
+		valueMap := make(map[string]map[string]*BaseValue)
+		err = yaml.Unmarshal(sourceBytes, &valueMap)
+		if err != nil {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFileBase, err.Error())
+		}
+		baseValue, ok := valueMap[param.Template.Name][common.GitopsBaseValueNamespace]
+		if !ok {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"value parent err, file = %s, parent = %s", common.GitopsFileBase, param.Template.Name)
+		}
+		baseValue.Template = &BaseValueTemplate{
+			Name:    param.TargetRelease.TemplateName,
+			Release: param.TargetRelease.ChartVersion,
+		}
+		retMap := make(map[string]map[string]*BaseValue)
+		retMap[param.TargetRelease.TemplateName] = map[string]*BaseValue{
+			common.GitopsBaseValueNamespace: baseValue,
+		}
+		marshal(&upgradedBytes, &err, &retMap)
+		return upgradedBytes, err
+	}
+	assembleManifest := func() ([]byte, error) {
+		var (
+			upgradedBytes []byte
+			err           error
+		)
+		marshal(&upgradedBytes, &err, &pkgcommon.Manifest{Version: common.MetaVersion2})
+		if err != nil {
+			log.Errorf(ctx, "marshal manifest error, err = %s", err.Error())
+		}
+		return upgradedBytes, nil
+	}
+	updatePipelineValue := func(sourceBytes []byte) ([]byte, error) {
+		if sourceBytes == nil {
+			return nil, nil
+		}
+
+		var (
+			inMap         map[string]map[string]interface{}
+			upgradedBytes []byte
+			err           error
+		)
+		err = yaml.Unmarshal(sourceBytes, &inMap)
+		if err != nil {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFilePipeline, err.Error())
+		}
+		antScript, ok := inMap[param.Template.Name]["buildxml"]
+		if !ok {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"value parent err, file = %s, parent = %s",
+				common.GitopsFilePipeline, param.Template.Name)
+		}
+		retMap := map[string]map[string]interface{}{
+			PipelineValueParent: {
+				"buildInfo": map[string]interface{}{
+					"buildTool": "ant",
+					"buildxml":  antScript,
+				},
+				"buildType":   "netease-normal",
+				"environment": param.BuildConfig.Environment,
+				"language":    param.BuildConfig.Language,
+			},
+		}
+		marshal(&upgradedBytes, &err, &retMap)
+		return upgradedBytes, err
+	}
+	updateApplicationValue := func(sourceBytes []byte) ([]byte, error) {
+		if sourceBytes == nil {
+			return nil, nil
+		}
+
+		var (
+			inMap         map[string]map[string]interface{}
+			upgradedBytes []byte
+			err           error
+		)
+		err = yaml.Unmarshal(sourceBytes, &inMap)
+		if err != nil {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFileApplication, err.Error())
+		}
+		midMap, ok := inMap[param.Template.Name]
+		if !ok {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"value parent err, file = %s, parent = %s",
+				common.GitopsFileApplication, param.Template.Name)
+		}
+		// convert params to envs
+		func() {
+			appMap, ok := midMap["app"].(map[string]interface{})
+			if !ok {
+				return
+			}
+			paramsMap, ok := appMap["params"].(map[string]interface{})
+			if ok {
+				var envsArray []map[string]interface{}
+				for k, v := range paramsMap {
+					envsArray = append(envsArray, map[string]interface{}{
+						"name":  k,
+						"value": v,
+					})
+				}
+				delete(appMap, "params")
+				appMap["envs"] = envsArray
+			}
+		}()
+		retMap := make(map[string]map[string]interface{})
+		retMap[param.TargetRelease.TemplateName] = midMap
+		marshal(&upgradedBytes, &err, &retMap)
+		return upgradedBytes, err
+	}
+	updateValueParent := func(fileName string, sourceBytes []byte) ([]byte, error) {
+		if sourceBytes == nil {
+			return nil, nil
+		}
+
+		var (
+			inMap         map[string]interface{}
+			upgradedBytes []byte
+			err           error
+		)
+		err = yaml.Unmarshal(sourceBytes, &inMap)
+		if err != nil {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"yaml Unmarshal err, file = %s, err = %s", fileName, err.Error())
+		}
+		valueMap, ok := inMap[param.Template.Name]
+		if !ok {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid,
+				"value parent err, file = %s, parent = %s", fileName, param.Template.Name)
+		}
+		retMap := map[string]interface{}{
+			param.TargetRelease.TemplateName: valueMap,
+		}
+		marshal(&upgradedBytes, &err, &retMap)
+		return upgradedBytes, err
+	}
+
+	// 2. upgrade value bytes
+	var wgUpdateValue sync.WaitGroup
+	wgUpdateValue.Add(len(cases))
+	for i := range cases {
+		i := i
+		switch cases[i].fileName {
+		case common.GitopsFileChart:
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err = updateChartValue(cases[i].sourceBytes)
+			}()
+		case common.GitopsFileBase:
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err = updateBaseValue(cases[i].sourceBytes)
+			}()
+		case common.GitopsFileManifest:
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, _ = assembleManifest()
+			}()
+		case common.GitopsFilePipeline:
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err = updatePipelineValue(cases[i].sourceBytes)
+			}()
+		case common.GitopsFileApplication:
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err = updateApplicationValue(cases[i].sourceBytes)
+			}()
+		default:
+			// update value parent
+			go func() {
+				defer wgUpdateValue.Done()
+				cases[i].upgradedBytes, cases[i].err =
+					updateValueParent(cases[i].fileName, cases[i].sourceBytes)
+			}()
+		}
+	}
+	wgUpdateValue.Wait()
+
+	// 3. write files
+	var gitActions []gitlablib.CommitAction
+	for _, oneCase := range cases {
+		if oneCase.fileName != common.GitopsFileManifest {
+			if oneCase.err != nil {
+				return "", oneCase.err
+			}
+			if oneCase.sourceBytes != nil {
+				gitActions = append(gitActions, gitlablib.CommitAction{
+					Action:   gitlablib.FileUpdate,
+					FilePath: oneCase.fileName,
+					Content:  string(oneCase.upgradedBytes),
+				})
+			}
+		} else {
+			if oneCase.err != nil {
+				gitActions = append(gitActions, gitlablib.CommitAction{
+					Action:   gitlablib.FileCreate,
+					FilePath: oneCase.fileName,
+					Content:  string(oneCase.upgradedBytes),
+				})
+			} else {
+				gitActions = append(gitActions, gitlablib.CommitAction{
+					Action:   gitlablib.FileUpdate,
+					FilePath: oneCase.fileName,
+					Content:  string(oneCase.upgradedBytes),
+				})
+			}
+		}
+	}
+	commitMsg := angular.CommitMessage("cluster", angular.Subject{
+		Operator: currentUser.GetName(),
+		Action:   "upgrade cluster",
+		Cluster:  angular.StringPtr(param.Cluster),
+	}, struct {
+		SourceTemplate ClusterTemplate `json:"sourceTemplate"`
+		TargetTemplate ClusterTemplate `json:"targetRelease"`
+	}{
+		SourceTemplate: *param.Template,
+		TargetTemplate: ClusterTemplate{
+			Name:    param.TargetRelease.TemplateName,
+			Release: param.TargetRelease.Name,
+		},
+	})
+	newCommit, err := g.gitlabLib.WriteFiles(ctx, pid, GitOpsBranch, commitMsg, nil, gitActions)
+	if err != nil {
+		return "", err
+	}
+	return newCommit.ID, nil
 }
 
 // assembleApplicationValue assemble application.yaml data
@@ -1255,6 +1665,92 @@ func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
 			},
 		},
 	}, nil
+}
+
+// revertAction generates a commit action based on the diff to simulate 'git revert'
+// ref: https://git-scm.com/docs/git-revert
+// an example of all types of file changes:
+//
+//	"diffs": [
+//		{
+//			"old_path": "Chart_bak.yaml",
+//			"new_path": "Chart.yaml",
+//			"new_file": false,
+//			"renamed_file": true,  // Chart.yaml is renamed to Chart_bak.yaml in gitOps branch
+//			"deleted_file": false,
+//			"diff": ""
+//		}, {
+//			"old_path": "README.md",
+//			"new_path": "README.md",
+//			"new_file": true, // README.md is deleted in gitOps branch
+//			"renamed_file": false,
+//			"deleted_file": false,
+//			"diff": "..."
+//		}, {
+//			"old_path": "application.yaml", // application.yaml is updated in gitOps branch
+//			"new_path": "application.yaml",
+//			"new_file": false,
+//			"renamed_file": false,
+//			"deleted_file": false,
+//			"diff": "..."
+//		}, {
+//			"old_path": "new_file.yaml",
+//			"new_path": "new_file.yaml",
+//			"new_file": false,
+//			"renamed_file": false,
+//			"deleted_file": true, // new_file.yaml is created in gitOps branch
+//			"diff": "..."
+//		}
+//	]
+func (g *clusterGitRepo) revertAction(ctx context.Context, application, cluster,
+	commit string, diff gitlab.Diff) (*gitlablib.CommitAction, error) {
+	if diff.DeletedFile {
+		// file is deleted from gitops branch to the commit
+		return &gitlablib.CommitAction{
+			Action:   gitlablib.FileDelete,
+			FilePath: diff.OldPath,
+		}, nil
+	}
+	if diff.NewFile {
+		// file is created from gitops branch to the commit
+		file, err := g.readFile(ctx, application, cluster, diff.NewPath, &commit)
+		if err != nil {
+			return nil, err
+		}
+		return &gitlablib.CommitAction{
+			Action:   gitlablib.FileCreate,
+			FilePath: diff.NewPath,
+			Content:  string(file),
+		}, nil
+	}
+	if diff.RenamedFile {
+		// file is renamed from gitops branch to the commit
+		return &gitlablib.CommitAction{
+			Action:       gitlablib.FileMove,
+			FilePath:     diff.NewPath,
+			PreviousPath: diff.OldPath,
+		}, nil
+	}
+	// file is updated from gitops branch to the commit if flags are all false
+	file, err := g.readFile(ctx, application, cluster, diff.NewPath, &commit)
+	if err != nil {
+		return nil, err
+	}
+	return &gitlablib.CommitAction{
+		Action:   gitlablib.FileUpdate,
+		FilePath: diff.NewPath,
+		Content:  string(file),
+	}, nil
+}
+
+// readFile gets file for specific revision, defaults to gitOps branch
+func (g *clusterGitRepo) readFile(ctx context.Context, application, cluster,
+	fileName string, commit *string) ([]byte, error) {
+	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
+	if commit != nil {
+		return g.gitlabLib.GetFile(ctx, pid, *commit, fileName)
+	}
+	return g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, fileName)
 }
 
 func renameTemplateName(name string) string {
