@@ -111,7 +111,7 @@ Thank you to all of our [contributors](https://github.com/horizoncd/horizon/cont
 You can contact with us by the following ways:
 
 * [Discussions](https://github.com/horizoncd/horizon/discussions)
-* [Slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1pv55jkv6-vVke4zRSXntXLzeVVB4FLA)
+* [Slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1pqpobiwn-1mgV60SIa1oi4mL1WXf7uA)
 * WeChat Group  
   
   ![wachat](image/readme/wechat.jpg)
