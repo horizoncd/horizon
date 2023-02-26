@@ -10,36 +10,35 @@ import (
 
 var (
 	// Fty is the global registry factory
-	Fty = NewFactory()
+	Fty = NewRegistryCache()
 )
 
 // nolint
 //
 //go:generate mockgen -source=$GOFILE -destination=../../../../mock/pkg/cluster/registry/factory/factory_mock.go -package=mock_factory
-type Factory interface {
+type RegistryGetter interface {
 	GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error)
 }
 
-type factory struct {
-	registryCache *sync.Map
+type RegistryCache struct {
+	*sync.Map
 }
 
-func NewFactory() Factory {
-	registryCache := &sync.Map{}
-	return &factory{
-		registryCache: registryCache,
+func NewRegistryCache() *RegistryCache {
+	return &RegistryCache{
+		&sync.Map{},
 	}
 }
 
-func (f *factory) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
+func (f *RegistryCache) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
 	key := fmt.Sprintf("%v-%v-%v-%v", config.Server, config.Token, config.Path, config.Kind)
-	if ret, ok := f.registryCache.Load(key); ok {
+	if ret, ok := f.Load(key); ok {
 		return ret.(registry.Registry), nil
 	}
 	rg, err := registry.NewRegistry(config)
 	if err != nil {
 		return nil, err
 	}
-	f.registryCache.Store(key, rg)
+	f.Store(key, rg)
 	return rg, nil
 }
