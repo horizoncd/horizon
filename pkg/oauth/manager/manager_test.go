@@ -6,6 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
+	"gorm.io/gorm"
+
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -18,9 +22,6 @@ import (
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
-	"gorm.io/gorm"
 )
 
 var (
@@ -56,7 +57,7 @@ func TestOauthAppBasic(t *testing.T) {
 	createReq := &CreateOAuthAppReq{
 		Name:        "OauthTest",
 		RedirectURI: "https://example.com/oauth/redirect",
-		HomeURL:     "https://exmple.com",
+		HomeURL:     "https://example.com",
 		Desc:        "This is an example  oauth app",
 		OwnerType:   models.GroupOwnerType,
 		OwnerID:     1,
@@ -73,7 +74,7 @@ func TestOauthAppBasic(t *testing.T) {
 
 	updateReq := UpdateOauthAppReq{
 		Name:        "OauthTest2",
-		HomeURL:     "https://exmple2.com",
+		HomeURL:     "https://example2.com",
 		RedirectURI: "https://example.com/oauth/redirect2",
 		Desc:        "This is",
 	}
@@ -104,7 +105,7 @@ func TestClientSecretBasic(t *testing.T) {
 	createReq := &CreateOAuthAppReq{
 		Name:        "OauthTest",
 		RedirectURI: "https://example.com/oauth/redirect",
-		HomeURL:     "https://exmple.com",
+		HomeURL:     "https://example.com",
 		Desc:        "This is an example  oauth app",
 		OwnerType:   models.GroupOwnerType,
 		OwnerID:     1,
@@ -173,7 +174,7 @@ func TestOauthAuthorizeAndAccessBasic(t *testing.T) {
 	createReq := &CreateOAuthAppReq{
 		Name:        "OauthTest",
 		RedirectURI: "https://example.com/oauth/redirect",
-		HomeURL:     "https://exmple.com",
+		HomeURL:     "https://example.com",
 		Desc:        "This is an example  oauth app",
 		OwnerType:   models.GroupOwnerType,
 		OwnerID:     1,
