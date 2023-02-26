@@ -57,33 +57,35 @@ const (
 	NotFound = "NotFound"
 )
 
+type ResourceType string
+
 const (
 	// ResourceApplication represent the application  member entry.
-	ResourceApplication = "applications"
+	ResourceApplication ResourceType = "applications"
 
 	// ResourceCluster represent the application instance member entry
-	ResourceCluster = "clusters"
+	ResourceCluster ResourceType = "clusters"
 
-	ResourceRegion = "regions"
+	ResourceRegion ResourceType = "regions"
 
 	// ResourceGroup represent the group member entry.
-	ResourceGroup = "groups"
+	ResourceGroup ResourceType = "groups"
 
 	// ResourcePipelinerun currently pipelineruns do not have direct member info, will
 	// use the pipeline's cluster's member info
-	ResourcePipelinerun = "pipelineruns"
+	ResourcePipelinerun ResourceType = "pipelineruns"
 
 	// ResourceOauthApps currently oauthapp do not have direct member info, will
 	// use the oauthapp's groups member info
-	ResourceOauthApps = "oauthapps"
+	ResourceOauthApps ResourceType = "oauthapps"
 
-	ResourceTemplate = "templates"
+	ResourceTemplate ResourceType = "templates"
 
-	ResourceTemplateRelease = "templatereleases"
-	AliasTemplateRelease    = "releases"
+	ResourceTemplateRelease ResourceType = "templatereleases"
+	AliasTemplateRelease    ResourceType = "releases"
 
-	ResourceWebhook    = "webhooks"
-	ResourceWebhookLog = "webhooklogs"
+	ResourceWebhook    ResourceType = "webhooks"
+	ResourceWebhookLog ResourceType = "webhooklogs"
 )
 
 const (
