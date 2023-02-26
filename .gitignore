@@ -6,3 +6,6 @@ coverage.data
 
 .DS_Store
 core/__debug_bin
+
+bin/
+
