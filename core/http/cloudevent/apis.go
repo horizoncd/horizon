@@ -2,14 +2,13 @@ package cloudevent
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/cloudevent"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
+	pipelinecloudevent "github.com/tektoncd/pipeline/pkg/reconciler/events/cloudevent"
 )
 
 type API struct {
@@ -23,10 +22,9 @@ func NewAPI(cloudEventCtl cloudevent.Controller) *API {
 }
 
 func (a *API) CloudEvent(c *gin.Context) {
-	// "Ce-Source": "/apis/tekton.dev/v1beta1/namespaces/default/taskruns/curl-run-6gplk"
-	// Ce-Source is the selfLink in k8s resource
-	// if resource is not a pipelineRun, return
-	if !strings.Contains(c.GetHeader("Ce-Source"), "pipelineruns") {
+	ceType := c.GetHeader("Ce-Type")
+	if ceType != string(pipelinecloudevent.PipelineRunSuccessfulEventV1) &&
+		ceType != string(pipelinecloudevent.PipelineRunFailedEventV1) {
 		response.Success(c)
 		return
 	}
@@ -35,10 +33,6 @@ func (a *API) CloudEvent(c *gin.Context) {
 	if err := c.ShouldBindJSON(&wpr); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
-		return
-	}
-	if !wpr.IsFinished() {
-		response.Success(c)
 		return
 	}
 
