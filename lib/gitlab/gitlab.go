@@ -154,13 +154,16 @@ type FileAction string
 const (
 	FileCreate FileAction = "create"
 	FileUpdate FileAction = "update"
+	FileDelete FileAction = "delete"
+	FileMove   FileAction = "move"
 )
 
 // CommitAction represents a single file action within a commit.
 type CommitAction struct {
-	Action   FileAction
-	FilePath string
-	Content  string
+	Action       FileAction
+	FilePath     string
+	Content      string
+	PreviousPath string
 }
 
 func (a FileAction) toFileActionValuePtr() *gitlab.FileActionValue {
@@ -473,9 +476,10 @@ func (h *helper) WriteFiles(ctx context.Context, pid interface{}, branch, commit
 			acts := make([]*gitlab.CommitActionOptions, 0)
 			for i := range actions {
 				acts = append(acts, &gitlab.CommitActionOptions{
-					Action:   actions[i].Action.toFileActionValuePtr(),
-					FilePath: &actions[i].FilePath,
-					Content:  &actions[i].Content,
+					Action:       actions[i].Action.toFileActionValuePtr(),
+					FilePath:     &actions[i].FilePath,
+					Content:      &actions[i].Content,
+					PreviousPath: &actions[i].PreviousPath,
 				})
 			}
 			return acts

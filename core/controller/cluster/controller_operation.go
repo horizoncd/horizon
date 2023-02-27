@@ -8,6 +8,7 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
@@ -144,7 +145,8 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		// freed cluster is allowed to deploy without diff
 		commit = configCommit.Master
 	} else {
-		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, prCreated.ID)
+		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name,
+			gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &prCreated.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -229,7 +231,7 @@ func (c *controller) Rollback(ctx context.Context,
 	if pipelinerun.Action == prmodels.ActionRestart || pipelinerun.Status != string(prmodels.StatusOK) ||
 		pipelinerun.ConfigCommit == "" {
 		return nil, perror.Wrapf(herrors.ErrParamInvalid,
-			"the pipelinerun with id: %v can not be rollbacked", r.PipelinerunID)
+			"the pipelinerun with id: %v can not be rolled back", r.PipelinerunID)
 	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -272,6 +274,12 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
+	// Deprecated: for internal usage
+	err = c.checkAndSyncGitOpsBranch(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
+	if err != nil {
+		return nil, err
+	}
+
 	// 4. rollback cluster config in git repo and update status
 	newConfigCommit, err := c.clusterGitRepo.Rollback(ctx, application.Name, cluster.Name, pipelinerun.ConfigCommit)
 	if err != nil {
@@ -283,7 +291,8 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 
 	// 5. merge branch & update config commit and status
-	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name, prCreated.ID)
+	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name,
+		gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &prCreated.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -296,11 +305,14 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	if err := c.updateTagsFromFile(ctx, application, cluster); err != nil {
+	// 6. update template and tags in db
+	// TODO(zhuxu): remove strong dependencies on db updates, just print an err log when updates fail
+	cluster, err = c.updateTemplateAndTagsFromFile(ctx, application, cluster)
+	if err != nil {
 		return nil, err
 	}
 
-	// 8. create cluster in cd system
+	// 7. create cluster in cd system
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, err
@@ -321,7 +333,7 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	// 9. reset cluster status
+	// 8. reset cluster status
 	if cluster.Status == common.ClusterStatusFreed {
 		cluster.Status = common.ClusterStatusEmpty
 		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
@@ -330,7 +342,7 @@ func (c *controller) Rollback(ctx context.Context,
 		}
 	}
 
-	// 10. deploy cluster in cd and update status
+	// 9. deploy cluster in cd and update status
 	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
 		Environment: cluster.EnvironmentName,
 		Cluster:     cluster.Name,
@@ -342,7 +354,7 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	// 11. record event
+	// 10. record event
 	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: common.ResourceCluster,
@@ -647,6 +659,66 @@ func (c *controller) GetGrafanaDashBoard(ctx context.Context, clusterID uint) (*
 	}, nil
 }
 
+// Deprecated: Upgrade v1 to v2
+func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
+	const op = "cluster controller: upgrade to v2"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	// 1. validate infos
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return err
+	}
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return err
+	}
+	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return err
+	}
+
+	// 2. match target template
+	targetTemplate, ok := c.templateUpgradeMapper[templateFromFile.Name]
+	if !ok {
+		return perror.Wrapf(herrors.ErrParamInvalid,
+			"cluster template %s does not support upgrade", templateFromFile.Name)
+	}
+	targetRelease, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
+		targetTemplate.Name, targetTemplate.Release)
+	if err != nil {
+		return err
+	}
+
+	// 3. sync gitops branch if restarts occur
+	err = c.syncGitOpsBranch(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return err
+	}
+
+	// 4. upgrade git repo files to v2
+	_, err = c.clusterGitRepo.UpgradeCluster(ctx, &gitrepo.UpgradeValuesParam{
+		Application:   application.Name,
+		Cluster:       cluster.Name,
+		Template:      templateFromFile,
+		TargetRelease: targetRelease,
+		BuildConfig:   &targetTemplate.BuildConfig,
+	})
+	if err != nil {
+		return err
+	}
+
+	// 5. update template in db
+	// TODO(zhuxu): remove strong dependencies on db updates, just print an err log when updates fail
+	cluster.Template = targetRelease.TemplateName
+	cluster.TemplateRelease = targetRelease.Name
+	_, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *controller) updatePRStatus(ctx context.Context, action string, prID uint,
 	pState prmodels.PipelineStatus, revision string) error {
 	var err error
@@ -669,18 +741,30 @@ func (c *controller) updatePRStatus(ctx context.Context, action string, prID uin
 	return nil
 }
 
-func (c *controller) updateTagsFromFile(ctx context.Context,
-	application *amodels.Application, cluster *cmodels.Cluster) error {
+// updateTemplateAndTagsFromFile syncs template and tags in db when git repo files are updated
+func (c *controller) updateTemplateAndTagsFromFile(ctx context.Context,
+	application *amodels.Application, cluster *cmodels.Cluster) (*cmodels.Cluster, error) {
+	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return nil, err
+	}
+	cluster.Template = templateFromFile.Name
+	cluster.TemplateRelease = templateFromFile.Release
+	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
+	if err != nil {
+		return nil, err
+	}
+
 	files, err := c.clusterGitRepo.GetClusterValueFiles(ctx, application.Name, cluster.Name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, file := range files {
 		if file.FileName == common.GitopsFileTags {
 			release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			midMap := file.Content[release.ChartName].(map[string]interface{})
 			tagsMap := midMap[common.GitopsKeyTags].(map[string]interface{})
@@ -697,7 +781,84 @@ func (c *controller) updateTagsFromFile(ctx context.Context,
 					Value:        value,
 				})
 			}
-			return c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, cluster.ID, tags)
+			return cluster, c.tagMgr.UpsertByResourceTypeID(ctx,
+				common.ResourceCluster, cluster.ID, tags)
+		}
+	}
+	return cluster, nil
+}
+
+func (c *controller) checkAndSyncGitOpsBranch(ctx context.Context, application,
+	cluster string, commit string) error {
+	changed, err := c.manifestVersionChanged(ctx, application, cluster, commit)
+	if err != nil {
+		return err
+	}
+	if changed {
+		err = c.syncGitOpsBranch(ctx, application, cluster)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Deprecated: for internal usage
+// manifestVersionChanged determines whether manifest version is changed
+func (c *controller) manifestVersionChanged(ctx context.Context, application,
+	cluster string, commit string) (bool, error) {
+	currentManifest, err1 := c.clusterGitRepo.GetManifest(ctx, application, cluster, nil)
+	if err1 != nil {
+		if _, ok := perror.Cause(err1).(*herrors.HorizonErrNotFound); !ok {
+			log.Errorf(ctx, "get cluster manifest error, err = %s", err1.Error())
+			return false, err1
+		}
+	}
+	targetManifest, err2 := c.clusterGitRepo.GetManifest(ctx, application, cluster, &commit)
+	if err2 != nil {
+		if _, ok := perror.Cause(err2).(*herrors.HorizonErrNotFound); !ok {
+			log.Errorf(ctx, "get cluster manifest error, err = %s", err2.Error())
+			return false, err2
+		}
+	}
+	if err1 != nil && err2 != nil {
+		// manifest does not exist in both revisions
+		return false, nil
+	}
+	if err1 != nil || err2 != nil {
+		// One exists and the other does not exist in two revisions
+		return true, nil
+	}
+	return currentManifest.Version != targetManifest.Version, nil
+}
+
+// Deprecated: for internal usage
+// syncGitOpsBranch syncs gitOps branch with default branch to avoid merge conflicts.
+// Restart updates time in restart.yaml in default branch. When other actions update
+// template prefix in gitOps branch, there are merge conflicts in restart.yaml because
+// usual context lines of 'git diff' are three. Ref: https://git-scm.com/docs/git-diff
+// For example:
+//
+//	<<<<<<< HEAD
+//	javaapp:
+//	  restartTime: "2025-02-19 10:24:52"
+//	=======
+//	rollout:
+//	  restartTime: "2025-02-14 12:12:07"
+//	>>>>>>> gitops
+func (c *controller) syncGitOpsBranch(ctx context.Context, application, cluster string) error {
+	gitOpsBranch := gitrepo.GitOpsBranch
+	defaultBranch := c.clusterGitRepo.DefaultBranch()
+	diff, err := c.clusterGitRepo.CompareConfig(ctx, application, cluster,
+		&gitOpsBranch, &defaultBranch)
+	if err != nil {
+		return err
+	}
+	if diff != "" {
+		_, err = c.clusterGitRepo.MergeBranch(ctx, application,
+			cluster, defaultBranch, gitOpsBranch, nil)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

@@ -2,8 +2,41 @@ defaultScope:
   - applications:read-write
   - clusters:read-write
 roles:
+  - name: groups:read-only
+    desc: Readonly permissions for the group and its sub resources
+    rules:
+      - apiGroups:
+          - core
+        resources:
+          - groups
+          - groups/groups
+          - groups/members
+          - groups/templates
+        verbs:
+          - get
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
+  - name: groups:read-write
+    desc: Read-write permissions for the group and its sub resources
+    rules:
+      - apiGroups:
+          - core
+        resources:
+          - groups
+          - groups/groups
+          - groups/members
+          - groups/templates
+          - groups/transfer
+        verbs:
+          - "*"
+        scopes:
+          - "*"
+        nonResourceURLs:
+          - "*"
   - name: applications:read-only
-    desc: 应用(application)及相关子资源的只读权限等
+    desc: Readonly permissions for the application and its sub resources
     rules:
       - apiGroups:
           - core
@@ -13,6 +46,15 @@ roles:
           - applications/members
           - applications/envtemplates
           - applications/defaultregions
+          - applications/subresourcetags
+          - applications/selectableregions
+          - applications/envtemplates
+          - environments
+          - environments/regions
+          - templates
+          - templates/releases
+          - templatereleases/schema
+          - templatereleases
         verbs:
           - get
         scopes:
@@ -20,7 +62,7 @@ roles:
         nonResourceURLs:
           - "*"
   - name: applications:read-write
-    desc: 应用(application)及其相关子资源的读写删权限
+    desc: Read-write permissions for the application and its sub resources
     rules:
       - apiGroups:
           - core
@@ -30,6 +72,16 @@ roles:
           - applications/members
           - applications/envtemplates
           - applications/defaultregions
+          - applications/subresourcetags
+          - applications/transfer
+          - applications/selectableregions
+          - applications/envtemplates
+          - environments
+          - environments/regions
+          - templates
+          - templates/releases
+          - templatereleases/schema
+          - templatereleases
         verbs:
           - "*"
         scopes:
@@ -37,7 +89,7 @@ roles:
         nonResourceURLs:
           - "*"
   - name: clusters:read-only
-    desc: 集群(cluster)及其相关子资源的相关的只读权限
+    desc: Readonly permissions for the cluster and its sub resources
     rules:
       - apiGroups:
           - core
@@ -50,6 +102,14 @@ roles:
           - clusters/pipelineruns
           - clusters/containerlog
           - clusters/tags
+          - clusters/pod
+          - pipelineruns
+          - pipelineruns/log
+          - pipelineruns/diffs
+          - clusters/events
+          - clusters/outputs
+          - clusters/containers
+          - clusters/dashboards
           - clusters/buildstatus
           - clusters/step
           - clusters/resourcetree
@@ -60,23 +120,47 @@ roles:
         nonResourceURLs:
           - "*"
   - name: clusters:read-write
-    desc: 集群(cluster)及其相关子资源的相关的只读权限
+    desc: Read-write permissions for the cluster and its sub resources
     rules:
       - apiGroups:
           - core
         resources:
           - applications/clusters
           - clusters
+          - clusters/builddeploy
+          - clusters/deploy
           - clusters/diffs
+          - clusters/next
+          - clusters/restart
+          - clusters/rollback
           - clusters/status
           - clusters/members
           - clusters/pipelineruns
+          - clusters/terminal
           - clusters/containerlog
+          - clusters/online
+          - clusters/offline
           - clusters/tags
+          - pipelineruns
+          - pipelineruns/stop
+          - pipelineruns/log
+          - pipelineruns/diffs
+          - clusters/dashboards
+          - clusters/pods
+          - clusters/pod
+          - clusters/free
+          - clusters/events
+          - clusters/outputs
+          - clusters/promote
+          - clusters/shell
+          - clusters/pause
+          - clusters/resume
+          - clusters/containers
           - clusters/exec
           - clusters/buildstatus
           - clusters/step
           - clusters/resourcetree
+          - clusters/upgrade
         verbs:
           - "*"
         scopes:

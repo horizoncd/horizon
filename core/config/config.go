@@ -18,6 +18,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/config/server"
 	"github.com/horizoncd/horizon/pkg/config/session"
 	"github.com/horizoncd/horizon/pkg/config/tekton"
+	"github.com/horizoncd/horizon/pkg/config/template"
 	"github.com/horizoncd/horizon/pkg/config/templaterepo"
 	"github.com/horizoncd/horizon/pkg/config/token"
 	"github.com/horizoncd/horizon/pkg/config/webhook"
@@ -45,6 +46,7 @@ type Config struct {
 	EventHandlerConfig     eventhandler.Config     `yaml:"eventHandler"`
 	CodeGitRepos           []*git.Repo             `yaml:"gitRepos"`
 	TokenConfig            token.Config            `yaml:"tokenConfig"`
+	TemplateUpgradeMapper  template.UpgradeMapper  `yaml:"templateUpgradeMapper"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {
