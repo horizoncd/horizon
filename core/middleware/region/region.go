@@ -19,7 +19,7 @@ import (
 )
 
 // http params for create cluster api
-var _urlPattern = regexp.MustCompile(`/apis/core/v1/applications/(\d+)/clusters`)
+var _urlPattern = regexp.MustCompile(`/apis/core/v[12]/applications/(\d+)/clusters`)
 
 const (
 	_method     = http.MethodPost
