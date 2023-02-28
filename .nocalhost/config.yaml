@@ -1,20 +1,13 @@
-name: horizon-backend-core
+name: horizon-core
 serviceType: deployment
 containers:
   - name: core
     dev:
       gitUrl: ""
-      image: nocalhost-docker.pkg.coding.net/nocalhost/dev-images/golang:latest
+      image: horizoncd/go-dlv:1.0
       shell: ""
       workDir: ""
       storageClass: ""
-      resources:
-        limits:
-          memory: 2048Mi
-          cpu: "2"
-        requests:
-          memory: 2048Mi
-          cpu: "2"
       persistentVolumeDirs: []
       command:
         run:
@@ -30,7 +23,6 @@ containers:
         filePattern: []
         ignoreFilePattern:
           - "./build"
-          - "./chart"
           - "./db"
           - "./mock"
           - "./openapi"
