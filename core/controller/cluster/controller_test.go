@@ -1320,6 +1320,12 @@ func testV2(t *testing.T) {
 		cd:                   mockCd,
 		eventMgr:             manager.EventManager,
 	}
+	applicationGitRepo.EXPECT().GetApplication(gomock.Any(), applicationName, gomock.Any()).
+		Return(&appgitrepo.GetResponse{
+			Manifest:     nil,
+			BuildConf:    pipelineJSONBlob,
+			TemplateConf: applicationJSONBlob,
+		}, nil).Times(1)
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 
 	createClusterName := "app-cluster2"

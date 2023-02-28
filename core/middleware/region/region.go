@@ -44,7 +44,8 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 			return
 		}
 		// scope format is: {environment}/{region}
-		scope := c.Request.URL.Query().Get(_scopeParam)
+		query := c.Request.URL.Query()
+		scope := query.Get(_scopeParam)
 		params := strings.Split(scope, "/")
 		// invalid scope
 		if scope == "" || len(params) > 2 {
@@ -72,7 +73,8 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 			return
 		}
 
-		c.Request.URL.RawQuery = fmt.Sprintf("%v=%v/%v", _scopeParam, environment, r)
+		query.Set(_scopeParam, fmt.Sprintf("%v/%v", environment, r))
+		c.Request.URL.RawQuery = query.Encode()
 		c.Next()
 	}, skippers...)
 }
