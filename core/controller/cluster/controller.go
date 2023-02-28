@@ -127,7 +127,7 @@ type controller struct {
 	pipelinerunMgr        prmanager.Manager
 	pipelineMgr           pipelinemanager.Manager
 	tektonFty             factory.Factory
-	registryFty           registryfty.Factory
+	registryFty           registryfty.RegistryGetter
 	userManager           usermanager.Manager
 	userSvc               usersvc.Service
 	memberManager         member.Manager

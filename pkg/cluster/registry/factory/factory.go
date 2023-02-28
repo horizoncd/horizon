@@ -20,17 +20,17 @@ type RegistryGetter interface {
 	GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error)
 }
 
-type RegistryCache struct {
+type registryCache struct {
 	*sync.Map
 }
 
-func NewRegistryCache() *RegistryCache {
-	return &RegistryCache{
+func NewRegistryCache() *registryCache {
+	return &registryCache{
 		&sync.Map{},
 	}
 }
 
-func (f *RegistryCache) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
+func (f *registryCache) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
 	key := fmt.Sprintf("%v-%v-%v-%v", config.Server, config.Token, config.Path, config.Kind)
 	if ret, ok := f.Load(key); ok {
 		return ret.(registry.Registry), nil
