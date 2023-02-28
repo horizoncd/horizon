@@ -3,15 +3,16 @@ package output
 import (
 	"errors"
 
+	"golang.org/x/net/context"
+
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
 	"github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	"golang.org/x/net/context"
 )
 
-// Getter provides som functions for output
+// Getter provides some functions for output
 type Getter interface {
 	// GetTemplateOutPut get horizon template's output for specified template release.
 	GetTemplateOutPut(ctx context.Context, templateName, releaseName string) (string, error)

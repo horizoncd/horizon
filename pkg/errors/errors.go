@@ -37,7 +37,7 @@ func WithMessagef(err error, format string, args ...interface{}) error {
 // Wrap returns an error annotating err with a stack trace
 // at the point Wrap is called, and the supplied message.
 // If err is nil, Wrap returns nil.
-// alway used in the boundary of thirdparty module, do not used thirdparty error directory
+// always used in the boundary of thirdparty module, do not used thirdparty error directory
 // but  define a error (var GitError = errors.New("Git Error")) and Warp with the information of third party error info
 // Wrap(GitError, error.Error())
 func Wrap(err error, message string) error {

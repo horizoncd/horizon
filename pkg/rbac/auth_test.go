@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/core/common"
 	servicemock "github.com/horizoncd/horizon/mock/pkg/member/service"
 	rolemock "github.com/horizoncd/horizon/mock/pkg/rbac/role"
@@ -13,7 +15,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/rbac/types"
-	"github.com/stretchr/testify/assert"
 )
 
 // members and pipelineruns are allowed
@@ -121,7 +122,7 @@ func TestAuthRole(t *testing.T) {
 	assert.Equal(t, RoleNotExist, reason)
 	assert.Nil(t, err)
 
-	// get role ok and denyed
+	// get role ok and denied
 	roleServieMock.EXPECT().GetRole(ctx,
 		gomock.Any()).Return(&types.Role{
 		Name:        "owner",
