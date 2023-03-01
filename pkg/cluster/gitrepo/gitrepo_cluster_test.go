@@ -226,10 +226,10 @@ func Test(t *testing.T) {
 	assert.Equal(t, files.PipelineJSONBlob, pipelineJSONBlob)
 	assert.Equal(t, files.ApplicationJSONBlob, applicationJSONBlob)
 
-	template, err := r.GetTemplateChart(ctx, application, cluster)
+	template, err := r.GetClusterTemplate(ctx, application, cluster)
 	assert.Nil(t, err)
 	assert.Equal(t, template.Name, templateName)
-	assert.Equal(t, template.Version, "v1.0.0")
+	assert.Equal(t, template.Release, "v1.0.0")
 
 	_, err = r.GetManifest(ctx, application, cluster, nil)
 	assert.NotNil(t, err)
@@ -449,27 +449,20 @@ func TestUpgradeToV2(t *testing.T) {
 	assert.NotNil(t, files.ApplicationJSONBlob)
 	assert.NotNil(t, files.PipelineJSONBlob)
 	t.Logf("%+v", files)
-	template, err := r.GetTemplateChart(ctx, application, cluster)
+	template, err := r.GetClusterTemplate(ctx, application, cluster)
 	assert.Nil(t, err)
 	assert.Equal(t, template.Name, templateName)
-	assert.Equal(t, template.Version, "v1.0.0")
+	assert.Equal(t, template.Release, "v1.0.0")
 	targetTemplate := "rollout"
 	targetRelease := "v1.2.0"
-	targetVersion := "v1.2.0-zb5cn52w"
 	upgradeCommit, err := r.UpgradeCluster(ctx, &UpgradeValuesParam{
 		Application: application,
 		Cluster:     cluster,
-		SourceRelease: &trmodels.TemplateRelease{
-			Name:         template.Version,
-			TemplateName: template.Name,
-			ChartName:    template.Name,
-			ChartVersion: template.Version,
-		},
+		Template:    template,
 		TargetRelease: &trmodels.TemplateRelease{
-			Name:         targetRelease,
 			TemplateName: targetTemplate,
 			ChartName:    targetTemplate,
-			ChartVersion: targetVersion,
+			ChartVersion: targetRelease,
 		},
 		BuildConfig: &templateconfig.BuildConfig{
 			Language:    "java",
@@ -485,10 +478,10 @@ func TestUpgradeToV2(t *testing.T) {
 	assert.NotNil(t, files.ApplicationJSONBlob)
 	assert.NotNil(t, files.PipelineJSONBlob)
 	t.Logf("%+v", files)
-	template, err = r.GetTemplateChart(ctx, application, cluster)
+	template, err = r.GetClusterTemplate(ctx, application, cluster)
 	assert.Nil(t, err)
 	assert.Equal(t, template.Name, targetTemplate)
-	assert.Equal(t, template.Version, targetVersion)
+	assert.Equal(t, template.Release, targetRelease)
 }
 
 func TestHardDeleteCluster(t *testing.T) {
