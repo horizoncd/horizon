@@ -30,15 +30,15 @@ func NewRegistryCache() *registryCache {
 	}
 }
 
-func (f *registryCache) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
+func (r *registryCache) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
 	key := fmt.Sprintf("%v-%v-%v-%v", config.Server, config.Token, config.Path, config.Kind)
-	if ret, ok := f.Load(key); ok {
+	if ret, ok := r.Load(key); ok {
 		return ret.(registry.Registry), nil
 	}
 	rg, err := registry.NewRegistry(config)
 	if err != nil {
 		return nil, err
 	}
-	f.Store(key, rg)
+	r.Store(key, rg)
 	return rg, nil
 }
