@@ -19,6 +19,7 @@ type DAO interface {
 	ListByTemplateName(ctx context.Context, templateName string) ([]*models.TemplateRelease, error)
 	ListByTemplateID(ctx context.Context, id uint) ([]*models.TemplateRelease, error)
 	GetByTemplateNameAndRelease(ctx context.Context, templateName, release string) (*models.TemplateRelease, error)
+	GetByChartNameAndVersion(ctx context.Context, chartName, chartVersion string) (*models.TemplateRelease, error)
 	GetByID(ctx context.Context, releaseID uint) (*models.TemplateRelease, error)
 	GetRefOfApplication(ctx context.Context, id uint) ([]*amodels.Application, uint, error)
 	GetRefOfCluster(ctx context.Context, id uint) ([]*cmodel.Cluster, uint, error)
@@ -66,6 +67,22 @@ func (d dao) GetByTemplateNameAndRelease(ctx context.Context,
 	result := d.db.WithContext(ctx).Raw(common.TemplateReleaseQueryByTemplateNameAndName,
 		templateName, release).First(&tr)
 
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.TemplateReleaseInDB, result.Error.Error())
+		}
+		return nil, herrors.NewErrGetFailed(herrors.TemplateReleaseInDB, result.Error.Error())
+	}
+
+	return &tr, nil
+}
+
+func (d dao) GetByChartNameAndVersion(ctx context.Context,
+	chartName, chartVersion string) (*models.TemplateRelease, error) {
+	var tr models.TemplateRelease
+	result := d.db.WithContext(ctx).
+		Where("chart_name = ? AND chart_version = ? AND deleted_ts = 0",
+			chartName, chartVersion).First(&tr)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, herrors.NewErrNotFound(herrors.TemplateReleaseInDB, result.Error.Error())

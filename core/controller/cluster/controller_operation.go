@@ -232,7 +232,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 
 func (c *controller) Rollback(ctx context.Context,
 	clusterID uint, r *RollbackRequest) (_ *PipelinerunIDResponse, err error) {
-	const op = "cluster controller: rollback "
+	const op = "cluster controller: rollback"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. get pipelinerun to rollback, and do some validation
@@ -703,16 +703,21 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 	if err != nil {
 		return err
 	}
-	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
+	templateChartFromFile, err := c.clusterGitRepo.GetTemplateChart(ctx, application.Name, cluster.Name)
+	if err != nil {
+		return err
+	}
+	sourceRelease, err := c.templateReleaseMgr.GetByChartNameAndVersion(ctx,
+		templateChartFromFile.Name, templateChartFromFile.Version)
 	if err != nil {
 		return err
 	}
 
 	// 2. match target template
-	targetTemplate, ok := c.templateUpgradeMapper[templateFromFile.Name]
+	targetTemplate, ok := c.templateUpgradeMapper[sourceRelease.TemplateName]
 	if !ok {
 		return perror.Wrapf(herrors.ErrParamInvalid,
-			"cluster template %s does not support upgrade", templateFromFile.Name)
+			"cluster template %s does not support upgrade", sourceRelease.TemplateName)
 	}
 	targetRelease, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
 		targetTemplate.Name, targetTemplate.Release)
@@ -730,7 +735,7 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 	_, err = c.clusterGitRepo.UpgradeCluster(ctx, &gitrepo.UpgradeValuesParam{
 		Application:   application.Name,
 		Cluster:       cluster.Name,
-		Template:      templateFromFile,
+		SourceRelease: sourceRelease,
 		TargetRelease: targetRelease,
 		BuildConfig:   &targetTemplate.BuildConfig,
 	})
@@ -774,12 +779,17 @@ func (c *controller) updatePRStatus(ctx context.Context, action string, prID uin
 // updateTemplateAndTagsFromFile syncs template and tags in db when git repo files are updated
 func (c *controller) updateTemplateAndTagsFromFile(ctx context.Context,
 	application *amodels.Application, cluster *cmodels.Cluster) (*cmodels.Cluster, error) {
-	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
+	templateChartFromFile, err := c.clusterGitRepo.GetTemplateChart(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return nil, err
 	}
-	cluster.Template = templateFromFile.Name
-	cluster.TemplateRelease = templateFromFile.Release
+	release, err := c.templateReleaseMgr.GetByChartNameAndVersion(ctx,
+		templateChartFromFile.Name, templateChartFromFile.Version)
+	if err != nil {
+		return nil, err
+	}
+	cluster.Template = release.TemplateName
+	cluster.TemplateRelease = release.Name
 	cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
 	if err != nil {
 		return nil, err
@@ -792,10 +802,6 @@ func (c *controller) updateTemplateAndTagsFromFile(ctx context.Context,
 
 	for _, file := range files {
 		if file.FileName == common.GitopsFileTags {
-			release, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-			if err != nil {
-				return nil, err
-			}
 			midMap := file.Content[release.ChartName].(map[string]interface{})
 			tagsMap := midMap[common.GitopsKeyTags].(map[string]interface{})
 			tags := make([]*tmodels.Tag, 0, len(tagsMap))
