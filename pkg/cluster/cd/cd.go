@@ -751,15 +751,18 @@ func (c *cd) GetPodEvents(ctx context.Context,
 		return nil, err
 	}
 
-	labelSelector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v",
-		common.ClusterClusterLabelKey, params.Cluster))
-	pods, err := kube.GetPods(ctx, kubeClient.Basic, params.Namespace, labelSelector.String())
+	resourceTree, err := c.GetResourceTree(ctx, &GetResourceTreeParams{
+		Environment:  params.Environment,
+		Cluster:      params.Cluster,
+		RegionEntity: params.RegionEntity,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, pod := range pods {
-		if pod.Name == params.Pod {
+	for i := range resourceTree {
+		pod := resourceTree[i].PodDetail
+		if pod != nil && pod.Metadata.Namespace == params.Namespace && pod.Metadata.Name == params.Pod {
 			k8sEvents, err := kube.GetPodEvents(ctx, kubeClient.Basic, params.Namespace, params.Pod)
 			if err != nil {
 				return nil, err

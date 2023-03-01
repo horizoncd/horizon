@@ -52,6 +52,7 @@ type DeployClusterParams struct {
 
 type GetPodEventsParams struct {
 	RegionEntity *regionmodels.RegionEntity
+	Environment  string
 	Cluster      string
 	Namespace    string
 	Pod          string
