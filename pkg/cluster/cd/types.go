@@ -354,8 +354,9 @@ type CompactPodMetadata struct {
 }
 
 type CompactContainer struct {
-	Name  string `json:"name"`
-	Image string `json:"image"`
+	Name           string        `json:"name"`
+	Image          string        `json:"image"`
+	ReadinessProbe *corev1.Probe `json:"readinessProbe,omitempty"`
 }
 
 type CompactPodSpec struct {
@@ -418,7 +419,8 @@ func Compact(pod corev1.Pod) CompactPod {
 
 func ContainerCompact(container corev1.Container) CompactContainer {
 	return CompactContainer{
-		Name:  container.Name,
-		Image: container.Image,
+		Name:           container.Name,
+		Image:          container.Image,
+		ReadinessProbe: container.ReadinessProbe,
 	}
 }
