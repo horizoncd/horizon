@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/config"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -65,7 +67,6 @@ import (
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	userservice "github.com/horizoncd/horizon/pkg/user/service"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -504,7 +505,7 @@ func test(t *testing.T) {
 	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
-	registryFty := registryftymock.NewMockFactory(mockCtl)
+	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	commitGetter := commitmock.NewMockGitGetter(mockCtl)
 	tagManager := tagmock.NewMockManager(mockCtl)
 
@@ -1242,7 +1243,7 @@ func testV2(t *testing.T) {
 	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	tagManager := tagmock.NewMockManager(mockCtl)
-	registryFty := registryftymock.NewMockFactory(mockCtl)
+	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	mockCd := cdmock.NewMockCD(mockCtl)
 
 	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.0", gomock.Any()).
@@ -1446,7 +1447,7 @@ func testUpgrade(t *testing.T) {
 	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	tagManager := tagmock.NewMockManager(mockCtl)
-	registryFty := registryftymock.NewMockFactory(mockCtl)
+	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	mockCd := cdmock.NewMockCD(mockCtl)
 
 	appMgr := manager.ApplicationManager
