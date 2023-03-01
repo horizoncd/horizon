@@ -139,7 +139,8 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	}
 
 	// 7. get templateRelease
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, r.TemplateInfo.Name, r.TemplateInfo.Release)
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx,
+		buildTemplateInfo.TemplateInfo.Name, buildTemplateInfo.TemplateInfo.Release)
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +159,8 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 		BaseParams: &gitrepo.BaseParams{
 			ClusterID:           clusterResp.ID,
 			Cluster:             clusterResp.Name,
-			PipelineJSONBlob:    r.BuildConfig,
-			ApplicationJSONBlob: r.TemplateConfig,
+			PipelineJSONBlob:    buildTemplateInfo.BuildConfig,
+			ApplicationJSONBlob: buildTemplateInfo.TemplateConfig,
 			TemplateRelease:     tr,
 			Application:         application,
 			Environment:         environment,
@@ -222,7 +223,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
-	// 12. customize response
+	// 13. customize response
 	return ret, nil
 }
 
@@ -540,12 +541,11 @@ func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r 
 
 	var appGitRepoFile *appgitrepo.GetResponse
 	var err error
-	if (r.BuildConfig != nil || r.TemplateInfo != nil) && mergePatch {
-		appGitRepoFile, err = c.applicationGitRepo.GetApplication(ctx, application.Name, environment)
-		if err != nil {
-			return nil, err
-		}
+	appGitRepoFile, err = c.applicationGitRepo.GetApplication(ctx, application.Name, environment)
+	if err != nil {
+		return nil, err
 	}
+
 	if r.BuildConfig != nil {
 		if mergePatch {
 			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepoFile.BuildConf, r.BuildConfig)
