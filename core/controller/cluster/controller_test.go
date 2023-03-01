@@ -505,7 +505,7 @@ func test(t *testing.T) {
 	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	cd := cdmock.NewMockCD(mockCtl)
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
-	registryFty := registryftymock.NewMockFactory(mockCtl)
+	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	commitGetter := commitmock.NewMockGitGetter(mockCtl)
 	tagManager := tagmock.NewMockManager(mockCtl)
 
