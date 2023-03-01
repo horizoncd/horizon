@@ -481,7 +481,18 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		return err
 	}
 
-	// 7. update cluster in db
+	// 7. record event
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceCluster,
+			EventType:    eventmodels.ClusterUpdated,
+			ResourceID:   cluster.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
+
+	// 8. update cluster in db
 	clusterModel := r.toClusterModel(cluster, expireSeconds, environmentName,
 		regionName, templateInfo.Name, templateInfo.Release)
 	_, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)

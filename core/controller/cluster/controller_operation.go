@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -75,6 +76,18 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	if err := c.updatePRStatus(ctx, prmodels.ActionRestart, prCreated.ID, prmodels.StatusOK, commit); err != nil {
 		return nil, err
 	}
+
+	// 5. record event
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceCluster,
+			EventType:    eventmodels.ClusterRestarted,
+			ResourceID:   cluster.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
+
 	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,
 	}, nil
@@ -615,6 +628,23 @@ func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podN
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// 5. record event
+	podNameEncodedBts, err := json.Marshal(podName)
+	if err != nil {
+		log.Warningf(ctx, "failed to marshal podNames: %v", err.Error())
+	}
+	podNameEncoded := string(podNameEncodedBts)
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceCluster,
+			EventType:    eventmodels.ClusterPodsRescheduled,
+			ResourceID:   cluster.ID,
+			Extra:        &podNameEncoded,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
 	return ofBatchResp(result), nil

@@ -443,14 +443,25 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 		return nil, err
 	}
 
-	// 5. get fullPath
+	// 5. record event
+	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceApplication,
+			EventType:    eventmodels.ApplicationUpdated,
+			ResourceID:   applicationModel.ID,
+		},
+	}); err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
+
+	// 6. get fullPath
 	group, err := c.groupSvc.GetChildByID(ctx, appExistsInDB.GroupID)
 	if err != nil {
 		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, appExistsInDB.Name)
 
-	// 6. list template release
+	// 7. list template release
 	trs, err := c.templateReleaseMgr.ListByTemplateName(ctx, appExistsInDB.Template)
 	if err != nil {
 		return nil, err
