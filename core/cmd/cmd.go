@@ -594,7 +594,6 @@ func Run(flags *Flags) {
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	tag.RegisterRoutes(r, tagAPI)
 	templateschematagapi.RegisterRoutes(r, templateSchemaTagAPI)
-	accessAPI.RegisterRoutes(r)
 	registerIs := []RegisterApi{accessAPI}
 	for _, register := range registerIs {
 		register.RegisterRoutes(r)
