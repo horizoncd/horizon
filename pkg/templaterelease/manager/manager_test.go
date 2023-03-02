@@ -33,7 +33,6 @@ func Test(t *testing.T) {
 	var (
 		templateName = "javaapp"
 		name         = "v1.0.0"
-		chartName    = templateName
 		chartVersion = "v1.0.0-test"
 		repo         = "repo"
 		description  = "javaapp template v1.0.0"
@@ -59,7 +58,6 @@ func Test(t *testing.T) {
 		Template:     template.ID,
 		TemplateName: templateName,
 		Name:         name,
-		ChartName:    chartName,
 		ChartVersion: chartVersion,
 		Description:  description,
 		Recommended:  &recommend,
@@ -105,13 +103,6 @@ func Test(t *testing.T) {
 	assert.NotNil(t, templateRelease)
 	assert.Equal(t, chartVersion, templateRelease.ChartVersion)
 	assert.Equal(t, name, templateRelease.Name)
-
-	templateRelease, err = templateReleaseMgr.GetByChartNameAndVersion(ctx, chartName, chartVersion)
-	assert.Nil(t, err)
-	assert.NotNil(t, templateRelease)
-	assert.Equal(t, name, templateRelease.Name)
-	assert.Equal(t, chartName, templateRelease.ChartName)
-	assert.Equal(t, chartVersion, templateRelease.ChartVersion)
 
 	app := &applicationmodel.Application{
 		Template:        templateName,

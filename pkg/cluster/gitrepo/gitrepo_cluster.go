@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -79,16 +80,16 @@ type ClusterCommit struct {
 	Gitops string
 }
 
-type ClusterTemplateChart struct {
+type ClusterTemplate struct {
 	Name    string
-	Version string
+	Release string
 }
 
 // Deprecated: for internal usage
 type UpgradeValuesParam struct {
 	Application   string
 	Cluster       string
-	SourceRelease *trmodels.TemplateRelease
+	Template      *ClusterTemplate
 	TargetRelease *trmodels.TemplateRelease
 	BuildConfig   *template.BuildConfig
 }
@@ -106,8 +107,8 @@ type ClusterGitRepo interface {
 	GetCluster(ctx context.Context, application, cluster, templateName string) (*ClusterFiles, error)
 	GetClusterValueFiles(ctx context.Context,
 		application, cluster string) ([]ClusterValueFile, error)
-	// GetTemplateChart parses cluster's template name and release from GitopsFileChart
-	GetTemplateChart(ctx context.Context, application, cluster string) (*ClusterTemplateChart, error)
+	// GetClusterTemplate parses cluster's template name and release from GitopsFileChart
+	GetClusterTemplate(ctx context.Context, application, cluster string) (*ClusterTemplate, error)
 	CreateCluster(ctx context.Context, params *CreateClusterParams) error
 	UpdateCluster(ctx context.Context, params *UpdateClusterParams) error
 	DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) error
@@ -374,8 +375,8 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 	return clusterValueFiles, nil
 }
 
-func (g *clusterGitRepo) GetTemplateChart(ctx context.Context, application,
-	cluster string) (*ClusterTemplateChart, error) {
+func (g *clusterGitRepo) GetClusterTemplate(ctx context.Context, application,
+	cluster string) (*ClusterTemplate, error) {
 	const op = "cluster git repo: get cluster template"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -394,16 +395,29 @@ func (g *clusterGitRepo) GetTemplateChart(ctx context.Context, application,
 
 	for _, dependency := range chart.Dependencies {
 		if dependency.Name != "" && dependency.Version != "" {
-			return &ClusterTemplateChart{
+			// extract release
+			releaseName, err := func() (string, error) {
+				pattern := regexp.MustCompile("-([a-z0-9])+$")
+				b := []byte(dependency.Version)
+				loc := pattern.FindIndex(b)
+				if len(loc) == 0 {
+					return "", perror.Wrapf(herrors.ErrParamInvalid,
+						"failed to extract release from chart")
+				}
+				return string(b[0:loc[0]]), nil
+			}()
+			if err != nil {
+				return nil, err
+			}
+			return &ClusterTemplate{
 				Name:    dependency.Name,
-				Version: dependency.Version,
+				Release: releaseName,
 			}, nil
 		}
 	}
 	return nil, perror.Wrapf(herrors.ErrParamInvalid,
 		"failed to get cluster template from chart")
 }
-
 func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
 	const op = "cluster git repo: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -1295,11 +1309,10 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
 				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFileBase, err.Error())
 		}
-		baseValue, ok := valueMap[param.SourceRelease.TemplateName][common.GitopsBaseValueNamespace]
+		baseValue, ok := valueMap[param.Template.Name][common.GitopsBaseValueNamespace]
 		if !ok {
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
-				"value parent err, file = %s, parent = %s",
-				common.GitopsFileBase, param.SourceRelease.TemplateName)
+				"value parent err, file = %s, parent = %s", common.GitopsFileBase, param.Template.Name)
 		}
 		baseValue.Template = &BaseValueTemplate{
 			Name:    param.TargetRelease.TemplateName,
@@ -1338,11 +1351,11 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
 				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFilePipeline, err.Error())
 		}
-		antScript, ok := inMap[param.SourceRelease.TemplateName]["buildxml"]
+		antScript, ok := inMap[param.Template.Name]["buildxml"]
 		if !ok {
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
 				"value parent err, file = %s, parent = %s",
-				common.GitopsFilePipeline, param.SourceRelease.TemplateName)
+				common.GitopsFilePipeline, param.Template.Name)
 		}
 		retMap := map[string]map[string]interface{}{
 			PipelineValueParent: {
@@ -1373,11 +1386,11 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
 				"yaml Unmarshal err, file = %s, err = %s", common.GitopsFileApplication, err.Error())
 		}
-		midMap, ok := inMap[param.SourceRelease.TemplateName]
+		midMap, ok := inMap[param.Template.Name]
 		if !ok {
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
 				"value parent err, file = %s, parent = %s",
-				common.GitopsFileApplication, param.SourceRelease.TemplateName)
+				common.GitopsFileApplication, param.Template.Name)
 		}
 		// convert params to envs
 		func() {
@@ -1418,11 +1431,10 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
 				"yaml Unmarshal err, file = %s, err = %s", fileName, err.Error())
 		}
-		valueMap, ok := inMap[param.SourceRelease.TemplateName]
+		valueMap, ok := inMap[param.Template.Name]
 		if !ok {
 			return nil, perror.Wrapf(herrors.ErrParamInvalid,
-				"value parent err, file = %s, parent = %s",
-				fileName, param.SourceRelease.TemplateName)
+				"value parent err, file = %s, parent = %s", fileName, param.Template.Name)
 		}
 		retMap := map[string]interface{}{
 			param.TargetRelease.TemplateName: valueMap,
@@ -1508,16 +1520,13 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 		Action:   "upgrade cluster",
 		Cluster:  angular.StringPtr(param.Cluster),
 	}, struct {
-		SourceRelease ClusterTemplateChart `json:"sourceRelease"`
-		TargetRelease ClusterTemplateChart `json:"targetRelease"`
+		SourceTemplate ClusterTemplate `json:"sourceTemplate"`
+		TargetTemplate ClusterTemplate `json:"targetRelease"`
 	}{
-		SourceRelease: ClusterTemplateChart{
-			Name:    param.SourceRelease.ChartName,
-			Version: param.SourceRelease.ChartVersion,
-		},
-		TargetRelease: ClusterTemplateChart{
-			Name:    param.TargetRelease.ChartName,
-			Version: param.TargetRelease.ChartVersion,
+		SourceTemplate: *param.Template,
+		TargetTemplate: ClusterTemplate{
+			Name:    param.TargetRelease.TemplateName,
+			Release: param.TargetRelease.Name,
 		},
 	})
 	newCommit, err := g.gitlabLib.WriteFiles(ctx, pid, GitOpsBranch, commitMsg, nil, gitActions)

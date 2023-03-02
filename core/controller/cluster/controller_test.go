@@ -1029,10 +1029,10 @@ func test(t *testing.T) {
 	// test rollback
 	clusterGitRepo.EXPECT().Rollback(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("rollback-commit", nil).AnyTimes()
-	clusterGitRepo.EXPECT().GetTemplateChart(ctx, application.Name, resp.Name).
-		Return(&gitrepo.ClusterTemplateChart{
+	clusterGitRepo.EXPECT().GetClusterTemplate(ctx, application.Name, resp.Name).
+		Return(&gitrepo.ClusterTemplate{
 			Name:    resp.Template.Name,
-			Version: resp.Template.Release,
+			Release: resp.Template.Release,
 		}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetManifest(ctx, application.Name, resp.Name, gomock.Any()).
 		Return(nil, herrors.NewErrNotFound(herrors.GitlabResource, "")).Times(2)
@@ -1573,10 +1573,10 @@ func testUpgrade(t *testing.T) {
 	assert.Equal(t, resp.Application.ID, application.ID)
 	assert.Equal(t, resp.FullPath, "/"+group.Path+"/"+application.Name+"/"+createClusterName)
 
-	clusterGitRepo.EXPECT().GetTemplateChart(ctx, application.Name, resp.Name).
-		Return(&gitrepo.ClusterTemplateChart{
-			Name:    templateName,
-			Version: templateRelease,
+	clusterGitRepo.EXPECT().GetClusterTemplate(ctx, application.Name, resp.Name).
+		Return(&gitrepo.ClusterTemplate{
+			Name:    resp.Template.Name,
+			Release: resp.Template.Release,
 		}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().UpgradeCluster(ctx, gomock.Any()).Return("", nil).Times(1)
 	clusterGitRepo.EXPECT().DefaultBranch().Return("master").AnyTimes()
