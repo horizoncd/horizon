@@ -13,8 +13,9 @@ import (
 type Manager interface {
 	Create(ctx context.Context, collection *models.Collection) (*models.Collection, error)
 	DeleteByResource(ctx context.Context, userID uint, resourceID uint,
-		resourceType models.CollectionResourceType) (*models.Collection, error)
-	List(ctx context.Context, resourceType models.CollectionResourceType, ids []uint) ([]models.Collection, error)
+		resourceType string) (*models.Collection, error)
+	List(ctx context.Context, userID uint, resourceType string,
+		ids []uint) ([]models.Collection, error)
 }
 
 type manager struct {
@@ -39,7 +40,7 @@ func (m *manager) Create(ctx context.Context, collection *models.Collection) (*m
 }
 
 func (m *manager) DeleteByResource(ctx context.Context, userID uint, resourceID uint,
-	resourceType models.CollectionResourceType) (*models.Collection, error) {
+	resourceType string) (*models.Collection, error) {
 	_, err := m.dao.GetByResource(ctx, userID, resourceID, resourceType)
 	if err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func (m *manager) DeleteByResource(ctx context.Context, userID uint, resourceID 
 	return m.dao.DeleteByResource(ctx, userID, resourceID, resourceType)
 }
 
-func (m *manager) List(ctx context.Context, resourceType models.CollectionResourceType,
+func (m *manager) List(ctx context.Context, userID uint, resourceType string,
 	ids []uint) ([]models.Collection, error) {
-	return m.dao.List(ctx, resourceType, ids)
+	return m.dao.List(ctx, userID, resourceType, ids)
 }

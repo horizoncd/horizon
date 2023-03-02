@@ -1,15 +1,9 @@
 package models
 
-type CollectionResourceType string
-
-const (
-	ResourceCluster = CollectionResourceType("cluster")
-)
-
 type Collection struct {
 	ID uint `gorm:"primarykey"`
 
 	ResourceID   uint `gorm:"column:resource_id"`
-	ResourceType CollectionResourceType
+	ResourceType string
 	UserID       uint `gorm:"column:user_id"`
 }

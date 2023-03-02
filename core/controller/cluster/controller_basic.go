@@ -40,6 +40,12 @@ import (
 func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWithFullResponse, int, error) {
 	applicationIDs := make([]uint, 0)
 
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	currentUserID := currentUser.GetID()
+
 	// get current user
 	if query != nil &&
 		query.Keywords != nil &&
@@ -48,6 +54,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWi
 			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
 				return nil, 0, err
 			}
+			currentUserID = userID
 			// get groups authorized to current user
 			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
 			if err != nil {
@@ -98,7 +105,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWi
 	}
 
 	if _, ok := query.Keywords[common.ClusterQueryWithFavorite]; ok {
-		err = c.addIsFavoriteForClusters(ctx, clusters)
+		err = c.addIsFavoriteForClusters(ctx, currentUserID, clusters)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -1104,12 +1111,13 @@ var (
 	favoriteFalse = false
 )
 
-func (c *controller) addIsFavoriteForClusters(ctx context.Context, clusters []*cmodels.ClusterWithRegion) error {
+func (c *controller) addIsFavoriteForClusters(ctx context.Context,
+	userID uint, clusters []*cmodels.ClusterWithRegion) error {
 	ids := make([]uint, 0, len(clusters))
 	for i := range clusters {
 		ids = append(ids, clusters[i].ID)
 	}
-	collections, err := c.collectionManager.List(ctx, collectionmodels.ResourceCluster, ids)
+	collections, err := c.collectionManager.List(ctx, userID, common.ResourceCluster, ids)
 	if err != nil {
 		return err
 	}

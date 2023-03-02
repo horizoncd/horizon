@@ -593,13 +593,13 @@ func (c *controller) Like(ctx context.Context, clusterID uint, like *WhetherLike
 		if like.IsFavorite {
 			collection := collectionmodels.Collection{
 				ResourceID:   clusterID,
-				ResourceType: collectionmodels.ResourceCluster,
+				ResourceType: common.ResourceCluster,
 				UserID:       currentUser.GetID(),
 			}
 			_, err := c.collectionManager.Create(ctx, &collection)
 			return err
 		}
-		_, err := c.collectionManager.DeleteByResource(ctx, currentUser.GetID(), clusterID, collectionmodels.ResourceCluster)
+		_, err := c.collectionManager.DeleteByResource(ctx, currentUser.GetID(), clusterID, common.ResourceCluster)
 		return err
 	}
 	return nil

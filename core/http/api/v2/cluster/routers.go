@@ -127,7 +127,11 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 		}, {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/favorite", common.ParamClusterID),
-			HandlerFunc: api.SetFavorite,
+			HandlerFunc: api.AddFavorite,
+		}, {
+			Method:      http.MethodDelete,
+			Pattern:     fmt.Sprintf("/clusters/:%v/favorite", common.ParamClusterID),
+			HandlerFunc: api.DeleteFavorite,
 		},
 	}
 

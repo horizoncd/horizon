@@ -13,10 +13,10 @@ import (
 type DAO interface {
 	Create(ctx context.Context, collection *models.Collection) (*models.Collection, error)
 	DeleteByResource(ctx context.Context, userID uint, resourceID uint,
-		resourceType models.CollectionResourceType) (*models.Collection, error)
+		resourceType string) (*models.Collection, error)
 	GetByResource(ctx context.Context, userID uint, resourceID uint,
-		resourceType models.CollectionResourceType) (*models.Collection, error)
-	List(ctx context.Context, resourceType models.CollectionResourceType, ids []uint) ([]models.Collection, error)
+		resourceType string) (*models.Collection, error)
+	List(ctx context.Context, userID uint, resourceType string, ids []uint) ([]models.Collection, error)
 }
 
 type dao struct {
@@ -37,7 +37,7 @@ func (d dao) Create(ctx context.Context, collection *models.Collection) (*models
 }
 
 func (d dao) GetByResource(ctx context.Context, userID uint, resourceID uint,
-	resourceType models.CollectionResourceType) (*models.Collection, error) {
+	resourceType string) (*models.Collection, error) {
 	collection := models.Collection{}
 	result := d.db.WithContext(ctx).Where("user_id = ?", userID).
 		Where("resource_id = ?", resourceID).
@@ -55,7 +55,7 @@ func (d dao) GetByResource(ctx context.Context, userID uint, resourceID uint,
 }
 
 func (d dao) DeleteByResource(ctx context.Context, userID uint, resourceID uint,
-	resourceType models.CollectionResourceType) (*models.Collection, error) {
+	resourceType string) (*models.Collection, error) {
 	collection := models.Collection{}
 	result := d.db.WithContext(ctx).Where("user_id = ?", userID).
 		Where("resource_id = ?", resourceID).
@@ -68,10 +68,11 @@ func (d dao) DeleteByResource(ctx context.Context, userID uint, resourceID uint,
 	return &collection, nil
 }
 
-func (d dao) List(ctx context.Context, resourceType models.CollectionResourceType,
+func (d dao) List(ctx context.Context, userID uint, resourceType string,
 	ids []uint) ([]models.Collection, error) {
 	var collections []models.Collection
 	result := d.db.WithContext(ctx).
+		Where("user_id = ?", userID).
 		Where("resource_type = ?", resourceType).
 		Where("resource_id in ?", ids).Find(&collections)
 	if result.Error != nil {
