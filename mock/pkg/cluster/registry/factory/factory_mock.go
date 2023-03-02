@@ -12,31 +12,31 @@ import (
 	registry "github.com/horizoncd/horizon/pkg/cluster/registry"
 )
 
-// MockFactory is a mock of Factory interface.
-type MockFactory struct {
+// MockRegistryGetter is a mock of RegistryGetter interface.
+type MockRegistryGetter struct {
 	ctrl     *gomock.Controller
-	recorder *MockFactoryMockRecorder
+	recorder *MockRegistryGetterMockRecorder
 }
 
-// MockFactoryMockRecorder is the mock recorder for MockFactory.
-type MockFactoryMockRecorder struct {
-	mock *MockFactory
+// MockRegistryGetterMockRecorder is the mock recorder for MockRegistryGetter.
+type MockRegistryGetterMockRecorder struct {
+	mock *MockRegistryGetter
 }
 
-// NewMockFactory creates a new mock instance.
-func NewMockFactory(ctrl *gomock.Controller) *MockFactory {
-	mock := &MockFactory{ctrl: ctrl}
-	mock.recorder = &MockFactoryMockRecorder{mock}
+// NewMockRegistryGetter creates a new mock instance.
+func NewMockRegistryGetter(ctrl *gomock.Controller) *MockRegistryGetter {
+	mock := &MockRegistryGetter{ctrl: ctrl}
+	mock.recorder = &MockRegistryGetterMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockFactory) EXPECT() *MockFactoryMockRecorder {
+func (m *MockRegistryGetter) EXPECT() *MockRegistryGetterMockRecorder {
 	return m.recorder
 }
 
 // GetRegistryByConfig mocks base method.
-func (m *MockFactory) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
+func (m *MockRegistryGetter) GetRegistryByConfig(ctx context.Context, config *registry.Config) (registry.Registry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRegistryByConfig", ctx, config)
 	ret0, _ := ret[0].(registry.Registry)
@@ -45,7 +45,7 @@ func (m *MockFactory) GetRegistryByConfig(ctx context.Context, config *registry.
 }
 
 // GetRegistryByConfig indicates an expected call of GetRegistryByConfig.
-func (mr *MockFactoryMockRecorder) GetRegistryByConfig(ctx, config interface{}) *gomock.Call {
+func (mr *MockRegistryGetterMockRecorder) GetRegistryByConfig(ctx, config interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRegistryByConfig", reflect.TypeOf((*MockFactory)(nil).GetRegistryByConfig), ctx, config)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRegistryByConfig", reflect.TypeOf((*MockRegistryGetter)(nil).GetRegistryByConfig), ctx, config)
 }

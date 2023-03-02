@@ -66,21 +66,6 @@ func (mr *MockManagerMockRecorder) DeleteByID(ctx, id interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockManager)(nil).DeleteByID), ctx, id)
 }
 
-// GetByChartNameAndVersion mocks base method.
-func (m *MockManager) GetByChartNameAndVersion(ctx context.Context, chartName, chartVersion string) (*models1.TemplateRelease, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByChartNameAndVersion", ctx, chartName, chartVersion)
-	ret0, _ := ret[0].(*models1.TemplateRelease)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetByChartNameAndVersion indicates an expected call of GetByChartNameAndVersion.
-func (mr *MockManagerMockRecorder) GetByChartNameAndVersion(ctx, chartName, chartVersion interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByChartNameAndVersion", reflect.TypeOf((*MockManager)(nil).GetByChartNameAndVersion), ctx, chartName, chartVersion)
-}
-
 // GetByID mocks base method.
 func (m *MockManager) GetByID(ctx context.Context, releaseID uint) (*models1.TemplateRelease, error) {
 	m.ctrl.T.Helper()

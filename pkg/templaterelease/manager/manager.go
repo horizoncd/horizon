@@ -17,14 +17,12 @@ import (
 type Manager interface {
 	// Create template release
 	Create(ctx context.Context, templateRelease *models.TemplateRelease) (*models.TemplateRelease, error)
-	// ListByTemplateName lists all releases by template name
+	// ListByTemplateName list all releases by template name
 	ListByTemplateName(ctx context.Context, templateName string) ([]*models.TemplateRelease, error)
-	// ListByTemplateID lists all releases by template ID
+	// ListByTemplateID list all releases by template ID
 	ListByTemplateID(ctx context.Context, id uint) ([]*models.TemplateRelease, error)
-	// GetByTemplateNameAndRelease gets release by template name and release name
+	// GetByTemplateNameAndRelease get release by template name and release name
 	GetByTemplateNameAndRelease(ctx context.Context, templateName, release string) (*models.TemplateRelease, error)
-	// GetByChartNameAndVersion returns release by chart name and chart version
-	GetByChartNameAndVersion(ctx context.Context, chartName, chartVersion string) (*models.TemplateRelease, error)
 	// GetByID gets release by releaseID
 	GetByID(ctx context.Context, releaseID uint) (*models.TemplateRelease, error)
 	GetRefOfApplication(ctx context.Context, id uint) ([]*amodels.Application, uint, error)
@@ -59,18 +57,6 @@ func (m *manager) GetByTemplateNameAndRelease(ctx context.Context,
 	defer wlog.Start(ctx, op).StopPrint()
 
 	tr, err := m.dao.GetByTemplateNameAndRelease(ctx, templateName, release)
-	if err != nil {
-		return nil, err
-	}
-	return tr, nil
-}
-
-func (m *manager) GetByChartNameAndVersion(ctx context.Context,
-	chartName, chartVersion string) (*models.TemplateRelease, error) {
-	const op = "template release manager: get by chart name and chart version"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	tr, err := m.dao.GetByChartNameAndVersion(ctx, chartName, chartVersion)
 	if err != nil {
 		return nil, err
 	}
