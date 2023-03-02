@@ -29,7 +29,7 @@ type EventSummary struct {
 	ResourceType string
 	ResourceID   uint
 	EventType    string
-	Extra        *string
+	Extra        *string `gorm:"default:''"`
 }
 
 type Event struct {
