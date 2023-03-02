@@ -143,10 +143,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
-	clusterv2 "github.com/horizoncd/horizon/core/http/api/v2/cluster"
 	"github.com/rbcervilla/redisstore/v8"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
+
+	clusterv2 "github.com/horizoncd/horizon/core/http/api/v2/cluster"
 )
 
 // Flags defines agent CLI flags.
@@ -593,7 +594,12 @@ func Run(flags *Flags) {
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	tag.RegisterRoutes(r, tagAPI)
 	templateschematagapi.RegisterRoutes(r, templateSchemaTagAPI)
-	accessapi.RegisterRoutes(r, accessAPI)
+	accessAPI.RegisterRoutes(r)
+	registerIs := []RegisterApi{accessAPI}
+	for _, register := range registerIs {
+		register.RegisterRoutes(r)
+	}
+	//accessapi.RegisterRoutes(r, accessAPI)
 	applicationregion.RegisterRoutes(r, applicationRegionAPI)
 	oauthapp.RegisterRoutes(r, oauthAppAPI)
 	oauthserver.RegisterRoutes(r, oauthServerAPI)
@@ -646,4 +652,8 @@ func Run(flags *Flags) {
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
+}
+
+type RegisterApi interface {
+	RegisterRoutes(engine *gin.Engine)
 }
