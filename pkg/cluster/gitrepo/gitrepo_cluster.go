@@ -1791,5 +1791,5 @@ func parseReleaseName(chartVersion string) string {
 	if len(loc) == 0 {
 		return chartVersion
 	}
-	return string(b[0:loc[0]])
+	return string(b[:loc[0]])
 }
