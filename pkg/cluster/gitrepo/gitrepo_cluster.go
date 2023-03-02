@@ -392,26 +392,12 @@ func (g *clusterGitRepo) GetClusterTemplate(ctx context.Context, application,
 		return nil, perror.Wrapf(herrors.ErrParamInvalid,
 			"yaml Unmarshal err, file = %s", common.GitopsFileChart)
 	}
-
+	// extract release
 	for _, dependency := range chart.Dependencies {
 		if dependency.Name != "" && dependency.Version != "" {
-			// extract release
-			releaseName, err := func() (string, error) {
-				pattern := regexp.MustCompile("-([a-z0-9])+$")
-				b := []byte(dependency.Version)
-				loc := pattern.FindIndex(b)
-				if len(loc) == 0 {
-					return "", perror.Wrapf(herrors.ErrParamInvalid,
-						"failed to extract release from chart")
-				}
-				return string(b[0:loc[0]]), nil
-			}()
-			if err != nil {
-				return nil, err
-			}
 			return &ClusterTemplate{
 				Name:    dependency.Name,
-				Release: releaseName,
+				Release: parseReleaseName(dependency.Version),
 			}, nil
 		}
 	}
@@ -1521,7 +1507,7 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 		Cluster:  angular.StringPtr(param.Cluster),
 	}, struct {
 		SourceTemplate ClusterTemplate `json:"sourceTemplate"`
-		TargetTemplate ClusterTemplate `json:"targetRelease"`
+		TargetTemplate ClusterTemplate `json:"targetTemplate"`
 	}{
 		SourceTemplate: *param.Template,
 		TargetTemplate: ClusterTemplate{
@@ -1791,4 +1777,19 @@ func marshal(b *[]byte, err *error, data interface{}) {
 	} else {
 		*b = buf.Bytes()
 	}
+}
+
+// parseReleaseName extracts release name from chart version
+// such as:
+//      v1.3.2-e0dee4e9 => v1.3.2
+//      v1.2.6-ad3ac3cb700786fbb368988510b46b356a76c917 => v1.2.6
+//      v1.0.0-rc1 => v1.0.0-rc1
+func parseReleaseName(chartVersion string) string {
+	pattern := regexp.MustCompile("(-([a-z0-9]){8}$)|(-([a-z0-9]){40}$)")
+	b := []byte(chartVersion)
+	loc := pattern.FindIndex(b)
+	if len(loc) == 0 {
+		return chartVersion
+	}
+	return string(b[:loc[0]])
 }
