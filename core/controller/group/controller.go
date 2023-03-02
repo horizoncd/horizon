@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
@@ -24,7 +26,6 @@ import (
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -487,7 +488,7 @@ func (c *controller) GetByFullPath(ctx context.Context,
 }
 
 func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
-	currenUser, err := common.UserFromContext(ctx)
+	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +498,7 @@ func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
 		return nil, err
 	}
 	var authedGroups []*models.Group
-	if currenUser.IsAdmin() {
+	if currentUser.IsAdmin() {
 		authedGroups = groups
 	} else {
 		authedGroups = make([]*models.Group, 0)
