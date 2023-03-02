@@ -575,61 +575,26 @@ func Run(flags *Flags) {
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
 
+	type RegisterI interface {
+		RegisterRoutes(engine *gin.Engine)
+	}
 	// v1
-	group.RegisterRoutes(r, groupAPI)
-	template.RegisterRoutes(r, templateAPI)
-	user.RegisterRoutes(r, userAPI)
-	application.RegisterRoutes(r, applicationAPI)
-	envtemplate.RegisterRoutes(r, envTemplateAPI)
-	cluster.RegisterRoutes(r, clusterAPI)
-	pipelinerun.RegisterRoutes(r, prAPI)
-	environment.RegisterRoutes(r, environmentAPI)
-	region.RegisterRoutes(r, regionAPI)
-	environmentregion.RegisterRoutes(r, environmentRegionAPI)
-	registry.RegisterRoutes(r, registryAPI)
-	member.RegisterRoutes(r, memberAPI)
-	roleapi.RegisterRoutes(r, roleAPI)
-	terminalapi.RegisterRoutes(r, terminalAPI)
-	codeapi.RegisterRoutes(r, codeGitAPI)
-	tag.RegisterRoutes(r, tagAPI)
-	templateschematagapi.RegisterRoutes(r, templateSchemaTagAPI)
-	accessapi.RegisterRoutes(r, accessAPI)
-	applicationregion.RegisterRoutes(r, applicationRegionAPI)
-	oauthapp.RegisterRoutes(r, oauthAppAPI)
-	oauthserver.RegisterRoutes(r, oauthServerAPI)
-	idp.RegisterRoutes(r, idpAPI)
-	accesstoken.RegisterRoutes(r, accessTokenAPI)
-	scope.RegisterRoutes(r, scopeAPI)
-	webhook.RegisterRoutes(r, webhookAPI)
-	event.RegisterRoutes(r, eventAPI)
-
+	registerV1Group := []RegisterI{groupAPI, templateAPI, userAPI, applicationAPI, envTemplateAPI, clusterAPI,
+		prAPI, environmentAPI, regionAPI, environmentRegionAPI, registryAPI, memberAPI, roleAPI, terminalAPI,
+		codeGitAPI, tagAPI, templateSchemaTagAPI, accessAPI, applicationRegionAPI, oauthAppAPI, oauthServerAPI,
+		idpAPI, accessTokenAPI, scopeAPI, webhookAPI, eventAPI, accessAPIV2, accessTokenAPIV2, applicationAPIV2, applicationRegionAPIV2, buildSchemaAPI,
+		clusterAPIV2, codeGitAPIV2, environmentAPIV2, environmentRegionAPIV2, envtemplateAPIV2, eventAPIV2, groupAPIV2, idpAPIV2,
+		memberAPIV2, oauthAppAPIV2, pipelinerunAPIV2, regionAPIV2, registryAPIV2, roleAPIV2, scopeAPIV2, tagAPIV2, templateAPIV2,
+		templateSchemaTagAPIV2, terminalAPIV2, userAPIV2, webhookAPIV2}
 	// v2
-	accessv2.RegisterRoutes(r, accessAPIV2)
-	accesstokenv2.RegisterRoutes(r, accessTokenAPIV2)
-	appv2.RegisterRoutes(r, applicationAPIV2)
-	applicationregionv2.RegisterRoutes(r, applicationRegionAPIV2)
-	buildAPI.RegisterRoutes(r, buildSchemaAPI)
-	clusterv2.RegisterRoutes(r, clusterAPIV2)
-	codev2.RegisterRoutes(r, codeGitAPIV2)
-	environmentv2.RegisterRoutes(r, environmentAPIV2)
-	environmentregionv2.RegisterRoutes(r, environmentRegionAPIV2)
-	envtemplatev2.RegisterRoutes(r, envtemplateAPIV2)
-	eventv2.RegisterRoutes(r, eventAPIV2)
-	groupv2.RegisterRoutes(r, groupAPIV2)
-	idpv2.RegisterRoutes(r, idpAPIV2)
-	memberv2.RegisterRoutes(r, memberAPIV2)
-	oauthappv2.RegisterRoutes(r, oauthAppAPIV2)
-	pipelinerunv2.RegisterRoutes(r, pipelinerunAPIV2)
-	regionv2.RegisterRoutes(r, regionAPIV2)
-	registryv2.RegisterRoutes(r, registryAPIV2)
-	rolev2.RegisterRoutes(r, roleAPIV2)
-	scopev2.RegisterRoutes(r, scopeAPIV2)
-	tagv2.RegisterRoutes(r, tagAPIV2)
-	templatev2.RegisterRoutes(r, templateAPIV2)
-	templateschematagv2.RegisterRoutes(r, templateSchemaTagAPIV2)
-	terminalv2.RegisterRoutes(r, terminalAPIV2)
-	userv2.RegisterRoutes(r, userAPIV2)
-	webhookv2.RegisterRoutes(r, webhookAPIV2)
+	registerV2Group := []RegisterI{}
+
+	for _, register := range registerV1Group {
+		register.RegisterRoutes(r)
+	}
+	for _, register := range registerV2Group {
+		register.RegisterRoutes(r)
+	}
 
 	// start cloud event server
 	go runCloudEventServer(

@@ -9,13 +9,13 @@ import (
 )
 
 // RegisterRoutes register routes
-func RegisterRoutes(engine *gin.Engine, api *API) {
+func (a *API) RegisterRoutes(engine *gin.Engine) {
 	frontGroup := engine.Group("/apis/front/v1")
 	var frontRoutes = route.Routes{
 		{
 			Method:      http.MethodPost,
 			Pattern:     "/accessreview",
-			HandlerFunc: api.AccessReview,
+			HandlerFunc: a.AccessReview,
 		},
 	}
 
