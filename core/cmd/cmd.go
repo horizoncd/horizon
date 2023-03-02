@@ -594,7 +594,7 @@ func Run(flags *Flags) {
 	codeapi.RegisterRoutes(r, codeGitAPI)
 	tag.RegisterRoutes(r, tagAPI)
 	templateschematagapi.RegisterRoutes(r, templateSchemaTagAPI)
-	registerIs := []RegisterApi{accessAPI}
+	registerIs := []RegisterI{accessAPI}
 	for _, register := range registerIs {
 		register.RegisterRoutes(r)
 	}
@@ -653,6 +653,6 @@ func Run(flags *Flags) {
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
 }
 
-type RegisterApi interface {
+type RegisterI interface {
 	RegisterRoutes(engine *gin.Engine)
 }
