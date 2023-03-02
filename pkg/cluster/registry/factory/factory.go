@@ -24,7 +24,7 @@ type registryCache struct {
 	*sync.Map
 }
 
-func newRegistryCache() *registryCache {
+func newRegistryCache() RegistryGetter {
 	return &registryCache{
 		&sync.Map{},
 	}
