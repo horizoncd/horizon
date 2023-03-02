@@ -402,6 +402,7 @@ func (c *controller) GetPodEvents(ctx context.Context, clusterID uint, podName s
 	}
 
 	param := cd.GetPodEventsParams{
+		Environment:  envValue.Environment,
 		Namespace:    envValue.Namespace,
 		Cluster:      cluster.Name,
 		Pod:          podName,
