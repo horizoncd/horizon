@@ -37,3 +37,11 @@ clean:
 	docker rmi -f horizon-swagger
 	docker rmi -f horizon-job
 	docker rmi -f horizon-core
+
+.PHONY: lint
+lint:
+	golangci-lint run -v
+
+.PHONY: ut
+ut:
+	sh .unit-test.sh
