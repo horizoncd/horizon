@@ -582,6 +582,7 @@ func Run(flags *Flags) {
 	type RegisterI interface {
 		RegisterRoutes(engine *gin.Engine)
 	}
+	//v1
 	registerV1Group := []RegisterI{}
 	registerV1Group = []RegisterI{groupAPI,
 		templateAPI,
@@ -614,6 +615,7 @@ func Run(flags *Flags) {
 		register.RegisterRoutes(r)
 	}
 
+	//v2
 	registerV2Group := []RegisterI{}
 	registerV2Group = []RegisterI{groupAPI,
 		accessAPIV2,
