@@ -325,8 +325,8 @@ func (a *API) GetApplicationPipelineStats(c *gin.Context) {
 	}
 
 	cluster := c.Query(_cluster)
-
-	pipelineStats, count, err := a.applicationCtl.GetApplicationPipelineStats(c, uint(appID), cluster, pageNumber, pageSize)
+	pipelineStats, count, err := a.applicationCtl.GetApplicationPipelineStats(c, uint(appID), cluster, pageNumber,
+		pageSize)
 	if err != nil {
 		log.Errorf(c, "Get application pipelineStats failed, error: %+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
