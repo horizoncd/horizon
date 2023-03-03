@@ -607,6 +607,7 @@ func Run(flags *Flags) {
 		webhookAPI,
 		eventAPI,
 	}
+
 	for _, register := range registerV1Group {
 		register.RegisterRoutes(r)
 	}
