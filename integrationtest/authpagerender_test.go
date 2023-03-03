@@ -161,8 +161,6 @@ func TestServer(t *testing.T) {
 	clusterapi := clusterAPI.API{}
 	clusterapi.RegisterRoutes(r)
 
-	//oauthserver.RegisterRoutes(r, api)
-	//clusterAPI.RegisterRoutes(r, nil)
 	ListenPort := ":18181"
 
 	go func() {
