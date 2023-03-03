@@ -37,7 +37,7 @@ type DAO interface {
 	UpdateByID(ctx context.Context, id uint, application *models.Application) (*models.Application, error)
 	DeleteByID(ctx context.Context, id uint) error
 	TransferByID(ctx context.Context, id uint, groupID uint) error
-	List(ctx context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error)
+	List(ctx context.Context, userAuthorizedGroupIDs []uint, query *q.Query) (int, []*models.Application, error)
 }
 
 // NewDAO returns an instance of the default DAO
@@ -282,7 +282,7 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 	return err
 }
 
-func (d *dao) List(ctx context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error) {
+func (d *dao) List(ctx context.Context, userAuthorizedGroupIDs []uint, query *q.Query) (int, []*models.Application, error) {
 	var (
 		applications []*models.Application
 		total        int64
@@ -306,12 +306,14 @@ func (d *dao) List(ctx context.Context, groupIDs []uint, query *q.Query) (int, [
 				statement = statement.Where("a.template = ?", v)
 			case corecommon.ApplicationQueryByRelease:
 				statement = statement.Where("a.template_release = ?", v)
+			case corecommon.ApplicationQueryByGroup:
+				statement = statement.Where("a.group_id = ?", v)
 			}
 		}
 
 		statement = statement.Where("a.deleted_ts = 0")
 
-		if len(groupIDs) > 0 &&
+		if len(userAuthorizedGroupIDs) > 0 &&
 			query.Keywords != nil &&
 			query.Keywords[corecommon.ApplicationQueryByUser] != nil {
 			statementGroup := d.db.WithContext(ctx).Table("tb_application as a")
@@ -325,7 +327,7 @@ func (d *dao) List(ctx context.Context, groupIDs []uint, query *q.Query) (int, [
 					statementGroup = statementGroup.Where("a.template_release = ?", v)
 				}
 			}
-			statementGroup = statementGroup.Where("group_id in ?", groupIDs).Where("a.deleted_ts = 0")
+			statementGroup = statementGroup.Where("group_id in ?", userAuthorizedGroupIDs).Where("a.deleted_ts = 0")
 			statement = d.db.Raw("? union ?", statement, statementGroup)
 		}
 	}

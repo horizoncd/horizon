@@ -5,4 +5,5 @@ const (
 	ApplicationQueryByUser     = "userID"
 	ApplicationQueryByTemplate = "template"
 	ApplicationQueryByRelease  = "templateRelease"
+	ApplicationQueryByGroup    = "groupID"
 )
