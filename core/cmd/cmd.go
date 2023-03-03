@@ -162,6 +162,10 @@ type Flags struct {
 	GitOpsRepoDefaultBranch string
 }
 
+func init() {
+
+}
+
 // ParseFlags parses agent CLI flags.
 func ParseFlags() *Flags {
 	var flags Flags
@@ -578,8 +582,8 @@ func Run(flags *Flags) {
 	type RegisterI interface {
 		RegisterRoutes(engine *gin.Engine)
 	}
-	// v1
-	registerV1Group := []RegisterI{groupAPI,
+	registerV1Group := []RegisterI{}
+	registerV1Group = []RegisterI{groupAPI,
 		templateAPI,
 		userAPI,
 		applicationAPI,
@@ -605,6 +609,13 @@ func Run(flags *Flags) {
 		scopeAPI,
 		webhookAPI,
 		eventAPI,
+	}
+	for _, register := range registerV1Group {
+		register.RegisterRoutes(r)
+	}
+
+	registerV2Group := []RegisterI{}
+	registerV2Group = []RegisterI{groupAPI,
 		accessAPIV2,
 		accessTokenAPIV2,
 		applicationAPIV2,
@@ -631,11 +642,6 @@ func Run(flags *Flags) {
 		terminalAPIV2,
 		userAPIV2,
 		webhookAPIV2,
-	}
-
-	registerV2Group := []RegisterI{}
-	for _, register := range registerV1Group {
-		register.RegisterRoutes(r)
 	}
 	for _, register := range registerV2Group {
 		register.RegisterRoutes(r)
