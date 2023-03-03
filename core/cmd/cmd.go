@@ -162,8 +162,8 @@ type Flags struct {
 	GitOpsRepoDefaultBranch string
 }
 
-func init() {
-
+type RegisterI interface {
+	RegisterRoutes(engine *gin.Engine)
 }
 
 // ParseFlags parses agent CLI flags.
@@ -579,9 +579,6 @@ func Run(flags *Flags) {
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
 
-	type RegisterI interface {
-		RegisterRoutes(engine *gin.Engine)
-	}
 	//v1
 	registerV1Group := []RegisterI{groupAPI,
 		templateAPI,
