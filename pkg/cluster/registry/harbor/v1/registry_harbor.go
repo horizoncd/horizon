@@ -1,4 +1,4 @@
-package harbor
+package v1
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"path"
 	"strconv"
 	"strings"
@@ -18,13 +17,13 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/registry"
+	"github.com/horizoncd/horizon/pkg/cluster/registry/harbor"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
-const kind = "harbor"
+const kind = "harbor_v1"
 
 // default params
 const (
@@ -86,7 +85,7 @@ func (h *Registry) createProject(ctx context.Context, project string) (_ int, er
 	const op = "registry: create project"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	url := fmt.Sprintf("%s/api/v2.0/projects", h.server)
+	url := fmt.Sprintf("%s/api/projects", h.server)
 	body := map[string]interface{}{
 		"project_name": project,
 		"metadata": map[string]string{
@@ -123,8 +122,7 @@ func (h *Registry) DeleteImage(ctx context.Context, appName string, clusterName 
 	const op = "registry: delete repository"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	link := path.Join("/api/v2.0/projects", h.path, "repositories",
-		url.PathEscape(path.Join(appName, clusterName)))
+	link := path.Join("/api/repositories", h.path, appName, clusterName)
 
 	link = fmt.Sprintf("%s%s", strings.TrimSuffix(h.server, "/"), link)
 
@@ -151,7 +149,7 @@ func (h *Registry) sendHTTPRequest(ctx context.Context, method string,
 			duration := time.Since(begin)
 			server := strings.TrimPrefix(strings.TrimPrefix(h.server, "http://"), "https://")
 			statuscode := strconv.Itoa(rsp.StatusCode)
-			observe(server, method, statuscode, operation, duration)
+			harbor.Observe(server, method, statuscode, operation, duration)
 		}
 	}()
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
