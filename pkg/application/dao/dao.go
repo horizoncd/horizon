@@ -282,7 +282,8 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 	return err
 }
 
-func (d *dao) List(ctx context.Context, userAuthorizedGroupIDs []uint, query *q.Query) (int, []*models.Application, error) {
+func (d *dao) List(ctx context.Context, userAuthorizedGroupIDs []uint,
+	query *q.Query) (int, []*models.Application, error) {
 	var (
 		applications []*models.Application
 		total        int64

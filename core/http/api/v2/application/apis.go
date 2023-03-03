@@ -260,7 +260,7 @@ func (a *API) List(c *gin.Context) {
 	if idStr != "" {
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("user id is not a number"))
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("group id is not a number"))
 			return
 		}
 		keywords[common.ApplicationQueryByGroup] = uint(id)
