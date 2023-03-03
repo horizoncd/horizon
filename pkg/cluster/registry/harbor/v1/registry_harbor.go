@@ -1,10 +1,8 @@
 package v1
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,7 +17,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/registry"
 	"github.com/horizoncd/horizon/pkg/cluster/registry/harbor"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
@@ -78,44 +75,6 @@ func NewHarborRegistry(config *registry.Config) (registry.Registry, error) {
 	}
 
 	return harborRegistry, nil
-}
-
-// for test only
-func (h *Registry) createProject(ctx context.Context, project string) (_ int, err error) {
-	const op = "registry: create project"
-	defer wlog.Start(ctx, op).StopPrint()
-
-	url := fmt.Sprintf("%s/api/projects", h.server)
-	body := map[string]interface{}{
-		"project_name": project,
-		"metadata": map[string]string{
-			"public": "false",
-		},
-	}
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return -1, perror.Wrap(herrors.ErrParamInvalid, err.Error())
-	}
-	resp, err := h.sendHTTPRequest(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes), false, "createProject")
-	if err != nil {
-		return -1, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode == http.StatusCreated {
-		location := resp.Header.Get("Location")
-		projectIDStr := location[strings.LastIndex(location, "/")+1:]
-		projectID, err := strconv.Atoi(projectIDStr)
-		if err != nil {
-			return -1, perror.Wrap(herrors.ErrParamInvalid, err.Error())
-		}
-		return projectID, nil
-	} else if resp.StatusCode == http.StatusConflict {
-		return -1, nil
-	}
-
-	message := common.Response(ctx, resp)
-	return -1, errors.E(op, resp.StatusCode, message)
 }
 
 func (h *Registry) DeleteImage(ctx context.Context, appName string, clusterName string) (err error) {
