@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(engine *gin.Engine, api *API) {
+func (api *API) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/apis/core/v1")
 	var routes = route.Routes{
 		{

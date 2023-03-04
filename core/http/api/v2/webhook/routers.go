@@ -16,7 +16,7 @@ const (
 	_webhookLogIDParam = "webhookLogID"
 )
 
-func RegisterRoutes(engine *gin.Engine, api *API) {
+func (api *API) RegisterRoutes(engine *gin.Engine) {
 	group := engine.Group("/apis/core/v2")
 	var routers = route.Routes{
 		{
