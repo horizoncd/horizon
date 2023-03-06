@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v2/applications/searchapplications?filter={filter}&userID={userID}&groupID={groupID}&template={template}&templateRelease={templateRelease}&pageNumber={pageNumber}&pageSize={pageSize}:
+  /apis/front/v2/applications/searchapplications:
     get:
       tags:
         - application
@@ -34,7 +34,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/front/v2/applications/searchmyapplications?filter={filter}&template={template}&templateRelease={templateRelease}&pageNumber={pageNumber}&pageSize={pageSize}:
+  /apis/front/v2/applications/searchmyapplications:
     get:
       tags:
         - application
