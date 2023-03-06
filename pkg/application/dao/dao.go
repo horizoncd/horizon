@@ -282,63 +282,69 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 	return err
 }
 
-func (d *dao) List(ctx context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error) {
+func (d *dao) List(ctx context.Context, groupIDs []uint,
+	query *q.Query) (int, []*models.Application, error) {
 	var (
 		applications []*models.Application
 		total        int64
 	)
 
-	statement := d.db.WithContext(ctx).Table("tb_application as a")
-
+	finalStatement := d.db.WithContext(ctx).Table("tb_application as a")
 	if query != nil {
+		// basic filter
 		for k, v := range query.Keywords {
 			switch k {
 			case corecommon.ApplicationQueryName:
-				statement = statement.Where("a.name like ?", fmt.Sprintf("%%%v%%", v))
-			case corecommon.ApplicationQueryByUser:
-				statement = statement.
-					Select("a.*").
-					Joins("join tb_member as m on m.resource_id = a.id").
-					Where("m.resource_type = ?", corecommon.ResourceApplication).
-					Where("m.member_type = '0'").
-					Where("m.membername_id = ?", v)
+				finalStatement = finalStatement.Where("a.name like ?", fmt.Sprintf("%%%v%%", v))
 			case corecommon.ApplicationQueryByTemplate:
-				statement = statement.Where("a.template = ?", v)
+				finalStatement = finalStatement.Where("a.template = ?", v)
 			case corecommon.ApplicationQueryByRelease:
-				statement = statement.Where("a.template_release = ?", v)
+				finalStatement = finalStatement.Where("a.template_release = ?", v)
 			}
 		}
 
-		statement = statement.Where("a.deleted_ts = 0")
+		// add groupID filter
+		if len(groupIDs) != 0 {
+			finalStatement = finalStatement.Where("group_id in ?", groupIDs)
+		}
+		finalStatement = finalStatement.Where("a.deleted_ts = 0")
 
-		if len(groupIDs) > 0 &&
-			query.Keywords != nil &&
-			query.Keywords[corecommon.ApplicationQueryByUser] != nil {
-			statementGroup := d.db.WithContext(ctx).Table("tb_application as a")
+		// union user direct authorized entity
+		if query.Keywords[corecommon.ApplicationQueryByUser] != nil {
+			userStatement := d.db.WithContext(ctx).Table("tb_application as a")
 			for k, v := range query.Keywords {
 				switch k {
 				case corecommon.ApplicationQueryName:
-					statementGroup = statementGroup.Where("a.name like ?", fmt.Sprintf("%%%v%%", v))
+					userStatement = userStatement.Where("a.name like ?", fmt.Sprintf("%%%v%%", v))
+				case corecommon.ApplicationQueryByUser:
+					userStatement = userStatement.
+						Select("a.*").
+						Joins("join tb_member as m on m.resource_id = a.id").
+						Where("m.resource_type = ?", corecommon.ResourceApplication).
+						Where("m.member_type = '0'").
+						Where("m.membername_id = ?", v)
 				case corecommon.ApplicationQueryByTemplate:
-					statementGroup = statementGroup.Where("a.template = ?", v)
+					userStatement = userStatement.Where("a.template = ?", v)
 				case corecommon.ApplicationQueryByRelease:
-					statementGroup = statementGroup.Where("a.template_release = ?", v)
+					userStatement = userStatement.Where("a.template_release = ?", v)
+				case corecommon.ApplicationQueryByGroup:
+					userStatement = userStatement.Where("a.group_id = ?", v)
 				}
 			}
-			statementGroup = statementGroup.Where("group_id in ?", groupIDs).Where("a.deleted_ts = 0")
-			statement = d.db.Raw("? union ?", statement, statementGroup)
+			userStatement = userStatement.Where("a.deleted_ts = 0")
+			finalStatement = d.db.Raw("? union ?", userStatement, finalStatement)
 		}
 	}
 
-	res := d.db.Raw("select count(distinct id) from (?) as apps", statement).Scan(&total)
+	res := d.db.Raw("select count(distinct id) from (?) as apps", finalStatement).Scan(&total)
 
 	if res.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, res.Error.Error())
 	}
 
-	statement = d.db.Raw("select distinct * from (?) as apps order by updated_at desc limit ? offset ?",
-		statement, query.Limit(), query.Offset())
-	res = statement.Scan(&applications)
+	finalStatement = d.db.Raw("select distinct * from (?) as apps order by updated_at desc limit ? offset ?",
+		finalStatement, query.Limit(), query.Offset())
+	res = finalStatement.Scan(&applications)
 	if res.Error != nil {
 		return 0, nil, herrors.NewErrGetFailed(herrors.ApplicationInDB, res.Error.Error())
 	}
