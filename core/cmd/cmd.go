@@ -580,7 +580,8 @@ func Run(flags *Flags) {
 	metrics.RegisterRoutes(r)
 
 	//v1
-	registerV1Group := []RegisterI{groupAPI,
+	registerV1Group := []RegisterI{
+		groupAPI,
 		templateAPI,
 		userAPI,
 		applicationAPI,
@@ -613,7 +614,8 @@ func Run(flags *Flags) {
 	}
 
 	//v2
-	registerV2Group := []RegisterI{groupAPI,
+	registerV2Group := []RegisterI{
+		groupAPIV2,
 		accessAPIV2,
 		accessTokenAPIV2,
 		applicationAPIV2,
@@ -625,7 +627,6 @@ func Run(flags *Flags) {
 		environmentRegionAPIV2,
 		envtemplateAPIV2,
 		eventAPIV2,
-		groupAPIV2,
 		idpAPIV2,
 		memberAPIV2,
 		oauthAppAPIV2,

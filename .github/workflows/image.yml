@@ -12,9 +12,24 @@ jobs:
     strategy:
       matrix:
         components: [core, job, swagger]
+        platforms: ['linux/amd64', 'linux/arm64']
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 20
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            go:
+              - '**.go'
+              - 'build/core/Dockerfile'
+              - 'build/job/Dockerfile'
+            api:
+              - 'openapi/**'
+              - 'build/swagger/build.sh'
+              - 'build/swagger/Dockerfile'
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v3
@@ -32,15 +47,23 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Condition
+        id: condition
+        run: |
+          echo "run=${{ (steps.changes.outputs.go == 'true' && (matrix.components == 'core' || matrix.components == 'job')) || (steps.changes.outputs.api == 'true' && matrix.components == 'swagger') }}" > GITHUB_OUTPUT
+
       - name: Set up QEMU
+        if: ${{ matrix.platforms != 'linux/amd64' && steps.condition.outputs.run == 'true' }}
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
+        if: ${{ steps.condition.outputs.run == 'true' }}
         uses: docker/setup-buildx-action@v2
       - name: Build and push
+        if: ${{ steps.condition.outputs.run == 'true' }}
         uses: docker/build-push-action@v3
         with:
           context: .
           file: ./build/${{ matrix.components }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platforms }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
