@@ -32,7 +32,7 @@ require (
 	github.com/tektoncd/pipeline v0.17.1-0.20201027063619-b7badedd0f65
 	github.com/tektoncd/triggers v0.8.2-0.20201007153255-cb1879311818
 	github.com/xanzy/go-gitlab v0.50.4
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d
+	golang.org/x/net v0.7.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/igm/sockjs-go.v3 v3.0.1
