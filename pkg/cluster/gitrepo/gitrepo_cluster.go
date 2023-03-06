@@ -1781,9 +1781,10 @@ func marshal(b *[]byte, err *error, data interface{}) {
 
 // parseReleaseName extracts release name from chart version
 // such as:
-//      v1.3.2-e0dee4e9 => v1.3.2
-//      v1.2.6-ad3ac3cb700786fbb368988510b46b356a76c917 => v1.2.6
-//      v1.0.0-rc1 => v1.0.0-rc1
+//
+//	v1.3.2-e0dee4e9 => v1.3.2
+//	v1.2.6-ad3ac3cb700786fbb368988510b46b356a76c917 => v1.2.6
+//	v1.0.0-rc1 => v1.0.0-rc1
 func parseReleaseName(chartVersion string) string {
 	pattern := regexp.MustCompile("(-([a-z0-9]){8}$)|(-([a-z0-9]){40}$)")
 	b := []byte(chartVersion)
