@@ -15,6 +15,7 @@ paths:
         - $ref: 'common.yaml#/components/parameters/filter'
         - $ref: 'common.yaml#/components/parameters/userID'
         - $ref: 'common.yaml#/components/parameters/groupID'
+        - $ref: 'common.yaml#/components/parameters/groupRecursive'
         - $ref: 'common.yaml#/components/parameters/template'
         - $ref: 'common.yaml#/components/parameters/templateRelease'
         - $ref: 'common.yaml#/components/parameters/pageNumber'

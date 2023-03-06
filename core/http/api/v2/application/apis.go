@@ -266,6 +266,16 @@ func (a *API) List(c *gin.Context) {
 		keywords[common.ApplicationQueryByGroup] = uint(id)
 	}
 
+	groupRecursiveStr := c.Query(common.ApplicationQueryByGroupRecursive)
+	if groupRecursiveStr != "" {
+		groupRecursive, err := strconv.ParseBool(groupRecursiveStr)
+		if err != nil {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("groupRecursive is not a bool"))
+			return
+		}
+		keywords[common.ApplicationQueryByGroupRecursive] = groupRecursive
+	}
+
 	query := q.New(keywords).WithPagination(c)
 
 	applications, total, err := a.applicationCtl.List(c, query)
