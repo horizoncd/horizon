@@ -6,5 +6,5 @@ type Git struct {
 	Subfolder string `json:"subfolder"`
 	Branch    string `json:"branch"`
 	Tag       string `json:"tag"`
-	Commmit   string `json:"commit"`
+	Commit   string `json:"commit"`
 }

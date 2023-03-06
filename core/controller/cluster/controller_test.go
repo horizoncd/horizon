@@ -1674,12 +1674,12 @@ syncDomainName:
   Value: {{ .Values.horizon.cluster}}.{{ .Values.env.ingressDomain}}`
 	outputMock.EXPECT().GetTemplateOutPut(gomock.Any(), template, templateRelease).Return(outPutStr, nil).Times(1)
 
-	renderObect, err := c.GetClusterOutput(context.TODO(), 123)
+	renderObject, err := c.GetClusterOutput(context.TODO(), 123)
 	assert.Nil(t, err)
 	builder := &strings.Builder{}
 	encoder := yaml.NewEncoder(builder)
 	encoder.SetIndent(2)
-	err = encoder.Encode(renderObect)
+	err = encoder.Encode(renderObject)
 	assert.Nil(t, err)
 	var ExpectOutPutStr = `syncDomainName:
   Description: sync domain name

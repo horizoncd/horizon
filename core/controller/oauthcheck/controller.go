@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/context"
+
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/auth"
 	rbactype "github.com/horizoncd/horizon/pkg/auth"
@@ -15,7 +17,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/rbac/types"
 	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	"golang.org/x/net/context"
 )
 
 type Controller interface {
@@ -112,7 +113,7 @@ func (c *controller) CheckScopePermission(ctx context.Context, accessToken strin
 	for _, scopeRule := range scopeRoles {
 		for i, policy := range scopeRule.PolicyRules {
 			if types.RuleAllow(record, &policy) {
-				reason := fmt.Sprintf("user %s allowd by scope(%s) by rule[%d]",
+				reason := fmt.Sprintf("user %s allowed by scope(%s) by rule[%d]",
 					usr.String(), scopeRule.Name, i)
 				return true, reason, nil
 			}

@@ -113,7 +113,7 @@ func VisitRoles(member *models.Member, role *types.Role,
 	}
 	for i, rule := range role.PolicyRules {
 		if types.RuleAllow(attr, &rule) {
-			reason = fmt.Sprintf("user %s allowd by member(%s) by rule[%d]",
+			reason = fmt.Sprintf("user %s allowed by member(%s) by rule[%d]",
 				attr.GetUser().String(), memberInfo, i)
 			return auth.DecisionAllow, reason, nil
 		}

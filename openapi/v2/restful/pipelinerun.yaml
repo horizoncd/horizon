@@ -280,10 +280,10 @@ components:
               description: "latest commit id of source code"
             commitMsg:
               type: string
-              description: "lastest commit message of source code"
+              description: "latest commit message of source code"
             link:
               type: string
-              description: "link of lastest commit"
+              description: "link of latest commit"
         codeDiff:
           type: object
           properties:

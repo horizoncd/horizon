@@ -145,7 +145,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 				restartTime time.Time
 			)
 
-			// get image and restart time by lastest pipelinerun
+			// get image and restart time by latest pipelinerun
 			if latestPipelinerun.Action == prmodels.ActionBuildDeploy ||
 				latestPipelinerun.Action == prmodels.ActionRollback {
 				image = latestPipelinerun.ImageURL

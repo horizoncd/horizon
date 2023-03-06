@@ -10,7 +10,7 @@ import (
 
 var (
 	// Fty is the global registry factory
-	Fty = NewRegistryCache()
+	Fty = newRegistryCache()
 )
 
 // nolint
@@ -24,7 +24,7 @@ type registryCache struct {
 	*sync.Map
 }
 
-func NewRegistryCache() *registryCache {
+func newRegistryCache() *registryCache {
 	return &registryCache{
 		&sync.Map{},
 	}
