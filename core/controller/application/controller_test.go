@@ -14,6 +14,7 @@ import (
 	trschemamock "github.com/horizoncd/horizon/mock/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/application/gitrepo"
 	"github.com/horizoncd/horizon/pkg/application/models"
+	appregionmodels "github.com/horizoncd/horizon/pkg/applicationregion/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
@@ -275,6 +276,9 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&eventmodels.Event{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&appregionmodels.ApplicationRegion{}); err != nil {
+		panic(err)
+	}
 	ctx = context.TODO()
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
@@ -344,6 +348,8 @@ func Test(t *testing.T) {
 		clusterMgr:           manager.ClusterMgr,
 		userSvc:              userservice.NewService(manager),
 		eventMgr:             manager.EventManager,
+		memberManager:        manager.MemberManager,
+		applicationRegionMgr: manager.ApplicationRegionManager,
 	}
 
 	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
