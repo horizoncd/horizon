@@ -21,29 +21,6 @@ func TestLogOK(t *testing.T) {
 	Start(ctx, "test: stopPrint").StopPrint()
 }
 
-func TestPanic(t *testing.T) {
-	ctx := log.WithContext(context.Background(), "traceId")
-
-	const op = "app: create application"
-	defer Start(ctx, op).StopPrint()
-
-	doPanic()
-}
-
-func TestPanic2(t *testing.T) {
-	ctx := log.WithContext(context.Background(), "traceId")
-
-	const op = "app: create application"
-	defer Start(ctx, op).StopPrint()
-
-	doPanic()
-}
-
-func doPanic() {
-	var v *int
-	*v = 10
-}
-
 func TestLogError(t *testing.T) {
 	ctx := log.WithContext(context.Background(), "traceId")
 

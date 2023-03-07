@@ -86,6 +86,7 @@ import (
 	webhookv2 "github.com/horizoncd/horizon/core/http/api/v2/webhook"
 	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/core/middleware/auth"
+	recovermiddle "github.com/horizoncd/horizon/core/middleware/recover"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/environment/service"
@@ -548,7 +549,7 @@ func Run(flags *Flags) {
 	// use middleware
 	middlewares := []gin.HandlerFunc{
 		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
-		gin.Recovery(),
+		recovermiddle.Middleware(),
 		requestid.Middleware(), // requestID middleware, attach a requestID to context
 		logmiddle.Middleware(), // log middleware, attach a logger to context
 
@@ -579,7 +580,7 @@ func Run(flags *Flags) {
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
 
-	//v1
+	// v1
 	registerV1Group := []RegisterI{
 		groupAPI,
 		templateAPI,
@@ -613,7 +614,7 @@ func Run(flags *Flags) {
 		register.RegisterRoutes(r)
 	}
 
-	//v2
+	// v2
 	registerV2Group := []RegisterI{
 		groupAPIV2,
 		accessAPIV2,

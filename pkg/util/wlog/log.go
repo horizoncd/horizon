@@ -2,7 +2,6 @@ package wlog
 
 import (
 	"context"
-	"runtime/debug"
 	"time"
 
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -19,9 +18,6 @@ func Start(ctx context.Context, op string) Log {
 }
 
 func (l Log) StopPrint() {
-	if err := recover(); err != nil {
-		log.Error(l.ctx, string(debug.Stack()))
-	}
 	duration := time.Since(l.start)
 
 	log.WithFiled(l.ctx, "op",
