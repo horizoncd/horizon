@@ -58,7 +58,8 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
 			prCreated.ID, commit, err)
 	}
-	if err := c.updatePRStatus(ctx, prmodels.ActionRestart, prCreated.ID, prmodels.StatusMerged, commit); err != nil {
+	if err := c.updatePipelineRunStatus(ctx,
+		prmodels.ActionRestart, prCreated.ID, prmodels.StatusMerged, commit); err != nil {
 		return nil, err
 	}
 
@@ -73,7 +74,7 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	log.Infof(ctx, "Restart Deployed, pr = %d, commit = %s", prCreated.ID, commit)
 
 	// 4. update status
-	if err := c.updatePRStatus(ctx, prmodels.ActionRestart, prCreated.ID, prmodels.StatusOK, commit); err != nil {
+	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionRestart, prCreated.ID, prmodels.StatusOK, commit); err != nil {
 		return nil, err
 	}
 
@@ -164,7 +165,8 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 			return nil, err
 		}
 	}
-	if err := c.updatePRStatus(ctx, prmodels.ActionDeploy, prCreated.ID, prmodels.StatusMerged, commit); err != nil {
+	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionDeploy,
+		prCreated.ID, prmodels.StatusMerged, commit); err != nil {
 		return nil, err
 	}
 
@@ -210,7 +212,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}); err != nil {
 		return nil, err
 	}
-	if err := c.updatePRStatus(ctx, prmodels.ActionDeploy, prCreated.ID, prmodels.StatusOK, commit); err != nil {
+	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionDeploy, prCreated.ID, prmodels.StatusOK, commit); err != nil {
 		return nil, err
 	}
 
@@ -298,7 +300,7 @@ func (c *controller) Rollback(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	if err := c.updatePRStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusCommitted,
+	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusCommitted,
 		newConfigCommit); err != nil {
 		return nil, err
 	}
@@ -313,7 +315,7 @@ func (c *controller) Rollback(ctx context.Context,
 		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
 			prCreated.ID, masterRevision, err)
 	}
-	if err := c.updatePRStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusMerged,
+	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusMerged,
 		masterRevision); err != nil {
 		return nil, err
 	}
@@ -363,7 +365,8 @@ func (c *controller) Rollback(ctx context.Context,
 	}); err != nil {
 		return nil, err
 	}
-	if err := c.updatePRStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusOK, masterRevision); err != nil {
+	if err := c.updatePipelineRunStatus(ctx,
+		prmodels.ActionRollback, prCreated.ID, prmodels.StatusOK, masterRevision); err != nil {
 		return nil, err
 	}
 
@@ -749,8 +752,8 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 	return nil
 }
 
-func (c *controller) updatePRStatus(ctx context.Context, action string, prID uint,
-	pState prmodels.PipelineStatus, revision string) error {
+func (c *controller) updatePipelineRunStatus(ctx context.Context,
+	action string, prID uint, pState prmodels.PipelineStatus, revision string) error {
 	var err error
 	if pState != prmodels.StatusOK {
 		err = c.pipelinerunMgr.UpdateStatusByID(ctx, prID, pState)
