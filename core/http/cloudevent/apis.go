@@ -2,6 +2,7 @@ package cloudevent
 
 import (
 	"fmt"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/cloudevent"
 	"github.com/horizoncd/horizon/pkg/server/response"
