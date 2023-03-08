@@ -12,6 +12,9 @@ components:
     groupID:
       name: groupID
       in: query
+    groupRecursive:
+      name: groupRecursive
+      in: query
     userID:
       name: userID
       in: query

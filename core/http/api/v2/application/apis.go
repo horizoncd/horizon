@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/application"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -256,6 +257,26 @@ func (a *API) List(c *gin.Context) {
 		keywords[common.ApplicationQueryByUser] = uint(id)
 	}
 
+	idStr = c.Query(common.ApplicationQueryByGroup)
+	if idStr != "" {
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("group id is not a number"))
+			return
+		}
+		keywords[common.ApplicationQueryByGroup] = uint(id)
+	}
+
+	groupRecursiveStr := c.Query(common.ApplicationQueryByGroupRecursive)
+	if groupRecursiveStr != "" {
+		groupRecursive, err := strconv.ParseBool(groupRecursiveStr)
+		if err != nil {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("groupRecursive is not a bool"))
+			return
+		}
+		keywords[common.ApplicationQueryByGroupRecursive] = groupRecursive
+	}
+
 	query := q.New(keywords).WithPagination(c)
 
 	applications, total, err := a.applicationCtl.List(c, query)
@@ -321,9 +342,9 @@ func (a *API) GetApplicationPipelineStats(c *gin.Context) {
 		return
 	}
 
-	cluser := c.Query(_cluster)
-
-	pipelineStats, count, err := a.applicationCtl.GetApplicationPipelineStats(c, uint(appID), cluser, pageNumber, pageSize)
+	cluster := c.Query(_cluster)
+	pipelineStats, count, err := a.applicationCtl.GetApplicationPipelineStats(c, uint(appID), cluster, pageNumber,
+		pageSize)
 	if err != nil {
 		log.Errorf(c, "Get application pipelineStats failed, error: %+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))

@@ -20,7 +20,7 @@ type Controller interface {
 	UpdateByID(c context.Context, id uint, u *UpdateUserRequest) (*User, error)
 	ListUserLinks(ctx context.Context, uid uint) ([]*Link, error)
 	DeleteLinksByID(c context.Context, id uint) error
-	// LoginWithPasswd checks inputed email & password
+	// LoginWithPasswd checks inputted email & password
 	LoginWithPasswd(ctx context.Context, request *LoginRequest) (*models.User, error)
 }
 

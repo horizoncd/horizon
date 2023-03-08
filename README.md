@@ -112,6 +112,8 @@ You can contact with us by the following ways:
 
 * [Discussions](https://github.com/horizoncd/horizon/discussions)
 * [Slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1pqpobiwn-1mgV60SIa1oi4mL1WXf7uA)
-* WeChat Group  
+* WeChat Group
   
-  ![wachat](image/readme/wechat.jpg)
+  Add administrator wechat and you will be invited to join the group.
+
+  ![wechat](image/readme/wechat.jpg)

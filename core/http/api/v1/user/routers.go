@@ -10,7 +10,7 @@ import (
 )
 
 // RegisterRoutes register routes
-func RegisterRoutes(engine *gin.Engine, api *API) {
+func (api *API) RegisterRoutes(engine *gin.Engine) {
 	coreGroup := engine.Group("/apis/core/v1/users")
 	var coreRoutes = route.Routes{
 		{

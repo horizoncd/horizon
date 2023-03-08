@@ -2,7 +2,7 @@
 
 ## Welcome
 
-Welcome to HorizonCD and thanks for your interest in contributing to us!
+Welcome to HorizonCD, and thanks for your interest in contributing to us!
 
 Below is a set of things you should know before you open a PR.
 
@@ -15,12 +15,12 @@ Before opening an issue, you should always check if there's one containing your 
 If there's feedback\comments or anything you are not sure about, feel free to open an issue, whenever day and night.
 
 To make the issue details as standard as possible, we setup an [ISSUE TEMPLATE](https://github.com/horizoncd/horizon/tree/main/.github/ISSUE_TEMPLATE) for issue reporters. You can find two kinds of issue templates there: bug report and feature request. Please BE SURE to follow the instructions to fill fields in template.
+An issue about bugs should tell us:
 
 There are a lot of cases when you could open an issue:
 
 + bug report
 + feature request
-+ performance issues
 + feature proposal
 + feature design
 + help wanted
@@ -28,33 +28,28 @@ There are a lot of cases when you could open an issue:
 + test improvement
 + any questions on project
 + and so on
-
 > We must remind that when filing a new issue, please remember to remove the sensitive data from your post. Sensitive data could be password, secret key, network locations, private business data and so on.
-
 ## Commit Rules
 To better comply with Angular specifications, it is recommended that you make a habit of committing code without the `git commit -m` option, Instead, directly use `git commit` or `git commit -a` to enter the interactive interface and edit the Commit Message. This will better format the Commit Message.
 
 You might think that code commits are heavy and seem arbitrary. Or maybe we want to wait until we've built a complete feature and commit it together in a commit. In this case, we can perform `git rebase -i` commits before the final merge or Pull Request.
-
+=======
+We are eager to discuss with you.
 ## Pull Requests
-
-You'll need to sign a [Contributer License Agreement(CLA)](./CLA.md), before we could accept your pull requests.
+You'll need to sign off your commits, before we could accept your pull requests.
 
 Pull requests should always get an associated issue. Before making a PR, please open an issue to discuss with us, or you are at a risk of spending lots of time on a PR that we don't need.
 
-### Code Style
-
-This project adheres to coding conventions [`Effective Go`](https://go.dev/doc/effective_go), please make sure your code follows it either.
 
 ### Code review
 
-We recommend you describe what your PR do in the PR's comment box, that's will save a lot of time for you and us.
+We recommend you describe what your PR do in the PR's comment box, that will save a lot of time for you and us.
 
-Before you call someone to reivew your code, check the [CI](https://github.com/horizoncd/horizon/actions) is passed.
+Before you call someone to review your code, check the [CI](https://github.com/horizoncd/horizon/actions) is passed.
 
 ### CI
 
-We host CI on [github actions](https://github.com/horizoncd/horizon/actions), we will make sure PR pass tests before we can merge it.
+We host CI on [GitHub Actions](https://github.com/horizoncd/horizon/actions), we will make sure PR pass tests before we can merge it.
 
 These two kind of tests: `lint` and `unit test`
 
@@ -62,4 +57,4 @@ These two kind of tests: `lint` and `unit test`
 
 `unit test` runs all the test in code, and the code coverage should not less than 70 percent.
 
-Try your best to keep every function has been tested, it keeps the funtion behaves as intended.
+Try your best to keep every function has been tested, it keeps the function behaves as intended.

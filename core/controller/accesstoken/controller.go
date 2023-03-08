@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 
@@ -32,7 +33,7 @@ type Controller interface {
 	ListPersonalAccessTokens(ctx context.Context,
 		query *q.Query) (accessTokens []PersonalAccessToken, total int, err error)
 	ListResourceAccessTokens(ctx context.Context, resourceType string,
-		reosurceID uint, query *q.Query) (accessTokens []ResourceAccessToken, total int, err error)
+		resourceID uint, query *q.Query) (accessTokens []ResourceAccessToken, total int, err error)
 	RevokePersonalAccessToken(ctx context.Context, id uint) error
 	RevokeResourceAccessToken(ctx context.Context, id uint) error
 }

@@ -698,14 +698,11 @@ func (c *controller) List(ctx context.Context, query *q.Query) (
 			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
 				return nil, 0, err
 			}
-			// get groups authorized to current user
 			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
 			if err != nil {
 				return nil, 0,
 					perror.WithMessage(err, "failed to list group resource of current user")
 			}
-
-			// get these groups' subGroups
 			subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
 			if err != nil {
 				return nil, 0, perror.WithMessage(err, "failed to get groups")
@@ -713,6 +710,24 @@ func (c *controller) List(ctx context.Context, query *q.Query) (
 
 			for _, group := range subGroups {
 				subGroupIDs = append(subGroupIDs, group.ID)
+			}
+		} else {
+			// TODO: user filter not support group filter yet
+			// group filter
+			if groupID, ok := query.Keywords[common.ApplicationQueryByGroup].(uint); ok {
+				if groupRecursive, ok :=
+					query.Keywords[common.ApplicationQueryByGroupRecursive].(bool); ok && groupRecursive {
+					groupIDs := []uint{groupID}
+					subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
+					if err != nil {
+						return nil, 0, perror.WithMessage(err, "failed to get groups")
+					}
+					for _, group := range subGroups {
+						subGroupIDs = append(subGroupIDs, group.ID)
+					}
+				} else {
+					subGroupIDs = append(subGroupIDs, groupID)
+				}
 			}
 		}
 	}

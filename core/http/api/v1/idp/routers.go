@@ -8,7 +8,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/route"
 )
 
-func RegisterRoutes(engine *gin.Engine, api *API) {
+func (api *API) RegisterRoutes(engine *gin.Engine) {
 	apiGroup := engine.Group("/apis/core/v1/idps")
 	var routes = route.Routes{
 		{

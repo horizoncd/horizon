@@ -5,7 +5,7 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /apis/front/v2/applications/searchapplications?filter={filter}&userID={userID}&template={template}&templateRelease={templateRelease}&pageNumber={pageNumber}&pageSize={pageSize}:
+  /apis/front/v2/applications/searchapplications:
     get:
       tags:
         - application
@@ -14,6 +14,8 @@ paths:
       parameters:
         - $ref: 'common.yaml#/components/parameters/filter'
         - $ref: 'common.yaml#/components/parameters/userID'
+        - $ref: 'common.yaml#/components/parameters/groupID'
+        - $ref: 'common.yaml#/components/parameters/groupRecursive'
         - $ref: 'common.yaml#/components/parameters/template'
         - $ref: 'common.yaml#/components/parameters/templateRelease'
         - $ref: 'common.yaml#/components/parameters/pageNumber'
@@ -32,7 +34,7 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/front/v2/applications/searchmyapplications?filter={filter}&template={template}&templateRelease={templateRelease}&pageNumber={pageNumber}&pageSize={pageSize}:
+  /apis/front/v2/applications/searchmyapplications:
     get:
       tags:
         - application
