@@ -19,6 +19,7 @@ jobs:
         with:
           fetch-depth: 20
       - uses: dorny/paths-filter@v2
+        if: ${{ !startsWith(github.ref_name, 'v') }}
         id: changes
         with:
           filters: |
@@ -50,7 +51,7 @@ jobs:
       - name: Condition
         id: condition
         run: |
-          echo "run=${{ (steps.changes.outputs.go == 'true' && (matrix.components == 'core' || matrix.components == 'job')) || (steps.changes.outputs.api == 'true' && matrix.components == 'swagger') }}" >> $GITHUB_OUTPUT
+          echo "run=${{ startsWith(github.ref_name, 'v') || ((steps.changes.outputs.go == 'true' && (matrix.components == 'core' || matrix.components == 'job')) || (steps.changes.outputs.api == 'true' && matrix.components == 'swagger')) }}" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         if: ${{ matrix.platforms != 'linux/amd64' && steps.condition.outputs.run == 'true' }}
