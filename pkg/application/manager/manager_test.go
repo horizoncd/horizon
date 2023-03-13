@@ -8,6 +8,7 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
+	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	groupdao "github.com/horizoncd/horizon/pkg/group/dao"
@@ -189,4 +190,79 @@ func Test(t *testing.T) {
 	app, err := mgr.GetByIDIncludeSoftDelete(ctx, appGetByName.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, app)
+}
+
+func TestList(t *testing.T) {
+	currentUser, err := common.UserFromContext(ctx)
+	assert.Nil(t, err)
+	userDAO := userdao.NewDAO(db)
+	user2, err := userDAO.Create(ctx, &usermodels.User{
+		Name:  "leo",
+		Email: "leo@corp.com",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, user2)
+
+	var (
+		groupID         = 1
+		name            = "application0"
+		description     = "description about application"
+		priority        = models.P0
+		gitURL          = "ssh://git@github.com"
+		gitSubfolder    = "/"
+		gitBranch       = "develop"
+		template        = "javaapp"
+		templateRelease = "v1.1.0"
+		createdBy       = currentUser.GetID()
+		updatedBy       = currentUser.GetID()
+	)
+	application := &models.Application{
+		GroupID:         uint(groupID),
+		Name:            name,
+		Description:     description,
+		Priority:        priority,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubfolder,
+		GitRef:          gitBranch,
+		Template:        template,
+		TemplateRelease: templateRelease,
+		CreatedBy:       createdBy,
+		UpdatedBy:       updatedBy,
+	}
+	_, err = mgr.Create(ctx, application, map[string]string{user2.Email: role.Owner})
+	assert.Nil(t, err)
+
+	application = &models.Application{
+		GroupID:         2,
+		Name:            "application1",
+		Description:     description,
+		Priority:        priority,
+		GitURL:          gitURL,
+		GitSubfolder:    gitSubfolder,
+		GitRef:          gitBranch,
+		Template:        "springboot",
+		TemplateRelease: "v1.2.3",
+		CreatedBy:       createdBy,
+		UpdatedBy:       updatedBy,
+	}
+	_, err = mgr.Create(ctx, application, nil)
+	assert.Nil(t, err)
+	total, _, err := mgr.List(ctx, []uint{1, 2}, q.New(nil))
+	assert.Nil(t, err)
+	assert.Equal(t, total, 2)
+
+	k1 := make(map[string]interface{})
+	k1[common.ApplicationQueryByTemplate] = template
+	k1[common.ApplicationQueryByRelease] = templateRelease
+	k1[common.ApplicationQueryName] = "app"
+	total, _, err = mgr.List(ctx, []uint{1, 2}, q.New(k1))
+	assert.Nil(t, err)
+	assert.Equal(t, total, 1)
+
+	k2 := make(map[string]interface{})
+	k2[common.ApplicationQueryByUser] = user2.ID
+	total, apps, err := mgr.List(ctx, nil, q.New(k2))
+	assert.Nil(t, err)
+	assert.Equal(t, total, 1)
+	assert.Equal(t, apps[0].Name, "application0")
 }
