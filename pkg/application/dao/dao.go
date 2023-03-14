@@ -285,54 +285,51 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 func (d *dao) List(ctx context.Context, groupIDs []uint,
 	query *q.Query) (int, []*models.Application, error) {
 	var (
-		applications []*models.Application
-		total        int64
+		applications   []*models.Application
+		total          int64
+		finalStatement *gorm.DB
 	)
 
-	finalStatement := d.db.WithContext(ctx).Table("tb_application as a")
-	if query != nil {
-		// basic filter
+	// basic filter
+	genSQL := func() *gorm.DB {
+		statement := d.db.WithContext(ctx).Table("tb_application as a").Select("a.*")
 		for k, v := range query.Keywords {
 			switch k {
 			case corecommon.ApplicationQueryName:
-				finalStatement = finalStatement.Where("a.name like ?", fmt.Sprintf("%%%v%%", v))
+				statement = statement.Where("a.name like ?", fmt.Sprintf("%%%v%%", v))
 			case corecommon.ApplicationQueryByTemplate:
-				finalStatement = finalStatement.Where("a.template = ?", v)
+				statement = statement.Where("a.template = ?", v)
 			case corecommon.ApplicationQueryByRelease:
-				finalStatement = finalStatement.Where("a.template_release = ?", v)
+				statement = statement.Where("a.template_release = ?", v)
 			}
 		}
+		statement = statement.Where("a.deleted_ts = 0")
+		return statement
+	}
 
-		// add groupID filter
-		if len(groupIDs) != 0 {
-			finalStatement = finalStatement.Where("group_id in ?", groupIDs)
-		}
-		finalStatement = finalStatement.Where("a.deleted_ts = 0")
-
-		// union user direct authorized entity
-		if query.Keywords[corecommon.ApplicationQueryByUser] != nil {
-			userStatement := d.db.WithContext(ctx).Table("tb_application as a")
-			for k, v := range query.Keywords {
-				switch k {
-				case corecommon.ApplicationQueryName:
-					userStatement = userStatement.Where("a.name like ?", fmt.Sprintf("%%%v%%", v))
-				case corecommon.ApplicationQueryByUser:
-					userStatement = userStatement.
-						Select("a.*").
-						Joins("join tb_member as m on m.resource_id = a.id").
-						Where("m.resource_type = ?", corecommon.ResourceApplication).
-						Where("m.member_type = '0'").
-						Where("m.membername_id = ?", v)
-				case corecommon.ApplicationQueryByTemplate:
-					userStatement = userStatement.Where("a.template = ?", v)
-				case corecommon.ApplicationQueryByRelease:
-					userStatement = userStatement.Where("a.template_release = ?", v)
-				case corecommon.ApplicationQueryByGroup:
-					userStatement = userStatement.Where("a.group_id = ?", v)
-				}
+	if query != nil {
+		if userID, ok := query.Keywords[corecommon.ApplicationQueryByUser]; ok {
+			// query of user's directly authorized applications
+			statementUser := genSQL().
+				Joins("join tb_member as m on m.resource_id = a.id").
+				Where("m.resource_type = ?", corecommon.ResourceApplication).
+				Where("m.member_type = '0'").
+				Where("m.membername_id = ?", userID).
+				Where("m.deleted_ts = 0")
+			if len(groupIDs) != 0 {
+				// union query of authorized applications inherited from user's groups
+				statementGroup := genSQL().Where("group_id in ?", groupIDs)
+				finalStatement = d.db.Raw("? union ?", statementGroup, statementUser)
+			} else {
+				// user does not belong to any group
+				finalStatement = statementUser
 			}
-			userStatement = userStatement.Where("a.deleted_ts = 0")
-			finalStatement = d.db.Raw("? union ?", userStatement, finalStatement)
+		} else {
+			finalStatement = genSQL()
+			if len(groupIDs) != 0 {
+				// query of applications filtered by groups
+				finalStatement = finalStatement.Where("group_id in ?", groupIDs)
+			}
 		}
 	}
 
