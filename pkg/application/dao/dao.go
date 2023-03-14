@@ -290,6 +290,7 @@ func (d *dao) List(ctx context.Context, groupIDs []uint,
 		finalStatement *gorm.DB
 	)
 
+	// basic filter
 	genSQL := func() *gorm.DB {
 		statement := d.db.WithContext(ctx).Table("tb_application as a").Select("a.*")
 		for k, v := range query.Keywords {
@@ -307,15 +308,8 @@ func (d *dao) List(ctx context.Context, groupIDs []uint,
 	}
 
 	if query != nil {
-		// basic filter
-		finalStatement = genSQL()
-		// add groupID filter
-		if len(groupIDs) != 0 {
-			finalStatement = finalStatement.Where("group_id in ?", groupIDs)
-		}
-
-		// union user direct authorized entity
 		if userID, ok := query.Keywords[corecommon.ApplicationQueryByUser]; ok {
+			// query of user's directly authorized applications
 			statementUser := genSQL().
 				Joins("join tb_member as m on m.resource_id = a.id").
 				Where("m.resource_type = ?", corecommon.ResourceApplication).
@@ -323,10 +317,18 @@ func (d *dao) List(ctx context.Context, groupIDs []uint,
 				Where("m.membername_id = ?", userID).
 				Where("m.deleted_ts = 0")
 			if len(groupIDs) != 0 {
-				finalStatement = d.db.Raw("? union ?", finalStatement, statementUser)
+				// union query of authorized applications inherited from user's groups
+				statementGroup := genSQL().Where("group_id in ?", groupIDs)
+				finalStatement = d.db.Raw("? union ?", statementGroup, statementUser)
 			} else {
 				// user does not belong to any group
 				finalStatement = statementUser
+			}
+		} else {
+			finalStatement = genSQL()
+			if len(groupIDs) != 0 {
+				// query of applications filtered by groups
+				finalStatement = finalStatement.Where("group_id in ?", groupIDs)
 			}
 		}
 	}
