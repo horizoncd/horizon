@@ -14,28 +14,32 @@ Before opening an issue, you should always check if there's one containing your 
 
 If there's feedback\comments or anything you are not sure about, feel free to open an issue, whenever day and night.
 
+To make the issue details as standard as possible, we setup an [ISSUE TEMPLATE](https://github.com/horizoncd/horizon/tree/main/.github/ISSUE_TEMPLATE) for issue reporters. You can find two kinds of issue templates there: bug report and feature request. Please BE SURE to follow the instructions to fill fields in template.
 An issue about bugs should tell us:
 
-    * What do you want to achieve.
-    * What is the expected result.
-    * What are the steps to reproduce this bug.
-    * What environment you are using.
+There are a lot of cases when you could open an issue:
 
-An issue about new features should tell us:
++ bug report
++ feature request
++ feature proposal
++ feature design
++ help wanted
++ doc incomplete
++ test improvement
++ any questions on project
++ and so on
+> We must remind that when filing a new issue, please remember to remove the sensitive data from your post. Sensitive data could be password, secret key, network locations, private business data and so on.
+## Commit Rules
+To better comply with Angular specifications, it is recommended that you make a habit of committing code without the `git commit -m` option, Instead, directly use `git commit` or `git commit -a` to enter the interactive interface and edit the Commit Message. This will better format the Commit Message.
 
-    * Senario the new feature works in.
-
+You might think that code commits are heavy and seem arbitrary. Or maybe we want to wait until we've built a complete feature and commit it together in a commit. In this case, we can perform `git rebase -i` commits before the final merge or Pull Request.
+=======
 We are eager to discuss with you.
-
 ## Pull Requests
-
 You'll need to sign off your commits, before we could accept your pull requests.
 
 Pull requests should always get an associated issue. Before making a PR, please open an issue to discuss with us, or you are at a risk of spending lots of time on a PR that we don't need.
 
-### Code Style
-
-This project adheres to coding conventions [`Effective Go`](https://go.dev/doc/effective_go), please make sure your code follows it either.
 
 ### Code review
 

@@ -8,3 +8,8 @@ coverage.data
 core/__debug_bin
 
 bin/
+
+# Debugging info
+*.debug
+*.exe
+*.test
