@@ -227,8 +227,7 @@ func runPProfServer(config *pprof.Config) {
 	}
 }
 
-// Run runs the agent.
-func Run(flags *Flags) {
+func Init(flags *Flags) ([]RegisterI, *gin.Engine, *config.Config) {
 	// init log
 	InitLog(flags)
 
@@ -609,10 +608,6 @@ func Run(flags *Flags) {
 		eventAPI,
 	}
 
-	for _, register := range registerV1Group {
-		register.RegisterRoutes(r)
-	}
-
 	//v2
 	registerV2Group := []RegisterI{
 		groupAPIV2,
@@ -642,9 +637,6 @@ func Run(flags *Flags) {
 		userAPIV2,
 		webhookAPIV2,
 	}
-	for _, register := range registerV2Group {
-		register.RegisterRoutes(r)
-	}
 
 	// start cloud event server
 	go runCloudEventServer(
@@ -654,11 +646,23 @@ func Run(flags *Flags) {
 		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		requestid.Middleware(),
 	)
+	//merge routes
+	registerAll := append(registerV1Group, registerV2Group...)
+	return registerAll, r, coreConfig
+}
+
+// Run runs the agent.
+func Run(flags *Flags) {
+	// init api
+	registerAll, r, c := Init(flags)
+	for _, register := range registerAll {
+		register.RegisterRoutes(r)
+	}
 
 	// enable pprof
-	runPProfServer(&coreConfig.PProf)
+	runPProfServer(&c.PProf)
 
 	// start api server
 	log.Printf("Server started")
-	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
+	log.Print(r.Run(fmt.Sprintf(":%d", c.ServerConfig.Port)))
 }
