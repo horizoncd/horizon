@@ -47,8 +47,8 @@ func TestServiceGetByID(t *testing.T) {
 
 	t.Run("GetByID", func(t *testing.T) {
 		s := service{
-			groupService:       groupservice.NewService(manager),
-			applicationManager: manager.ApplicationManager,
+			groupSvc: groupservice.NewService(manager),
+			appMgr:   manager.ApplicationManager,
 		}
 		result, err := s.GetByID(ctx, application.ID)
 		assert.Nil(t, err)
@@ -57,8 +57,8 @@ func TestServiceGetByID(t *testing.T) {
 
 	t.Run("GetByIDs", func(t *testing.T) {
 		s := service{
-			groupService:       groupservice.NewService(manager),
-			applicationManager: manager.ApplicationManager,
+			groupSvc: groupservice.NewService(manager),
+			appMgr:   manager.ApplicationManager,
 		}
 		result, err := s.GetByIDs(ctx, []uint{application.ID})
 		assert.Nil(t, err)
