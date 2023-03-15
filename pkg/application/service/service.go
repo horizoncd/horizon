@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/horizoncd/horizon/pkg/param/managerparam"
 
 	"github.com/horizoncd/horizon/pkg/application/manager"
 	"github.com/horizoncd/horizon/pkg/application/models"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
 )
 
 type Service interface {

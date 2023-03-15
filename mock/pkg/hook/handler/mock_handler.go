@@ -7,8 +7,8 @@ package mock_handler
 import (
 	reflect "reflect"
 
-	hook "github.com/horizoncd/horizon/pkg/hook/hook"
 	gomock "github.com/golang/mock/gomock"
+	hook "github.com/horizoncd/horizon/pkg/hook/hook"
 )
 
 // MockEventHandler is a mock of EventHandler interface.
