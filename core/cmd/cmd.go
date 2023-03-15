@@ -227,7 +227,7 @@ func runPProfServer(config *pprof.Config) {
 	}
 }
 
-func Init(flags *Flags) ([]RegisterRouter, *gin.Engine, *config.Config) {
+func Init(flags *Flags) *config.Config {
 	// init log
 	InitLog(flags)
 
@@ -648,21 +648,20 @@ func Init(flags *Flags) ([]RegisterRouter, *gin.Engine, *config.Config) {
 	)
 	//merge routes
 	registerAll := append(registerV1Group, registerV2Group...)
-	return registerAll, r, coreConfig
+	for _, register := range registerAll {
+		register.RegisterRoute(r)
+	}
+
+	// start api server
+	log.Printf("Server started")
+	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
+	return coreConfig
 }
 
 // Run runs the agent.
 func Run(flags *Flags) {
 	// init api
-	registerAll, r, c := Init(flags)
-	for _, register := range registerAll {
-		register.RegisterRoute(r)
-	}
-
+	c := Init(flags)
 	// enable pprof
 	runPProfServer(&c.PProf)
-
-	// start api server
-	log.Printf("Server started")
-	log.Print(r.Run(fmt.Sprintf(":%d", c.ServerConfig.Port)))
 }
