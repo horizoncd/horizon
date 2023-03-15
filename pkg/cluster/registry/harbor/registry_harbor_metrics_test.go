@@ -9,22 +9,22 @@ import (
 )
 
 // nolint
-func Test_observe(t *testing.T) {
-	observe("server1", "GET", "200", "createProject", 100*time.Millisecond)
-	observe("server1", "GET", "300", "createProject", 400*time.Millisecond)
-	observe("server1", "GET", "400", "createProject", 1000*time.Millisecond)
+func Test_Observe(t *testing.T) {
+	Observe("server1", "GET", "200", "createProject", 100*time.Millisecond)
+	Observe("server1", "GET", "300", "createProject", 400*time.Millisecond)
+	Observe("server1", "GET", "400", "createProject", 1000*time.Millisecond)
 
-	observe("server2", "GET", "200", "addMembers", 100*time.Millisecond)
-	observe("server2", "GET", "300", "addMembers", 400*time.Millisecond)
-	observe("server2", "GET", "400", "addMembers", 1000*time.Millisecond)
+	Observe("server2", "GET", "200", "addMembers", 100*time.Millisecond)
+	Observe("server2", "GET", "300", "addMembers", 400*time.Millisecond)
+	Observe("server2", "GET", "400", "addMembers", 1000*time.Millisecond)
 
-	observe("server1", "GET", "200", "deleteRepository", 100*time.Millisecond)
-	observe("server1", "GET", "300", "deleteRepository", 400*time.Millisecond)
-	observe("server1", "GET", "400", "deleteRepository", 1000*time.Millisecond)
+	Observe("server1", "GET", "200", "deleteRepository", 100*time.Millisecond)
+	Observe("server1", "GET", "300", "deleteRepository", 400*time.Millisecond)
+	Observe("server1", "GET", "400", "deleteRepository", 1000*time.Millisecond)
 
-	observe("server1", "POST", "200", "listImage", 100*time.Millisecond)
-	observe("server1", "POST", "300", "listImage", 400*time.Millisecond)
-	observe("server1", "POST", "400", "listImage", 1000*time.Millisecond)
+	Observe("server1", "POST", "200", "listImage", 100*time.Millisecond)
+	Observe("server1", "POST", "300", "listImage", 400*time.Millisecond)
+	Observe("server1", "POST", "400", "listImage", 1000*time.Millisecond)
 
 	metadata := `
 		# HELP harbor_request_duration_milliseconds Harbor request duration in milliseconds

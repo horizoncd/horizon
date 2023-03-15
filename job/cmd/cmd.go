@@ -149,7 +149,7 @@ func Run(flags *Flags) {
 	)
 
 	// init kube client
-	_, client, err := kube.BuildClient("")
+	_, client, err := kube.BuildClient(coreConfig.KubeConfig)
 	if err != nil {
 		panic(err)
 	}
