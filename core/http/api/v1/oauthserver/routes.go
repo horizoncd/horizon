@@ -13,7 +13,7 @@ const (
 	AccessTokenPath = "/access_token"
 )
 
-func (api *API) RegisterRoutes(engine *gin.Engine) {
+func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group(BasicPath)
 
 	var routes = route.Routes{

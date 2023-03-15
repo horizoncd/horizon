@@ -162,8 +162,8 @@ type Flags struct {
 	GitOpsRepoDefaultBranch string
 }
 
-type RegisterI interface {
-	RegisterRoutes(engine *gin.Engine)
+type RegisterRouter interface {
+	RegisterRoute(engine *gin.Engine)
 }
 
 // ParseFlags parses agent CLI flags.
@@ -227,7 +227,7 @@ func runPProfServer(config *pprof.Config) {
 	}
 }
 
-func Init(flags *Flags) ([]RegisterI, *gin.Engine, *config.Config) {
+func Init(flags *Flags) ([]RegisterRouter, *gin.Engine, *config.Config) {
 	// init log
 	InitLog(flags)
 
@@ -579,7 +579,7 @@ func Init(flags *Flags) ([]RegisterI, *gin.Engine, *config.Config) {
 	metrics.RegisterRoutes(r)
 
 	//v1
-	registerV1Group := []RegisterI{
+	registerV1Group := []RegisterRouter{
 		groupAPI,
 		templateAPI,
 		userAPI,
@@ -609,7 +609,7 @@ func Init(flags *Flags) ([]RegisterI, *gin.Engine, *config.Config) {
 	}
 
 	//v2
-	registerV2Group := []RegisterI{
+	registerV2Group := []RegisterRouter{
 		groupAPIV2,
 		accessAPIV2,
 		accessTokenAPIV2,
@@ -656,7 +656,7 @@ func Run(flags *Flags) {
 	// init api
 	registerAll, r, c := Init(flags)
 	for _, register := range registerAll {
-		register.RegisterRoutes(r)
+		register.RegisterRoute(r)
 	}
 
 	// enable pprof
