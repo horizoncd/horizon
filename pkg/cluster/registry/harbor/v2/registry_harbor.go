@@ -21,7 +21,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
-const kind = "harbor_v2"
+const kind = "harbor"
 
 // default params
 const (
