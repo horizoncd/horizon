@@ -4,9 +4,13 @@ containers:
   - name: core
     dev:
       gitUrl: ""
-      image: horizoncd/go-dlv:1.0
+      image: horizoncd/go-dlv:v2.0.0
+      sidecarImage: horizoncd/nocalhost-sidecar:syncthing
+      # aliyun registry for domestic developer
+      # image: registry.cn-hangzhou.aliyuncs.com/horizoncd/go-dlv:v2.0.0
+      # sidecarImage: registry.cn-hangzhou.aliyuncs.com/horizoncd/nocalhost-sidecar:syncthing
       shell: ""
-      workDir: ""
+      workDir: "/home/appops"
       storageClass: ""
       persistentVolumeDirs: []
       command:
