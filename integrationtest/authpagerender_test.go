@@ -157,9 +157,9 @@ func TestServer(t *testing.T) {
 	r := gin.New()
 	r.Use(middlewares...)
 
-	api.RegisterRoutes(r)
+	api.RegisterRoute(r)
 	clusterapi := clusterAPI.API{}
-	clusterapi.RegisterRoutes(r)
+	clusterapi.RegisterRoute(r)
 
 	ListenPort := ":18181"
 
