@@ -5,10 +5,11 @@
 package mock_factory
 
 import (
+	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 	tekton "github.com/horizoncd/horizon/pkg/cluster/tekton"
 	collector "github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
-	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // MockFactory is a mock of Factory interface
