@@ -3,7 +3,7 @@ package manager
 import (
 	"context"
 
-	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	regiondao "github.com/horizoncd/horizon/pkg/region/dao"
 	"github.com/horizoncd/horizon/pkg/region/models"

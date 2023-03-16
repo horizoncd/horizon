@@ -8,11 +8,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/horizoncd/horizon/core/common"
 	servicemock "github.com/horizoncd/horizon/mock/pkg/member/service"
 	rolemock "github.com/horizoncd/horizon/mock/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/auth"
 	"github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/rbac/types"
 )

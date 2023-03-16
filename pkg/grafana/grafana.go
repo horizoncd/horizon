@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"

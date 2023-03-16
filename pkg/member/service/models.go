@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/horizoncd/horizon/core/common"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/member/models"
 )
 

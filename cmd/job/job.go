@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/horizoncd/horizon/job/cmd"
+	"github.com/horizoncd/horizon/pkg/job/cmd"
 
 	// for image registry
 	_ "github.com/horizoncd/horizon/pkg/cluster/registry/harbor"

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 

@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	applicationmodels "github.com/horizoncd/horizon/pkg/application/models"
@@ -15,6 +14,7 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	envregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"

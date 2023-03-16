@@ -1,7 +1,7 @@
 package callbacks
 
 import (
-	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"gorm.io/gorm"
 )
 

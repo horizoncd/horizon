@@ -3,7 +3,7 @@ package manager
 import (
 	"context"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/idp/utils"
 	"github.com/horizoncd/horizon/pkg/userlink/dao"

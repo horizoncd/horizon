@@ -8,13 +8,13 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/horizoncd/horizon/core/common"
-	webhookctl "github.com/horizoncd/horizon/core/controller/webhook"
 	"github.com/horizoncd/horizon/lib/q"
 	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	applicationmodels "github.com/horizoncd/horizon/pkg/application/models"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	webhookctl "github.com/horizoncd/horizon/pkg/core/controller/webhook"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	"github.com/horizoncd/horizon/pkg/event/models"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"

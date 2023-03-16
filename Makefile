@@ -8,7 +8,8 @@ all: tidy gen format lint cover build
 
 ## build: Build the project for horizon
 build:
-	@mkdir -p bin && export CGO_ENABLED=0 && go build -o bin/app -ldflags '-s -w' ./cmd/core/core.go
+	@mkdir -p bin && export CGO_ENABLED=0 && go build -o bin/core -ldflags '-s -w' ./cmd/core/core.go
+	@mkdir -p bin && export CGO_ENABLED=0 && go build -o bin/job -ldflags '-s -w' ./cmd/job/job.go
 
 ## swagger: Build the swagger
 swagger:

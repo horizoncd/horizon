@@ -9,11 +9,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"k8s.io/apimachinery/pkg/fields"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"github.com/tektoncd/cli/pkg/options"

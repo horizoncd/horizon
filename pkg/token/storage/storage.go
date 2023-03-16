@@ -4,8 +4,8 @@ import (
 	"context"
 	goerrors "errors"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/pkg/token/models"
 	"gorm.io/gorm"
 )

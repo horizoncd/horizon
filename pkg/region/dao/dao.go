@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 
-	hcommon "github.com/horizoncd/horizon/core/common"
 	appregionmodels "github.com/horizoncd/horizon/pkg/applicationregion/models"
 	"github.com/horizoncd/horizon/pkg/common"
+	hcommon "github.com/horizoncd/horizon/pkg/core/common"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/region/models"

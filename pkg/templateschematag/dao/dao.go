@@ -3,8 +3,8 @@ package dao
 import (
 	"context"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/pkg/templateschematag/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

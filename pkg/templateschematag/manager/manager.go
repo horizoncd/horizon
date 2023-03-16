@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/templateschematag/dao"
 	"github.com/horizoncd/horizon/pkg/templateschematag/models"

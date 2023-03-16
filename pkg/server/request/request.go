@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/core/common"
 )
 
 // GetPageParam get and check the page params

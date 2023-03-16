@@ -3,8 +3,8 @@ package argocd
 import (
 	"sync"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/config/argocd"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 )
 
 const _default = "default"

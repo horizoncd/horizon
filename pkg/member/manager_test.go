@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"

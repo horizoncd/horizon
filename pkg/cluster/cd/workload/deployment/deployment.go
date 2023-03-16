@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
-	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	v1 "k8s.io/api/apps/v1"

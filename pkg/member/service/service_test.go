@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/horizoncd/horizon/core/common"
-	herror "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
 	applicationmanagermock "github.com/horizoncd/horizon/mock/pkg/application/manager"
 	clustermanagermock "github.com/horizoncd/horizon/mock/pkg/cluster/manager"
@@ -19,6 +17,8 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	memberctx "github.com/horizoncd/horizon/pkg/context"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	herror "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	groupModels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/member/models"

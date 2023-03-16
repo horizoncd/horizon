@@ -3,10 +3,10 @@ package dao
 import (
 	"context"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
 	"github.com/horizoncd/horizon/pkg/server/global"

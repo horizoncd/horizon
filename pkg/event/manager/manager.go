@@ -5,10 +5,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/horizoncd/horizon/core/common"
-	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
+	"github.com/horizoncd/horizon/pkg/core/middleware/requestid"
 	"github.com/horizoncd/horizon/pkg/event/dao"
 	"github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/util/log"

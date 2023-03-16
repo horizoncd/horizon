@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/horizoncd/horizon/core/common"
-	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	"github.com/horizoncd/horizon/pkg/core/middleware/requestid"
 	"github.com/horizoncd/horizon/pkg/hook/hook"
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
