@@ -2,13 +2,13 @@
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 # Declare all targets as phony targets
-.PHONY: all build swagger swagger-run job core clean lint ut imports help 
+.PHONY: all build swagger swagger-run job core clean lint ut imports help
 
 all: tidy gen format lint cover build
 
 ## build: Build the project for horizon
 build:
-	@mkdir -p bin && export CGO_ENABLED=0 && go build -o bin/app -ldflags '-s -w' ./core/main.go
+	@mkdir -p bin && export CGO_ENABLED=0 && go build -o bin/app -ldflags '-s -w' ./cmd/core/core.go
 
 ## swagger: Build the swagger
 swagger:
