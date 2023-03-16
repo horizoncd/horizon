@@ -38,7 +38,7 @@ jobs:
             latest=false
           images: |
             ${{ secrets.DOCKERHUB_USERNAME }}/horizon-${{ matrix.components }}
-            registry.cn-hangzhou.aliyuncs.com/horizoncd/horizon-${{ matrix.components }}
+            registry.cn-hangzhou.aliyuncs.com/${{ secrets.ALIREGISTRY_NAMESPACE }}/horizon-${{ matrix.components }}
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-,enable=${{ github.ref_type == 'branch' }}
