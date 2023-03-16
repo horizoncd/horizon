@@ -578,7 +578,7 @@ func Init(flags *Flags) *config.Config {
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
 
-	//v1
+	// v1
 	registerV1Group := []RegisterRouter{
 		groupAPI,
 		templateAPI,
@@ -608,7 +608,7 @@ func Init(flags *Flags) *config.Config {
 		eventAPI,
 	}
 
-	//v2
+	// v2
 	registerV2Group := []RegisterRouter{
 		groupAPIV2,
 		accessAPIV2,
@@ -646,7 +646,7 @@ func Init(flags *Flags) *config.Config {
 		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		requestid.Middleware(),
 	)
-	//merge routes
+	// merge routes
 	registerAll := append(registerV1Group, registerV2Group...)
 	for _, register := range registerAll {
 		register.RegisterRoute(r)
