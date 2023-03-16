@@ -118,7 +118,7 @@ type ClusterGitRepo interface {
 	CompareConfig(ctx context.Context, application, cluster string, from, to *string) (string, error)
 	// MergeBranch merge branch and return target branch's newest commit
 	MergeBranch(ctx context.Context, application, cluster, sourceBranch,
-		targetBranch string, prID *uint) (_ string, err error)
+		targetBranch string, pipelineRunID *uint) (_ string, err error)
 	GetPipelineOutput(ctx context.Context, application, cluster string, template string) (interface{}, error)
 	UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
 		pipelineOutput interface{}) (string, error)
@@ -726,13 +726,14 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 }
 
 func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster,
-	sourceBranch, targetBranch string, prID *uint) (_ string, err error) {
+	sourceBranch, targetBranch string, pipelineRunID *uint) (_ string, err error) {
 	removeSourceBranch := false
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 
 	var title string
-	if prID != nil {
-		title = fmt.Sprintf("git merge %v into %v, prID = %d", sourceBranch, targetBranch, prID)
+	if pipelineRunID != nil {
+		title = fmt.Sprintf("git merge %v into %v, pipelineRunID = %d",
+			sourceBranch, targetBranch, *pipelineRunID)
 	} else {
 		title = fmt.Sprintf("git merge %v into %v", sourceBranch, targetBranch)
 	}
