@@ -14,7 +14,7 @@ const (
 	_oauthClientSecretID   = "secretID"
 )
 
-func (api *API) RegisterRoutes(engine *gin.Engine) {
+func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group("/apis/core/v1")
 	r := route.Routes{
 		{

@@ -162,8 +162,8 @@ type Flags struct {
 	GitOpsRepoDefaultBranch string
 }
 
-type RegisterI interface {
-	RegisterRoutes(engine *gin.Engine)
+type RegisterRouter interface {
+	RegisterRoute(engine *gin.Engine)
 }
 
 // ParseFlags parses agent CLI flags.
@@ -227,8 +227,7 @@ func runPProfServer(config *pprof.Config) {
 	}
 }
 
-// Run runs the agent.
-func Run(flags *Flags) {
+func Init(flags *Flags) *config.Config {
 	// init log
 	InitLog(flags)
 
@@ -579,8 +578,8 @@ func Run(flags *Flags) {
 	health.RegisterRoutes(r)
 	metrics.RegisterRoutes(r)
 
-	//v1
-	registerV1Group := []RegisterI{
+	// v1
+	registerV1Group := []RegisterRouter{
 		groupAPI,
 		templateAPI,
 		userAPI,
@@ -609,12 +608,8 @@ func Run(flags *Flags) {
 		eventAPI,
 	}
 
-	for _, register := range registerV1Group {
-		register.RegisterRoutes(r)
-	}
-
-	//v2
-	registerV2Group := []RegisterI{
+	// v2
+	registerV2Group := []RegisterRouter{
 		groupAPIV2,
 		accessAPIV2,
 		accessTokenAPIV2,
@@ -642,9 +637,6 @@ func Run(flags *Flags) {
 		userAPIV2,
 		webhookAPIV2,
 	}
-	for _, register := range registerV2Group {
-		register.RegisterRoutes(r)
-	}
 
 	// start cloud event server
 	go runCloudEventServer(
@@ -654,11 +646,22 @@ func Run(flags *Flags) {
 		ginlogmiddle.Middleware(gin.DefaultWriter, "/health", "/metrics"),
 		requestid.Middleware(),
 	)
-
-	// enable pprof
-	runPProfServer(&coreConfig.PProf)
+	// merge routes
+	registerAll := append(registerV1Group, registerV2Group...)
+	for _, register := range registerAll {
+		register.RegisterRoute(r)
+	}
 
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
+	return coreConfig
+}
+
+// Run runs the agent.
+func Run(flags *Flags) {
+	// init api
+	c := Init(flags)
+	// enable pprof
+	runPProfServer(&c.PProf)
 }
