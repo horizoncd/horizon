@@ -50,7 +50,7 @@ func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Applicati
 			return r.Git.URL
 		}(),
 		GitSubfolder: func() string {
-			if r.Git == nil {
+			if r.Git == nil || r.Git.Subfolder == "" {
 				return application.GitSubfolder
 			}
 			return r.Git.Subfolder
