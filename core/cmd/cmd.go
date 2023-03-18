@@ -149,7 +149,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// defines agent CLI flags.
 var (
 	ConfigFile              string
 	RoleConfigFile          string
