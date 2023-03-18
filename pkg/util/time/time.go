@@ -3,7 +3,7 @@ package time
 import (
 	"time"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const defaultTimeFormat = "2006-01-02 15:04:05"
