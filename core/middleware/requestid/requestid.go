@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	middleware "github.com/horizoncd/horizon/core/middleware"
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 )
 
 // HeaderXRequestID X-Request-ID header

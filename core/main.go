@@ -6,8 +6,7 @@ import (
 	"github.com/horizoncd/horizon/core/cmd"
 
 	// for image registry
-	_ "github.com/horizoncd/horizon/pkg/cluster/registry/harbor/v1"
-	_ "github.com/horizoncd/horizon/pkg/cluster/registry/harbor/v2"
+	_ "github.com/horizoncd/horizon/pkg/cluster/registry/harbor"
 
 	_ "github.com/horizoncd/horizon/pkg/git"
 	_ "github.com/horizoncd/horizon/pkg/git/github"
@@ -24,5 +23,5 @@ import (
 )
 
 func main() {
-	cmd.Run(cmd.ParseFlags())
+	cmd.Run()
 }

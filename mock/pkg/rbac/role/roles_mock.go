@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
 	role "github.com/horizoncd/horizon/pkg/rbac/role"
 	types "github.com/horizoncd/horizon/pkg/rbac/types"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockService is a mock of Service interface.

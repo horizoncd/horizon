@@ -24,7 +24,7 @@ func init() {
 	}, []string{_server, _method, _statuscode, _operation})
 }
 
-func Observe(server, method, statuscode, operation string, duration time.Duration) {
+func observe(server, method, statuscode, operation string, duration time.Duration) {
 	_harborDurationHistogram.With(prometheus.Labels{
 		_server:     server,
 		_method:     method,
