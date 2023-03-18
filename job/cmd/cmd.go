@@ -34,43 +34,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Flags defines agent CLI flags.
-type Flags struct {
+var (
 	ConfigFile              string
 	Environment             string
 	LogLevel                string
 	GitOpsRepoDefaultBranch string
-}
+)
 
-// ParseFlags parses agent CLI flags.
-func ParseFlags() *Flags {
-	var flags Flags
+func init() {
+	flag.StringVar(
+		&ConfigFile, "config", "", "configuration file path")
 
 	flag.StringVar(
-		&flags.ConfigFile, "config", "", "configuration file path")
+		&Environment, "environment", "production", "environment string tag")
 
 	flag.StringVar(
-		&flags.Environment, "environment", "production", "environment string tag")
+		&LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
 
 	flag.StringVar(
-		&flags.LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
-
-	flag.StringVar(
-		&flags.GitOpsRepoDefaultBranch, "gitOpsRepoDefaultBranch", "master",
+		&GitOpsRepoDefaultBranch, "gitOpsRepoDefaultBranch", "master",
 		"configure gitops git engine default branch")
-
-	flag.Parse()
-	return &flags
 }
 
-func InitLog(flags *Flags) {
-	if flags.Environment == "production" {
+func InitLog() {
+	if Environment == "production" {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 	} else {
 		logrus.SetFormatter(&logrus.TextFormatter{})
 	}
 	logrus.SetOutput(os.Stdout)
-	level, err := logrus.ParseLevel(flags.LogLevel)
+	level, err := logrus.ParseLevel(LogLevel)
 	if err != nil {
 		panic(err)
 	}
@@ -78,12 +71,15 @@ func InitLog(flags *Flags) {
 }
 
 // Run runs the agent.
-func Run(flags *Flags) {
+func Run() {
+	// parses agent CLI flags.
+	flag.Parse()
+
 	// init log
-	InitLog(flags)
+	InitLog()
 
 	// load coreConfig
-	coreConfig, err := config.LoadConfig(flags.ConfigFile)
+	coreConfig, err := config.LoadConfig(ConfigFile)
 	if err != nil {
 		panic(err)
 	}
@@ -132,14 +128,14 @@ func Run(flags *Flags) {
 	}
 
 	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
-		flags.GitOpsRepoDefaultBranch)
+		GitOpsRepoDefaultBranch)
 	if err != nil {
 		panic(err)
 	}
 
 	parameter := &param.Param{
 		Manager: manager,
-		Cd:      cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper, flags.GitOpsRepoDefaultBranch),
+		Cd:      cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper, GitOpsRepoDefaultBranch),
 	}
 
 	// init controller
