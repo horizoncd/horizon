@@ -149,8 +149,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Flags defines agent CLI flags.
-type Flags struct {
+// defines agent CLI flags.
+var (
 	ConfigFile              string
 	RoleConfigFile          string
 	ScopeRoleFile           string
@@ -160,56 +160,50 @@ type Flags struct {
 	Environment             string
 	LogLevel                string
 	GitOpsRepoDefaultBranch string
+)
+
+func init() {
+	flag.StringVar(
+		&ConfigFile, "config", "", "configuration file path")
+
+	flag.StringVar(
+		&RoleConfigFile, "roles", "", "roles file path")
+
+	flag.StringVar(
+		&ScopeRoleFile, "scopes", "", "configuration file path")
+
+	flag.StringVar(&BuildJSONSchemaFile, "buildjsonschema", "",
+		"build json schema file path")
+
+	flag.StringVar(&BuildUISchemaFile, "builduischema", "",
+		"build ui schema file path")
+
+	flag.BoolVar(
+		&Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
+
+	flag.StringVar(
+		&Environment, "environment", "production", "environment string tag")
+
+	flag.StringVar(
+		&LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
+
+	flag.StringVar(
+		&GitOpsRepoDefaultBranch, "gitOpsRepoDefaultBranch", "master",
+		"configure gitops git engine default branch")
 }
 
 type RegisterRouter interface {
 	RegisterRoute(engine *gin.Engine)
 }
 
-// ParseFlags parses agent CLI flags.
-func ParseFlags() *Flags {
-	var flags Flags
-
-	flag.StringVar(
-		&flags.ConfigFile, "config", "", "configuration file path")
-
-	flag.StringVar(
-		&flags.RoleConfigFile, "roles", "", "roles file path")
-
-	flag.StringVar(
-		&flags.ScopeRoleFile, "scopes", "", "configuration file path")
-
-	flag.StringVar(&flags.BuildJSONSchemaFile, "buildjsonschema", "",
-		"build json schema file path")
-
-	flag.StringVar(&flags.BuildUISchemaFile, "builduischema", "",
-		"build ui schema file path")
-
-	flag.BoolVar(
-		&flags.Dev, "dev", false, "if true, turn off the usermiddleware to skip login")
-
-	flag.StringVar(
-		&flags.Environment, "environment", "production", "environment string tag")
-
-	flag.StringVar(
-		&flags.LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
-
-	flag.StringVar(
-		&flags.GitOpsRepoDefaultBranch, "gitOpsRepoDefaultBranch", "master",
-		"configure gitops git engine default branch")
-
-	flag.Parse()
-	return &flags
-}
-
-func InitLog(flags *Flags) {
-	if flags.Environment == "production" {
+func InitLog() {
+	if Environment == "production" {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 	} else {
 		logrus.SetFormatter(&logrus.TextFormatter{})
 	}
 	logrus.SetOutput(os.Stdout)
-	level, err := logrus.ParseLevel(flags.LogLevel)
+	level, err := logrus.ParseLevel(LogLevel)
 	if err != nil {
 		panic(err)
 	}
@@ -227,12 +221,9 @@ func runPProfServer(config *pprof.Config) {
 	}
 }
 
-func Init(flags *Flags) *config.Config {
-	// init log
-	InitLog(flags)
-
+func InitAPI() {
 	// load coreConfig
-	coreConfig, err := config.LoadConfig(flags.ConfigFile)
+	coreConfig, err := config.LoadConfig(ConfigFile)
 	if err != nil {
 		panic(err)
 	}
@@ -242,7 +233,7 @@ func Init(flags *Flags) *config.Config {
 	}
 
 	// init roles
-	file, err := os.OpenFile(flags.RoleConfigFile, os.O_RDONLY, 0644)
+	file, err := os.OpenFile(RoleConfigFile, os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -312,7 +303,7 @@ func Init(flags *Flags) *config.Config {
 	}
 
 	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, rootGroup, gitlabGitops,
-		flags.GitOpsRepoDefaultBranch)
+		GitOpsRepoDefaultBranch)
 
 	if err != nil {
 		panic(err)
@@ -324,7 +315,7 @@ func Init(flags *Flags) *config.Config {
 	}
 
 	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
-		flags.GitOpsRepoDefaultBranch)
+		GitOpsRepoDefaultBranch)
 	if err != nil {
 		panic(err)
 	}
@@ -358,7 +349,7 @@ func Init(flags *Flags) *config.Config {
 	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
 
 	// init scope service
-	scopeFile, err := os.OpenFile(flags.ScopeRoleFile, os.O_RDONLY, 0644)
+	scopeFile, err := os.OpenFile(ScopeRoleFile, os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -398,8 +389,8 @@ func Init(flags *Flags) *config.Config {
 	}
 
 	buildSchema := &build.Schema{
-		JSONSchema: readJSONFileFunc(flags.BuildJSONSchemaFile),
-		UISchema:   readJSONFileFunc(flags.BuildUISchemaFile),
+		JSONSchema: readJSONFileFunc(BuildJSONSchemaFile),
+		UISchema:   readJSONFileFunc(BuildUISchemaFile),
 	}
 
 	groupSvc := groupservice.NewService(manager)
@@ -430,7 +421,7 @@ func Init(flags *Flags) *config.Config {
 		ScopeService:         scopeService,
 		ApplicationGitRepo:   applicationGitRepo,
 		TemplateSchemaGetter: templateSchemaGetter,
-		Cd:                   cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper, flags.GitOpsRepoDefaultBranch),
+		Cd:                   cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper, GitOpsRepoDefaultBranch),
 		OutputGetter:         outputGetter,
 		TektonFty:            tektonFty,
 		ClusterGitRepo:       clusterGitRepo,
@@ -655,13 +646,19 @@ func Init(flags *Flags) *config.Config {
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
-	return coreConfig
+
+	// enable pprof
+	runPProfServer(&coreConfig.PProf)
 }
 
 // Run runs the agent.
-func Run(flags *Flags) {
+func Run() {
+	// parses flags.
+	flag.Parse()
+
+	// init log
+	InitLog()
+
 	// init api
-	c := Init(flags)
-	// enable pprof
-	runPProfServer(&c.PProf)
+	InitAPI()
 }

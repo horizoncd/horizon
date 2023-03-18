@@ -24,5 +24,5 @@ import (
 )
 
 func main() {
-	cmd.Run(cmd.ParseFlags())
+	cmd.Run()
 }
