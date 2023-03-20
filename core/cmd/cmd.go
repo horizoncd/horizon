@@ -94,6 +94,7 @@ import (
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	"github.com/horizoncd/horizon/pkg/util/kube"
+	"github.com/quasoft/memstore"
 
 	templateschematagapi "github.com/horizoncd/horizon/core/http/api/v1/templateschematag"
 	terminalapi "github.com/horizoncd/horizon/core/http/api/v1/terminal"
@@ -160,6 +161,7 @@ type Flags struct {
 	Environment             string
 	LogLevel                string
 	GitOpsRepoDefaultBranch string
+	Cache                   string
 }
 
 type RegisterRouter interface {
@@ -197,6 +199,8 @@ func ParseFlags() *Flags {
 	flag.StringVar(
 		&flags.GitOpsRepoDefaultBranch, "gitOpsRepoDefaultBranch", "master",
 		"configure gitops git engine default branch")
+	flag.StringVar(
+		&flags.Cache, "cache", "redis", "default redis, allow redis mem")
 
 	flag.Parse()
 	return &flags
@@ -271,23 +275,10 @@ func Init(flags *Flags) *config.Config {
 	}
 	callbacks.RegisterCustomCallbacks(mysqlDB)
 
-	redisClient := redis.NewClient(&redis.Options{
-		Network:  coreConfig.RedisConfig.Protocol,
-		Addr:     coreConfig.RedisConfig.Address,
-		Password: coreConfig.RedisConfig.Password,
-		DB:       int(coreConfig.RedisConfig.DB),
-	})
+	// init session store
+	// var store sessions.Store
+	store, _ := createStore(coreConfig, flags.Cache)
 
-	// session store
-	store, err := redisstore.NewRedisStore(context.Background(), redisClient)
-	if err != nil {
-		panic(err)
-	}
-
-	store.Options(sessions.Options{
-		Path:   "/",
-		MaxAge: int(coreConfig.SessionConfig.MaxAge),
-	})
 	// https://pkg.go.dev/github.com/gorilla/sessions#section-readme
 	gob.Register(&userauth.DefaultInfo{})
 
@@ -656,6 +647,35 @@ func Init(flags *Flags) *config.Config {
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
 	return coreConfig
+}
+
+func createStore(coreConfig *config.Config, cacheType string) (sessions.Store, error) {
+	if cacheType == "redis" {
+		redisClient := redis.NewClient(&redis.Options{
+			Network:  coreConfig.RedisConfig.Protocol,
+			Addr:     coreConfig.RedisConfig.Address,
+			Password: coreConfig.RedisConfig.Password,
+			DB:       int(coreConfig.RedisConfig.DB),
+		})
+		store, err := redisstore.NewRedisStore(context.Background(), redisClient)
+		if err != nil {
+			panic(err)
+		}
+
+		store.Options(sessions.Options{
+			Path:   "/",
+			MaxAge: int(coreConfig.SessionConfig.MaxAge),
+		})
+		return store, nil
+
+	}
+	store := memstore.NewMemStore(
+		[]byte("authkey123"),
+		[]byte("enckey12341234567890123456789012"),
+	)
+	store.Options.MaxAge = int(coreConfig.SessionConfig.MaxAge)
+	store.Options.Path = "/"
+	return store, nil
 }
 
 // Run runs the agent.
