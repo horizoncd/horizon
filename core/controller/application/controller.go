@@ -322,6 +322,12 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	if err := c.validateBuildAndTemplateConfigV2(ctx, request); err != nil {
 		return nil, err
 	}
+
+	group, err := c.groupSvc.GetChildByID(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+
 	// check groups or applications with the same name exists
 	groups, err := c.groupMgr.GetByNameOrPathUnderParent(ctx, request.Name, request.Name, groupID)
 	if err != nil {
@@ -359,16 +365,7 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		return nil, err
 	}
 
-	fullPath, err := func() (string, error) {
-		group, err := c.groupSvc.GetChildByID(ctx, groupID)
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%v/%v", group.FullPath, request.Name), nil
-	}()
-	if err != nil {
-		return nil, err
-	}
+	fullPath := fmt.Sprintf("%v/%v", group.FullPath, applicationDBModel.Name)
 
 	ret := &CreateApplicationResponseV2{
 		ID:        applicationDBModel.ID,
@@ -801,7 +798,7 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 	return selectableRegionsByEnv, nil
 }
 
-func (c controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
+func (c *controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
 	pageNumber, pageSize int) ([]*pipelinemodels.PipelineStats, int64, error) {
 	app, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {
