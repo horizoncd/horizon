@@ -667,7 +667,6 @@ func createStore(coreConfig *config.Config, cacheType string) (sessions.Store, e
 			MaxAge: int(coreConfig.SessionConfig.MaxAge),
 		})
 		return store, nil
-
 	}
 	store := memstore.NewMemStore(
 		[]byte("authkey123"),
