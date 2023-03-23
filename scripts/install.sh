@@ -3,6 +3,8 @@
 VERSION="2.1.4"
 CHINA=false
 FULL=false
+MINIKUBE=false
+KIND=false
 
 # Install horizon of the script
 #
@@ -235,7 +237,16 @@ function applyinitjobtok8s(){
         image="registry.cn-hangzhou.aliyuncs.com/horizoncd/horizoncd.init:v1.0.0"
     fi
 
-    cat <<EOF  | kubectl apply -nhorizoncd -f -
+    INDENT="    "
+    if $KIND 
+    then
+      kubeconfig=$(docker exec horizon-control-plane cat /etc/kubernetes/admin.conf | sed "2,\$s/^/$INDENT/")
+    elif
+    then
+      kubeconfig=$(docker exec minikube cat /etc/kubernetes/admin.conf | sed "2,\$s/^/$INDENT/")
+    fi
+
+    cat <<EOF | kubectl apply -nhorizoncd -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -257,26 +268,7 @@ data:
                                 password=password, database=db, port=int(port), cursorclass=pymysql.cursors.DictCursor)
 
     sql_registry = "insert into tb_registry (id, name, server, token, path, insecure_skip_tls_verify, kind) VALUES (1, 'local', 'https://horizon-registry.horizoncd.svc.cluster.local', 'YWRtaW46SGFyYm9yMTIzNDU=', 'library', 1, 'harbor')"
-    sql_kubernetes = '''INSERT INTO tb_region (id, name, display_name, server, certificate, ingress_domain, prometheus_url, disabled, registry_id) VALUES (1, 'local', 'local','https://kubernetes.default.svc','apiVersion: v1
-    clusters:
-    - cluster:
-        certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJek1ETXlNakE0TURreU5sb1hEVE16TURNeE9UQTRNRGt5Tmxvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBT21tCmEwMkhUdEtzNWNRVnJvd2VFVmhOamZyVjh2OTB6VG13S09NWXNYdlN0WWVsM2tIZVY4S3M5ZmlXQlZXMXQ5eFYKdjB4N3BZL2NXME1uV0s2dHlua2dtZ3NxNmFzUms1RkpGT0kvQzFROCtkbnkxNCt0STd5cjVabE5SWmR6REs3QwpUNytHKzAxWGtZSGt0WHJNVmNTS2k1bCtEZVl6VlNwV3Q0QlRxVEt3bkxlVldnVm1MVGY4QU05QlFQajY4U1BVCitQZ1VtQXVSS2ljSnBWbFc1UWFLZXFhUzZUaVcveDlDbEZaK083cmhGbC9iOGQzQkpvSzFGTmt1UmR0T0VmWUsKaGZhMXg2eGdqcmo2RlJ5RGZreUJ2UUJRNmN0WGVScXZNQlNkRitrcHNoUWp1YnJtcmI0Y2k1WGpZTzJ4TTlyOQptU3lVZC85YmxCWUorRVBzM2RjQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZLREdTdmZWYVJkeC9oeW1oOEF6LzBBVzdXOWNNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDSERKTDVNK2p1d0pSWllFanlrbUdLWlZxcmNDVHAzQjJIMldic2JwNHdOQUtPaTlHawppcEhnazJuU2VhKzczS0ZuQXpWT0E3Y2NGMEcxS04yeDAxbDF3bWlxRmlGeW13Zkt5WEJ5N21uUzRyYkl0RzVMClNISS9SWWJESGpzUTFqS2JMdHRrMllBVUZ2RElVT2JJeGFCOVFTUUJnSmo1VG84ZXpMNFJhZ2tScTFxMWEvZXcKS3dVYVZ6ZFhDM09OTU5nWTRlMEdOV3RIVTdFUlVubml3eXUwMzlhL0hMWUlSMTIrL3dlZnRRRFBIYU0vSjVHUgpZODduUXBzdVQvZFB3NVh5N2FSKzFzaGJEVGVad2xnS1dqSDlUN2M0dXdkZ1dlamNXbFFWRmFKR2p5V3c4SGhHClNXV3hGaXBBMDE5YTZYS1Q2dDduTGZvRjd5V3Q5eWRyNGNydAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
-        server: https://horizon-control-plane:6443
-      name: horizon
-    contexts:
-    - context:
-        cluster: horizon
-        user: kubernetes-admin
-      name: kubernetes-admin@horizon
-    current-context: kubernetes-admin@horizon
-    kind: Config
-    preferences: {}
-    users:
-    - name: kubernetes-admin
-      user:
-        client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFekNDQWZ1Z0F3SUJBZ0lJWlQxc2g1ZXBNekF3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TXpBek1qSXdPREE1TWpaYUZ3MHlOREF6TWpFd09EQTVNamhhTURReApGekFWQmdOVkJBb1REbk41YzNSbGJUcHRZWE4wWlhKek1Sa3dGd1lEVlFRREV4QnJkV0psY201bGRHVnpMV0ZrCmJXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXNiclQ5amNEazVwbjdSL00KeFkrMFNWSVRFb2F3cHpyMTlIeElORU1yTG1zdkxZdGsxNng5Tk04VmsxZ05nWEpVQ2NURXhraG5aUTFCVE9vOQpyaysyYjhPeGRTWEZRd1lNSkJDMzJWL1FuZlZEM3VyeWVrc2FNZ3RIam9zTks4YmltRm9OczhXN3F2YzNlTmJPCmVBQzdvampyQmFBcWd1Y1pTYTdyckhNYWdReGdVUUROd3pYYkhUU2NpMXZ1cUEyWmNwZC9TWldaN2JxdTFDb0YKY1BkeXl4RG1iQmh3R1haVDZTZUtiVWh2ZjkrRzk2TW9FSEJEWTJORXVLSDUwdE1sZzVqL045d0txWXJhQjMyegoveWdtVlpSWnptVG9yNjNEQ3NxS2plZjZrM2hwSFZHY2laMG1UQ0IvWW5CTkczd3ZPS0ZnNnoxc1VObmJKdVJZCnpUQVZud0lEQVFBQm8wZ3dSakFPQmdOVkhROEJBZjhFQkFNQ0JhQXdFd1lEVlIwbEJBd3dDZ1lJS3dZQkJRVUgKQXdJd0h3WURWUjBqQkJnd0ZvQVVvTVpLOTlWcEYzSCtIS2FId0RQL1FCYnRiMXd3RFFZSktvWklodmNOQVFFTApCUUFEZ2dFQkFISGVwOXRzejJVcHdlUHRSSEtQTmlWWWdTdVdtejBJaTUrWmRSZm4xR0ZlQTFoa2lUNi9aOUxiCmVhamt3S0QzeFYvUGpTd1FncWlmdXR2ZzJvcXVYSk9MZ0F4aEZOWGROSDJ4Z0dhTDI0bUJTeWx3YUM2M1VkWEkKZ0crZm9lbDR1K1JyL0Z6TkdGcGNQWVFzMnBaZE1EZFBhOG85TSsvVGNnSFlyRjZIMk9rZ3U3T0w4NjVCQUc4Vgp4ZCtZSTBVUWpUYzl6UmFocFJLVzJRU2Z6N2ZZYXlKVkZsK0dDbDNTdEo4MXNxWTZRbU5YYzg0eVBHMk8zTDNZCnJDYndSS0x0bmhYbHdhNjEzbVEvZ1hWTjJkOWwvbVNuMGgzVVJqUWttTHBJSjdQMUdkVnRESVYzMXhBRkpGaXIKMzUzczZVbjY5ZTgyQ29zS21VanF1cHM4d3pRQ0g1bz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
-        client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBc2JyVDlqY0RrNXBuN1IvTXhZKzBTVklURW9hd3B6cjE5SHhJTkVNckxtc3ZMWXRrCjE2eDlOTThWazFnTmdYSlVDY1RFeGtoblpRMUJUT285cmsrMmI4T3hkU1hGUXdZTUpCQzMyVi9RbmZWRDN1cnkKZWtzYU1ndEhqb3NOSzhiaW1Gb05zOFc3cXZjM2VOYk9lQUM3b2pqckJhQXFndWNaU2E3cnJITWFnUXhnVVFETgp3elhiSFRTY2kxdnVxQTJaY3BkL1NaV1o3YnF1MUNvRmNQZHl5eERtYkJod0dYWlQ2U2VLYlVodmY5K0c5Nk1vCkVIQkRZMk5FdUtINTB0TWxnNWovTjl3S3FZcmFCMzJ6L3lnbVZaUlp6bVRvcjYzRENzcUtqZWY2azNocEhWR2MKaVowbVRDQi9ZbkJORzN3dk9LRmc2ejFzVU5uYkp1Ull6VEFWbndJREFRQUJBb0lCQUVaeHZzSEFYSEtNcU5TYgozaFlRTjIwNFVzYnRDK2U4dnZBQXNyM0VRY0ZNU283S3lWV1MwSzIxeHQ5Mzd5SjNwa2VZN2tXSlBUSVladUdOCmxwVVlrejhKV2JVTkczck5VdEtZcmNaQzYvVXYyWTdwb09KSUVrSHpwcEVoSEQ5VnZVcVZwd2l5UHdnc3BKZ0kKekIxVWJRcUhkTi90OCt1ZW5hOU8zYXFrbE1UQThWVjRXc1RzdTlieUQzVXJCUGw0OE1mUDdJZzhZcit6ejVTUgorVGFXZnRXVGRqUkdxTUNubzN4YVR3TGcvTXpNV3hoc09BOVFKTmZUdlZpR1JERGVrbVJ0ZFYwcWNjQkZONnhjCnYrRTNDaVpDVTU1aTc4ZkJSSkptWlQ4dWM0a0crOUNaeUd5RE45SkVWZ2VMQzNCZWI3clFKL3lFMHVFTHVseFoKRDRNeWIwRUNnWUVBNkdaZkxOSkRCTkZzNlBHSHFubFJoeTR4VlB1ZjJKN0tmallMUUY0WWF5U092T3AyRzFmdwpPSy9ROHN2NWY3dXZZc1AwM0VrOVFUUTZyMkpGQldDcHR2dFA2OWVuaFJLc1UyQ0t0M2toRzdBdlhmTzZhbXlICkVqK3FrWmVBUXZqWXRkejNaZVgxV1hPekVOTmtidG1NaDhOcE56TktMdUhocFhSeUVpNzhaNTBDZ1lFQXc4YzIKOC8wWVc3MUJJazE4VmgxQWxTTXpISldlU2pkMUgrWSt6VEJjYWdGUDB0eVI0ZVBROXlkaVRuNFE1QjZid3dWOApkbzMxTy9uRzJOenBLeGVManRQNXFnUmJLa04yN1pxdllJUG96OXRIUGVxdlprU1BXYU1MUFpRMTNMNWtyYnlOClh5NU5lNzNsUk5Bb3hoa29Cbk0vM0tUU3J5VUhqT1ZFQ1ZEV3Myc0NnWUJoM0lIbGNPRHh6WEpzSVJEODB6dG0KamlnTjNpdHdYMlZyZ2p4NHJXYmc3ek1BRUVjTnVwa1lkY2lxQlFTYUtpRnZtSTZxbUZpbjlXTms2UitoWlJQeQpUcDlYODZiQ0hadmRQRUVOZzM5U2xuMUx0YzlnOHpScGxjK3dvVGhNZTFkZU5aOGtGSktkU1dBMURKODFJbnpQCnlwU3F2dmxWQnA4ck9mNnk4NEFyN1FLQmdHWHRLYWNOZGNrTlZ3UE00NWJSMC9YUlJhTDBJbHp4VW9FeEZqRXQKcEc5c0QycndldUxvQUxzc1Bmb3ZtQXVzQTl3YzF4ZkNBSk1oRDIySVZieWhuWDdXelh5K2w5Z0JGOEhNYnRJSQoyd1NjWFJMWFJFb3lGNC9MV3ViTWF0NXFJWEJ5WWdmVHkzTkpBanc1UTRFZlI3OVQ4VU9tYkNuVFZZTDlPZGEvCng0ZlJBb0dBT2RBUmJYeGw0eS9OZThxODFON2tHOTRzay8rdDFmU3ZkTmFORU8zdkI0bER1UmJLbFZOWm1GQVkKWW1EUHR4dkZxVmdxcVdhZWI3SzZJWmxVMEF6M0V3d0JyM2dreWJUUUI1MU5LZ3BpTXpOZDFMTHBuRXNGVkVxago2eUNpU2RDQWdXc3Y5ejZZZHVqZFVVWHcxcWd0dWd0MmQzMVdNYk91dy9VRWJUeDNPU2M9Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
-    ','', '', 0, 1)'''
+    sql_kubernetes = '''INSERT INTO tb_region (id, name, display_name, server, certificate, ingress_domain, prometheus_url, disabled, registry_id) VALUES (1, 'local', 'local','https://kubernetes.default.svc', '$kubeconfig','', '', 0, 1)'''
 
     sql_tag = "INSERT INTO tb_tag (id, resource_id, resource_type, tag_key, tag_value) VALUES (1, 1, 'regions', 'cloudnative-kubernetes-groups', 'public')"
     sql_environment = "INSERT INTO tb_environment (id, name, display_name, auto_free) VALUES (1, 'local', 'local', 0)"
@@ -370,9 +362,6 @@ function parseinput() {
         exit
     fi
 
-    kind=false
-    minikube=false
-
     while [ $# -gt 0 ]
     do
         case $1 in
@@ -381,11 +370,11 @@ function parseinput() {
                 exit
                 ;;
             -k|--kind)
-                kind=true
+                KIND=true
                 shift
                 ;;
             -m|--minikube)
-                minikube=true
+                MINIKUBE=true
                 shift
                 ;;
             -v|--version)
@@ -412,18 +401,18 @@ function parseinput() {
         esac
     done
 
-     if $kind && $minikube
+     if $KIND && $MINIKUBE
      then
          echo "Cannot use both kind and minikube"
          exit
-     elif ! $kind && ! $minikube
+     elif ! $KIND && ! $MINIKUBE
      then
          echo "Must use either kind or minikube"
          exit
-     elif $kind
+     elif $KIND
      then
          kindcreatecluster
-     elif $minikube
+     elif $MINIKUBE
      then
          minikubecreatecluster
      fi
