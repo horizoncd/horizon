@@ -161,7 +161,6 @@ type Flags struct {
 	Environment             string
 	LogLevel                string
 	GitOpsRepoDefaultBranch string
-	Cache                   string
 }
 
 type RegisterRouter interface {
@@ -199,9 +198,6 @@ func ParseFlags() *Flags {
 	flag.StringVar(
 		&flags.GitOpsRepoDefaultBranch, "gitOpsRepoDefaultBranch", "master",
 		"configure gitops git engine default branch")
-	flag.StringVar(
-		&flags.Cache, "cache", "redis", "default redis, allow redis mem")
-
 	flag.Parse()
 	return &flags
 }
@@ -277,7 +273,7 @@ func Init(flags *Flags) *config.Config {
 
 	// init session store
 	// var store sessions.Store
-	store, _ := createStore(coreConfig, flags.Cache)
+	store, _ := createStore(coreConfig)
 
 	// https://pkg.go.dev/github.com/gorilla/sessions#section-readme
 	gob.Register(&userauth.DefaultInfo{})
@@ -649,8 +645,8 @@ func Init(flags *Flags) *config.Config {
 	return coreConfig
 }
 
-func createStore(coreConfig *config.Config, cacheType string) (sessions.Store, error) {
-	if cacheType == "redis" {
+func createStore(coreConfig *config.Config) (sessions.Store, error) {
+	if coreConfig.SessionConfig.StoreType == "redis" {
 		redisClient := redis.NewClient(&redis.Options{
 			Network:  coreConfig.RedisConfig.Protocol,
 			Addr:     coreConfig.RedisConfig.Address,

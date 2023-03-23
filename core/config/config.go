@@ -99,6 +99,8 @@ func LoadConfig(configFilePath string) (*Config, error) {
 	if config.WebhookConfig.ResponseBodyTruncateSize <= 0 {
 		config.WebhookConfig.ResponseBodyTruncateSize = 16384
 	}
-
+	if config.SessionConfig.StoreType == "" {
+		config.SessionConfig.StoreType = "redis"
+	}
 	return &config, nil
 }
