@@ -67,9 +67,15 @@ function checkprerequesites() {
     mustinstalled docker
 
     # If kind is not installed, install kind
-    if ! checkbinary kind
+    if KIND && ! checkbinary kind
     then
         installkind
+    fi
+
+    # If minikube is not installed, install minikube
+    if MINIKUBE && ! checkbinary minikube
+    then
+        installminikube
     fi
 
     # If kubectl is not installed, install kubectl
@@ -241,8 +247,7 @@ function applyinitjobtok8s(){
     if $KIND 
     then
       kubeconfig=$(docker exec horizon-control-plane cat /etc/kubernetes/admin.conf | sed "2,\$s/^/$INDENT/")
-    elif
-    then
+    else
       kubeconfig=$(docker exec minikube cat /etc/kubernetes/admin.conf | sed "2,\$s/^/$INDENT/")
     fi
 
@@ -400,6 +405,8 @@ function parseinput() {
                 ;;
         esac
     done
+
+    checkprerequesites
 
      if $KIND && $MINIKUBE
      then
