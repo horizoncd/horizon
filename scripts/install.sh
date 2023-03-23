@@ -67,13 +67,13 @@ function checkprerequesites() {
     mustinstalled docker
 
     # If kind is not installed, install kind
-    if KIND && ! checkbinary kind
+    if $KIND && ! checkbinary kind
     then
         installkind
     fi
 
     # If minikube is not installed, install minikube
-    if MINIKUBE && ! checkbinary minikube
+    if $MINIKUBE && ! checkbinary minikube
     then
         installminikube
     fi
@@ -99,6 +99,7 @@ function cmdhelp() {
     echo "  -m, --minikube"
     echo "  -c, --clean"
     echo "  -v, --version <VERSION>"
+    echo "  -i, --init"
     echo "  -f, --full"
     # install for user from China
     echo "  -cn, --china"
@@ -231,16 +232,16 @@ function clean() {
 #    kubectl delete ns ingress-nginx
 
     echo "Cleaning kind cluster"
-    kind delete cluster --name horizon || minikube delete
+    kind delete cluster --name horizon 2> /dev/null || minikube delete 2> /dev/null
 }
 
 function applyinitjobtok8s(){
     echo "Applying init job to k8s"
 
-    image="horizoncd/init:v1.0.0"
+    image="horizoncd/init:v1.0.1"
     if $CHINA
     then
-        image="registry.cn-hangzhou.aliyuncs.com/horizoncd/horizoncd.init:v1.0.0"
+        image="registry.cn-hangzhou.aliyuncs.com/horizoncd/horizoncd.init:v1.0.1"
     fi
 
     INDENT="    "
@@ -270,7 +271,7 @@ data:
     db = os.environ.get('MYSQL_DATABASE', 'horizon')
 
     connection = pymysql.connect(host=host, user=username,
-                                password=password, database=db, port=int(port), cursorclass=pymysql.cursors.DictCursor)
+                                 password=password, database=db, port=int(port), cursorclass=pymysql.cursors.DictCursor)
 
     sql_registry = "insert into tb_registry (id, name, server, token, path, insecure_skip_tls_verify, kind) VALUES (1, 'local', 'https://horizon-registry.horizoncd.svc.cluster.local', 'YWRtaW46SGFyYm9yMTIzNDU=', 'library', 1, 'harbor')"
     sql_kubernetes = '''INSERT INTO tb_region (id, name, display_name, server, certificate, ingress_domain, prometheus_url, disabled, registry_id) VALUES (1, 'local', 'local','https://kubernetes.default.svc', '$kubeconfig','', '', 0, 1)'''
@@ -297,26 +298,34 @@ data:
 
     user = "horizoncd"
     repo = "deployment"
-    format = "tarball"  # 或者 "tarball"
-    branch = "main"   # 或者其他分支名称
+    format = "tarball"
+    branch = "main"
+
     url = f"https://github.com/{user}/{repo}/{format}/{branch}"
+
     response = requests.get(url, stream=True)
+
     chart_file_path = "/tmp/deployment.tgz"
+
     with open(chart_file_path, "wb") as f:
         for chunk in response.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
-    chartmuseum_url = os.environ.get("CHARTMUSEUM_URL", "http://localhost:8080")
+
+
+    chartmuseum_url = os.environ.get("CHARTMUSEUM_URL", "http://127.0.0.1:8080")
+
     version = "v0.0.1"
-    command = ["helm", "cm-push", "--version", version, chart_file_path, chartmuseum_url]
+
+    command = "helm-cm-push --version {} {} {}".format(version, chart_file_path, chartmuseum_url)
     result = subprocess.run(command, shell=True,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if result.returncode == 0:
-        print("Chart包上传成功！")
-    else:
-        print(f"Chart包上传失败：{result.stderr.decode('utf-8')}")
-        exit(1)
 
+    if result.returncode == 0:
+        print("Chart upload success!")
+    else:
+        print(f"Chart upload failed: {result.stderr.decode('utf-8')}")
+        exit(1)
 ---
 apiVersion: batch/v1
 kind: Job
@@ -393,6 +402,11 @@ function parseinput() {
             -f|--full)
                 FULL=true
                 shift
+                ;;
+            -i|--init)
+                applyinitjobtok8s
+                echo "Horizon is initialized successfully!"
+                exit
                 ;;
             -c|--clean)
                 clean
