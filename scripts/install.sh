@@ -10,9 +10,16 @@ CONTAINER_NAME=""
 HELM_SET=""
 STORAGE_CLASS=""
 
+WEBSIDE="google.com"
+INSTALL_K3S_MIRROR=cn
+INSTALL_K3S_EXEC="--docker"
+K3S_DIR="./k3s/get-k3s.sh"
+K3S_ZH_DIR="./k3s/get-k3s-zh.sh"
+
 CLOUD=false
 MINIKUBE=false
 KIND=false
+K3S=false
 
 INTERNAL_GITLAB_ENABLED=false
 GITLAB="core.args.gitOpsRepoDefaultBranch=main"
@@ -43,6 +50,29 @@ function checkbinary() {
     else
         echo "The binary $1 is not installed"
         return 1
+    fi
+}
+
+function checkandrunk3s(){
+    if which k3s >/dev/null 2>&1; then
+        echo "K3s is already installed."
+    else
+        echo "Starting k3s server"
+        k3s server &
+    fi
+}
+
+function checkandrundocker(){
+    if ! which docker >/dev/null 2>&1; then
+        echo "Docker is not installed"
+        curl https://releases.rancher.com/install-docker/20.10.sh | sh
+        sudo systemctl start docker
+    elif ! docker info &> /dev/null
+    then
+        echo "Docker is installed but the daemon is not running"
+        sudo systemctl start docker
+    else
+        echo "Docker is already installed and running"
     fi
 }
 
@@ -82,6 +112,20 @@ function installminikube() {
     sudo mv minikube /usr/local/bin/
 }
 
+function installk3s() {
+    ping -c 1 $WEBSIDE > /dev/null
+    if [ $? -eq 0 ]
+    then
+        echo "install k3s k3s/get-k3s" ;pwd
+        chmod +x ./k3s/get-k3s.sh
+        INSTALL_K3S_MIRROR=cn INSTALL_K3S_EXEC="--docker" ./k3s/get-k3s.sh
+    else
+        echo "install k3s k3s/get-k3s-zh" ;pwd 
+        chmod +x ./k3s/get-k3s-zh.sh
+        INSTALL_K3S_MIRROR=cn INSTALL_K3S_EXEC="--docker" ./k3s/get-k3s-zh.sh
+    fi
+}
+
 function checkprerequesites() {
     mustinstalled docker
 
@@ -95,6 +139,12 @@ function checkprerequesites() {
     if $MINIKUBE && ! checkbinary minikube
     then
         installminikube
+    fi
+
+    # If k3s is not installed, install k3s
+    if $K3S && ! checkbinary k3s
+    then
+        installk3s
     fi
 
     # If kubectl is not installed, install kubectl
@@ -118,6 +168,7 @@ function cmdhelp() {
     echo "  -g, --gitlab-internal, create with internal gitlab"
     echo "  -k, --kind, create cluster by kind"
     echo "  -m, --minikube, create cluster by minikube"
+    echo "  --k3s, Install the k3s test environment"
     echo "  --clean"
     echo "  -c, --cloud, install on cloud"
     echo "  -s, --storage-class <STORAGE_CLASS>, specify the storage class to use, only take effect when -c/--cloud is set"
@@ -211,7 +262,7 @@ function progressbar() {
 
     # get count of pods that are ready
     ready=$(kubectl get pods -nhorizoncd --field-selector=status.phase=Running 2> /dev/null | \
-      awk '{print $2}' | grep -v READY | awk -F/ '$1 == $2 {print}' | wc -l)
+      awk '{print $2}' | grep -v READY | awk -F/ '1==2 {print}' | wc -l)
     succeeded=$(kubectl get pods -nhorizoncd --field-selector=status.phase=Succeeded 2> /dev/null | \
                    grep -v NAME -c)
     ready=$((ready + succeeded))
@@ -348,29 +399,23 @@ data:
     import requests
     import pymysql
     import os
-
     host = os.environ.get('MYSQL_HOST', '127.0.0.1')
     port = os.environ.get('MYSQL_PORT', '3306')
     username = os.environ.get('MYSQL_USER', 'root')
     password = os.environ.get('MYSQL_PASSWORD', '123456')
     db = os.environ.get('MYSQL_DATABASE', 'horizon')
-
     connection = pymysql.connect(host=host, user=username,
                                  password=password, database=db, port=int(port), cursorclass=pymysql.cursors.DictCursor)
-
     sql_registry = "insert into tb_registry (id, name, server, token, path, insecure_skip_tls_verify, kind) VALUES (1, 'local', 'https://horizon-registry.horizoncd.svc.cluster.local', 'YWRtaW46SGFyYm9yMTIzNDU=', 'library', 1, 'harbor')"
     sql_kubernetes = '''INSERT INTO tb_region (id, name, display_name, server, certificate, ingress_domain, prometheus_url, disabled, registry_id) VALUES (1, 'local', 'local','https://kubernetes.default.svc', '$kubeconfig','', '', 0, 1)'''
-
     sql_tag = "INSERT INTO tb_tag (id, resource_id, resource_type, tag_key, tag_value) VALUES (1, 1, 'regions', 'cloudnative-kubernetes-groups', 'public')"
     sql_environment = "INSERT INTO tb_environment (id, name, display_name, auto_free) VALUES (1, 'local', 'local', 0)"
     sql_environment_region = "INSERT INTO tb_environment_region (id, environment_name, region_name, is_default, disabled) VALUES (1, 'local', 'local', 0, 0)"
     sql_group = "INSERT INTO tb_group (id, name, path, description, visibility_level, parent_id, traversal_ids, region_selector) VALUES (1,'horizon', 'horizon', '', 'private', 0, 1, '- key: cloudnative-kubernetes-groups\n  values:\n    - public\n  operator: ""')"
     sql_template = "INSERT INTO tb_template (id, name, description, repository, group_id, chart_name, only_admin, only_owner, without_ci) VALUES (1, 'deployment', '', 'https://github.com/horizoncd/deployment.git', 0, 'deployment', 0, 0, 1)"
     sql_template_release = "INSERT INTO tb_template_release (id, template_name, name, description, recommended, template, chart_name, only_admin, chart_version, sync_status, failed_reason, commit_id, last_sync_at, only_owner) VALUES (1, 'deployment', 'v0.0.1', '', 1, 1, 'deployment', 0, 'v0.0.1-5e5193b355961b983cab05a83fa22934001ddf4d', 'status_succeed', '', '5e5193b355961b983cab05a83fa22934001ddf4d', '2023-03-22 17:28:38', 0)"
-
     sqls = [sql_registry, sql_kubernetes, sql_tag, sql_environment,
             sql_environment_region, sql_group, sql_template, sql_template_release]
-
     with connection:
         with connection.cursor() as cursor:
             for sql in sqls:
@@ -380,32 +425,22 @@ data:
                     print("Error:", e)
                     print("sql:", sql)
         connection.commit()
-
     user = "horizoncd"
     repo = "deployment"
     format = "tarball"
     branch = "main"
-
     url = f"https://github.com/{user}/{repo}/{format}/{branch}"
-
     response = requests.get(url, stream=True)
-
     chart_file_path = "/tmp/deployment.tgz"
-
     with open(chart_file_path, "wb") as f:
         for chunk in response.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
-
-
     chartmuseum_url = os.environ.get("CHARTMUSEUM_URL", "http://127.0.0.1:8080")
-
     version = "v0.0.1-5e5193b355961b983cab05a83fa22934001ddf4d"
-
     command = "helm-cm-push --version {} {} {}".format(version, chart_file_path, chartmuseum_url)
     result = subprocess.run(command, shell=True,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
     if result.returncode == 0:
         print("Chart upload success!")
     else:
@@ -440,7 +475,6 @@ spec:
           - name: init-script
             mountPath: /init
       restartPolicy: Never
-
       volumes:
         - name: init-script
           configMap:
@@ -478,6 +512,10 @@ function parseinput() {
                 ;;
             -m|--minikube)
                 MINIKUBE=true
+                shift
+                ;;
+            --k3s)
+                K3S=true
                 shift
                 ;;
             --set)
@@ -550,9 +588,9 @@ function parseinput() {
 
     checkprerequesites
 
-    if ! $KIND && ! $MINIKUBE && ! $CLOUD
+    if ! $KIND && ! $MINIKUBE && ! $K3S  && ! $CLOUD
     then
-        echo "Please specify the cluster type. kind or minikube or cloud."
+        echo "Please specify the cluster type. kind or minikube or k3s or cloud."
         cmdhelp
         exit 1
     elif $KIND
@@ -561,8 +599,11 @@ function parseinput() {
     elif $MINIKUBE
     then
         minikubecreatecluster
+    elif $K3S
+    then
+        checkandrunk3s
     fi
-
+    
     if ! $CLOUD
     then
         installingress

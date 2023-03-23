@@ -1,6 +1,8 @@
 .DEFAULT_GOAL := help
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
+INSTALL_BIN_DIR = /usr/local/bin
+
 # Declare all targets as phony targets
 .PHONY: all build swagger swagger-run job core clean lint ut imports help 
 
@@ -59,6 +61,15 @@ ut:
 imports:
 	@goimports -l -w $(SRC)
 
+## k3s-uninstall: Unnstall k3s
+k3s-uninstall:
+	(cd $(INSTALL_BIN_DIR) && ./k3s-killall.sh) || true
+	(cd $(INSTALL_BIN_DIR) && ./k3s-uninstall.sh) || true
+
+## k3s-install: Install k3s
+k3s-install:
+	@echo "===========> Installing k3s"
+	cd scripts && chmod +x install.sh && ./install.sh --k3s
 
 ## help: Display help information
 help: Makefile
