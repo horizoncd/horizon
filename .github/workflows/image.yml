@@ -11,7 +11,7 @@ jobs:
   release:
     strategy:
       matrix:
-        components: [core, job, swagger]
+        components: [core, swagger]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v3
@@ -25,7 +25,6 @@ jobs:
             go:
               - '**.go'
               - 'build/core/Dockerfile'
-              - 'build/job/Dockerfile'
             api:
               - 'openapi/**'
               - 'build/swagger/build.sh'

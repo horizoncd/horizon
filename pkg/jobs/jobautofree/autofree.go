@@ -1,4 +1,4 @@
-package autofree
+package jobautofree
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func AutoReleaseExpiredClusterJob(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Manager,
+func Run(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Manager,
 	clusterCtr clusterctl.Controller, prCtr prctl.Controller) {
 	// verify account
 	user, err := userMgr.GetUserByID(ctx, jobConfig.AccountID)

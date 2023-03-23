@@ -1,4 +1,4 @@
-package autofree
+package jobautofree
 
 import (
 	"context"
@@ -189,7 +189,7 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		<-timer.C
 		cancelFunc()
 	}()
-	AutoReleaseExpiredClusterJob(ctx, &autofree.Config{
+	Run(ctx, &autofree.Config{
 		AccountID:     1,
 		JobInterval:   1 * time.Second,
 		BatchInterval: 0 * time.Second,
