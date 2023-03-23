@@ -1,10 +1,13 @@
 #!/bin/bash
 
-VERSION="2.1.4"
+VERSION="2.1.6"
 CHINA=false
 FULL=false
 MINIKUBE=false
 KIND=false
+HELM_SET=""
+UPGRADE=false
+CONTAINER_NAME=""
 
 # Install horizon of the script
 #
@@ -99,14 +102,18 @@ function cmdhelp() {
     echo "  -m, --minikube"
     echo "  -c, --clean"
     echo "  -v, --version <VERSION>"
+    echo "  -u, --upgrade"
     echo "  -i, --init"
     echo "  -f, --full"
+    echo "  --set <HELM SETS>"
     # install for user from China
     echo "  -cn, --china"
 }
 
 function kindcreatecluster() {
     echo "Creating kind cluster"
+
+    CONTAINER_NAME="horizon-control-plane"
 
 echo \
 'kind: Cluster
@@ -130,25 +137,25 @@ nodes:
 
     kind create cluster --image=kindest/node:v1.19.16 --name=horizon --config=/tmp/kind.yaml
 
-    docker exec horizon-control-plane bash -c \
-        $'echo "nameserver `kubectl get service -n kube-system kube-dns -o jsonpath=\'{.spec.clusterIP}\'`" >> /etc/resolv.conf'
-
-    docker exec horizon-control-plane bash -c \
-$'echo \'[plugins."io.containerd.grpc.v1.cri".registry.configs."harbor.horizoncd.svc.cluster.local".tls]
+    docker exec $CONTAINER_NAME bash -c \
+$'echo \'[plugins."io.containerd.grpc.v1.cri".registry.configs."horizon-registry.horizoncd.svc.cluster.local".tls]
   insecure_skip_verify = true\' >> /etc/containerd/config.toml'
 
-    docker exec horizon-control-plane systemctl restart containerd
+    docker exec $CONTAINER_NAME systemctl restart containerd
 
     kubectl config use-context kind-horizon
 }
 
 function minikubecreatecluster() {
     echo "Creating minikube cluster"
+
+    CONTAINER_NAME="minikube"
+
     minikube start --container-runtime=docker --driver=docker \
         --kubernetes-version=v1.19.16 --cpus=4 --memory=8000 --ports=80:80 --ports=443:443
 
     kubectl get service -n kube-system kube-dns -o jsonpath='{.spec.clusterIP}' | xargs \
-        -I {} docker exec minikube bash -c 'echo "nameserver {}" >> /etc/resolv.conf'
+        -I {} docker exec $CONTAINER_NAME bash -c 'echo "nameserver {}" >> /etc/resolv.conf'
 
     kubectl config use-context minikube
 }
@@ -156,7 +163,7 @@ function minikubecreatecluster() {
 function installingress() {
     # install ingress-nginx by helm
     echo "Installing ingress-nginx"
-    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx 2> /dev/null
     helm install my-ingress-nginx -n ingress-nginx ingress-nginx/ingress-nginx \
         --version 4.1.4 --set controller.hostNetwork=true --set controller.watchIngressWithoutClass=true --create-namespace
 
@@ -168,22 +175,22 @@ function installingress() {
 # print progress bar by count of how many pods was ready
 # 'kubectl get pods -n horizoncd'
 function progressbar() {
- # 获取pods的总数
-  total=$(kubectl get pods -nhorizoncd --field-selector=status.phase!=Failed 2> /dev/null | grep -v NAME | wc -l | awk '{print $1}')
-
   while true; do
-    # 获取ready的pods的个数
+   # get count of pods
+    total=$(kubectl get pods -nhorizoncd --field-selector=status.phase!=Failed 2> /dev/null | grep -v NAME | wc -l | awk '{print $1}')
+
+    # get count of pods that are ready
     ready=$(kubectl get pods -nhorizoncd --field-selector=status.phase=Running 2> /dev/null | \
       awk '{print $2}' | grep -v READY | awk -F/ '$1 == $2 {print}' | wc -l)
-    completed=$(kubectl get pods -nhorizoncd --field-selector=status.phase=Succeeded 2> /dev/null | \
+    succeeded=$(kubectl get pods -nhorizoncd --field-selector=status.phase=Succeeded 2> /dev/null | \
                    grep -v NAME -c)
-    ready=$((ready + completed))
+    ready=$((ready + succeeded))
 
-    # 计算进度条的长度
+    # calculate progress bar length
     bar_length=50
     completed=$((ready * bar_length / total))
 
-    # 输出进度条
+    # print progress bar
     echo -ne '['
     for ((i=0; i<$bar_length; i++)); do
       if ((i < $completed)); then
@@ -194,29 +201,47 @@ function progressbar() {
     done
     echo -ne "] (${ready}/${total})\r"
 
-    # 暂停1秒钟，然后清除当前行
+    # sleep 1 second, then clear the line
     sleep 1
     echo -ne "\033[K"
 
-    # 如果所有pods都已经ready，则退出循环
+    # if all pods are ready, break the loop
     if ((ready == total)); then
       break
     fi
   done
-
-  echo "Horizon is installed"
 }
 
 function install() {
-
     helm repo add horizon https://horizoncd.github.io/helm-charts
 
-    cmd="helm install horizon horizon/horizon -n horizoncd --version $VERSION --create-namespace --timeout 60s"
+    cmd="helm"
+
+    if $UPGRADE
+    then
+        cmd="$cmd upgrade"
+    else
+        cmd="$cmd install"
+    fi
+
+    if [ -n "$HELM_SET" ]
+    then
+        cmd="$cmd --set $HELM_SET"
+    fi
+
+    if $UPGRADE
+    then
+        cmd="$cmd horizon horizon/horizon -n horizoncd --version $VERSION --timeout 30s"
+    else
+        cmd="$cmd horizon horizon/horizon -n horizoncd --version $VERSION --create-namespace --timeout 60s"
+    fi
+
     if $CHINA
     then
         cmd="$cmd -f https://raw.githubusercontent.com/horizoncd/helm-charts/main/horizon-cn-values.yaml"
     fi
 
+    echo $cmd
     eval $cmd 2> /dev/null
 
     progressbar
@@ -315,7 +340,7 @@ data:
 
     chartmuseum_url = os.environ.get("CHARTMUSEUM_URL", "http://127.0.0.1:8080")
 
-    version = "v0.0.1"
+    version = "v0.0.1-5e5193b355961b983cab05a83fa22934001ddf4d"
 
     command = "helm-cm-push --version {} {} {}".format(version, chart_file_path, chartmuseum_url)
     result = subprocess.run(command, shell=True,
@@ -387,9 +412,17 @@ function parseinput() {
                 KIND=true
                 shift
                 ;;
+            -u|--upgrade)
+                UPGRADE=true
+                shift
+                ;;
             -m|--minikube)
                 MINIKUBE=true
                 shift
+                ;;
+            --set)
+                HELM_SET=$2
+                shift 2
                 ;;
             -v|--version)
                 VERSION=$2
@@ -420,31 +453,40 @@ function parseinput() {
         esac
     done
 
+    if $UPGRADE
+    then
+      install
+      exit
+    fi
+
     checkprerequesites
 
-     if $KIND && $MINIKUBE
-     then
-         echo "Cannot use both kind and minikube"
-         exit
-     elif ! $KIND && ! $MINIKUBE
-     then
-         echo "Must use either kind or minikube"
-         exit
-     elif $KIND
-     then
-         kindcreatecluster
-     elif $MINIKUBE
-     then
-         minikubecreatecluster
-     fi
+    if $KIND && $MINIKUBE
+    then
+        echo "Cannot use both kind and minikube"
+        exit
+    elif ! $KIND && ! $MINIKUBE
+    then
+        echo "Must use either kind or minikube"
+        exit
+    elif $KIND
+    then
+        kindcreatecluster
+    elif $MINIKUBE
+    then
+        minikubecreatecluster
+    fi
 
-     installingress
+    installingress
 
-     install
+    install
 
-     applyinitjobtok8s
+    applyinitjobtok8s
 
-     echo 'Horizon is installed successfully!'
+    docker exec $CONTAINER_NAME bash -c \
+          $'echo "nameserver `kubectl get service -n kube-system kube-dns -o jsonpath=\'{.spec.clusterIP}\'`" >> /etc/resolv.conf'
+
+    echo 'Horizon is installed successfully!'
 }
 
 parseinput "$@"
