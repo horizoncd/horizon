@@ -12,6 +12,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/config/git"
 	"github.com/horizoncd/horizon/pkg/config/gitlab"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
+	"github.com/horizoncd/horizon/pkg/config/job"
 	"github.com/horizoncd/horizon/pkg/config/oauth"
 	"github.com/horizoncd/horizon/pkg/config/pprof"
 	"github.com/horizoncd/horizon/pkg/config/redis"
@@ -29,6 +30,7 @@ import (
 type Config struct {
 	ServerConfig           server.Config           `yaml:"serverConfig"`
 	CloudEventServerConfig server.Config           `yaml:"cloudEventServerConfig"`
+	JobConfig              job.Config              `yaml:"jobConfig"`
 	PProf                  pprof.Config            `yaml:"pprofConfig"`
 	DBConfig               db.Config               `yaml:"dbConfig"`
 	SessionConfig          session.Config          `yaml:"sessionConfig"`

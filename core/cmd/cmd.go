@@ -10,7 +10,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
+	"sync"
+	"syscall"
 
 	"github.com/horizoncd/horizon/core/config"
 	accessctl "github.com/horizoncd/horizon/core/controller/access"
@@ -90,6 +93,10 @@ import (
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
+	"github.com/horizoncd/horizon/pkg/jobs"
+	"github.com/horizoncd/horizon/pkg/jobs/jobautofree"
+	"github.com/horizoncd/horizon/pkg/jobs/jobgrafanasync"
+	"github.com/horizoncd/horizon/pkg/jobs/jobwebhook"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
@@ -227,19 +234,21 @@ func runPProfServer(config *pprof.Config) {
 	}
 }
 
-func Init(flags *Flags) *config.Config {
-	// init log
-	InitLog(flags)
-
-	// load coreConfig
+func LoadConfig(flags *Flags) (*config.Config, error) {
 	coreConfig, err := config.LoadConfig(flags.ConfigFile)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	_, err = json.MarshalIndent(coreConfig, "", " ")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
+	return coreConfig, nil
+}
+
+func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
+	// init log
+	InitLog(flags)
 
 	// init roles
 	file, err := os.OpenFile(flags.RoleConfigFile, os.O_RDONLY, 0644)
@@ -293,8 +302,6 @@ func Init(flags *Flags) *config.Config {
 
 	// init manager parameter
 	manager := managerparam.InitManager(mysqlDB)
-	// init service
-	ctx := context.Background()
 
 	gitlabGitops, err := gitlablib.New(coreConfig.GitopsRepoConfig.Token, coreConfig.GitopsRepoConfig.URL)
 	if err != nil {
@@ -542,6 +549,18 @@ func Init(flags *Flags) *config.Config {
 		webhookAPIV2           = webhookv2.NewAPI(webhookCtl)
 	)
 
+	// start jobs
+	autoFreeJob := func(ctx context.Context) {
+		jobautofree.Run(ctx, &coreConfig.AutoFreeConfig, parameter.UserManager, clusterCtl, prCtl)
+	}
+	webhookJob := func(ctx context.Context) {
+		jobwebhook.Run(ctx, coreConfig.EventHandlerConfig, coreConfig.WebhookConfig, manager)
+	}
+	grafanaSyncJob := func(ctx context.Context) {
+		jobgrafanasync.Run(ctx, coreConfig, manager, client)
+	}
+	go jobs.Run(ctx, &coreConfig.JobConfig, autoFreeJob, webhookJob, grafanaSyncJob)
+
 	// init server
 	r := gin.New()
 	// use middleware
@@ -655,13 +674,44 @@ func Init(flags *Flags) *config.Config {
 	// start api server
 	log.Printf("Server started")
 	log.Print(r.Run(fmt.Sprintf(":%d", coreConfig.ServerConfig.Port)))
-	return coreConfig
 }
 
 // Run runs the agent.
 func Run(flags *Flags) {
-	// init api
-	c := Init(flags)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+
+	setTasksBeforeExit(cancelFunc)
+
+	configs, err := LoadConfig(flags)
+	if err != nil {
+		panic(err)
+	}
+
 	// enable pprof
-	runPProfServer(&c.PProf)
+	runPProfServer(&configs.PProf)
+
+	// init api
+	Init(ctx, flags, configs)
+}
+
+// setTasksBeforeExit set stop funcs which will be executed after sigterm and sigint catched
+func setTasksBeforeExit(stopFuncs ...func()) {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		s := <-sig
+		log.Printf("got %s signal, stop tasks...\n", s)
+		if len(stopFuncs) == 0 {
+			return
+		}
+		wg := sync.WaitGroup{}
+		wg.Add(len(stopFuncs))
+		for _, stopFunc := range stopFuncs {
+			go func(stop func()) {
+				stop()
+			}(stopFunc)
+		}
+		wg.Wait()
+		log.Printf("all tasks stopped, exit now.")
+	}()
 }

@@ -2,6 +2,12 @@ serverConfig:
   port: 8080
 cloudEventServerConfig:
   port: 8181
+jobConfig:
+  lockName: horizon-lock
+  lockNS: horizoncd
+  leaseDuration: 15
+  renewDeadline: 10
+  retryPeriod: 2
 dbConfig:
   host: ""
   port: 3331
@@ -77,4 +83,3 @@ oauth:
 tokenConfig:
   jwtSigningKey: ""
   callbackTokenExpireIn: 2h
-
