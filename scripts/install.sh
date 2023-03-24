@@ -1,6 +1,7 @@
 #!/bin/bash
 
-VERSION="2.1.6"
+VERSION="2.1.7"
+
 CHINA=false
 FULL=false
 MINIKUBE=false
@@ -8,6 +9,17 @@ KIND=false
 HELM_SET=""
 UPGRADE=false
 CONTAINER_NAME=""
+CLEAN=false
+
+INTERNAL_GITLAB_ENABLED=false
+GITLAB="core.args.gitOpsRepoDefaultBranch=main"
+GITLAB="$GITLAB,config.gitopsRepoConfig.rootGroupPath=horizoncd1"
+GITLAB="$GITLAB,config.gitopsRepoConfig.url=https://gitlab.com"
+GITLAB="$GITLAB,config.gitopsRepoConfig.token=glpat-2n6qmgCah_Yz4kErMC5V"
+GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.url=https://gitlab.com"
+GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.password=glpat-2n6qmgCah_Yz4kErMC5V"
+GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.username=root"
+GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.name=gitops-creds"
 
 # Install horizon of the script
 #
@@ -98,16 +110,18 @@ function cmdhelp() {
     echo "Usage: $0 [options]"
     echo "Options:"
     echo "  -h, --help"
-    echo "  -k, --kind"
-    echo "  -m, --minikube"
+    echo "  -e, --gitlab-external <defaultBranch> <rootGroupID> <url> <token>, create with external gitlab"
+    echo "  -g, --gitlab-internal, create with internal gitlab"
+    echo "  -k, --kind, create cluster by kind"
+    echo "  -m, --minikube, create cluster by minikube"
     echo "  -c, --clean"
-    echo "  -v, --version <VERSION>"
-    echo "  -u, --upgrade"
-    echo "  -i, --init"
-    echo "  -f, --full"
-    echo "  --set <HELM SETS>"
+    echo "  -v, --version <VERSION>, specify the version of horizon to install"
+    echo "  -u, --upgrade, equals to helm upgrade"
+    echo "  -i, --init, deploy init job into cluster"
+    echo "  -f, --full, install full horizon"
+    echo "  --set <HELM SETS>, equals to helm install/upgrade --set ..."
     # install for user from China
-    echo "  -cn, --china"
+    echo "  -cn, --china, install China"
 }
 
 function kindcreatecluster() {
@@ -135,7 +149,7 @@ nodes:
         protocol: TCP' > /tmp/kind.yaml
 
 
-    kind create cluster --image=kindest/node:v1.19.16 --name=horizon --config=/tmp/kind.yaml
+    kind create cluster --image=kindest/node:v1.19.16 --name=horizon --config=/tmp/kind.yaml || exit 1
 
     docker exec $CONTAINER_NAME bash -c \
 $'echo \'[plugins."io.containerd.grpc.v1.cri".registry.configs."horizon-registry.horizoncd.svc.cluster.local".tls]
@@ -143,7 +157,7 @@ $'echo \'[plugins."io.containerd.grpc.v1.cri".registry.configs."horizon-registry
 
     docker exec $CONTAINER_NAME systemctl restart containerd
 
-    kubectl config use-context kind-horizon
+    kubectl config use-context kind-horizon || exit 1
 }
 
 function minikubecreatecluster() {
@@ -152,12 +166,12 @@ function minikubecreatecluster() {
     CONTAINER_NAME="minikube"
 
     minikube start --container-runtime=docker --driver=docker \
-        --kubernetes-version=v1.19.16 --cpus=4 --memory=8000 --ports=80:80 --ports=443:443
+        --kubernetes-version=v1.19.16 --cpus=4 --memory=8000 --ports=80:80 --ports=443:443 || exit 1
 
     kubectl get service -n kube-system kube-dns -o jsonpath='{.spec.clusterIP}' | xargs \
         -I {} docker exec $CONTAINER_NAME bash -c 'echo "nameserver {}" >> /etc/resolv.conf'
 
-    kubectl config use-context minikube
+    kubectl config use-context minikube || exit 1
 }
 
 function installingress() {
@@ -215,6 +229,8 @@ function progressbar() {
 function install() {
     helm repo add horizon https://horizoncd.github.io/helm-charts
 
+    helm repo update
+
     cmd="helm"
 
     if $UPGRADE
@@ -224,9 +240,21 @@ function install() {
         cmd="$cmd install"
     fi
 
+    if $FULL
+    then
+        cmd="$cmd --set tags.full=true,tags.minimal=false"
+    fi
+
     if [ -n "$HELM_SET" ]
     then
         cmd="$cmd --set $HELM_SET"
+    fi
+
+    if not $INTERNAL_GITLAB_ENABLED
+    then
+        cmd="$cmd --set $GITLAB,gitlab.enabled=false"
+    else
+        cmd="$cmd --set gitlab.enabled=true"
     fi
 
     if $UPGRADE
@@ -257,7 +285,12 @@ function clean() {
 #    kubectl delete ns ingress-nginx
 
     echo "Cleaning kind cluster"
-    kind delete cluster --name horizon 2> /dev/null || minikube delete 2> /dev/null
+    if $KIND
+    then
+        kind delete cluster --name horizon
+    else
+        minikube delete
+    fi
 }
 
 function applyinitjobtok8s(){
@@ -428,6 +461,21 @@ function parseinput() {
                 VERSION=$2
                 shift 2
                 ;;
+            -g|--gitlab-internal)
+                INTERNAL_GITLAB_ENABLED=true
+                shift
+                ;;
+            -e|--external-gitlab)
+                GITLAB="core.args.gitOpsRepoDefaultBranch=$2"
+                GITLAB="$GITLAB,config.gitopsRepoConfig.rootGroupPath=$3"
+                GITLAB="$GITLAB,config.gitopsRepoConfig.url=$4"
+                GITLAB="$GITLAB,config.gitopsRepoConfig.token=$5"
+                GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.url=$4"
+                GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.password=$5"
+                GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.username=root"
+                GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.name=gitops-creds"
+                shift 5
+                ;;
             -cn|--china)
                 CHINA=true
                 shift
@@ -442,7 +490,7 @@ function parseinput() {
                 exit
                 ;;
             -c|--clean)
-                clean
+                CLEAN=true
                 exit
                 ;;
             *)
@@ -452,6 +500,12 @@ function parseinput() {
                 ;;
         esac
     done
+
+    if $CLEAN
+    then
+      clean
+      exit
+    fi
 
     if $UPGRADE
     then
