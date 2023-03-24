@@ -95,6 +95,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/jobs"
 	"github.com/horizoncd/horizon/pkg/jobs/jobautofree"
+	"github.com/horizoncd/horizon/pkg/jobs/jobgrafanasync"
 	"github.com/horizoncd/horizon/pkg/jobs/jobwebhook"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
@@ -555,7 +556,10 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	webhookJob := func(ctx context.Context) {
 		jobwebhook.Run(ctx, coreConfig.EventHandlerConfig, coreConfig.WebhookConfig, manager)
 	}
-	go jobs.Run(ctx, &coreConfig.JobConfig, autoFreeJob, webhookJob)
+	grafanaSyncJob := func(ctx context.Context) {
+		jobgrafanasync.Run(ctx, coreConfig, manager, client)
+	}
+	go jobs.Run(ctx, &coreConfig.JobConfig, autoFreeJob, webhookJob, grafanaSyncJob)
 
 	// init server
 	r := gin.New()

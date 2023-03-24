@@ -80,9 +80,8 @@ func (s *service) SyncDatasource(ctx context.Context) {
 			log.Debug(ctx, "Get done signal from context")
 			return
 		case <-ticker.C:
+			s.sync(ctx)
 		}
-
-		s.sync(ctx)
 	}
 }
 
