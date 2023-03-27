@@ -23,8 +23,8 @@ func NewNoStorageCollector(tekton tekton.Interface) *NoStorageCollector {
 	}
 }
 
-func (c *NoStorageCollector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, horizonMetaData *global.HorizonMetaData) (
-	*CollectResult, error) {
+func (c *NoStorageCollector) Collect(ctx context.Context, pr *v1beta1.PipelineRun,
+	horizonMetaData *global.HorizonMetaData) (*CollectResult, error) {
 	const op = "NoStorageCollector: collect"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -61,7 +61,8 @@ func (c *NoStorageCollector) GetPipelineRunObject(ctx context.Context,
 	return nil, nil
 }
 
-func (c *NoStorageCollector) GetPipelineRun(ctx context.Context, pr *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
+func (c *NoStorageCollector) GetPipelineRun(ctx context.Context,
+	pr *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
 	const op = "NoStorageCollector: getPipelineRun"
 	defer wlog.Start(ctx, op).StopPrint()
 

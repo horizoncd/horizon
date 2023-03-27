@@ -233,8 +233,6 @@ func Test(t *testing.T) {
 		}(),
 	}, nil)
 
-	tekton.EXPECT().DeletePipelineRun(ctx, gomock.Any()).Return(nil)
-
 	templateReleaseMgr := trmock.NewMockManager(mockCtl)
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(&trmodels.TemplateRelease{}, nil)

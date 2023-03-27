@@ -216,7 +216,11 @@ func TestS3Collector_Collect(t *testing.T) {
 	t.Logf("%v", string(b))
 
 	// 1. getLatestPipelineRunLog
-	prModel := &prmodels.Pipelinerun{LogObject: collectResult.LogObject}
+	prModel := &prmodels.Pipelinerun{
+		LogObject: collectResult.LogObject,
+		PrObject:  collectResult.PrObject,
+		S3Bucket:  collectResult.Bucket,
+	}
 	_, err = c.GetPipelineRunLog(ctx, prModel)
 	assert.Nil(t, err)
 
@@ -231,6 +235,7 @@ func TestS3Collector_Collect(t *testing.T) {
 
 	// 3. getLatestPipelineRun
 	tektonPR, err := c.GetPipelineRun(ctx, prModel)
+	assert.Nil(t, err)
 	if !reflect.DeepEqual(tektonPR, pr) {
 		t.Fatalf("pipelineRun objectMeta: expected %v, got %v", objectMeta, obj.Metadata)
 	}

@@ -243,18 +243,18 @@ func (mr *MockClusterGitRepoMockRecorder) HardDeleteCluster(ctx, application, cl
 }
 
 // MergeBranch mocks base method.
-func (m *MockClusterGitRepo) MergeBranch(ctx context.Context, application, cluster, sourceBranch, targetBranch string, prID *uint) (string, error) {
+func (m *MockClusterGitRepo) MergeBranch(ctx context.Context, application, cluster, sourceBranch, targetBranch string, pipelineRunID *uint) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MergeBranch", ctx, application, cluster, sourceBranch, targetBranch, prID)
+	ret := m.ctrl.Call(m, "MergeBranch", ctx, application, cluster, sourceBranch, targetBranch, pipelineRunID)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // MergeBranch indicates an expected call of MergeBranch.
-func (mr *MockClusterGitRepoMockRecorder) MergeBranch(ctx, application, cluster, sourceBranch, targetBranch, prID interface{}) *gomock.Call {
+func (mr *MockClusterGitRepoMockRecorder) MergeBranch(ctx, application, cluster, sourceBranch, targetBranch, pipelineRunID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeBranch", reflect.TypeOf((*MockClusterGitRepo)(nil).MergeBranch), ctx, application, cluster, sourceBranch, targetBranch, prID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeBranch", reflect.TypeOf((*MockClusterGitRepo)(nil).MergeBranch), ctx, application, cluster, sourceBranch, targetBranch, pipelineRunID)
 }
 
 // Rollback mocks base method.
