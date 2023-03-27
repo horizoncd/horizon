@@ -4,12 +4,15 @@ VERSION="2.1.7"
 
 CHINA=false
 FULL=false
+UPGRADE=false
+CLEAN=false
+CONTAINER_NAME=""
+HELM_SET=""
+STORAGE_CLASS=""
+
+CLOUD=false
 MINIKUBE=false
 KIND=false
-HELM_SET=""
-UPGRADE=false
-CONTAINER_NAME=""
-CLEAN=false
 
 INTERNAL_GITLAB_ENABLED=false
 GITLAB="core.args.gitOpsRepoDefaultBranch=main"
@@ -20,6 +23,7 @@ GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.url=https://git
 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.password=glpat-2n6qmgCah_Yz4kErMC5V"
 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.username=root"
 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.name=gitops-creds"
+
 
 # Install horizon of the script
 #
@@ -114,7 +118,9 @@ function cmdhelp() {
     echo "  -g, --gitlab-internal, create with internal gitlab"
     echo "  -k, --kind, create cluster by kind"
     echo "  -m, --minikube, create cluster by minikube"
-    echo "  -c, --clean"
+    echo "  --clean"
+    echo "  -c, --cloud"
+    echo "  -s, --storage-class <STORAGE_CLASS>, specify the storage class to use, only take effect when -c/--cloud is set"
     echo "  -v, --version <VERSION>, specify the version of horizon to install"
     echo "  -u, --upgrade, equals to helm upgrade"
     echo "  -i, --init, deploy init job into cluster"
@@ -168,9 +174,6 @@ function minikubecreatecluster() {
     minikube start --container-runtime=docker --driver=docker \
         --kubernetes-version=v1.19.16 --cpus=4 --memory=8000 --ports=80:80 --ports=443:443 || exit 1
 
-    kubectl get service -n kube-system kube-dns -o jsonpath='{.spec.clusterIP}' | xargs \
-        -I {} docker exec $CONTAINER_NAME bash -c 'echo "nameserver {}" >> /etc/resolv.conf'
-
     kubectl config use-context minikube || exit 1
 }
 
@@ -184,6 +187,11 @@ function installingress() {
     # wait for ingress-nginx to be ready
     echo "Waiting for ingress-nginx to be ready"
     kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=my-ingress-nginx,app.kubernetes.io/name=ingress-nginx --timeout=600s -n ingress-nginx
+
+    if $MINIKUBE
+    then
+      kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io/my-ingress-nginx-admission
+    fi
 }
 
 # print progress bar by count of how many pods was ready
@@ -245,16 +253,26 @@ function install() {
         cmd="$cmd --set tags.full=true,tags.minimal=false"
     fi
 
+    if $CLOUD
+    then
+        cmd="$cmd --set mysql.primary.persistence.size=20Gi,gitlab.persistence.size=20Gi,harbor.persistence.persistentVolumeClaim.databse.size=20Gi,harbor.persistence.persistentVolumeClaim.jobservice.size=20Gi,minio.persistence.size=20Gi,harbor.persistence.persistentVolumeClaim.database.size=20Gi"
+
+        if [ -n "$STORAGE_CLASS" ]
+        then
+          cmd="$cmd --set gitlab.persistence.storageClass=$STORAGE_CLASS,minio.global.storageClass=$STORAGE_CLASS,harbor.persistence.persistentVolumeClaim.database.storageClass=$STORAGE_CLASS,persistence.persistentVolumeClaim.jobservice.jobLog.storageClass=$STORAGE_CLASS,harbor.persistence.persistentVolumeClaim.jobservice.scanDataExports.storageClass=$STORAGE_CLASS,mysql.global.storageClass=$STORAGE_CLASS"
+        fi
+    fi
+
     if [ -n "$HELM_SET" ]
     then
         cmd="$cmd --set $HELM_SET"
     fi
 
-    if not $INTERNAL_GITLAB_ENABLED
+    if $INTERNAL_GITLAB_ENABLED
     then
-        cmd="$cmd --set $GITLAB,gitlab.enabled=false"
-    else
         cmd="$cmd --set gitlab.enabled=true"
+    else
+        cmd="$cmd --set $GITLAB,gitlab.enabled=false"
     fi
 
     if $UPGRADE
@@ -465,6 +483,10 @@ function parseinput() {
                 INTERNAL_GITLAB_ENABLED=true
                 shift
                 ;;
+            -s|--storage-class)
+                STORAGE_CLASS=$2
+                shift 2
+                ;;
             -e|--external-gitlab)
                 GITLAB="core.args.gitOpsRepoDefaultBranch=$2"
                 GITLAB="$GITLAB,config.gitopsRepoConfig.rootGroupPath=$3"
@@ -489,9 +511,13 @@ function parseinput() {
                 echo "Horizon is initialized successfully!"
                 exit
                 ;;
-            -c|--clean)
+            -c|--cloud)
+                CLOUD=true
+                shift
+                ;;
+            --clean)
                 CLEAN=true
-                exit
+                shift
                 ;;
             *)
                 echo "Invalid option $1"
@@ -515,14 +541,11 @@ function parseinput() {
 
     checkprerequesites
 
-    if $KIND && $MINIKUBE
+    if ! $KIND && ! $MINIKUBE && ! $CLOUD
     then
-        echo "Cannot use both kind and minikube"
-        exit
-    elif ! $KIND && ! $MINIKUBE
-    then
-        echo "Must use either kind or minikube"
-        exit
+        echo "Please specify the cluster type. kind or minikube or cloud."
+        cmdhelp
+        exit 1
     elif $KIND
     then
         kindcreatecluster
@@ -531,14 +554,20 @@ function parseinput() {
         minikubecreatecluster
     fi
 
-    installingress
+    if ! $CLOUD
+    then
+        installingress
+    fi
 
     install
 
-    applyinitjobtok8s
+    if ! $CLOUD
+    then
+        applyinitjobtok8s
+    fi
 
-    docker exec $CONTAINER_NAME bash -c \
-          $'echo "nameserver `kubectl get service -n kube-system kube-dns -o jsonpath=\'{.spec.clusterIP}\'`" >> /etc/resolv.conf'
+    nameserver=$(kubectl get service -n kube-system kube-dns -o jsonpath={.spec.clusterIP})
+    docker exec $CONTAINER_NAME bash -c "echo \"nameserver $nameserver\" > /etc/resolv.conf"
 
     echo 'Horizon is installed successfully!'
 }
