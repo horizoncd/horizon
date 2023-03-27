@@ -10,30 +10,30 @@ import (
 )
 
 // RegisterRoutes register routes
-func (api *API) RegisterRoute(engine *gin.Engine) {
+func (a *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group("/apis/core/v1")
 	var routes = route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/log", _pipelinerunIDParam),
-			HandlerFunc: api.Log,
+			HandlerFunc: a.Log,
 		}, {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/stop", _pipelinerunIDParam),
-			HandlerFunc: api.Stop,
+			HandlerFunc: a.Stop,
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/diffs", _pipelinerunIDParam),
-			HandlerFunc: api.GetDiff,
+			HandlerFunc: a.GetDiff,
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v", _pipelinerunIDParam),
-			HandlerFunc: api.Get,
+			HandlerFunc: a.Get,
 		},
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/pipelineruns", _clusterIDParam),
-			HandlerFunc: api.List,
+			HandlerFunc: a.List,
 		},
 	}
 
@@ -45,11 +45,11 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/log", _clusterParam),
-			HandlerFunc: api.LatestLogForCluster,
+			HandlerFunc: a.LatestLogForCluster,
 		}, {
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/clusters/:%v/stop", _clusterParam),
-			HandlerFunc: api.StopPipelinerunForCluster,
+			HandlerFunc: a.StopPipelinerunForCluster,
 		},
 	}
 

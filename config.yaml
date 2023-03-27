@@ -50,8 +50,11 @@ tektonMapper:
     # if you run horizon on local machine, you need to set this to the absolute path of your kubeconfig
     # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
     kubeconfig: "/Users/xxx/.kube/config"
-    s3:
-      enabled: false
+    logStorage:
+      # the following types of log storage are supported:
+      #   s3: default minio is used, and you can also configure your own s3 storage
+      #   dummy: a dummy log storage, build logs are not stored and get them directly from k8s
+      type: dummy
       accessKey: ""
       secretKey: ""
       region: ""

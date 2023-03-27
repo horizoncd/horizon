@@ -13,22 +13,21 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
-type NoStorageCollector struct {
+type DummyCollector struct {
 	tekton tekton.Interface
 }
 
-func NewNoStorageCollector(tekton tekton.Interface) *NoStorageCollector {
-	return &NoStorageCollector{
+func NewDummyCollector(tekton tekton.Interface) Interface {
+	return &DummyCollector{
 		tekton: tekton,
 	}
 }
 
-func (c *NoStorageCollector) Collect(ctx context.Context, pr *v1beta1.PipelineRun,
+func (c *DummyCollector) Collect(ctx context.Context, pr *v1beta1.PipelineRun,
 	horizonMetaData *global.HorizonMetaData) (*CollectResult, error) {
-	const op = "NoStorageCollector: collect"
+	const op = "DummyCollector: collect"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	// only collect pipelineRun result and Start and end time
 	metadata := resolveObjMetadata(pr, horizonMetaData)
 	collectResult := &CollectResult{
 		Result:         metadata.PipelineRun.Result,
@@ -40,8 +39,8 @@ func (c *NoStorageCollector) Collect(ctx context.Context, pr *v1beta1.PipelineRu
 	return collectResult, nil
 }
 
-func (c *NoStorageCollector) GetPipelineRunLog(ctx context.Context, pr *prmodels.Pipelinerun) (*Log, error) {
-	const op = "NoStorageCollector: getPipelineRunLog"
+func (c *DummyCollector) GetPipelineRunLog(ctx context.Context, pr *prmodels.Pipelinerun) (*Log, error) {
+	const op = "DummyCollector: getPipelineRunLog"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// get logs from k8s directly
@@ -55,15 +54,15 @@ func (c *NoStorageCollector) GetPipelineRunLog(ctx context.Context, pr *prmodels
 	}, nil
 }
 
-func (c *NoStorageCollector) GetPipelineRunObject(ctx context.Context,
+func (c *DummyCollector) GetPipelineRunObject(ctx context.Context,
 	object string) (*Object, error) {
 	// no storage to collect pipelineRun object
 	return nil, nil
 }
 
-func (c *NoStorageCollector) GetPipelineRun(ctx context.Context,
+func (c *DummyCollector) GetPipelineRun(ctx context.Context,
 	pr *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
-	const op = "NoStorageCollector: getPipelineRun"
+	const op = "DummyCollector: getPipelineRun"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// get pipelineRun from k8s directly
