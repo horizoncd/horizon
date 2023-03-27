@@ -21,8 +21,11 @@ const (
 	ClusterQueryEnd           = "end"
 	ClusterQueryExtraOwner    = "extraOwner"
 	ClusterQueryHard          = "hard"
-	ClusterQueryIsFavorite    = "isFavorite"
-	ClusterQueryWithFavorite  = "withFavorite"
+
+	// ClusterQueryIsFavorite is used to query cluster with favorite for current user only.
+	ClusterQueryIsFavorite = "isFavorite"
+	// ClusterQueryWithFavorite is used to query cluster with favorite field inside.
+	ClusterQueryWithFavorite = "withFavorite"
 )
 
 const (

@@ -582,7 +582,7 @@ func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r 
 	return buildTemplateInfo, nil
 }
 
-func (c *controller) Like(ctx context.Context, clusterID uint, like *WhetherLike) (err error) {
+func (c *controller) ToggleLikeStatus(ctx context.Context, clusterID uint, like *WhetherLike) (err error) {
 	// get current user
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {

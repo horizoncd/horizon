@@ -467,7 +467,7 @@ func (a *API) AddFavorite(c *gin.Context) {
 
 	whetherLike := cluster.WhetherLike{IsFavorite: true}
 
-	err = a.clusterCtl.Like(c, uint(clusterID), &whetherLike)
+	err = a.clusterCtl.ToggleLikeStatus(c, uint(clusterID), &whetherLike)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
@@ -491,7 +491,7 @@ func (a *API) DeleteFavorite(c *gin.Context) {
 
 	whetherLike := cluster.WhetherLike{IsFavorite: false}
 
-	err = a.clusterCtl.Like(c, uint(clusterID), &whetherLike)
+	err = a.clusterCtl.ToggleLikeStatus(c, uint(clusterID), &whetherLike)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))

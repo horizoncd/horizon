@@ -27,7 +27,8 @@ type DAO interface {
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
-	List(ctx context.Context, query *q.Query, withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error)
+	List(ctx context.Context, query *q.Query, userID uint,
+		withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error)
 	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*models.Cluster, error)
 	GetByNameFuzzily(ctx context.Context, name string, includeSoftDelete bool) ([]*models.Cluster, error)
 }
@@ -204,8 +205,8 @@ func (d *dao) CheckClusterExists(ctx context.Context, cluster string) (bool, err
 	return true, nil
 }
 
-func (d *dao) List(ctx context.Context,
-	query *q.Query, withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
+func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
+	withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
 	var (
 		clusters []*models.ClusterWithRegion
 		total    int64
@@ -255,9 +256,11 @@ func (d *dao) List(ctx context.Context,
 				isFavoriteInter := query.Keywords[common.ClusterQueryIsFavorite]
 				isFavorite := isFavoriteInter.(bool)
 				if isFavorite {
-					statement = statement.Where("c.id in (select resource_id from tb_collection where resource_type = 'cluster')")
+					statement = statement.Where("c.id in (select resource_id from "+
+						"tb_collection where resource_type = 'cluster' and user_id = ?)", userID)
 				} else {
-					statement = statement.Where("c.id not in (select resource_id from tb_collection where resource_type = 'cluster')")
+					statement = statement.Where("c.id not in (select resource_id from "+
+						"tb_collection where resource_type = 'cluster' and user_id = ?)", userID)
 				}
 			}
 		}

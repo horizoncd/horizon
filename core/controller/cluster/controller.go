@@ -107,7 +107,7 @@ type Controller interface {
 	GetStep(ctx context.Context, clusterID uint) (resp *GetStepResponse, err error)
 	// Deprecated: for internal usage, v1 to v2
 	Upgrade(ctx context.Context, clusterID uint) error
-	Like(ctx context.Context, clusterID uint, like *WhetherLike) (err error)
+	ToggleLikeStatus(ctx context.Context, clusterID uint, like *WhetherLike) (err error)
 }
 
 type controller struct {
