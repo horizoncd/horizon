@@ -36,20 +36,25 @@ func NewFactory(tektonMapper tektonconfig.Mapper) (Factory, error) {
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
-		s3Driver, err := s3.NewDriver(s3.Params{
-			AccessKey:        tektonConfig.S3.AccessKey,
-			SecretKey:        tektonConfig.S3.SecretKey,
-			Region:           tektonConfig.S3.Region,
-			Endpoint:         tektonConfig.S3.Endpoint,
-			Bucket:           tektonConfig.S3.Bucket,
-			DisableSSL:       tektonConfig.S3.DisableSSL,
-			SkipVerify:       tektonConfig.S3.SkipVerify,
-			S3ForcePathStyle: tektonConfig.S3.S3ForcePathStyle,
-			ContentType:      "text/plain",
-		})
-		c := collector.NewS3Collector(s3Driver, t)
-		if err != nil {
-			return nil, errors.E(op, err)
+		var c collector.Interface
+		if tektonConfig.S3.Enabled {
+			s3Driver, err := s3.NewDriver(s3.Params{
+				AccessKey:        tektonConfig.S3.AccessKey,
+				SecretKey:        tektonConfig.S3.SecretKey,
+				Region:           tektonConfig.S3.Region,
+				Endpoint:         tektonConfig.S3.Endpoint,
+				Bucket:           tektonConfig.S3.Bucket,
+				DisableSSL:       tektonConfig.S3.DisableSSL,
+				SkipVerify:       tektonConfig.S3.SkipVerify,
+				S3ForcePathStyle: tektonConfig.S3.S3ForcePathStyle,
+				ContentType:      "text/plain",
+			})
+			if err != nil {
+				return nil, errors.E(op, err)
+			}
+			c = collector.NewS3Collector(s3Driver, t)
+		} else {
+			c = collector.NewNoStorageCollector(t)
 		}
 		cache.Store(env, &tektonCache{
 			tekton:          t,

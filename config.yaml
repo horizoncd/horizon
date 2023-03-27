@@ -51,6 +51,7 @@ tektonMapper:
     # if you are running it on mac, the path may be looked like '/Users/xxx/.kube/config'
     kubeconfig: "/Users/xxx/.kube/config"
     s3:
+      enabled: false
       accessKey: ""
       secretKey: ""
       region: ""

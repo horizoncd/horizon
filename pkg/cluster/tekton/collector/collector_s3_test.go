@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
@@ -178,6 +179,7 @@ func TestS3Collector_Collect(t *testing.T) {
 	ctl := gomock.NewController(t)
 	tek := tektonmock.NewMockInterface(ctl)
 	tek.EXPECT().GetPipelineRunLog(ctx, pr).Return(getPipelineRunLog(pr))
+	tek.EXPECT().DeletePipelineRun(ctx, pr).Return(nil)
 
 	backend := s3mem.New()
 	_ = backend.CreateBucket("bucket")
@@ -214,15 +216,22 @@ func TestS3Collector_Collect(t *testing.T) {
 	t.Logf("%v", string(b))
 
 	// 1. getLatestPipelineRunLog
-	b, err = c.GetPipelineRunLog(ctx, collectResult.LogObject)
+	prModel := &prmodels.Pipelinerun{LogObject: collectResult.LogObject}
+	_, err = c.GetPipelineRunLog(ctx, prModel)
 	assert.Nil(t, err)
-	t.Logf(string(b))
+
 	// 2. getLatestPipelineRunObject
 	obj, err := c.GetPipelineRunObject(ctx, collectResult.PrObject)
 	assert.Nil(t, err)
 	assert.NotNil(t, obj)
 	objectMeta := resolveObjMetadata(pr, businessDatas)
 	if !reflect.DeepEqual(objectMeta, obj.Metadata) {
+		t.Fatalf("pipelineRun objectMeta: expected %v, got %v", objectMeta, obj.Metadata)
+	}
+
+	// 3. getLatestPipelineRun
+	tektonPR, err := c.GetPipelineRun(ctx, prModel)
+	if !reflect.DeepEqual(tektonPR, pr) {
 		t.Fatalf("pipelineRun objectMeta: expected %v, got %v", objectMeta, obj.Metadata)
 	}
 }

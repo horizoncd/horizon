@@ -10,6 +10,7 @@ type Tekton struct {
 }
 
 type S3 struct {
+	Enabled          bool   `yaml:"enabled"`
 	AccessKey        string `yaml:"accessKey"`
 	SecretKey        string `yaml:"secretKey"`
 	Region           string `yaml:"region"`

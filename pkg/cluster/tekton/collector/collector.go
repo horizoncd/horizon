@@ -4,6 +4,8 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,6 +46,13 @@ type (
 	}
 )
 
+type Log struct {
+	LogChannel <-chan log.Log
+	ErrChannel <-chan error
+
+	LogBytes []byte
+}
+
 func NewObjectMeta(horizonMetaData *global.HorizonMetaData, pr *v1beta1.PipelineRun) *ObjectMeta {
 	wrappedPr := &metrics.WrappedPipelineRun{
 		PipelineRun: pr,
@@ -79,11 +88,14 @@ type Interface interface {
 	// Collect log & object for pipelinerun
 	Collect(ctx context.Context, pr *v1beta1.PipelineRun, horizonMetaData *global.HorizonMetaData) (*CollectResult, error)
 
-	// GetPipelineRunLog get pipelinerun log from collector
-	GetPipelineRunLog(ctx context.Context, logObject string) (_ []byte, err error)
+	// GetPipelineRunLog gets pipelinerun log from collector
+	GetPipelineRunLog(ctx context.Context, pr *prmodels.Pipelinerun) (*Log, error)
 
 	// GetPipelineRunObject get pipelinerun object from collector
 	GetPipelineRunObject(ctx context.Context, object string) (*Object, error)
+
+	// GetPipelineRun gets tekton pipelinerun
+	GetPipelineRun(ctx context.Context, pr *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error)
 }
 
 var _ Interface = (*S3Collector)(nil)

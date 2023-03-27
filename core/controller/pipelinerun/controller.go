@@ -113,34 +113,19 @@ func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelin
 	const op = "pipeline controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	// if pr.PrObject is empty, get pipelinerun log in k8s
-	if pr.PrObject == "" {
-		tektonClient, err := c.tektonFty.GetTekton(environment)
-		if err != nil {
-			return nil, perror.WithMessagef(err, "faild to get tekton for %s", environment)
-		}
-
-		logCh, errCh, err := tektonClient.GetPipelineRunLogByID(ctx, pr.CIEventID)
-		if err != nil {
-			return nil, err
-		}
-		return &Log{
-			LogChannel: logCh,
-			ErrChannel: errCh,
-		}, nil
-	}
-
-	// else, get log from s3
 	tektonCollector, err := c.tektonFty.GetTektonCollector(environment)
 	if err != nil {
 		return nil, perror.WithMessagef(err, "faild to get tekton collector for %s", environment)
 	}
-	logBytes, err := tektonCollector.GetPipelineRunLog(ctx, pr.LogObject)
+
+	prLog, err := tektonCollector.GetPipelineRunLog(ctx, pr)
 	if err != nil {
-		return nil, perror.WithMessagef(err, "faild to get tekton collector for %s", environment)
+		return nil, err
 	}
 	return &Log{
-		LogBytes: logBytes,
+		LogChannel: prLog.LogChannel,
+		ErrChannel: prLog.ErrChannel,
+		LogBytes:   prLog.LogBytes,
 	}, nil
 }
 
