@@ -36,7 +36,7 @@ GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.name=gitops-cre
 # Check if the binary is installed
 # If not, return false, else return true
 function checkbinary() {
-    if command -v $1 &> /dev/null
+    if command -v "$1" &> /dev/null
     then
         echo "The binary $1 is installed"
         return 0
@@ -47,7 +47,7 @@ function checkbinary() {
 }
 
 function mustinstalled() {
-    if ! command -v $1 &> /dev/null
+    if ! command -v "$1" &> /dev/null
     then
         echo "The binary $1 is not installed"
         exit
@@ -114,12 +114,12 @@ function cmdhelp() {
     echo "Usage: $0 [options]"
     echo "Options:"
     echo "  -h, --help"
-    echo "  -e, --gitlab-external <defaultBranch> <rootGroupID> <url> <token>, create with external gitlab"
+    echo "  -e, --gitlab-external <defaultBranch> <rootGroupID> <gitlabURL> <token>, create with external gitlab"
     echo "  -g, --gitlab-internal, create with internal gitlab"
     echo "  -k, --kind, create cluster by kind"
     echo "  -m, --minikube, create cluster by minikube"
     echo "  --clean"
-    echo "  -c, --cloud"
+    echo "  -c, --cloud, install on cloud"
     echo "  -s, --storage-class <STORAGE_CLASS>, specify the storage class to use, only take effect when -c/--cloud is set"
     echo "  -v, --version <VERSION>, specify the version of horizon to install"
     echo "  -u, --upgrade, equals to helm upgrade"
@@ -127,7 +127,7 @@ function cmdhelp() {
     echo "  -f, --full, install full horizon"
     echo "  --set <HELM SETS>, equals to helm install/upgrade --set ..."
     # install for user from China
-    echo "  -cn, --china, install China"
+    echo "  -cn, --china, install with image mirror in China"
 }
 
 function kindcreatecluster() {
@@ -171,8 +171,16 @@ function minikubecreatecluster() {
 
     CONTAINER_NAME="minikube"
 
+    MEMORY=8000
+    CPUS=4
+    if ! $FULL
+    then
+        MEMORY=4000
+        CPUS=2
+    fi
+
     minikube start --container-runtime=docker --driver=docker \
-        --kubernetes-version=v1.19.16 --cpus=4 --memory=8000 --ports=80:80 --ports=443:443 || exit 1
+        --kubernetes-version=v1.19.16 --cpus=$CPUS --memory=$MEMORY --ports=80:80 --ports=443:443 || exit 1
 
     kubectl config use-context minikube || exit 1
 }
@@ -199,7 +207,7 @@ function installingress() {
 function progressbar() {
   while true; do
    # get count of pods
-    total=$(kubectl get pods -nhorizoncd --field-selector=status.phase!=Failed 2> /dev/null | grep -v NAME | wc -l | awk '{print $1}')
+    total=$(kubectl get pods -nhorizoncd --field-selector=status.phase!=Failed 2> /dev/null | grep -v NAME -c | awk '{print $1}')
 
     # get count of pods that are ready
     ready=$(kubectl get pods -nhorizoncd --field-selector=status.phase=Running 2> /dev/null | \
@@ -214,8 +222,8 @@ function progressbar() {
 
     # print progress bar
     echo -ne '['
-    for ((i=0; i<$bar_length; i++)); do
-      if ((i < $completed)); then
+    for ((i=0; i<bar_length; i++)); do
+      if ((i < completed)); then
         echo -ne '#'
       else
         echo -ne '-'
@@ -237,6 +245,7 @@ function progressbar() {
 function install() {
     helm repo add horizon https://horizoncd.github.io/helm-charts
 
+    echo "Update helm repo"
     helm repo update
 
     cmd="helm"
@@ -287,8 +296,8 @@ function install() {
         cmd="$cmd -f https://raw.githubusercontent.com/horizoncd/helm-charts/main/horizon-cn-values.yaml"
     fi
 
-    echo $cmd
-    eval $cmd 2> /dev/null
+    printf "\n Run: %s" "$cmd"
+    eval "$cmd" 2> /dev/null
 
     progressbar
 }
@@ -303,11 +312,11 @@ function clean() {
 #    kubectl delete ns ingress-nginx
 
     echo "Cleaning kind cluster"
-    if $KIND
+    if $MINIKUBE
     then
-        kind delete cluster --name horizon
-    else
         minikube delete
+    else
+        kind delete cluster --name horizon
     fi
 }
 
@@ -566,7 +575,7 @@ function parseinput() {
         applyinitjobtok8s
     fi
 
-    nameserver=$(kubectl get service -n kube-system kube-dns -o jsonpath={.spec.clusterIP})
+    nameserver=$(kubectl get service -n kube-system kube-dns -o jsonpath="{.spec.clusterIP}")
     docker exec $CONTAINER_NAME bash -c "echo \"nameserver $nameserver\" > /etc/resolv.conf"
 
     echo 'Horizon is installed successfully!'
