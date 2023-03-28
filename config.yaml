@@ -52,8 +52,8 @@ tektonMapper:
     kubeconfig: "/Users/xxx/.kube/config"
     logStorage:
       # the following types of log storage are supported:
-      #   s3: default minio is used, and you can also configure your own s3 storage
-      #   dummy: a dummy log storage, build logs are not stored and get them directly from k8s
+      #   s3: Minio is used by default, and you can also specify your own s3 storage.
+      #   dummy: A dummy log storage. Building logs are not stored and Horizon gets them directly from k8s.
       type: dummy
       accessKey: ""
       secretKey: ""
