@@ -7,6 +7,7 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
 	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/server/request"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/util/errors"
@@ -40,7 +41,7 @@ func (a *API) Log(c *gin.Context) {
 	}
 	l, err := a.prCtl.GetPipelinerunLog(c, uint(prID))
 	if err != nil {
-		l := &prctl.Log{
+		l := &collector.Log{
 			LogBytes: []byte(errors.Message(err)),
 		}
 		a.writeLog(c, l)
@@ -64,7 +65,7 @@ func (a *API) LatestLogForCluster(c *gin.Context) {
 	a.writeLog(c, l)
 }
 
-func (a *API) writeLog(c *gin.Context, l *prctl.Log) {
+func (a *API) writeLog(c *gin.Context, l *collector.Log) {
 	c.Header("Content-Type", "text/plain")
 	if l.LogBytes != nil {
 		_, _ = c.Writer.Write(l.LogBytes)

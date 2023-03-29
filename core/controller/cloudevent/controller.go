@@ -92,20 +92,6 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		return err
 	}
 
-	tekton, err := c.tektonFty.GetTekton(environment)
-	if err != nil {
-		return err
-	}
-
-	// 3. delete pipelinerun in k8s
-	if err := tekton.DeletePipelineRun(ctx, wpr.PipelineRun); err != nil {
-		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			log.Warningf(ctx, "received pipelineRun: %v is not found when delete", wpr.PipelineRun.Name)
-			return nil
-		}
-		return err
-	}
-
 	// format Pipeline results
 	pipelineResult := metrics.FormatPipelineResults(wpr.PipelineRun)
 

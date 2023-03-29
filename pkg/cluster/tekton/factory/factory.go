@@ -11,7 +11,10 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/errors"
 )
 
-const _default = "default"
+const (
+	_default   = "default"
+	_s3Storage = "s3"
+)
 
 type Factory interface {
 	GetTekton(environment string) (tekton.Interface, error)
@@ -36,20 +39,25 @@ func NewFactory(tektonMapper tektonconfig.Mapper) (Factory, error) {
 		if err != nil {
 			return nil, errors.E(op, err)
 		}
-		s3Driver, err := s3.NewDriver(s3.Params{
-			AccessKey:        tektonConfig.S3.AccessKey,
-			SecretKey:        tektonConfig.S3.SecretKey,
-			Region:           tektonConfig.S3.Region,
-			Endpoint:         tektonConfig.S3.Endpoint,
-			Bucket:           tektonConfig.S3.Bucket,
-			DisableSSL:       tektonConfig.S3.DisableSSL,
-			SkipVerify:       tektonConfig.S3.SkipVerify,
-			S3ForcePathStyle: tektonConfig.S3.S3ForcePathStyle,
-			ContentType:      "text/plain",
-		})
-		c := collector.NewS3Collector(s3Driver, t)
-		if err != nil {
-			return nil, errors.E(op, err)
+		var c collector.Interface
+		if tektonConfig.LogStorage.Type == _s3Storage {
+			s3Driver, err := s3.NewDriver(s3.Params{
+				AccessKey:        tektonConfig.LogStorage.AccessKey,
+				SecretKey:        tektonConfig.LogStorage.SecretKey,
+				Region:           tektonConfig.LogStorage.Region,
+				Endpoint:         tektonConfig.LogStorage.Endpoint,
+				Bucket:           tektonConfig.LogStorage.Bucket,
+				DisableSSL:       tektonConfig.LogStorage.DisableSSL,
+				SkipVerify:       tektonConfig.LogStorage.SkipVerify,
+				S3ForcePathStyle: tektonConfig.LogStorage.S3ForcePathStyle,
+				ContentType:      "text/plain",
+			})
+			if err != nil {
+				return nil, errors.E(op, err)
+			}
+			c = collector.NewS3Collector(s3Driver, t)
+		} else {
+			c = collector.NewDummyCollector(t)
 		}
 		cache.Store(env, &tektonCache{
 			tekton:          t,

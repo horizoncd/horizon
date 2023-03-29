@@ -11,8 +11,8 @@ import (
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
-	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param"
@@ -25,8 +25,8 @@ import (
 )
 
 type Controller interface {
-	GetPipelinerunLog(ctx context.Context, pipelinerunID uint) (*Log, error)
-	GetClusterLatestLog(ctx context.Context, clusterID uint) (*Log, error)
+	GetPipelinerunLog(ctx context.Context, pipelinerunID uint) (*collector.Log, error)
+	GetClusterLatestLog(ctx context.Context, clusterID uint) (*collector.Log, error)
 	GetDiff(ctx context.Context, pipelinerunID uint) (*GetDiffResponse, error)
 	Get(ctx context.Context, pipelinerunID uint) (*PipelineBasic, error)
 	List(ctx context.Context, clusterID uint, canRollback bool, query q.Query) (int, []*PipelineBasic, error)
@@ -60,14 +60,7 @@ func NewController(param *param.Param) Controller {
 	}
 }
 
-type Log struct {
-	LogChannel <-chan log.Log
-	ErrChannel <-chan error
-
-	LogBytes []byte
-}
-
-func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) (_ *Log, err error) {
+func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) (_ *collector.Log, err error) {
 	const op = "pipelinerun controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -89,7 +82,7 @@ func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) 
 	return c.getPipelinerunLog(ctx, pr, cluster.EnvironmentName)
 }
 
-func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_ *Log, err error) {
+func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_ *collector.Log, err error) {
 	const op = "pipelinerun controller: get cluster latest log"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -109,39 +102,16 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 }
 
 func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelinerun,
-	environment string) (_ *Log, err error) {
+	environment string) (_ *collector.Log, err error) {
 	const op = "pipeline controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	// if pr.PrObject is empty, get pipelinerun log in k8s
-	if pr.PrObject == "" {
-		tektonClient, err := c.tektonFty.GetTekton(environment)
-		if err != nil {
-			return nil, perror.WithMessagef(err, "faild to get tekton for %s", environment)
-		}
-
-		logCh, errCh, err := tektonClient.GetPipelineRunLogByID(ctx, pr.CIEventID)
-		if err != nil {
-			return nil, err
-		}
-		return &Log{
-			LogChannel: logCh,
-			ErrChannel: errCh,
-		}, nil
-	}
-
-	// else, get log from s3
 	tektonCollector, err := c.tektonFty.GetTektonCollector(environment)
 	if err != nil {
 		return nil, perror.WithMessagef(err, "faild to get tekton collector for %s", environment)
 	}
-	logBytes, err := tektonCollector.GetPipelineRunLog(ctx, pr.LogObject)
-	if err != nil {
-		return nil, perror.WithMessagef(err, "faild to get tekton collector for %s", environment)
-	}
-	return &Log{
-		LogBytes: logBytes,
-	}, nil
+
+	return tektonCollector.GetPipelineRunLog(ctx, pr)
 }
 
 func (c *controller) GetDiff(ctx context.Context, pipelinerunID uint) (_ *GetDiffResponse, err error) {

@@ -15,6 +15,7 @@ import (
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -51,7 +52,7 @@ type S3Collector struct {
 	logger *log.Logger
 }
 
-func NewS3Collector(s3 s3.Interface, tekton tekton.Interface) *S3Collector {
+func NewS3Collector(s3 s3.Interface, tekton tekton.Interface) Interface {
 	dir := getEnvOrDefault(_envKeyPipelineRunLogDIR, _defaultPipelineRunLogDir)
 	filename := getEnvOrDefault(_envKeyPipelineRunLogFile, _defaultPipelineRunLogFile)
 	output := lumberjack.Logger{
@@ -118,6 +119,8 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, hori
 	*CollectResult, error) {
 	const op = "s3Collector: collect"
 	defer wlog.Start(ctx, op).StopPrint()
+
+	// collect pipelineRun log into s3
 	metadata := resolveObjMetadata(pr, horizonMetaData)
 	collectLogResult, err := c.collectLog(ctx, pr, metadata)
 	if err != nil {
@@ -137,18 +140,55 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, hori
 	}
 	b = cutByteInMiddle(b, _limitSize, _mb, len(b)-_mb)
 	c.logger.Println(string(b))
-	return &CollectResult{
+
+	collectResult := &CollectResult{
 		Bucket:         c.s3.GetBucket(ctx),
 		LogObject:      collectLogResult.LogObject,
 		PrObject:       collectObjectResult.PrObject,
 		Result:         metadata.PipelineRun.Result,
 		StartTime:      metadata.PipelineRun.StartTime,
 		CompletionTime: metadata.PipelineRun.CompletionTime,
+	}
+
+	// delete pipelinerun in k8s
+	if err := c.tekton.DeletePipelineRun(ctx, pr); err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			logutil.Warningf(ctx, "received pipelineRun: %v is not found when deleted", pr.Name)
+			return collectResult, nil
+		}
+		return nil, err
+	}
+	return collectResult, nil
+}
+
+func (c *S3Collector) GetPipelineRunLog(ctx context.Context, pr *prmodels.Pipelinerun) (*Log, error) {
+	const op = "s3Collector: getPipelineRunLog"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	// if pr.PrObject is not empty, get logs from s3
+	if pr.PrObject != "" {
+		logBytes, err := c.getPipelineRunLog(ctx, pr.LogObject)
+		if err != nil {
+			return nil, perror.WithMessagef(err, "failed to get pipelineRun log from s3")
+		}
+		return &Log{
+			LogBytes: logBytes,
+		}, nil
+	}
+
+	// else, get logs from k8s directly
+	logCh, errCh, err := c.tekton.GetPipelineRunLogByID(ctx, pr.CIEventID)
+	if err != nil {
+		return nil, perror.WithMessagef(err, "failed to get pipelineRun log from k8s")
+	}
+	return &Log{
+		LogChannel: logCh,
+		ErrChannel: errCh,
 	}, nil
 }
 
-func (c *S3Collector) GetPipelineRunLog(ctx context.Context, logObject string) (_ []byte, err error) {
-	const op = "s3Collector: getPipelineRunLog"
+func (c *S3Collector) getPipelineRunLog(ctx context.Context, logObject string) (_ []byte, err error) {
+	const op = "s3Collector: getPipelineRunLog from s3"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	b, err := c.s3.GetObject(ctx, logObject)
@@ -181,6 +221,31 @@ func (c *S3Collector) GetPipelineRunObject(ctx context.Context, object string) (
 		return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 	}
 	return obj, nil
+}
+
+func (c *S3Collector) GetPipelineRun(ctx context.Context,
+	pr *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
+	const op = "s3Collector: getPipelineRun"
+	defer wlog.Start(ctx, op).StopPrint()
+
+	// if pr.PrObject is not empty, get pipelineRun object from s3
+	if pr.PrObject != "" {
+		obj, err := c.GetPipelineRunObject(ctx, pr.PrObject)
+		if err != nil {
+			return nil, err
+		}
+		return obj.PipelineRun, nil
+	}
+
+	// else, get pipelineRun object from k8s directly
+	tektonPipelineRun, err := c.tekton.GetPipelineRunByID(ctx, pr.CIEventID)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return tektonPipelineRun, nil
 }
 
 type CollectObjectResult struct {
