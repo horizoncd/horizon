@@ -3,8 +3,8 @@ package response
 import (
 	"net/http"
 
-	"github.com/horizoncd/horizon/core/common"
-	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	"github.com/horizoncd/horizon/pkg/core/middleware/requestid"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/log"

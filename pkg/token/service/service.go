@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	herror "github.com/horizoncd/horizon/core/errors"
 	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
+	herror "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/token/generator"

@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 	"time"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"helm.sh/helm/v3/pkg/chart"
 	"sigs.k8s.io/yaml"

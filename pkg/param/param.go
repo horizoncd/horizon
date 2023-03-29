@@ -18,7 +18,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 
-	"github.com/horizoncd/horizon/core/controller/build"
+	"github.com/horizoncd/horizon/pkg/core/controller/build"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/templaterelease/output"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"

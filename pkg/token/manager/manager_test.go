@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/token/generator"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	v5jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
 )

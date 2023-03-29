@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/common"
 	"github.com/horizoncd/horizon/pkg/pipelinerun/models"

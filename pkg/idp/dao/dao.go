@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/horizoncd/horizon/core/common/idp"
-	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/core/common/idp"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/idp/models"
 	"gorm.io/gorm"

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/tag/models"
 
 	"github.com/stretchr/testify/assert"

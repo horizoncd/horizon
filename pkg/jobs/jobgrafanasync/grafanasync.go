@@ -3,7 +3,7 @@ package jobgrafanasync
 import (
 	"context"
 
-	"github.com/horizoncd/horizon/core/config"
+	"github.com/horizoncd/horizon/pkg/core/config"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"k8s.io/client-go/kubernetes"

@@ -3,10 +3,10 @@ package manager
 import (
 	"context"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/cluster/dao"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	userdao "github.com/horizoncd/horizon/pkg/user/dao"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"

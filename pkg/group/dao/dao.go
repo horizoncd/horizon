@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/horizoncd/horizon/core/common"
-	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
 	dbcommon "github.com/horizoncd/horizon/pkg/common"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/group/models"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"

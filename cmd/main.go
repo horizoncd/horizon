@@ -3,7 +3,7 @@ package main
 import (
 	_ "net/http/pprof"
 
-	"github.com/horizoncd/horizon/core/cmd"
+	"github.com/horizoncd/horizon/pkg/core/cmd"
 
 	// for image registry
 	_ "github.com/horizoncd/horizon/pkg/cluster/registry/harbor/v1"

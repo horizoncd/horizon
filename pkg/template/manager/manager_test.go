@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"

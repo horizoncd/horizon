@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/stretchr/testify/assert"
 )

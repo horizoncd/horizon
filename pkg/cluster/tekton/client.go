@@ -3,7 +3,7 @@ package tekton
 import (
 	"strings"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	tektonclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"k8s.io/client-go/dynamic"

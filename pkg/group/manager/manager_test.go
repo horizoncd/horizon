@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/horizoncd/horizon/core/common"
-	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
 	applicationdao "github.com/horizoncd/horizon/pkg/application/dao"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"

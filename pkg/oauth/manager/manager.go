@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/horizoncd/horizon/core/common"
-	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
 	"github.com/horizoncd/horizon/pkg/oauth/models"

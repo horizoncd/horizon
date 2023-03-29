@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	eventhandlerconfig "github.com/horizoncd/horizon/pkg/config/eventhandler"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"

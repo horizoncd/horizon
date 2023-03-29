@@ -8,8 +8,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/horizoncd/horizon/core/common"
-	webhookctl "github.com/horizoncd/horizon/core/controller/webhook"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	webhookctl "github.com/horizoncd/horizon/pkg/core/controller/webhook"
 	"github.com/horizoncd/horizon/lib/q"
 	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	applicationmodels "github.com/horizoncd/horizon/pkg/application/models"

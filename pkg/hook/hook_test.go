@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/pkg/core/middleware/requestid"
 	handlermock "github.com/horizoncd/horizon/mock/pkg/hook/handler"
 	hhook "github.com/horizoncd/horizon/pkg/hook/hook"
 	"github.com/horizoncd/horizon/pkg/util/log"

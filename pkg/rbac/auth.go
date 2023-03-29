@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/pkg/auth"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	"github.com/horizoncd/horizon/pkg/rbac/role"

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"

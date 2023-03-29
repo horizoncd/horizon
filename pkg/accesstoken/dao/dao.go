@@ -7,9 +7,9 @@ import (
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	"gorm.io/gorm"
 
-	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/accesstoken/models"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 )
 

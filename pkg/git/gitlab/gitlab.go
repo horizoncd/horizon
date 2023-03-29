@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"regexp"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/git"
 	"github.com/xanzy/go-gitlab"

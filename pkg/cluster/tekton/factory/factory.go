@@ -3,7 +3,7 @@ package factory
 import (
 	"sync"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/lib/s3"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"

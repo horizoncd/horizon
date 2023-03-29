@@ -6,9 +6,9 @@ import (
 
 	pkgcommon "github.com/horizoncd/horizon/pkg/common"
 
-	"github.com/horizoncd/horizon/core/common"
-	herrors "github.com/horizoncd/horizon/core/errors"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/angular"
 	"github.com/horizoncd/horizon/pkg/util/log"

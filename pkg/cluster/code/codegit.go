@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/git"

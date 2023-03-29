@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	applicationdao "github.com/horizoncd/horizon/pkg/application/dao"
 	envregiondao "github.com/horizoncd/horizon/pkg/environmentregion/dao"
