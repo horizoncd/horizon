@@ -2,13 +2,13 @@
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 # Declare all targets as phony targets
-.PHONY: all build swagger swagger-run job core clean lint ut imports help 
+.PHONY: all build swagger swagger-run  core clean lint ut imports help
 
 all: tidy gen format lint cover build
 
 ## build: Build the project for horizon
 build:
-	@mkdir -p bin && export CGO_ENABLED=0 && go build -o bin/app -ldflags '-s -w' ./core/main.go
+	@mkdir -p bin && export CGO_ENABLED=0 && go build -o bin/app -ldflags '-s -w' ./cmd/main.go
 
 ## swagger: Build the swagger
 swagger:
@@ -22,14 +22,6 @@ endif
 swagger-run: swagger
 	@echo "===========> Swagger is available at http://localhost:80"
 	@docker run --rm -p 80:8080 horizon-swagger
-
-## job: Build the job
-job:
-ifeq ($(shell uname -m),arm64)
-	@docker build -t horizon-job -f build/job/Dockerfile . --platform linux/arm64
-else
-	@docker build -t horizon-job -f build/job/Dockerfile .
-endif
 
 ## core: Build the core
 core:
