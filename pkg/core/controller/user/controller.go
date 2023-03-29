@@ -3,9 +3,9 @@ package user
 import (
 	"context"
 
+	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/core/common"
 	herrors "github.com/horizoncd/horizon/pkg/core/errors"
-	"github.com/horizoncd/horizon/lib/q"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/user/manager"

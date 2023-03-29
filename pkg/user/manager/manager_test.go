@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	idpmodels "github.com/horizoncd/horizon/pkg/idp/models"
 	"github.com/horizoncd/horizon/pkg/idp/utils"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"

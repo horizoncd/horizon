@@ -14,8 +14,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/horizoncd/horizon/pkg/core/common"
-	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
 	gitmock "github.com/horizoncd/horizon/mock/pkg/git"
 	groupmanagermock "github.com/horizoncd/horizon/mock/pkg/group/manager"
@@ -30,6 +28,8 @@ import (
 	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	config "github.com/horizoncd/horizon/pkg/config/templaterepo"
 	hctx "github.com/horizoncd/horizon/pkg/context"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/git"
 	"github.com/horizoncd/horizon/pkg/git/gitlab"

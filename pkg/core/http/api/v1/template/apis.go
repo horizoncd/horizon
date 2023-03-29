@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strconv"
 
+	tplctx "github.com/horizoncd/horizon/pkg/context"
 	"github.com/horizoncd/horizon/pkg/core/common"
 	templatectl "github.com/horizoncd/horizon/pkg/core/controller/template"
 	templateschematagctl "github.com/horizoncd/horizon/pkg/core/controller/templateschematag"
 	herrors "github.com/horizoncd/horizon/pkg/core/errors"
-	tplctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 

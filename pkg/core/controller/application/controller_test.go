@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
 	appgitrepomock "github.com/horizoncd/horizon/mock/pkg/application/gitrepo"
@@ -17,6 +16,7 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	groupservice "github.com/horizoncd/horizon/pkg/group/service"

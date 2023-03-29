@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	middleware "github.com/horizoncd/horizon/pkg/core/middleware"
 	"github.com/horizoncd/horizon/pkg/config/authenticate"
+	middleware "github.com/horizoncd/horizon/pkg/core/middleware"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/util/log"
 

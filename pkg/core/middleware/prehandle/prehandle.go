@@ -6,10 +6,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/pkg/auth"
 	"github.com/horizoncd/horizon/pkg/core/common"
 	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	middleware "github.com/horizoncd/horizon/pkg/core/middleware"
-	"github.com/horizoncd/horizon/pkg/auth"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/server/response"

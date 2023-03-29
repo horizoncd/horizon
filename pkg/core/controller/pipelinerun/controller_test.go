@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
 	applicationmockmanager "github.com/horizoncd/horizon/mock/pkg/application/manager"
@@ -24,7 +23,9 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	clustermodel "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	envmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	"github.com/horizoncd/horizon/pkg/git"
 	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
@@ -270,11 +271,8 @@ func Test(t *testing.T) {
 	}
 
 	logBytes := []byte("this is a log")
-	tektonCollector.EXPECT().GetPipelineRunLog(ctx, gomock.Any()).Return(logBytes, nil).AnyTimes()
-
-	logCh := make(chan log.Log)
-	errCh := make(chan error)
-	tekton.EXPECT().GetPipelineRunLogByID(ctx, gomock.Any()).Return(logCh, errCh, nil)
+	tektonCollector.EXPECT().GetPipelineRunLog(ctx, gomock.Any()).
+		Return(&collector.Log{LogBytes: logBytes}, nil).Times(1)
 
 	l, err := c.GetPipelinerunLog(ctx, pipelinerun.ID)
 	assert.Nil(t, err)
@@ -294,6 +292,14 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, pipelinerun)
+
+	logCh := make(chan log.Log)
+	errCh := make(chan error)
+	tektonCollector.EXPECT().GetPipelineRunLog(ctx, gomock.Any()).
+		Return(&collector.Log{
+			LogChannel: logCh,
+			ErrChannel: errCh,
+		}, nil).Times(1)
 
 	go func() {
 		defer close(logCh)

@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	collector "github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
+	models "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	global "github.com/horizoncd/horizon/pkg/server/global"
 	v1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
@@ -52,19 +53,34 @@ func (mr *MockInterfaceMockRecorder) Collect(ctx, pr, horizonMetaData interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Collect", reflect.TypeOf((*MockInterface)(nil).Collect), ctx, pr, horizonMetaData)
 }
 
-// GetPipelineRunLog mocks base method.
-func (m *MockInterface) GetPipelineRunLog(ctx context.Context, logObject string) ([]byte, error) {
+// GetPipelineRun mocks base method.
+func (m *MockInterface) GetPipelineRun(ctx context.Context, pr *models.Pipelinerun) (*v1beta1.PipelineRun, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPipelineRunLog", ctx, logObject)
-	ret0, _ := ret[0].([]byte)
+	ret := m.ctrl.Call(m, "GetPipelineRun", ctx, pr)
+	ret0, _ := ret[0].(*v1beta1.PipelineRun)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPipelineRun indicates an expected call of GetPipelineRun.
+func (mr *MockInterfaceMockRecorder) GetPipelineRun(ctx, pr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPipelineRun", reflect.TypeOf((*MockInterface)(nil).GetPipelineRun), ctx, pr)
+}
+
+// GetPipelineRunLog mocks base method.
+func (m *MockInterface) GetPipelineRunLog(ctx context.Context, pr *models.Pipelinerun) (*collector.Log, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPipelineRunLog", ctx, pr)
+	ret0, _ := ret[0].(*collector.Log)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPipelineRunLog indicates an expected call of GetPipelineRunLog.
-func (mr *MockInterfaceMockRecorder) GetPipelineRunLog(ctx, logObject interface{}) *gomock.Call {
+func (mr *MockInterfaceMockRecorder) GetPipelineRunLog(ctx, pr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPipelineRunLog", reflect.TypeOf((*MockInterface)(nil).GetPipelineRunLog), ctx, logObject)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPipelineRunLog", reflect.TypeOf((*MockInterface)(nil).GetPipelineRunLog), ctx, pr)
 }
 
 // GetPipelineRunObject mocks base method.

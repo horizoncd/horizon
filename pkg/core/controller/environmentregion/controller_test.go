@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/horizoncd/horizon/lib/orm"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/core/controller/environment"
 	"github.com/horizoncd/horizon/pkg/core/controller/region"
-	"github.com/horizoncd/horizon/lib/orm"
-	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
 	"github.com/horizoncd/horizon/pkg/environmentregion/models"
 	"github.com/horizoncd/horizon/pkg/param"

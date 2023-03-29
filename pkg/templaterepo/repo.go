@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/pkg/config/templaterepo"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"helm.sh/helm/v3/pkg/chart"
 )

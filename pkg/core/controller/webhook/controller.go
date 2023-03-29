@@ -3,10 +3,10 @@ package webhook
 import (
 	"context"
 
-	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/lib/q"
 	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	"github.com/horizoncd/horizon/pkg/param"

@@ -7,10 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
+	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/core/controller/user"
 	herrors "github.com/horizoncd/horizon/pkg/core/errors"
-	"github.com/horizoncd/horizon/lib/q"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"

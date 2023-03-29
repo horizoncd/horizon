@@ -4,9 +4,9 @@ import (
 	"context"
 	"sort"
 
-	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	appregionmodels "github.com/horizoncd/horizon/pkg/applicationregion/models"
 	"github.com/horizoncd/horizon/pkg/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/pkg/environment/models"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	"gorm.io/gorm"

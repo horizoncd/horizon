@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/core/common"
-	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -253,41 +253,11 @@ func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,
 
 func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *clustermodels.Cluster,
 	pipelinerun *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
-	var latestPr *v1beta1.PipelineRun
-	getPipelineRunFromCollector := func() (*v1beta1.PipelineRun, error) {
-		tektonCollector, err := c.tektonFty.GetTektonCollector(cluster.EnvironmentName)
-		if err != nil {
-			return nil, err
-		}
-		obj, err := tektonCollector.GetPipelineRunObject(ctx, pipelinerun.PrObject)
-		if err != nil {
-			return nil, err
-		}
-		return obj.PipelineRun, nil
+	tektonCollector, err := c.tektonFty.GetTektonCollector(cluster.EnvironmentName)
+	if err != nil {
+		return nil, err
 	}
-	var (
-		err          error
-		tektonClient tekton.Interface
-	)
-	if pipelinerun.PrObject == "" {
-		tektonClient, err = c.tektonFty.GetTekton(cluster.EnvironmentName)
-		if err != nil {
-			return nil, err
-		}
-		latestPr, err = tektonClient.GetPipelineRunByID(ctx, pipelinerun.CIEventID)
-		if err != nil {
-			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-				return nil, nil
-			}
-			return nil, err
-		}
-	} else {
-		latestPr, err = getPipelineRunFromCollector()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return latestPr, nil
+	return tektonCollector.GetPipelineRun(ctx, pipelinerun)
 }
 
 // getRunningTask Get the latest currently executing Task of the pipeline Run.

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	groupmanagermock "github.com/horizoncd/horizon/mock/pkg/group/manager"
 	membermock "github.com/horizoncd/horizon/mock/pkg/member/service"
@@ -18,6 +17,7 @@ import (
 	applicationdao "github.com/horizoncd/horizon/pkg/application/dao"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/group/service"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"

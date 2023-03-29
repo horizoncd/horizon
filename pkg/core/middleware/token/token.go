@@ -2,11 +2,11 @@ package token
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/horizoncd/horizon/pkg/auth"
 	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/pkg/core/controller/oauthcheck"
 	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/pkg/core/middleware"
-	"github.com/horizoncd/horizon/pkg/auth"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/util/log"

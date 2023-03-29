@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/horizoncd/horizon/lib/orm"
@@ -802,6 +803,10 @@ func test(t *testing.T) {
 	tektonFty.EXPECT().GetTekton(gomock.Any()).Return(tekton, nil).AnyTimes()
 	tekton.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("abc", nil)
 	tekton.EXPECT().GetPipelineRunByID(ctx, gomock.Any()).Return(pr, nil).AnyTimes()
+	tektonCollector := tektoncollectormock.NewMockInterface(mockCtl)
+
+	tektonFty.EXPECT().GetTektonCollector(gomock.Any()).Return(tektonCollector, nil).AnyTimes()
+	tektonCollector.EXPECT().GetPipelineRun(ctx, gomock.Any()).Return(pr, nil).AnyTimes()
 
 	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&git.Commit{
 		ID:      "code-commit-id",

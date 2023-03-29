@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"

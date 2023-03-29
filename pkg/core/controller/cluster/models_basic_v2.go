@@ -3,11 +3,11 @@ package cluster
 import (
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/core/common"
-	controllertag "github.com/horizoncd/horizon/pkg/core/controller/tag"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/core/common"
+	controllertag "github.com/horizoncd/horizon/pkg/core/controller/tag"
 	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 )

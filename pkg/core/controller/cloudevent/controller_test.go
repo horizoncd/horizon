@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	clustergitrepomock "github.com/horizoncd/horizon/mock/pkg/cluster/gitrepo"
 	tektonmock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton"
@@ -19,6 +18,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
+	"github.com/horizoncd/horizon/pkg/core/common"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
@@ -232,8 +232,6 @@ func Test(t *testing.T) {
 			}
 		}(),
 	}, nil)
-
-	tekton.EXPECT().DeletePipelineRun(ctx, gomock.Any()).Return(nil)
 
 	templateReleaseMgr := trmock.NewMockManager(mockCtl)
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(gomock.Any(), gomock.Any(), gomock.Any()).

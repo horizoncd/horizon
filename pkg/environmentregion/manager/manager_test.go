@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
 	"github.com/horizoncd/horizon/pkg/environmentregion/models"

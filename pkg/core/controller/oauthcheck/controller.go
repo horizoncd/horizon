@@ -7,10 +7,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	"github.com/horizoncd/horizon/pkg/auth"
 	rbactype "github.com/horizoncd/horizon/pkg/auth"
 	"github.com/horizoncd/horizon/pkg/authentication/user"
+	herrors "github.com/horizoncd/horizon/pkg/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/oauth/scope"
 	"github.com/horizoncd/horizon/pkg/param"
