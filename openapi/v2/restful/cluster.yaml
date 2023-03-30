@@ -759,6 +759,16 @@ paths:
           in: query
           schema:
             type: string
+        - name: isFavorite
+          description: return user's favorite cluster
+          in: query
+          schema:
+            type: boolean
+        - name: withFavorite
+          description: return cluster with favorite field
+          in: query
+          schema:
+            type: boolean
       responses:
         '200':
           description: OK
@@ -1108,6 +1118,35 @@ paths:
             application/json:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
+  /apis/core/v2/clusters/{clusterId}/favorite:
+    parameters:
+      - name: clusterId
+        in: path
+        required: true
+        description: The ID of the cluster to add to favorites
+        schema:
+          type: integer
+          example: 60517
+    post:
+      summary: Add cluster to favorites
+      operationId: addFavoriteCluster
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {}
+    delete:
+      summary: Remove cluster from favorites
+      operationId: removeFavoriteCluster
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {}
+
+
 
 components:
   schemas:
@@ -1500,3 +1539,4 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DashBoard"
+

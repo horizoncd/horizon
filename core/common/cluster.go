@@ -8,6 +8,7 @@ const (
 	ClusterQueryByUser        = "userID"
 	ClusterQueryByTemplate    = "template"
 	ClusterQueryByRelease     = "templateRelease"
+	ClusterQueryByRegion      = "region"
 	ClusterQueryTagSelector   = "tagSelector"
 	ClusterQueryScope         = "scope"
 	ClusterQueryMergePatch    = "mergePatch"
@@ -21,6 +22,11 @@ const (
 	ClusterQueryEnd           = "end"
 	ClusterQueryExtraOwner    = "extraOwner"
 	ClusterQueryHard          = "hard"
+
+	// ClusterQueryIsFavorite is used to query cluster with favorite for current user only.
+	ClusterQueryIsFavorite = "isFavorite"
+	// ClusterQueryWithFavorite is used to query cluster with favorite field inside.
+	ClusterQueryWithFavorite = "withFavorite"
 )
 
 const (

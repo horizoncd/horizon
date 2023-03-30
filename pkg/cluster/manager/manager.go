@@ -94,7 +94,12 @@ func (m *manager) CheckClusterExists(ctx context.Context, cluster string) (bool,
 }
 
 func (m *manager) List(ctx context.Context, query *q.Query, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
-	return m.dao.List(ctx, query, true, appIDs...)
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	currentUserID := currentUser.GetID()
+	return m.dao.List(ctx, query, currentUserID, true, appIDs...)
 }
 
 func (m *manager) GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name string) ([]*models.Cluster, error) {
@@ -103,7 +108,12 @@ func (m *manager) GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name st
 
 func (m *manager) ListByApplicationID(ctx context.Context,
 	applicationID uint) (int, []*models.ClusterWithRegion, error) {
-	return m.dao.List(ctx, q.New(q.KeyWords{common.ParamApplicationID: applicationID}), false)
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	currentUserID := currentUser.GetID()
+	return m.dao.List(ctx, q.New(q.KeyWords{common.ParamApplicationID: applicationID}), currentUserID, false)
 }
 
 func (m *manager) ListClusterWithExpiry(ctx context.Context,

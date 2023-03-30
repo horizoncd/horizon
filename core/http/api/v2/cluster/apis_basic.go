@@ -54,6 +54,26 @@ func parseContext(c *gin.Context) *q.Query {
 		keywords[common.ParamApplicationID] = applicationID
 	}
 
+	region := c.Query(common.ClusterQueryByRegion)
+	if region != "" {
+		keywords[common.ClusterQueryByRegion] = region
+	}
+
+	withFavorite := c.Query(common.ClusterQueryWithFavorite)
+	if withFavorite != "" {
+		keywords[common.ClusterQueryWithFavorite] = withFavorite
+	}
+
+	isFavoriteStr := c.Query(common.ClusterQueryIsFavorite)
+	if isFavoriteStr != "" {
+		isFavorite, err := strconv.ParseBool(isFavoriteStr)
+		if err != nil {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return nil
+		}
+		keywords[common.ClusterQueryIsFavorite] = isFavorite
+	}
+
 	filter := c.Query(common.ClusterQueryName)
 	if filter != "" {
 		keywords[common.ClusterQueryName] = filter
@@ -439,4 +459,52 @@ func (a *API) GetByName(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, resp)
+}
+
+func (a *API) AddFavorite(c *gin.Context) {
+	op := "cluster: add favorite"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	whetherLike := cluster.WhetherLike{IsFavorite: true}
+
+	err = a.clusterCtl.ToggleLikeStatus(c, uint(clusterID), &whetherLike)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.Success(c)
+}
+
+func (a *API) DeleteFavorite(c *gin.Context) {
+	op := "cluster: delete favorite"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
+		return
+	}
+
+	whetherLike := cluster.WhetherLike{IsFavorite: false}
+
+	err = a.clusterCtl.ToggleLikeStatus(c, uint(clusterID), &whetherLike)
+	if err != nil {
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(e.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf("%+v", err)
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.Success(c)
 }

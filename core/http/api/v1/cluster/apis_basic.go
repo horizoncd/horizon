@@ -44,6 +44,19 @@ func parseContext(c *gin.Context) *q.Query {
 		keywords[common.ClusterQueryByUser] = uint(userID)
 	}
 
+	isFavoriteStr := c.Query(common.ClusterQueryIsFavorite)
+	if isFavoriteStr != "" {
+		isFavorite, err := strconv.ParseBool(isFavoriteStr)
+		if err != nil {
+			response.AbortWithRPCError(c,
+				rpcerror.ParamError.WithErrMsgf(
+					"failed to parse isFavorite\n"+
+						"isFavorite = %s\nerr = %v", isFavoriteStr, err))
+			return nil
+		}
+		keywords[common.ClusterQueryIsFavorite] = isFavorite
+	}
+
 	applicationIDStr := c.Param(common.ParamApplicationID)
 	if applicationIDStr != "" {
 		applicationID, err := strconv.ParseUint(applicationIDStr, 10, 0)

@@ -27,7 +27,8 @@ type DAO interface {
 	UpdateByID(ctx context.Context, id uint, cluster *models.Cluster) (*models.Cluster, error)
 	DeleteByID(ctx context.Context, id uint) error
 	CheckClusterExists(ctx context.Context, cluster string) (bool, error)
-	List(ctx context.Context, query *q.Query, withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error)
+	List(ctx context.Context, query *q.Query, userID uint,
+		withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error)
 	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*models.Cluster, error)
 	GetByNameFuzzily(ctx context.Context, name string, includeSoftDelete bool) ([]*models.Cluster, error)
 }
@@ -204,8 +205,8 @@ func (d *dao) CheckClusterExists(ctx context.Context, cluster string) (bool, err
 	return true, nil
 }
 
-func (d *dao) List(ctx context.Context,
-	query *q.Query, withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
+func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
+	withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
 	var (
 		clusters []*models.ClusterWithRegion
 		total    int64
@@ -251,6 +252,18 @@ func (d *dao) List(ctx context.Context,
 				statement = statement.Where("c.template = ?", v)
 			case common.ClusterQueryByRelease:
 				statement = statement.Where("c.template_release = ?", v)
+			case common.ClusterQueryByRegion:
+				statement = statement.Where("c.region_name = ?", v)
+			case common.ClusterQueryIsFavorite:
+				isFavoriteInter := query.Keywords[common.ClusterQueryIsFavorite]
+				isFavorite := isFavoriteInter.(bool)
+				if isFavorite {
+					statement = statement.Where("c.id in (select resource_id from "+
+						"tb_collection where resource_type = 'clusters' and user_id = ?)", userID)
+				} else {
+					statement = statement.Where("c.id not in (select resource_id from "+
+						"tb_collection where resource_type = 'clusters' and user_id = ?)", userID)
+				}
 			}
 		}
 		statement = statement.Where("c.deleted_ts = 0")
@@ -287,7 +300,7 @@ func (d *dao) List(ctx context.Context,
 		return 0, nil, herrors.NewErrGetFailed(herrors.ClusterInDB, res.Error.Error())
 	}
 
-	statement = d.db.Raw("select * from (?) as apps order by updated_at desc limit ? offset ?",
+	statement = d.db.Raw("select * from (?) as clsuters order by updated_at desc limit ? offset ?",
 		statement, query.Limit(), query.Offset())
 	res = statement.Scan(&clusters)
 	if res.Error != nil {

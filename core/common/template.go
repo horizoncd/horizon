@@ -6,5 +6,6 @@ const (
 	TemplateQueryByGroup          = "groupID"
 	TemplateQueryByGroupRecursive = "groupIDRecursive"
 	TemplateQueryByGroups         = "templateGroupIDs"
+	TemplateQueryWithRelease      = "withRelease"
 	TemplateQueryName             = "filter"
 )

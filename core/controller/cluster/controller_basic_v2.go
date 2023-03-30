@@ -13,6 +13,7 @@ import (
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cluster/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
+	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
@@ -579,4 +580,27 @@ func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r 
 		return nil, perror.Wrap(herrors.ErrParamInvalid, "TemplateInfo or TemplateConfig nil")
 	}
 	return buildTemplateInfo, nil
+}
+
+func (c *controller) ToggleLikeStatus(ctx context.Context, clusterID uint, like *WhetherLike) (err error) {
+	// get current user
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return perror.WithMessage(err, "no user in context")
+	}
+
+	if like != nil {
+		if like.IsFavorite {
+			collection := collectionmodels.Collection{
+				ResourceID:   clusterID,
+				ResourceType: common.ResourceCluster,
+				UserID:       currentUser.GetID(),
+			}
+			_, err := c.collectionManager.Create(ctx, &collection)
+			return err
+		}
+		_, err := c.collectionManager.DeleteByResource(ctx, currentUser.GetID(), clusterID, common.ResourceCluster)
+		return err
+	}
+	return nil
 }

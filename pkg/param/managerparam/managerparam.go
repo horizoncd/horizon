@@ -1,6 +1,7 @@
 package managerparam
 
 import (
+	collectionmanager "github.com/horizoncd/horizon/pkg/collection/manager"
 	"gorm.io/gorm"
 
 	accesstokenmanager "github.com/horizoncd/horizon/pkg/accesstoken/manager"
@@ -34,6 +35,7 @@ type Manager struct {
 	ApplicationManager       applicationmanager.Manager
 	TemplateReleaseManager   trmanager.Manager
 	TemplateSchemaTagManager trtmanager.Manager
+	CollectionMgr            collectionmanager.Manager
 	ClusterMgr               clustermanager.Manager
 	MemberManager            membermanager.Manager
 	ClusterSchemaTagMgr      templateschematagmanager.Manager
@@ -63,6 +65,7 @@ func InitManager(db *gorm.DB) *Manager {
 		TemplateReleaseManager:   trmanager.New(db),
 		TemplateSchemaTagManager: trtmanager.New(db),
 		ClusterMgr:               clustermanager.New(db),
+		CollectionMgr:            collectionmanager.New(db),
 		MemberManager:            membermanager.New(db),
 		ClusterSchemaTagMgr:      templateschematagmanager.New(db),
 		ApplicationRegionManager: applicationregionmanager.New(db),

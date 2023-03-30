@@ -16,6 +16,7 @@ var (
 	GitlabResource            = sourceType{name: "GitlabResource"}
 	GithubResource            = sourceType{name: "GithubResource"}
 	ClusterInDB               = sourceType{name: "ClusterInDB"}
+	CollectionInDB            = sourceType{name: "CollectionInDB"}
 	ClusterStateInArgo        = sourceType{name: "ClusterStateInArgo"}
 	TagInDB                   = sourceType{name: "TagInDB"}
 	ApplicationInArgo         = sourceType{name: "ApplicationInArgo"}

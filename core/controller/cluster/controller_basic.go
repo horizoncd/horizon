@@ -19,6 +19,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/registry"
+	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
 	emvregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
@@ -39,6 +40,12 @@ import (
 func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWithFullResponse, int, error) {
 	applicationIDs := make([]uint, 0)
 
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	currentUserID := currentUser.GetID()
+
 	// get current user
 	if query != nil &&
 		query.Keywords != nil &&
@@ -47,6 +54,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWi
 			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
 				return nil, 0, err
 			}
+			currentUserID = userID
 			// get groups authorized to current user
 			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
 			if err != nil {
@@ -94,6 +102,13 @@ func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWi
 	if err != nil {
 		return nil, 0,
 			perror.WithMessage(err, "failed to list user clusters")
+	}
+
+	if _, ok := query.Keywords[common.ClusterQueryWithFavorite]; ok {
+		err = c.addIsFavoriteForClusters(ctx, currentUserID, clusters)
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 
 	responses, err := c.getFullResponsesWithRegion(ctx, clusters)
@@ -1089,4 +1104,34 @@ func validateClusterName(name string) error {
 // isUnstableStatus judge if status is Creating or Deleting
 func isClusterStatusUnstable(status string) bool {
 	return status == common.ClusterStatusCreating || status == common.ClusterStatusDeleting
+}
+
+var (
+	favoriteTrue  = true
+	favoriteFalse = false
+)
+
+func (c *controller) addIsFavoriteForClusters(ctx context.Context,
+	userID uint, clusters []*cmodels.ClusterWithRegion) error {
+	ids := make([]uint, 0, len(clusters))
+	for i := range clusters {
+		ids = append(ids, clusters[i].ID)
+	}
+	collections, err := c.collectionManager.List(ctx, userID, common.ResourceCluster, ids)
+	if err != nil {
+		return err
+	}
+	m := map[uint]collectionmodels.Collection{}
+	for _, collection := range collections {
+		m[collection.ResourceID] = collection
+	}
+
+	for i := range clusters {
+		if _, ok := m[clusters[i].ID]; ok {
+			clusters[i].IsFavorite = &favoriteTrue
+		} else {
+			clusters[i].IsFavorite = &favoriteFalse
+		}
+	}
+	return nil
 }
