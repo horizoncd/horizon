@@ -61,4 +61,4 @@ Try your best to keep every function has been tested, it keeps the function beha
 
 ### Developing
 
-The [developing guide](DEVELOPING.md) could help you easily develop and debug the features you are interested in.
+The [development guide](DEVELOPMENT.md) could help you easily develop and debug the features you are interested in.
