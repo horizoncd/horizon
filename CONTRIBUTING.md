@@ -58,3 +58,7 @@ These two kind of tests: `lint` and `unit test`
 `unit test` runs all the test in code, and the code coverage should not less than 70 percent.
 
 Try your best to keep every function has been tested, it keeps the function behaves as intended.
+
+### Developing
+
+The [developing guide](DEVELOPING.md) could help you easily develop and debug the features you are interested in.
