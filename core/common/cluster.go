@@ -8,6 +8,7 @@ const (
 	ClusterQueryByUser        = "userID"
 	ClusterQueryByTemplate    = "template"
 	ClusterQueryByRelease     = "templateRelease"
+	ClusterQueryByRegion      = "region"
 	ClusterQueryTagSelector   = "tagSelector"
 	ClusterQueryScope         = "scope"
 	ClusterQueryMergePatch    = "mergePatch"

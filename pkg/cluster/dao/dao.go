@@ -252,15 +252,17 @@ func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
 				statement = statement.Where("c.template = ?", v)
 			case common.ClusterQueryByRelease:
 				statement = statement.Where("c.template_release = ?", v)
+			case common.ClusterQueryByRegion:
+				statement = statement.Where("c.region_name = ?", v)
 			case common.ClusterQueryIsFavorite:
 				isFavoriteInter := query.Keywords[common.ClusterQueryIsFavorite]
 				isFavorite := isFavoriteInter.(bool)
 				if isFavorite {
 					statement = statement.Where("c.id in (select resource_id from "+
-						"tb_collection where resource_type = 'cluster' and user_id = ?)", userID)
+						"tb_collection where resource_type = 'clusters' and user_id = ?)", userID)
 				} else {
 					statement = statement.Where("c.id not in (select resource_id from "+
-						"tb_collection where resource_type = 'cluster' and user_id = ?)", userID)
+						"tb_collection where resource_type = 'clusters' and user_id = ?)", userID)
 				}
 			}
 		}

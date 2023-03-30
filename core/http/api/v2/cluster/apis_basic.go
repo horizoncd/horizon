@@ -54,6 +54,11 @@ func parseContext(c *gin.Context) *q.Query {
 		keywords[common.ParamApplicationID] = applicationID
 	}
 
+	region := c.Query(common.ClusterQueryByRegion)
+	if region != "" {
+		keywords[common.ClusterQueryByRegion] = region
+	}
+
 	withFavorite := c.Query(common.ClusterQueryWithFavorite)
 	if withFavorite != "" {
 		keywords[common.ClusterQueryWithFavorite] = withFavorite
