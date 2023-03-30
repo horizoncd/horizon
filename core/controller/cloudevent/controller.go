@@ -61,6 +61,9 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	if err != nil {
 		return err
 	}
+	// TODO(zhuxu): logs for troubleshooting of missing buildLog
+	log.Infof(ctx, "got cloudEvent of pipelineRun %v, event id: %v",
+		horizonMetaData.PipelinerunID, horizonMetaData.EventID)
 
 	environment := horizonMetaData.Environment
 	pipelinerunID := horizonMetaData.PipelinerunID
@@ -79,6 +82,10 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		}
 		return err
 	}
+
+	// TODO(zhuxu): logs for troubleshooting of missing buildLog
+	log.Infof(ctx, "pipelineRun %v status: %v, started at %v, finished at %v",
+		pipelinerunID, result.Result, result.StartTime, result.CompletionTime)
 
 	// 2. update pipelinerun in db
 	if err := c.pipelinerunMgr.UpdateResultByID(ctx, pipelinerunID, &prmodels.Result{
