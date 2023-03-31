@@ -1,0 +1,56 @@
+name: Installation Feedback
+description: Feedback a suggestion or bug during installation
+title: "[INSTALLATION] <title>"
+labels: feedback
+body:
+- type: dropdown
+  attributes:
+    label: Installation Type
+    description: Which type did you use to install horizon?
+    options:
+      - script (minimal)
+      - script (full)
+      - script (cloud)
+      - manual
+  validations:
+    required: true
+- type: dropdown
+  attributes:
+    label: Installation Result
+    description: |
+      Successfully deploying your first workload on k8s through Horizon indicates that the installation succeed.
+      Otherwise, there could be problems with the installation.
+    options:
+      - success
+      - failure
+  validations:
+    required: true
+- type: dropdown
+  attributes:
+    label: Installation Duration
+    description: How long did it take to install Horizon?
+    options:
+      - "less than 2min"
+      - "2 ~ 5min"
+      - "5 ~ 10min"
+      - "more than 10min"
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Environment
+    value: |
+      - OS:
+      - CPU:
+      - Memory:
+    render: markdown
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Suggestions & Bugs
+    description: |
+      Please give your suggestions to help us optimize the installation experience.
+      If you encounter problems during installation, please provide sufficient context for troubleshooting, such as logs and pictures.
+  validations:
+    required: true
