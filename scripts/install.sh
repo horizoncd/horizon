@@ -1,6 +1,7 @@
 #!/bin/bash
 
-VERSION="2.1.7"
+VERSION=
+K8S_VERSION="v1.19.16"
 
 CHINA=false
 FULL=false
@@ -9,6 +10,8 @@ CLEAN=false
 CONTAINER_NAME=""
 HELM_SET=""
 STORAGE_CLASS=""
+
+HTTP_PORT=80
 
 CLOUD=false
 MINIKUBE=false
@@ -122,12 +125,14 @@ function cmdhelp() {
     echo "  -c, --cloud, install on cloud"
     echo "  -s, --storage-class <STORAGE_CLASS>, specify the storage class to use, only take effect when -c/--cloud is set"
     echo "  -v, --version <VERSION>, specify the version of horizon to install"
+    echo "  -kv, --k8s-version <K8S_VERSION>, specify the version of k8s to install, default is $K8S_VERSION, only take effect when -k/-m is set"
     echo "  -u, --upgrade, equals to helm upgrade"
     echo "  -i, --init, deploy init job into cluster"
     echo "  -f, --full, install full horizon"
     echo "  --set <HELM SETS>, equals to helm install/upgrade --set ..."
     # install for user from China
     echo "  -cn, --china, install with image mirror in China"
+    echo "  --http-port <HTTP PORT>, specify the http port to use, only take effect when -k/-m is set"
 }
 
 function kindcreatecluster() {
@@ -136,7 +141,7 @@ function kindcreatecluster() {
     CONTAINER_NAME="horizon-control-plane"
 
 echo \
-'kind: Cluster
+"kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
   - role: control-plane
@@ -145,17 +150,14 @@ nodes:
         kind: InitConfiguration
         nodeRegistration:
           kubeletExtraArgs:
-            node-labels: "ingress-ready=true"
+            node-labels: \"ingress-ready=true\"
     extraPortMappings:
       - containerPort: 80
-        hostPort: 80
-        protocol: TCP
-      - containerPort: 443
-        hostPort: 443
-        protocol: TCP' > /tmp/kind.yaml
+        hostPort: $HTTP_PORT
+        protocol: TCP" > /tmp/kind.yaml
 
 
-    kind create cluster --image=kindest/node:v1.19.16 --name=horizon --config=/tmp/kind.yaml || exit 1
+    kind create cluster --image=kindest/node:$K8S_VERSION --name=horizon --config=/tmp/kind.yaml || exit 1
 
     docker exec $CONTAINER_NAME bash -c \
 $'echo \'[plugins."io.containerd.grpc.v1.cri".registry.configs."horizon-registry.horizoncd.svc.cluster.local".tls]
@@ -180,7 +182,7 @@ function minikubecreatecluster() {
     fi
 
     minikube start --container-runtime=docker --driver=docker \
-        --kubernetes-version=v1.19.16 --cpus=$CPUS --memory=$MEMORY --ports=80:80 --ports=443:443 || exit 1
+        --kubernetes-version=$K8S_VERSION --cpus=$CPUS --memory=$MEMORY --ports=$HTTP_PORT:80 || exit 1
 
     kubectl config use-context minikube || exit 1
 }
@@ -190,16 +192,19 @@ function installingress() {
     echo "Installing ingress-nginx"
     helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx 2> /dev/null
     helm install my-ingress-nginx -n ingress-nginx ingress-nginx/ingress-nginx \
-        --version 4.1.4 --set controller.hostNetwork=true --set controller.watchIngressWithoutClass=true --create-namespace
+        --version 4.1.4 \
+        --set controller.hostNetwork=true \
+        --set controller.watchIngressWithoutClass=true \
+        --set controller.livenessProbe.initialDelaySeconds=0 \
+        --set controller.readinessProbe.initialDelaySeconds=0 \
+        --set controller.admissionWebhooks.enabled=false \
+        --create-namespace > /dev/null
 
     # wait for ingress-nginx to be ready
     echo "Waiting for ingress-nginx to be ready"
-    kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=my-ingress-nginx,app.kubernetes.io/name=ingress-nginx --timeout=600s -n ingress-nginx
-
-    if $MINIKUBE
-    then
-      kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io/my-ingress-nginx-admission
-    fi
+    while ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=my-ingress-nginx,app.kubernetes.io/name=ingress-nginx --timeout=600s -n ingress-nginx 2> /dev/null; do	
+      sleep 1	
+    done
 }
 
 # print progress bar by count of how many pods was ready
@@ -260,6 +265,8 @@ function install() {
     if $FULL
     then
         cmd="$cmd --set tags.full=true,tags.minimal=false"
+    else
+        cmd="$cmd --set chartmuseum.env.open.STORAGE=local"
     fi
 
     if $CLOUD
@@ -284,11 +291,18 @@ function install() {
         cmd="$cmd --set $GITLAB,gitlab.enabled=false"
     fi
 
+    cmd="$cmd horizon horizon/horizon -n horizoncd"
+
+    if [ -n "$VERSION" ]
+    then
+        cmd="$cmd --version $VERSION"
+    fi
+
     if $UPGRADE
     then
-        cmd="$cmd horizon horizon/horizon -n horizoncd --version $VERSION --timeout 30s"
+        cmd="$cmd --timeout 30s"
     else
-        cmd="$cmd horizon horizon/horizon -n horizoncd --version $VERSION --create-namespace --timeout 60s"
+        cmd="$cmd --create-namespace --timeout 60s"
     fi
 
     if $CHINA
@@ -296,8 +310,8 @@ function install() {
         cmd="$cmd -f https://raw.githubusercontent.com/horizoncd/helm-charts/main/horizon-cn-values.yaml"
     fi
 
-    printf "\n Run: %s" "$cmd"
-    eval "$cmd" 2> /dev/null
+    echo "Installing horizon"
+    eval "$cmd" 1> /dev/null
 
     progressbar
 }
@@ -488,6 +502,10 @@ function parseinput() {
                 VERSION=$2
                 shift 2
                 ;;
+            -kv|--k8s-version)
+                K8S_VERSION=$2
+                shift 2
+                ;;
             -g|--gitlab-internal)
                 INTERNAL_GITLAB_ENABLED=true
                 shift
@@ -527,6 +545,10 @@ function parseinput() {
             --clean)
                 CLEAN=true
                 shift
+                ;;
+            --http-port)
+                HTTP_PORT=$2
+                shift 2
                 ;;
             *)
                 echo "Invalid option $1"
@@ -579,6 +601,7 @@ function parseinput() {
     docker exec $CONTAINER_NAME bash -c "echo \"nameserver $nameserver\" > /etc/resolv.conf"
 
     echo 'Horizon is installed successfully!'
+    echo "Please access the Horizon UI at http://horizon.h8r.site:$HTTP_PORT"
 }
 
 parseinput "$@"
