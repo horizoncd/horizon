@@ -127,8 +127,7 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, hori
 		return nil, err
 	}
 
-	// TODO(zhuxu): logs for troubleshooting of missing buildLog
-	logutil.Infof(ctx, "collected log result: logObject: %s, logURL: %s",
+	logutil.Debugf(ctx, "collected log result: logObject: %s, logURL: %s",
 		collectLogResult.LogObject, collectLogResult.LogURL)
 
 	collectObjectResult, err := c.collectObject(ctx, metadata, pr)
@@ -136,8 +135,7 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, hori
 		return nil, err
 	}
 
-	// TODO(zhuxu): logs for troubleshooting of missing buildLog
-	logutil.Infof(ctx, "collected object result: %+v", collectObjectResult)
+	logutil.Debugf(ctx, "collected object result: %+v", collectObjectResult)
 
 	logStruct := NewLogStruct(collectObjectResult.PrURL,
 		metadata, collectLogResult.LogURL, collectLogResult.LogContent)
@@ -167,8 +165,7 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, hori
 		return nil, err
 	}
 
-	// TODO(zhuxu): logs for troubleshooting of missing buildLog
-	logutil.Infof(ctx, "tekton pipelineRun is deleted successfully, ID: %v", horizonMetaData.PipelinerunID)
+	logutil.Debugf(ctx, "tekton pipelineRun is deleted successfully, ID: %v", horizonMetaData.PipelinerunID)
 
 	return collectResult, nil
 }
