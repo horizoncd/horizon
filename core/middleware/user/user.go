@@ -37,11 +37,11 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/config/authenticate"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	usermanager "github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	"github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
@@ -127,7 +127,7 @@ func Middleware(param *param.Param, store sessions.Store,
 	}, skippers...)
 }
 
-func akskAuthn(c *gin.Context, keys authenticate.KeysConfig, userMgr usermanager.Manager) (*models.User, error) {
+func akskAuthn(c *gin.Context, keys authenticate.KeysConfig, userMgr usermanager.UserManager) (*models.User, error) {
 	r := c.Request
 	log.Infof(c, "request url path: %v", r.URL)
 

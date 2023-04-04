@@ -19,12 +19,10 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
-	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	"github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
-	"github.com/horizoncd/horizon/pkg/tag/models"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
@@ -39,10 +37,10 @@ type Controller interface {
 }
 
 type controller struct {
-	clusterMgr     clustermanager.Manager
-	tagMgr         tagmanager.Manager
+	clusterMgr     manager.ClusterManager
+	tagMgr         manager.TagManager
 	clusterGitRepo gitrepo.ClusterGitRepo
-	applicationMgr appmanager.Manager
+	applicationMgr manager.ApplicationManager
 }
 
 func NewController(param *param.Param) Controller {
@@ -71,7 +69,7 @@ func (c *controller) Update(ctx context.Context, resourceType string, resourceID
 	defer wlog.Start(ctx, op).StopPrint()
 
 	tags := r.toTags(resourceType, resourceID)
-	if err := tagmanager.ValidateUpsert(tags); err != nil {
+	if err := manager.ValidateTagsUpsert(tags); err != nil {
 		return err
 	}
 

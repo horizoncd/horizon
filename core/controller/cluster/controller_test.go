@@ -18,87 +18,69 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/horizoncd/horizon/core/common"
+	"github.com/horizoncd/horizon/core/config"
+	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/lib/orm"
+	cdmock "github.com/horizoncd/horizon/mock/pkg/cd"
+	clustergitrepomock "github.com/horizoncd/horizon/mock/pkg/cluster/gitrepo"
 	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
-	clustercd "github.com/horizoncd/horizon/pkg/cd"
+	tektonftymock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/factory"
+	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
+	"github.com/horizoncd/horizon/pkg/cd"
+	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
+	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
+	registrydao "github.com/horizoncd/horizon/pkg/dao"
+	"github.com/horizoncd/horizon/pkg/git/gitlab"
+	appgitrepo "github.com/horizoncd/horizon/pkg/gitrepo"
+	"github.com/horizoncd/horizon/pkg/models"
+	"github.com/horizoncd/horizon/pkg/param"
+	"github.com/horizoncd/horizon/pkg/param/managerparam"
+	groupservice "github.com/horizoncd/horizon/pkg/service"
+	"gorm.io/gorm"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/horizoncd/horizon/core/common"
-	"github.com/horizoncd/horizon/core/config"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/core/middleware/requestid"
-	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
 	applicationgitrepomock "github.com/horizoncd/horizon/mock/pkg/application/gitrepo"
 	applicationmanangermock "github.com/horizoncd/horizon/mock/pkg/application/manager"
-	cdmock "github.com/horizoncd/horizon/mock/pkg/cd"
 	commitmock "github.com/horizoncd/horizon/mock/pkg/cluster/code"
-	clustergitrepomock "github.com/horizoncd/horizon/mock/pkg/cluster/gitrepo"
 	clustermanagermock "github.com/horizoncd/horizon/mock/pkg/cluster/manager"
 	registrymock "github.com/horizoncd/horizon/mock/pkg/cluster/registry"
 	registryftymock "github.com/horizoncd/horizon/mock/pkg/cluster/registry/factory"
 	tektonmock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton"
-	tektonftymock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/factory"
 	outputmock "github.com/horizoncd/horizon/mock/pkg/templaterelease/output"
 	trschemamock "github.com/horizoncd/horizon/mock/pkg/templaterelease/schema"
-	appgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
-	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	"github.com/horizoncd/horizon/pkg/cluster/models"
-	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	templateconfig "github.com/horizoncd/horizon/pkg/config/template"
 	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
-	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
-	"github.com/horizoncd/horizon/pkg/environment/service"
-	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/git"
-	"github.com/horizoncd/horizon/pkg/git/gitlab"
-	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
-	groupservice "github.com/horizoncd/horizon/pkg/group/service"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	"github.com/horizoncd/horizon/pkg/param"
-	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	registrydao "github.com/horizoncd/horizon/pkg/registry/dao"
-	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	tmodel "github.com/horizoncd/horizon/pkg/tag/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	gitlabschema "github.com/horizoncd/horizon/pkg/templaterelease/schema/gitlab"
-	schematagmodel "github.com/horizoncd/horizon/pkg/templateschematag/models"
-	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
-	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	userservice "github.com/horizoncd/horizon/pkg/user/service"
-
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gopkg.in/yaml.v3"
 )
 
-// nolint
-var (
-	ctx                                   context.Context
-	c                                     *controller
-	pr                                    *v1beta1.PipelineRun
-	applicationSchema, pipelineSchema     map[string]interface{}
-	pipelineJSONBlob, applicationJSONBlob map[string]interface{}
-	commitGetter                          codemodels.GitGetter
-	applicationSchemaJSON                 = `{
+func createApplicationCtx() (context.Context, *v1beta1.PipelineRun, map[string]interface{}, map[string]interface{},
+	map[string]interface{}, map[string]interface{}, codemodels.GitGetter, *gorm.DB, *managerparam.Manager,
+	string, string, string, string, string) {
+	var (
+		ctx                                   context.Context
+		pr                                    *v1beta1.PipelineRun
+		applicationSchema, pipelineSchema     map[string]interface{}
+		pipelineJSONBlob, applicationJSONBlob map[string]interface{}
+		commitGetter                          codemodels.GitGetter
+		applicationSchemaJSON                 = `{
     "type":"object",
     "properties":{
         "app":{
@@ -280,7 +262,7 @@ var (
     }
 }
 `
-	pipelineSchemaJSON = `{
+		pipelineSchemaJSON = `{
   "type": "object",
   "title": "Ant",
   "properties": {
@@ -293,10 +275,10 @@ var (
 }
 `
 
-	pipelineJSONStr = `{
+		pipelineJSONStr = `{
 		"buildxml":"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE project [<!ENTITY buildfile SYSTEM \"file:./build-user.xml\">]>\n<project basedir=\".\" default=\"deploy\" name=\"demo\">\n    <property name=\"ant\" value=\"ant\" />\n    <property name=\"baseline.dir\" value=\"${basedir}\"/>\n\n    <target name=\"package\">\n        <exec dir=\"${baseline.dir}\" executable=\"${ant}\" failonerror=\"true\">\n            <arg line=\"-buildfile overmind_build.xml -Denv=test -DenvName=qa-game.cloudnative.com\"/>\n        </exec>\n    </target>\n\n    <target name=\"deploy\">\n        <echo message=\"begin auto deploy......\"/>\n        <antcall target=\"package\"/>\n    </target>\n</project>"
 	}`
-	applicationJSONStr = `{
+		applicationJSONStr = `{
     "app":{
         "spec":{
             "replicas":1,
@@ -323,7 +305,7 @@ var (
     }
 }`
 
-	prJson = `{
+		prJSON = `{
         "metadata":{
             "name":"test-music-docker-q58rp",
             "namespace":"tekton-resources",
@@ -441,20 +423,17 @@ var (
     }
 	`
 
-	db, _   = orm.NewSqliteDB("")
-	manager = managerparam.InitManager(db)
-)
+		db, _   = orm.NewSqliteDB("")
+		manager = managerparam.InitManager(db)
+	)
 
-const secondsInOneDay = 24 * 3600
-
-// nolint
-func TestMain(m *testing.M) {
-	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
-		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
-		&registrymodels.Registry{}, eventmodels.Event{},
-		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{}, &eventmodels.Event{},
-		&prmodels.Pipelinerun{}, &schematagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{},
-		&envmodels.Environment{}, &tokenmodels.Token{}); err != nil {
+	// nolint
+	if err := db.AutoMigrate(&models.Application{}, &models.Cluster{}, &models.Group{},
+		&models.TemplateRelease{}, &models.Member{}, &models.User{},
+		&models.Registry{}, models.Event{},
+		&models.Region{}, &models.EnvironmentRegion{}, &models.Event{},
+		&models.Pipelinerun{}, &models.ClusterTemplateSchemaTag{}, &models.Tag{},
+		&models.Environment{}, &models.Token{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -476,7 +455,7 @@ func TestMain(m *testing.M) {
 	if err := json.Unmarshal([]byte(applicationJSONStr), &applicationJSONBlob); err != nil {
 		panic(err)
 	}
-	if err := json.Unmarshal([]byte(prJson), &pr); err != nil {
+	if err := json.Unmarshal([]byte(prJSON), &pr); err != nil {
 		panic(err)
 	}
 
@@ -487,8 +466,12 @@ func TestMain(m *testing.M) {
 			Token: "123456",
 		},
 	})
-	os.Exit(m.Run())
+	return ctx, pr, applicationSchema, pipelineSchema, pipelineJSONBlob,
+		applicationJSONBlob, commitGetter, db, manager, applicationSchemaJSON,
+		pipelineSchemaJSON, prJSON, applicationJSONStr, pipelineJSONStr
 }
+
+const secondsInOneDay = 24 * 3600
 
 func TestAll(t *testing.T) {
 	t.Run("Test", test)
@@ -509,10 +492,12 @@ func TestAll(t *testing.T) {
 
 // nolint
 func test(t *testing.T) {
+	ctx, pr, applicationSchema, pipelineSchema, pipelineJSONBlob,
+		applicationJSONBlob, _, db, manager, _, _, _, _, _ := createApplicationCtx()
 	// for test
 	conf := config.Config{}
 	param := param.Param{
-		AutoFreeSvc: service.New([]string{"test", "dev"}),
+		AutoFreeSvc: groupservice.NewAutoFreeSVC([]string{"test", "dev"}),
 		Manager:     managerparam.InitManager(nil),
 	}
 	NewController(&conf, &param)
@@ -521,7 +506,7 @@ func test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
-	cd := cdmock.NewMockLegacyCD(mockCtl)
+	legacyCD := cdmock.NewMockLegacyCD(mockCtl)
 	k8sutil := cdmock.NewMockK8sUtil(mockCtl)
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
@@ -556,11 +541,11 @@ func test(t *testing.T) {
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
 	groupMgr := manager.GroupManager
-	registryDAO := registrydao.NewDAO(db)
+	registryDAO := registrydao.NewRegistryDAO(db)
 	envRegionMgr := manager.EnvRegionMgr
 
 	// init data
-	group, err := groupMgr.Create(ctx, &groupmodels.Group{
+	group, err := groupMgr.Create(ctx, &models.Group{
 		Name:     "group",
 		Path:     "group",
 		ParentID: 0,
@@ -569,7 +554,7 @@ func test(t *testing.T) {
 	assert.NotNil(t, group)
 
 	gitURL := "ssh://git.com"
-	application, err := appMgr.Create(ctx, &appmodels.Application{
+	application, err := appMgr.Create(ctx, &models.Application{
 		GroupID:         group.ID,
 		Name:            "app",
 		Priority:        "P3",
@@ -580,7 +565,7 @@ func test(t *testing.T) {
 		TemplateRelease: "v1.0.0",
 	}, nil)
 
-	tr, err := trMgr.Create(ctx, &trmodels.TemplateRelease{
+	tr, err := trMgr.Create(ctx, &models.TemplateRelease{
 		TemplateName: templateName,
 		Name:         "v1.0.0",
 		ChartVersion: "v1.0.0-test",
@@ -589,14 +574,14 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
 
-	id, err := registryDAO.Create(ctx, &registrymodels.Registry{
+	id, err := registryDAO.Create(ctx, &models.Registry{
 		Server: "https://harbor.com",
 		Token:  "xxx",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, id)
 
-	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+	region, err := regionMgr.Create(ctx, &models.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
 		RegistryID:  id,
@@ -604,33 +589,33 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: "test",
 		RegionName:      "hz",
 	})
-	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: "dev",
 		RegionName:      "hz",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
 
-	env, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+	env, err := envMgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "dev",
 		DisplayName: "开发",
 	})
-	env, err = envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+	env, err = envMgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "test",
 		DisplayName: "开发",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, env)
 
-	c = &controller{
+	c := &controller{
 		clusterMgr:           manager.ClusterMgr,
 		clusterGitRepo:       clusterGitRepo,
 		commitGetter:         commitGetter,
-		cd:                   cd,
+		cd:                   legacyCD,
 		k8sutil:              k8sutil,
 		applicationMgr:       appMgr,
 		templateReleaseMgr:   trMgr,
@@ -639,17 +624,17 @@ func test(t *testing.T) {
 		envRegionMgr:         envRegionMgr,
 		regionMgr:            regionMgr,
 		autoFreeSvc:          param.AutoFreeSvc,
-		groupSvc:             groupservice.NewService(manager),
+		groupSvc:             groupservice.NewGroupService(manager),
 		pipelinerunMgr:       manager.PipelinerunMgr,
 		tektonFty:            tektonFty,
 		registryFty:          registryFty,
 		userManager:          manager.UserManager,
-		userSvc:              userservice.NewService(manager),
+		userSvc:              groupservice.NewUserService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		tagMgr:               tagManager,
 		applicationGitRepo:   applicationGitRepo,
 		eventMgr:             manager.EventManager,
-		tokenSvc: tokenservice.NewService(manager, tokenconfig.Config{
+		tokenSvc: groupservice.NewTokenService(manager, tokenconfig.Config{
 			JwtSigningKey:         "horizon",
 			CallbackTokenExpireIn: time.Hour * 2,
 		}),
@@ -665,30 +650,30 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(2)
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
-		"app-cluster", templateName).Return(&gitrepo.ClusterFiles{
+		"app-cluster", templateName).Return(&appgitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 	}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetCluster(ctx, "app",
-		"app-cluster-mergepatch", "javaapp").Return(&gitrepo.ClusterFiles{
+		"app-cluster-mergepatch", "javaapp").Return(&appgitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
 	}, nil).AnyTimes()
-	clusterGitRepo.EXPECT().GetConfigCommit(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.ClusterCommit{
+	clusterGitRepo.EXPECT().GetConfigCommit(ctx, gomock.Any(), gomock.Any()).Return(&appgitrepo.ClusterCommit{
 		Master: "master-commit",
 		Gitops: "gitops-commit",
 	}, nil).AnyTimes()
-	clusterGitRepo.EXPECT().GetEnvValue(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.EnvValue{
+	clusterGitRepo.EXPECT().GetEnvValue(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&appgitrepo.EnvValue{
 		Namespace: "test-1",
 	}, nil).AnyTimes()
-	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
+	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&appgitrepo.RepoInfo{
 		GitRepoURL: "ssh://xxxx",
 		ValueFiles: []string{},
 	}).AnyTimes()
 	imageName := "image"
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().DefaultBranch().Return("master").AnyTimes()
-	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
+	legacyCD.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 	clusterGitRepo.EXPECT().UpdateTags(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
@@ -702,7 +687,7 @@ func test(t *testing.T) {
 				Application: applicationJSONBlob,
 				Pipeline:    pipelineJSONBlob,
 			},
-			Tags: tagmodels.TagsBasic{
+			Tags: models.TagsBasic{
 				{
 					Key:   "key1",
 					Value: "value1",
@@ -738,7 +723,7 @@ func test(t *testing.T) {
 				Subfolder: "/new",
 				Branch:    "new",
 			},
-			Tags: tagmodels.TagsBasic{
+			Tags: models.TagsBasic{
 				{
 					Key:   "key1",
 					Value: "value2",
@@ -755,7 +740,7 @@ func test(t *testing.T) {
 		},
 	}
 
-	newTr, err := trMgr.Create(ctx, &trmodels.TemplateRelease{
+	newTr, err := trMgr.Create(ctx, &models.TemplateRelease{
 		TemplateName: templateName,
 		ChartName:    templateName,
 		Name:         "v1.0.1",
@@ -802,7 +787,7 @@ func test(t *testing.T) {
 	assert.Equal(t, 1, len(resp.Base.Tags))
 
 	resp, err = c.UpdateCluster(ctx, resp.ID, &UpdateClusterRequest{
-		Base:       &Base{Tags: tagmodels.TagsBasic{}},
+		Base:       &Base{Tags: models.TagsBasic{}},
 		ExpireTime: "48h0m0s",
 	}, false)
 	assert.Nil(t, err)
@@ -871,13 +856,13 @@ func test(t *testing.T) {
 		Return("", nil).AnyTimes()
 	clusterGitRepo.EXPECT().MergeBranch(ctx, gomock.Any(), gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
-	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
+	clusterGitRepo.EXPECT().GetRepoInfo(ctx, gomock.Any(), gomock.Any()).Return(&appgitrepo.RepoInfo{
 		GitRepoURL: "ssh://xxxx.git",
 		ValueFiles: []string{"file1", "file2"},
 	}).AnyTimes()
 
-	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
-	cd.EXPECT().GetClusterStateV1(ctx, gomock.Any()).Return(nil, herrors.NewErrNotFound(herrors.PodsInK8S, "test"))
+	legacyCD.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
+	legacyCD.EXPECT().GetClusterStateV1(ctx, gomock.Any()).Return(nil, herrors.NewErrNotFound(herrors.PodsInK8S, "test"))
 	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
 		PipelinerunID: buildDeployResp.PipelinerunID,
 	})
@@ -889,12 +874,12 @@ func test(t *testing.T) {
 	// InternalDeployV2 needs a new context with jwt token string
 	user, err := common.UserFromContext(ctx)
 	assert.Nil(t, err)
-	_, err = c.userManager.Create(ctx, &usermodels.User{
+	_, err = c.userManager.Create(ctx, &models.User{
 		Name: user.GetName(),
 	})
 	assert.Nil(t, err)
 	token, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(user.GetID())), time.Hour,
-		tokenservice.WithPipelinerunID(buildDeployResp.PipelinerunID))
+		models.WithPipelinerunID(buildDeployResp.PipelinerunID))
 	assert.Nil(t, err)
 	newCtx := common.WithContextJWTTokenString(ctx, token)
 
@@ -908,15 +893,15 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().MergeBranch(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
-	clusterGitRepo.EXPECT().GetRepoInfo(gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.RepoInfo{
+	clusterGitRepo.EXPECT().GetRepoInfo(gomock.Any(), gomock.Any(), gomock.Any()).Return(&appgitrepo.RepoInfo{
 		GitRepoURL: "ssh://xxxx.git",
 		ValueFiles: []string{"file1", "file2"},
 	}).AnyTimes()
-	clusterGitRepo.EXPECT().GetEnvValue(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.EnvValue{
+	clusterGitRepo.EXPECT().GetEnvValue(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&appgitrepo.EnvValue{
 		Namespace: "test-1",
 	}, nil).AnyTimes()
-	cd.EXPECT().CreateCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	cd.EXPECT().DeployCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	legacyCD.EXPECT().CreateCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	legacyCD.EXPECT().DeployCluster(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	internalDeployRespV2, err := c.InternalDeployV2(newCtx, resp.ID, &InternalDeployRequestV2{
 		PipelinerunID: buildDeployResp.PipelinerunID,
 		Output:        nil,
@@ -972,10 +957,10 @@ func test(t *testing.T) {
 	assert.NotNil(t, resp)
 	b, _ = json.Marshal(restartResp)
 	t.Logf("%s", string(b))
-	pr, err := manager.PipelinerunMgr.GetByID(ctx, restartResp.PipelinerunID)
+	prmodels, err := manager.PipelinerunMgr.GetByID(ctx, restartResp.PipelinerunID)
 	assert.Nil(t, err)
-	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
-	assert.NotNil(t, pr.FinishedAt)
+	assert.Equal(t, string(models.StatusOK), prmodels.Status)
+	assert.NotNil(t, prmodels.FinishedAt)
 
 	// test deploy
 	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, herrors.ErrPipelineOutputEmpty).Times(1)
@@ -1017,9 +1002,9 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(deployResp)
 	t.Logf("%s", string(b))
 
-	pr, err = manager.PipelinerunMgr.GetByID(ctx, deployResp.PipelinerunID)
+	prmodels, err = manager.PipelinerunMgr.GetByID(ctx, deployResp.PipelinerunID)
 	assert.Nil(t, err)
-	assert.Equal(t, string(prmodels.StatusCreated), pr.Status)
+	assert.Equal(t, string(models.StatusCreated), prmodels.Status)
 
 	// test next
 	k8sutil.EXPECT().ExecuteAction(ctx, gomock.Any()).Return(nil)
@@ -1027,7 +1012,7 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 
 	// test Online and Offline
-	execResp := map[string]clustercd.ExecResp{
+	execResp := map[string]cd.ExecResp{
 		"pod1": {
 			Result: true,
 		},
@@ -1062,7 +1047,7 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(shellResp)
 	t.Logf("%s", string(b))
 
-	valueFile := gitrepo.ClusterValueFile{
+	valueFile := appgitrepo.ClusterValueFile{
 		FileName: common.GitopsFileTags,
 	}
 	err = yaml.Unmarshal([]byte(`javaapp:
@@ -1071,20 +1056,20 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 
 	clusterGitRepo.EXPECT().GetClusterValueFiles(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return([]gitrepo.ClusterValueFile{valueFile}, nil)
+		Return([]appgitrepo.ClusterValueFile{valueFile}, nil)
 	// test rollback
 	clusterGitRepo.EXPECT().Rollback(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("rollback-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetClusterTemplate(ctx, application.Name, resp.Name).
-		Return(&gitrepo.ClusterTemplate{
+		Return(&appgitrepo.ClusterTemplate{
 			Name:    resp.Template.Name,
 			Release: resp.Template.Release,
 		}, nil).AnyTimes()
 	clusterGitRepo.EXPECT().GetManifest(ctx, application.Name, resp.Name, gomock.Any()).
 		Return(nil, herrors.NewErrNotFound(herrors.GitlabResource, "")).Times(2)
 	// update status to 'ok'
-	err = manager.PipelinerunMgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &prmodels.Result{
-		Result: string(prmodels.StatusOK),
+	err = manager.PipelinerunMgr.UpdateResultByID(ctx, buildDeployResp.PipelinerunID, &models.Result{
+		Result: string(models.StatusOK),
 	})
 	assert.Nil(t, err)
 
@@ -1096,10 +1081,10 @@ func test(t *testing.T) {
 	assert.NotNil(t, rollbackResp)
 	b, _ = json.Marshal(rollbackResp)
 	t.Logf("%s", string(b))
-	pr, err = manager.PipelinerunMgr.GetByID(ctx, rollbackResp.PipelinerunID)
+	prmodels, err = manager.PipelinerunMgr.GetByID(ctx, rollbackResp.PipelinerunID)
 	assert.Nil(t, err)
-	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
-	assert.NotNil(t, pr.FinishedAt)
+	assert.Equal(t, string(models.StatusOK), prmodels.Status)
+	assert.NotNil(t, prmodels.FinishedAt)
 	tags, err := manager.TagManager.ListByResourceTypeID(ctx, common.ResourceCluster, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(tags))
@@ -1108,7 +1093,7 @@ func test(t *testing.T) {
 	c.tagMgr = tagManager
 
 	k8sutil.EXPECT().DeletePods(ctx, gomock.Any()).Return(
-		map[string]clustercd.OperationResult{
+		map[string]cd.OperationResult{
 			"pod1": {Result: true},
 		}, nil)
 	result, err := c.DeleteClusterPods(ctx, resp.ID, []string{"pod1"})
@@ -1121,7 +1106,7 @@ func test(t *testing.T) {
 	podExist := "exist"
 	podNotExist := "notexist"
 	k8sutil.EXPECT().GetPod(ctx, gomock.Any()).DoAndReturn(
-		func(_ context.Context, param *clustercd.GetPodParams) (*v1.Pod, error) {
+		func(_ context.Context, param *cd.GetPodParams) (*v1.Pod, error) {
 			if param.Pod == podExist {
 				return &v1.Pod{}, nil
 			} else {
@@ -1191,7 +1176,7 @@ func test(t *testing.T) {
 	}
 
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).DoAndReturn(
-		func(_ context.Context, params *gitrepo.CreateClusterParams) error {
+		func(_ context.Context, params *appgitrepo.CreateClusterParams) error {
 			blob := map[string]interface{}{}
 			err := json.Unmarshal([]byte(mergedJSONStr), &blob)
 			assert.Nil(t, err)
@@ -1259,7 +1244,7 @@ func test(t *testing.T) {
 		},
 	}
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).DoAndReturn(
-		func(_ context.Context, params *gitrepo.UpdateClusterParams) error {
+		func(_ context.Context, params *appgitrepo.UpdateClusterParams) error {
 			blob := map[string]interface{}{}
 			err := json.Unmarshal([]byte(mergedJSONStr), &blob)
 			assert.Nil(t, err)
@@ -1272,10 +1257,12 @@ func test(t *testing.T) {
 }
 
 func testV2(t *testing.T) {
+	ctx, _, applicationSchema, pipelineSchema, pipelineJSONBlob,
+		applicationJSONBlob, _, db, manager, _, _, _, _, _ := createApplicationCtx()
 	// for test
 	conf := config.Config{}
 	param := param.Param{
-		AutoFreeSvc: service.New([]string{"dev", "test"}),
+		AutoFreeSvc: groupservice.NewAutoFreeSVC([]string{"dev", "test"}),
 		Manager:     managerparam.InitManager(nil),
 	}
 	NewController(&conf, &param)
@@ -1305,15 +1292,15 @@ func testV2(t *testing.T) {
 	groupMgr := manager.GroupManager
 	envRegionMgr := manager.EnvRegionMgr
 
-	registryDAO := registrydao.NewDAO(db)
-	id, err := registryDAO.Create(ctx, &registrymodels.Registry{
+	registryDAO := registrydao.NewRegistryDAO(db)
+	id, err := registryDAO.Create(ctx, &models.Registry{
 		Server: "https://harbor.com",
 		Token:  "xxx",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, id)
 
-	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+	region, err := regionMgr.Create(ctx, &models.Region{
 		Name:        "hz",
 		DisplayName: "HZ",
 		RegistryID:  id,
@@ -1321,26 +1308,26 @@ func testV2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, region)
 
-	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: "test2",
 		RegionName:      "hz",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
-	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: "dev2",
 		RegionName:      "hz",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
 
-	env, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+	env, err := envMgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "dev2",
 		DisplayName: "开发",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, env)
-	env, err = envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+	env, err = envMgr.CreateEnvironment(ctx, &models.Environment{
 		Name:        "test2",
 		DisplayName: "开发",
 	})
@@ -1348,7 +1335,7 @@ func testV2(t *testing.T) {
 	assert.NotNil(t, env)
 
 	// init data
-	group, err := groupMgr.Create(ctx, &groupmodels.Group{
+	group, err := groupMgr.Create(ctx, &models.Group{
 		Name:     "group1",
 		Path:     "group1",
 		ParentID: 0,
@@ -1363,10 +1350,10 @@ func testV2(t *testing.T) {
 	appGitSubFolder := "/test"
 	appGitRef := "master"
 	priority := "P3"
-	application, err := appMgr.Create(ctx, &appmodels.Application{
+	application, err := appMgr.Create(ctx, &models.Application{
 		GroupID:         group.ID,
 		Name:            applicationName,
-		Priority:        appmodels.Priority(priority),
+		Priority:        models.Priority(priority),
 		GitURL:          gitURL,
 		GitSubfolder:    appGitSubFolder,
 		GitRef:          appGitRef,
@@ -1375,7 +1362,7 @@ func testV2(t *testing.T) {
 	}, nil)
 	assert.Nil(t, err)
 
-	tr, err := trMgr.Create(ctx, &trmodels.TemplateRelease{
+	tr, err := trMgr.Create(ctx, &models.TemplateRelease{
 		TemplateName: templateName,
 		Name:         "v1.0.0",
 		ChartVersion: "v1.0.0-test",
@@ -1384,7 +1371,7 @@ func testV2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
 
-	c = &controller{
+	c := &controller{
 		clusterMgr:           manager.ClusterMgr,
 		clusterGitRepo:       clusterGitRepo,
 		applicationMgr:       appMgr,
@@ -1393,11 +1380,11 @@ func testV2(t *testing.T) {
 		envMgr:               envMgr,
 		envRegionMgr:         envRegionMgr,
 		regionMgr:            regionMgr,
-		groupSvc:             groupservice.NewService(manager),
+		groupSvc:             groupservice.NewGroupService(manager),
 		pipelinerunMgr:       manager.PipelinerunMgr,
 		userManager:          manager.UserManager,
-		autoFreeSvc:          service.New([]string{"dev2", "test2"}),
-		userSvc:              userservice.NewService(manager),
+		autoFreeSvc:          groupservice.NewAutoFreeSVC([]string{"dev2", "test2"}),
+		userSvc:              groupservice.NewUserService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		applicationGitRepo:   applicationGitRepo,
 		tagMgr:               manager.TagManager,
@@ -1421,7 +1408,7 @@ func testV2(t *testing.T) {
 		Git: &codemodels.Git{
 			Branch: "develop",
 		},
-		Tags: tagmodels.TagsBasic{
+		Tags: models.TagsBasic{
 			{
 				Key:   "key1",
 				Value: "value1",
@@ -1476,14 +1463,15 @@ func testV2(t *testing.T) {
 	t.Logf("%+v", getClusterResp)
 
 	// update v2
-	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).Return(&gitrepo.ClusterFiles{
-		PipelineJSONBlob:    pipelineJSONBlob,
-		ApplicationJSONBlob: applicationJSONBlob,
-		Manifest:            nil,
-	}, nil).Times(1)
+	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).
+		Return(&appgitrepo.ClusterFiles{
+			PipelineJSONBlob:    pipelineJSONBlob,
+			ApplicationJSONBlob: applicationJSONBlob,
+			Manifest:            nil,
+		}, nil).Times(1)
 
 	updateRequestV2 := &UpdateClusterRequestV2{
-		Tags: tagmodels.TagsBasic{
+		Tags: models.TagsBasic{
 			{
 				Key:   "key1",
 				Value: "value2",
@@ -1504,11 +1492,12 @@ func testV2(t *testing.T) {
 	var manifest = make(map[string]interface{})
 	manifest["Version"] = common.MetaVersion2
 
-	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).Return(&gitrepo.ClusterFiles{
-		PipelineJSONBlob:    pipelineJSONBlob,
-		ApplicationJSONBlob: applicationJSONBlob,
-		Manifest:            manifest,
-	}, nil).Times(1)
+	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).
+		Return(&appgitrepo.ClusterFiles{
+			PipelineJSONBlob:    pipelineJSONBlob,
+			ApplicationJSONBlob: applicationJSONBlob,
+			Manifest:            manifest,
+		}, nil).Times(1)
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
 	clusterGitRepo.EXPECT().UpdateTags(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.0", gomock.Any()).
@@ -1537,10 +1526,13 @@ func testV2(t *testing.T) {
 }
 
 func testUpgrade(t *testing.T) {
+	ctx, _, applicationSchema, pipelineSchema, pipelineJSONBlob,
+		applicationJSONBlob, _, _, manager, _, _, _, _, _ := createApplicationCtx()
+
 	// for test
 	conf := config.Config{}
 	parameter := param.Param{
-		AutoFreeSvc: service.New([]string{"dev", "test"}),
+		AutoFreeSvc: groupservice.NewAutoFreeSVC([]string{"dev", "test"}),
 		Manager:     managerparam.InitManager(nil),
 	}
 	NewController(&conf, &parameter)
@@ -1557,11 +1549,29 @@ func testUpgrade(t *testing.T) {
 	trMgr := manager.TemplateReleaseManager
 	envMgr := manager.EnvMgr
 	regionMgr := manager.RegionMgr
+	registryMgr := manager.RegistryManager
 	groupMgr := manager.GroupManager
 	envRegionMgr := manager.EnvRegionMgr
 
+	_, err := envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
+		EnvironmentName: "test",
+		RegionName:      "hz",
+	})
+	assert.Nil(t, err)
+
+	rg, err := registryMgr.Create(ctx, &models.Registry{
+		Name: "test",
+	})
+	assert.Nil(t, err)
+
+	_, err = regionMgr.Create(ctx, &models.Region{
+		Name:       "hz",
+		RegistryID: rg,
+	})
+	assert.Nil(t, err)
+
 	// init data
-	group, err := groupMgr.Create(ctx, &groupmodels.Group{
+	group, err := groupMgr.Create(ctx, &models.Group{
 		Name:     "group-upgrade",
 		Path:     "group-upgrade",
 		ParentID: 0,
@@ -1576,10 +1586,10 @@ func testUpgrade(t *testing.T) {
 	appGitSubFolder := "/test"
 	appGitRef := "master"
 	priority := "P3"
-	application, err := appMgr.Create(ctx, &appmodels.Application{
+	application, err := appMgr.Create(ctx, &models.Application{
 		GroupID:         group.ID,
 		Name:            applicationName,
-		Priority:        appmodels.Priority(priority),
+		Priority:        models.Priority(priority),
 		GitURL:          gitURL,
 		GitSubfolder:    appGitSubFolder,
 		GitRef:          appGitRef,
@@ -1588,7 +1598,7 @@ func testUpgrade(t *testing.T) {
 	}, nil)
 	assert.Nil(t, err)
 
-	tr, err := trMgr.Create(ctx, &trmodels.TemplateRelease{
+	tr, err := trMgr.Create(ctx, &models.TemplateRelease{
 		TemplateName: templateName,
 		Name:         templateRelease,
 		ChartVersion: templateRelease + "-test",
@@ -1596,6 +1606,12 @@ func testUpgrade(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, tr)
+
+	_, err = trMgr.Create(ctx, &models.TemplateRelease{
+		TemplateName: "rollout",
+		Name:         "v1.0.0",
+	})
+	assert.Nil(t, err)
 
 	templateUpgradeMapper := templateconfig.UpgradeMapper{
 		"javaapp": {
@@ -1608,7 +1624,7 @@ func testUpgrade(t *testing.T) {
 		},
 	}
 
-	c = &controller{
+	c := &controller{
 		clusterMgr:            manager.ClusterMgr,
 		clusterGitRepo:        clusterGitRepo,
 		applicationMgr:        appMgr,
@@ -1617,11 +1633,11 @@ func testUpgrade(t *testing.T) {
 		envMgr:                envMgr,
 		envRegionMgr:          envRegionMgr,
 		regionMgr:             regionMgr,
-		groupSvc:              groupservice.NewService(manager),
+		groupSvc:              groupservice.NewGroupService(manager),
 		pipelinerunMgr:        manager.PipelinerunMgr,
 		userManager:           manager.UserManager,
 		autoFreeSvc:           parameter.AutoFreeSvc,
-		userSvc:               userservice.NewService(manager),
+		userSvc:               groupservice.NewUserService(manager),
 		schemaTagManager:      manager.ClusterSchemaTagMgr,
 		applicationGitRepo:    applicationGitRepo,
 		tagMgr:                manager.TagManager,
@@ -1647,7 +1663,7 @@ func testUpgrade(t *testing.T) {
 			},
 		}, nil).Times(1)
 	clusterGitRepo.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).Times(1)
-	clusterGitRepo.EXPECT().GetEnvValue(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&gitrepo.EnvValue{
+	clusterGitRepo.EXPECT().GetEnvValue(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&appgitrepo.EnvValue{
 		Namespace: "test-1",
 	}, nil).AnyTimes()
 
@@ -1677,7 +1693,7 @@ func testUpgrade(t *testing.T) {
 	assert.Equal(t, resp.FullPath, "/"+group.Path+"/"+application.Name+"/"+createClusterName)
 
 	clusterGitRepo.EXPECT().GetClusterTemplate(ctx, application.Name, resp.Name).
-		Return(&gitrepo.ClusterTemplate{
+		Return(&appgitrepo.ClusterTemplate{
 			Name:    resp.Template.Name,
 			Release: resp.Template.Release,
 		}, nil).AnyTimes()
@@ -1720,8 +1736,8 @@ func assertMapEqual(t *testing.T, expected, got map[string]interface{}) {
 
 func testGetClusterOutPut(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	appManagerMock := applicationmanangermock.NewMockManager(mockCtl)
-	clusterManagerMock := clustermanagermock.NewMockManager(mockCtl)
+	appManagerMock := applicationmanangermock.NewMockApplicationManager(mockCtl)
+	clusterManagerMock := clustermanagermock.NewMockClusterManager(mockCtl)
 	outputMock := outputmock.NewMockGetter(mockCtl)
 	clusterGitRepoMock := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	c := controller{
@@ -1744,13 +1760,13 @@ func testGetClusterOutPut(t *testing.T) {
 	}, nil).Times(1)
 
 	applicationName := "app-demo"
-	appManagerMock.EXPECT().GetByID(gomock.Any(), applicationID).Return(&appmodels.Application{
+	appManagerMock.EXPECT().GetByID(gomock.Any(), applicationID).Return(&models.Application{
 		Model:   global.Model{},
 		GroupID: 0,
 		Name:    applicationName,
 	}, nil).Times(1)
 
-	envValueFile := gitrepo.ClusterValueFile{
+	envValueFile := appgitrepo.ClusterValueFile{
 		FileName: "env.yaml",
 	}
 	var envValue = `
@@ -1766,7 +1782,7 @@ javaapp:
 `
 	err := yaml.Unmarshal([]byte(envValue), &(envValueFile.Content))
 	assert.Nil(t, err)
-	var clusterValueFiles = make([]gitrepo.ClusterValueFile, 0)
+	var clusterValueFiles = make([]appgitrepo.ClusterValueFile, 0)
 	clusterValueFiles = append(clusterValueFiles, envValueFile)
 	clusterGitRepoMock.EXPECT().GetClusterValueFiles(gomock.Any(), applicationName, clusterName).Return(
 		clusterValueFiles, nil).Times(1)
@@ -1831,7 +1847,7 @@ javaapp:
 `
 
 func testRenderOutPutObject(t *testing.T) {
-	var envValueFile, horizonValueFile, applicationValueFile gitrepo.ClusterValueFile
+	var envValueFile, horizonValueFile, applicationValueFile appgitrepo.ClusterValueFile
 	err := yaml.Unmarshal([]byte(envValue), &(envValueFile.Content))
 	assert.Nil(t, err)
 
@@ -1858,7 +1874,7 @@ func testRenderOutPutObject(t *testing.T) {
 }
 
 func testRenderOutPutObjectMissingKey(t *testing.T) {
-	var envValueFile, horizonValueFile, applicationValueFile gitrepo.ClusterValueFile
+	var envValueFile, horizonValueFile, applicationValueFile appgitrepo.ClusterValueFile
 	var envValue = `
 javaapp:
   env:
@@ -1901,6 +1917,7 @@ javaapp:
 }
 
 func testIsClusterActuallyHealthy(t *testing.T) {
+	ctx := context.Background()
 	layout := "2006-01-02 15:04:05"
 	var t0 time.Time
 	t1, err := time.Parse(layout, "2022-09-17 17:50:00")
@@ -1911,40 +1928,40 @@ func testIsClusterActuallyHealthy(t *testing.T) {
 	assert.Nil(t, err)
 	imageV1 := "v1"
 	imageV2 := "v2"
-	cs := &clustercd.ClusterState{}
+	cs := &cd.ClusterState{}
 	assert.Equal(t, false, isClusterActuallyHealthy(ctx, cs, imageV1, t0, 0))
 
-	containerV1 := &clustercd.Container{
+	containerV1 := &cd.Container{
 		Image: imageV1,
 	}
-	containerV2 := &clustercd.Container{
+	containerV2 := &cd.Container{
 		Image: imageV2,
 	}
-	Pod1 := &clustercd.ClusterPod{}
-	Pod2 := &clustercd.ClusterPod{}
-	Pod3 := &clustercd.ClusterPod{}
+	Pod1 := &cd.ClusterPod{}
+	Pod2 := &cd.ClusterPod{}
+	Pod3 := &cd.ClusterPod{}
 
 	// pod1: t1, imagev1, imagev2
 	Pod1.Metadata.Annotations = map[string]string{
 		common.ClusterRestartTimeKey: t1.Format(layout),
 	}
-	Pod1.Spec.Containers = []*clustercd.Container{containerV1, containerV2}
+	Pod1.Spec.Containers = []*cd.Container{containerV1, containerV2}
 
 	// pod2: t2, imagev1, imagev2
 	Pod2.Metadata.Annotations = map[string]string{
 		common.ClusterRestartTimeKey: t2.Format(layout),
 	}
-	Pod2.Spec.InitContainers = []*clustercd.Container{containerV1, containerV2}
+	Pod2.Spec.InitContainers = []*cd.Container{containerV1, containerV2}
 
 	// pod2: imagev2
-	Pod3.Spec.InitContainers = []*clustercd.Container{containerV2}
+	Pod3.Spec.InitContainers = []*cd.Container{containerV2}
 
 	cs.PodTemplateHash = "test"
-	cs.Versions = map[string]*clustercd.ClusterVersion{}
+	cs.Versions = map[string]*cd.ClusterVersion{}
 
 	// none replicas is expected
-	cs.Versions[cs.PodTemplateHash] = &clustercd.ClusterVersion{
-		Pods: map[string]*clustercd.ClusterPod{"Pod3": Pod3},
+	cs.Versions[cs.PodTemplateHash] = &cd.ClusterVersion{
+		Pods: map[string]*cd.ClusterPod{"Pod3": Pod3},
 	}
 	assert.Equal(t, true, isClusterActuallyHealthy(ctx, cs, imageV1, tActual, 0))
 

@@ -27,20 +27,14 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/q"
-	"github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cd"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/registry"
-	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
-	emvregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	tagmanager "github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/mergemap"
@@ -71,7 +65,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWi
 			}
 			currentUserID = userID
 			// get groups authorized to current user
-			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
+			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, models.TypeGroup, userID)
 			if err != nil {
 				return nil, 0,
 					perror.WithMessage(err, "failed to list group resource of current user")
@@ -100,7 +94,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWi
 
 			// get applications authorized to current user
 			authorizedApplicationIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx,
-				membermodels.TypeApplication, userID)
+				models.TypeApplication, userID)
 			if err != nil {
 				return nil, 0,
 					perror.WithMessage(err, "failed to list application resource of current user")
@@ -185,7 +179,7 @@ func (c *controller) ListByApplication(ctx context.Context,
 }
 
 func (c *controller) getFullResponses(ctx context.Context,
-	clusters []*cmodels.Cluster) ([]*ListClusterWithFullResponse, error) {
+	clusters []*models.Cluster) ([]*ListClusterWithFullResponse, error) {
 	// get applications
 	var applicationIDs []uint
 	for _, cluster := range clusters {
@@ -222,8 +216,8 @@ func (c *controller) getFullResponses(ctx context.Context,
 }
 
 func (c *controller) getFullResponsesWithRegion(ctx context.Context,
-	clustersWithRegion []*cmodels.ClusterWithRegion) ([]*ListClusterWithFullResponse, error) {
-	clusters := make([]*cmodels.Cluster, 0, len(clustersWithRegion))
+	clustersWithRegion []*models.ClusterWithRegion) ([]*ListClusterWithFullResponse, error) {
+	clusters := make([]*models.Cluster, 0, len(clustersWithRegion))
 	for _, clusterWithRegion := range clustersWithRegion {
 		clusters = append(clusters, clusterWithRegion.Cluster)
 	}
@@ -247,7 +241,7 @@ func (c *controller) ListClusterWithExpiry(ctx context.Context,
 	return ofClusterWithExpiry(clusterList), err
 }
 
-func (c *controller) clusterWillExpireIn(ctx context.Context, cluster *cmodels.Cluster) (*uint, error) {
+func (c *controller) clusterWillExpireIn(ctx context.Context, cluster *models.Cluster) (*uint, error) {
 	if cluster.ExpireSeconds == 0 {
 		return nil, nil
 	}
@@ -498,7 +492,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 	cluster, tags := r.toClusterModel(application, er, expireSeconds)
 	cluster.Status = common.ClusterStatusCreating
 
-	if err := tagmanager.ValidateUpsert(tags); err != nil {
+	if err := tagmanager.ValidateTagsUpsert(tags); err != nil {
 		return nil, err
 	}
 
@@ -560,10 +554,10 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 		r.TemplateInput.Pipeline, r.TemplateInput.Application)
 
 	// 11. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &models.Event{
+		EventSummary: models.EventSummary{
 			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterCreated,
+			EventType:    models.ClusterCreated,
 			ResourceID:   ret.ID,
 		},
 	}); err != nil {
@@ -592,8 +586,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 
 	// 3. get environmentRegion/namespace for this cluster
 	var (
-		er               *emvregionmodels.EnvironmentRegion
-		regionEntity     *regionmodels.RegionEntity
+		er               *models.EnvironmentRegion
+		regionEntity     *models.RegionEntity
 		namespace        string
 		namespaceChanged bool
 	)
@@ -617,7 +611,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 			return nil, err
 		}
 	} else {
-		er = &emvregionmodels.EnvironmentRegion{
+		er = &models.EnvironmentRegion{
 			EnvironmentName: cluster.EnvironmentName,
 			RegionName:      cluster.RegionName,
 		}
@@ -732,10 +726,10 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 6. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &models.Event{
+		EventSummary: models.EventSummary{
 			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterUpdated,
+			EventType:    models.ClusterUpdated,
 			ResourceID:   cluster.ID,
 		},
 	}); err != nil {
@@ -894,7 +888,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		if hard {
 			// delete member
 			if err := c.memberManager.HardDeleteMemberByResourceTypeID(ctx,
-				string(membermodels.TypeApplicationCluster), clusterID); err != nil {
+				string(models.TypeApplicationCluster), clusterID); err != nil {
 				log.Errorf(newctx, "failed to delete members of cluster: %v, err: %v", cluster.Name, err)
 			}
 			// delete pipelinerun
@@ -924,10 +918,10 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 		}
 
 		// 5. record event
-		if _, err := c.eventMgr.CreateEvent(newctx, &eventmodels.Event{
-			EventSummary: eventmodels.EventSummary{
+		if _, err := c.eventMgr.CreateEvent(newctx, &models.Event{
+			EventSummary: models.EventSummary{
 				ResourceType: common.ResourceCluster,
-				EventType:    eventmodels.ClusterDeleted,
+				EventType:    models.ClusterDeleted,
 				ResourceID:   clusterID,
 			},
 			ReqID: rid,
@@ -1004,10 +998,10 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 		}
 
 		// 4. create event
-		if _, err := c.eventMgr.CreateEvent(newctx, &eventmodels.Event{
-			EventSummary: eventmodels.EventSummary{
+		if _, err := c.eventMgr.CreateEvent(newctx, &models.Event{
+			EventSummary: models.EventSummary{
 				ResourceType: common.ResourceCluster,
-				EventType:    eventmodels.ClusterFreed,
+				EventType:    models.ClusterFreed,
 				ResourceID:   clusterID,
 			},
 		}); err != nil {
@@ -1178,7 +1172,7 @@ func (c *controller) addIsFavoriteForClusters(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	m := map[uint]collectionmodels.Collection{}
+	m := map[uint]models.Collection{}
 	for _, collection := range collections {
 		m[collection.ResourceID] = collection
 	}

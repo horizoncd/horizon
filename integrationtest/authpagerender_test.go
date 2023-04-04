@@ -38,15 +38,15 @@ import (
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	oauthconfig "github.com/horizoncd/horizon/pkg/config/oauth"
-	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
-	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
+	oauthdao "github.com/horizoncd/horizon/pkg/dao"
+	oauthmanager "github.com/horizoncd/horizon/pkg/manager"
+	tokenmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/oauth/models"
 	"github.com/horizoncd/horizon/pkg/oauth/scope"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/rbac/types"
 	"github.com/horizoncd/horizon/pkg/token/generator"
-	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 	"github.com/stretchr/testify/assert"
@@ -119,8 +119,8 @@ func TestServer(t *testing.T) {
 	callbacks.RegisterCustomCallbacks(db)
 
 	tokenStorage := tokenstorage.NewStorage(db)
-	oauthAppDAO := oauthdao.NewDAO(db)
-	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
+	oauthAppDAO := oauthdao.NewOAuthDAO(db)
+	oauthManager := oauthmanager.NewOAuthManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
 		authorizeCodeExpireIn, accessTokenExpireIn)
 	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
 	clientIDGen := func(appType models.AppType) string {

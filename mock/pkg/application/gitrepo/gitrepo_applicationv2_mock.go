@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	gitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
 )
 
 // MockApplicationGitRepo2 is a mock of ApplicationGitRepo interface.

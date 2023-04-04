@@ -25,25 +25,21 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/lib/orm"
-	applicationmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
-	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
+	applicationmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/rbac"
 	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	memberservice "github.com/horizoncd/horizon/pkg/service"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
 	ctx         context.Context
 	c           Controller
-	group       *groupmodels.Group
+	group       *applicationmodels.Group
 	application *applicationmodels.Application
-	cluster     *clustermodels.Cluster
+	cluster     *applicationmodels.Cluster
 	manager     *managerparam.Manager
 )
 
@@ -51,19 +47,19 @@ var (
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	manager = managerparam.InitManager(db)
-	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
+	if err := db.AutoMigrate(&applicationmodels.Member{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
+	if err := db.AutoMigrate(&applicationmodels.Group{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&applicationmodels.Application{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&clustermodels.Cluster{}); err != nil {
+	if err := db.AutoMigrate(&applicationmodels.Cluster{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&usermodels.User{}); err != nil {
+	if err := db.AutoMigrate(&applicationmodels.User{}); err != nil {
 		panic(err)
 	}
 
@@ -71,7 +67,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	memberService := memberservice.NewService(roleService, nil, manager)
+	memberService := memberservice.NewMemberService(roleService, nil, manager)
 	if err != nil {
 		panic(err)
 	}
@@ -86,7 +82,7 @@ func TestMain(m *testing.M) {
 			"(^/apis/core/v1/roles)|(^/apis/internal/.*)"))
 	c = NewController(rbacAuthorizer, skippers)
 
-	group, err = manager.GroupManager.Create(ctx, &groupmodels.Group{
+	group, err = manager.GroupManager.Create(ctx, &applicationmodels.Group{
 		Name:            "group",
 		Path:            "/group",
 		VisibilityLevel: "private",
@@ -99,7 +95,7 @@ func TestMain(m *testing.M) {
 		GroupID: group.ID,
 	}, nil)
 
-	cluster, _ = manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
+	cluster, _ = manager.ClusterMgr.Create(ctx, &applicationmodels.Cluster{
 		Name:          "cluster",
 		ApplicationID: application.ID,
 	}, nil, nil)
@@ -109,7 +105,7 @@ func TestMain(m *testing.M) {
 
 // nolint
 func TestController_GetAccesses_Guest(t *testing.T) {
-	guest, err := manager.UserManager.Create(ctx, &usermodels.User{
+	guest, err := manager.UserManager.Create(ctx, &applicationmodels.User{
 		Name: "guest",
 	})
 
@@ -165,7 +161,7 @@ func TestController_GetAccesses_Guest(t *testing.T) {
 
 // nolint
 func TestController_GetAccesses_Owner(t *testing.T) {
-	owner, err := manager.UserManager.Create(ctx, &usermodels.User{
+	owner, err := manager.UserManager.Create(ctx, &applicationmodels.User{
 		Name: "owner",
 	})
 
@@ -173,11 +169,11 @@ func TestController_GetAccesses_Owner(t *testing.T) {
 		ID: owner.ID,
 	})
 
-	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
+	_, err = manager.MemberManager.Create(ctx, &applicationmodels.Member{
 		ResourceType: "groups",
 		ResourceID:   group.ID,
 		Role:         "owner",
-		MemberType:   membermodels.MemberUser,
+		MemberType:   applicationmodels.MemberUser,
 		MemberNameID: owner.ID,
 	})
 	assert.Nil(t, err)
@@ -215,7 +211,7 @@ func TestController_GetAccesses_Owner(t *testing.T) {
 
 // nolint
 func TestController_GetAccesses_Admin(t *testing.T) {
-	admin, err := manager.UserManager.Create(ctx, &usermodels.User{
+	admin, err := manager.UserManager.Create(ctx, &applicationmodels.User{
 		Name: "admin",
 	})
 

@@ -17,8 +17,7 @@ package user
 import (
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/user/models"
-	lmodels "github.com/horizoncd/horizon/pkg/userlink/models"
+	"github.com/horizoncd/horizon/pkg/models"
 )
 
 type User struct {
@@ -70,7 +69,7 @@ type Link struct {
 	Unlinkable bool   `json:"unlinkable"`
 }
 
-func ofUserLink(link *lmodels.UserLink) *Link {
+func ofUserLink(link *models.UserLink) *Link {
 	return &Link{
 		ID:         link.ID,
 		Sub:        link.Sub,
@@ -82,7 +81,7 @@ func ofUserLink(link *lmodels.UserLink) *Link {
 	}
 }
 
-func ofUserLinks(links []*lmodels.UserLink) []*Link {
+func ofUserLinks(links []*models.UserLink) []*Link {
 	resp := make([]*Link, 0, len(links))
 	for _, link := range links {
 		resp = append(resp, ofUserLink(link))

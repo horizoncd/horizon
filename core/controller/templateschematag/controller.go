@@ -18,10 +18,9 @@ import (
 	"context"
 
 	"github.com/horizoncd/horizon/core/common"
+	clustermanager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/param"
 
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
-	templateschematagmanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
@@ -31,8 +30,8 @@ type Controller interface {
 }
 
 type controller struct {
-	clusterMgr          clustermanager.Manager
-	clusterSchemaTagMgr templateschematagmanager.Manager
+	clusterMgr          clustermanager.ClusterManager
+	clusterSchemaTagMgr clustermanager.TemplateSchemaTagManager
 }
 
 func NewController(param *param.Param) Controller {
@@ -65,7 +64,7 @@ func (c *controller) Update(ctx context.Context, clusterID uint, r *UpdateReques
 
 	clusterTemplateSchemaTags := r.toClusterTemplateSchemaTags(clusterID, currentUser)
 
-	if err := templateschematagmanager.ValidateUpsert(clusterTemplateSchemaTags); err != nil {
+	if err := clustermanager.ValidateUpsert(clusterTemplateSchemaTags); err != nil {
 		return err
 	}
 

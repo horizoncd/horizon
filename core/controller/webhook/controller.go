@@ -19,16 +19,10 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
-	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
-	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
-	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
+	"github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	wmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
-	"github.com/horizoncd/horizon/pkg/webhook/models"
 )
 
 type Controller interface {
@@ -46,12 +40,12 @@ type Controller interface {
 }
 
 type controller struct {
-	webhookMgr     wmanager.Manager
-	userMgr        usermanager.Manager
-	eventMgr       eventmanager.Manager
-	groupMgr       groupmanager.Manager
-	applicationMgr applicationmanager.Manager
-	clusterMgr     clustermanager.Manager
+	webhookMgr     manager.WebhookManager
+	userMgr        manager.UserManager
+	eventMgr       manager.EventManager
+	groupMgr       manager.GroupManager
+	applicationMgr manager.ApplicationManager
+	clusterMgr     manager.ClusterManager
 }
 
 func NewController(param *param.Param) Controller {
@@ -243,7 +237,7 @@ func (c *controller) GetWebhookLog(ctx context.Context, id uint) (*Log, error) {
 	}
 
 	webhookLog := ofWebhookLogModel(wl)
-	webhookLog.CreatedBy = usermodels.ToUser(userMap[wl.CreatedBy])
+	webhookLog.CreatedBy = models.ToUser(userMap[wl.CreatedBy])
 	return webhookLog, nil
 }
 

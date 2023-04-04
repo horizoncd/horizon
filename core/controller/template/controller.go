@@ -30,18 +30,11 @@ import (
 	hctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/git"
-	gmanager "github.com/horizoncd/horizon/pkg/group/manager"
-	groupModels "github.com/horizoncd/horizon/pkg/group/models"
-	"github.com/horizoncd/horizon/pkg/group/service"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
+	gmanager "github.com/horizoncd/horizon/pkg/manager"
+	groupModels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
-	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
-	"github.com/horizoncd/horizon/pkg/template/models"
-	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	"github.com/horizoncd/horizon/pkg/service"
 	"github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/horizoncd/horizon/pkg/util/permission"
@@ -86,11 +79,11 @@ type Controller interface {
 type controller struct {
 	gitgetter            git.Helper
 	templateRepo         templaterepo.TemplateRepo
-	groupMgr             gmanager.Manager
-	templateMgr          tmanager.Manager
-	templateReleaseMgr   trmanager.Manager
-	memberMgr            membermanager.Manager
-	memberSvc            memberservice.Service
+	groupMgr             gmanager.GroupManager
+	templateMgr          gmanager.TemplateManager
+	templateReleaseMgr   gmanager.TemplateReleaseManager
+	memberMgr            gmanager.MemberManager
+	memberSvc            service.MemberService
 	templateSchemaGetter schema.Getter
 }
 
@@ -124,7 +117,7 @@ func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bo
 				}
 				// get groups authorized to current user
 				groupIDs, err = c.memberMgr.ListResourceOfMemberInfoByRole(
-					ctx, membermodels.TypeGroup, userID, role.Owner)
+					ctx, groupModels.TypeGroup, userID, role.Owner)
 				if err != nil {
 					return nil, perror.WithMessage(err, "failed to list group resource of current user")
 				}
@@ -137,9 +130,9 @@ func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bo
 
 				groupIDs = nil
 				for _, group := range subGroups {
-					var member *membermodels.Member
-					if member, err = c.memberMgr.Get(ctx, membermodels.TypeGroup,
-						group.ID, membermodels.MemberUser, userID); err != nil {
+					var member *groupModels.Member
+					if member, err = c.memberMgr.Get(ctx, groupModels.TypeGroup,
+						group.ID, groupModels.MemberUser, userID); err != nil {
 						return nil, err
 					}
 					if member == nil || member.Role == role.Owner {
@@ -244,7 +237,7 @@ func (c *controller) listTemplateByUser(ctx context.Context) (Templates, error) 
 
 	// get groups authorized to current user
 	groupIDs, err := c.memberMgr.ListResourceOfMemberInfoByRole(
-		ctx, membermodels.TypeGroup, currentUser.GetID(), role.Owner)
+		ctx, groupModels.TypeGroup, currentUser.GetID(), role.Owner)
 	if err != nil {
 		return nil, perror.WithMessage(err, "failed to list group resource of current user")
 	}
@@ -257,9 +250,9 @@ func (c *controller) listTemplateByUser(ctx context.Context) (Templates, error) 
 
 	groupIDs = nil
 	for _, group := range subGroups {
-		var member *membermodels.Member
-		if member, err = c.memberMgr.Get(ctx, membermodels.TypeGroup,
-			group.ID, membermodels.MemberUser, currentUser.GetID()); err != nil {
+		var member *groupModels.Member
+		if member, err = c.memberMgr.Get(ctx, groupModels.TypeGroup,
+			group.ID, groupModels.MemberUser, currentUser.GetID()); err != nil {
 			return nil, err
 		}
 		if member == nil || member.Role == role.Owner {
@@ -275,7 +268,7 @@ func (c *controller) listTemplateByUser(ctx context.Context) (Templates, error) 
 
 	// get templates authorized to current user
 	authorizedTemplateIDs, err := c.memberMgr.ListResourceOfMemberInfoByRole(ctx,
-		membermodels.TypeTemplate, currentUser.GetID(), role.Owner)
+		groupModels.TypeTemplate, currentUser.GetID(), role.Owner)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +286,7 @@ func (c *controller) listTemplateByUser(ctx context.Context) (Templates, error) 
 		set[template.ID] = struct{}{}
 	}
 
-	filter := func(t *models.Template) bool {
+	filter := func(t *groupModels.Template) bool {
 		if _, ok := set[t.ID]; !ok {
 			set[t.ID] = struct{}{}
 			return true
@@ -576,11 +569,11 @@ func (c *controller) CreateTemplate(ctx context.Context,
 		return nil, err
 	}
 
-	_, err = c.memberMgr.Create(ctx, &membermodels.Member{
-		ResourceType: membermodels.TypeTemplate,
+	_, err = c.memberMgr.Create(ctx, &groupModels.Member{
+		ResourceType: groupModels.TypeTemplate,
 		ResourceID:   template.ID,
 		Role:         role.Owner,
-		MemberType:   membermodels.MemberUser,
+		MemberType:   groupModels.MemberUser,
 		MemberNameID: user.GetID(),
 		GrantedBy:    user.GetID(),
 		CreatedBy:    user.GetID(),
@@ -618,16 +611,16 @@ func (c *controller) CreateRelease(ctx context.Context,
 			return nil, err
 		}
 		release.CommitID = tag.ShortID
-		release.SyncStatus = trmodels.StatusSucceed
+		release.SyncStatus = groupModels.SyncStatusSucceed
 		release.ChartVersion = chartVersion
 	} else {
-		release.SyncStatus = trmodels.StatusOutOfSync
+		release.SyncStatus = groupModels.SyncStatusOutOfSync
 	}
 
 	release.Template = template.ID
 	release.LastSyncAt = time.Now()
 
-	var newRelease *trmodels.TemplateRelease
+	var newRelease *groupModels.TemplateRelease
 	if newRelease, err = c.templateReleaseMgr.Create(ctx, release); err != nil {
 		return nil, err
 	}
@@ -824,14 +817,14 @@ func (c *controller) SyncReleaseToRepo(ctx context.Context, releaseID uint) erro
 }
 
 func (c *controller) handleReleaseSyncStatus(ctx context.Context,
-	release *trmodels.TemplateRelease, commitID string, failedReason string) error {
+	release *groupModels.TemplateRelease, commitID string, failedReason string) error {
 	if failedReason == "" {
-		release.SyncStatus = trmodels.StatusSucceed
+		release.SyncStatus = groupModels.SyncStatusSucceed
 		release.FailedReason = ""
 		release.ChartVersion = fmt.Sprintf(common.ChartVersionFormat, release.Name, commitID)
 	} else {
 		release.FailedReason = failedReason
-		release.SyncStatus = trmodels.StatusFailed
+		release.SyncStatus = groupModels.SyncStatusFailed
 	}
 	release.CommitID = commitID
 	release.LastSyncAt = time.Now()
@@ -849,13 +842,13 @@ func (c *controller) getTag(ctx context.Context, repository,
 }
 
 func (c *controller) checkStatusForReleases(ctx context.Context,
-	template *models.Template, releases []*trmodels.TemplateRelease) []*trmodels.TemplateRelease {
+	template *groupModels.Template, releases []*groupModels.TemplateRelease) []*groupModels.TemplateRelease {
 	var wg sync.WaitGroup
-	res := make([]*trmodels.TemplateRelease, len(releases))
+	res := make([]*groupModels.TemplateRelease, len(releases))
 
 	wg.Add(len(releases))
 	for i := range releases {
-		go func(index int, r *trmodels.TemplateRelease) {
+		go func(index int, r *groupModels.TemplateRelease) {
 			res[index], _ = c.checkStatusForRelease(ctx, template, r)
 			wg.Done()
 		}(i, releases[i])
@@ -866,18 +859,18 @@ func (c *controller) checkStatusForReleases(ctx context.Context,
 }
 
 func (c *controller) checkStatusForRelease(ctx context.Context,
-	template *models.Template, release *trmodels.TemplateRelease) (*trmodels.TemplateRelease, error) {
-	if release.SyncStatus != trmodels.StatusSucceed {
+	template *groupModels.Template, release *groupModels.TemplateRelease) (*groupModels.TemplateRelease, error) {
+	if release.SyncStatus != groupModels.SyncStatusSucceed {
 		return release, nil
 	}
 
 	tag, err := c.getTag(ctx, template.Repository, release.ChartName, release.Name)
 	if err != nil {
-		release.SyncStatus = trmodels.StatusUnknown
+		release.SyncStatus = groupModels.SyncStatusUnknown
 		return release, err
 	}
 	if tag.ShortID != release.CommitID {
-		release.SyncStatus = trmodels.StatusOutOfSync
+		release.SyncStatus = groupModels.SyncStatusOutOfSync
 	}
 	return release, nil
 }
@@ -894,7 +887,7 @@ func (c *controller) syncReleaseToRepo(chartBytes []byte, name, tag string) erro
 }
 
 func (c *controller) checkHasOnlyOwnerPermissionForTemplate(ctx context.Context,
-	template *models.Template) bool {
+	template *groupModels.Template) bool {
 	user, err := common.UserFromContext(ctx)
 	if err != nil {
 		return false
@@ -922,7 +915,7 @@ func (c *controller) checkHasOnlyOwnerPermissionForTemplate(ctx context.Context,
 }
 
 func (c *controller) checkHasOnlyOwnerPermissionForRelease(ctx context.Context,
-	release *trmodels.TemplateRelease) bool {
+	release *groupModels.TemplateRelease) bool {
 	user, err := common.UserFromContext(ctx)
 	if err != nil {
 		return false

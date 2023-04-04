@@ -31,31 +31,15 @@ import (
 	"github.com/horizoncd/horizon/lib/q"
 	cdmock "github.com/horizoncd/horizon/mock/pkg/cd"
 	pipelinemockmanager "github.com/horizoncd/horizon/mock/pkg/pipelinerun/manager"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	"github.com/horizoncd/horizon/pkg/cluster/models"
-	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/config/autofree"
-	emodel "github.com/horizoncd/horizon/pkg/environment/models"
-	"github.com/horizoncd/horizon/pkg/environment/service"
-	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	"github.com/horizoncd/horizon/pkg/errors"
-	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
-	idpmodels "github.com/horizoncd/horizon/pkg/idp/models"
 	"github.com/horizoncd/horizon/pkg/idp/utils"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	appmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	pipelinemodel "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	tmodel "github.com/horizoncd/horizon/pkg/tag/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
-	tagmodel "github.com/horizoncd/horizon/pkg/templateschematag/models"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	linkmodels "github.com/horizoncd/horizon/pkg/userlink/models"
+	"github.com/horizoncd/horizon/pkg/service"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,11 +52,12 @@ var (
 const secondsInOneDay = 24 * 3600
 
 func TestMain(m *testing.M) {
-	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
-		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
-		&registrymodels.Registry{}, &idpmodels.IdentityProvider{}, &linkmodels.UserLink{},
-		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{},
-		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{}, &emodel.Environment{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.Application{}, &appmodels.Cluster{}, &appmodels.Group{},
+		&appmodels.TemplateRelease{}, &appmodels.Member{}, &appmodels.User{},
+		&appmodels.Registry{}, &appmodels.IdentityProvider{}, &appmodels.UserLink{},
+		&appmodels.Region{}, &appmodels.EnvironmentRegion{},
+		&appmodels.Pipelinerun{}, &appmodels.ClusterTemplateSchemaTag{},
+		&appmodels.Tag{}, &appmodels.Environment{}); err != nil {
 		panic(err)
 	}
 	// nolint
@@ -91,11 +76,11 @@ func createUser(t *testing.T) {
 		email = "horizon@noreply.com"
 	)
 
-	method := uint8(idpmodels.ClientSecretSentAsPost)
-	idp, err := manager.IdpManager.Create(ctx, &idpmodels.IdentityProvider{
+	method := uint8(appmodels.ClientSecretSentAsPost)
+	idp, err := manager.IdpManager.Create(ctx, &appmodels.IdentityProvider{
 		Model:                   global.Model{ID: 1},
 		Name:                    "netease",
-		TokenEndpointAuthMethod: (*idpmodels.TokenEndpointAuthMethod)(&method),
+		TokenEndpointAuthMethod: (*appmodels.TokenEndpointAuthMethod)(&method),
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, uint(1), idp.ID)
@@ -103,7 +88,7 @@ func createUser(t *testing.T) {
 
 	mgr := manager.UserManager
 
-	u, err := mgr.Create(ctx, &usermodels.User{
+	u, err := mgr.Create(ctx, &appmodels.User{
 		Name:  name,
 		Email: email,
 	})
@@ -124,11 +109,11 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	cd := cdmock.NewMockCD(mockCtl)
 	conf := &coreconfig.Config{}
 	parameter := &param.Param{
-		AutoFreeSvc: service.New([]string{"dev"}),
+		AutoFreeSvc: service.NewAutoFreeSVC([]string{"dev"}),
 		Manager:     manager,
 		CD:          cd,
 	}
-	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
+	mockPipelineManager := pipelinemockmanager.NewMockPipelineRunManager(mockCtl)
 	parameter.PipelinerunMgr = mockPipelineManager
 	clrCtl := clusterctl.NewController(conf, parameter)
 	prCtl := prctl.NewController(parameter)
@@ -141,7 +126,7 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	// ListClusterWithExpiry
 	for i := 0; i < 7; i++ {
 		name := "clusterWithExpiry" + strconv.Itoa(i)
-		cluster := &clustermodels.Cluster{
+		cluster := &appmodels.Cluster{
 			ApplicationID:   uint(1),
 			Name:            name,
 			EnvironmentName: "dev",
@@ -164,16 +149,16 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		assert.NotNil(t, cluster)
 
 		// pipelinerun
-		pipelineruns := make([]*pipelinemodel.Pipelinerun, 0)
+		pipelineruns := make([]*appmodels.Pipelinerun, 0)
 		if i == 5 {
-			pipelineruns = append(pipelineruns, &pipelinemodel.Pipelinerun{
+			pipelineruns = append(pipelineruns, &appmodels.Pipelinerun{
 				ID:        uint(i + 1),
 				ClusterID: cluster.ID,
 				CreatedBy: 1,
 				UpdatedAt: time.Now(),
 			})
 		} else if i != 4 {
-			pipelineruns = append(pipelineruns, &pipelinemodel.Pipelinerun{
+			pipelineruns = append(pipelineruns, &appmodels.Pipelinerun{
 				ID:        uint(i + 1),
 				ClusterID: cluster.ID,
 				CreatedBy: 1,

@@ -23,21 +23,13 @@ import (
 	"github.com/horizoncd/horizon/core/controller/group"
 	"github.com/horizoncd/horizon/lib/orm"
 	rolemock "github.com/horizoncd/horizon/mock/pkg/rbac/role"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
-	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
-	"github.com/horizoncd/horizon/pkg/group/models"
-	groupservice "github.com/horizoncd/horizon/pkg/group/service"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
+	appmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	tmodels "github.com/horizoncd/horizon/pkg/template/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
-	usermodel "github.com/horizoncd/horizon/pkg/user/models"
+	service "github.com/horizoncd/horizon/pkg/service"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -51,9 +43,9 @@ var (
 	contextUserFullName      = "TonyWu"
 	manager                  = managerparam.InitManager(db)
 	groupCtl            group.Controller
-	groupSvc            groupservice.Service
-	applicationSvc      applicationservice.Service
-	clusterSvc          clusterservice.Service
+	groupSvc            service.GroupService
+	applicationSvc      service.ApplicationService
+	clusterSvc          service.ClusterService
 )
 
 var (
@@ -82,15 +74,15 @@ func createContext(t *testing.T) {
 		Admin:    true,
 	})
 	// create table
-	err := db.AutoMigrate(&models.Group{}, &usermodel.User{},
-		&appmodels.Application{}, &membermodels.Member{},
-		&tmodels.Template{}, &trmodels.TemplateRelease{})
+	err := db.AutoMigrate(&appmodels.Group{}, &appmodels.User{},
+		&appmodels.Application{}, &appmodels.Member{},
+		&appmodels.Template{}, &appmodels.TemplateRelease{})
 	assert.Nil(t, err)
 
 	groupCtl = group.NewController(&param.Param{Manager: manager})
-	groupSvc = groupservice.NewService(manager)
-	applicationSvc = applicationservice.NewService(groupSvc, manager)
-	clusterSvc = clusterservice.NewService(applicationSvc, manager)
+	groupSvc = service.NewGroupService(manager)
+	applicationSvc = service.NewApplicationService(groupSvc, manager)
+	clusterSvc = service.NewClusterService(applicationSvc, manager)
 }
 
 func MemberSame(m1, m2 Member) bool {
@@ -107,7 +99,7 @@ func MemberSame(m1, m2 Member) bool {
 
 func CreateUsers(t *testing.T) {
 	// create user
-	user1 := usermodel.User{
+	user1 := appmodels.User{
 		Model: global.Model{},
 		Name:  user1Name,
 	}
@@ -124,7 +116,7 @@ func CreateUsers(t *testing.T) {
 	user5 := user1
 	user5.Name = user5Name
 
-	for _, user := range []usermodel.User{user1, user2, user3, user4, user5} {
+	for _, user := range []appmodels.User{user1, user2, user3, user4, user5} {
 		_, err := manager.UserManager.Create(ctx, &user)
 		assert.Nil(t, err)
 	}
@@ -132,7 +124,7 @@ func CreateUsers(t *testing.T) {
 
 func TestCreateGroupWithOwner(t *testing.T) {
 	createContext(t)
-	memberService := memberservice.NewService(nil, nil, manager)
+	memberService := service.NewMemberService(nil, nil, manager)
 	ctl := NewController(&param.Param{
 		MemberService:  memberService,
 		Manager:        manager,
@@ -157,10 +149,10 @@ func TestCreateGroupWithOwner(t *testing.T) {
 
 	retMembers, err := ctl.ListMember(ctx, common.ResourceGroup, groupID)
 	expectMember := Member{
-		MemberType:   membermodels.MemberUser,
+		MemberType:   appmodels.MemberUser,
 		MemberName:   contextUserName,
 		MemberNameID: contextUserID,
-		ResourceType: membermodels.TypeGroup,
+		ResourceType: appmodels.TypeGroup,
 		ResourceID:   groupID,
 		Role:         roleservice.Owner,
 		GrantedBy:    contextUserID,
@@ -169,9 +161,9 @@ func TestCreateGroupWithOwner(t *testing.T) {
 	assert.NotNil(t, retMembers)
 	assert.True(t, MemberSame(retMembers[0], expectMember))
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.Member{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.User{})
 }
 
 func PostMemberAndMemberEqual(postMember PostMember, member2 Member) bool {
@@ -193,7 +185,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	roleMockService.EXPECT().RoleCompare(ctx, gomock.Any(), gomock.Any()).Return(
 		roleservice.RoleBigger, nil).AnyTimes()
 
-	memberService := memberservice.NewService(roleMockService, nil, manager)
+	memberService := service.NewMemberService(roleMockService, nil, manager)
 	ctl := NewController(&param.Param{
 		MemberService:  memberService,
 		Manager:        manager,
@@ -219,7 +211,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 		ResourceType: common.ResourceGroup,
 		ResourceID:   groupID,
 		MemberNameID: user2ID,
-		MemberType:   membermodels.MemberUser,
+		MemberType:   appmodels.MemberUser,
 		Role:         roleservice.Owner,
 	}
 	retMember2, err := ctl.CreateMember(ctx, &postMember2)
@@ -246,7 +238,7 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 		ResourceType: common.ResourceGroup,
 		ResourceID:   groupID,
 		MemberNameID: user1ID,
-		MemberType:   membermodels.MemberUser,
+		MemberType:   appmodels.MemberUser,
 		Role:         roleservice.Owner,
 	}
 	members, err := ctl.ListMember(ctx, common.ResourceGroup, groupID)
@@ -255,14 +247,14 @@ func TestCreateGetUpdateRemoveList(t *testing.T) {
 	assert.True(t, PostMemberAndMemberEqual(postMemberOwner, members[0]))
 	assert.True(t, PostMemberAndMemberEqual(postMember2, members[1]))
 
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&membermodels.Member{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&usermodel.User{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.Group{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.Member{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.User{})
 }
 
 func TestTemplateMember(t *testing.T) {
 	createContext(t)
-	memberService := memberservice.NewService(nil, nil, manager)
+	memberService := service.NewMemberService(nil, nil, manager)
 	ctl := NewController(&param.Param{
 		MemberService:  memberService,
 		Manager:        manager,
@@ -272,7 +264,7 @@ func TestTemplateMember(t *testing.T) {
 	})
 
 	onlyOwner := false
-	template := &tmodels.Template{
+	template := &appmodels.Template{
 		Model:     global.Model{},
 		Name:      "javaapp",
 		ChartName: "javaapp",
@@ -283,7 +275,7 @@ func TestTemplateMember(t *testing.T) {
 	assert.Nil(t, err)
 
 	recommended := true
-	release := &trmodels.TemplateRelease{
+	release := &appmodels.TemplateRelease{
 		Model:        global.Model{},
 		Template:     1,
 		TemplateName: "javaapp",
@@ -296,7 +288,7 @@ func TestTemplateMember(t *testing.T) {
 	_, err = manager.TemplateReleaseManager.Create(ctx, release)
 	assert.Nil(t, err)
 
-	jerry := &usermodel.User{
+	jerry := &appmodels.User{
 		Model:    global.Model{},
 		Name:     "Jerry",
 		FullName: "Jerry",
@@ -309,7 +301,7 @@ func TestTemplateMember(t *testing.T) {
 	createMemberParam := &PostMember{
 		ResourceType: common.ResourceTemplate,
 		ResourceID:   template.ID,
-		MemberType:   membermodels.MemberUser,
+		MemberType:   appmodels.MemberUser,
 		MemberNameID: jerry.ID,
 		Role:         "owner",
 	}

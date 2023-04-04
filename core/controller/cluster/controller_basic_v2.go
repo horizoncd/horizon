@@ -22,13 +22,10 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/build"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cd"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
-	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	"github.com/horizoncd/horizon/pkg/templaterelease/models"
+	appgitrepo "github.com/horizoncd/horizon/pkg/gitrepo"
+	appmodels "github.com/horizoncd/horizon/pkg/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/models"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -37,8 +34,6 @@ import (
 
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
@@ -183,8 +178,8 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	}
 
 	// 10. create git repo
-	err = c.clusterGitRepo.CreateCluster(ctx, &gitrepo.CreateClusterParams{
-		BaseParams: &gitrepo.BaseParams{
+	err = c.clusterGitRepo.CreateCluster(ctx, &appgitrepo.CreateClusterParams{
+		BaseParams: &appgitrepo.BaseParams{
 			ClusterID:           clusterResp.ID,
 			Cluster:             clusterResp.Name,
 			PipelineJSONBlob:    buildTemplateInfo.BuildConfig,
@@ -241,10 +236,10 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	}
 
 	// 12. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &appmodels.Event{
+		EventSummary: appmodels.EventSummary{
 			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterCreated,
+			EventType:    appmodels.ClusterCreated,
 			ResourceID:   cluster.ID,
 		},
 	}); err != nil {
@@ -395,7 +390,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	}
 
 	// 2. check if we should update region and env
-	var regionEntity *regionmodels.RegionEntity
+	var regionEntity *appmodels.RegionEntity
 	environmentName := cluster.EnvironmentName
 	regionName := cluster.RegionName
 	if cluster.Status == common.ClusterStatusFreed &&
@@ -427,7 +422,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	}
 
 	// 4. customize template\build\template infos
-	templateInfo, templateRelease, err := func() (*codemodels.TemplateInfo, *models.TemplateRelease, error) {
+	templateInfo, templateRelease, err := func() (*codemodels.TemplateInfo, *appmodels.TemplateRelease, error) {
 		var templateInfo *codemodels.TemplateInfo
 		if r.TemplateInfo == nil {
 			templateInfo = &codemodels.TemplateInfo{
@@ -499,8 +494,8 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	}
 
 	// 6. update in git repo
-	if err = c.clusterGitRepo.UpdateCluster(ctx, &gitrepo.UpdateClusterParams{
-		BaseParams: &gitrepo.BaseParams{
+	if err = c.clusterGitRepo.UpdateCluster(ctx, &appgitrepo.UpdateClusterParams{
+		BaseParams: &appgitrepo.BaseParams{
 			ClusterID:           cluster.ID,
 			Cluster:             cluster.Name,
 			PipelineJSONBlob:    buildConfig,
@@ -515,10 +510,10 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	}
 
 	// 7. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &appmodels.Event{
+		EventSummary: appmodels.EventSummary{
 			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterUpdated,
+			EventType:    appmodels.ClusterUpdated,
 			ResourceID:   cluster.ID,
 		},
 	}); err != nil {
@@ -634,7 +629,7 @@ func (c *controller) ToggleLikeStatus(ctx context.Context, clusterID uint, like 
 
 	if like != nil {
 		if like.IsFavorite {
-			collection := collectionmodels.Collection{
+			collection := appmodels.Collection{
 				ResourceID:   clusterID,
 				ResourceType: common.ResourceCluster,
 				UserID:       currentUser.GetID(),

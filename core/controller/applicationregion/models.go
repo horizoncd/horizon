@@ -17,15 +17,13 @@ package applicationregion
 import (
 	"sort"
 
-	"github.com/horizoncd/horizon/pkg/applicationregion/models"
-	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
-	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
+	"github.com/horizoncd/horizon/pkg/models"
 )
 
 type ApplicationRegion []*Region
 
-func ofApplicationRegion(applicationRegions []*models.ApplicationRegion, environments []*envmodels.Environment,
-	environmentRegions []*envregionmodels.EnvironmentRegion) ApplicationRegion {
+func ofApplicationRegion(applicationRegions []*models.ApplicationRegion, environments []*models.Environment,
+	environmentRegions []*models.EnvironmentRegion) ApplicationRegion {
 	defaultRegionMap := make(map[string]string)
 	for _, environmentRegion := range environmentRegions {
 		defaultRegionMap[environmentRegion.EnvironmentName] = environmentRegion.RegionName

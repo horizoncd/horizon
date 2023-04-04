@@ -136,3 +136,41 @@ func (mr *MockCDMockRecorder) GetStep(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStep", reflect.TypeOf((*MockCD)(nil).GetStep), ctx, params)
 }
+
+// MockLegacyStatusGetter is a mock of LegacyStatusGetter interface.
+type MockLegacyStatusGetter struct {
+	ctrl     *gomock.Controller
+	recorder *MockLegacyStatusGetterMockRecorder
+}
+
+// MockLegacyStatusGetterMockRecorder is the mock recorder for MockLegacyStatusGetter.
+type MockLegacyStatusGetterMockRecorder struct {
+	mock *MockLegacyStatusGetter
+}
+
+// NewMockLegacyStatusGetter creates a new mock instance.
+func NewMockLegacyStatusGetter(ctrl *gomock.Controller) *MockLegacyStatusGetter {
+	mock := &MockLegacyStatusGetter{ctrl: ctrl}
+	mock.recorder = &MockLegacyStatusGetterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockLegacyStatusGetter) EXPECT() *MockLegacyStatusGetterMockRecorder {
+	return m.recorder
+}
+
+// LegacyStatusGet mocks base method.
+func (m *MockLegacyStatusGetter) LegacyStatusGet(ctx context.Context, params *cd.GetClusterStateParams) (*cd.ClusterState, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LegacyStatusGet", ctx, params)
+	ret0, _ := ret[0].(*cd.ClusterState)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LegacyStatusGet indicates an expected call of LegacyStatusGet.
+func (mr *MockLegacyStatusGetterMockRecorder) LegacyStatusGet(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LegacyStatusGet", reflect.TypeOf((*MockLegacyStatusGetter)(nil).LegacyStatusGet), ctx, params)
+}

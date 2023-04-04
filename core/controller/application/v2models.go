@@ -17,9 +17,9 @@ package application
 import (
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	"github.com/horizoncd/horizon/pkg/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/models"
 )
 
 type GetApplicationResponseV2 struct {

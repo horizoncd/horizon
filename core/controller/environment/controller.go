@@ -17,13 +17,10 @@ package environment
 import (
 	"context"
 
-	environmentmanager "github.com/horizoncd/horizon/pkg/environment/manager"
-	"github.com/horizoncd/horizon/pkg/environment/models"
-	"github.com/horizoncd/horizon/pkg/environment/service"
-	envregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
+	environmentmanager "github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	"github.com/horizoncd/horizon/pkg/service"
 )
 
 type Controller interface {
@@ -35,7 +32,7 @@ type Controller interface {
 	GetByName(ctx context.Context, name string) (*Environment, error)
 	// ListEnabledRegionsByEnvironment will be removed later. list regions by the environment that are enabled
 	// Deprecated
-	ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (regionmodels.RegionParts, error)
+	ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (models.RegionParts, error)
 }
 
 var _ Controller = (*controller)(nil)
@@ -50,9 +47,9 @@ func NewController(param *param.Param) Controller {
 }
 
 type controller struct {
-	envMgr       environmentmanager.Manager
-	envRegionMgr envregionmanager.Manager
-	regionMgr    regionmanager.Manager
+	envMgr       environmentmanager.EnvironmentManager
+	envRegionMgr environmentmanager.EnvironmentRegionManager
+	regionMgr    environmentmanager.RegionManager
 	autoFreeSvc  *service.AutoFreeSVC
 }
 
@@ -100,7 +97,7 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 }
 
 func (c *controller) ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (
-	regionmodels.RegionParts, error) {
+	models.RegionParts, error) {
 	return c.envRegionMgr.ListEnabledRegionsByEnvironment(ctx, environment)
 }
 

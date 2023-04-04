@@ -16,7 +16,7 @@ package templateschematag
 
 import (
 	"github.com/horizoncd/horizon/pkg/authentication/user"
-	tagmodels "github.com/horizoncd/horizon/pkg/templateschematag/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/models"
 )
 
 type ListResponse struct {

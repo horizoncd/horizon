@@ -15,7 +15,7 @@
 package tag
 
 import (
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/models"
 )
 
 type ListResponse struct {

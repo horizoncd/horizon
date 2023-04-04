@@ -21,10 +21,9 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	"github.com/horizoncd/horizon/pkg/user/manager"
-	"github.com/horizoncd/horizon/pkg/user/models"
-	linkmanager "github.com/horizoncd/horizon/pkg/userlink/manager"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
@@ -39,8 +38,8 @@ type Controller interface {
 }
 
 type controller struct {
-	userMgr  manager.Manager
-	linksMgr linkmanager.Manager
+	userMgr  manager.UserManager
+	linksMgr manager.UserLinkManager
 }
 
 func NewController(param *param.Param) Controller {

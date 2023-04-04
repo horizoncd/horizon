@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	tokenmanager "github.com/horizoncd/horizon/pkg/manager"
 	"golang.org/x/net/context"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -29,8 +30,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/oauth/scope"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/rbac/types"
-	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 )
 
 type Controller interface {
@@ -40,8 +39,8 @@ type Controller interface {
 }
 
 type controller struct {
-	tokenManager tokenmanager.Manager
-	userManager  usermanager.Manager
+	tokenManager tokenmanager.TokenManager
+	userManager  tokenmanager.UserManager
 	scopeService scope.Service
 }
 

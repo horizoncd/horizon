@@ -17,10 +17,9 @@ package application
 import (
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	"github.com/horizoncd/horizon/pkg/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/models"
 )
 
 // Base holds the parameters which can be updated of an application
@@ -130,7 +129,7 @@ func (m *UpdateApplicationRequest) toApplicationModel(appExistsInDB *models.Appl
 }
 
 // ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse
-func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodels.TemplateRelease,
+func ofApplicationModel(app *models.Application, fullPath string, trs []*models.TemplateRelease,
 	pipelineJSONBlob, applicationJSONBlob map[string]interface{}, tags ...*tagmodels.Tag) *GetApplicationResponse {
 	var recommendedRelease string
 	for _, tr := range trs {

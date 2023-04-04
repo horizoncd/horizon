@@ -21,29 +21,21 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
 	appgitrepomock "github.com/horizoncd/horizon/mock/pkg/application/gitrepo"
 	trschemamock "github.com/horizoncd/horizon/mock/pkg/templaterelease/schema"
-	"github.com/horizoncd/horizon/pkg/application/gitrepo"
-	"github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
-	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
-	groupservice "github.com/horizoncd/horizon/pkg/group/service"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	"github.com/horizoncd/horizon/pkg/models"
+	eventmodels "github.com/horizoncd/horizon/pkg/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	tmodels "github.com/horizoncd/horizon/pkg/template/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	groupservice "github.com/horizoncd/horizon/pkg/service"
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
-	userservice "github.com/horizoncd/horizon/pkg/user/service"
-
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -265,26 +257,26 @@ var (
         }
     }
 }`
-	manager *managerparam.Manager
+	mgr *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
-	manager = managerparam.InitManager(db)
-	if err := db.AutoMigrate(&models.Application{}, &clustermodels.Cluster{}, &regionmodels.Region{}); err != nil {
+	mgr = managerparam.InitManager(db)
+	if err := db.AutoMigrate(&models.Application{}, &models.Cluster{}, &models.Region{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
+	if err := db.AutoMigrate(&models.Group{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&tmodels.Template{}); err != nil {
+	if err := db.AutoMigrate(&models.Template{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&trmodels.TemplateRelease{}); err != nil {
+	if err := db.AutoMigrate(&models.TemplateRelease{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
+	if err := db.AutoMigrate(&models.Member{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&tagmodels.Tag{}); err != nil {
@@ -343,29 +335,29 @@ func Test(t *testing.T) {
 			},
 		}, nil).AnyTimes()
 
-	tr := &trmodels.TemplateRelease{
+	tr := &models.TemplateRelease{
 		TemplateName: "javaapp",
 		ChartVersion: "v1.0.0",
 		Name:         "v1.0.0",
 		ChartName:    "javaapp",
 	}
-	_, err := manager.TemplateReleaseManager.Create(ctx, tr)
+	_, err := mgr.TemplateReleaseManager.Create(ctx, tr)
 	assert.Nil(t, err)
 
 	c = &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
-		tagMgr:               manager.TagManager,
-		applicationMgr:       manager.ApplicationManager,
-		groupMgr:             manager.GroupManager,
-		groupSvc:             groupservice.NewService(manager),
-		templateReleaseMgr:   manager.TemplateReleaseManager,
-		clusterMgr:           manager.ClusterMgr,
-		userSvc:              userservice.NewService(manager),
-		eventMgr:             manager.EventManager,
+		tagMgr:               mgr.TagManager,
+		applicationMgr:       mgr.ApplicationManager,
+		groupMgr:             mgr.GroupManager,
+		groupSvc:             groupservice.NewGroupService(mgr),
+		templateReleaseMgr:   mgr.TemplateReleaseManager,
+		clusterMgr:           mgr.ClusterMgr,
+		userSvc:              groupservice.NewUserService(mgr),
+		eventMgr:             mgr.EventManager,
 	}
 
-	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
+	group, err := mgr.GroupManager.Create(ctx, &models.Group{
 		Name: "ABC",
 		Path: "abc",
 	})
@@ -499,28 +491,28 @@ func TestV2(t *testing.T) {
 			},
 		}, nil).AnyTimes()
 
-	tr := &trmodels.TemplateRelease{
+	tr := &models.TemplateRelease{
 		TemplateName: "javaapp",
 		ChartVersion: "v1.0.0",
 		Name:         "v1.0.0",
 		ChartName:    "javaapp",
 	}
-	_, err := manager.TemplateReleaseManager.Create(ctx, tr)
+	_, err := mgr.TemplateReleaseManager.Create(ctx, tr)
 	assert.Nil(t, err)
 	c := &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
-		applicationMgr:       manager.ApplicationManager,
-		tagMgr:               manager.TagManager,
-		groupMgr:             manager.GroupManager,
-		groupSvc:             groupservice.NewService(manager),
-		templateReleaseMgr:   manager.TemplateReleaseManager,
-		clusterMgr:           manager.ClusterMgr,
-		userSvc:              userservice.NewService(manager),
-		eventMgr:             manager.EventManager,
+		applicationMgr:       mgr.ApplicationManager,
+		tagMgr:               mgr.TagManager,
+		groupMgr:             mgr.GroupManager,
+		groupSvc:             groupservice.NewGroupService(mgr),
+		templateReleaseMgr:   mgr.TemplateReleaseManager,
+		clusterMgr:           mgr.ClusterMgr,
+		userSvc:              groupservice.NewUserService(mgr),
+		eventMgr:             mgr.EventManager,
 	}
 
-	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
+	group, err := mgr.GroupManager.Create(ctx, &models.Group{
 		Name: "cde",
 		Path: "cde",
 	})
@@ -634,10 +626,10 @@ func Test_validateApplicationName(t *testing.T) {
 
 func TestListUserApplication(t *testing.T) {
 	// init data
-	var groups []*groupmodels.Group
+	var groups []*models.Group
 	for i := 0; i < 5; i++ {
 		name := "groupForAppFuzzily" + strconv.Itoa(i)
-		group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
+		group, err := mgr.GroupManager.Create(ctx, &models.Group{
 			Name:     name,
 			Path:     name,
 			ParentID: 0,
@@ -651,7 +643,7 @@ func TestListUserApplication(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		group := groups[i]
 		name := "appFuzzily" + strconv.Itoa(i)
-		application, err := manager.ApplicationManager.Create(ctx, &models.Application{
+		application, err := mgr.ApplicationManager.Create(ctx, &models.Application{
 			GroupID:         group.ID,
 			Name:            name,
 			Priority:        "P3",
@@ -667,10 +659,10 @@ func TestListUserApplication(t *testing.T) {
 	}
 
 	c = &controller{
-		applicationMgr: manager.ApplicationManager,
-		groupMgr:       manager.GroupManager,
-		groupSvc:       groupservice.NewService(manager),
-		memberManager:  manager.MemberManager,
+		applicationMgr: mgr.ApplicationManager,
+		groupMgr:       mgr.GroupManager,
+		groupSvc:       groupservice.NewGroupService(mgr),
+		memberManager:  mgr.MemberManager,
 	}
 
 	// nolint
@@ -679,20 +671,20 @@ func TestListUserApplication(t *testing.T) {
 		ID:   uint(2),
 	})
 
-	_, err := manager.MemberManager.Create(ctx, &membermodels.Member{
-		ResourceType: membermodels.TypeGroup,
+	_, err := mgr.MemberManager.Create(ctx, &models.Member{
+		ResourceType: models.TypeGroup,
 		ResourceID:   groups[0].ID,
 		Role:         "owner",
-		MemberType:   membermodels.MemberUser,
+		MemberType:   models.MemberUser,
 		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
 
-	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
-		ResourceType: membermodels.TypeApplication,
+	_, err = mgr.MemberManager.Create(ctx, &models.Member{
+		ResourceType: models.TypeApplication,
 		ResourceID:   applications[1].ID,
 		Role:         "owner",
-		MemberType:   membermodels.MemberUser,
+		MemberType:   models.MemberUser,
 		MemberNameID: 2,
 	})
 	assert.Nil(t, err)
@@ -713,11 +705,11 @@ func TestListUserApplication(t *testing.T) {
 		t.Logf("%v", resp)
 	}
 
-	_, err = manager.MemberManager.Create(ctx, &membermodels.Member{
-		ResourceType: membermodels.TypeGroup,
+	_, err = mgr.MemberManager.Create(ctx, &models.Member{
+		ResourceType: models.TypeGroup,
 		ResourceID:   groups[2].ID,
 		Role:         "owner",
-		MemberType:   membermodels.MemberUser,
+		MemberType:   models.MemberUser,
 		MemberNameID: 2,
 	})
 	assert.Nil(t, err)

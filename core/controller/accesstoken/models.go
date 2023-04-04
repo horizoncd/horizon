@@ -17,7 +17,7 @@ package accesstoken
 import (
 	"time"
 
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	usermodels "github.com/horizoncd/horizon/pkg/models"
 )
 
 const (

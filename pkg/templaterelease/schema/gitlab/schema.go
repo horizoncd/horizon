@@ -21,8 +21,7 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
-	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
+	tmanager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
@@ -42,8 +41,8 @@ const (
 
 type getter struct {
 	gitlabLib          gitlablib.Interface
-	templateMgr        tmanager.Manager
-	templateReleaseMgr trmanager.Manager
+	templateMgr        tmanager.TemplateManager
+	templateReleaseMgr tmanager.TemplateReleaseManager
 }
 
 func (g *getter) GetTemplateSchema(ctx context.Context,

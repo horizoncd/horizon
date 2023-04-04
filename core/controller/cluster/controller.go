@@ -20,39 +20,20 @@ import (
 	"github.com/horizoncd/horizon/core/config"
 	"github.com/horizoncd/horizon/core/controller/build"
 	"github.com/horizoncd/horizon/lib/q"
-	appgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
-	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
-	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
 	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/code"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	registryfty "github.com/horizoncd/horizon/pkg/cluster/registry/factory"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
-	collectionmanager "github.com/horizoncd/horizon/pkg/collection/manager"
-	"github.com/horizoncd/horizon/pkg/config/grafana"
+	grafanaconfig "github.com/horizoncd/horizon/pkg/config/grafana"
 	"github.com/horizoncd/horizon/pkg/config/template"
-	"github.com/horizoncd/horizon/pkg/config/token"
-	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
-	"github.com/horizoncd/horizon/pkg/environment/service"
-	environmentregionmapper "github.com/horizoncd/horizon/pkg/environmentregion/manager"
-	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
-	grafanaservice "github.com/horizoncd/horizon/pkg/grafana"
-	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
-	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
-	"github.com/horizoncd/horizon/pkg/member"
+	tokenconfig "github.com/horizoncd/horizon/pkg/config/token"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	"github.com/horizoncd/horizon/pkg/grafana"
+	"github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/param"
-	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
-	pipelinemanager "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/manager"
-	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
-	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
-	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
+	"github.com/horizoncd/horizon/pkg/service"
 	"github.com/horizoncd/horizon/pkg/templaterelease/output"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
-	templateschematagmanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
-	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	usersvc "github.com/horizoncd/horizon/pkg/user/service"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -123,40 +104,40 @@ type Controller interface {
 }
 
 type controller struct {
-	clusterMgr            clustermanager.Manager
+	clusterMgr            manager.ClusterManager
 	clusterGitRepo        gitrepo.ClusterGitRepo
-	applicationGitRepo    appgitrepo.ApplicationGitRepo
+	applicationGitRepo    gitrepo.ApplicationGitRepo
 	commitGetter          code.GitGetter
 	cd                    cd.CD
 	k8sutil               cd.K8sUtil
-	applicationMgr        appmanager.Manager
+	applicationMgr        manager.ApplicationManager
 	autoFreeSvc           *service.AutoFreeSVC
-	applicationSvc        applicationservice.Service
-	templateReleaseMgr    trmanager.Manager
+	applicationSvc        service.ApplicationService
+	templateReleaseMgr    manager.TemplateReleaseManager
 	templateSchemaGetter  templateschema.Getter
 	outputGetter          output.Getter
-	envMgr                envmanager.Manager
-	envRegionMgr          environmentregionmapper.Manager
-	regionMgr             regionmanager.Manager
-	groupSvc              groupsvc.Service
-	pipelinerunMgr        prmanager.Manager
-	pipelineMgr           pipelinemanager.Manager
+	envMgr                manager.EnvironmentManager
+	envRegionMgr          manager.EnvironmentRegionManager
+	regionMgr             manager.RegionManager
+	groupSvc              service.GroupService
+	pipelinerunMgr        manager.PipelineRunManager
+	pipelineMgr           manager.PipelineManager
 	tektonFty             factory.Factory
 	registryFty           registryfty.RegistryGetter
-	userManager           usermanager.Manager
-	userSvc               usersvc.Service
-	memberManager         member.Manager
-	groupManager          groupmanager.Manager
-	schemaTagManager      templateschematagmanager.Manager
-	tagMgr                tagmanager.Manager
-	grafanaService        grafanaservice.Service
-	grafanaConfig         grafana.Config
+	userManager           manager.UserManager
+	userSvc               service.UserService
+	memberManager         manager.MemberManager
+	groupManager          manager.GroupManager
+	schemaTagManager      manager.TemplateSchemaTagManager
+	tagMgr                manager.TagManager
+	grafanaService        grafana.Service
+	grafanaConfig         grafanaconfig.Config
 	buildSchema           *build.Schema
-	eventMgr              eventmanager.Manager
-	tokenSvc              tokenservice.Service
-	tokenConfig           token.Config
+	eventMgr              manager.EventManager
+	tokenSvc              service.TokenService
+	tokenConfig           tokenconfig.Config
 	templateUpgradeMapper template.UpgradeMapper
-	collectionManager     collectionmanager.Manager
+	collectionManager     manager.CollectionManager
 }
 
 var _ Controller = (*controller)(nil)

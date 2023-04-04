@@ -23,12 +23,11 @@ import (
 	"github.com/horizoncd/horizon/lib/q"
 	eventhandlerconfig "github.com/horizoncd/horizon/pkg/config/eventhandler"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
-	"github.com/horizoncd/horizon/pkg/event/models"
+	eventmanager "github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/util/common"
 	"github.com/horizoncd/horizon/pkg/util/log"
-	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
 )
 
 type Service interface {
@@ -50,8 +49,8 @@ type eventHandlerService struct {
 	resume        bool
 	quit          chan bool
 
-	eventMgr   eventmanager.Manager
-	webhookMgr webhookmanager.Manager
+	eventMgr   eventmanager.EventManager
+	webhookMgr eventmanager.WebhookManager
 }
 
 func NewService(ctx context.Context, manager *managerparam.Manager, config eventhandlerconfig.Config) Service {

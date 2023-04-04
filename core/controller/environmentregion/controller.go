@@ -17,10 +17,9 @@ package environmentregion
 import (
 	"context"
 
-	environmentregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
-	"github.com/horizoncd/horizon/pkg/environmentregion/models"
+	environmentregionmanager "github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
 )
 
 type Controller interface {
@@ -41,8 +40,8 @@ func NewController(param *param.Param) Controller {
 }
 
 type controller struct {
-	envRegionMgr environmentregionmanager.Manager
-	regionMgr    regionmanager.Manager
+	envRegionMgr environmentregionmanager.EnvironmentRegionManager
+	regionMgr    environmentregionmanager.RegionManager
 }
 
 func (c *controller) ListByEnvironment(ctx context.Context, environment string) (EnvironmentRegions, error) {

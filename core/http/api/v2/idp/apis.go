@@ -24,10 +24,10 @@ import (
 	"github.com/horizoncd/horizon/core/controller/idp"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	usermodel "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
-	usermodel "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/horizoncd/horizon/pkg/user/util"
+	userutil "github.com/horizoncd/horizon/pkg/util/user"
 )
 
 // for path variable
@@ -107,14 +107,14 @@ func (a *API) LoginCallback(c *gin.Context) {
 		return
 	}
 
-	session, err := util.GetSession(a.store, c.Request)
+	session, err := userutil.GetSession(a.store, c.Request)
 	if err != nil {
 		response.AbortWithRPCError(c,
 			rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
 	}
 
-	if err = util.SetSession(session, c.Request, c.Writer, user); err != nil {
+	if err = userutil.SetSession(session, c.Request, c.Writer, user); err != nil {
 		response.AbortWithRPCError(c,
 			rpcerror.InternalError.WithErrMsgf(
 				"saving session into backend or response failed:\n"+
@@ -126,7 +126,7 @@ func (a *API) LoginCallback(c *gin.Context) {
 }
 
 func (a *API) Logout(c *gin.Context) {
-	session, err := util.GetSession(a.store, c.Request)
+	session, err := userutil.GetSession(a.store, c.Request)
 	if err != nil {
 		response.AbortWithRPCError(c,
 			rpcerror.InternalError.WithErrMsg(err.Error()))

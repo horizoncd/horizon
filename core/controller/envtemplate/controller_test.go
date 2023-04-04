@@ -26,11 +26,9 @@ import (
 	"github.com/horizoncd/horizon/lib/orm"
 	appgitrepomock "github.com/horizoncd/horizon/mock/pkg/application/gitrepo"
 	trschemamock "github.com/horizoncd/horizon/mock/pkg/templaterelease/schema"
-	"github.com/horizoncd/horizon/pkg/application/gitrepo"
-	"github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	templatesvc "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/stretchr/testify/assert"
@@ -256,14 +254,14 @@ var (
     }
 }`
 
-	manager *managerparam.Manager
+	mgr *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
-	manager = managerparam.InitManager(db)
-	if err := db.AutoMigrate(&models.Application{}, &envmodels.Environment{}, &membermodels.Member{}); err != nil {
+	mgr = managerparam.InitManager(db)
+	if err := db.AutoMigrate(&models.Application{}, &models.Environment{}, &models.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -311,8 +309,8 @@ func Test(t *testing.T) {
 			},
 		}, nil).AnyTimes()
 
-	envMgr := manager.EnvMgr
-	applicationMgr := manager.ApplicationManager
+	envMgr := mgr.EnvMgr
+	applicationMgr := mgr.ApplicationManager
 	c = &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
@@ -320,7 +318,7 @@ func Test(t *testing.T) {
 		envMgr:               envMgr,
 	}
 
-	_, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+	_, err := envMgr.CreateEnvironment(ctx, &models.Environment{
 		Name: env,
 	})
 	assert.Nil(t, err)
@@ -376,8 +374,8 @@ func TestV2(t *testing.T) {
 			},
 		}, nil).AnyTimes()
 
-	envMgr := manager.EnvMgr
-	applicationMgr := manager.ApplicationManager
+	envMgr := mgr.EnvMgr
+	applicationMgr := mgr.ApplicationManager
 	c = &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
@@ -389,7 +387,7 @@ func TestV2(t *testing.T) {
 		},
 	}
 
-	_, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+	_, err := envMgr.CreateEnvironment(ctx, &models.Environment{
 		Name: env,
 	})
 	assert.Nil(t, err)

@@ -17,8 +17,8 @@ package environment
 import (
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/environment/models"
-	"github.com/horizoncd/horizon/pkg/environment/service"
+	"github.com/horizoncd/horizon/pkg/models"
+	"github.com/horizoncd/horizon/pkg/service"
 )
 
 type Environment struct {

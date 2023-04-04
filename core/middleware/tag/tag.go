@@ -19,9 +19,9 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	middleware "github.com/horizoncd/horizon/core/middleware"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
-	"github.com/horizoncd/horizon/pkg/tag/models"
 	"github.com/horizoncd/horizon/pkg/util/sets"
 
 	"github.com/gin-gonic/gin"

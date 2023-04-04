@@ -23,7 +23,7 @@ import (
 	templatemock "github.com/horizoncd/horizon/mock/pkg/template/manager"
 	templatereleasemock "github.com/horizoncd/horizon/mock/pkg/templaterelease/manager"
 	repomock "github.com/horizoncd/horizon/mock/pkg/templaterepo"
-	trm "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	trm "github.com/horizoncd/horizon/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 	"helm.sh/helm/v3/pkg/chart"
@@ -34,8 +34,8 @@ func TestGeTemplateOutPut(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	repoMock := repomock.NewMockTemplateRepo(mockCtrl)
-	templateMockMgr := templatemock.NewMockManager(mockCtrl)
-	templatereleaseMockMgr := templatereleasemock.NewMockManager(mockCtrl)
+	templateMockMgr := templatemock.NewMockTemplateManager(mockCtrl)
+	templatereleaseMockMgr := templatereleasemock.NewMockTemplateReleaseManager(mockCtrl)
 
 	var outputGetter Getter = &getter{
 		templateRepo:       repoMock,

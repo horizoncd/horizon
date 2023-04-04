@@ -20,20 +20,15 @@ import (
 	"net/http"
 
 	"github.com/horizoncd/horizon/lib/q"
-	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	"github.com/horizoncd/horizon/pkg/cluster/code"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
-	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	appmanager "github.com/horizoncd/horizon/pkg/manager"
+	prmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
-	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
@@ -49,14 +44,14 @@ type Controller interface {
 }
 
 type controller struct {
-	pipelinerunMgr prmanager.Manager
-	applicationMgr appmanager.Manager
-	clusterMgr     clustermanager.Manager
-	envMgr         envmanager.Manager
+	pipelinerunMgr appmanager.PipelineRunManager
+	applicationMgr appmanager.ApplicationManager
+	clusterMgr     appmanager.ClusterManager
+	envMgr         appmanager.EnvironmentManager
 	tektonFty      factory.Factory
 	commitGetter   code.GitGetter
 	clusterGitRepo gitrepo.ClusterGitRepo
-	userManager    usermanager.Manager
+	userManager    appmanager.UserManager
 }
 
 var _ Controller = (*controller)(nil)
@@ -236,7 +231,7 @@ func (c *controller) List(ctx context.Context,
 }
 
 func (c *controller) ofPipelineBasic(ctx context.Context,
-	pr, firstCanRollbackPipelinerun *models.Pipelinerun) (*PipelineBasic, error) {
+	pr, firstCanRollbackPipelinerun *prmodels.Pipelinerun) (*PipelineBasic, error) {
 	user, err := c.userManager.GetUserByID(ctx, pr.CreatedBy)
 	if err != nil {
 		return nil, err
@@ -280,8 +275,8 @@ func (c *controller) ofPipelineBasic(ctx context.Context,
 	return prBasic, nil
 }
 
-func (c *controller) ofPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
-	firstCanRollbackPipelinerun *models.Pipelinerun) ([]*PipelineBasic, error) {
+func (c *controller) ofPipelineBasics(ctx context.Context, prs []*prmodels.Pipelinerun,
+	firstCanRollbackPipelinerun *prmodels.Pipelinerun) ([]*PipelineBasic, error) {
 	var pipelineBasics []*PipelineBasic
 	for _, pr := range prs {
 		pipelineBasic, err := c.ofPipelineBasic(ctx, pr, firstCanRollbackPipelinerun)

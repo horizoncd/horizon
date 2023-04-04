@@ -36,26 +36,19 @@ import (
 	trmock "github.com/horizoncd/horizon/mock/pkg/templaterelease/manager"
 	trschemamock "github.com/horizoncd/horizon/mock/pkg/templaterelease/schema"
 	mock_repo "github.com/horizoncd/horizon/mock/pkg/templaterepo"
-	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	gitconfig "github.com/horizoncd/horizon/pkg/config/git"
 	hctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/git"
 	"github.com/horizoncd/horizon/pkg/git/github"
-	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	"github.com/horizoncd/horizon/pkg/template/models"
-	tmodels "github.com/horizoncd/horizon/pkg/template/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	memberservice "github.com/horizoncd/horizon/pkg/service"
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	reposchema "github.com/horizoncd/horizon/pkg/templaterelease/schema/repo"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 	"helm.sh/helm/v3/pkg/chart"
@@ -77,10 +70,10 @@ func TestList(t *testing.T) {
 	createContext()
 
 	mockCtl := gomock.NewController(t)
-	templateMgr := tmock.NewMockManager(mockCtl)
-	templateReleaseMgr := trmock.NewMockManager(mockCtl)
-	groupMgr := groupmanagermock.NewMockManager(mockCtl)
-	memberMgr := membermock.NewMockManager(mockCtl)
+	templateMgr := tmock.NewMockTemplateManager(mockCtl)
+	templateReleaseMgr := trmock.NewMockTemplateReleaseManager(mockCtl)
+	groupMgr := groupmanagermock.NewMockGroupManager(mockCtl)
+	memberMgr := membermock.NewMockMemberManager(mockCtl)
 
 	bts, err := ioutil.ReadFile("../../../roles.yaml")
 	if err != nil {
@@ -90,7 +83,7 @@ func TestList(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	memberService := memberservice.NewService(roleService, nil, mgr)
+	memberService := memberservice.NewMemberService(roleService, nil, mgr)
 	if err != nil {
 		panic(err)
 	}
@@ -119,26 +112,26 @@ func TestList(t *testing.T) {
 			OnlyOwner: &onlyOwnerFalse,
 		},
 	}, nil).Times(2)
-	group1 := &groupmodels.Group{
+	group1 := &models.Group{
 		Model:        global.Model{ID: 1},
 		Name:         "group1",
 		Path:         "group1",
 		TraversalIDs: "1",
 	}
 	groupMgr.EXPECT().GetByID(gomock.Any(), uint(1)).Return(group1, nil)
-	groupMgr.EXPECT().GetByIDs(gomock.Any(), []uint{1}).Return([]*groupmodels.Group{group1}, nil)
+	groupMgr.EXPECT().GetByIDs(gomock.Any(), []uint{1}).Return([]*models.Group{group1}, nil)
 
 	recommends := []bool{false, true, false}
 
 	templateMgr.EXPECT().GetByName(gomock.Any(), "javaapp").Return(
-		&tmodels.Template{
+		&models.Template{
 			Name:       "javaapp",
 			ChartName:  "7-javaapp_test3",
 			Repository: "https://cloudnative.com/music-cloud-native/horizon/horizon.git",
 		}, nil,
 	)
 	templateMgr.EXPECT().GetByName(gomock.Any(), "javaapp").Return(
-		&tmodels.Template{
+		&models.Template{
 			Model:      global.Model{ID: 1},
 			Name:       "javaapp",
 			OnlyOwner:  &onlyOwnerTrue,
@@ -149,7 +142,7 @@ func TestList(t *testing.T) {
 
 	tags := []string{"v1.0.0", "v1.0.1", "v1.0.2"}
 	templateReleaseMgr.EXPECT().ListByTemplateName(gomock.Any(), "javaapp").
-		Return([]*trmodels.TemplateRelease{
+		Return([]*models.TemplateRelease{
 			{
 				Model: global.Model{
 					ID: 1,
@@ -157,7 +150,7 @@ func TestList(t *testing.T) {
 				Template:    1,
 				Name:        tags[0],
 				CommitID:    "test",
-				SyncStatus:  trmodels.StatusSucceed,
+				SyncStatus:  models.SyncStatusSucceed,
 				Recommended: &recommends[0],
 				OnlyOwner:   &onlyOwnerTrue,
 			}, {
@@ -167,7 +160,7 @@ func TestList(t *testing.T) {
 				Template:    1,
 				Name:        tags[1],
 				CommitID:    "test",
-				SyncStatus:  trmodels.StatusSucceed,
+				SyncStatus:  models.SyncStatusSucceed,
 				Recommended: &recommends[1],
 				OnlyOwner:   &onlyOwnerFalse,
 			}, {
@@ -177,7 +170,7 @@ func TestList(t *testing.T) {
 				Template:    1,
 				Name:        tags[2],
 				CommitID:    "test3",
-				SyncStatus:  trmodels.StatusSucceed,
+				SyncStatus:  models.SyncStatusSucceed,
 				Recommended: &recommends[2],
 				OnlyOwner:   &onlyOwnerFalse,
 			},
@@ -218,9 +211,9 @@ func TestList(t *testing.T) {
 	assert.Equal(t, "v1.0.1", templateReleases[0].Name)
 	assert.Equal(t, "v1.0.2", templateReleases[1].Name)
 	assert.Equal(t, "v1.0.0", templateReleases[2].Name)
-	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[0].SyncStatusCode)
-	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[1].SyncStatusCode)
-	assert.Equal(t, uint8(trmodels.StatusSucceed), templateReleases[2].SyncStatusCode)
+	assert.Equal(t, uint8(models.SyncStatusSucceed), templateReleases[0].SyncStatusCode)
+	assert.Equal(t, uint8(models.SyncStatusSucceed), templateReleases[1].SyncStatusCode)
+	assert.Equal(t, uint8(models.SyncStatusSucceed), templateReleases[2].SyncStatusCode)
 
 	currentUser, err := common.UserFromContext(ctx)
 	assert.Nil(t, err)
@@ -234,11 +227,11 @@ func TestList(t *testing.T) {
 	assert.Equal(t, 1, len(templates))
 	assert.Equal(t, "tomcat", templates[0].Name)
 
-	m, err := mgr.MemberManager.Create(ctx, &membermodels.Member{
+	m, err := mgr.MemberManager.Create(ctx, &models.Member{
 		ResourceType: common.ResourceTemplate,
 		ResourceID:   1,
 		Role:         roleservice.Owner,
-		MemberType:   membermodels.MemberUser,
+		MemberType:   models.MemberUser,
 		MemberNameID: currentUser.GetID(),
 	})
 	assert.Nil(t, err)
@@ -254,8 +247,8 @@ func TestListTemplates(t *testing.T) {
 	createContext()
 
 	mockCtl := gomock.NewController(t)
-	groupMgr := groupmanagermock.NewMockManager(mockCtl)
-	memberMgr := membermock.NewMockManager(mockCtl)
+	groupMgr := groupmanagermock.NewMockGroupManager(mockCtl)
+	memberMgr := membermock.NewMockMemberManager(mockCtl)
 	mgr.MemberManager = memberMgr
 	mgr.GroupManager = groupMgr
 
@@ -303,15 +296,15 @@ func TestListTemplates(t *testing.T) {
 	groupID := uint(1)
 	userID := uint(1)
 	memberMgr.EXPECT().
-		ListResourceOfMemberInfoByRole(gomock.Any(), membermodels.TypeGroup, userID, roleservice.Owner).
+		ListResourceOfMemberInfoByRole(gomock.Any(), models.TypeGroup, userID, roleservice.Owner).
 		Return([]uint{1}, nil).Times(1)
 	groupMgr.EXPECT().GetSubGroupsByGroupIDs(gomock.Any(), []uint{1}).
-		Return([]*groupmodels.Group{{Model: global.Model{ID: 1}}}, nil).Times(1)
-	memberMgr.EXPECT().Get(gomock.Any(), membermodels.TypeGroup,
-		groupID, membermodels.MemberUser, userID).
-		Return(&membermodels.Member{Role: roleservice.Owner}, nil).Times(1)
+		Return([]*models.Group{{Model: global.Model{ID: 1}}}, nil).Times(1)
+	memberMgr.EXPECT().Get(gomock.Any(), models.TypeGroup,
+		groupID, models.MemberUser, userID).
+		Return(&models.Member{Role: roleservice.Owner}, nil).Times(1)
 	memberMgr.EXPECT().
-		ListResourceOfMemberInfoByRole(gomock.Any(), membermodels.TypeTemplate, userID, roleservice.Owner).
+		ListResourceOfMemberInfoByRole(gomock.Any(), models.TypeTemplate, userID, roleservice.Owner).
 		Return([]uint{}, nil).Times(1)
 
 	ctx = context.WithValue(ctx, hctx.TemplateListSelfOnly, true)
@@ -328,7 +321,7 @@ func TestGetSchema(t *testing.T) {
 
 	mockCtl := gomock.NewController(t)
 	// templateMgr := tmock.NewMockManager(mockCtl)
-	templateReleaseMgr := releasemanagermock.NewMockManager(mockCtl)
+	templateReleaseMgr := releasemanagermock.NewMockTemplateReleaseManager(mockCtl)
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	schema := map[string]interface{}{
 		"type": "object",
@@ -343,7 +336,7 @@ func TestGetSchema(t *testing.T) {
 			UISchema:   schema,
 		},
 	}
-	release := &trmodels.TemplateRelease{
+	release := &models.TemplateRelease{
 		Name:         templateTag,
 		TemplateName: templateName,
 		ChartVersion: templateTag,
@@ -589,9 +582,9 @@ func TestListTemplate(t *testing.T) {
 
 func createContext() {
 	db, _ = orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&trmodels.TemplateRelease{},
-		&amodels.Application{}, &cmodels.Cluster{}, &membermodels.Member{},
-		&tmodels.Template{}, &membermodels.Member{}, &groupmodels.Group{}, &usermodels.User{}); err != nil {
+	if err := db.AutoMigrate(&models.TemplateRelease{},
+		&models.Application{}, &models.Cluster{}, &models.Member{},
+		&models.Template{}, &models.Member{}, &models.Group{}, &models.User{}); err != nil {
 		panic(err)
 	}
 	mgr = managerparam.InitManager(db)
@@ -603,7 +596,7 @@ func createContext() {
 		Admin: true,
 	})
 
-	currentUser := usermodels.User{
+	currentUser := models.User{
 		Name: "Jerry",
 		Model: global.Model{
 			ID: 1,
@@ -643,7 +636,7 @@ func createChart(t *testing.T, ctl Controller, groupID uint) {
 		if err != nil {
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 				name := fmt.Sprintf("test-%d", rand.Uint32())
-				_, err := mgr.GroupManager.Create(ctx, &groupmodels.Group{
+				_, err := mgr.GroupManager.Create(ctx, &models.Group{
 					Name:         name,
 					Path:         name,
 					ParentID:     0,

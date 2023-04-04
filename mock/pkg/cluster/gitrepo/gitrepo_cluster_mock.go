@@ -9,9 +9,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	gitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	common "github.com/horizoncd/horizon/pkg/common"
-	models "github.com/horizoncd/horizon/pkg/tag/models"
+	gitrepo "github.com/horizoncd/horizon/pkg/gitrepo"
+	models "github.com/horizoncd/horizon/pkg/models"
 )
 
 // MockClusterGitRepo is a mock of ClusterGitRepo interface.

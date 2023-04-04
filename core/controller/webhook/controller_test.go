@@ -18,22 +18,17 @@ import (
 	"context"
 	"testing"
 
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
-	applicationmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
-	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	utilcommon "github.com/horizoncd/horizon/pkg/util/common"
-	webhookmodels "github.com/horizoncd/horizon/pkg/webhook/models"
 )
 
 var (
@@ -48,7 +43,7 @@ var (
 		URL:              utilcommon.StringPtr("http://xxxx"),
 		SSLVerifyEnabled: utilcommon.BoolPtr(false),
 		Triggers: []string{
-			eventmodels.ClusterCreated,
+			models.ClusterCreated,
 		},
 	}
 	createWebhookReq = CreateWebhookRequest{
@@ -56,7 +51,7 @@ var (
 		Enabled:          true,
 		SSLVerifyEnabled: false,
 		Triggers: []string{
-			eventmodels.ClusterCreated,
+			models.ClusterCreated,
 		},
 	}
 )
@@ -64,13 +59,13 @@ var (
 func createContext() {
 	db, _ = orm.NewSqliteDB("file::memory:?cache=shared")
 	if err := db.AutoMigrate(
-		&webhookmodels.Webhook{},
-		&webhookmodels.WebhookLog{},
-		&usermodels.User{},
-		&eventmodels.Event{},
-		&groupmodels.Group{},
-		&applicationmodels.Application{},
-		&clustermodels.Cluster{},
+		&models.Webhook{},
+		&models.WebhookLog{},
+		&models.User{},
+		&models.Event{},
+		&models.Group{},
+		&models.Application{},
+		&models.Cluster{},
 	); err != nil {
 		panic(err)
 	}
@@ -112,10 +107,10 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(ws))
 	assert.Equal(t, *(uw.URL), w.URL)
 
-	wl, err := c.webhookMgr.CreateWebhookLog(ctx, &webhookmodels.WebhookLog{
+	wl, err := c.webhookMgr.CreateWebhookLog(ctx, &models.WebhookLog{
 		WebhookID: w.ID,
 		URL:       w.URL,
-		Status:    webhookmodels.StatusWaiting,
+		Status:    models.WebhookStatusWaiting,
 	})
 	assert.Nil(t, err)
 
@@ -123,14 +118,14 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, wl.URL, wlSummary.URL)
 
-	wl.Status = webhookmodels.StatusSuccess
+	wl.Status = models.WebhookStatusSuccess
 	wl, err = c.webhookMgr.UpdateWebhookLog(ctx, wl)
 	assert.Nil(t, err)
 
 	wlRetry, err := c.ResendWebhook(ctx, wl.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, wl.URL, wlRetry.URL)
-	assert.Equal(t, webhookmodels.StatusWaiting, wlRetry.Status)
+	assert.Equal(t, models.WebhookStatusWaiting, wlRetry.Status)
 
 	query := q.New(nil)
 	query.PageNumber = common.DefaultPageNumber
@@ -142,26 +137,26 @@ func Test(t *testing.T) {
 	err = c.DeleteWebhook(ctx, w.ID)
 	assert.Nil(t, err)
 
-	event := eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			EventType: eventmodels.ApplicationCreated,
+	event := models.Event{
+		EventSummary: models.EventSummary{
+			EventType: models.ApplicationCreated,
 		},
 	}
 
-	ok, err := CheckIfEventMatch(&webhookmodels.Webhook{
-		Triggers: eventmodels.Any,
+	ok, err := CheckIfEventMatch(&models.Webhook{
+		Triggers: models.Any,
 	}, &event)
 	assert.Nil(t, err)
 	assert.Equal(t, true, ok)
 
-	ok, err = CheckIfEventMatch(&webhookmodels.Webhook{
-		Triggers: eventmodels.ApplicationCreated,
+	ok, err = CheckIfEventMatch(&models.Webhook{
+		Triggers: models.ApplicationCreated,
 	}, &event)
 	assert.Nil(t, err)
 	assert.Equal(t, true, ok)
 
-	ok, err = CheckIfEventMatch(&webhookmodels.Webhook{
-		Triggers: eventmodels.ClusterBuildDeployed,
+	ok, err = CheckIfEventMatch(&models.Webhook{
+		Triggers: models.ClusterBuildDeployed,
 	}, &event)
 	assert.Nil(t, err)
 	assert.Equal(t, false, ok)

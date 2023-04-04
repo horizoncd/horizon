@@ -108,7 +108,8 @@ import (
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/cd"
-	"github.com/horizoncd/horizon/pkg/environment/service"
+	"github.com/horizoncd/horizon/pkg/dao"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/jobs"
 	"github.com/horizoncd/horizon/pkg/jobs/autofree"
@@ -117,9 +118,10 @@ import (
 	"github.com/horizoncd/horizon/pkg/jobs/grafanasync"
 	"github.com/horizoncd/horizon/pkg/jobs/k8sevent"
 	jobwebhook "github.com/horizoncd/horizon/pkg/jobs/webhook"
+	oauthmanager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/regioninformers"
+	"github.com/horizoncd/horizon/pkg/service"
 	"github.com/horizoncd/horizon/pkg/token/generator"
-	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/workload"
@@ -143,20 +145,12 @@ import (
 	tokenmiddle "github.com/horizoncd/horizon/core/middleware/token"
 	usermiddle "github.com/horizoncd/horizon/core/middleware/user"
 	"github.com/horizoncd/horizon/lib/orm"
-	"github.com/horizoncd/horizon/pkg/application/gitrepo"
-	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/cluster/code"
-	clustergitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	oauthconfig "github.com/horizoncd/horizon/pkg/config/oauth"
 	"github.com/horizoncd/horizon/pkg/config/pprof"
 	roleconfig "github.com/horizoncd/horizon/pkg/config/role"
-	groupservice "github.com/horizoncd/horizon/pkg/group/service"
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
-	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
-	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
 	scopeservice "github.com/horizoncd/horizon/pkg/oauth/scope"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
@@ -165,7 +159,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterelease/output"
 	templateschemarepo "github.com/horizoncd/horizon/pkg/templaterelease/schema/repo"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
-	userservice "github.com/horizoncd/horizon/pkg/user/service"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 
 	"github.com/gin-gonic/gin"
@@ -346,7 +339,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		panic(err)
 	}
 
-	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
+	clusterGitRepo, err := gitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
 		coreConfig.GitopsRepoConfig.DefaultBranch, coreConfig.GitopsRepoConfig.DefaultVisibility)
 	if err != nil {
 		panic(err)
@@ -368,16 +361,16 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		panic(err)
 	}
 
-	oauthAppDAO := oauthdao.NewDAO(mysqlDB)
+	oauthAppDAO := dao.NewOAuthDAO(mysqlDB)
 	tokenStorage := tokenstorage.NewStorage(mysqlDB)
-	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
+	oauthManager := oauthmanager.NewOAuthManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
 		coreConfig.Oauth.AuthorizeCodeExpireIn, coreConfig.Oauth.AccessTokenExpireIn)
 
 	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
 	if err != nil {
 		panic(err)
 	}
-	mservice := memberservice.NewService(roleService, oauthManager, manager)
+	mservice := service.NewMemberService(roleService, oauthManager, manager)
 	rbacAuthorizer := rbac.NewAuthorizer(roleService, mservice)
 
 	// init scope service
@@ -400,7 +393,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		panic(err)
 	}
 
-	autoFreeSvc := service.New(coreConfig.AutoFreeConfig.SupportedEnvs)
+	autoFreeSvc := service.NewAutoFreeSVC(coreConfig.AutoFreeConfig.SupportedEnvs)
 
 	// init build schema controller
 	readJSONFileFunc := func(filePath string) map[string]interface{} {
@@ -425,11 +418,11 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		UISchema:   readJSONFileFunc(flags.BuildUISchemaFile),
 	}
 
-	groupSvc := groupservice.NewService(manager)
-	applicationSvc := applicationservice.NewService(groupSvc, manager)
-	clusterSvc := clusterservice.NewService(applicationSvc, manager)
-	userSvc := userservice.NewService(manager)
-	tokenSvc := tokenservice.NewService(manager, coreConfig.TokenConfig)
+	groupSvc := service.NewGroupService(manager)
+	applicationSvc := service.NewApplicationService(groupSvc, manager)
+	clusterSvc := service.NewClusterService(applicationSvc, manager)
+	userSvc := service.NewUserService(manager)
+	tokenSvc := service.NewTokenService(manager, coreConfig.TokenConfig)
 
 	// init kube client
 	_, client, err := kube.BuildClient(coreConfig.KubeConfig)

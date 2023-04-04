@@ -15,8 +15,7 @@
 package environmentregion
 
 import (
-	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	envregionmodels "github.com/horizoncd/horizon/pkg/models"
 )
 
 type EnvironmentRegion struct {
@@ -31,9 +30,9 @@ type EnvironmentRegion struct {
 type EnvironmentRegions []*EnvironmentRegion
 
 // ofEnvironmentModels []*models.Region to []*EnvironmentRegion
-func ofRegionModels(regions []*regionmodels.Region,
+func ofRegionModels(regions []*envregionmodels.Region,
 	environmentRegions []*envregionmodels.EnvironmentRegion) EnvironmentRegions {
-	displayNameMap := make(map[string]*regionmodels.Region)
+	displayNameMap := make(map[string]*envregionmodels.Region)
 	for _, region := range regions {
 		displayNameMap[region.Name] = region
 	}

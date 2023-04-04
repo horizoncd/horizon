@@ -22,12 +22,9 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/orm"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	"github.com/horizoncd/horizon/pkg/cluster/models"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	appmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	templateschemamodels "github.com/horizoncd/horizon/pkg/templateschematag/models"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 )
@@ -42,8 +39,8 @@ var (
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	manager = managerparam.InitManager(db)
-	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
-		&templateschemamodels.ClusterTemplateSchemaTag{}, &membermodels.Member{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.Application{}, &appmodels.Cluster{},
+		&appmodels.ClusterTemplateSchemaTag{}, &appmodels.Member{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -73,7 +70,7 @@ func Test(t *testing.T) {
 	}, nil)
 	assert.Nil(t, err)
 
-	cluster, err := clusterMgr.Create(ctx, &models.Cluster{
+	cluster, err := clusterMgr.Create(ctx, &appmodels.Cluster{
 		ApplicationID: application.ID,
 		Name:          "cluster",
 	}, nil, nil)

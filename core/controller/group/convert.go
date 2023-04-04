@@ -15,7 +15,7 @@
 package group
 
 import (
-	"github.com/horizoncd/horizon/pkg/group/models"
+	"github.com/horizoncd/horizon/pkg/models"
 )
 
 // convertNewGroupToGroup convert newGroup model to group model

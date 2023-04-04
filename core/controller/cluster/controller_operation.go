@@ -24,19 +24,15 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cd"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	tmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
-	tokensvc "github.com/horizoncd/horizon/pkg/token/service"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	"github.com/horizoncd/horizon/pkg/models"
+	cmodels "github.com/horizoncd/horizon/pkg/models"
+	prmodels "github.com/horizoncd/horizon/pkg/models"
+	tmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -63,11 +59,11 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	}
 
 	// 2. create pipeline record
-	prCreated, err := c.pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	prCreated, err := c.pipelinerunMgr.Create(ctx, &models.Pipelinerun{
 		ClusterID:        clusterID,
-		Action:           prmodels.ActionRestart,
-		Status:           string(prmodels.StatusCreated),
-		Title:            prmodels.ActionRestart,
+		Action:           models.ActionRestart,
+		Status:           string(models.StatusCreated),
+		Title:            models.ActionRestart,
 		LastConfigCommit: lastConfigCommit.Master,
 		ConfigCommit:     lastConfigCommit.Master,
 	})
@@ -82,7 +78,7 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 			prCreated.ID, commit, err)
 	}
 	if err := c.updatePipelineRunStatus(ctx,
-		prmodels.ActionRestart, prCreated.ID, prmodels.StatusMerged, commit); err != nil {
+		models.ActionRestart, prCreated.ID, models.StatusMerged, commit); err != nil {
 		return nil, err
 	}
 
@@ -97,15 +93,15 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 	log.Infof(ctx, "Restart Deployed, pr = %d, commit = %s", prCreated.ID, commit)
 
 	// 4. update status
-	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionRestart, prCreated.ID, prmodels.StatusOK, commit); err != nil {
+	if err := c.updatePipelineRunStatus(ctx, models.ActionRestart, prCreated.ID, models.StatusOK, commit); err != nil {
 		return nil, err
 	}
 
 	// 5. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &models.Event{
+		EventSummary: models.EventSummary{
 			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterRestarted,
+			EventType:    models.ClusterRestarted,
 			ResourceID:   cluster.ID,
 		},
 	}); err != nil {
@@ -164,10 +160,10 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	}
 
 	// 2. create pipeline record
-	prCreated, err := c.pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	prCreated, err := c.pipelinerunMgr.Create(ctx, &models.Pipelinerun{
 		ClusterID:        clusterID,
-		Action:           prmodels.ActionDeploy,
-		Status:           string(prmodels.StatusCreated),
+		Action:           models.ActionDeploy,
+		Status:           string(models.StatusCreated),
 		Title:            r.Title,
 		Description:      r.Description,
 		GitURL:           cluster.GitURL,
@@ -184,7 +180,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 
 	// 3. generate a JWT token for tekton callback
 	token, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(currentUser.GetID())),
-		c.tokenConfig.CallbackTokenExpireIn, tokensvc.WithPipelinerunID(prCreated.ID))
+		c.tokenConfig.CallbackTokenExpireIn, models.WithPipelinerunID(prCreated.ID))
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +241,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 }
 
 func (c *controller) checkAllowDeploy(ctx context.Context,
-	application *amodels.Application, cluster *cmodels.Cluster,
+	application *models.Application, cluster *cmodels.Cluster,
 	clusterFiles *gitrepo.ClusterFiles, configCommit *gitrepo.ClusterCommit) error {
 	// check pipeline output
 	if len(clusterFiles.PipelineJSONBlob) > 0 {
@@ -295,7 +291,7 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 
-	if pipelinerun.Action == prmodels.ActionRestart || pipelinerun.Status != string(prmodels.StatusOK) ||
+	if pipelinerun.Action == models.ActionRestart || pipelinerun.Status != string(models.StatusOK) ||
 		pipelinerun.ConfigCommit == "" {
 		return nil, perror.Wrapf(herrors.ErrParamInvalid,
 			"the pipelinerun with id: %v can not be rolled back", r.PipelinerunID)
@@ -323,11 +319,11 @@ func (c *controller) Rollback(ctx context.Context,
 	}
 
 	// 3. create record
-	prCreated, err := c.pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	prCreated, err := c.pipelinerunMgr.Create(ctx, &models.Pipelinerun{
 		ClusterID:        clusterID,
-		Action:           prmodels.ActionRollback,
-		Status:           string(prmodels.StatusCreated),
-		Title:            prmodels.ActionRollback,
+		Action:           models.ActionRollback,
+		Status:           string(models.StatusCreated),
+		Title:            models.ActionRollback,
 		GitURL:           pipelinerun.GitURL,
 		GitRefType:       pipelinerun.GitRefType,
 		GitRef:           pipelinerun.GitRef,
@@ -352,7 +348,7 @@ func (c *controller) Rollback(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusCommitted,
+	if err := c.updatePipelineRunStatus(ctx, models.ActionRollback, prCreated.ID, models.StatusCommitted,
 		newConfigCommit); err != nil {
 		return nil, err
 	}
@@ -367,7 +363,7 @@ func (c *controller) Rollback(ctx context.Context,
 		log.Errorf(ctx, "UpdateConfigCommitByID error, pr = %d, commit = %s, err = %v",
 			prCreated.ID, masterRevision, err)
 	}
-	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionRollback, prCreated.ID, prmodels.StatusMerged,
+	if err := c.updatePipelineRunStatus(ctx, models.ActionRollback, prCreated.ID, models.StatusMerged,
 		masterRevision); err != nil {
 		return nil, err
 	}
@@ -418,15 +414,15 @@ func (c *controller) Rollback(ctx context.Context,
 		return nil, err
 	}
 	if err := c.updatePipelineRunStatus(ctx,
-		prmodels.ActionRollback, prCreated.ID, prmodels.StatusOK, masterRevision); err != nil {
+		models.ActionRollback, prCreated.ID, models.StatusOK, masterRevision); err != nil {
 		return nil, err
 	}
 
 	// 10. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &models.Event{
+		EventSummary: models.EventSummary{
 			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterRollbacked,
+			EventType:    models.ClusterRollbacked,
 			ResourceID:   cluster.ID,
 		},
 	}); err != nil {
@@ -438,8 +434,8 @@ func (c *controller) Rollback(ctx context.Context,
 	}, nil
 }
 
-func (c *controller) retrieveClusterCtx(ctx context.Context, clusterID uint) (*cmodels.Cluster,
-	*amodels.Application, *trmodels.TemplateRelease, *regionmodels.RegionEntity, *gitrepo.EnvValue, error) {
+func (c *controller) retrieveClusterCtx(ctx context.Context, clusterID uint) (*models.Cluster,
+	*models.Application, *models.TemplateRelease, *models.RegionEntity, *gitrepo.EnvValue, error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, nil, nil, nil, nil,
@@ -607,10 +603,10 @@ func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podN
 		log.Warningf(ctx, "failed to marshal podNames: %v", err.Error())
 	}
 	podNameEncoded := string(podNameEncodedBts)
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &models.Event{
+		EventSummary: models.EventSummary{
 			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterPodsRescheduled,
+			EventType:    models.ClusterPodsRescheduled,
 			ResourceID:   cluster.ID,
 			Extra:        &podNameEncoded,
 		},
@@ -721,13 +717,13 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 }
 
 func (c *controller) updatePipelineRunStatus(ctx context.Context,
-	action string, prID uint, pState prmodels.PipelineStatus, revision string) error {
+	action string, prID uint, pState models.PipelineStatus, revision string) error {
 	var err error
-	if pState != prmodels.StatusOK {
+	if pState != models.StatusOK {
 		err = c.pipelinerunMgr.UpdateStatusByID(ctx, prID, pState)
 	} else {
 		finishedAt := time.Now()
-		err = c.pipelinerunMgr.UpdateResultByID(ctx, prID, &prmodels.Result{
+		err = c.pipelinerunMgr.UpdateResultByID(ctx, prID, &models.Result{
 			Result:     string(pState),
 			FinishedAt: &finishedAt,
 		})
@@ -744,7 +740,7 @@ func (c *controller) updatePipelineRunStatus(ctx context.Context,
 
 // updateTemplateAndTagsFromFile syncs template and tags in db when git repo files are updated
 func (c *controller) updateTemplateAndTagsFromFile(ctx context.Context,
-	application *amodels.Application, cluster *cmodels.Cluster) (*cmodels.Cluster, error) {
+	application *models.Application, cluster *models.Cluster) (*models.Cluster, error) {
 	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return nil, err

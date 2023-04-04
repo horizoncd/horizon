@@ -18,8 +18,8 @@ import (
 	"context"
 	"strconv"
 
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	"github.com/horizoncd/horizon/pkg/param"
+	memberservice "github.com/horizoncd/horizon/pkg/service"
 )
 
 type Controller interface {
@@ -44,7 +44,7 @@ func NewController(param *param.Param) Controller {
 }
 
 type controller struct {
-	memberService memberservice.Service
+	memberService memberservice.MemberService
 	convertHelper ConvertMemberHelp
 }
 

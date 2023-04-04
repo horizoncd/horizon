@@ -28,18 +28,13 @@ import (
 	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
 	tektonftymock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/factory"
 	trmock "github.com/horizoncd/horizon/mock/pkg/templaterelease/manager"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	appmodels "github.com/horizoncd/horizon/pkg/models"
+	prmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	pipelinemodels "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,38 +47,38 @@ var (
 
 	pipelineRun *v1beta1.PipelineRun
 
-	manager *managerparam.Manager
+	mgr *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
-	manager = managerparam.InitManager(db)
-	if err := db.AutoMigrate(&prmodels.Pipelinerun{}); err != nil {
+	mgr = managerparam.InitManager(db)
+	if err := db.AutoMigrate(&appmodels.Pipelinerun{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&pipelinemodels.Pipeline{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.Pipeline{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&pipelinemodels.Task{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.Task{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&pipelinemodels.Step{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.Step{}); err != nil {
 		panic(err)
 	}
 	if err := db.AutoMigrate(&appmodels.Application{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&clustermodels.Cluster{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.Cluster{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&usermodels.User{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.User{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.Member{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&trmodels.TemplateRelease{}); err != nil {
+	if err := db.AutoMigrate(&appmodels.TemplateRelease{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -247,27 +242,27 @@ func Test(t *testing.T) {
 		}(),
 	}, nil)
 
-	templateReleaseMgr := trmock.NewMockManager(mockCtl)
+	templateReleaseMgr := trmock.NewMockTemplateReleaseManager(mockCtl)
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(&trmodels.TemplateRelease{}, nil)
+		Return(&appmodels.TemplateRelease{}, nil)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	clusterGitRepo.EXPECT().GetCluster(ctx, gomock.Any(),
 		gomock.Any(), gomock.Any()).Return(&gitrepo.ClusterFiles{
 		PipelineJSONBlob:    map[string]interface{}{},
 		ApplicationJSONBlob: map[string]interface{}{},
 	}, nil)
-	application, _ := manager.ApplicationManager.Create(ctx, &appmodels.Application{
+	application, _ := mgr.ApplicationManager.Create(ctx, &appmodels.Application{
 		Name: "app",
 	}, map[string]string{})
-	user, _ := manager.UserManager.Create(ctx, &usermodels.User{
+	user, _ := mgr.UserManager.Create(ctx, &appmodels.User{
 		Name: "user",
 	})
-	cluster, _ := manager.ClusterMgr.Create(ctx, &clustermodels.Cluster{
+	cluster, _ := mgr.ClusterMgr.Create(ctx, &appmodels.Cluster{
 		ApplicationID: application.ID,
 		Name:          "cluster",
 	}, nil, nil)
-	pipelinerunMgr := manager.PipelinerunMgr
-	_, err := pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	pipelinerunMgr := mgr.PipelinerunMgr
+	_, err := pipelinerunMgr.Create(ctx, &appmodels.Pipelinerun{
 		ClusterID:   cluster.ID,
 		Action:      "builddeploy",
 		Status:      "created",
@@ -278,7 +273,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	p := &param.Param{Manager: manager}
+	p := &param.Param{Manager: mgr}
 	p.ClusterGitRepo = clusterGitRepo
 	p.TemplateReleaseManager = templateReleaseMgr
 	c := NewController(tektonFty, p)

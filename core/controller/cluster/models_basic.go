@@ -17,20 +17,17 @@ package cluster
 import (
 	"time"
 
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	"github.com/horizoncd/horizon/pkg/cluster/models"
-	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/pkg/models"
+	appmodels "github.com/horizoncd/horizon/pkg/models"
 )
 
 type Base struct {
-	Description   string                `json:"description"`
-	Git           *codemodels.Git       `json:"git"`
-	Template      *Template             `json:"template"`
-	TemplateInput *TemplateInput        `json:"templateInput"`
-	Tags          []*tagmodels.TagBasic `json:"tags"`
+	Description   string             `json:"description"`
+	Git           *codemodels.Git    `json:"git"`
+	Template      *Template          `json:"template"`
+	TemplateInput *TemplateInput     `json:"templateInput"`
+	Tags          []*models.TagBasic `json:"tags"`
 }
 
 type TemplateInput struct {
@@ -97,7 +94,7 @@ type Scope struct {
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
-	er *envregionmodels.EnvironmentRegion, expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
+	er *appmodels.EnvironmentRegion, expireSeconds uint) (*appmodels.Cluster, []*appmodels.Tag) {
 	var (
 		// r.Git cannot be nil
 		gitURL       = r.Git.URL
@@ -110,7 +107,7 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 	if gitSubfolder == "" {
 		gitSubfolder = application.GitSubfolder
 	}
-	cluster := &models.Cluster{
+	cluster := &appmodels.Cluster{
 		ApplicationID:   application.ID,
 		Name:            r.Name,
 		EnvironmentName: er.EnvironmentName,
@@ -124,9 +121,9 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 		Template:        r.Template.Name,
 		TemplateRelease: r.Template.Release,
 	}
-	tags := make([]*tagmodels.Tag, 0)
+	tags := make([]*appmodels.Tag, 0)
 	for _, tag := range r.Tags {
-		tags = append(tags, &tagmodels.Tag{
+		tags = append(tags, &appmodels.Tag{
 			Key:   tag.Key,
 			Value: tag.Value,
 		})
@@ -135,7 +132,7 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 }
 
 func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
-	templateRelease string, er *envregionmodels.EnvironmentRegion) (*models.Cluster, []*tagmodels.Tag) {
+	templateRelease string, er *models.EnvironmentRegion) (*models.Cluster, []*models.Tag) {
 	var gitURL, gitSubfolder, gitRef, gitRefType string
 	if r.Git != nil {
 		gitURL, gitSubfolder, gitRefType, gitRef = r.Git.URL,
@@ -147,9 +144,9 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		gitRef = cluster.GitRef
 	}
 
-	tags := make([]*tagmodels.Tag, 0)
+	tags := make([]*models.Tag, 0)
 	for _, tag := range r.Tags {
-		tags = append(tags, &tagmodels.Tag{
+		tags = append(tags, &models.Tag{
 			Key:   tag.Key,
 			Value: tag.Value,
 		})
@@ -170,7 +167,7 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 	}, tags
 }
 
-func getUserFromMap(id uint, userMap map[uint]*usermodels.User) *usermodels.User {
+func getUserFromMap(id uint, userMap map[uint]*appmodels.User) *appmodels.User {
 	user, ok := userMap[id]
 	if !ok {
 		return nil
@@ -178,7 +175,7 @@ func getUserFromMap(id uint, userMap map[uint]*usermodels.User) *usermodels.User
 	return user
 }
 
-func toUser(user *usermodels.User) *User {
+func toUser(user *appmodels.User) *User {
 	if user == nil {
 		return nil
 	}
@@ -190,7 +187,7 @@ func toUser(user *usermodels.User) *User {
 }
 
 func ofClusterModel(application *appmodels.Application, cluster *models.Cluster, fullPath, namespace string,
-	pipelineJSONBlob, applicationJSONBlob map[string]interface{}, tags ...*tagmodels.Tag) *GetClusterResponse {
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{}, tags ...*models.Tag) *GetClusterResponse {
 	expireTime := ""
 	if cluster.ExpireSeconds > 0 {
 		expireTime = time.Duration(cluster.ExpireSeconds * 1e9).String()
@@ -200,7 +197,7 @@ func ofClusterModel(application *appmodels.Application, cluster *models.Cluster,
 		CreateClusterRequest: &CreateClusterRequest{
 			Base: &Base{
 				Description: cluster.Description,
-				Tags:        tagmodels.Tags(tags).IntoTagsBasic(),
+				Tags:        models.Tags(tags).IntoTagsBasic(),
 				Git: codemodels.NewGit(cluster.GitURL, cluster.GitSubfolder,
 					cluster.GitRefType, cluster.GitRef),
 				TemplateInput: &TemplateInput{
@@ -248,10 +245,10 @@ type ListClusterResponse struct {
 	IsFavorite  *bool                 `json:"isFavorite"`
 	CreatedAt   time.Time             `json:"createdAt"`
 	UpdatedAt   time.Time             `json:"updatedAt"`
-	Tags        []*tagmodels.TagBasic `json:"tags,omitempty"`
+	Tags        []*appmodels.TagBasic `json:"tags,omitempty"`
 }
 
-func ofCluster(cluster *models.Cluster) *ListClusterResponse {
+func ofCluster(cluster *appmodels.Cluster) *ListClusterResponse {
 	return &ListClusterResponse{
 		ID:          cluster.ID,
 		Name:        cluster.Name,
@@ -272,16 +269,17 @@ func ofCluster(cluster *models.Cluster) *ListClusterResponse {
 	}
 }
 
-func ofClusterWithEnvAndRegion(cluster *models.ClusterWithRegion) *ListClusterResponse {
+func ofClusterWithEnvAndRegion(cluster *appmodels.ClusterWithRegion) *ListClusterResponse {
 	resp := ofCluster(cluster.Cluster)
 	resp.Scope.RegionDisplayName = cluster.RegionDisplayName
 	return resp
 }
 
-func ofClustersWithEnvRegionTags(clusters []*models.ClusterWithRegion, tags []*tagmodels.Tag) []*ListClusterResponse {
-	tagMap := map[uint][]*tagmodels.TagBasic{}
+func ofClustersWithEnvRegionTags(clusters []*appmodels.ClusterWithRegion,
+	tags []*appmodels.Tag) []*ListClusterResponse {
+	tagMap := map[uint][]*appmodels.TagBasic{}
 	for _, tag := range tags {
-		tagBasic := &tagmodels.TagBasic{
+		tagBasic := &appmodels.TagBasic{
 			Key:   tag.Key,
 			Value: tag.Value,
 		}
@@ -324,7 +322,7 @@ type ListClusterWithExpiryResponse struct {
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
-func ofClusterWithExpiry(clusters []*models.Cluster) []*ListClusterWithExpiryResponse {
+func ofClusterWithExpiry(clusters []*appmodels.Cluster) []*ListClusterWithExpiryResponse {
 	resList := make([]*ListClusterWithExpiryResponse, 0, len(clusters))
 	for _, c := range clusters {
 		resList = append(resList, &ListClusterWithExpiryResponse{

@@ -25,12 +25,12 @@ import (
 	"github.com/horizoncd/horizon/lib/q"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/config/autofree"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
+	usermanager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	uuid "github.com/satori/go.uuid"
 )
 
-func Run(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Manager,
+func Run(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.UserManager,
 	clusterCtr clusterctl.Controller, prCtr prctl.Controller) {
 	// verify account
 	user, err := userMgr.GetUserByID(ctx, jobConfig.AccountID)

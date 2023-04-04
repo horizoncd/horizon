@@ -21,9 +21,8 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/build"
-	"github.com/horizoncd/horizon/pkg/application/gitrepo"
-	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
-	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	manager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/param"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/errors"
@@ -40,8 +39,8 @@ type Controller interface {
 type controller struct {
 	applicationGitRepo   gitrepo.ApplicationGitRepo
 	templateSchemaGetter templateschema.Getter
-	applicationMgr       applicationmanager.Manager
-	envMgr               envmanager.Manager
+	applicationMgr       manager.ApplicationManager
+	envMgr               manager.EnvironmentManager
 	buildSchema          *build.Schema
 }
 

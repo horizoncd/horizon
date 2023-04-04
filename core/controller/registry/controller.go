@@ -19,9 +19,9 @@ import (
 	"sync"
 
 	"github.com/horizoncd/horizon/pkg/cluster/registry"
+	"github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	"github.com/horizoncd/horizon/pkg/registry/manager"
-	"github.com/horizoncd/horizon/pkg/registry/models"
 )
 
 var kindCache []string
@@ -44,7 +44,7 @@ func NewController(param *param.Param) Controller {
 }
 
 type controller struct {
-	registryManager manager.Manager
+	registryManager manager.RegistryManager
 }
 
 func (c controller) Create(ctx context.Context, request *CreateRegistryRequest) (uint, error) {

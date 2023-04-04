@@ -18,11 +18,10 @@ import (
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	"github.com/horizoncd/horizon/pkg/cluster/models"
-	envregionmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	"github.com/horizoncd/horizon/pkg/models"
+	appmodels "github.com/horizoncd/horizon/pkg/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/models"
 )
 
 type CreateClusterRequestV2 struct {
@@ -52,7 +51,7 @@ type CreateClusterParamsV2 struct {
 }
 
 func (r *CreateClusterParamsV2) toClusterModel(application *appmodels.Application,
-	er *envregionmodels.EnvironmentRegion, info *BuildTemplateInfo,
+	er *models.EnvironmentRegion, info *BuildTemplateInfo,
 	expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
 	cluster := &models.Cluster{
 		ApplicationID:   application.ID,
@@ -101,7 +100,7 @@ func (r *CreateClusterParamsV2) toClusterModel(application *appmodels.Applicatio
 	}()
 	tags := make([]*tagmodels.Tag, 0)
 	for _, tag := range r.Tags {
-		tags = append(tags, &tagmodels.Tag{
+		tags = append(tags, &models.Tag{
 			Key:   tag.Key,
 			Value: tag.Value,
 		})

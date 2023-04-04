@@ -24,7 +24,7 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	memberctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	membermodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"

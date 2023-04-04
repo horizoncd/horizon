@@ -17,7 +17,7 @@ package tag
 import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/tag/models"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/labels"
 )

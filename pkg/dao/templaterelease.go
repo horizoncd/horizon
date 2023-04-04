@@ -1,0 +1,164 @@
+// Copyright © 2023 Horizoncd.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package dao
+
+import (
+	"context"
+	"fmt"
+
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/common"
+	hctx "github.com/horizoncd/horizon/pkg/context"
+	perror "github.com/horizoncd/horizon/pkg/errors"
+	amodels "github.com/horizoncd/horizon/pkg/models"
+	"gorm.io/gorm"
+)
+
+type TemplateReleaseDAO interface {
+	Create(ctx context.Context, templateRelease *amodels.TemplateRelease) (*amodels.TemplateRelease, error)
+	ListByTemplateName(ctx context.Context, templateName string) ([]*amodels.TemplateRelease, error)
+	ListByTemplateID(ctx context.Context, id uint) ([]*amodels.TemplateRelease, error)
+	GetByTemplateNameAndRelease(ctx context.Context, templateName, release string) (*amodels.TemplateRelease, error)
+	GetByID(ctx context.Context, releaseID uint) (*amodels.TemplateRelease, error)
+	GetRefOfApplication(ctx context.Context, id uint) ([]*amodels.Application, uint, error)
+	GetRefOfCluster(ctx context.Context, id uint) ([]*amodels.Cluster, uint, error)
+	UpdateByID(ctx context.Context, releaseID uint, release *amodels.TemplateRelease) error
+	DeleteByID(ctx context.Context, id uint) error
+}
+
+// NewTemplateReleaseDAO returns an instance of the default TemplateReleaseDAO
+func NewTemplateReleaseDAO(db *gorm.DB) TemplateReleaseDAO {
+	return &templateReleaseDAO{db: db}
+}
+
+type templateReleaseDAO struct{ db *gorm.DB }
+
+func (d templateReleaseDAO) Create(ctx context.Context,
+	templateRelease *amodels.TemplateRelease) (*amodels.TemplateRelease, error) {
+	result := d.db.WithContext(ctx).Create(templateRelease)
+
+	if result.Error != nil {
+		return nil, herrors.NewErrCreateFailed(herrors.GroupInDB, result.Error.Error())
+	}
+	return templateRelease, nil
+}
+
+func (d templateReleaseDAO) ListByTemplateName(ctx context.Context,
+	templateName string) ([]*amodels.TemplateRelease, error) {
+	var trs []*amodels.TemplateRelease
+	result := d.db.WithContext(ctx).Raw(common.TemplateReleaseQueryByTemplateName, templateName).Scan(&trs)
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.TemplateReleaseInDB, result.Error.Error())
+	}
+	return trs, nil
+}
+
+func (d templateReleaseDAO) ListByTemplateID(ctx context.Context, templateID uint) ([]*amodels.TemplateRelease, error) {
+	var trs []*amodels.TemplateRelease
+	result := d.db.Raw(common.TemplateReleaseListByTemplateID, templateID).Scan(&trs)
+	if result.Error != nil {
+		return nil, herrors.NewErrGetFailed(herrors.TemplateReleaseInDB, result.Error.Error())
+	}
+	return trs, nil
+}
+
+func (d templateReleaseDAO) GetByTemplateNameAndRelease(ctx context.Context,
+	templateName, release string) (*amodels.TemplateRelease, error) {
+	var tr amodels.TemplateRelease
+	result := d.db.WithContext(ctx).Raw(common.TemplateReleaseQueryByTemplateNameAndName,
+		templateName, release).First(&tr)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.TemplateReleaseInDB, result.Error.Error())
+		}
+		return nil, herrors.NewErrGetFailed(herrors.TemplateReleaseInDB, result.Error.Error())
+	}
+
+	return &tr, nil
+}
+
+func (d templateReleaseDAO) GetByID(ctx context.Context, releaseID uint) (*amodels.TemplateRelease, error) {
+	var tr amodels.TemplateRelease
+	result := d.db.Raw(common.TemplateReleaseQueryByID,
+		releaseID).First(&tr)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, herrors.NewErrNotFound(herrors.TemplateReleaseInDB, result.Error.Error())
+		}
+		return nil, herrors.NewErrGetFailed(herrors.TemplateReleaseInDB, result.Error.Error())
+	}
+
+	return &tr, nil
+}
+func (d templateReleaseDAO) GetRefOfApplication(ctx context.Context, id uint) ([]*amodels.Application, uint, error) {
+	onlyRefCount, ok := ctx.Value(hctx.TemplateOnlyRefCount).(bool)
+	var (
+		applications []*amodels.Application
+		total        uint
+	)
+	res := d.db.Raw(common.TemplateReleaseRefCountOfApplication, id).Scan(&total)
+	if res.Error != nil {
+		return nil, 0, perror.Wrap(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
+			fmt.Sprintf("failed to get ref count of application: %s", res.Error.Error()))
+	}
+
+	if !ok || !onlyRefCount {
+		res = d.db.Raw(common.TemplateReleaseRefOfApplication, id).Scan(&applications)
+		if res.Error != nil {
+			return nil, 0, perror.Wrap(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
+				fmt.Sprintf("failed to get ref of application: %s", res.Error.Error()))
+		}
+	}
+	return applications, total, nil
+}
+
+func (d templateReleaseDAO) GetRefOfCluster(ctx context.Context, id uint) ([]*amodels.Cluster, uint, error) {
+	onlyRefCount, ok := ctx.Value(hctx.TemplateOnlyRefCount).(bool)
+	var (
+		clusters []*amodels.Cluster
+		total    uint
+	)
+	res := d.db.Raw(common.TemplateReleaseRefCountOfCluster, id).Scan(&total)
+	if res.Error != nil {
+		return nil, 0, perror.Wrap(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
+			fmt.Sprintf("failed to get ref count of clsuter: %s", res.Error.Error()))
+	}
+
+	if !ok || !onlyRefCount {
+		res = d.db.Raw(common.TemplateReleaseRefOfCluster, id).Scan(&clusters)
+		if res.Error != nil {
+			return nil, 0, perror.Wrap(herrors.NewErrGetFailed(herrors.TemplateInDB, res.Error.Error()),
+				fmt.Sprintf("failed to get ref of clsuter: %s", res.Error.Error()))
+		}
+	}
+	return clusters, total, nil
+}
+
+func (d templateReleaseDAO) UpdateByID(ctx context.Context, releaseID uint, release *amodels.TemplateRelease) error {
+	return d.db.Transaction(func(tx *gorm.DB) error {
+		release.ID = releaseID
+		return tx.Model(&release).Updates(release).Error
+	})
+}
+
+func (d templateReleaseDAO) DeleteByID(ctx context.Context, id uint) error {
+	if res := d.db.Exec(common.TemplateReleaseDelete, id); res.Error != nil {
+		return perror.Wrap(herrors.NewErrDeleteFailed(herrors.TemplateInDB, res.Error.Error()),
+			fmt.Sprintf("failed to delete template, id = %d", id))
+	}
+	return nil
+}

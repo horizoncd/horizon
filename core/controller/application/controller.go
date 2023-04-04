@@ -24,29 +24,14 @@ import (
 	"github.com/horizoncd/horizon/core/controller/build"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
-	"github.com/horizoncd/horizon/pkg/application/gitrepo"
-	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
-	"github.com/horizoncd/horizon/pkg/application/models"
-	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
-	applicationregionmanager "github.com/horizoncd/horizon/pkg/applicationregion/manager"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
-	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
-	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
-	"github.com/horizoncd/horizon/pkg/member"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	"github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	pipelinemanager "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/manager"
-	pipelinemodels "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
+	"github.com/horizoncd/horizon/pkg/service"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
-	usersvc "github.com/horizoncd/horizon/pkg/user/service"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -70,7 +55,7 @@ type Controller interface {
 	List(ctx context.Context, query *q.Query) ([]*ListApplicationResponse, int, error)
 	// Transfer  try transfer application to another group
 	Transfer(ctx context.Context, id uint, groupID uint) error
-	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (regionmodels.RegionParts, error)
+	GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (models.RegionParts, error)
 
 	CreateApplicationV2(ctx context.Context, groupID uint,
 		request *CreateOrUpdateApplicationRequestV2) (*CreateApplicationResponseV2, error)
@@ -81,24 +66,24 @@ type Controller interface {
 
 	// GetApplicationPipelineStats return pipeline stats about an application
 	GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string, pageNumber, pageSize int) (
-		[]*pipelinemodels.PipelineStats, int64, error)
+		[]*models.PipelineStats, int64, error)
 }
 
 type controller struct {
 	applicationGitRepo   gitrepo.ApplicationGitRepo
 	templateSchemaGetter templateschema.Getter
-	applicationMgr       applicationmanager.Manager
-	applicationSvc       applicationservice.Service
-	groupMgr             groupmanager.Manager
-	groupSvc             groupsvc.Service
-	templateReleaseMgr   trmanager.Manager
-	clusterMgr           clustermanager.Manager
-	userSvc              usersvc.Service
-	memberManager        member.Manager
-	eventMgr             eventmanager.Manager
-	tagMgr               tagmanager.Manager
-	applicationRegionMgr applicationregionmanager.Manager
-	pipelinemanager      pipelinemanager.Manager
+	tagMgr               manager.TagManager
+	applicationMgr       manager.ApplicationManager
+	applicationSvc       service.ApplicationService
+	groupMgr             manager.GroupManager
+	groupSvc             service.GroupService
+	templateReleaseMgr   manager.TemplateReleaseManager
+	clusterMgr           manager.ClusterManager
+	userSvc              service.UserService
+	memberManager        manager.MemberManager
+	eventMgr             manager.EventManager
+	applicationRegionMgr manager.ApplicationRegionManager
+	pipelinemanager      manager.PipelineManager
 	buildSchema          *build.Schema
 }
 
@@ -205,7 +190,7 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 		}(),
 		Image:       app.Image,
 		BuildConfig: applicationRepo.BuildConf,
-		Tags:        tagmodels.Tags(tags).IntoTagsBasic(),
+		Tags:        models.Tags(tags).IntoTagsBasic(),
 		TemplateInfo: func() *codemodels.TemplateInfo {
 			if app.Template == "" {
 				return nil
@@ -309,10 +294,10 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application)
 
 	// 7. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &models.Event{
+		EventSummary: models.EventSummary{
 			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationCreated,
+			EventType:    models.ApplicationCreated,
 			ResourceID:   ret.ID,
 		},
 	}); err != nil {
@@ -436,10 +421,10 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		ret.Priority = *request.Priority
 	}
 
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &models.Event{
+		EventSummary: models.EventSummary{
 			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationCreated,
+			EventType:    models.ApplicationCreated,
 			ResourceID:   applicationDBModel.ID,
 		},
 	}); err != nil {
@@ -498,10 +483,10 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 	}
 
 	// 5. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &models.Event{
+		EventSummary: models.EventSummary{
 			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationUpdated,
+			EventType:    models.ApplicationUpdated,
 			ResourceID:   applicationModel.ID,
 		},
 	}); err != nil {
@@ -617,7 +602,7 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 	if hard {
 		// delete member
 		if err := c.memberManager.HardDeleteMemberByResourceTypeID(ctx,
-			string(membermodels.TypeApplication), id); err != nil {
+			string(models.TypeApplication), id); err != nil {
 			return err
 		}
 		// delete region config
@@ -642,10 +627,10 @@ func (c *controller) DeleteApplication(ctx context.Context, id uint, hard bool) 
 	}
 
 	// 4. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
+	if _, err := c.eventMgr.CreateEvent(ctx, &models.Event{
+		EventSummary: models.EventSummary{
 			ResourceType: common.ResourceApplication,
-			EventType:    eventmodels.ApplicationDeleted,
+			EventType:    models.ApplicationDeleted,
 			ResourceID:   id,
 		},
 	}); err != nil {
@@ -767,7 +752,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) (
 			if err := permission.OnlySelfAndAdmin(ctx, userID); err != nil {
 				return nil, 0, err
 			}
-			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, membermodels.TypeGroup, userID)
+			groupIDs, err := c.memberManager.ListResourceOfMemberInfo(ctx, models.TypeGroup, userID)
 			if err != nil {
 				return nil, 0,
 					perror.WithMessage(err, "failed to list group resource of current user")
@@ -844,7 +829,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) (
 }
 
 func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (
-	regionmodels.RegionParts, error) {
+	models.RegionParts, error) {
 	application, err := c.applicationMgr.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -870,8 +855,8 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 	return selectableRegionsByEnv, nil
 }
 
-func (c *controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
-	pageNumber, pageSize int) ([]*pipelinemodels.PipelineStats, int64, error) {
+func (c controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
+	pageNumber, pageSize int) ([]*models.PipelineStats, int64, error) {
 	app, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {
 		return nil, 0, err

@@ -15,6 +15,7 @@
 package cluster
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -24,24 +25,22 @@ import (
 	applicationmanangermock "github.com/horizoncd/horizon/mock/pkg/application/manager"
 	cdmock "github.com/horizoncd/horizon/mock/pkg/cd"
 	clustermanagermock "github.com/horizoncd/horizon/mock/pkg/cluster/manager"
-	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cd"
-	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	applicationmodel "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
 	"github.com/stretchr/testify/assert"
 )
 
 func testGetClusterStatusV2(t *testing.T) {
+	ctx := context.Background()
 	mockCtl := gomock.NewController(t)
-	clusterManagerMock := clustermanagermock.NewMockManager(mockCtl)
-	appManagerMock := applicationmanangermock.NewMockManager(mockCtl)
+	clusterManagerMock := clustermanagermock.NewMockClusterManager(mockCtl)
+	appManagerMock := applicationmanangermock.NewMockApplicationManager(mockCtl)
 	mockCD := cdmock.NewMockCD(mockCtl)
 	db, _ := orm.NewSqliteDB("")
-	_ = db.AutoMigrate(&regionmodels.Region{}, &registrymodels.Registry{})
+	_ = db.AutoMigrate(&applicationmodel.Region{}, &applicationmodel.Registry{})
 	manager := managerparam.InitManager(db)
 
 	regionName := "test"
@@ -54,12 +53,12 @@ func testGetClusterStatusV2(t *testing.T) {
 		cd:             mockCD,
 	}
 
-	_, err := manager.RegistryManager.Create(ctx, &registrymodels.Registry{
+	_, err := manager.RegistryManager.Create(ctx, &applicationmodel.Registry{
 		Model: global.Model{ID: 1},
 	})
 	assert.Nil(t, err)
 
-	_, err = manager.RegionMgr.Create(ctx, &regionmodels.Region{
+	_, err = manager.RegionMgr.Create(ctx, &applicationmodel.Region{
 		Model:       global.Model{ID: 1},
 		Name:        regionName,
 		DisplayName: regionName,
@@ -68,11 +67,11 @@ func testGetClusterStatusV2(t *testing.T) {
 	assert.Nil(t, err)
 
 	clusterManagerMock.EXPECT().GetByID(gomock.Any(), gomock.Any()).Times(1).
-		Return(&clustermodels.Cluster{Status: common.ClusterStatusEmpty, RegionName: regionName}, nil)
+		Return(&applicationmodel.Cluster{Status: common.ClusterStatusEmpty, RegionName: regionName}, nil)
 	clusterManagerMock.EXPECT().GetByID(gomock.Any(), gomock.Any()).Times(1).
-		Return(&clustermodels.Cluster{Status: common.ClusterStatusCreating, RegionName: regionName}, nil)
+		Return(&applicationmodel.Cluster{Status: common.ClusterStatusCreating, RegionName: regionName}, nil)
 	clusterManagerMock.EXPECT().GetByID(gomock.Any(), gomock.Any()).Times(1).
-		Return(&clustermodels.Cluster{Status: common.ClusterStatusEmpty, RegionName: regionName}, nil)
+		Return(&applicationmodel.Cluster{Status: common.ClusterStatusEmpty, RegionName: regionName}, nil)
 
 	appManagerMock.EXPECT().GetByID(gomock.Any(), gomock.Any()).Times(3).
 		Return(&applicationmodel.Application{}, nil)

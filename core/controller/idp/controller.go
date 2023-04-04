@@ -26,12 +26,10 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/idp/manager"
 	"github.com/horizoncd/horizon/pkg/idp/utils"
+	"github.com/horizoncd/horizon/pkg/manager"
+	usermodel "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	usermodel "github.com/horizoncd/horizon/pkg/user/models"
-	linkmanager "github.com/horizoncd/horizon/pkg/userlink/manager"
 	"golang.org/x/oauth2"
 )
 
@@ -52,9 +50,9 @@ type Controller interface {
 }
 
 type controller struct {
-	idpManager  manager.Manager
-	userManager usermanager.Manager
-	linkManager linkmanager.Manager
+	idpManager  manager.IDProviderManager
+	userManager manager.UserManager
+	linkManager manager.UserLinkManager
 }
 
 func NewController(param *param.Param) Controller {

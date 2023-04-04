@@ -17,11 +17,10 @@ package output
 import (
 	"errors"
 
+	tmanager "github.com/horizoncd/horizon/pkg/manager"
 	"golang.org/x/net/context"
 
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
-	"github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
@@ -34,8 +33,8 @@ type Getter interface {
 
 type getter struct {
 	templateRepo       templaterepo.TemplateRepo
-	templateMgr        tmanager.Manager
-	templateReleaseMgr manager.Manager
+	templateMgr        tmanager.TemplateManager
+	templateReleaseMgr tmanager.TemplateReleaseManager
 }
 
 const (

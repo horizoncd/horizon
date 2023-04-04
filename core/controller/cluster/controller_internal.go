@@ -22,10 +22,9 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cd"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	eventmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
@@ -83,7 +82,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
 		return nil, err
 	}
-	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
+	updatePRStatus := func(pState eventmodels.PipelineStatus, revision string) error {
 		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, pr.ID, pState); err != nil {
 			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
 				pr.ID, pState, err)
@@ -93,7 +92,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 			pr.ID, pState, revision)
 		return nil
 	}
-	if err := updatePRStatus(prmodels.StatusCommitted, commit); err != nil {
+	if err := updatePRStatus(eventmodels.StatusCommitted, commit); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +102,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, perror.WithMessage(err, op)
 	}
-	if err := updatePRStatus(prmodels.StatusMerged, masterRevision); err != nil {
+	if err := updatePRStatus(eventmodels.StatusMerged, masterRevision); err != nil {
 		return nil, err
 	}
 
@@ -147,7 +146,7 @@ func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 9. update status
-	if err := updatePRStatus(prmodels.StatusOK, masterRevision); err != nil {
+	if err := updatePRStatus(eventmodels.StatusOK, masterRevision); err != nil {
 		return nil, err
 	}
 

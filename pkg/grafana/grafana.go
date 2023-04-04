@@ -26,8 +26,8 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	regionmanager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
@@ -52,7 +52,7 @@ type Service interface {
 type service struct {
 	config     grafana.Config
 	kubeClient kubernetes.Interface
-	regionMgr  regionmanager.Manager
+	regionMgr  regionmanager.RegionManager
 }
 
 func NewService(config grafana.Config, manager *managerparam.Manager, client kubernetes.Interface) Service {

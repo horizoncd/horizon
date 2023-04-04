@@ -20,24 +20,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"gopkg.in/yaml.v3"
 
 	"github.com/horizoncd/horizon/core/common"
 	webhookctl "github.com/horizoncd/horizon/core/controller/webhook"
 	"github.com/horizoncd/horizon/lib/q"
-	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
-	applicationmodels "github.com/horizoncd/horizon/pkg/application/models"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
-	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
-	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
-	"github.com/horizoncd/horizon/pkg/event/models"
-	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
-	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
-	webhookmodels "github.com/horizoncd/horizon/pkg/webhook/models"
 )
 
 const (
@@ -48,14 +39,14 @@ const (
 
 // MessageContent will be marshaled as webhook request body
 type MessageContent struct {
-	ID          uint                  `json:"id,omitempty"`
-	EventID     uint                  `json:"eventID,omitempty"`
-	WebhookID   uint                  `json:"webhookID,omitempty"`
-	Application *ApplicationInfo      `json:"application,omitempty"`
-	Cluster     *ClusterInfo          `json:"cluster,omitempty"`
-	EventType   string                `json:"eventType,omitempty"`
-	User        *usermodels.UserBasic `json:"user,omitempty"`
-	Extra       *string               `json:"extra,omitempty"`
+	ID          uint              `json:"id,omitempty"`
+	EventID     uint              `json:"eventID,omitempty"`
+	WebhookID   uint              `json:"webhookID,omitempty"`
+	Application *ApplicationInfo  `json:"application,omitempty"`
+	Cluster     *ClusterInfo      `json:"cluster,omitempty"`
+	EventType   string            `json:"eventType,omitempty"`
+	User        *models.UserBasic `json:"user,omitempty"`
+	Extra       *string           `json:"extra,omitempty"`
 }
 
 type ResourceCommonInfo struct {
@@ -78,12 +69,12 @@ type ClusterInfo struct {
 
 // WebhookLogGenerator generates webhook logs by events
 type WebhookLogGenerator struct {
-	webhookMgr     webhookmanager.Manager
-	eventMgr       eventmanager.Manager
-	groupMgr       groupmanager.Manager
-	applicationMgr applicationmanager.Manager
-	clusterMgr     clustermanager.Manager
-	userMgr        usermanager.Manager
+	webhookMgr     manager.WebhookManager
+	eventMgr       manager.EventManager
+	groupMgr       manager.GroupManager
+	applicationMgr manager.ApplicationManager
+	clusterMgr     manager.ClusterManager
+	userMgr        manager.UserManager
 }
 
 func NewWebhookLogGenerator(manager *managerparam.Manager) *WebhookLogGenerator {
@@ -98,10 +89,10 @@ func NewWebhookLogGenerator(manager *managerparam.Manager) *WebhookLogGenerator 
 }
 
 type messageDependency struct {
-	webhook     *webhookmodels.Webhook
+	webhook     *models.Webhook
 	event       *models.Event
-	application *applicationmodels.Application
-	cluster     *clustermodels.Cluster
+	application *models.Application
+	cluster     *models.Cluster
 }
 
 // listSystemResources lists root group(0) as system resource
@@ -113,7 +104,7 @@ func (w *WebhookLogGenerator) listSystemResources() map[string][]uint {
 
 // listAssociatedResourcesOfApp get application by id and list all the parent resources
 func (w *WebhookLogGenerator) listAssociatedResourcesOfApp(ctx context.Context,
-	id uint) (*applicationmodels.Application, map[string][]uint) {
+	id uint) (*models.Application, map[string][]uint) {
 	resources := w.listSystemResources()
 	app, err := w.applicationMgr.GetByIDIncludeSoftDelete(ctx, id)
 	if err != nil {
@@ -127,14 +118,14 @@ func (w *WebhookLogGenerator) listAssociatedResourcesOfApp(ctx context.Context,
 		log.Warningf(ctx, "application %d is not exist", id)
 		return app, resources
 	}
-	groupIDs := groupmanager.FormatIDsFromTraversalIDs(group.TraversalIDs)
+	groupIDs := manager.FormatIDsFromTraversalIDs(group.TraversalIDs)
 	resources[common.ResourceGroup] = append(resources[common.ResourceGroup], groupIDs...)
 	return app, resources
 }
 
 // listAssociatedResourcesOfCluster get cluster by id and list all the parent resources
-func (w *WebhookLogGenerator) listAssociatedResourcesOfCluster(ctx context.Context, id uint) (*clustermodels.Cluster,
-	*applicationmodels.Application, map[string][]uint) {
+func (w *WebhookLogGenerator) listAssociatedResourcesOfCluster(ctx context.Context, id uint) (*models.Cluster,
+	*models.Application, map[string][]uint) {
 	cluster, err := w.clusterMgr.GetByIDIncludeSoftDelete(ctx, id)
 	if err != nil {
 		log.Warningf(ctx, "cluster %d is not exist",
@@ -154,8 +145,8 @@ func (w *WebhookLogGenerator) listAssociatedResources(ctx context.Context,
 	e *models.Event) (*messageDependency, map[string][]uint) {
 	var (
 		resources   map[string][]uint
-		cluster     *clustermodels.Cluster
-		application *applicationmodels.Application
+		cluster     *models.Cluster
+		application *models.Application
 		dep         = &messageDependency{}
 	)
 
@@ -200,7 +191,7 @@ func (w *WebhookLogGenerator) makeRequestBody(ctx context.Context, dep *messageD
 		if err != nil {
 			return "", err
 		}
-		message.User = usermodels.ToUser(user)
+		message.User = models.ToUser(user)
 	}
 
 	if dep.event.ResourceType == common.ResourceApplication &&
@@ -238,7 +229,7 @@ func (w *WebhookLogGenerator) makeRequestBody(ctx context.Context, dep *messageD
 func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Event,
 	resume bool) error {
 	var (
-		webhookLogs        []*webhookmodels.WebhookLog
+		webhookLogs        []*models.WebhookLog
 		conditionsToCreate = map[uint]map[uint]messageDependency{}
 		conditionsToQuery  = map[uint][]uint{}
 	)
@@ -320,13 +311,13 @@ func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Even
 				continue
 			}
 
-			webhookLogs = append(webhookLogs, &webhookmodels.WebhookLog{
+			webhookLogs = append(webhookLogs, &models.WebhookLog{
 				EventID:        dependency.event.ID,
 				WebhookID:      dependency.webhook.ID,
 				URL:            dependency.webhook.URL,
 				RequestHeaders: headers,
 				RequestData:    body,
-				Status:         webhookmodels.StatusWaiting,
+				Status:         models.WebhookStatusWaiting,
 			})
 		}
 	}

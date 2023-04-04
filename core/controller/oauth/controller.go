@@ -20,7 +20,7 @@ import (
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/oauth/manager"
+	"github.com/horizoncd/horizon/pkg/manager"
 	oauthmodel "github.com/horizoncd/horizon/pkg/oauth/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/token/generator"
@@ -74,7 +74,7 @@ func NewController(param *param.Param) Controller {
 var _ Controller = &controller{}
 
 type controller struct {
-	oauthManager manager.Manager
+	oauthManager manager.OAuthManager
 }
 
 func (c *controller) GenAuthorizeCode(ctx context.Context, req *AuthorizeReq) (*AuthorizeCodeResponse, error) {

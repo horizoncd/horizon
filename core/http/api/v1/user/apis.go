@@ -26,11 +26,11 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	usermodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/horizoncd/horizon/pkg/user/util"
 	"github.com/horizoncd/horizon/pkg/util/log"
+	user2 "github.com/horizoncd/horizon/pkg/util/user"
 )
 
 // path variable
@@ -268,7 +268,7 @@ func (a *API) LoginWithPassword(c *gin.Context) {
 		return
 	}
 
-	session, err := util.GetSession(a.store, c.Request)
+	session, err := user2.GetSession(a.store, c.Request)
 	if err != nil {
 		log.Errorf(c, "failed to get session: store = %#v, request = %#v, err = %v",
 			a.store, c.Request, err)
@@ -277,7 +277,7 @@ func (a *API) LoginWithPassword(c *gin.Context) {
 		return
 	}
 
-	err = util.SetSession(session, c.Request, c.Writer, user)
+	err = user2.SetSession(session, c.Request, c.Writer, user)
 	if err != nil {
 		log.Errorf(c, "failed to set session: store = %#v, request = %#v, err = %v",
 			a.store, c.Request, err)

@@ -24,9 +24,8 @@ import (
 	gitlablibmock "github.com/horizoncd/horizon/mock/lib/gitlab"
 	tmock "github.com/horizoncd/horizon/mock/pkg/template/manager"
 	trmock "github.com/horizoncd/horizon/mock/pkg/templaterelease/manager"
+	tmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	tmodels "github.com/horizoncd/horizon/pkg/template/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	"github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/stretchr/testify/assert"
@@ -228,8 +227,8 @@ func TestFunc(t *testing.T) {
 func TestNoTag(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	gitlabLib := gitlablibmock.NewMockInterface(mockCtl)
-	templateReleaseMgr := trmock.NewMockManager(mockCtl)
-	templateMgr := tmock.NewMockManager(mockCtl)
+	templateReleaseMgr := trmock.NewMockTemplateReleaseManager(mockCtl)
+	templateMgr := tmock.NewMockTemplateManager(mockCtl)
 
 	templateMgr.EXPECT().GetByName(ctx, templateName).
 		Return(&tmodels.Template{
@@ -237,7 +236,7 @@ func TestNoTag(t *testing.T) {
 			Repository: templateGitlabProject,
 		}, nil)
 	templateReleaseMgr.EXPECT().GetByTemplateNameAndRelease(ctx, templateName,
-		releaseName).Return(&trmodels.TemplateRelease{
+		releaseName).Return(&tmodels.TemplateRelease{
 		Model: global.Model{
 			ID: 1,
 		},

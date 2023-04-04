@@ -22,8 +22,7 @@ import (
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	tmodels "github.com/horizoncd/horizon/pkg/template/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	tmodels "github.com/horizoncd/horizon/pkg/models"
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 )
 
@@ -64,8 +63,8 @@ type CreateReleaseRequest struct {
 }
 
 func (c *CreateReleaseRequest) toReleaseModel(ctx context.Context,
-	template *tmodels.Template) (*trmodels.TemplateRelease, error) {
-	t := &trmodels.TemplateRelease{
+	template *tmodels.Template) (*tmodels.TemplateRelease, error) {
+	t := &tmodels.TemplateRelease{
 		Name:         c.Name,
 		TemplateName: template.Name,
 		ChartName:    template.ChartName,
@@ -113,8 +112,8 @@ type UpdateReleaseRequest struct {
 	OnlyOwner   bool   `json:"onlyOwner"`
 }
 
-func (c *UpdateReleaseRequest) toReleaseModel(ctx context.Context) (*trmodels.TemplateRelease, error) {
-	tr := &trmodels.TemplateRelease{
+func (c *UpdateReleaseRequest) toReleaseModel(ctx context.Context) (*tmodels.TemplateRelease, error) {
+	tr := &tmodels.TemplateRelease{
 		Name:        c.Name,
 		Description: c.Description,
 		Recommended: c.Recommended,
@@ -219,7 +218,7 @@ func (r Releases) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
-func toRelease(m *trmodels.TemplateRelease) *Release {
+func toRelease(m *tmodels.TemplateRelease) *Release {
 	if m == nil {
 		return nil
 	}
@@ -239,14 +238,14 @@ func toRelease(m *trmodels.TemplateRelease) *Release {
 		CreatedBy:      m.CreatedBy,
 		UpdatedBy:      m.UpdatedBy,
 	}
-	switch trmodels.SyncStatus(tr.SyncStatusCode) {
-	case trmodels.StatusSucceed:
+	switch tmodels.SyncStatus(tr.SyncStatusCode) {
+	case tmodels.SyncStatusSucceed:
 		tr.SyncStatus = "Succeed"
-	case trmodels.StatusUnknown:
+	case tmodels.SyncStatusUnknown:
 		tr.SyncStatus = "Unknown"
-	case trmodels.StatusFailed:
+	case tmodels.SyncStatusFailed:
 		tr.SyncStatus = "Failed"
-	case trmodels.StatusOutOfSync:
+	case tmodels.SyncStatusOutOfSync:
 		tr.SyncStatus = "OutOfSync"
 	}
 	if m.Recommended != nil {
@@ -260,7 +259,7 @@ func toRelease(m *trmodels.TemplateRelease) *Release {
 	return tr
 }
 
-func toReleases(trs []*trmodels.TemplateRelease) Releases {
+func toReleases(trs []*tmodels.TemplateRelease) Releases {
 	releases := make(Releases, 0)
 	for _, tr := range trs {
 		t := toRelease(tr)

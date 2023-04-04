@@ -19,7 +19,7 @@ import (
 
 	"github.com/horizoncd/horizon/core/controller/registry"
 	"github.com/horizoncd/horizon/core/controller/tag"
-	"github.com/horizoncd/horizon/pkg/region/models"
+	"github.com/horizoncd/horizon/pkg/models"
 )
 
 type Region struct {

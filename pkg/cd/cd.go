@@ -30,10 +30,10 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/argocd"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
 	argocdconf "github.com/horizoncd/horizon/pkg/config/argocd"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
 	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
@@ -87,6 +87,10 @@ type CD interface {
 	GetResourceTree(ctx context.Context, params *GetResourceTreeParams) ([]ResourceNode, error)
 	GetStep(ctx context.Context, params *GetStepParams) (*Step, error)
 	GetPodEvents(ctx context.Context, params *GetPodEventsParams) ([]Event, error)
+}
+
+type LegacyStatusGetter interface {
+	LegacyStatusGet(ctx context.Context, params *GetClusterStateParams) (*ClusterState, error)
 }
 
 type cd struct {

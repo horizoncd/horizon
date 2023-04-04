@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	collector "github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
-	models "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	models "github.com/horizoncd/horizon/pkg/models"
 	global "github.com/horizoncd/horizon/pkg/server/global"
 	v1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )

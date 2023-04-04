@@ -20,10 +20,10 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/pkg/auth"
-	"github.com/horizoncd/horizon/pkg/member/models"
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/rbac/types"
+	memberservice "github.com/horizoncd/horizon/pkg/service"
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
@@ -35,7 +35,7 @@ type Authorizer interface {
 
 type VisitorFunc func(fmt.Stringer, *types.PolicyRule, error) bool
 
-func NewAuthorizer(roleservice role.Service, memberservice memberservice.Service) Authorizer {
+func NewAuthorizer(roleservice role.Service, memberservice memberservice.MemberService) Authorizer {
 	return &authorizer{
 		roleService:   roleservice,
 		memberService: memberservice,
@@ -44,7 +44,7 @@ func NewAuthorizer(roleservice role.Service, memberservice memberservice.Service
 
 type authorizer struct {
 	roleService   role.Service
-	memberService memberservice.Service
+	memberService memberservice.MemberService
 }
 
 const (

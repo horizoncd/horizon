@@ -18,9 +18,7 @@ import (
 	"strings"
 	"testing"
 
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
-
+	regionmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/mozillazg/go-pinyin"
 )
 
@@ -41,7 +39,7 @@ func testImageURL(t *testing.T) {
 			name: "normal1",
 			args: args{
 				regionEntity: &regionmodels.RegionEntity{
-					Registry: &registrymodels.Registry{
+					Registry: &regionmodels.Registry{
 						Path:   "path",
 						Server: "https://harbor.com",
 					},
@@ -57,7 +55,7 @@ func testImageURL(t *testing.T) {
 			name: "normal2",
 			args: args{
 				regionEntity: &regionmodels.RegionEntity{
-					Registry: &registrymodels.Registry{
+					Registry: &regionmodels.Registry{
 						Path:   "path",
 						Server: "https://harbor.com",
 					},
@@ -73,7 +71,7 @@ func testImageURL(t *testing.T) {
 			name: "normal3",
 			args: args{
 				regionEntity: &regionmodels.RegionEntity{
-					Registry: &registrymodels.Registry{
+					Registry: &regionmodels.Registry{
 						Path:   "path",
 						Server: "https://harbor.com",
 					},
@@ -89,7 +87,7 @@ func testImageURL(t *testing.T) {
 			name: "normal4",
 			args: args{
 				regionEntity: &regionmodels.RegionEntity{
-					Registry: &registrymodels.Registry{
+					Registry: &regionmodels.Registry{
 						Path:   "path",
 						Server: "https://harbor.com",
 					},

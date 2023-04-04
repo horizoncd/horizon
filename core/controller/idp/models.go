@@ -17,7 +17,7 @@ package idp
 import (
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/idp/models"
+	"github.com/horizoncd/horizon/pkg/models"
 )
 
 type AuthInfo struct {

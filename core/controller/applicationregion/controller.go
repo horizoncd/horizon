@@ -17,15 +17,10 @@ package applicationregion
 import (
 	"context"
 
-	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
-	applicationregionmanager "github.com/horizoncd/horizon/pkg/applicationregion/manager"
-	"github.com/horizoncd/horizon/pkg/applicationregion/models"
-	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
-	envregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
+	"github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
 )
 
 type Controller interface {
@@ -34,12 +29,12 @@ type Controller interface {
 }
 
 type controller struct {
-	mgr                  applicationregionmanager.Manager
-	regionMgr            regionmanager.Manager
-	environmentMgr       envmanager.Manager
-	environmentRegionMgr envregionmanager.Manager
-	groupMgr             groupmanager.Manager
-	applicationMgr       applicationmanager.Manager
+	mgr                  manager.ApplicationRegionManager
+	regionMgr            manager.RegionManager
+	environmentMgr       manager.EnvironmentManager
+	environmentRegionMgr manager.EnvironmentRegionManager
+	groupMgr             manager.GroupManager
+	applicationMgr       manager.ApplicationManager
 }
 
 var _ Controller = (*controller)(nil)

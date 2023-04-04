@@ -24,16 +24,11 @@ import (
 	"strings"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
-	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
-	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
-	envregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	manager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/param"
-	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
-	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"k8s.io/client-go/tools/remotecommand"
@@ -51,12 +46,12 @@ type Controller interface {
 
 type controller struct {
 	kubeClientFty      kubeclient.Factory
-	clusterMgr         clustermanager.Manager
-	applicationMgr     applicationmanager.Manager
-	templateReleaseMgr trmanager.Manager
-	envMgr             envmanager.Manager
-	envRegionMgr       envregionmanager.Manager
-	regionMgr          regionmanager.Manager
+	clusterMgr         manager.ClusterManager
+	applicationMgr     manager.ApplicationManager
+	templateReleaseMgr manager.TemplateReleaseManager
+	envMgr             manager.EnvironmentManager
+	envRegionMgr       manager.EnvironmentRegionManager
+	regionMgr          manager.RegionManager
 	clusterGitRepo     gitrepo.ClusterGitRepo
 }
 

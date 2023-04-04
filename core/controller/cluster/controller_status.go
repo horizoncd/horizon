@@ -24,10 +24,9 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/cd"
-	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 
@@ -106,7 +105,7 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	}
 
 	if latestPipelinerun == nil ||
-		latestPipelinerun.Action != prmodels.ActionBuildDeploy {
+		latestPipelinerun.Action != models.ActionBuildDeploy {
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}
@@ -157,18 +156,18 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		// there is a possibility that healthy cluster is not reconciled by operator yet
 		if clusterState.Status == health.HealthStatusHealthy &&
 			latestPipelinerun != nil &&
-			latestPipelinerun.Status != string(prmodels.StatusFailed) &&
-			latestPipelinerun.Status != string(prmodels.StatusCancelled) {
+			latestPipelinerun.Status != string(models.StatusFailed) &&
+			latestPipelinerun.Status != string(models.StatusCancelled) {
 			var (
 				image       string
 				restartTime time.Time
 			)
 
 			// get image and restart time by latest pipelinerun
-			if latestPipelinerun.Action == prmodels.ActionBuildDeploy ||
-				latestPipelinerun.Action == prmodels.ActionRollback {
+			if latestPipelinerun.Action == models.ActionBuildDeploy ||
+				latestPipelinerun.Action == models.ActionRollback {
 				image = latestPipelinerun.ImageURL
-			} else if latestPipelinerun.Action == prmodels.ActionRestart {
+			} else if latestPipelinerun.Action == models.ActionRestart {
 				restartTime = latestPipelinerun.CreatedAt
 			}
 
@@ -256,7 +255,7 @@ func isClusterActuallyHealthy(ctx context.Context, clusterState *cd.ClusterState
 }
 
 func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,
-	clusterID uint) (*prmodels.Pipelinerun, error) {
+	clusterID uint) (*models.Pipelinerun, error) {
 	_, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, false, q.Query{
 		PageNumber: 1,
 		PageSize:   1,
@@ -270,8 +269,8 @@ func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,
 	return nil, nil
 }
 
-func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *clustermodels.Cluster,
-	pipelinerun *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
+func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *models.Cluster,
+	pipelinerun *models.Pipelinerun) (*v1beta1.PipelineRun, error) {
 	tektonCollector, err := c.tektonFty.GetTektonCollector(cluster.EnvironmentName)
 	if err != nil {
 		return nil, err
@@ -568,12 +567,12 @@ func willExpireIn(ttl uint, tms ...time.Time) *uint {
 	return &res
 }
 
-func isNonRunningTask(latestPipelinerun *prmodels.Pipelinerun) bool {
-	if latestPipelinerun == nil || latestPipelinerun.Status == string(prmodels.StatusOK) {
+func isNonRunningTask(latestPipelinerun *models.Pipelinerun) bool {
+	if latestPipelinerun == nil || latestPipelinerun.Status == string(models.StatusOK) {
 		return true
 	}
-	if latestPipelinerun.Action == prmodels.ActionRestart ||
-		latestPipelinerun.Action == prmodels.ActionRollback {
+	if latestPipelinerun.Action == models.ActionRestart ||
+		latestPipelinerun.Action == models.ActionRollback {
 		return true
 	}
 	return false

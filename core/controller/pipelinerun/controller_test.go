@@ -34,23 +34,14 @@ import (
 	tektonftymock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/factory"
 	pipelinemockmanager "github.com/horizoncd/horizon/mock/pkg/pipelinerun/manager"
 	usermock "github.com/horizoncd/horizon/mock/pkg/user/manager"
-	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
-	clustermodel "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/log"
-	envmodels "github.com/horizoncd/horizon/pkg/environmentregion/models"
 	"github.com/horizoncd/horizon/pkg/git"
-	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	applicationmodel "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	"github.com/stretchr/testify/assert"
-
-	pipelinemodel "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	usermodel "github.com/horizoncd/horizon/pkg/user/models"
 )
 
 var (
@@ -63,11 +54,11 @@ func TestGetAndListPipelinerun(t *testing.T) {
 	ctx := context.TODO()
 
 	mockCommitGetter := commitmock.NewMockGitGetter(mockCtl)
-	mockClusterManager := clustermockmananger.NewMockManager(mockCtl)
-	mockApplicationMananger := applicationmockmanager.NewMockManager(mockCtl)
-	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
+	mockClusterManager := clustermockmananger.NewMockClusterManager(mockCtl)
+	mockApplicationMananger := applicationmockmanager.NewMockApplicationManager(mockCtl)
+	mockPipelineManager := pipelinemockmanager.NewMockPipelineRunManager(mockCtl)
 	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
-	mockUserManager := usermock.NewMockManager(mockCtl)
+	mockUserManager := usermock.NewMockUserManager(mockCtl)
 	var ctl Controller = &controller{
 		pipelinerunMgr: mockPipelineManager,
 		clusterMgr:     mockClusterManager,
@@ -83,12 +74,12 @@ func TestGetAndListPipelinerun(t *testing.T) {
 	var pipelineID uint = 1932
 	var createUser uint = 32
 	mockPipelineManager.EXPECT().GetFirstCanRollbackPipelinerun(ctx, gomock.Any()).Return(nil, nil).AnyTimes()
-	mockPipelineManager.EXPECT().GetByID(ctx, pipelineID).Return(&models.Pipelinerun{
+	mockPipelineManager.EXPECT().GetByID(ctx, pipelineID).Return(&applicationmodel.Pipelinerun{
 		ID:        pipelineID,
 		CreatedBy: createUser,
 	}, nil).Times(1)
 	var UserName = "tom"
-	mockUserManager.EXPECT().GetUserByID(ctx, createUser).Return(&usermodel.User{
+	mockUserManager.EXPECT().GetUserByID(ctx, createUser).Return(&applicationmodel.User{
 		Name: UserName,
 	}, nil).Times(1)
 
@@ -106,13 +97,13 @@ func TestGetAndListPipelinerun(t *testing.T) {
 	var clusterID uint = 56
 	var totalCount = 100
 	// var pipelineruns []*pipelinemodel.Pipelinerun
-	pipelineruns := make([]*pipelinemodel.Pipelinerun, 0)
-	pipelineruns = append(pipelineruns, &pipelinemodel.Pipelinerun{
+	pipelineruns := make([]*applicationmodel.Pipelinerun, 0)
+	pipelineruns = append(pipelineruns, &applicationmodel.Pipelinerun{
 		ID:        2,
 		ClusterID: clusterID,
 		CreatedBy: 1,
 	})
-	pipelineruns = append(pipelineruns, &pipelinemodel.Pipelinerun{
+	pipelineruns = append(pipelineruns, &applicationmodel.Pipelinerun{
 		ID:        3,
 		ClusterID: clusterID,
 		CreatedBy: 0,
@@ -120,7 +111,7 @@ func TestGetAndListPipelinerun(t *testing.T) {
 
 	mockPipelineManager.EXPECT().GetByClusterID(ctx,
 		clusterID, gomock.Any(), gomock.Any()).Return(totalCount, pipelineruns, nil).Times(1)
-	mockUserManager.EXPECT().GetUserByID(ctx, gomock.Any()).Return(&usermodel.User{
+	mockUserManager.EXPECT().GetUserByID(ctx, gomock.Any()).Return(&applicationmodel.User{
 		Name: UserName,
 	}, nil).AnyTimes()
 
@@ -142,9 +133,9 @@ func TestGetDiff(t *testing.T) {
 	ctx := context.TODO()
 
 	mockCommitGetter := commitmock.NewMockGitGetter(mockCtl)
-	mockClusterManager := clustermockmananger.NewMockManager(mockCtl)
-	mockApplicationMananger := applicationmockmanager.NewMockManager(mockCtl)
-	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
+	mockClusterManager := clustermockmananger.NewMockClusterManager(mockCtl)
+	mockApplicationMananger := applicationmockmanager.NewMockApplicationManager(mockCtl)
+	mockPipelineManager := pipelinemockmanager.NewMockPipelineRunManager(mockCtl)
 	mockClusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 
 	var ctl Controller = &controller{
@@ -166,7 +157,7 @@ func TestGetDiff(t *testing.T) {
 	lastConfigCommit := "23232"
 	mockCommitGetter.EXPECT().GetCommitHistoryLink(gomock.Any(), gomock.Any()).
 		Return("https://cloudnative.com:22222/demo/springboot-demo/-/commits/"+gitCommit, nil).AnyTimes()
-	mockPipelineManager.EXPECT().GetByID(ctx, pipelineID).Return(&models.Pipelinerun{
+	mockPipelineManager.EXPECT().GetByID(ctx, pipelineID).Return(&applicationmodel.Pipelinerun{
 		ID:               0,
 		ClusterID:        clusterID,
 		GitURL:           gitURL,
@@ -179,7 +170,7 @@ func TestGetDiff(t *testing.T) {
 
 	clusterName := "mycluster"
 	var applicationID uint = 1234988
-	mockClusterManager.EXPECT().GetByID(ctx, clusterID).Return(&clustermodel.Cluster{
+	mockClusterManager.EXPECT().GetByID(ctx, clusterID).Return(&applicationmodel.Cluster{
 		ApplicationID: uint(applicationID),
 		Name:          clusterName,
 	}, nil).Times(1)
@@ -227,11 +218,11 @@ func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
 	manager = managerparam.InitManager(db)
 
-	if err := db.AutoMigrate(&clustermodel.Cluster{}, &membermodels.Member{},
-		&envmodels.EnvironmentRegion{}, &prmodels.Pipelinerun{}); err != nil {
+	if err := db.AutoMigrate(&applicationmodel.Cluster{}, &applicationmodel.Member{},
+		&applicationmodel.EnvironmentRegion{}, &applicationmodel.Pipelinerun{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&groupmodels.Group{}); err != nil {
+	if err := db.AutoMigrate(&applicationmodel.Group{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -254,7 +245,7 @@ func Test(t *testing.T) {
 	envMgr := manager.EnvMgr
 
 	clusterMgr := manager.ClusterMgr
-	cluster, err := clusterMgr.Create(ctx, &clustermodel.Cluster{
+	cluster, err := clusterMgr.Create(ctx, &applicationmodel.Cluster{
 		Name:            "cluster",
 		EnvironmentName: "test",
 		RegionName:      "hz",
@@ -265,7 +256,7 @@ func Test(t *testing.T) {
 	assert.NotNil(t, cluster)
 
 	pipelinerunMgr := manager.PipelinerunMgr
-	pipelinerun, err := pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	pipelinerun, err := pipelinerunMgr.Create(ctx, &applicationmodel.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    "builddeploy",
 		Status:    "ok",
@@ -295,7 +286,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, l.LogBytes, logBytes)
 	t.Logf("logBytes: %v", string(l.LogBytes))
 
-	pipelinerun, err = pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	pipelinerun, err = pipelinerunMgr.Create(ctx, &applicationmodel.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    "builddeploy",
 		Status:    "ok",
@@ -359,10 +350,10 @@ func Test(t *testing.T) {
 	assert.NotNil(t, err)
 	t.Logf("err: %v", err)
 
-	pipelinerun, err = pipelinerunMgr.Create(ctx, &prmodels.Pipelinerun{
+	pipelinerun, err = pipelinerunMgr.Create(ctx, &applicationmodel.Pipelinerun{
 		ClusterID: cluster.ID,
 		Action:    "builddeploy",
-		Status:    string(prmodels.StatusCreated),
+		Status:    string(applicationmodel.StatusCreated),
 		S3Bucket:  "",
 		LogObject: "",
 		PrObject:  "",

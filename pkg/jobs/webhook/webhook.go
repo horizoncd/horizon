@@ -23,18 +23,17 @@ import (
 	"github.com/horizoncd/horizon/pkg/eventhandler/wlgenerator"
 	"github.com/horizoncd/horizon/pkg/jobs"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	webhooksvc "github.com/horizoncd/horizon/pkg/webhook/service"
 )
 
 // New runs the agent.
 func New(ctx context.Context, eventHandlerService eventhandlersvc.Service,
-	webhookCfg webhookcfg.Config, mgrs *managerparam.Manager) (jobs.Job, webhooksvc.Service) {
+	webhookCfg webhookcfg.Config, mgrs *managerparam.Manager) (jobs.Job, WebhookService) {
 	if err := eventHandlerService.RegisterEventHandler("webhook",
 		wlgenerator.NewWebhookLogGenerator(mgrs)); err != nil {
 		log.Printf("failed to register event handler, error: %s", err.Error())
 		panic(err)
 	}
-	webhookService := webhooksvc.NewService(ctx, mgrs, webhookCfg)
+	webhookService := NewWebhookServiceService(ctx, mgrs, webhookCfg)
 
 	return func(ctx context.Context) {
 		// start webhook service with multi workers to consume webhook logs and send webhook events

@@ -17,7 +17,7 @@ package event
 import (
 	"context"
 
-	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
+	eventmanager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
@@ -27,7 +27,7 @@ type Controller interface {
 }
 
 type controller struct {
-	eventMgr eventmanager.Manager
+	eventMgr eventmanager.EventManager
 }
 
 func NewController(param *param.Param) Controller {

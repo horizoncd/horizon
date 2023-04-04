@@ -17,8 +17,8 @@ package harbor
 import (
 	"context"
 
+	trmanager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 )
@@ -34,7 +34,7 @@ const (
 
 type Getter struct {
 	repo               templaterepo.TemplateRepo
-	templateReleaseMgr trmanager.Manager
+	templateReleaseMgr trmanager.TemplateReleaseManager
 }
 
 func NewSchemaGetter(_ context.Context, repo templaterepo.TemplateRepo,

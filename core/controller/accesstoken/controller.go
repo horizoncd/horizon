@@ -21,22 +21,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	tokenmanager "github.com/horizoncd/horizon/pkg/token/manager"
-	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
-
 	"github.com/horizoncd/horizon/core/common"
 	herror "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
-	accesstokenmanager "github.com/horizoncd/horizon/pkg/accesstoken/manager"
-	"github.com/horizoncd/horizon/pkg/accesstoken/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	membermanager "github.com/horizoncd/horizon/pkg/member"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
+	accesstokenmanager "github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	memberservice "github.com/horizoncd/horizon/pkg/service"
 )
 
 type Controller interface {
@@ -53,12 +45,12 @@ type Controller interface {
 }
 
 type controller struct {
-	userMgr        usermanager.Manager
-	accessTokenMgr accesstokenmanager.Manager
-	tokenMgr       tokenmanager.Manager
-	tokenSvc       tokenservice.Service
-	memberSvc      memberservice.Service
-	memberMgr      membermanager.Manager
+	userMgr        accesstokenmanager.UserManager
+	accessTokenMgr accesstokenmanager.AccessTokenManager
+	tokenMgr       accesstokenmanager.TokenManager
+	tokenSvc       memberservice.TokenService
+	memberSvc      memberservice.MemberService
+	memberMgr      accesstokenmanager.MemberManager
 }
 
 func NewController(param *param.Param) Controller {
@@ -85,11 +77,11 @@ func (c *controller) CreateResourceAccessToken(ctx context.Context, request Crea
 		return nil, err
 	}
 
-	_, err = c.memberSvc.CreateMember(ctx, memberservice.PostMember{
+	_, err = c.memberSvc.CreateMember(ctx, models.PostMember{
 		ResourceType: resourceType,
 		ResourceID:   resourceID,
 		MemberInfo:   robot.ID,
-		MemberType:   membermodels.MemberUser,
+		MemberType:   models.MemberUser,
 		Role:         request.Role,
 	})
 	if err != nil {
@@ -119,7 +111,7 @@ func (c *controller) CreateResourceAccessToken(ctx context.Context, request Crea
 				Role: request.Role,
 			},
 			CreatedAt: token.CreatedAt,
-			CreatedBy: &usermodels.UserBasic{
+			CreatedBy: &models.UserBasic{
 				ID:    currentUser.GetID(),
 				Name:  currentUser.GetName(),
 				Email: currentUser.GetEmail(),
@@ -153,7 +145,7 @@ func (c *controller) CreatePersonalAccessToken(ctx context.Context,
 				ExpiresAt: parseExpiredAt(token.CreatedAt, token.ExpiresIn),
 			},
 			CreatedAt: token.CreatedAt,
-			CreatedBy: &usermodels.UserBasic{
+			CreatedBy: &models.UserBasic{
 				ID:    currentUser.GetID(),
 				Name:  currentUser.GetName(),
 				Email: currentUser.GetEmail(),
@@ -189,7 +181,7 @@ func (c *controller) ListPersonalAccessTokens(ctx context.Context,
 				ExpiresAt: parseExpiredAt(token.CreatedAt, token.ExpiresIn),
 			},
 			CreatedAt: token.CreatedAt,
-			CreatedBy: &usermodels.UserBasic{
+			CreatedBy: &models.UserBasic{
 				ID:    creator.ID,
 				Name:  creator.Name,
 				Email: creator.Email,
@@ -226,7 +218,7 @@ func (c *controller) ListResourceAccessTokens(ctx context.Context, resourceType 
 				Role: token.Role,
 			},
 			CreatedAt: token.CreatedAt,
-			CreatedBy: &usermodels.UserBasic{
+			CreatedBy: &models.UserBasic{
 				ID:    creator.ID,
 				Name:  creator.Name,
 				Email: creator.Email,
@@ -277,7 +269,7 @@ func (c *controller) RevokeResourceAccessToken(ctx context.Context, id uint) err
 	if err != nil {
 		return err
 	}
-	if user.UserType != usermodels.UserTypeRobot {
+	if user.UserType != models.UserTypeRobot {
 		return perror.Wrap(herror.ErrParamInvalid, "this is not a resource token")
 	}
 
@@ -321,15 +313,15 @@ func (c *controller) RevokeResourceAccessToken(ctx context.Context, id uint) err
 	return cleanRelatedResources()
 }
 
-func generateRobot(token, resourceType string, resourceID uint) *usermodels.User {
+func generateRobot(token, resourceType string, resourceID uint) *models.User {
 	fullName := fmt.Sprintf("%s_%d_robot_%s", resourceType, resourceID, uuid.New())
 	name := token
 	email := fmt.Sprintf("%s%s", fullName, RobotEmailSuffix)
-	return &usermodels.User{
+	return &models.User{
 		Name:     name,
 		FullName: fullName,
 		Email:    email,
-		UserType: usermodels.UserTypeRobot,
+		UserType: models.UserTypeRobot,
 	}
 }
 

@@ -17,9 +17,9 @@ package region
 import (
 	"context"
 
+	regionmanager "github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
-	"github.com/horizoncd/horizon/pkg/region/models"
 )
 
 type Controller interface {
@@ -37,7 +37,7 @@ func NewController(param *param.Param) Controller {
 }
 
 type controller struct {
-	regionMgr regionmanager.Manager
+	regionMgr regionmanager.RegionManager
 }
 
 func (c controller) GetByID(ctx context.Context, id uint) (*Region, error) {

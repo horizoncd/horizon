@@ -22,14 +22,11 @@ import (
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	idpmodels "github.com/horizoncd/horizon/pkg/idp/models"
 	"github.com/horizoncd/horizon/pkg/idp/utils"
+	idpmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	"github.com/horizoncd/horizon/pkg/user/models"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	linkmodels "github.com/horizoncd/horizon/pkg/userlink/models"
 	"gorm.io/gorm"
 
 	"github.com/stretchr/testify/assert"
@@ -44,8 +41,8 @@ var (
 
 func createContext() {
 	db, _ = orm.NewSqliteDB("")
-	if err := db.AutoMigrate(&usermodels.User{},
-		&linkmodels.UserLink{}, &idpmodels.IdentityProvider{}); err != nil {
+	if err := db.AutoMigrate(&idpmodels.User{},
+		&idpmodels.UserLink{}, &idpmodels.IdentityProvider{}); err != nil {
 		panic(err)
 	}
 	mgr = managerparam.InitManager(db)
@@ -66,7 +63,7 @@ func Test(t *testing.T) {
 	linkMgr := mgr.UserLinksManager
 	ctrl := NewController(&param.Param{Manager: mgr})
 
-	users := []*models.User{
+	users := []*idpmodels.User{
 		{
 			Model: global.Model{
 				ID: 1,

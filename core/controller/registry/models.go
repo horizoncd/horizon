@@ -17,7 +17,7 @@ package registry
 import (
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/registry/models"
+	"github.com/horizoncd/horizon/pkg/models"
 )
 
 type Registry struct {

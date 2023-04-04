@@ -28,9 +28,8 @@ import (
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	"github.com/horizoncd/horizon/pkg/git"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	tokensvc "github.com/horizoncd/horizon/pkg/token/service"
+	"github.com/horizoncd/horizon/pkg/models"
+	regionmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 
@@ -97,10 +96,10 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	// 2. add pipelinerun in db
-	pr := &prmodels.Pipelinerun{
+	pr := &regionmodels.Pipelinerun{
 		ClusterID:        clusterID,
-		Action:           prmodels.ActionBuildDeploy,
-		Status:           string(prmodels.StatusCreated),
+		Action:           regionmodels.ActionBuildDeploy,
+		Status:           string(regionmodels.StatusCreated),
 		Title:            r.Title,
 		Description:      r.Description,
 		GitURL:           cluster.GitURL,
@@ -118,7 +117,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 
 	// 3. generate a JWT token for tekton callback
 	token, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(currentUser.GetID())),
-		c.tokenConfig.CallbackTokenExpireIn, tokensvc.WithPipelinerunID(prCreated.ID))
+		c.tokenConfig.CallbackTokenExpireIn, regionmodels.WithPipelinerunID(prCreated.ID))
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +151,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	ciEventID, err := tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
-		Action:           prmodels.ActionBuildDeploy,
+		Action:           models.ActionBuildDeploy,
 		Application:      application.Name,
 		ApplicationID:    application.ID,
 		Cluster:          cluster.Name,

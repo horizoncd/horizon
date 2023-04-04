@@ -29,18 +29,14 @@ import (
 	membermock "github.com/horizoncd/horizon/mock/pkg/member/service"
 	templatemock "github.com/horizoncd/horizon/mock/pkg/template/manager"
 	releasemanagermock "github.com/horizoncd/horizon/mock/pkg/templaterelease/manager"
-	applicationdao "github.com/horizoncd/horizon/pkg/application/dao"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	"github.com/horizoncd/horizon/pkg/group/models"
-	"github.com/horizoncd/horizon/pkg/group/service"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	applicationdao "github.com/horizoncd/horizon/pkg/dao"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	tmodels "github.com/horizoncd/horizon/pkg/template/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	"github.com/horizoncd/horizon/pkg/service"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -81,12 +77,12 @@ func init() {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
-	err = db.AutoMigrate(&appmodels.Application{})
+	err = db.AutoMigrate(&models.Application{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
-	err = db.AutoMigrate(&membermodels.Member{})
+	err = db.AutoMigrate(&models.Member{})
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
@@ -98,7 +94,7 @@ func init() {
 func TestGetAuthedGroups(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	memberMock := membermock.NewMockService(mockCtrl)
+	memberMock := membermock.NewMockMemberService(mockCtrl)
 	myGroupCtl := NewController(&param.Param{
 		Manager:       manager,
 		MemberService: memberMock,
@@ -199,7 +195,7 @@ func TestGetAuthedGroups(t *testing.T) {
 		Admin: false,
 	})
 	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
-		&membermodels.Member{
+		&models.Member{
 			Model:        global.Model{},
 			ResourceType: "",
 			ResourceID:   0,
@@ -210,7 +206,7 @@ func TestGetAuthedGroups(t *testing.T) {
 			CreatedBy:    0,
 		}, nil).Times(1)
 	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
-		&membermodels.Member{
+		&models.Member{
 			Model:        global.Model{},
 			ResourceType: "",
 			ResourceID:   0,
@@ -221,7 +217,7 @@ func TestGetAuthedGroups(t *testing.T) {
 			CreatedBy:    0,
 		}, nil).Times(1)
 	memberMock.EXPECT().GetMemberOfResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(
-		&membermodels.Member{
+		&models.Member{
 			Model:        global.Model{},
 			ResourceType: "",
 			ResourceID:   0,
@@ -240,9 +236,9 @@ func TestGetAuthedGroups(t *testing.T) {
 func TestGetByFullPath(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 
-	groupMgr := groupmanagermock.NewMockManager(mockCtl)
-	templateMgr := templatemock.NewMockManager(mockCtl)
-	releaseMgr := releasemanagermock.NewMockManager(mockCtl)
+	groupMgr := groupmanagermock.NewMockGroupManager(mockCtl)
+	templateMgr := templatemock.NewMockTemplateManager(mockCtl)
+	releaseMgr := releasemanagermock.NewMockTemplateReleaseManager(mockCtl)
 
 	groupCtl := &controller{
 		groupManager:       groupMgr,
@@ -270,7 +266,7 @@ func TestGetByFullPath(t *testing.T) {
 		ParentID:     group1.ID,
 		TraversalIDs: "1,2",
 	}
-	template1 := &tmodels.Template{
+	template1 := &models.Template{
 		Model: global.Model{
 			ID: 1,
 		},
@@ -307,7 +303,7 @@ func TestGetByFullPath(t *testing.T) {
 	// for /group1/group2/template1/release1
 
 	path = "/group1/group2/template1/release1"
-	release1 := &trmodels.TemplateRelease{
+	release1 := &models.TemplateRelease{
 		Model:    global.Model{ID: 1},
 		Template: template1.ID,
 		Name:     "release1",
@@ -612,8 +608,8 @@ func TestControllerGetByPath(t *testing.T) {
 	assert.Nil(t, err)
 	child, err := groupCtl.GetByID(ctx, id)
 	assert.Nil(t, err)
-	applicationDAO := applicationdao.NewDAO(db)
-	app, err := applicationDAO.Create(ctx, &appmodels.Application{
+	applicationDAO := applicationdao.NewApplicationDAO(db)
+	app, err := applicationDAO.Create(ctx, &models.Application{
 		GroupID:     id,
 		Name:        "app",
 		Description: "this is a description",
@@ -629,7 +625,7 @@ func TestControllerGetByPath(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *service.Child
+		want    *models.Child
 		wantErr bool
 	}{
 		{
@@ -638,7 +634,7 @@ func TestControllerGetByPath(t *testing.T) {
 				ctx:  ctx,
 				path: "/a",
 			},
-			want: &service.Child{
+			want: &models.Child{
 				ID:              id,
 				Name:            "1",
 				Path:            "a",
@@ -664,7 +660,7 @@ func TestControllerGetByPath(t *testing.T) {
 				ctx:  ctx,
 				path: "/a/app",
 			},
-			want: &service.Child{
+			want: &models.Child{
 				ID:          app.ID,
 				Name:        "app",
 				Path:        "app",
@@ -697,7 +693,7 @@ func TestControllerGetByPath(t *testing.T) {
 	}
 
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.Application{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Application{})
 }
 
 func TestControllerGetChildren(t *testing.T) {
@@ -715,8 +711,8 @@ func TestControllerGetChildren(t *testing.T) {
 	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
 	group2, _ := groupCtl.GetByID(ctx, id2)
 
-	applicationDAO := applicationdao.NewDAO(db)
-	app, err := applicationDAO.Create(ctx, &appmodels.Application{
+	applicationDAO := applicationdao.NewApplicationDAO(db)
+	app, err := applicationDAO.Create(ctx, &models.Application{
 		GroupID: id,
 		Name:    "c",
 	}, nil)
@@ -731,7 +727,7 @@ func TestControllerGetChildren(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*service.Child
+		want    []*models.Child
 		want1   int64
 		wantErr bool
 	}{
@@ -743,7 +739,7 @@ func TestControllerGetChildren(t *testing.T) {
 				pageSize:   1,
 				pageNumber: 1,
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:        id2,
 					Name:      "2",
@@ -764,7 +760,7 @@ func TestControllerGetChildren(t *testing.T) {
 				pageSize:   1,
 				pageNumber: 2,
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:        app.ID,
 					Name:      "c",
@@ -798,7 +794,7 @@ func TestControllerGetChildren(t *testing.T) {
 	}
 
 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Group{})
-	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&appmodels.Application{})
+	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&models.Application{})
 }
 
 func TestControllerGetSubGroups(t *testing.T) {
@@ -828,7 +824,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*service.Child
+		want    []*models.Child
 		want1   int64
 		wantErr bool
 	}{
@@ -837,7 +833,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 			args: args{
 				ctx: ctx,
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -860,7 +856,7 @@ func TestControllerGetSubGroups(t *testing.T) {
 				ctx: ctx,
 				id:  id,
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:              id2,
 					Name:            "2",
@@ -912,8 +908,8 @@ func TestControllerSearchChildren(t *testing.T) {
 	id2, _ := groupCtl.CreateGroup(ctx, newGroup)
 	_, _ = groupCtl.GetByID(ctx, id2)
 
-	applicationDAO := applicationdao.NewDAO(db)
-	app, err := applicationDAO.Create(ctx, &appmodels.Application{
+	applicationDAO := applicationdao.NewApplicationDAO(db)
+	app, err := applicationDAO.Create(ctx, &models.Application{
 		GroupID: id,
 		Name:    "c",
 	}, nil)
@@ -927,7 +923,7 @@ func TestControllerSearchChildren(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*service.Child
+		want    []*models.Child
 		want1   int64
 		wantErr bool
 	}{
@@ -938,7 +934,7 @@ func TestControllerSearchChildren(t *testing.T) {
 				filter: "",
 				id:     id,
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:       id2,
 					Name:     "2",
@@ -965,7 +961,7 @@ func TestControllerSearchChildren(t *testing.T) {
 				filter: "c",
 				id:     id,
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:       app.ID,
 					Name:     app.Name,
@@ -1033,7 +1029,7 @@ func TestControllerSearchGroups(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []*service.Child
+		want    []*models.Child
 		want1   int64
 		wantErr bool
 	}{
@@ -1043,7 +1039,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "",
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -1066,7 +1062,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "3",
 			},
-			want:  []*service.Child{},
+			want:  []*models.Child{},
 			want1: 0,
 		},
 		{
@@ -1075,7 +1071,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "1",
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -1097,7 +1093,7 @@ func TestControllerSearchGroups(t *testing.T) {
 				ctx:    ctx,
 				filter: "2",
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:              id,
 					Name:            "1",
@@ -1110,7 +1106,7 @@ func TestControllerSearchGroups(t *testing.T) {
 					Type:            service.ChildTypeGroup,
 					ChildrenCount:   1,
 					UpdatedAt:       group1.UpdatedAt,
-					Children: []*service.Child{
+					Children: []*models.Child{
 						{
 							ID:              id2,
 							Name:            "2",
@@ -1302,12 +1298,12 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 	type args struct {
 		groupID      uint
 		groups       []*models.Group
-		applications []*appmodels.Application
+		applications []*models.Application
 	}
 	tests := []struct {
 		name string
 		args args
-		want []*service.Child
+		want []*models.Child
 	}{
 		{
 			name: "noMatch",
@@ -1324,9 +1320,9 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     0,
 					},
 				},
-				applications: []*appmodels.Application{},
+				applications: []*models.Application{},
 			},
-			want: []*service.Child{},
+			want: []*models.Child{},
 		},
 		{
 			name: "match",
@@ -1379,7 +1375,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 						ParentID:     4,
 					},
 				},
-				applications: []*appmodels.Application{
+				applications: []*models.Application{
 					{
 						Model: global.Model{
 							ID: 6,
@@ -1389,7 +1385,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					},
 				},
 			},
-			want: []*service.Child{
+			want: []*models.Child{
 				{
 					ID:            2,
 					Name:          "2",
@@ -1400,7 +1396,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					FullName:      "1/2",
 					ChildrenCount: 2,
 					Type:          service.ChildTypeGroup,
-					Children: []*service.Child{
+					Children: []*models.Child{
 						{
 							ID:           3,
 							Name:         "3",
@@ -1432,7 +1428,7 @@ func TestGenerateChildrenWithLevelStruct(t *testing.T) {
 					FullName:      "1/4",
 					ChildrenCount: 1,
 					Type:          service.ChildTypeGroup,
-					Children: []*service.Child{
+					Children: []*models.Child{
 						{
 							ID:           5,
 							Name:         "5",

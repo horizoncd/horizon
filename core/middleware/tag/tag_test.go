@@ -20,7 +20,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/horizoncd/horizon/core/common"
-	"github.com/horizoncd/horizon/pkg/tag/models"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/stretchr/testify/assert"
 )
 

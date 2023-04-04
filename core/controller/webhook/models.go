@@ -23,10 +23,8 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/event/models"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/pkg/models"
 	commonvalidate "github.com/horizoncd/horizon/pkg/util/validate"
-	wmodels "github.com/horizoncd/horizon/pkg/webhook/models"
 )
 
 const (
@@ -53,29 +51,29 @@ type CreateWebhookRequest struct {
 
 type Webhook struct {
 	CreateWebhookRequest
-	ID        uint                  `json:"id"`
-	CreatedAt time.Time             `json:"createdAt"`
-	CreatedBy *usermodels.UserBasic `json:"createdBy,omitempty"`
-	UpdatedAt time.Time             `json:"updatedAt"`
-	UpdatedBy *usermodels.UserBasic `json:"updatedBy,omitempty"`
+	ID        uint              `json:"id"`
+	CreatedAt time.Time         `json:"createdAt"`
+	CreatedBy *models.UserBasic `json:"createdBy,omitempty"`
+	UpdatedAt time.Time         `json:"updatedAt"`
+	UpdatedBy *models.UserBasic `json:"updatedBy,omitempty"`
 }
 
 type LogSummary struct {
-	ID           uint                  `json:"id"`
-	WebhookID    uint                  `json:"webhookID"`
-	EventID      uint                  `json:"eventID"`
-	URL          string                `json:"url"`
-	Status       string                `json:"status"`
-	ResourceType string                `json:"resourceType"`
-	ResourceName string                `json:"resourceName"`
-	ResourceID   uint                  `json:"resourceID"`
-	EventType    string                `json:"eventType"`
-	Extra        *string               `json:"extra"`
-	ErrorMessage string                `json:"errorMessage"`
-	CreatedAt    time.Time             `json:"createdAt"`
-	CreatedBy    *usermodels.UserBasic `json:"createdBy,omitempty"`
-	UpdatedAt    time.Time             `json:"updatedAt"`
-	UpdatedBy    *usermodels.UserBasic `json:"updatedBy,omitempty"`
+	ID           uint              `json:"id"`
+	WebhookID    uint              `json:"webhookID"`
+	EventID      uint              `json:"eventID"`
+	URL          string            `json:"url"`
+	Status       string            `json:"status"`
+	ResourceType string            `json:"resourceType"`
+	ResourceName string            `json:"resourceName"`
+	ResourceID   uint              `json:"resourceID"`
+	EventType    string            `json:"eventType"`
+	Extra        *string           `json:"extra"`
+	ErrorMessage string            `json:"errorMessage"`
+	CreatedAt    time.Time         `json:"createdAt"`
+	CreatedBy    *models.UserBasic `json:"createdBy,omitempty"`
+	UpdatedAt    time.Time         `json:"updatedAt"`
+	UpdatedBy    *models.UserBasic `json:"updatedBy,omitempty"`
 }
 
 type Log struct {
@@ -86,7 +84,7 @@ type Log struct {
 	ResponseBody    string `json:"responseBody"`
 }
 
-func (w *UpdateWebhookRequest) toModel(wm *wmodels.Webhook) *wmodels.Webhook {
+func (w *UpdateWebhookRequest) toModel(wm *models.Webhook) *models.Webhook {
 	if w.Enabled != nil {
 		wm.Enabled = *w.Enabled
 	}
@@ -121,8 +119,8 @@ func (c *controller) validateUpdateRequest(w *UpdateWebhookRequest) error {
 }
 
 func (w *CreateWebhookRequest) toModel(ctx context.Context,
-	resourceType string, resourceID uint) (*wmodels.Webhook, error) {
-	wm := &wmodels.Webhook{
+	resourceType string, resourceID uint) (*models.Webhook, error) {
+	wm := &models.Webhook{
 		ResourceType:     resourceType,
 		ResourceID:       resourceID,
 		Enabled:          w.Enabled,
@@ -185,7 +183,7 @@ func JoinTriggers(triggers []string) string {
 	return strings.Join(triggers, _triggerSeparator)
 }
 
-func CheckIfEventMatch(webhook *wmodels.Webhook, event *models.Event) (bool, error) {
+func CheckIfEventMatch(webhook *models.Webhook, event *models.Event) (bool, error) {
 	triggers := ParseTriggerStr(webhook.Triggers)
 	for _, trigger := range triggers {
 		if (trigger == models.Any) || (trigger == event.EventType) {
@@ -195,7 +193,7 @@ func CheckIfEventMatch(webhook *wmodels.Webhook, event *models.Event) (bool, err
 	return false, nil
 }
 
-func ofWebhookModel(wm *wmodels.Webhook) *Webhook {
+func ofWebhookModel(wm *models.Webhook) *Webhook {
 	w := &Webhook{
 		CreateWebhookRequest: CreateWebhookRequest{
 			Enabled:          wm.Enabled,
@@ -213,7 +211,7 @@ func ofWebhookModel(wm *wmodels.Webhook) *Webhook {
 	return w
 }
 
-func ofWebhookLogSummaryModel(wm *wmodels.WebhookLogWithEventInfo) *LogSummary {
+func ofWebhookLogSummaryModel(wm *models.WebhookLogWithEventInfo) *LogSummary {
 	wl := &LogSummary{
 		ID:           wm.ID,
 		WebhookID:    wm.WebhookID,
@@ -231,7 +229,7 @@ func ofWebhookLogSummaryModel(wm *wmodels.WebhookLogWithEventInfo) *LogSummary {
 	return wl
 }
 
-func ofWebhookLogModel(wm *wmodels.WebhookLog) *Log {
+func ofWebhookLogModel(wm *models.WebhookLog) *Log {
 	wl := &Log{
 		LogSummary: LogSummary{
 			ID:           wm.ID,

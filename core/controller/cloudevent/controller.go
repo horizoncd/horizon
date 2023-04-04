@@ -19,20 +19,15 @@ import (
 	"strings"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
-	applicationmanager "github.com/horizoncd/horizon/pkg/application/manager"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/collector"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	manager "github.com/horizoncd/horizon/pkg/manager"
+	prmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	pipelinemanager "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/manager"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 
@@ -45,13 +40,13 @@ type Controller interface {
 
 type controller struct {
 	tektonFty          factory.Factory
-	pipelinerunMgr     prmanager.Manager
-	pipelineMgr        pipelinemanager.Manager
-	clusterMgr         clustermanager.Manager
+	pipelinerunMgr     manager.PipelineRunManager
+	pipelineMgr        manager.PipelineManager
+	clusterMgr         manager.ClusterManager
 	clusterGitRepo     gitrepo.ClusterGitRepo
-	templateReleaseMgr trmanager.Manager
-	applicationMgr     applicationmanager.Manager
-	userMgr            usermanager.Manager
+	templateReleaseMgr manager.TemplateReleaseManager
+	applicationMgr     manager.ApplicationManager
+	userMgr            manager.UserManager
 }
 
 func NewController(tektonFty factory.Factory, parameter *param.Param) Controller {

@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -27,7 +28,6 @@ import (
 	rolemock "github.com/horizoncd/horizon/mock/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/auth"
 	"github.com/horizoncd/horizon/pkg/authentication/user"
-	"github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/rbac/types"
 )
 
@@ -44,7 +44,7 @@ var (
 // nolint
 func TestAuthMember(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	memberServiceMock := servicemock.NewMockService(mockCtl)
+	memberServiceMock := servicemock.NewMockMemberService(mockCtl)
 	roleServiceMock := rolemock.NewMockService(mockCtl)
 	testAuthorizer := Authorizer(&authorizer{
 		roleService:   roleServiceMock,
@@ -98,7 +98,7 @@ func TestAuthMember(t *testing.T) {
 // nolint
 func TestAuthRole(t *testing.T) {
 	mockCtl := gomock.NewController(t)
-	memberServiceMock := servicemock.NewMockService(mockCtl)
+	memberServiceMock := servicemock.NewMockMemberService(mockCtl)
 	roleServieMock := rolemock.NewMockService(mockCtl)
 	testAuthorizer := Authorizer(&authorizer{
 		roleService:   roleServieMock,

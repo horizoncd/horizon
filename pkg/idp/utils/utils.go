@@ -22,7 +22,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/idp/models"
+	"github.com/horizoncd/horizon/pkg/models"
 	"golang.org/x/oauth2"
 )
 

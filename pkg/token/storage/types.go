@@ -17,7 +17,7 @@ package storage
 import (
 	"context"
 
-	"github.com/horizoncd/horizon/pkg/token/models"
+	"github.com/horizoncd/horizon/pkg/models"
 )
 
 type Storage interface {

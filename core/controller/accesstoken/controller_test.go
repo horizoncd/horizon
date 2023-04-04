@@ -22,27 +22,22 @@ import (
 	"time"
 
 	"github.com/horizoncd/horizon/pkg/config/token"
-	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
+	oauthdao "github.com/horizoncd/horizon/pkg/dao"
+	oauthmanager "github.com/horizoncd/horizon/pkg/manager"
+	applicationmodels "github.com/horizoncd/horizon/pkg/models"
+	memberservice "github.com/horizoncd/horizon/pkg/service"
 	"github.com/horizoncd/horizon/pkg/token/generator"
-	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
-	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/horizoncd/horizon/core/common"
 	herror "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
-	applicationmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	groupmodels "github.com/horizoncd/horizon/pkg/group/models"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
-	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	roleservice "github.com/horizoncd/horizon/pkg/rbac/role"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 )
 
@@ -77,10 +72,10 @@ func TestMain(m *testing.M) {
 
 	manager := managerparam.InitManager(db)
 	if err := db.AutoMigrate(
-		&usermodels.User{},
-		&membermodels.Member{},
-		&tokenmodels.Token{},
-		&groupmodels.Group{},
+		&applicationmodels.User{},
+		&applicationmodels.Member{},
+		&applicationmodels.Token{},
+		&applicationmodels.Group{},
 		&applicationmodels.Application{},
 	); err != nil {
 		panic(err)
@@ -95,19 +90,19 @@ func TestMain(m *testing.M) {
 	accessTokenExpireIn := time.Hour * 24
 
 	tokenStorage := tokenstorage.NewStorage(db)
-	oauthAppDAO := oauthdao.NewDAO(db)
-	oauthMgr := oauthmanager.NewManager(oauthAppDAO, tokenStorage,
+	oauthAppDAO := oauthdao.NewOAuthDAO(db)
+	oauthMgr := oauthmanager.NewOAuthManager(oauthAppDAO, tokenStorage,
 		generator.NewAuthorizeGenerator(), authorizeCodeExpireIn, accessTokenExpireIn)
 
 	parameter := &param.Param{
 		Manager:       manager,
-		TokenSvc:      tokenservice.NewService(manager, token.Config{}),
-		MemberService: memberservice.NewService(roleSvc, oauthMgr, manager),
+		TokenSvc:      memberservice.NewTokenService(manager, token.Config{}),
+		MemberService: memberservice.NewMemberService(roleSvc, oauthMgr, manager),
 	}
 
 	ctx = context.TODO()
 
-	user, err := manager.UserManager.Create(ctx, &usermodels.User{
+	user, err := manager.UserManager.Create(ctx, &applicationmodels.User{
 		Name: "test",
 	})
 	if err != nil {
@@ -118,7 +113,7 @@ func TestMain(m *testing.M) {
 		ID:   user.ID,
 	})
 
-	group, err := manager.GroupManager.Create(ctx, &groupmodels.Group{
+	group, err := manager.GroupManager.Create(ctx, &applicationmodels.Group{
 		Name: "test",
 	})
 	if err != nil {

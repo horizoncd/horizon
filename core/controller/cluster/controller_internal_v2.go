@@ -23,13 +23,10 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/cd"
-	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
-	"github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
-	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
-	usermodel "github.com/horizoncd/horizon/pkg/user/models"
+	"github.com/horizoncd/horizon/pkg/gitrepo"
+	"github.com/horizoncd/horizon/pkg/models"
+	eventmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
@@ -83,7 +80,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
+	updatePRStatus := func(pState models.PipelineStatus, revision string) error {
 		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, pr.ID, pState); err != nil {
 			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
 				pr.ID, pState, err)
@@ -95,8 +92,8 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}
 
 	// 3. update pipeline output in git repo if builddeploy for gitImport and deploy for imageDeploy
-	if (pr.Action == prmodels.ActionBuildDeploy && pr.GitURL != "") ||
-		(pr.Action == prmodels.ActionDeploy && pr.GitURL == "") {
+	if (pr.Action == models.ActionBuildDeploy && pr.GitURL != "") ||
+		(pr.Action == models.ActionDeploy && pr.GitURL == "") {
 		log.Infof(ctx, "pipeline %v output content: %+v", r.PipelinerunID, r.Output)
 		commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
 			tr.ChartName, r.Output)
@@ -107,7 +104,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
 			return nil, err
 		}
-		if err := updatePRStatus(prmodels.StatusCommitted, commit); err != nil {
+		if err := updatePRStatus(models.StatusCommitted, commit); err != nil {
 			return nil, err
 		}
 	}
@@ -129,7 +126,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		if err != nil {
 			return nil, perror.WithMessage(err, op)
 		}
-		if err := updatePRStatus(prmodels.StatusMerged, masterRevision); err != nil {
+		if err := updatePRStatus(models.StatusMerged, masterRevision); err != nil {
 			return nil, err
 		}
 	}
@@ -174,7 +171,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}
 
 	// 9. update status
-	if err := updatePRStatus(prmodels.StatusOK, masterRevision); err != nil {
+	if err := updatePRStatus(eventmodels.StatusOK, masterRevision); err != nil {
 		return nil, err
 	}
 
@@ -187,12 +184,12 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}, nil
 }
 
-func (c *controller) recordEvent(ctx context.Context, pr *prmodels.Pipelinerun, cluster *models.Cluster) {
+func (c *controller) recordEvent(ctx context.Context, pr *models.Pipelinerun, cluster *models.Cluster) {
 	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: common.ResourceCluster,
 			EventType: func() string {
-				if pr.Action == prmodels.ActionBuildDeploy {
+				if pr.Action == models.ActionBuildDeploy {
 					return eventmodels.ClusterBuildDeployed
 				}
 				return eventmodels.ClusterDeployed
@@ -205,7 +202,7 @@ func (c *controller) recordEvent(ctx context.Context, pr *prmodels.Pipelinerun, 
 	}
 }
 
-func (c *controller) retrieveClaimsAndUser(ctx context.Context) (*tokenservice.Claims, *usermodel.User, error) {
+func (c *controller) retrieveClaimsAndUser(ctx context.Context) (*models.Claims, *models.User, error) {
 	jwtTokenString, err := common.JWTTokenStringFromContext(ctx)
 	if err != nil {
 		return nil, nil, err

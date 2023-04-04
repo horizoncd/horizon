@@ -24,11 +24,9 @@ import (
 	"github.com/horizoncd/horizon/core/controller/region"
 	"github.com/horizoncd/horizon/lib/orm"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	envmodels "github.com/horizoncd/horizon/pkg/environment/models"
-	"github.com/horizoncd/horizon/pkg/environmentregion/models"
+	envmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,10 +42,10 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&envmodels.Environment{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&models.EnvironmentRegion{}); err != nil {
+	if err := db.AutoMigrate(&envmodels.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&regionmodels.Region{}); err != nil {
+	if err := db.AutoMigrate(&envmodels.Region{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()

@@ -17,7 +17,7 @@ package generator
 import (
 	"net/http"
 
-	"github.com/horizoncd/horizon/pkg/token/models"
+	"github.com/horizoncd/horizon/pkg/models"
 )
 
 type CodeGenerateInfo struct {

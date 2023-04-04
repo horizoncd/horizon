@@ -22,7 +22,7 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/member"
 	memberctx "github.com/horizoncd/horizon/pkg/context"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	membermodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	"github.com/horizoncd/horizon/pkg/server/response"
 

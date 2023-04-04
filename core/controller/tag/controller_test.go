@@ -25,30 +25,26 @@ import (
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/orm"
 	clustergitrepomock "github.com/horizoncd/horizon/mock/pkg/cluster/gitrepo"
-	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	"github.com/horizoncd/horizon/pkg/cluster/models"
-	membermodels "github.com/horizoncd/horizon/pkg/member/models"
+	appmodels "github.com/horizoncd/horizon/pkg/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
-	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
-	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	ctx     context.Context
-	c       Controller
-	manager *managerparam.Manager
+	ctx context.Context
+	c   Controller
+	mgr *managerparam.Manager
 )
 
 // nolint
 func TestMain(m *testing.M) {
 	db, _ := orm.NewSqliteDB("")
-	manager = managerparam.InitManager(db)
-	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
-		&tagmodels.Tag{}, &membermodels.Member{}, &regionmodels.Region{},
-		&trmodels.TemplateRelease{}); err != nil {
+	mgr = managerparam.InitManager(db)
+	if err := db.AutoMigrate(&appmodels.Application{}, &appmodels.Cluster{},
+		&appmodels.Tag{}, &appmodels.Member{}, &appmodels.Region{},
+		&appmodels.TemplateRelease{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()
@@ -67,13 +63,13 @@ func Test(t *testing.T) {
 	clusterGitRepo.EXPECT().UpdateTags(ctx, gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	appMgr := manager.ApplicationManager
-	clusterMgr := manager.ClusterMgr
-	templateReleaseMgr := manager.TemplateReleaseManager
-	regionMgr := manager.RegionMgr
+	appMgr := mgr.ApplicationManager
+	clusterMgr := mgr.ClusterMgr
+	templateReleaseMgr := mgr.TemplateReleaseManager
+	regionMgr := mgr.RegionMgr
 
 	// init data
-	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+	region, err := regionMgr.Create(ctx, &appmodels.Region{
 		Name: "test",
 	})
 	assert.Nil(t, err)
@@ -90,7 +86,7 @@ func Test(t *testing.T) {
 	}, nil)
 	assert.Nil(t, err)
 
-	cluster, err := clusterMgr.Create(ctx, &models.Cluster{
+	cluster, err := clusterMgr.Create(ctx, &appmodels.Cluster{
 		ApplicationID:   application.ID,
 		Name:            "cluster",
 		Template:        "javaapp",
@@ -99,7 +95,7 @@ func Test(t *testing.T) {
 	}, nil, nil)
 	assert.Nil(t, err)
 
-	_, err = templateReleaseMgr.Create(ctx, &trmodels.TemplateRelease{
+	_, err = templateReleaseMgr.Create(ctx, &appmodels.TemplateRelease{
 		Template:     1,
 		TemplateName: "javaapp",
 		ChartVersion: "v1.2.0",
@@ -109,7 +105,7 @@ func Test(t *testing.T) {
 
 	c = &controller{
 		clusterMgr:     clusterMgr,
-		tagMgr:         manager.TagManager,
+		tagMgr:         mgr.TagManager,
 		clusterGitRepo: clusterGitRepo,
 		applicationMgr: appMgr,
 	}
@@ -223,7 +219,7 @@ func Test(t *testing.T) {
 	assert.NotNil(t, err)
 	t.Logf("%v", err.Error())
 
-	cluster2, err := clusterMgr.Create(ctx, &models.Cluster{
+	cluster2, err := clusterMgr.Create(ctx, &appmodels.Cluster{
 		ApplicationID: application.ID,
 		Name:          "cluster2",
 		RegionName:    region.Name,

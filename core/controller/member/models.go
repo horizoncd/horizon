@@ -20,16 +20,10 @@ import (
 	"fmt"
 	"time"
 
-	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
-	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
-	groupservice "github.com/horizoncd/horizon/pkg/group/service"
-	"github.com/horizoncd/horizon/pkg/member/models"
-	memberservice "github.com/horizoncd/horizon/pkg/member/service"
+	tmanager "github.com/horizoncd/horizon/pkg/manager"
+	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
-	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
-	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	service "github.com/horizoncd/horizon/pkg/service"
 )
 
 type UpdateMember struct {
@@ -82,8 +76,8 @@ type Member struct {
 	GrantTime time.Time `json:"grantTime"`
 }
 
-func CovertPostMember(member *PostMember) memberservice.PostMember {
-	return memberservice.PostMember{
+func CovertPostMember(member *PostMember) models.PostMember {
+	return models.PostMember{
 		ResourceType: member.ResourceType,
 		ResourceID:   member.ResourceID,
 		MemberInfo:   member.MemberNameID,
@@ -98,12 +92,12 @@ type ConvertMemberHelp interface {
 }
 
 type converter struct {
-	userManager    usermanager.Manager
-	groupSvc       groupservice.Service
-	applicationSvc applicationservice.Service
-	clusterSvc     clusterservice.Service
-	templateMgr    tmanager.Manager
-	releaseMgr     trmanager.Manager
+	userManager    tmanager.UserManager
+	groupSvc       service.GroupService
+	applicationSvc service.ApplicationService
+	clusterSvc     service.ClusterService
+	templateMgr    tmanager.TemplateManager
+	releaseMgr     tmanager.TemplateReleaseManager
 }
 
 func New(param *param.Param) ConvertMemberHelp {
@@ -120,7 +114,7 @@ func New(param *param.Param) ConvertMemberHelp {
 func (c *converter) ConvertMember(ctx context.Context, member *models.Member) (_ *Member, err error) {
 	// convert userID to userName
 	var memberInfo string
-	var user *usermodels.User
+	var user *models.User
 
 	if member.MemberType == models.MemberUser {
 		user, err = c.userManager.GetUserByID(ctx, member.MemberNameID)
