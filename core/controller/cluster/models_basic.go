@@ -244,9 +244,8 @@ func ofCluster(cluster *models.Cluster) *ListClusterResponse {
 		Git: &GitResponse{
 			GitURL: cluster.GitURL,
 		},
-		IsFavorite: cluster.IsFavorite,
-		CreatedAt:  cluster.CreatedAt,
-		UpdatedAt:  cluster.UpdatedAt,
+		CreatedAt: cluster.CreatedAt,
+		UpdatedAt: cluster.UpdatedAt,
 	}
 }
 
@@ -288,8 +287,9 @@ type GetClusterByNameResponse struct {
 
 type ListClusterWithFullResponse struct {
 	*ListClusterResponse
-	FullName string `json:"fullName,omitempty"`
-	FullPath string `json:"fullPath,omitempty"`
+	IsFavorite *bool  `json:"isFavorite"`
+	FullName   string `json:"fullName,omitempty"`
+	FullPath   string `json:"fullPath,omitempty"`
 }
 
 type ListClusterWithExpiryResponse struct {
