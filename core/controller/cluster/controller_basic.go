@@ -104,18 +104,17 @@ func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWi
 			perror.WithMessage(err, "failed to list user clusters")
 	}
 
-	if _, ok := query.Keywords[common.ClusterQueryWithFavorite]; ok {
-		err = c.addIsFavoriteForClusters(ctx, currentUserID, clusters)
-		if err != nil {
-			return nil, 0, err
-		}
-	}
-
 	responses, err := c.getFullResponsesWithRegion(ctx, clusters)
 	if err != nil {
 		return nil, 0, err
 	}
 
+	if _, ok := query.Keywords[common.ClusterQueryWithFavorite]; ok {
+		err = c.addIsFavoriteForClusters(ctx, currentUserID, responses)
+		if err != nil {
+			return nil, 0, err
+		}
+	}
 	return responses, count, nil
 }
 
@@ -179,6 +178,7 @@ func (c *controller) getFullResponses(ctx context.Context,
 		}
 		responses = append(responses, &ListClusterWithFullResponse{
 			response,
+			nil,
 			fullName,
 			fullPath,
 		})
@@ -1112,7 +1112,7 @@ var (
 )
 
 func (c *controller) addIsFavoriteForClusters(ctx context.Context,
-	userID uint, clusters []*cmodels.ClusterWithRegion) error {
+	userID uint, clusters []*ListClusterWithFullResponse) error {
 	ids := make([]uint, 0, len(clusters))
 	for i := range clusters {
 		ids = append(ids, clusters[i].ID)
