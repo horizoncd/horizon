@@ -11,7 +11,7 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	appgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
-	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
@@ -63,7 +63,7 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 	// If cluster not found on argo, check the cluster is freed or has not been published yet,
 	// or the cluster will be "notFound". If response's status field has not been set,
 	// set it with status from argocd.
-	cdStatus, err := c.cd.GetClusterStateV2(ctx, params)
+	cdStatus, err := c.cd.GetClusterState(ctx, params)
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return nil, err

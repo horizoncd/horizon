@@ -91,6 +91,7 @@ import (
 	"github.com/horizoncd/horizon/core/middleware/auth"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
+	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/jobs"
@@ -124,7 +125,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/application/gitrepo"
 	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	"github.com/horizoncd/horizon/pkg/cluster/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/code"
 	clustergitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
@@ -438,6 +438,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		ApplicationGitRepo:   applicationGitRepo,
 		TemplateSchemaGetter: templateSchemaGetter,
 		Cd:                   cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper, flags.GitOpsRepoDefaultBranch),
+		K8sUtil:              cd.NewK8sUtil(),
 		OutputGetter:         outputGetter,
 		TektonFty:            tektonFty,
 		ClusterGitRepo:       clusterGitRepo,

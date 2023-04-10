@@ -5,12 +5,14 @@ import (
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
+	"github.com/horizoncd/horizon/pkg/workload"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/kubectl/pkg/polymorphichelpers"
 )
 
@@ -23,8 +25,8 @@ var ability = &deployment{}
 
 type deployment struct{}
 
-func (*deployment) MatchGK(gk string) bool {
-	return "apps/Deployment" == gk
+func (*deployment) MatchGK(gk schema.GroupKind) bool {
+	return gk.Group == "apps" && gk.Kind == "Deployment"
 }
 
 func (*deployment) getDeployByNode(node *v1alpha1.ResourceNode, client *kube.Client) (*v1.Deployment, error) {
@@ -67,4 +69,8 @@ func (d *deployment) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) 
 		return nil, err
 	}
 	return pods.Items, nil
+}
+
+func (*deployment) Action(actionName string, un *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	return un, nil
 }

@@ -11,7 +11,9 @@ import (
 	"time"
 
 	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
+	clustercd "github.com/horizoncd/horizon/pkg/cd"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/config"
@@ -21,7 +23,7 @@ import (
 	"github.com/horizoncd/horizon/lib/q"
 	applicationgitrepomock "github.com/horizoncd/horizon/mock/pkg/application/gitrepo"
 	applicationmanangermock "github.com/horizoncd/horizon/mock/pkg/application/manager"
-	cdmock "github.com/horizoncd/horizon/mock/pkg/cluster/cd"
+	cdmock "github.com/horizoncd/horizon/mock/pkg/cd"
 	commitmock "github.com/horizoncd/horizon/mock/pkg/cluster/code"
 	clustergitrepomock "github.com/horizoncd/horizon/mock/pkg/cluster/gitrepo"
 	clustermanagermock "github.com/horizoncd/horizon/mock/pkg/cluster/manager"
@@ -35,7 +37,6 @@ import (
 	appgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
-	clustercd "github.com/horizoncd/horizon/pkg/cluster/cd"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
@@ -477,6 +478,8 @@ func TestMain(m *testing.M) {
 
 func TestAll(t *testing.T) {
 	t.Run("Test", test)
+	t.Run("TestV2", testV2)
+	t.Run("TestUpgrade", testUpgrade)
 	t.Run("TestGetClusterOutPut", testGetClusterOutPut)
 	t.Run("TestRenderOutPutObject", testRenderOutPutObject)
 	t.Run("TestRenderOutPutObjectMissingKey", testRenderOutPutObjectMissingKey)
@@ -504,7 +507,8 @@ func test(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
-	cd := cdmock.NewMockCD(mockCtl)
+	cd := cdmock.NewMockLegacyCD(mockCtl)
+	k8sutil := cdmock.NewMockK8sUtil(mockCtl)
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	commitGetter := commitmock.NewMockGitGetter(mockCtl)
@@ -613,6 +617,7 @@ func test(t *testing.T) {
 		clusterGitRepo:       clusterGitRepo,
 		commitGetter:         commitGetter,
 		cd:                   cd,
+		k8sutil:              k8sutil,
 		applicationMgr:       appMgr,
 		templateReleaseMgr:   trMgr,
 		templateSchemaGetter: templateSchemaGetter,
@@ -671,9 +676,6 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().DefaultBranch().Return("master").AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
-	cd.EXPECT().Pause(ctx, gomock.Any()).Return(nil).AnyTimes()
-	cd.EXPECT().Resume(ctx, gomock.Any()).Return(nil).AnyTimes()
-	cd.EXPECT().Promote(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 	createClusterRequest := &CreateClusterRequest{
 		Base: &Base{
@@ -834,7 +836,7 @@ func test(t *testing.T) {
 	}).AnyTimes()
 
 	cd.EXPECT().DeployCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
-	cd.EXPECT().GetClusterState(ctx, gomock.Any()).Return(nil, herrors.NewErrNotFound(herrors.PodsInK8S, "test"))
+	cd.EXPECT().GetClusterStateV1(ctx, gomock.Any()).Return(nil, herrors.NewErrNotFound(herrors.PodsInK8S, "test"))
 	internalDeployResp, err := c.InternalDeploy(ctx, resp.ID, &InternalDeployRequest{
 		PipelinerunID: buildDeployResp.PipelinerunID,
 	})
@@ -937,15 +939,6 @@ func test(t *testing.T) {
 	assert.Equal(t, herrors.ErrShouldBuildDeployFirst, perror.Cause(err))
 	assert.Nil(t, deployResp)
 
-	err = c.Pause(ctx, resp.ID)
-	assert.Nil(t, err)
-
-	err = c.Resume(ctx, resp.ID)
-	assert.Nil(t, err)
-
-	err = c.Promote(ctx, resp.ID)
-	assert.Nil(t, err)
-
 	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil,
 		nil).Times(1)
 
@@ -979,8 +972,8 @@ func test(t *testing.T) {
 	assert.NotNil(t, pr.FinishedAt)
 
 	// test next
-	cd.EXPECT().Next(ctx, gomock.Any()).Return(nil)
-	err = c.Next(ctx, resp.ID)
+	k8sutil.EXPECT().ExecuteAction(ctx, gomock.Any()).Return(nil)
+	err = c.ExecuteAction(ctx, resp.ID, "next", schema.GroupVersionResource{})
 	assert.Nil(t, err)
 
 	// test Online and Offline
@@ -994,9 +987,7 @@ func test(t *testing.T) {
 		},
 	}
 
-	cd.EXPECT().Online(ctx, gomock.Any()).Return(execResp, nil)
-	cd.EXPECT().Offline(ctx, gomock.Any()).Return(execResp, nil)
-	cd.EXPECT().Exec(ctx, gomock.Any()).Return(execResp, nil)
+	k8sutil.EXPECT().Exec(ctx, gomock.Any()).Return(execResp, nil).Times(3)
 
 	execRequest := &ExecRequest{
 		PodList:  []string{"pod1", "pod2"},
@@ -1066,7 +1057,7 @@ func test(t *testing.T) {
 	assert.Equal(t, "test_value", tags[0].Value)
 	c.tagMgr = tagManager
 
-	cd.EXPECT().DeletePods(ctx, gomock.Any()).Return(
+	k8sutil.EXPECT().DeletePods(ctx, gomock.Any()).Return(
 		map[string]clustercd.OperationResult{
 			"pod1": {Result: true},
 		}, nil)
@@ -1079,7 +1070,7 @@ func test(t *testing.T) {
 
 	podExist := "exist"
 	podNotExist := "notexist"
-	cd.EXPECT().GetPod(ctx, gomock.Any()).DoAndReturn(
+	k8sutil.EXPECT().GetPod(ctx, gomock.Any()).DoAndReturn(
 		func(_ context.Context, param *clustercd.GetPodParams) (*v1.Pod, error) {
 			if param.Pod == podExist {
 				return &v1.Pod{}, nil
@@ -1228,9 +1219,6 @@ func test(t *testing.T) {
 	).Times(1)
 	_, err = c.UpdateCluster(ctx, resp.ID, updateClusterRequest, true)
 	assert.Nil(t, err)
-
-	t.Run("TestV2", testV2)
-	t.Run("TestUpgrade", testUpgrade)
 }
 
 func testV2(t *testing.T) {

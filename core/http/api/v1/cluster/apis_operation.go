@@ -13,7 +13,14 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/log"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+var rolloutGVR = schema.GroupVersionResource{
+	Group:    "argoproj.io",
+	Version:  "v1alpha1",
+	Resource: "rollouts",
+}
 
 func (a *API) BuildDeploy(c *gin.Context) {
 	op := "cluster: build deploy"
@@ -242,6 +249,7 @@ func (a *API) Deploy(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
+// Deprecated: use ExecuteAction instead
 func (a *API) Next(c *gin.Context) {
 	op := "cluster: op"
 	clusterIDStr := c.Param(common.ParamClusterID)
@@ -251,7 +259,7 @@ func (a *API) Next(c *gin.Context) {
 		return
 	}
 
-	err = a.clusterCtl.Next(c, uint(clusterID))
+	err = a.clusterCtl.ExecuteAction(c, uint(clusterID), "promote", rolloutGVR)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			if e.Source == herrors.ClusterInDB {
@@ -277,7 +285,7 @@ func (a *API) GetContainerLog(c *gin.Context) {
 		return
 	}
 
-	tailLines := defaultTailLines
+	var tailLines int64 = defaultTailLines
 	tailLinesStr := c.Query(common.ClusterQueryTailLines)
 	if tailLinesStr != "" {
 		tailLinesUint64, err := strconv.ParseUint(tailLinesStr, 10, 0)
@@ -285,7 +293,7 @@ func (a *API) GetContainerLog(c *gin.Context) {
 			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 			return
 		}
-		tailLines = int(tailLinesUint64)
+		tailLines = int64(tailLinesUint64)
 	}
 
 	podName := c.Query(common.ClusterQueryPodName)
@@ -475,6 +483,7 @@ func (a *API) DeleteClusterPods(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
+// Deprecated: use ExecuteAction instead
 func (a *API) Promote(c *gin.Context) {
 	const op = "cluster: promote"
 	clusterIDStr := c.Param(common.ParamClusterID)
@@ -486,7 +495,7 @@ func (a *API) Promote(c *gin.Context) {
 		return
 	}
 
-	err = a.clusterCtl.Promote(c, uint(clusterID))
+	err = a.clusterCtl.ExecuteAction(c, uint(clusterID), "promote-full", rolloutGVR)
 	if err != nil {
 		err = perror.Wrap(err, "failed to promote cluster")
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
@@ -500,6 +509,7 @@ func (a *API) Promote(c *gin.Context) {
 	response.Success(c)
 }
 
+// Deprecated: use ExecuteAction instead
 func (a *API) Pause(c *gin.Context) {
 	const op = "cluster: pause"
 	clusterIDStr := c.Param(common.ParamClusterID)
@@ -511,7 +521,7 @@ func (a *API) Pause(c *gin.Context) {
 		return
 	}
 
-	err = a.clusterCtl.Pause(c, uint(clusterID))
+	err = a.clusterCtl.ExecuteAction(c, uint(clusterID), "pause", rolloutGVR)
 	if err != nil {
 		err = perror.Wrap(err, "failed to pause cluster")
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
@@ -525,6 +535,7 @@ func (a *API) Pause(c *gin.Context) {
 	response.Success(c)
 }
 
+// Deprecated: use ExecuteAction instead
 func (a *API) Resume(c *gin.Context) {
 	const op = "cluster: resume"
 	clusterIDStr := c.Param(common.ParamClusterID)
@@ -536,7 +547,7 @@ func (a *API) Resume(c *gin.Context) {
 		return
 	}
 
-	err = a.clusterCtl.Resume(c, uint(clusterID))
+	err = a.clusterCtl.ExecuteAction(c, uint(clusterID), "resume", rolloutGVR)
 	if err != nil {
 		err = perror.Wrap(err, "failed to resume cluster")
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {

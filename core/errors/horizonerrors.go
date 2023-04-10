@@ -44,6 +44,7 @@ var (
 	MemberInfoInDB            = sourceType{name: "MemberInfoInDB"}
 	ApplicationManifestInArgo = sourceType{name: "ApplicationManifestInArgo"}
 	PodsInK8S                 = sourceType{name: "PodsInK8S"}
+	PodLogsInK8S              = sourceType{name: "PodLogsInK8S"}
 	ReplicasSetInK8S          = sourceType{name: "ReplicasSetInK8S"}
 	DeploymentInK8S           = sourceType{name: "DeploymentInK8S"}
 	ResourceInK8S             = sourceType{name: "ResourceInK8S"}

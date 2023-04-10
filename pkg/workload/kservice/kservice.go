@@ -6,12 +6,13 @@ import (
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/workload"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/kubectl/pkg/polymorphichelpers"
@@ -27,8 +28,8 @@ var ability = &service{}
 
 type service struct{}
 
-func (*service) MatchGK(gk string) bool {
-	return "serving.knative.dev/Service" == gk
+func (*service) MatchGK(gk schema.GroupKind) bool {
+	return gk.Group == "serving.knative.dev" && gk.Kind == "Service"
 }
 
 func (*service) getServiceByNode(node *v1alpha1.ResourceNode, client *kube.Client) (*servicev1.Service, error) {
@@ -131,4 +132,8 @@ OUTTER:
 		"[knative service: %v] count = %v, min = %v, max = %v",
 		instance.Name, count, min, max)
 	return count >= min && count <= max, nil
+}
+
+func (*service) Action(actionName string, un *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	return un, nil
 }
