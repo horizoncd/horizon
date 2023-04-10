@@ -251,7 +251,7 @@ function install() {
     helm repo add horizon https://horizoncd.github.io/helm-charts
 
     echo "Update helm repo"
-    helm repo update
+    helm repo update horizon
 
     cmd="helm"
 
@@ -601,7 +601,7 @@ function parseinput() {
     docker exec $CONTAINER_NAME bash -c "echo \"nameserver $nameserver\" > /etc/resolv.conf"
 
     echo 'Horizon is installed successfully!'
-    echo "Please access the Horizon UI at http://horizon.h8r.site:$HTTP_PORT"
+    echo "Please access the Horizon UI at http://horizon.h8r.site:$HTTP_PORT with username: admin@cloudnative.com and password: 123456"
 }
 
 parseinput "$@"
