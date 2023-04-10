@@ -2,13 +2,14 @@ package cluster
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
-	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cd"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	perror "github.com/horizoncd/horizon/pkg/errors"
@@ -110,8 +111,12 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
+	lagacyCD, ok := c.cd.(cd.LegacyCD)
+	if !ok {
+		return nil, perror.Wrapf(herrors.ErrNotSupport, "cd %s does not support legacy cd", reflect.TypeOf(c.cd))
+	}
 	// nolint
-	clusterState, err := c.cd.GetClusterState(ctx, &cd.GetClusterStateParams{
+	clusterState, err := lagacyCD.GetClusterStateV1(ctx, &cd.GetClusterStateParams{
 		Environment:  cluster.EnvironmentName,
 		Cluster:      cluster.Name,
 		RegionEntity: regionEntity,
@@ -315,7 +320,7 @@ func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun
 }
 
 func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string,
-	tailLines int) (<-chan string, error) {
+	tailLines int64) (<-chan string, error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -335,15 +340,21 @@ func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podNam
 		return nil, err
 	}
 
-	param := cd.GetContainerLogParams{
-		Namespace:   envValue.Namespace,
-		Environment: cluster.EnvironmentName,
-		Cluster:     cluster.Name,
-		Pod:         podName,
-		Container:   containerName,
-		TailLines:   tailLines,
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
 	}
-	return c.cd.GetContainerLog(ctx, &param)
+
+	param := cd.GetContainerLogParams{
+		RegionEntity: regionEntity,
+		Namespace:    envValue.Namespace,
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		Pod:          podName,
+		Container:    containerName,
+		TailLines:    tailLines,
+	}
+	return c.k8sutil.GetContainerLog(ctx, &param)
 }
 
 func (c *controller) GetPodEvents(ctx context.Context, clusterID uint, podName string) (interface{}, error) {
@@ -412,7 +423,7 @@ func (c *controller) GetContainers(ctx context.Context, clusterID uint, podName 
 		Pod:          podName,
 		RegionEntity: regionEntity,
 	}
-	return c.cd.GetPodContainers(ctx, &param)
+	return c.k8sutil.GetPodContainers(ctx, &param)
 }
 
 func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName string) (
@@ -443,7 +454,7 @@ func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName 
 		Pod:          podName,
 		RegionEntity: regionEntity,
 	}
-	pod, err := c.cd.GetPod(ctx, &param)
+	pod, err := c.k8sutil.GetPod(ctx, &param)
 	if err != nil {
 		return nil, err
 	}

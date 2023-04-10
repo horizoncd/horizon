@@ -1,6 +1,8 @@
 package cluster
 
-import "github.com/horizoncd/horizon/pkg/cluster/cd"
+import (
+	"github.com/horizoncd/horizon/pkg/cd"
+)
 
 const ServerlessTemplateName = "serverless"
 
@@ -11,6 +13,13 @@ type PipelinerunIDResponse struct {
 type DeployRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
+}
+
+type ExecuteActionRequest struct {
+	Action   string `json:"action"`
+	Group    string `json:"group"`
+	Version  string `json:"version"`
+	Resource string `json:"resource"`
 }
 
 type ExecRequest struct {

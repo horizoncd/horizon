@@ -8,6 +8,8 @@ import (
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 type GetStepParams struct {
@@ -102,13 +104,40 @@ type ClusterResumeParams struct {
 	Environment  string
 }
 
+type ClusterPatchParams struct {
+	Resource     schema.GroupVersionResource
+	PatchOption  metav1.PatchOptions
+	PatchBody    []byte
+	PatchType    types.PatchType
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Environment  string
+}
+
+type ExecuteActionParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Namespace    string
+	Action       string
+	GVR          schema.GroupVersionResource
+	ResourceName string
+}
+
+type ClusterAutoPromoteParams struct {
+	RegionEntity *regionmodels.RegionEntity
+	Cluster      string
+	Namespace    string
+	Environment  string
+}
+
 type GetContainerLogParams struct {
-	Namespace   string
-	Cluster     string
-	Pod         string
-	Container   string
-	Environment string
-	TailLines   int
+	RegionEntity *regionmodels.RegionEntity
+	Namespace    string
+	Cluster      string
+	Pod          string
+	Container    string
+	Environment  string
+	TailLines    int64
 }
 
 type ExecParams struct {
@@ -209,6 +238,7 @@ type Step struct {
 	Total        int   `json:"total"`
 	Replicas     []int `json:"replicas"`
 	ManualPaused bool  `json:"manualPaused"`
+	AutoPromote  bool  `json:"autoPromote"`
 }
 
 // ClusterVersion version information

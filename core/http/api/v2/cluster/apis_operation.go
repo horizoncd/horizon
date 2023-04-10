@@ -14,6 +14,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/log"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const JWTTokenHeader = "X-Horizon-JWT-Token"
@@ -326,6 +327,42 @@ func (a *API) Restart(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
+func (a *API) ExecuteAction(c *gin.Context) {
+	const op = "cluster: execute action"
+	clusterIDStr := c.Param(common.ParamClusterID)
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
+	if err != nil {
+		err = perror.Wrap(err, "failed to parse cluster id")
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
+		return
+	}
+
+	var request cluster.ExecuteActionRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+		return
+	}
+
+	err = a.clusterCtl.ExecuteAction(c, uint(clusterID), request.Action, schema.GroupVersionResource{
+		Group:    request.Group,
+		Version:  request.Version,
+		Resource: request.Resource,
+	})
+	if err != nil {
+		err = perror.Wrap(err, "failed to promote cluster")
+		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
+			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		log.WithFiled(c, "op", op).Errorf(err.Error())
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.Success(c)
+}
+
 func (a *API) Deploy(c *gin.Context) {
 	op := "cluster: deploy"
 	clusterIDStr := c.Param(common.ParamClusterID)
@@ -365,31 +402,6 @@ func (a *API) Deploy(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-func (a *API) Next(c *gin.Context) {
-	op := "cluster: op"
-	clusterIDStr := c.Param(common.ParamClusterID)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-	if err != nil {
-		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
-		return
-	}
-
-	err = a.clusterCtl.Next(c, uint(clusterID))
-	if err != nil {
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
-			if e.Source == herrors.ClusterInDB {
-				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-				return
-			}
-		}
-		log.WithFiled(c, "op", op).Errorf("%+v", err)
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-
-	response.Success(c)
-}
-
 const defaultTailLines = 1000
 
 func (a *API) GetContainerLog(c *gin.Context) {
@@ -400,7 +412,7 @@ func (a *API) GetContainerLog(c *gin.Context) {
 		return
 	}
 
-	tailLines := defaultTailLines
+	var tailLines int64 = defaultTailLines
 	tailLinesStr := c.Query(common.ClusterQueryTailLines)
 	if tailLinesStr != "" {
 		tailLinesUint64, err := strconv.ParseUint(tailLinesStr, 10, 0)
@@ -408,7 +420,7 @@ func (a *API) GetContainerLog(c *gin.Context) {
 			response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 			return
 		}
-		tailLines = int(tailLinesUint64)
+		tailLines = int64(tailLinesUint64)
 	}
 
 	podName := c.Query(common.ClusterQueryPodName)
@@ -536,79 +548,4 @@ func (a *API) DeleteClusterPods(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, resp)
-}
-
-func (a *API) Promote(c *gin.Context) {
-	const op = "cluster: promote"
-	clusterIDStr := c.Param(common.ParamClusterID)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-	if err != nil {
-		err = perror.Wrap(err, "failed to parse cluster id")
-		log.WithFiled(c, "op", op).Errorf(err.Error())
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
-		return
-	}
-
-	err = a.clusterCtl.Promote(c, uint(clusterID))
-	if err != nil {
-		err = perror.Wrap(err, "failed to promote cluster")
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
-			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-			return
-		}
-		log.WithFiled(c, "op", op).Errorf(err.Error())
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-	response.Success(c)
-}
-
-func (a *API) Pause(c *gin.Context) {
-	const op = "cluster: pause"
-	clusterIDStr := c.Param(common.ParamClusterID)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-	if err != nil {
-		err = perror.Wrap(err, "failed to parse cluster id")
-		log.WithFiled(c, "op", op).Errorf(err.Error())
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
-		return
-	}
-
-	err = a.clusterCtl.Pause(c, uint(clusterID))
-	if err != nil {
-		err = perror.Wrap(err, "failed to pause cluster")
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
-			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-			return
-		}
-		log.WithFiled(c, "op", op).Errorf(err.Error())
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-	response.Success(c)
-}
-
-func (a *API) Resume(c *gin.Context) {
-	const op = "cluster: resume"
-	clusterIDStr := c.Param(common.ParamClusterID)
-	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
-	if err != nil {
-		err = perror.Wrap(err, "failed to parse cluster id")
-		log.WithFiled(c, "op", op).Errorf(err.Error())
-		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg("invalid cluster id"))
-		return
-	}
-
-	err = a.clusterCtl.Resume(c, uint(clusterID))
-	if err != nil {
-		err = perror.Wrap(err, "failed to resume cluster")
-		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
-			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
-			return
-		}
-		log.WithFiled(c, "op", op).Errorf(err.Error())
-		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
-		return
-	}
-	response.Success(c)
 }

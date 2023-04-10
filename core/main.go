@@ -17,10 +17,10 @@ import (
 	_ "github.com/horizoncd/horizon/pkg/templaterepo/chartmuseumbase"
 
 	// for k8s workload
-	_ "github.com/horizoncd/horizon/pkg/cluster/cd/workload/deployment"
-	_ "github.com/horizoncd/horizon/pkg/cluster/cd/workload/kservice"
-	_ "github.com/horizoncd/horizon/pkg/cluster/cd/workload/pod"
-	_ "github.com/horizoncd/horizon/pkg/cluster/cd/workload/rollout"
+	_ "github.com/horizoncd/horizon/pkg/workload/deployment"
+	_ "github.com/horizoncd/horizon/pkg/workload/kservice"
+	_ "github.com/horizoncd/horizon/pkg/workload/pod"
+	_ "github.com/horizoncd/horizon/pkg/workload/rollout"
 )
 
 func main() {

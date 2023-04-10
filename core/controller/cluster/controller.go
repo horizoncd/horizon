@@ -9,7 +9,7 @@ import (
 	appgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
 	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
-	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
@@ -39,6 +39,7 @@ import (
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usersvc "github.com/horizoncd/horizon/pkg/user/service"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Controller interface {
@@ -68,10 +69,8 @@ type Controller interface {
 	InternalDeploy(ctx context.Context, clusterID uint,
 		r *InternalDeployRequest) (_ *InternalDeployResponse, err error)
 
-	Promote(ctx context.Context, clusterID uint) error
-	Pause(ctx context.Context, clusterID uint) error
-	Resume(ctx context.Context, clusterID uint) error
-	Next(ctx context.Context, clusterID uint) error
+	ExecuteAction(ctx context.Context, clusterID uint, action string,
+		gvk schema.GroupVersionResource) error
 
 	// Deprecated: GetClusterStatus
 	GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
@@ -82,7 +81,7 @@ type Controller interface {
 	Exec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error)
 
 	GetDiff(ctx context.Context, clusterID uint, refType, ref string) (*GetDiffResponse, error)
-	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int) (
+	GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string, tailLines int64) (
 		<-chan string, error)
 
 	DeleteClusterPods(ctx context.Context, clusterID uint, podName []string) (BatchResponse, error)
@@ -116,6 +115,7 @@ type controller struct {
 	applicationGitRepo    appgitrepo.ApplicationGitRepo
 	commitGetter          code.GitGetter
 	cd                    cd.CD
+	k8sutil               cd.K8sUtil
 	applicationMgr        appmanager.Manager
 	autoFreeSvc           *service.AutoFreeSVC
 	applicationSvc        applicationservice.Service
@@ -155,6 +155,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		applicationGitRepo:    param.ApplicationGitRepo,
 		commitGetter:          param.GitGetter,
 		cd:                    param.Cd,
+		k8sutil:               param.K8sUtil,
 		applicationMgr:        param.ApplicationManager,
 		applicationSvc:        param.ApplicationSvc,
 		templateReleaseMgr:    param.TemplateReleaseManager,

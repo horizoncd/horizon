@@ -15,7 +15,7 @@ import (
 	xrequestid "github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
-	cdmock "github.com/horizoncd/horizon/mock/pkg/cluster/cd"
+	cdmock "github.com/horizoncd/horizon/mock/pkg/cd"
 	pipelinemockmanager "github.com/horizoncd/horizon/mock/pkg/pipelinerun/manager"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
