@@ -29,7 +29,7 @@ GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.name=gitops-cre
 
 GITHUB_TOKEN="config.gitRepos[0].url=https://github.com"
 GITHUB_TOKEN="$GITHUB_TOKEN,config.gitRepos[0].kind=github"
-GITHUB_TOKEN="$GITHUB_TOKEN,config.gitRepos[0].token=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"
+GITHUB_TOKEN="$GITHUB_TOKEN,config.gitRepos[0].token=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"
 
 # Install horizon of the script
 #
@@ -260,10 +260,12 @@ function install() {
 
     if $UPGRADE
     then
-        cmd="$cmd upgrade --set $GITHUB_TOKEN"
+        cmd="$cmd upgrade"
     else
-        cmd="$cmd install --set $GITHUB_TOKEN"
+        cmd="$cmd install"
     fi
+
+    cmd="$cmd --set $GITHUB_TOKEN"
 
     if $FULL
     then
