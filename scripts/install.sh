@@ -27,6 +27,9 @@ GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.password=glpat-
 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.username=root"
 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.name=gitops-creds"
 
+GITHUB_TOKEN="config.gitRepos[0].url=https://github.com"
+GITHUB_TOKEN="$GITHUB_TOKEN,config.gitRepos[0].kind=github"
+GITHUB_TOKEN="$GITHUB_TOKEN,config.gitRepos[0].token=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"
 
 # Install horizon of the script
 #
@@ -257,9 +260,9 @@ function install() {
 
     if $UPGRADE
     then
-        cmd="$cmd upgrade"
+        cmd="$cmd upgrade --set $GITHUB_TOKEN"
     else
-        cmd="$cmd install"
+        cmd="$cmd install --set $GITHUB_TOKEN"
     fi
 
     if $FULL
@@ -310,7 +313,13 @@ function install() {
         cmd="$cmd -f https://raw.githubusercontent.com/horizoncd/helm-charts/main/horizon-cn-values.yaml"
     fi
 
-    echo "Installing horizon"
+    if $UPGRADE
+    then
+        echo "Upgrading horizon"
+    else
+        echo "Installing horizon"
+    fi
+
     eval "$cmd" 1> /dev/null
 
     progressbar
