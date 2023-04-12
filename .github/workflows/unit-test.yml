@@ -51,8 +51,7 @@ jobs:
           chmod +x ./cc-test-reporter
           
       - name: Upload coverage data to Code Climate
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
         run: |
+          export CC_TEST_REPORTER_ID=${{ secrets.CC_TEST_REPORTER_ID }}
           ./cc-test-reporter format-coverage --prefix $(go list -m) --input-type gocov coverage.out
           ./cc-test-reporter upload-coverage 
