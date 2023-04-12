@@ -1,6 +1,6 @@
 <img src="image/readme/horizon.svg">
 
-[![license](https://img.shields.io/hexpm/l/plug)]() [![version](https://img.shields.io/badge/horizon-v2.0.1-yellow)]() [![Lint & Unit Test](https://github.com/horizoncd/horizon/actions/workflows/ut.yml/badge.svg)](https://github.com/horizoncd/horizon/actions/workflows/ut.yml) [![Test Coverage](https://api.codeclimate.com/v1/badges/5b9cc6ee71b84628a309/test_coverage)](https://codeclimate.com/github/horizoncd/horizon/test_coverage)
+[![license](https://img.shields.io/hexpm/l/plug)]() [![version](https://img.shields.io/badge/horizon-v2.0.1-yellow)]() [![Lint & Unit Test](https://github.com/horizoncd/horizon/actions/workflows/unit-test.yml/badge.svg)](https://github.com/horizoncd/horizon/actions/workflows/unit-test.yml) [![Test Coverage](https://api.codeclimate.com/v1/badges/5b9cc6ee71b84628a309/test_coverage)](https://codeclimate.com/github/horizoncd/horizon/test_coverage)
 
 # Horizon
 > [English](README.md) | 中文
