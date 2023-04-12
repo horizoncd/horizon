@@ -52,7 +52,7 @@ jobs:
           
       - name: Upload coverage data to Code Climate
         env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+          CC_TEST_REPORTER_ID: e47aa5e6270db938ee1bdd6dc9486f4f581beb1bcaee5d28be1633d68c8550c6
         run: |
           ./cc-test-reporter format-coverage --prefix $(go list -m) --input-type gocov coverage.out
           ./cc-test-reporter upload-coverage 
