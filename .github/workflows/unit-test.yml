@@ -29,7 +29,7 @@ jobs:
         with:
           version: v1.47.3
 
-  ut:
+  unit-test:
     strategy:
       matrix:
         go: [1.15]
@@ -41,13 +41,18 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - uses: actions/checkout@v3
-      - name: ut
-        env:
-          COVERAGE_STANDARD: 60
+      - name: Run tests
         run: |
-          COVERAGE=$(. .unit-test.sh)
-          [[ "$?" == 0 ]] || exit 1
-          [[ $(awk -v M=$COVERAGE -v N=$COVERAGE_STANDARD 'BEGIN{print(M>=N)?"0":"1"}') == "0" ]] && \
-          echo "coverage is $COVERAGE" || {
-            echo "coverage is $COVERAGE, is less than $COVERAGE_STANDARD"; exit 1
-          }
+          go test -v -coverprofile=coverage.out ./...
+
+      - name: Install Code Climate Test Reporter
+        run: |
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+          chmod +x ./cc-test-reporter
+          
+      - name: Upload coverage data to Code Climate
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+        run: |
+          ./cc-test-reporter format-coverage --prefix $(go list -m) --input-type gocov coverage.out
+          ./cc-test-reporter upload-coverage 
