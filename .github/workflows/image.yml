@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "**.go"
+      - "!**_test.go"
+      - "build/**"
     tags:
       - v*
 
