@@ -27,6 +27,7 @@ GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.password=glpat-
 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.username=root"
 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.name=gitops-creds"
 
+GITHUB_TOKEN=""
 
 # Install horizon of the script
 #
@@ -116,23 +117,24 @@ function checkprerequesites() {
 function cmdhelp() {
     echo "Usage: $0 [options]"
     echo "Options:"
-    echo "  -h, --help"
-    echo "  -e, --gitlab-external <defaultBranch> <rootGroupID> <gitlabURL> <token>, create with external gitlab"
-    echo "  -g, --gitlab-internal, create with internal gitlab"
-    echo "  -k, --kind, create cluster by kind"
-    echo "  -m, --minikube, create cluster by minikube"
-    echo "  --clean"
-    echo "  -c, --cloud, install on cloud"
-    echo "  -s, --storage-class <STORAGE_CLASS>, specify the storage class to use, only take effect when -c/--cloud is set"
-    echo "  -v, --version <VERSION>, specify the version of horizon to install"
-    echo "  -kv, --k8s-version <K8S_VERSION>, specify the version of k8s to install, default is $K8S_VERSION, only take effect when -k/-m is set"
-    echo "  -u, --upgrade, equals to helm upgrade"
-    echo "  -i, --init, deploy init job into cluster"
-    echo "  -f, --full, install full horizon"
-    echo "  --set <HELM SETS>, equals to helm install/upgrade --set ..."
+    echo "  -c,  --cloud, install on cloud"
     # install for user from China
     echo "  -cn, --china, install with image mirror in China"
-    echo "  --http-port <HTTP PORT>, specify the http port to use, only take effect when -k/-m is set"
+    echo "       --clean"
+    echo "  -e,  --gitlab-external <defaultBranch> <rootGroupID> <gitlabURL> <token>, create with external gitlab"
+    echo "  -f,  --full, install full horizon"
+    echo "       --github-token <token>, specify the github token for source code repo"
+    echo "  -g,  --gitlab-internal, create with internal gitlab"
+    echo "  -h,  --help"
+    echo "       --http-port <HTTP PORT>, specify the http port to use, only take effect when -k/-m is set"
+    echo "  -i,  --init, deploy init job into cluster"
+    echo "  -k,  --kind, create cluster by kind"
+    echo "  -kv, --k8s-version <K8S_VERSION>, specify the version of k8s to install, default is $K8S_VERSION, only take effect when -k/-m is set"
+    echo "  -m,  --minikube, create cluster by minikube"
+    echo "  -s,  --storage-class <STORAGE_CLASS>, specify the storage class to use, only take effect when -c/--cloud is set"
+    echo "       --set <HELM SETS>, equals to helm install/upgrade --set ..."
+    echo "  -u,  --upgrade, equals to helm upgrade"
+    echo "  -v,  --version <VERSION>, specify the version of horizon to install"
 }
 
 function kindcreatecluster() {
@@ -262,6 +264,11 @@ function install() {
         cmd="$cmd install"
     fi
 
+    if [ -n "$GITHUB_TOKEN" ]
+    then
+        cmd="$cmd --set $GITHUB_TOKEN"
+    fi
+
     if $FULL
     then
         cmd="$cmd --set tags.full=true,tags.minimal=false"
@@ -310,7 +317,13 @@ function install() {
         cmd="$cmd -f https://raw.githubusercontent.com/horizoncd/helm-charts/main/horizon-cn-values.yaml"
     fi
 
-    echo "Installing horizon"
+    if $UPGRADE
+    then
+        echo "Upgrading horizon"
+    else
+        echo "Installing horizon"
+    fi
+
     eval "$cmd" 1> /dev/null
 
     progressbar
@@ -509,6 +522,12 @@ function parseinput() {
             -g|--gitlab-internal)
                 INTERNAL_GITLAB_ENABLED=true
                 shift
+                ;;
+            --github-token)
+                GITHUB_TOKEN="config.gitRepos[0].url=https://github.com"
+                GITHUB_TOKEN="$GITHUB_TOKEN,config.gitRepos[0].kind=github"
+                GITHUB_TOKEN="$GITHUB_TOKEN,config.gitRepos[0].token=$2"
+                shift 2
                 ;;
             -s|--storage-class)
                 STORAGE_CLASS=$2
