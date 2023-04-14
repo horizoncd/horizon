@@ -14,7 +14,6 @@ on:
 permissions:
   contents: read
 
-
 jobs:
   lint:
     name: golangci-lint
@@ -37,22 +36,22 @@ jobs:
     needs: [lint]
     runs-on: ubuntu-20.04
     steps:
+      - uses: actions/checkout@v3
+      
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
-      - uses: actions/checkout@v3
-      - name: Run tests
-        run: |
-          go test -v -coverprofile=coverage.out ./...
 
-      - name: Install Code Climate Test Reporter
+      - name: Set Prefix
+        id: prefix
         run: |
-          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-          chmod +x ./cc-test-reporter
-          
-      - name: Upload coverage data to Code Climate
+          echo "PREFIX=$(go list -m)" >> $GITHUB_OUTPUT
+
+      - uses: paambaati/codeclimate-action@v3.2.0
         env:
           CC_TEST_REPORTER_ID: e47aa5e6270db938ee1bdd6dc9486f4f581beb1bcaee5d28be1633d68c8550c6
-        run: |
-          ./cc-test-reporter format-coverage --prefix $(go list -m) --input-type gocov coverage.out
-          ./cc-test-reporter upload-coverage 
+        with:
+          coverageLocations: |
+            ${{github.workspace}}/coverage.out:gocov
+          coverageCommand: go test -v -coverprofile=coverage.out ./...
+          prefix: ${{ steps.prefix.outputs.PREFIX }}
