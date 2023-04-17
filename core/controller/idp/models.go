@@ -33,7 +33,7 @@ type IdentityProvider struct {
 }
 
 func ofIDPModel(idp *models.IdentityProvider) *IdentityProvider {
-	var method = models.TokenEndpointAuthMethod(models.ClientSecretSentAsPost)
+	method := models.TokenEndpointAuthMethod(models.ClientSecretSentAsPost)
 	if idp.TokenEndpointAuthMethod != nil {
 		method = *idp.TokenEndpointAuthMethod
 	}

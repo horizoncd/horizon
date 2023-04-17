@@ -34,7 +34,7 @@ type DAO interface {
 	ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (models.RegionParts, error)
 }
 
-// NewDAO returns an instance of the default DAO
+// NewDAO returns an instance of the default DAO.
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }
@@ -44,7 +44,8 @@ type dao struct {
 }
 
 func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (
-	models.RegionParts, error) {
+	models.RegionParts, error,
+) {
 	if len(selectors) == 0 {
 		return models.RegionParts{}, nil
 	}
@@ -67,7 +68,7 @@ func (d *dao) ListByRegionSelectors(ctx context.Context, selectors groupmodels.R
 	return regionParts, nil
 }
 
-// GetRegionByID implements DAO
+// GetRegionByID implements DAO.
 func (d *dao) GetRegionByID(ctx context.Context, id uint) (*models.Region, error) {
 	var region models.Region
 	result := d.db.WithContext(ctx).Raw(common.RegionGetByID, id).First(&region)
@@ -137,7 +138,7 @@ func (d *dao) GetRegion(ctx context.Context, regionName string) (*models.Region,
 	return &region, nil
 }
 
-// DeleteByID implements DAO
+// DeleteByID implements DAO.
 func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	// check region exist
 	regionInDB, res := d.GetRegionByID(ctx, id)

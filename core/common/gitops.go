@@ -1,7 +1,7 @@
 package common
 
 const (
-	// fileName
+	// fileName.
 	GitopsFileChart          = "Chart.yaml"
 	GitopsFileApplication    = "application.yaml"
 	GitopsFileTags           = "tags.yaml"
@@ -13,7 +13,7 @@ const (
 	GitopsFilePipelineOutput = "pipeline/pipeline-output.yaml"
 	GitopsFileManifest       = "manifest.yaml"
 
-	// value namespace
+	// value namespace.
 	GitopsEnvValueNamespace  = "env"
 	GitopsBaseValueNamespace = "horizon"
 

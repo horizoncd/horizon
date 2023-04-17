@@ -40,19 +40,22 @@ type manager struct {
 }
 
 func (m *manager) Create(ctx context.Context,
-	templateRelease *models.TemplateRelease) (*models.TemplateRelease, error) {
+	templateRelease *models.TemplateRelease,
+) (*models.TemplateRelease, error) {
 	return m.dao.Create(ctx, templateRelease)
 }
 
 func (m *manager) ListByTemplateName(ctx context.Context, templateName string) ([]*models.TemplateRelease, error) {
 	return m.dao.ListByTemplateName(ctx, templateName)
 }
+
 func (m *manager) ListByTemplateID(ctx context.Context, id uint) ([]*models.TemplateRelease, error) {
 	return m.dao.ListByTemplateID(ctx, id)
 }
 
 func (m *manager) GetByTemplateNameAndRelease(ctx context.Context,
-	templateName, release string) (_ *models.TemplateRelease, err error) {
+	templateName, release string,
+) (_ *models.TemplateRelease, err error) {
 	const op = "template release manager: get by template name and release"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -64,13 +67,15 @@ func (m *manager) GetByTemplateNameAndRelease(ctx context.Context,
 }
 
 func (m *manager) GetByID(ctx context.Context,
-	releaseID uint) (*models.TemplateRelease, error) {
+	releaseID uint,
+) (*models.TemplateRelease, error) {
 	return m.dao.GetByID(ctx, releaseID)
 }
 
 func (m *manager) GetRefOfApplication(ctx context.Context, id uint) ([]*amodels.Application, uint, error) {
 	return m.dao.GetRefOfApplication(ctx, id)
 }
+
 func (m *manager) GetRefOfCluster(ctx context.Context, id uint) ([]*cmodel.Cluster, uint, error) {
 	return m.dao.GetRefOfCluster(ctx, id)
 }

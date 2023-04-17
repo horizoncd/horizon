@@ -9,7 +9,7 @@ import (
 	"github.com/horizoncd/horizon/lib/q"
 )
 
-// GetPageParam get and check the page params
+// GetPageParam get and check the page params.
 func GetPageParam(c *gin.Context) (int, int, error) {
 	var (
 		pageNumber int
@@ -39,7 +39,7 @@ func GetPageParam(c *gin.Context) (int, int, error) {
 }
 
 func GetFilterParam(c *gin.Context) q.KeyWords {
-	var res = make(q.KeyWords)
+	res := make(q.KeyWords)
 
 	template := c.Query(common.Template)
 	templateRelease := c.Query(common.TemplateRelease)

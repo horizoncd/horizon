@@ -19,7 +19,8 @@ type UpdateRequest struct {
 }
 
 func (r *UpdateRequest) toClusterTemplateSchemaTags(clusterID uint,
-	user user.User) []*tagmodels.ClusterTemplateSchemaTag {
+	user user.User,
+) []*tagmodels.ClusterTemplateSchemaTag {
 	clusterSchemaTags := make([]*tagmodels.ClusterTemplateSchemaTag, 0)
 	for _, tag := range r.Tags {
 		clusterSchemaTags = append(clusterSchemaTags, &tagmodels.ClusterTemplateSchemaTag{

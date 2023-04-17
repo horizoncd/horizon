@@ -102,7 +102,8 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 }
 
 func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelinerun,
-	environment string) (_ *collector.Log, err error) {
+	environment string,
+) (_ *collector.Log, err error) {
 	const op = "pipeline controller: get pipelinerun log"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -198,7 +199,8 @@ func (c *controller) Get(ctx context.Context, pipelineID uint) (_ *PipelineBasic
 }
 
 func (c *controller) List(ctx context.Context,
-	clusterID uint, canRollback bool, query q.Query) (_ int, _ []*PipelineBasic, err error) {
+	clusterID uint, canRollback bool, query q.Query,
+) (_ int, _ []*PipelineBasic, err error) {
 	const op = "pipelinerun controller: list pipelinerun"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -221,7 +223,8 @@ func (c *controller) List(ctx context.Context,
 }
 
 func (c *controller) ofPipelineBasic(ctx context.Context,
-	pr, firstCanRollbackPipelinerun *models.Pipelinerun) (*PipelineBasic, error) {
+	pr, firstCanRollbackPipelinerun *models.Pipelinerun,
+) (*PipelineBasic, error) {
 	user, err := c.userManager.GetUserByID(ctx, pr.CreatedBy)
 	if err != nil {
 		return nil, err
@@ -266,7 +269,8 @@ func (c *controller) ofPipelineBasic(ctx context.Context,
 }
 
 func (c *controller) ofPipelineBasics(ctx context.Context, prs []*models.Pipelinerun,
-	firstCanRollbackPipelinerun *models.Pipelinerun) ([]*PipelineBasic, error) {
+	firstCanRollbackPipelinerun *models.Pipelinerun,
+) ([]*PipelineBasic, error) {
 	var pipelineBasics []*PipelineBasic
 	for _, pr := range prs {
 		pipelineBasic, err := c.ofPipelineBasic(ctx, pr, firstCanRollbackPipelinerun)

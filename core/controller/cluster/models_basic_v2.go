@@ -30,7 +30,8 @@ type CreateClusterRequestV2 struct {
 
 func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Application,
 	er *envregionmodels.EnvironmentRegion, info *BuildTemplateInfo,
-	expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
+	expireSeconds uint,
+) (*models.Cluster, []*tagmodels.Tag) {
 	cluster := &models.Cluster{
 		ApplicationID:   application.ID,
 		Name:            r.Name,
@@ -112,7 +113,8 @@ type UpdateClusterRequestV2 struct {
 }
 
 func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireSeconds uint, environmentName,
-	regionName, templateName, templateRelease string) *models.Cluster {
+	regionName, templateName, templateRelease string,
+) *models.Cluster {
 	var gitURL, gitSubFolder, gitRef, gitRefType string
 	if r.Git != nil {
 		gitURL, gitSubFolder, gitRefType, gitRef = r.Git.URL,

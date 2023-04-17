@@ -31,7 +31,8 @@ func New(db *gorm.DB) Manager {
 }
 
 func (m *manager) CreateLink(ctx context.Context, uid uint,
-	idpID uint, claims *utils.Claims, deletable bool) (*models.UserLink, error) {
+	idpID uint, claims *utils.Claims, deletable bool,
+) (*models.UserLink, error) {
 	if claims == nil {
 		return nil, perror.Wrapf(herrors.ErrParamInvalid, "claims is required")
 	}
@@ -55,7 +56,8 @@ func (m *manager) GetByID(ctx context.Context, id uint) (*models.UserLink, error
 }
 
 func (m *manager) GetByIDPAndSub(ctx context.Context,
-	idpID uint, sub string) (*models.UserLink, error) {
+	idpID uint, sub string,
+) (*models.UserLink, error) {
 	return m.dao.GetByIDPAndSub(ctx, idpID, sub)
 }
 

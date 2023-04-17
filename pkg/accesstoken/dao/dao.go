@@ -30,7 +30,8 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d *dao) ListAccessTokensByResource(ctx context.Context, resourceType string, resourceID uint,
-	query *q.Query) ([]*models.AccessToken, int, error) {
+	query *q.Query,
+) ([]*models.AccessToken, int, error) {
 	var (
 		pageSize   = common.DefaultPageSize
 		pageNumber = common.DefaultPageNumber

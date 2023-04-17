@@ -26,7 +26,7 @@ type GetApplicationResponseV2 struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// CreateOrUpdateApplicationRequestV2 holds the parameters required to create an application
+// CreateOrUpdateApplicationRequestV2 holds the parameters required to create an application.
 type CreateOrUpdateApplicationRequestV2 struct {
 	Name           string                   `json:"name"`
 	Description    string                   `json:"description"`
@@ -91,7 +91,8 @@ func (req *CreateOrUpdateApplicationRequestV2) CreateToApplicationModel(groupID 
 }
 
 func (req *CreateOrUpdateApplicationRequestV2) UpdateToApplicationModel(
-	appExistsInDB *models.Application) *models.Application {
+	appExistsInDB *models.Application,
+) *models.Application {
 	application := &models.Application{
 		Description:     appExistsInDB.Description,
 		Priority:        appExistsInDB.Priority,

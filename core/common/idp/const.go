@@ -1,6 +1,6 @@
 package idp
 
-// for query key
+// for query key.
 const (
 	QueryName = "name"
 )

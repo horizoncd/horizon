@@ -107,7 +107,8 @@ func (c *controller) validateUpdateRequest(w *UpdateWebhookRequest) error {
 }
 
 func (w *CreateWebhookRequest) toModel(ctx context.Context,
-	resourceType string, resourceID uint) (*wmodels.Webhook, error) {
+	resourceType string, resourceID uint,
+) (*wmodels.Webhook, error) {
 	wm := &wmodels.Webhook{
 		ResourceType:     resourceType,
 		ResourceID:       resourceID,

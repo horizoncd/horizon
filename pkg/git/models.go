@@ -17,7 +17,7 @@ type Commit struct {
 	Message string
 }
 
-// SearchParams contains parameters for searching operation
+// SearchParams contains parameters for searching operation.
 type SearchParams struct {
 	Filter     string
 	PageNumber int

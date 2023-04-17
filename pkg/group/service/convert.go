@@ -11,7 +11,7 @@ import (
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 )
 
-// GenerateFullFromGroups generate fullPath which looks like /a/b/c, and fullName which looks like 1 / 2
+// GenerateFullFromGroups generate fullPath which looks like /a/b/c, and fullName which looks like 1 / 2.
 func GenerateFullFromGroups(groups []*models.Group) *Full {
 	// sort groups by the size of the traversalIDs array after split by ','
 	sort.Sort(models.Groups(groups))
@@ -33,7 +33,7 @@ func GenerateFullFromGroups(groups []*models.Group) *Full {
 	}
 }
 
-// ConvertGroupToChild format Child based on group model、fullName、fullPath and resourceType
+// ConvertGroupToChild format Child based on group model、fullName、fullPath and resourceType.
 func ConvertGroupToChild(group *models.Group, full *Full) *Child {
 	return &Child{
 		ID:              group.ID,
@@ -50,7 +50,7 @@ func ConvertGroupToChild(group *models.Group, full *Full) *Child {
 	}
 }
 
-// ConvertGroupOrApplicationToChild format Child based on groupOrApplication
+// ConvertGroupOrApplicationToChild format Child based on groupOrApplication.
 func ConvertGroupOrApplicationToChild(groupOrApplication *models.GroupOrApplication, full *Full) *Child {
 	return &Child{
 		ID:          groupOrApplication.ID,
@@ -168,7 +168,7 @@ func GenerateIDToFull(groups []*models.Group) map[uint]*Full {
 	return idToFull
 }
 
-// GenerateIDToGroup map id to group
+// GenerateIDToGroup map id to group.
 func GenerateIDToGroup(groups []*models.Group) map[uint]*models.Group {
 	idToGroup := make(map[uint]*models.Group)
 

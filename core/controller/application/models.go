@@ -8,7 +8,7 @@ import (
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 )
 
-// Base holds the parameters which can be updated of an application
+// Base holds the parameters which can be updated of an application.
 type Base struct {
 	Description   string          `json:"description"`
 	Priority      string          `json:"priority"`
@@ -22,7 +22,7 @@ type TemplateInput struct {
 	Pipeline    map[string]interface{} `json:"pipeline"`
 }
 
-// CreateApplicationRequest holds the parameters required to create an application
+// CreateApplicationRequest holds the parameters required to create an application.
 type CreateApplicationRequest struct {
 	Base
 
@@ -30,7 +30,7 @@ type CreateApplicationRequest struct {
 	ExtraMembers map[string]string `json:"extraMembers"`
 }
 
-// UpdateApplicationRequest holds the parameters required to update an application
+// UpdateApplicationRequest holds the parameters required to update an application.
 type UpdateApplicationRequest struct {
 	Base
 }
@@ -54,14 +54,14 @@ type ListApplicationResponse struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// Template struct about template
+// Template struct about template.
 type Template struct {
 	Name               string `json:"name"`
 	Release            string `json:"release"`
 	RecommendedRelease string `json:"recommendedRelease,omitempty"`
 }
 
-// toApplicationModel transfer CreateApplicationRequest to models.Application
+// toApplicationModel transfer CreateApplicationRequest to models.Application.
 func (m *CreateApplicationRequest) toApplicationModel(groupID uint) *models.Application {
 	return &models.Application{
 		GroupID:         groupID,
@@ -77,7 +77,7 @@ func (m *CreateApplicationRequest) toApplicationModel(groupID uint) *models.Appl
 	}
 }
 
-// toApplicationModel transfer UpdateApplicationRequest to models.Application
+// toApplicationModel transfer UpdateApplicationRequest to models.Application.
 func (m *UpdateApplicationRequest) toApplicationModel(appExistsInDB *models.Application) *models.Application {
 	application := &models.Application{
 		Description:     appExistsInDB.Description,
@@ -113,9 +113,10 @@ func (m *UpdateApplicationRequest) toApplicationModel(appExistsInDB *models.Appl
 	return application
 }
 
-// ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse
+// ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse.
 func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodels.TemplateRelease,
-	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetApplicationResponse {
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{},
+) *GetApplicationResponse {
 	var recommendedRelease string
 	for _, tr := range trs {
 		if *tr.Recommended {

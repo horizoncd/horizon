@@ -96,7 +96,7 @@ func (a *API) GetDiff(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-// Deprecated
+// Deprecated.
 func (a *API) ClusterStatus(c *gin.Context) {
 	op := "cluster: cluster status"
 	clusterIDStr := c.Param(common.ParamClusterID)
@@ -106,7 +106,7 @@ func (a *API) ClusterStatus(c *gin.Context) {
 		return
 	}
 
-	// nolint
+	//nolint
 	resp, err := a.clusterCtl.GetClusterStatus(c, uint(clusterID))
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
@@ -319,7 +319,7 @@ func (a *API) GetContainerLog(c *gin.Context) {
 	}
 }
 
-// Deprecated
+// Deprecated.
 func (a *API) Online(c *gin.Context) {
 	op := "cluster: online"
 	clusterIDStr := c.Param(common.ParamClusterID)
@@ -349,7 +349,7 @@ func (a *API) Online(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-// Deprecated
+// Deprecated.
 func (a *API) Offline(c *gin.Context) {
 	op := "cluster: offline"
 	clusterIDStr := c.Param(common.ParamClusterID)
@@ -577,7 +577,7 @@ func (a *API) Resume(c *gin.Context) {
 	response.Success(c)
 }
 
-// Deprecated: for internal usage
+// Deprecated: for internal usage.
 func (a *API) Upgrade(c *gin.Context) {
 	const op = "cluster: upgrade"
 	clusterIDStr := c.Param(common.ParamClusterID)

@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiV2Group := engine.Group("/apis/core/v2")
 	apiV2Routes := route.Routes{
@@ -58,7 +58,7 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 	route.RegisterRoutes(apiV2Group, apiV2Routes)
 
 	frontV2Group := engine.Group("/apis/front/v2/applications")
-	var frontV2Routes = route.Routes{
+	frontV2Routes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     "/searchmyapplications",

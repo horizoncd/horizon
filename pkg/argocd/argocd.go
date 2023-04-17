@@ -33,7 +33,7 @@ var (
 )
 
 type (
-	// ArgoCD interact with ArgoCD Server
+	// ArgoCD interact with ArgoCD Server.
 	ArgoCD interface {
 		// AssembleArgoApplication assemble application by params
 		AssembleArgoApplication(name, namespace, gitRepoURL, server string,
@@ -78,14 +78,14 @@ type (
 			param ContainerLogParams) (<-chan ContainerLog, <-chan error, error)
 	}
 
-	// EventParam the params for ListResourceEvents
+	// EventParam the params for ListResourceEvents.
 	EventParam struct {
 		ResourceNamespace string `json:"resourceNamespace"`
 		ResourceUID       string `json:"resourceUID"`
 		ResourceName      string `json:"resourceName"`
 	}
 
-	// ResourceParams the params for GetApplicationResource
+	// ResourceParams the params for GetApplicationResource.
 	ResourceParams struct {
 		// Group name in k8s, for example, Deployment resource is in 'apps' group
 		Group string `json:"group,omitempty"`
@@ -108,7 +108,7 @@ type (
 		} `json:"error"`
 	}
 
-	// ContainerLogParams the params for GetContainerLog
+	// ContainerLogParams the params for GetContainerLog.
 	ContainerLogParams struct {
 		Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 		PodName       string `json:"podName,omitempty" yaml:"podName,omitempty"`
@@ -125,7 +125,7 @@ type (
 )
 
 type (
-	// argo holding the info for ArgoCD Server
+	// argo holding the info for ArgoCD Server.
 	helper struct {
 		// URL for argoCD server
 		URL string `json:"url"`
@@ -156,35 +156,34 @@ func NewArgoCD(URL, token, namespace string) ArgoCD {
 var _ ArgoCD = (*helper)(nil)
 
 const (
-	// http retry count
+	// http retry count.
 	_retry = 3
-	// http timeout
+	// http timeout.
 	_timeout = 10 * time.Second
-	// retry backoff duration
+	// retry backoff duration.
 	_backoff = 1 * time.Second
 )
 
-var (
-	_client = &retryablehttp.Client{
-		HTTPClient: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
+var _client = &retryablehttp.Client{
+	HTTPClient: &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
 			},
-			Timeout: _timeout,
 		},
-		RetryMax:     _retry,
-		CheckRetry:   retryablehttp.DefaultRetryPolicy,
-		ErrorHandler: retryablehttp.PassthroughErrorHandler,
-		Backoff: func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
-			return _backoff
-		},
-	}
-)
+		Timeout: _timeout,
+	},
+	RetryMax:     _retry,
+	CheckRetry:   retryablehttp.DefaultRetryPolicy,
+	ErrorHandler: retryablehttp.PassthroughErrorHandler,
+	Backoff: func(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
+		return _backoff
+	},
+}
 
 func (h *helper) AssembleArgoApplication(name, namespace, gitRepoURL, server string,
-	valueFiles []string, targetRevision string) *Application {
+	valueFiles []string, targetRevision string,
+) *Application {
 	const finalizer = "resources-finalizer.argocd.argoproj.io"
 	const apiVersion = "argoproj.io/v1alpha1"
 	const kind = "Application"
@@ -337,7 +336,8 @@ func (h *helper) WaitApplication(ctx context.Context, cluster string, uid string
 }
 
 func (h *helper) GetApplication(ctx context.Context,
-	application string) (applicationCRD *v1alpha1.Application, err error) {
+	application string,
+) (applicationCRD *v1alpha1.Application, err error) {
 	const op = "argo: get application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -346,7 +346,8 @@ func (h *helper) GetApplication(ctx context.Context,
 }
 
 func (h *helper) RefreshApplication(ctx context.Context,
-	application string) (applicationCRD *v1alpha1.Application, err error) {
+	application string,
+) (applicationCRD *v1alpha1.Application, err error) {
 	const op = "argo: refresh application "
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -355,7 +356,8 @@ func (h *helper) RefreshApplication(ctx context.Context,
 }
 
 func (h *helper) getOrRefreshApplication(ctx context.Context,
-	url string) (applicationCRD *v1alpha1.Application, err error) {
+	url string,
+) (applicationCRD *v1alpha1.Application, err error) {
 	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -382,7 +384,8 @@ func (h *helper) getOrRefreshApplication(ctx context.Context,
 }
 
 func (h *helper) GetApplicationTree(ctx context.Context, application string) (
-	tree *v1alpha1.ApplicationTree, err error) {
+	tree *v1alpha1.ApplicationTree, err error,
+) {
 	const op = "argo: get application tree"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -410,7 +413,8 @@ func (h *helper) GetApplicationTree(ctx context.Context, application string) (
 }
 
 func (h *helper) GetApplicationResource(ctx context.Context, application string,
-	gvk ResourceParams, resource interface{}) (err error) {
+	gvk ResourceParams, resource interface{},
+) (err error) {
 	const op = "argo: get application resource"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -457,7 +461,8 @@ func (h *helper) GetApplicationResource(ctx context.Context, application string,
 }
 
 func (h *helper) ListResourceEvents(ctx context.Context, application string, param EventParam) (
-	eventList *corev1.EventList, err error) {
+	eventList *corev1.EventList, err error,
+) {
 	const op = "argo: list resource events"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -513,13 +518,14 @@ func (h *helper) ResumeRollout(ctx context.Context, application string) (err err
 }
 
 func (h *helper) GetContainerLog(ctx context.Context, application string,
-	param ContainerLogParams) (lc <-chan ContainerLog, ec <-chan error, err error) {
+	param ContainerLogParams,
+) (lc <-chan ContainerLog, ec <-chan error, err error) {
 	const op = "argo: get container log"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	format := "%v/api/v1/applications/%v/pods/%v/logs?container=%v&follow=false&namespace=%v&tailLines=%v"
 	url := fmt.Sprintf(format, h.URL, application, param.PodName, param.ContainerName, param.Namespace, param.TailLines)
-	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil) // nolint:bodyclose
+	resp, err := h.sendHTTPRequest(ctx, http.MethodGet, url, nil) //nolint:bodyclose
 	if err != nil {
 		return nil, nil, err
 	}
@@ -567,7 +573,8 @@ func (h *helper) GetContainerLog(ctx context.Context, application string,
 }
 
 func (h *helper) sendHTTPRequest(ctx context.Context, method string, url string,
-	body io.Reader) (*http.Response, error) {
+	body io.Reader,
+) (*http.Response, error) {
 	log.Infof(ctx, "method: %v, url: %v", method, url)
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {

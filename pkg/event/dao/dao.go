@@ -25,7 +25,7 @@ type DAO interface {
 
 type dao struct{ db *gorm.DB }
 
-// NewDAO returns an instance of the default DAO
+// NewDAO returns an instance of the default DAO.
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }
@@ -79,8 +79,9 @@ func (d *dao) GetEvent(ctx context.Context, id uint) (*models.Event, error) {
 	return event, nil
 }
 
-func (d *dao) CreateOrUpdateCursor(ctx context.Context,
-	eventCursor *models.EventCursor) (*models.EventCursor, error) {
+func (d *dao) CreateOrUpdateCursor(_ context.Context,
+	eventCursor *models.EventCursor,
+) (*models.EventCursor, error) {
 	if result := d.db.Clauses(clause.OnConflict{
 		Columns: []clause.Column{
 			{
@@ -94,7 +95,7 @@ func (d *dao) CreateOrUpdateCursor(ctx context.Context,
 	return eventCursor, nil
 }
 
-func (d *dao) GetCursor(ctx context.Context) (*models.EventCursor, error) {
+func (d *dao) GetCursor(_ context.Context) (*models.EventCursor, error) {
 	var eventIndex models.EventCursor
 	if result := d.db.First(&eventIndex); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {

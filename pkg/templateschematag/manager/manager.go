@@ -33,11 +33,12 @@ func (m *manager) ListByClusterID(ctx context.Context, clusterID uint) ([]*model
 }
 
 func (m *manager) UpsertByClusterID(ctx context.Context, clusterID uint,
-	tags []*models.ClusterTemplateSchemaTag) error {
+	tags []*models.ClusterTemplateSchemaTag,
+) error {
 	return m.dao.UpsertByClusterID(ctx, clusterID, tags)
 }
 
-// ValidateUpsert tags upsert
+// ValidateUpsert tags upsert.
 func ValidateUpsert(tags []*models.ClusterTemplateSchemaTag) error {
 	if len(tags) > 20 {
 		return perror.WithMessage(herrors.ErrParamInvalid, "the count of tags must be less than 20")

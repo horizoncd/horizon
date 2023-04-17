@@ -16,7 +16,7 @@ const (
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group(BasicPath)
 
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Pattern:     AuthorizePath,
 			Method:      http.MethodGet,

@@ -14,7 +14,7 @@ import (
 )
 
 // Authorizer use the basic rbac rules to check if the user
-// have the permissions
+// have the permissions.
 type Authorizer interface {
 	Authorize(ctx context.Context, attributes auth.Attributes) (auth.Decision, string, error)
 }
@@ -44,7 +44,8 @@ const (
 )
 
 func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.Decision,
-	string, error) {
+	string, error,
+) {
 	// 0. check (admin allows everything, and some are not checked)
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
@@ -104,7 +105,8 @@ func (a *authorizer) Authorize(ctx context.Context, attr auth.Attributes) (auth.
 }
 
 func VisitRoles(member *models.Member, role *types.Role,
-	attr auth.Attributes) (_ auth.Decision, reason string, err error) {
+	attr auth.Attributes,
+) (_ auth.Decision, reason string, err error) {
 	var memberInfo string
 	if member != nil {
 		memberInfo = member.BaseInfo()

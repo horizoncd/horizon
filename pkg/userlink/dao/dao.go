@@ -20,7 +20,7 @@ type DAO interface {
 	GetByIDPAndSub(ctx context.Context, id uint, sub string) (*models.UserLink, error)
 }
 
-// NewDAO returns an instance of the default DAO
+// NewDAO returns an instance of the default DAO.
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }
@@ -43,7 +43,7 @@ func (d dao) ListByUserID(ctx context.Context, uid uint) ([]*models.UserLink, er
 	return links, nil
 }
 
-func (d dao) GetByID(ctx context.Context, id uint) (*models.UserLink, error) {
+func (d dao) GetByID(_ context.Context, id uint) (*models.UserLink, error) {
 	var link *models.UserLink
 	err := d.db.Table("tb_idp_user").
 		Where("id = ?", id).
@@ -60,7 +60,7 @@ func (d dao) GetByID(ctx context.Context, id uint) (*models.UserLink, error) {
 	return link, err
 }
 
-func (d dao) DeleteByID(ctx context.Context, id uint) error {
+func (d dao) DeleteByID(_ context.Context, id uint) error {
 	var link *models.UserLink
 	err := d.db.Table("tb_idp_user").
 		Delete(&link, id).Error

@@ -77,6 +77,7 @@ func (a *API) GetOauthApp(c *gin.Context) {
 	}
 	response.SuccessWithData(c, oauthApp)
 }
+
 func (a *API) DeleteOauthApp(c *gin.Context) {
 	const op = "DeleteOauthApp"
 	oauthAppClientIDStr := c.Param(_oauthAppClientIDParam)

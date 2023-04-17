@@ -12,9 +12,12 @@ import (
 	webhooksvc "github.com/horizoncd/horizon/pkg/webhook/service"
 )
 
-// Run runs the agent.
+// Run starts the event handler service and the webhook service with multi workers
+// to consume webhook logs and send webhook events.
+// In end graceful exit.
 func Run(ctx context.Context, eventHandlerConfig eventhandlercfg.Config,
-	webhookCfg webhookcfg.Config, mgrs *managerparam.Manager) {
+	webhookCfg webhookcfg.Config, mgrs *managerparam.Manager,
+) {
 	// start event handler service to generate webhook log by events
 	eventHandlerService := eventhandlersvc.NewService(ctx, mgrs, eventHandlerConfig)
 	if err := eventHandlerService.RegisterEventHandler("webhook",
@@ -28,7 +31,6 @@ func Run(ctx context.Context, eventHandlerConfig eventhandlercfg.Config,
 	webhookService.Start()
 
 	<-ctx.Done()
-	// graceful exit
 	webhookService.StopAndWait()
 	eventHandlerService.StopAndWait()
 }

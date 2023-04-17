@@ -9,23 +9,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (a *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group("/apis/core/v1")
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/log", _pipelinerunIDParam),
 			HandlerFunc: a.Log,
-		}, {
+		},
+		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/stop", _pipelinerunIDParam),
 			HandlerFunc: a.Stop,
-		}, {
+		},
+		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/diffs", _pipelinerunIDParam),
 			HandlerFunc: a.GetDiff,
-		}, {
+		},
+		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v", _pipelinerunIDParam),
 			HandlerFunc: a.Get,
@@ -41,7 +44,7 @@ func (a *API) RegisterRoute(engine *gin.Engine) {
 	// stop pipelinerun for cluster
 	// only used for overmind
 	frontGroup := engine.Group("/apis/front/v1")
-	var frontRoutes = route.Routes{
+	frontRoutes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/log", _clusterParam),

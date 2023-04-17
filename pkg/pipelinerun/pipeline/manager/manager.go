@@ -28,7 +28,8 @@ type manager struct {
 }
 
 func (m manager) ListPipelineStats(ctx context.Context, application, cluster string, pageNumber, pageSize int) (
-	[]*models.PipelineStats, int64, error) {
+	[]*models.PipelineStats, int64, error,
+) {
 	query := q.New(q.KeyWords{
 		_application: application,
 	})

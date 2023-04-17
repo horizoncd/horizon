@@ -59,10 +59,9 @@ func NewController(param *param.Param) Controller {
 }
 
 func (c *controller) CreateResourceAccessToken(ctx context.Context, request CreateResourceAccessTokenRequest,
-	resourceType string, resourceID uint) (*CreateResourceAccessTokenResponse, error) {
-	var (
-		userID uint
-	)
+	resourceType string, resourceID uint,
+) (*CreateResourceAccessTokenResponse, error) {
+	var userID uint
 
 	// resource access token need robot user & member
 	robot := generateRobot(request.Name, resourceType, resourceID)
@@ -119,7 +118,8 @@ func (c *controller) CreateResourceAccessToken(ctx context.Context, request Crea
 }
 
 func (c *controller) CreatePersonalAccessToken(ctx context.Context,
-	request CreatePersonalAccessTokenRequest) (*CreatePersonalAccessTokenResponse, error) {
+	request CreatePersonalAccessTokenRequest,
+) (*CreatePersonalAccessTokenResponse, error) {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -153,10 +153,9 @@ func (c *controller) CreatePersonalAccessToken(ctx context.Context,
 }
 
 func (c *controller) ListPersonalAccessTokens(ctx context.Context,
-	query *q.Query) (accessTokens []PersonalAccessToken, total int, err error) {
-	var (
-		tokens []*models.AccessToken
-	)
+	query *q.Query,
+) (accessTokens []PersonalAccessToken, total int, err error) {
+	var tokens []*models.AccessToken
 
 	tokens, total, err = c.accessTokenMgr.ListPersonalAccessTokens(ctx, query)
 	if err != nil {
@@ -188,10 +187,9 @@ func (c *controller) ListPersonalAccessTokens(ctx context.Context,
 }
 
 func (c *controller) ListResourceAccessTokens(ctx context.Context, resourceType string,
-	resourceID uint, query *q.Query) (accessTokens []ResourceAccessToken, total int, err error) {
-	var (
-		tokens []*models.AccessToken
-	)
+	resourceID uint, query *q.Query,
+) (accessTokens []ResourceAccessToken, total int, err error) {
+	var tokens []*models.AccessToken
 	tokens, total, err = c.accessTokenMgr.ListAccessTokensByResource(ctx, resourceType, resourceID, query)
 	if err != nil {
 		return nil, 0, err

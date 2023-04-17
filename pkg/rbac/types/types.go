@@ -2,7 +2,7 @@ package types
 
 // attention: rbac is refers to the kubernetes rbac
 // copy core struct and logics from the kubernetes code
-// and do same modify
+// and do same modify.
 const (
 	APIGroupAll    = "*"
 	ResourceAll    = "*"

@@ -80,7 +80,7 @@ func AbortWithRPCError(c *gin.Context, rpcError rpcerror.RPCError) {
 	Abort(c, rpcError.HTTPCode, string(rpcError.ErrorCode), rpcError.ErrorMessage)
 }
 
-// AbortWithError TODO: remove this function after all error changed to rpcerror.RPCError
+// AbortWithError TODO: remove this function after all error changed to rpcerror.RPCError.
 func AbortWithError(c *gin.Context, err error) {
 	Abort(c, errors.Status(err), errors.Code(err), err.Error())
 }

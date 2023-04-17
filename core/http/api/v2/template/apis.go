@@ -19,12 +19,12 @@ import (
 )
 
 const (
-	// param
+	// param.
 	_templateParam = "templateID"
 	_releaseParam  = "releaseID"
 	_groupParam    = "groupID"
 
-	// query
+	// query.
 	_resourceTypeQuery = "resourceType"
 	_clusterIDQuery    = "clusterID"
 	_withFullPath      = "fullpath"
@@ -44,7 +44,7 @@ func NewAPI(ctl templatectl.Controller, tagCtl templateschematagctl.Controller) 
 	}
 }
 
-// Deprecated
+// Deprecated.
 func (a *API) ListTemplatesByGroupID(c *gin.Context) {
 	op := "template: list templates by group id"
 

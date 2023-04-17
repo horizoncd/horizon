@@ -80,7 +80,8 @@ func (c *controller) Update(ctx context.Context, resourceType string, resourceID
 }
 
 func (c *controller) ListSubResourceTags(ctx context.Context, resourceType string,
-	resourceID uint) (*ListResponse, error) {
+	resourceID uint,
+) (*ListResponse, error) {
 	const op = "cluster tag controller: list sub resource tags"
 	defer wlog.Start(ctx, op).StopPrint()
 

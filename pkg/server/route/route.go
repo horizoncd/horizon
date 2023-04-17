@@ -19,7 +19,7 @@ type Route struct {
 // Routes is the list of the generated Route.
 type Routes []Route
 
-// RegisterRoutes register every route to routerGroup
+// RegisterRoutes register every route to routerGroup.
 func RegisterRoutes(api *gin.RouterGroup, routes Routes) {
 	for _, route := range routes {
 		switch route.Method {

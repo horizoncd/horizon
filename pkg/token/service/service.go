@@ -36,7 +36,8 @@ type service struct {
 }
 
 func (s *service) CreateAccessToken(ctx context.Context, name, expiresAtStr string,
-	userID uint, scopes []string) (*tokenmodels.Token, error) {
+	userID uint, scopes []string,
+) (*tokenmodels.Token, error) {
 	// 1. check expiration date
 	createdAt := time.Now()
 	expiresIn := time.Duration(0)
@@ -65,7 +66,8 @@ func (s *service) CreateAccessToken(ctx context.Context, name, expiresAtStr stri
 }
 
 func (s *service) genAccessToken(gen generator.AccessTokenCodeGenerator, name string, userID uint,
-	scopes []string, createdAt time.Time, expiresIn time.Duration) (*tokenmodels.Token, error) {
+	scopes []string, createdAt time.Time, expiresIn time.Duration,
+) (*tokenmodels.Token, error) {
 	code := gen.GenCode(&generator.CodeGenerateInfo{
 		Token: tokenmodels.Token{UserID: userID},
 	})
@@ -102,7 +104,7 @@ func (s *service) CreateJWTToken(subject string, expiresIn time.Duration, option
 	return token.SignedString([]byte(s.TokenConfig.JwtSigningKey))
 }
 
-// ParseJWTToken parses string and return claims
+// ParseJWTToken parses string and return claims.
 func (s *service) ParseJWTToken(tokenStr string) (Claims, error) {
 	var claims Claims
 	_, err := jwt.ParseWithClaims(tokenStr, &claims, func(token *jwt.Token) (interface{}, error) {

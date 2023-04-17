@@ -95,9 +95,19 @@ type RemoteExecutor struct {
 	Client *http.Client
 }
 
-func (f *RemoteExecutor) Execute(method string, url *url.URL,
-	config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer,
-	tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+// Execute is a method of the remote executor. It executes an HTTP request,
+// gets the response, and writes it to standard output.
+func (f *RemoteExecutor) Execute(
+	method string, // Request method
+	url *url.URL, // Request URL
+	_ *restclient.Config, // REST client configuration
+	_ io.Reader, // Standard input
+	stdout, // Standard output
+	_ io.Writer, // Standard output and error output
+	_ bool, // Whether it is a TTY
+	_ remotecommand.TerminalSizeQueue, // Terminal size queue
+) error {
+	// Construct request object
 	req, err := http.NewRequest(method, url.String(), nil)
 	if err != nil {
 		return err
@@ -108,6 +118,10 @@ func (f *RemoteExecutor) Execute(method string, url *url.URL,
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected response code %d", resp.StatusCode)
+	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

@@ -25,14 +25,14 @@ type API struct {
 	groupCtl group.Controller
 }
 
-// NewAPI initializes a new group api
+// NewAPI initializes a new group api.
 func NewAPI(controller group.Controller) *API {
 	return &API{
 		groupCtl: controller,
 	}
 }
 
-// CreateGroup create a group
+// CreateGroup create a group.
 func (a *API) CreateGroup(c *gin.Context) {
 	var newGroup *group.NewGroup
 	err := c.ShouldBindJSON(&newGroup)
@@ -50,7 +50,7 @@ func (a *API) CreateGroup(c *gin.Context) {
 	response.SuccessWithData(c, id)
 }
 
-// CreateSubGroup create a subgroup
+// CreateSubGroup create a subgroup.
 func (a *API) CreateSubGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.ParseUint(groupID, 10, 0)
@@ -81,7 +81,7 @@ func (a *API) CreateSubGroup(c *gin.Context) {
 	response.SuccessWithData(c, id)
 }
 
-// DeleteGroup delete a group by id
+// DeleteGroup delete a group by id.
 func (a *API) DeleteGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.ParseUint(groupID, 10, 0)
@@ -99,7 +99,7 @@ func (a *API) DeleteGroup(c *gin.Context) {
 	response.Success(c)
 }
 
-// GetGroup get a group child by id
+// GetGroup get a group child by id.
 func (a *API) GetGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.ParseUint(groupID, 10, 0)
@@ -126,7 +126,7 @@ func (a *API) ListAuthedGroup(c *gin.Context) {
 	response.SuccessWithData(c, groups)
 }
 
-// GetGroupByFullPath get a group child by fullPath
+// GetGroupByFullPath get a group child by fullPath.
 func (a *API) GetGroupByFullPath(c *gin.Context) {
 	path := c.Query(_paramFullPath)
 	resourceType := c.Query(_paramType)
@@ -144,7 +144,7 @@ func (a *API) GetGroupByFullPath(c *gin.Context) {
 	response.SuccessWithData(c, child)
 }
 
-// TransferGroup transfer a group to another parent group
+// TransferGroup transfer a group to another parent group.
 func (a *API) TransferGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	parentID := c.Query(_paramGroupID)
@@ -168,7 +168,7 @@ func (a *API) TransferGroup(c *gin.Context) {
 	response.Success(c)
 }
 
-// UpdateGroup update basic info of a group
+// UpdateGroup update basic info of a group.
 func (a *API) UpdateGroup(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.ParseUint(groupID, 10, 0)
@@ -193,7 +193,7 @@ func (a *API) UpdateGroup(c *gin.Context) {
 	response.Success(c)
 }
 
-// GetChildren get children of a group, including groups and applications
+// GetChildren get children of a group, including groups and applications.
 func (a *API) GetChildren(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.ParseUint(groupID, 10, 0)
@@ -219,7 +219,7 @@ func (a *API) GetChildren(c *gin.Context) {
 	})
 }
 
-// GetSubGroups get subGroups of a group
+// GetSubGroups get subGroups of a group.
 func (a *API) GetSubGroups(c *gin.Context) {
 	groupID := c.Param(_paramGroupID)
 	intID, err := strconv.ParseUint(groupID, 10, 0)
@@ -245,7 +245,7 @@ func (a *API) GetSubGroups(c *gin.Context) {
 	})
 }
 
-// SearchChildren search children of a group, including groups and applications
+// SearchChildren search children of a group, including groups and applications.
 func (a *API) SearchChildren(c *gin.Context) {
 	groupID := c.Query(_paramGroupID)
 	intID, err := strconv.ParseUint(groupID, 10, 0)
@@ -278,7 +278,7 @@ func (a *API) SearchChildren(c *gin.Context) {
 	})
 }
 
-// SearchGroups search subgroups of a group
+// SearchGroups search subgroups of a group.
 func (a *API) SearchGroups(c *gin.Context) {
 	groupID := c.Query(_paramGroupID)
 	intID, err := strconv.ParseUint(groupID, 10, 0)

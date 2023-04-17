@@ -18,7 +18,7 @@ type Environment struct {
 
 type Environments []*Environment
 
-// ofEnvironmentModels []*models.Environment to []*Environment
+// ofEnvironmentModels []*models.Environment to []*Environment.
 func ofEnvironmentModels(envs []*models.Environment, autoFreeSvc *service.AutoFreeSVC) Environments {
 	environments := make(Environments, 0)
 	for _, env := range envs {

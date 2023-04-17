@@ -76,7 +76,7 @@ func (r *RequestInfoFactory) NewRequestInfo(req *http.Request) (*RequestInfo, er
 	case "POST":
 		requestInfo.Verb = "create"
 	case "GET", "HEAD":
-		// nolint
+		//nolint
 		requestInfo.Verb = "get"
 	case "PUT":
 		requestInfo.Verb = "update"

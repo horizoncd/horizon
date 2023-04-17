@@ -20,7 +20,8 @@ import (
 )
 
 func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
-	r *InternalDeployRequestV2) (_ *InternalDeployResponseV2, err error) {
+	r *InternalDeployRequestV2,
+) (_ *InternalDeployResponseV2, err error) {
 	const op = "cluster controller: internal deploy v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -186,7 +187,8 @@ func (c *controller) retrieveClaimsAndUser(ctx context.Context) (*tokenservice.C
 }
 
 func (c *controller) InternalGetClusterStatus(ctx context.Context,
-	clusterID uint) (_ *GetClusterStatusResponse, err error) {
+	clusterID uint,
+) (_ *GetClusterStatusResponse, err error) {
 	// auth jwt token
 	_, user, err := c.retrieveClaimsAndUser(ctx)
 	if err != nil {

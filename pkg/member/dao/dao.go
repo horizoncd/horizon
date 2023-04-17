@@ -34,9 +34,7 @@ type DAO interface {
 	ListMembersByUserID(ctx context.Context, userID uint) ([]models.Member, error)
 }
 
-var (
-	model = &models.Member{}
-)
+var model = &models.Member{}
 
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
@@ -50,7 +48,8 @@ func (d *dao) Create(ctx context.Context, member *models.Member) (*models.Member
 }
 
 func (d *dao) Get(ctx context.Context, resourceType models.ResourceType, resourceID uint,
-	memberType models.MemberType, memberInfo uint) (*models.Member, error) {
+	memberType models.MemberType, memberInfo uint,
+) (*models.Member, error) {
 	var member models.Member
 	result := d.db.WithContext(ctx).Raw(common.MemberSingleQuery, resourceType, resourceID,
 		memberType, memberInfo).Scan(&member)
@@ -124,7 +123,8 @@ func (d *dao) HardDelete(ctx context.Context, resourceType string, resourceID ui
 }
 
 func (d *dao) ListDirectMember(ctx context.Context, resourceType models.ResourceType,
-	resourceID uint) ([]models.Member, error) {
+	resourceID uint,
+) ([]models.Member, error) {
 	var members []models.Member
 	result := d.db.WithContext(ctx).Raw(common.MemberSelectAll, resourceType, resourceID).Scan(&members)
 	if result.Error != nil {
@@ -134,7 +134,8 @@ func (d *dao) ListDirectMember(ctx context.Context, resourceType models.Resource
 }
 
 func (d *dao) ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
-	resourceID uint) ([]models.Member, error) {
+	resourceID uint,
+) ([]models.Member, error) {
 	var members []models.Member
 	if emails, ok := ctx.Value(memberctx.MemberEmails).([]string); ok {
 		result := d.db.WithContext(ctx).Raw(common.MemberSelectByUserEmails, resourceType, resourceID, emails).Scan(&members)
@@ -146,7 +147,8 @@ func (d *dao) ListDirectMemberOnCondition(ctx context.Context, resourceType mode
 }
 
 func (d *dao) ListResourceOfMemberInfo(ctx context.Context,
-	resourceType models.ResourceType, memberInfo uint) ([]uint, error) {
+	resourceType models.ResourceType, memberInfo uint,
+) ([]uint, error) {
 	var resources []uint
 	result := d.db.WithContext(ctx).Raw(common.MemberListResource, resourceType, memberInfo).Scan(&resources)
 	if result.Error != nil {
@@ -156,7 +158,8 @@ func (d *dao) ListResourceOfMemberInfo(ctx context.Context,
 }
 
 func (d *dao) ListResourceOfMemberInfoByRole(ctx context.Context,
-	resourceType models.ResourceType, info uint, role string) ([]uint, error) {
+	resourceType models.ResourceType, info uint, role string,
+) ([]uint, error) {
 	members := make([]uint, 0)
 	res := d.db.Model(model).WithContext(ctx).Select("resource_id").Where(&models.Member{
 		ResourceType: resourceType,

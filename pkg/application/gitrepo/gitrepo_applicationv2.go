@@ -58,7 +58,8 @@ type gitRepo struct {
 var _ ApplicationGitRepo = &gitRepo{}
 
 func NewApplicationGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
-	gitlabLib gitlablib.Interface, defaultBranch string) (ApplicationGitRepo, error) {
+	gitlabLib gitlablib.Interface, defaultBranch string,
+) (ApplicationGitRepo, error) {
 	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _applications)
 	if err != nil {
 		return nil, err
@@ -90,7 +91,7 @@ func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application stri
 		environmentRepoName = req.Environment
 	}
 
-	var envProjectExists = false
+	envProjectExists := false
 	pid := fmt.Sprintf("%v/%v/%v", g.applicationsGroup.FullPath, application, environmentRepoName)
 	var project *gitlab.Project
 	project, err = g.gitlabLib.GetProject(ctx, pid)
@@ -123,7 +124,7 @@ func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application stri
 	}
 
 	// 2. if env template repo exists, the gitlab action is update, else the action is create
-	var action = gitlablib.FileCreate
+	action := gitlablib.FileCreate
 	if envProjectExists {
 		action = gitlablib.FileUpdate
 	}

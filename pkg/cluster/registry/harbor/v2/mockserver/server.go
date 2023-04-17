@@ -107,7 +107,7 @@ func (s *HarborServer) PushImage(projectName string, repository string, tag stri
 func (s *HarborServer) DeleteRepository(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	project, repository := vars["project"], vars["repository"]
-	var projectID = ""
+	projectID := ""
 	for _, v := range s.Projects {
 		if v.Name == project {
 			projectID = strconv.Itoa(v.ID)

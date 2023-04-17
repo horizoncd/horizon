@@ -13,7 +13,8 @@ import (
 )
 
 func runCloudEventServer(tektonFty factory.Factory, config server.Config,
-	parameter *param.Param, middlewares ...gin.HandlerFunc) {
+	parameter *param.Param, middlewares ...gin.HandlerFunc,
+) {
 	r := gin.Default()
 	r.Use(middlewares...)
 

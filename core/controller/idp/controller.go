@@ -89,7 +89,8 @@ func (c *controller) List(ctx context.Context) ([]*IdentityProvider, error) {
 }
 
 func (c *controller) LoginOrLink(ctx context.Context,
-	code string, state string, redirectURL string) (*usermodel.User, error) {
+	code string, state string, redirectURL string,
+) (*usermodel.User, error) {
 	bts, err := base64.StdEncoding.DecodeString(state)
 	if err != nil {
 		return nil, perror.Wrapf(
@@ -183,7 +184,8 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*IdentityProvider, e
 }
 
 func (c *controller) Create(ctx context.Context,
-	createParam *CreateIDPRequest) (*IdentityProvider, error) {
+	createParam *CreateIDPRequest,
+) (*IdentityProvider, error) {
 	idp := createParam.toModel()
 
 	_, err := c.idpManager.GetByCondition(ctx,
@@ -210,7 +212,8 @@ func (c *controller) Delete(ctx context.Context, idpID uint) error {
 }
 
 func (c *controller) Update(ctx context.Context,
-	id uint, updateParam *UpdateIDPRequest) (*IdentityProvider, error) {
+	id uint, updateParam *UpdateIDPRequest,
+) (*IdentityProvider, error) {
 	updateIDP := updateParam.toModel()
 	idp, err := c.idpManager.Update(ctx, id, updateIDP)
 	if err != nil {

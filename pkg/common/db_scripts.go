@@ -1,6 +1,6 @@
 package common
 
-/* sql about template */
+/* sql about template. */
 const (
 	TemplateList                  = "select * from tb_template"
 	TemplateListByGroup           = "select * from tb_template where group_id = ?"
@@ -53,7 +53,7 @@ const (
 		"where tb_template_release.id = ? and tb_cluster.deleted_ts = 0"
 )
 
-/* sql about user */
+/* sql about user. */
 const (
 	// UserQueryByOIDC ...
 	UserQueryByOIDC  = "select * from tb_user where oidc_type = ? and email = ? and user_type = ?"
@@ -67,7 +67,7 @@ const (
 	UserDeleteByID = "delete from tb_user where id = ?"
 )
 
-/* sql about member */
+/* sql about member. */
 const (
 	MemberQueryByID   = "select * from tb_member where id = ? and deleted_ts = 0"
 	MemberSingleQuery = "select * from tb_member where resource_type = ? and  resource_id = ? and member_type= ?" +
@@ -87,7 +87,7 @@ const (
 		" membername_id = ? and deleted_ts = 0"
 )
 
-/* sql about group */
+/* sql about group. */
 const (
 	GroupQueryByParentIDAndName = "select * from tb_group where parent_id = ? and name = ? and deleted_ts = 0"
 	GroupQueryByParentIDAndPath = "select * from tb_group where parent_id = ? and path = ? and deleted_ts = 0"
@@ -122,7 +122,7 @@ const (
 		"where a.group_id=? and a.deleted_ts = 0) ga"
 )
 
-/* sql about application */
+/* sql about application. */
 const (
 	ApplicationQueryByIDs             = "select * from tb_application where id in ? and deleted_ts = 0"
 	ApplicationQueryByGroupIDs        = "select * from tb_application where group_id in ? and deleted_ts = 0"
@@ -136,7 +136,7 @@ const (
 	ApplicationCountByGroupID = "select count(1) from tb_application where group_id = ? and deleted_ts = 0"
 )
 
-/* sql about environment */
+/* sql about environment. */
 const (
 	// EnvironmentListAll ...
 	EnvironmentListAll   = "select * from tb_environment where deleted_ts = 0 order by updated_at desc"
@@ -144,7 +144,7 @@ const (
 	EnvironmentGetByName = "select * from tb_environment where name = ? and deleted_ts = 0"
 )
 
-/* sql about environmentRegion */
+/* sql about environmentRegion. */
 const (
 	EnvironmentListRegion = "select * from tb_environment_region " +
 		"where environment_name = ? and deleted_ts = 0"
@@ -166,7 +166,7 @@ const (
 	EnvironmentRegionUnsetDefaultByID = "update tb_environment_region set is_default = 0 where id = ?"
 )
 
-/* sql about region */
+/* sql about region. */
 const (
 	// RegionListAll ...
 	RegionListAll    = "select * from tb_region where deleted_ts = 0 order by updated_at desc"
@@ -178,7 +178,7 @@ const (
 		"and %s group by r.id having count(r.id) = ?"
 )
 
-/* sql about cluster */
+/* sql about cluster. */
 const (
 	ClusterCountByRegionName  = "select count(1) from tb_cluster where region_name = ? and deleted_ts = 0"
 	ClusterQueryByID          = "select * from tb_cluster where id = ? and deleted_ts = 0"
@@ -187,7 +187,7 @@ const (
 	ClusterQueryByClusterName = "select * from tb_cluster where name = ? and deleted_ts = 0"
 )
 
-/* sql about pipelinerun */
+/* sql about pipelinerun. */
 const (
 	PipelinerunGetByID                       = "select * from tb_pipelinerun where id = ?"
 	PipelinerunGetByCIEventID                = "select * from tb_pipelinerun where ci_event_id = ?"
@@ -221,7 +221,7 @@ const (
 		" and action != 'restart' and status = 'ok' order by created_at desc limit 1 offset 0"
 )
 
-/* sql about cluster tag */
+/* sql about cluster tag. */
 const (
 	// TagListByResourceTypeID ...
 	TagListByResourceTypeID = "select * from tb_tag where resource_type = ?" +
@@ -236,7 +236,7 @@ const (
 		" and resource_id = ? and `tag_key` not in ?"
 )
 
-/* sql about cluster template tag */
+/* sql about cluster template tag. */
 const (
 	ClusterTemplateSchemaTagListByClusterID = "select * from tb_cluster_template_schema_tag where cluster_id = ? " +
 		"order by id"
@@ -245,7 +245,7 @@ const (
 		" and `tag_key` not in ?"
 )
 
-/* sql about application region */
+/* sql about application region. */
 const (
 	ApplicationRegionListByEnvApplicationID = "select * from tb_application_region where environment_name = ? " +
 		"and application_id = ?"
@@ -253,7 +253,7 @@ const (
 	ApplicationRegionDeleteAllByApplicationID = "delete from tb_application_region where application_id = ?"
 )
 
-/* sql about token*/
+/* sql about token.*/
 const (
 	DeleteByCode     = "delete  from tb_token where code = ?"
 	DeleteTokenByID  = "delete from tb_token where id = ?"
@@ -261,7 +261,7 @@ const (
 	DeleteByClientID = "delete from tb_token where client_id = ?"
 )
 
-/* sql about oauth app*/
+/* sql about oauth app.*/
 const (
 	GetOauthAppByClientID        = "select * from tb_oauth_app where  client_id = ?"
 	DeleteOauthAppByClientID     = "delete from tb_oauth_app where client_id = ?"
@@ -271,7 +271,7 @@ const (
 	ClientSecretSelectAll        = "select * from tb_oauth_client_secret where client_id = ?"
 )
 
-/* sql about pipeline*/
+/* sql about pipeline.*/
 const (
 	PipelineDeleteByCluster = "delete from tb_pipeline where cluster= ?"
 	TaskDeleteByCluster     = "delete from tb_task where cluster= ?"

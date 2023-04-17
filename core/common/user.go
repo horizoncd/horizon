@@ -36,7 +36,7 @@ func UserFromContext(ctx context.Context) (user.User, error) {
 }
 
 func WithContext(parent context.Context, user user.User) context.Context {
-	return context.WithValue(parent, UserContextKey(), user) // nolint
+	return context.WithValue(parent, UserContextKey(), user) //nolint
 }
 
 func SetUser(c *gin.Context, user user.User) {

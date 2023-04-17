@@ -37,7 +37,8 @@ func (d dao) Create(ctx context.Context, collection *models.Collection) (*models
 }
 
 func (d dao) GetByResource(ctx context.Context, userID uint, resourceID uint,
-	resourceType string) (*models.Collection, error) {
+	resourceType string,
+) (*models.Collection, error) {
 	collection := models.Collection{}
 	result := d.db.WithContext(ctx).Where("user_id = ?", userID).
 		Where("resource_id = ?", resourceID).
@@ -55,7 +56,8 @@ func (d dao) GetByResource(ctx context.Context, userID uint, resourceID uint,
 }
 
 func (d dao) DeleteByResource(ctx context.Context, userID uint, resourceID uint,
-	resourceType string) (*models.Collection, error) {
+	resourceType string,
+) (*models.Collection, error) {
 	collection := models.Collection{}
 	result := d.db.WithContext(ctx).Where("user_id = ?", userID).
 		Where("resource_id = ?", resourceID).
@@ -69,7 +71,8 @@ func (d dao) DeleteByResource(ctx context.Context, userID uint, resourceID uint,
 }
 
 func (d dao) List(ctx context.Context, userID uint, resourceType string,
-	ids []uint) ([]models.Collection, error) {
+	ids []uint,
+) ([]models.Collection, error) {
 	var collections []models.Collection
 	result := d.db.WithContext(ctx).
 		Where("user_id = ?", userID).

@@ -19,7 +19,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
-// path variable
+// path variable.
 const (
 	_userIDParam = "userID"
 	_linkIDParam = "linkID"

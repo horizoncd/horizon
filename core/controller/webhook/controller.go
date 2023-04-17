@@ -52,7 +52,8 @@ func NewController(param *param.Param) Controller {
 }
 
 func (c *controller) CreateWebhook(ctx context.Context, resourceType string,
-	resourceID uint, w *CreateWebhookRequest) (*Webhook, error) {
+	resourceID uint, w *CreateWebhookRequest,
+) (*Webhook, error) {
 	const op = "webhook controller: create"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -88,7 +89,8 @@ func (c *controller) GetWebhook(ctx context.Context, id uint) (*Webhook, error) 
 }
 
 func (c *controller) UpdateWebhook(ctx context.Context, id uint,
-	w *UpdateWebhookRequest) (*Webhook, error) {
+	w *UpdateWebhookRequest,
+) (*Webhook, error) {
 	const op = "wehook controller: update"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -121,7 +123,8 @@ func (c *controller) DeleteWebhook(ctx context.Context, id uint) error {
 }
 
 func (c *controller) ListWebhooks(ctx context.Context, resourceType string,
-	resourceID uint, query *q.Query) ([]*Webhook, int64, error) {
+	resourceID uint, query *q.Query,
+) ([]*Webhook, int64, error) {
 	const op = "wehook controller: list"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -141,7 +144,8 @@ func (c *controller) ListWebhooks(ctx context.Context, resourceType string,
 }
 
 func (c *controller) ListWebhookLogs(ctx context.Context, wID uint,
-	query *q.Query) ([]*LogSummary, int64, error) {
+	query *q.Query,
+) ([]*LogSummary, int64, error) {
 	const op = "wehook controller: list log"
 	defer wlog.Start(ctx, op).StopPrint()
 

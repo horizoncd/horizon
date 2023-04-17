@@ -196,7 +196,7 @@ type ClusterStateV2 struct {
 	Status string `json:"status"`
 }
 
-// ClusterState cluster state
+// ClusterState cluster state.
 type ClusterState struct {
 	// Status:
 	// Processing
@@ -241,7 +241,7 @@ type Step struct {
 	AutoPromote  bool  `json:"autoPromote"`
 }
 
-// ClusterVersion version information
+// ClusterVersion version information.
 type ClusterVersion struct {
 	// Replicas the replicas of this revision
 	Replicas int    `json:"replicas,omitempty" yaml:"replicas,omitempty"`
@@ -250,7 +250,7 @@ type ClusterVersion struct {
 	Pods map[string]*ClusterPod `json:"pods,omitempty" yaml:"pods,omitempty"`
 }
 
-// ClusterPod pod detail
+// ClusterPod pod detail.
 type ClusterPod struct {
 	Metadata          PodMetadata  `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 	Spec              PodSpec      `json:"spec,omitempty" yaml:"spec,omitempty"`
@@ -300,7 +300,7 @@ type Event struct {
 	EventTimestamp metav1.Time `json:"eventTimestamp,omitempty" yaml:"eventTimestamp,omitempty"`
 }
 
-// ContainerDetail represents more information about a container
+// ContainerDetail represents more information about a container.
 type ContainerDetail struct {
 	// Name of the container.
 	Name string `json:"name"`
@@ -374,7 +374,7 @@ type ResourceTreeNode struct {
 	children []*ResourceTreeNode
 }
 
-// for pod compact
+// for pod compact.
 type CompactPodMetadata struct {
 	Name              string            `json:"name"`
 	Namespace         string            `json:"namespace"`

@@ -99,7 +99,8 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 }
 
 func (c *controller) Deploy(ctx context.Context, clusterID uint,
-	r *DeployRequest) (_ *PipelinerunIDResponse, err error) {
+	r *DeployRequest,
+) (_ *PipelinerunIDResponse, err error) {
 	const op = "cluster controller: deploy "
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -237,7 +238,8 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 }
 
 func (c *controller) Rollback(ctx context.Context,
-	clusterID uint, r *RollbackRequest) (_ *PipelinerunIDResponse, err error) {
+	clusterID uint, r *RollbackRequest,
+) (_ *PipelinerunIDResponse, err error) {
 	const op = "cluster controller: rollback "
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -459,7 +461,7 @@ export OFFLINE_SHELL="/home/appops/.probe/offline-once.sh"
 bash "$OFFLINE_SHELL"
 `}
 
-// Deprecated
+// Deprecated.
 func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
 	const op = "cluster controller: online"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -468,13 +470,53 @@ func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest)
 	return c.Exec(ctx, clusterID, r)
 }
 
-// Deprecated
+// Deprecated.
 func (c *controller) Offline(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
 	const op = "cluster controller: offline"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	r.Commands = offlineCommands
 	return c.Exec(ctx, clusterID, r)
+}
+
+func (c *controller) exec(ctx context.Context, clusterID uint,
+	r *ExecRequest, execFunc cd.ExecFunc,
+) (_ ExecResponse, err error) {
+	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, err
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
+	}
+
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
+	if err != nil {
+		return nil, err
+	}
+
+	execResp, err := execFunc(ctx, &cd.ExecParams{
+		Environment:  cluster.EnvironmentName,
+		Cluster:      cluster.Name,
+		RegionEntity: regionEntity,
+		Namespace:    envValue.Namespace,
+		PodList:      r.PodList,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ofExecResp(execResp), nil
 }
 
 func (c *controller) Exec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
@@ -611,7 +653,7 @@ func (c *controller) GetGrafanaDashBoard(ctx context.Context, clusterID uint) (*
 	}, nil
 }
 
-// Deprecated: Upgrade v1 to v2
+// Deprecated: Upgrade v1 to v2.
 func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 	const op = "cluster controller: upgrade to v2"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -672,7 +714,8 @@ func (c *controller) Upgrade(ctx context.Context, clusterID uint) error {
 }
 
 func (c *controller) updatePipelineRunStatus(ctx context.Context,
-	action string, prID uint, pState prmodels.PipelineStatus, revision string) error {
+	action string, prID uint, pState prmodels.PipelineStatus, revision string,
+) error {
 	var err error
 	if pState != prmodels.StatusOK {
 		err = c.pipelinerunMgr.UpdateStatusByID(ctx, prID, pState)
@@ -693,9 +736,10 @@ func (c *controller) updatePipelineRunStatus(ctx context.Context,
 	return nil
 }
 
-// updateTemplateAndTagsFromFile syncs template and tags in db when git repo files are updated
+// updateTemplateAndTagsFromFile syncs template and tags in db when git repo files are updated.
 func (c *controller) updateTemplateAndTagsFromFile(ctx context.Context,
-	application *amodels.Application, cluster *cmodels.Cluster) (*cmodels.Cluster, error) {
+	application *amodels.Application, cluster *cmodels.Cluster,
+) (*cmodels.Cluster, error) {
 	templateFromFile, err := c.clusterGitRepo.GetClusterTemplate(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return nil, err
@@ -741,7 +785,8 @@ func (c *controller) updateTemplateAndTagsFromFile(ctx context.Context,
 }
 
 func (c *controller) checkAndSyncGitOpsBranch(ctx context.Context, application,
-	cluster string, commit string) error {
+	cluster string, commit string,
+) error {
 	changed, err := c.manifestVersionChanged(ctx, application, cluster, commit)
 	if err != nil {
 		return err
@@ -756,9 +801,10 @@ func (c *controller) checkAndSyncGitOpsBranch(ctx context.Context, application,
 }
 
 // Deprecated: for internal usage
-// manifestVersionChanged determines whether manifest version is changed
+// manifestVersionChanged determines whether manifest version is changed.
 func (c *controller) manifestVersionChanged(ctx context.Context, application,
-	cluster string, commit string) (bool, error) {
+	cluster string, commit string,
+) (bool, error) {
 	currentManifest, err1 := c.clusterGitRepo.GetManifest(ctx, application, cluster, nil)
 	if err1 != nil {
 		if _, ok := perror.Cause(err1).(*herrors.HorizonErrNotFound); !ok {

@@ -38,18 +38,20 @@ type manager struct {
 	regionDAO    regiondao.DAO
 }
 
-// DeleteByID implements Manager
+// DeleteByID implements Manager.
 func (m *manager) DeleteByID(ctx context.Context, id uint) error {
 	return m.envRegionDAO.DeleteByID(ctx, id)
 }
 
 func (m *manager) GetDefaultRegionByEnvironment(ctx context.Context, env string) (
-	*models.EnvironmentRegion, error) {
+	*models.EnvironmentRegion, error,
+) {
 	return m.envRegionDAO.GetDefaultRegionByEnvironment(ctx, env)
 }
 
 func (m *manager) CreateEnvironmentRegion(ctx context.Context,
-	er *models.EnvironmentRegion) (*models.EnvironmentRegion, error) {
+	er *models.EnvironmentRegion,
+) (*models.EnvironmentRegion, error) {
 	return m.envRegionDAO.CreateEnvironmentRegion(ctx, er)
 }
 
@@ -62,7 +64,8 @@ func (m *manager) ListByEnvironment(ctx context.Context, env string) ([]*models.
 }
 
 func (m *manager) ListEnabledRegionsByEnvironment(ctx context.Context, env string) (
-	regionmodels.RegionParts, error) {
+	regionmodels.RegionParts, error,
+) {
 	return m.envRegionDAO.ListEnabledRegionsByEnvironment(ctx, env)
 }
 
@@ -71,7 +74,8 @@ func (m *manager) GetEnvironmentRegionByID(ctx context.Context, id uint) (*model
 }
 
 func (m *manager) GetByEnvironmentAndRegion(ctx context.Context,
-	env, region string) (*models.EnvironmentRegion, error) {
+	env, region string,
+) (*models.EnvironmentRegion, error) {
 	return m.envRegionDAO.GetEnvironmentRegionByEnvAndRegion(ctx, env, region)
 }
 

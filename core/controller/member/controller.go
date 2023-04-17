@@ -21,7 +21,7 @@ type Controller interface {
 	GetMemberOfResource(ctx context.Context, resourceType string, resourceID uint) (*Member, error)
 }
 
-// NewController initializes a new group controller
+// NewController initializes a new group controller.
 func NewController(param *param.Param) Controller {
 	return &controller{
 		memberService: param.MemberService,

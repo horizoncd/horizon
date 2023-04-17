@@ -124,7 +124,7 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 	}
 
 	frontV2Group := engine.Group("/apis/front/v2/clusters")
-	var frontV2Routes = route.Routes{
+	frontV2Routes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%v", common.ParamClusterName),

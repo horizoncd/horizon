@@ -9,7 +9,7 @@ import (
 
 func RegisterRoutes(engine *gin.Engine, api *API) {
 	group := engine.Group("/apis/internal")
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodPost,
 			Pattern:     "/cloudevents",

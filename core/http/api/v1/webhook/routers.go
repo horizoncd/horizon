@@ -18,7 +18,7 @@ const (
 
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	group := engine.Group("/apis/core/v1")
-	var routers = route.Routes{
+	routers := route.Routes{
 		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/:%v/:%v/webhooks", _resourceTypeParam, _resourceIDParam),

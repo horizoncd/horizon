@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	// param
+	// param.
 	_environmentRegionIDParam = "environmentRegionID"
 	_environmentNameQuery     = "environmentName"
 )

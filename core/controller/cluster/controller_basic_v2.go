@@ -83,7 +83,8 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 }
 
 func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, environment,
-	region string, r *CreateClusterRequestV2, mergePatch bool) (*CreateClusterResponseV2, error) {
+	region string, r *CreateClusterRequestV2, mergePatch bool,
+) (*CreateClusterResponseV2, error) {
 	const op = "cluster controller: create cluster v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -349,7 +350,8 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 }
 
 func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
-	r *UpdateClusterRequestV2, mergePatch bool) error {
+	r *UpdateClusterRequestV2, mergePatch bool,
+) error {
 	const op = "cluster controller: update cluster v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -479,7 +481,8 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 			Environment:         environmentName,
 			RegionEntity:        regionEntity,
 			Version:             common.MetaVersion2,
-		}}); err != nil {
+		},
+	}); err != nil {
 		return err
 	}
 
@@ -511,7 +514,8 @@ type BuildTemplateInfo struct {
 }
 
 func (info *BuildTemplateInfo) Validate(ctx context.Context,
-	trGetter templateschema.Getter, templateSchemaRenderVal map[string]string, buildSchema *build.Schema) error {
+	trGetter templateschema.Getter, templateSchemaRenderVal map[string]string, buildSchema *build.Schema,
+) error {
 	if templateSchemaRenderVal == nil {
 		templateSchemaRenderVal = make(map[string]string)
 	}
@@ -537,7 +541,8 @@ func (info *BuildTemplateInfo) Validate(ctx context.Context,
 }
 
 func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r *CreateClusterRequestV2,
-	application *appmodels.Application, environment string, mergePatch bool) (*BuildTemplateInfo, error) {
+	application *appmodels.Application, environment string, mergePatch bool,
+) (*BuildTemplateInfo, error) {
 	buildTemplateInfo := &BuildTemplateInfo{}
 
 	var appGitRepoFile *appgitrepo.GetResponse

@@ -75,7 +75,7 @@ type Authorizer interface {
 type Decision int
 
 const (
-	// DecisionDeny means that an authorizer decided to deny the action
+	// DecisionDeny means that an authorizer decided to deny the action.
 	DecisionDeny Decision = iota
 	// DecisionAllow means that an authorizer  decided to allow the action.
 	DecisionAllow

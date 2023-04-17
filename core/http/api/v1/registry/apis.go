@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	// param
+	// param.
 	_registryIDParam = "registryID"
 )
 

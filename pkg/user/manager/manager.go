@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/horizoncd/horizon/lib/q"
-	"github.com/horizoncd/horizon/pkg/user/dao"
+	userdao "github.com/horizoncd/horizon/pkg/user/dao"
 	"github.com/horizoncd/horizon/pkg/user/models"
 	"gorm.io/gorm"
 )
@@ -24,31 +24,31 @@ type Manager interface {
 }
 
 type manager struct {
-	dao dao.DAO
+	userdao userdao.DAO
 }
 
 func New(db *gorm.DB) Manager {
-	return &manager{dao: dao.NewDAO(db)}
+	return &manager{userdao: userdao.NewDAO(db)}
 }
 
 func (m *manager) Create(ctx context.Context, user *models.User) (*models.User, error) {
-	return m.dao.Create(ctx, user)
+	return m.userdao.Create(ctx, user)
 }
 
 func (m *manager) List(ctx context.Context, query *q.Query) (int64, []*models.User, error) {
-	return m.dao.List(ctx, query)
+	return m.userdao.List(ctx, query)
 }
 
 func (m *manager) ListByEmail(ctx context.Context, emails []string) ([]*models.User, error) {
-	return m.dao.ListByEmail(ctx, emails)
+	return m.userdao.ListByEmail(ctx, emails)
 }
 
 func (m *manager) GetUserByID(ctx context.Context, userID uint) (*models.User, error) {
-	return m.dao.GetByID(ctx, userID)
+	return m.userdao.GetByID(ctx, userID)
 }
 
 func (m *manager) GetUserByIDs(ctx context.Context, userIDs []uint) ([]*models.User, error) {
-	return m.dao.GetByIDs(ctx, userIDs)
+	return m.userdao.GetByIDs(ctx, userIDs)
 }
 
 func (m *manager) GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint]*models.User, error) {
@@ -65,13 +65,13 @@ func (m *manager) GetUserMapByIDs(ctx context.Context, userIDs []uint) (map[uint
 }
 
 func (m *manager) GetUserByIDP(ctx context.Context, email string, idp string) (*models.User, error) {
-	return m.dao.GetUserByIDP(ctx, email, idp)
+	return m.userdao.GetUserByIDP(ctx, email, idp)
 }
 
 func (m *manager) UpdateByID(ctx context.Context, id uint, db *models.User) (*models.User, error) {
-	return m.dao.UpdateByID(ctx, id, db)
+	return m.userdao.UpdateByID(ctx, id, db)
 }
 
 func (m *manager) DeleteUser(ctx context.Context, id uint) error {
-	return m.dao.DeleteUser(ctx, id)
+	return m.userdao.DeleteUser(ctx, id)
 }

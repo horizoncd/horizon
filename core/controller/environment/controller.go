@@ -86,7 +86,8 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 }
 
 func (c *controller) ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (
-	regionmodels.RegionParts, error) {
+	regionmodels.RegionParts, error,
+) {
 	return c.envRegionMgr.ListEnabledRegionsByEnvironment(ctx, environment)
 }
 

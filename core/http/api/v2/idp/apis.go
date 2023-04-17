@@ -16,12 +16,12 @@ import (
 	"github.com/horizoncd/horizon/pkg/user/util"
 )
 
-// for path variable
+// for path variable.
 var (
 	_idp = "idp"
 )
 
-// for query
+// for query.
 var (
 	_oidcCode    = "code"
 	_oidcState   = "state"

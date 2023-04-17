@@ -37,7 +37,7 @@ type DAO interface {
 
 type dao struct{ db *gorm.DB }
 
-// NewDAO returns an instance of the default DAO
+// NewDAO returns an instance of the default DAO.
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }
@@ -69,7 +69,8 @@ func (d *dao) ListWebhooks(ctx context.Context) ([]*models.Webhook, error) {
 }
 
 func (d *dao) ListWebhookOfResources(ctx context.Context,
-	resources map[string][]uint, query *q.Query) ([]*models.Webhook, int64, error) {
+	resources map[string][]uint, query *q.Query,
+) ([]*models.Webhook, int64, error) {
 	var ws []*models.Webhook
 	var (
 		condition *gorm.DB
@@ -113,7 +114,8 @@ func (d *dao) ListWebhookOfResources(ctx context.Context,
 }
 
 func (d *dao) UpdateWebhook(ctx context.Context, id uint,
-	w *models.Webhook) (*models.Webhook, error) {
+	w *models.Webhook,
+) (*models.Webhook, error) {
 	if result := d.db.WithContext(ctx).Where("id = ?", id).
 		Select("enabled", "url", "enable_ssl_verify", "description", "secret", "triggers").
 		Updates(w); result.Error != nil {
@@ -139,7 +141,8 @@ func (d *dao) DeleteWebhook(ctx context.Context, id uint) error {
 }
 
 func (d *dao) CreateWebhookLog(ctx context.Context,
-	wl *models.WebhookLog) (*models.WebhookLog, error) {
+	wl *models.WebhookLog,
+) (*models.WebhookLog, error) {
 	d.db.WithContext(ctx).Commit().Callback()
 	if result := d.db.WithContext(ctx).Create(wl); result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.WebhookLogInDB, result.Error.Error())
@@ -148,7 +151,8 @@ func (d *dao) CreateWebhookLog(ctx context.Context,
 }
 
 func (d *dao) CreateWebhookLogs(ctx context.Context,
-	wls []*models.WebhookLog) ([]*models.WebhookLog, error) {
+	wls []*models.WebhookLog,
+) ([]*models.WebhookLog, error) {
 	d.db.WithContext(ctx).Commit().Callback()
 	if result := d.db.WithContext(ctx).Create(wls); result.Error != nil {
 		return nil, herrors.NewErrInsertFailed(herrors.WebhookLogInDB, result.Error.Error())
@@ -156,8 +160,9 @@ func (d *dao) CreateWebhookLogs(ctx context.Context,
 	return wls, nil
 }
 
-func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
-	query *q.Query, resources map[string][]uint) ([]*models.WebhookLogWithEventInfo, int64, error) {
+func (d *dao) ListWebhookLogs(_ context.Context, wID uint,
+	query *q.Query, resources map[string][]uint,
+) ([]*models.WebhookLogWithEventInfo, int64, error) {
 	var (
 		logs  []*models.WebhookLogWithEventInfo
 		count int64
@@ -200,7 +205,8 @@ func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
 }
 
 func (d *dao) ListWebhookLogsByMap(ctx context.Context,
-	webhookEventMap map[uint][]uint) ([]*models.WebhookLog, error) {
+	webhookEventMap map[uint][]uint,
+) ([]*models.WebhookLog, error) {
 	var (
 		ws        []*models.WebhookLog
 		condition *gorm.DB
@@ -226,7 +232,8 @@ func (d *dao) ListWebhookLogsByMap(ctx context.Context,
 }
 
 func (d *dao) ListWebhookLogsByStatus(ctx context.Context, wID uint,
-	status string) ([]*models.WebhookLog, error) {
+	status string,
+) ([]*models.WebhookLog, error) {
 	var ws []*models.WebhookLog
 	if result := d.db.WithContext(ctx).Where("webhook_id = ?", wID).Where("status = ?", status).
 		Find(&ws); result.Error != nil {

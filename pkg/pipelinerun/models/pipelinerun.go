@@ -20,7 +20,7 @@ const (
 	StatusDeployed  PipelineStatus = "deployed"
 	StatusOK        PipelineStatus = "ok"
 	StatusFailed    PipelineStatus = "failed"
-	StatusCancelled PipelineStatus = "cancelled"
+	StatusCancelled PipelineStatus = "canceled"
 	StatusUnknown   PipelineStatus = "unknown"
 )
 
@@ -31,7 +31,7 @@ type Pipelinerun struct {
 	ClusterID uint
 	// Action type, which can be builddeploy, deploy, restart, rollback
 	Action string
-	// Status of this pipelinerun, which can be created, ok, failed, cancelled, unknown
+	// Status of this pipelinerun, which can be created, ok, failed, canceled, unknown
 	Status string
 	// Title of this pipelinerun
 	Title string

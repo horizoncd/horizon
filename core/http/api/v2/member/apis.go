@@ -31,7 +31,7 @@ type API struct {
 	roleService role.Service
 }
 
-// NewAPI initializes a new group api
+// NewAPI initializes a new group api.
 func NewAPI(controller member.Controller, rservice role.Service) *API {
 	return &API{
 		memberCtrl:  controller,
@@ -327,9 +327,10 @@ func (a *API) validRole(ctx context.Context, role string) error {
 	return nil
 }
 
-// validatePostMember validate postMember body according to resourceType
+// validatePostMember validate postMember body according to resourceType.
 func (a *API) validatePostMember(ctx context.Context,
-	postMember *member.PostMember) error {
+	postMember *member.PostMember,
+) error {
 	if err := validMemberType(postMember.MemberType); err != nil {
 		return err
 	}

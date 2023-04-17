@@ -23,10 +23,10 @@ import (
 const (
 	rootGroupID = 0
 
-	// _updateAt one of the field of the group table
+	// _updateAt one of the field of the group table.
 	_updateAt = "updated_at"
 
-	// _parentID one of the field of the group table
+	// _parentID one of the field of the group table.
 	_parentID = "parent_id"
 )
 
@@ -101,7 +101,8 @@ func New(db *gorm.DB) Manager {
 }
 
 func (m manager) GetChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) (
-	[]*models.GroupOrApplication, int64, error) {
+	[]*models.GroupOrApplication, int64, error,
+) {
 	return m.groupDAO.ListChildren(ctx, parentID, pageNumber, pageSize)
 }
 
@@ -203,7 +204,7 @@ func (m manager) GetSubGroupsUnderParentIDs(ctx context.Context, parentIDs []uin
 	return m.groupDAO.ListWithoutPage(ctx, query)
 }
 
-// checkApplicationExists check application is already exists under the same parent
+// checkApplicationExists check application is already exists under the same parent.
 func (m manager) checkApplicationExists(ctx context.Context, group *models.Group) error {
 	apps, err := m.applicationDAO.GetByNamesUnderGroup(ctx,
 		group.ParentID, []string{group.Name, group.Path})
@@ -217,11 +218,12 @@ func (m manager) checkApplicationExists(ctx context.Context, group *models.Group
 }
 
 func (m manager) GetByNameOrPathUnderParent(ctx context.Context,
-	name, path string, parentID uint) ([]*models.Group, error) {
+	name, path string, parentID uint,
+) ([]*models.Group, error) {
 	return m.groupDAO.GetByNameOrPathUnderParent(ctx, name, path, parentID)
 }
 
-// formatListGroupQuery query info for listing groups under a parent group, order by updated_at desc by default
+// formatListGroupQuery query info for listing groups under a parent group, order by updated_at desc by default.
 func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
 	query := q.New(q.KeyWords{
 		_parentID: id,
@@ -235,10 +237,10 @@ func formatListGroupQuery(id uint, pageNumber, pageSize int) *q.Query {
 	return query
 }
 
-// FormatIDsFromTraversalIDs format id array from traversalIDs(1,2,3)
+// FormatIDsFromTraversalIDs format id array from traversalIDs(1,2,3).
 func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
 	splitIds := strings.Split(traversalIDs, ",")
-	var ids = make([]uint, len(splitIds))
+	ids := make([]uint, len(splitIds))
 	for i, id := range splitIds {
 		ii, _ := strconv.Atoi(id)
 		ids[i] = uint(ii)
@@ -246,7 +248,7 @@ func FormatIDsFromTraversalIDs(traversalIDs string) []uint {
 	return ids
 }
 
-// GetSubGroupsByGroupIDs get groups and its subGroups by specified groupIDs
+// GetSubGroupsByGroupIDs get groups and its subGroups by specified groupIDs.
 func (m manager) GetSubGroupsByGroupIDs(ctx context.Context, groupIDs []uint) ([]*models.Group, error) {
 	IDs := make([]uint, 0)
 	groupIDSet := make(map[uint]struct{})
@@ -384,12 +386,12 @@ func (m manager) GetDefaultRegions(ctx context.Context, id uint) ([]*envregionmo
 	return res, nil
 }
 
-// IsRootGroup return whether it is the root group(groupID equals 0)
-func (m manager) IsRootGroup(ctx context.Context, groupID uint) bool {
+// IsRootGroup return whether it is the root group(groupID equals 0).
+func (m manager) IsRootGroup(_ context.Context, groupID uint) bool {
 	return groupID == rootGroupID
 }
 
-// GroupExist returns whether the group exists in db
+// GroupExist returns whether the group exists in db.
 func (m manager) GroupExist(ctx context.Context, groupID uint) bool {
 	if m.IsRootGroup(ctx, groupID) {
 		return true

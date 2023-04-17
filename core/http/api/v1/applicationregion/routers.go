@@ -10,10 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group("/apis/core/v1")
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/applications/:%v/defaultregions", common.ParamApplicationID),

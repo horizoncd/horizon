@@ -21,7 +21,7 @@ type Region struct {
 	UpdatedBy     uint
 }
 
-// RegionEntity region entity, region with registry
+// RegionEntity region entity, region with registry.
 type RegionEntity struct {
 	*Region
 

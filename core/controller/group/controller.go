@@ -29,9 +29,9 @@ import (
 )
 
 const (
-	// ErrCodeNotFound a kind of error code, returned when there's no group matching the given id
+	// ErrCodeNotFound a kind of error code, returned when there's no group matching the given id.
 	ErrCodeNotFound = errors.ErrorCode("RecordNotFound")
-	// ErrGroupHasChildren a kind of error code, returned when deleting a group which still has some children
+	// ErrGroupHasChildren a kind of error code, returned when deleting a group which still has some children.
 	ErrGroupHasChildren = errors.ErrorCode("GroupHasChildren")
 )
 
@@ -71,7 +71,7 @@ type controller struct {
 	templateReleaseMgr trmanager.Manager
 }
 
-// NewController initializes a new group controller
+// NewController initializes a new group controller.
 func NewController(param *param.Param) Controller {
 	return &controller{
 		groupManager:       param.GroupManager,
@@ -83,9 +83,10 @@ func NewController(param *param.Param) Controller {
 	}
 }
 
-// GetChildren get children of a group, including subgroups and applications
+// GetChildren get children of a group, including subgroups and applications.
 func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageSize int) (
-	[]*service.Child, int64, error) {
+	[]*service.Child, int64, error,
+) {
 	var parent *models.Group
 	var full *service.Full
 	if id > 0 {
@@ -124,7 +125,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 	}
 
 	// format GroupChild
-	var gChildren = make([]*service.Child, len(children))
+	gChildren := make([]*service.Child, len(children))
 	for i, val := range children {
 		var fName, fPath string
 		if id == 0 {
@@ -146,7 +147,7 @@ func (c *controller) GetChildren(ctx context.Context, id uint, pageNumber, pageS
 	return gChildren, count, nil
 }
 
-// SearchGroups search subGroups of a group
+// SearchGroups search subGroups of a group.
 func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error) {
 	if params.Filter == "" {
 		return c.GetSubGroups(ctx, params.GroupID, params.PageNumber, params.PageSize)
@@ -183,7 +184,7 @@ func (c *controller) SearchGroups(ctx context.Context, params *SearchParams) ([]
 	return childrenWithLevelStruct, int64(len(childrenWithLevelStruct)), nil
 }
 
-// SearchChildren search children of a group, including subgroups and applications
+// SearchChildren search children of a group, including subgroups and applications.
 func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) ([]*service.Child, int64, error) {
 	if params.Filter == "" {
 		return c.GetChildren(ctx, params.GroupID, params.PageNumber, params.PageSize)
@@ -232,9 +233,10 @@ func (c *controller) SearchChildren(ctx context.Context, params *SearchParams) (
 	return childrenWithLevelStruct, int64(len(childrenWithLevelStruct)), nil
 }
 
-// GetSubGroups get subgroups of a group
+// GetSubGroups get subgroups of a group.
 func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, pageSize int) (
-	[]*service.Child, int64, error) {
+	[]*service.Child, int64, error,
+) {
 	var parent *models.Group
 	var full *service.Full
 	if id > 0 {
@@ -271,7 +273,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 	}
 
 	// format GroupChild
-	var gChildren = make([]*service.Child, len(subGroups))
+	gChildren := make([]*service.Child, len(subGroups))
 	for i, s := range subGroups {
 		var fName, fPath string
 		if id == 0 {
@@ -293,7 +295,7 @@ func (c *controller) GetSubGroups(ctx context.Context, id uint, pageNumber, page
 	return gChildren, count, nil
 }
 
-// UpdateBasic update basic info of a group, including name, path, description and visibilityLevel
+// UpdateBasic update basic info of a group, including name, path, description and visibilityLevel.
 func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *UpdateGroup) error {
 	group := convertUpdateGroupToGroup(updateGroup)
 	group.ID = id
@@ -306,7 +308,7 @@ func (c *controller) UpdateBasic(ctx context.Context, id uint, updateGroup *Upda
 	return nil
 }
 
-// Transfer put a group under another parent group
+// Transfer put a group under another parent group.
 func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 	err := c.groupManager.Transfer(ctx, id, newParentID)
 	if err != nil {
@@ -316,7 +318,7 @@ func (c *controller) Transfer(ctx context.Context, id, newParentID uint) error {
 	return nil
 }
 
-// CreateGroup add a group
+// CreateGroup add a group.
 func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint, error) {
 	groupEntity := convertNewGroupToGroup(newGroup)
 
@@ -329,9 +331,10 @@ func (c *controller) CreateGroup(ctx context.Context, newGroup *NewGroup) (uint,
 }
 
 // GetByFullPath TODO: refactor by resource type
-// get a resource by the URLPath
+// get a resource by the URLPath.
 func (c *controller) GetByFullPath(ctx context.Context,
-	resourcePath string, resourceType string) (*service.Child, error) {
+	resourcePath string, resourceType string,
+) (*service.Child, error) {
 	const op = "get record by fullPath"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -518,7 +521,7 @@ func (c *controller) ListAuthedGroup(ctx context.Context) ([]*Group, error) {
 	return c.ofGroupModel(ctx, authedGroups)
 }
 
-// GetByID get a group by the id
+// GetByID get a group by the id.
 func (c *controller) GetByID(ctx context.Context, id uint) (*StructuredGroup, error) {
 	group, err := c.groupManager.GetByID(ctx, id)
 	if err != nil {
@@ -553,7 +556,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*StructuredGroup, er
 	}, nil
 }
 
-// Delete remove a group by the id
+// Delete remove a group by the id.
 func (c *controller) Delete(ctx context.Context, id uint) error {
 	const op = "group *controller: delete group by id"
 
@@ -571,7 +574,7 @@ func (c *controller) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
-// formatGroupsInTraversalIDs query groups by ids (split traversalIDs by ',')
+// formatGroupsInTraversalIDs query groups by ids (split traversalIDs by ',').
 func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*models.Group) ([]*models.Group, error) {
 	var ids []uint
 	for _, g := range groups {
@@ -586,9 +589,10 @@ func (c *controller) formatGroupsInTraversalIDs(ctx context.Context, groups []*m
 	return groupsByIDs, nil
 }
 
-// generateChildrenWithLevelStruct generate subgroups with level struct
+// generateChildrenWithLevelStruct generate subgroups with level struct.
 func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
-	applications []*appmodels.Application) []*service.Child {
+	applications []*appmodels.Application,
+) []*service.Child {
 	// get mapping between id and full
 	idToFull := service.GenerateIDToFull(groups)
 
@@ -649,7 +653,7 @@ func (c *controller) formatFullFromGroup(ctx context.Context, group *models.Grou
 }
 
 func (c *controller) ofGroupModel(ctx context.Context, groups []*models.Group) ([]*Group, error) {
-	var ofGroups = make([]*Group, 0)
+	ofGroups := make([]*Group, 0)
 	for _, item := range groups {
 		fullEntity, err := c.formatFullFromGroup(ctx, item)
 		if err != nil {

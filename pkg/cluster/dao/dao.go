@@ -42,7 +42,8 @@ func NewDAO(db *gorm.DB) DAO {
 }
 
 func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
-	tags []*tagmodels.Tag, extraMembers map[*usermodels.User]string) (*models.Cluster, error) {
+	tags []*tagmodels.Tag, extraMembers map[*usermodels.User]string,
+) (*models.Cluster, error) {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -206,7 +207,8 @@ func (d *dao) CheckClusterExists(ctx context.Context, cluster string) (bool, err
 }
 
 func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
-	withRegion bool, appIDs ...uint) (int, []*models.ClusterWithRegion, error) {
+	withRegion bool, appIDs ...uint,
+) (int, []*models.ClusterWithRegion, error) {
 	var (
 		clusters []*models.ClusterWithRegion
 		total    int64
@@ -342,7 +344,8 @@ func GenSQLForTagSelector(tagSelectors []tagmodels.TagSelector, statement *gorm.
 }
 
 func (d *dao) ListClusterWithExpiry(ctx context.Context,
-	query *q.Query) ([]*models.Cluster, error) {
+	query *q.Query,
+) ([]*models.Cluster, error) {
 	var clusters []*models.Cluster
 	tx := d.db.WithContext(ctx)
 	offset := (query.PageNumber - 1) * query.PageSize

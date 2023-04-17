@@ -76,6 +76,7 @@ func (c *controller) ofClientSecret(ctx context.Context, secret *models.OauthCli
 		CreatedBy:    user.Name,
 	}, nil
 }
+
 func (c *controller) CreateSecret(ctx context.Context, clientID string) (*SecretBasic, error) {
 	const op = "oauth app controller  CreateSecret"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -104,7 +105,7 @@ func (c *controller) ListSecret(ctx context.Context, ClientID string) ([]SecretB
 		return nil, err
 	}
 	translate := func() ([]SecretBasic, error) {
-		var secretBasics = make([]SecretBasic, 0)
+		secretBasics := make([]SecretBasic, 0)
 		for _, secret := range secrets {
 			basic, err := c.ofClientSecret(ctx, &secret)
 			if err != nil {
@@ -176,7 +177,7 @@ func (c *controller) List(ctx context.Context, groupID uint) ([]APPBasicInfo, er
 	if err != nil {
 		return nil, err
 	}
-	var appInfos = make([]APPBasicInfo, 0)
+	appInfos := make([]APPBasicInfo, 0)
 	for _, app := range apps {
 		appInfos = append(appInfos, APPBasicInfo{
 			AppID:       app.ID,

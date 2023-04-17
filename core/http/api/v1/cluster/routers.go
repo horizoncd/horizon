@@ -9,10 +9,10 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/route"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group("/apis/core/v1")
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/applications/:%v/clusters", common.ParamApplicationID),
@@ -132,7 +132,7 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 	}
 
 	frontGroup := engine.Group("/apis/front/v1/clusters")
-	var frontRoutes = route.Routes{
+	frontRoutes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%v", common.ParamClusterName),
@@ -151,7 +151,7 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 	}
 
 	internalGroup := engine.Group("/apis/internal/v1/clusters")
-	var internalRoutes = route.Routes{
+	internalRoutes := route.Routes{
 		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/:%v/deploy", common.ParamClusterID),

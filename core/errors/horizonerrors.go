@@ -57,7 +57,7 @@ var (
 	WebhookInDB               = sourceType{name: "WebhookInDB"}
 	WebhookLogInDB            = sourceType{name: "WebhookLogInDB"}
 
-	// S3
+	// S3.
 	PipelinerunLog = sourceType{name: "PipelinerunLog"}
 	PipelinerunObj = sourceType{name: "PipelinerunObj"}
 
@@ -72,7 +72,7 @@ var (
 	TokenInDB = sourceType{name: "TokenInDB"}
 	ChartFile = sourceType{name: "ChartFile"}
 
-	// identity provider
+	// identity provider.
 	Oauth2Token           = sourceType{name: "Oauth2Token"}
 	ProviderFromDiscovery = sourceType{name: "ProviderFromDiscovery"}
 
@@ -180,7 +180,7 @@ func (e *HorizonErrListFailed) Error() string {
 }
 
 var (
-	// universal
+	// universal.
 	ErrWriteFailed      = errors.New("write failed")
 	ErrReadFailed       = errors.New("read failed")
 	ErrNameConflict     = errors.New("name conflict")
@@ -194,19 +194,19 @@ var (
 	ErrGenerateRandomID = errors.New("failed to generate random id")
 	ErrDisabled         = errors.New("entity is disabled")
 	ErrDuplicatedKey    = errors.New("duplicated keys")
-	// ErrInternal = errors.New("internal error")
+	// ErrInternal = errors.New("internal error").
 
-	// http
+	// http.
 	ErrHTTPRespNotAsExpected = errors.New("http response is not as expected")
 	ErrHTTPRequestFailed     = errors.New("http request failed")
 
-	// cluster
+	// cluster.
 	ErrClusterNoChange        = errors.New("no change to cluster")
 	ErrShouldBuildDeployFirst = errors.New("clusters with build config should build and deploy first")
 
-	// pipelinerun
+	// pipelinerun.
 
-	// context
+	// context.
 	ErrFailedToGetORM       = errors.New("cannot get the ORM from context")
 	ErrFailedToGetUser      = errors.New("cannot get user from context")
 	ErrFailedToGetRequestID = errors.New("cannot get the requestID from context")
@@ -215,7 +215,7 @@ var (
 	ErrKubeDynamicCliResponseNotOK = errors.New("response for kube dynamic cli is not 200 OK")
 	ErrKubeExecFailed              = errors.New("kube exec failed")
 
-	// S3
+	// S3.
 	ErrS3SignFailed   = errors.New("s3 sign failed")
 	ErrS3PutObjFailed = errors.New("s3 put obj failed")
 	ErrS3GetObjFailed = errors.New("s3 get obj failed")
@@ -225,32 +225,32 @@ var (
 	ErrGitlabResourceNotFound      = errors.New("gitlab resource not found")
 	ErrGitLabDefaultBranchNotMatch = errors.New("gitlab default branch do not match")
 
-	// git
+	// git.
 	ErrBranchAndCommitEmpty      = errors.New("branch and commit cannot be empty at the same time")
 	ErrGitlabInterfaceCallFailed = errors.New("failed to call gitlab interface")
 
-	// pipeline
+	// pipeline.
 	ErrPipelineOutputEmpty = errors.New("pipeline output is empty")
 
-	// restart
+	// restart.
 	ErrRestartFileEmpty = errors.New("restart file is empty")
 
-	// tekton
+	// tekton.
 	ErrTektonInternal = errors.New("tekton internal error")
 
-	// helm
+	// helm.
 	ErrLoadChartArchive = errors.New("failed to load archive")
 
 	// group
-	// ErrHasChildren used when delete a group which still has some children
+	// ErrHasChildren used when delete a group which still has some children.
 	ErrGroupHasChildren = errors.New("children exist, cannot be deleted")
-	// ErrConflictWithApplication conflict with the application
+	// ErrConflictWithApplication conflict with the application.
 	ErrGroupConflictWithApplication = errors.New("name or path is in conflict with application")
 
-	// ErrOAuthSecretNotFound oauth clientid secret was not valid
+	// ErrOAuthSecretNotFound oauth clientid secret was not valid.
 	ErrOAuthSecretNotValid = errors.New("secret not valid")
 
-	// ErrOAuthCodeExpired oauth authorization code  or access token expire
+	// ErrOAuthCodeExpired oauth authorization code  or access token expire.
 	ErrOAuthCodeExpired               = errors.New("code expired")
 	ErrOAuthAccessTokenExpired        = errors.New("Access Token Expired")
 	ErrOAuthReqNotValid               = errors.New("oauth request not valid")
@@ -260,10 +260,10 @@ var (
 	ErrOAuthTokenFormatError          = errors.New("Oauth token format error")
 	ErrOAuthNotGroupOwnerType         = errors.New("not group oauth app")
 
-	// ErrRegistryUsedByRegions used when deleting a registry that is still used by regions
+	// ErrRegistryUsedByRegions used when deleting a registry that is still used by regions.
 	ErrRegistryUsedByRegions = errors.New("cannot delete a registry when used by regions")
 
-	// ErrRegionUsedByClusters used when deleting a region that is still used by clusters
+	// ErrRegionUsedByClusters used when deleting a region that is still used by clusters.
 	ErrRegionUsedByClusters        = errors.New("cannot delete a region when used by clusters")
 	ErrPipelineOutPut              = errors.New("pipeline output is not valid")
 	ErrTemplateParamInvalid        = errors.New("parameters of template are invalid")
@@ -271,7 +271,7 @@ var (
 	ErrAPIServerResponseNotOK      = errors.New("response for api-server is not 200 OK")
 	ErrListGrafanaDashboard        = errors.New("List grafana dashboards error")
 
-	// event
+	// event.
 	ErrEventHandlerAlreadyExist = errors.New("event handler already exist")
 
 	ErrSessionNotFound   = errors.New("session not found")
@@ -282,6 +282,6 @@ var (
 
 	ErrNotSupport = errors.New("not support")
 
-	// token
+	// token.
 	ErrTokenInvalid = errors.New("token is invalid")
 )

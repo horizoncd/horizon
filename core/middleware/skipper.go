@@ -12,7 +12,7 @@ type Skipper func(*http.Request) bool
 
 // MethodAndPathSkipper returns skipper which
 // will skip the middleware when r.Method equals the method and r.URL.Path matches the re
-// when method is "*" it equals all http method
+// when method is "*" it equals all http method.
 func MethodAndPathSkipper(method string, re *regexp.Regexp) func(r *http.Request) bool {
 	return func(r *http.Request) bool {
 		path := path.Clean(r.URL.EscapedPath())

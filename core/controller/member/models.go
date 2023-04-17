@@ -134,6 +134,7 @@ func (c *converter) ConvertMember(ctx context.Context, member *models.Member) (_
 		GrantTime:    member.UpdatedAt,
 	}, nil
 }
+
 func (c *converter) ConvertMembers(ctx context.Context, members []models.Member) ([]Member, error) {
 	var userIDs []uint
 

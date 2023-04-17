@@ -50,7 +50,7 @@ func NewService(ctx context.Context, manager *managerparam.Manager, config event
 	}
 }
 
-// EventHandler processes new events by registered handlers
+// EventHandler processes new events by registered handlers.
 type EventHandler interface {
 	Process(ctx context.Context, event []*models.Event, resume bool) error
 }
@@ -63,7 +63,7 @@ func (e *eventHandlerService) RegisterEventHandler(name string, eh EventHandler)
 	return nil
 }
 
-// StopAndWait stop and wait for all registered handlers to exit
+// StopAndWait stop and wait for all registered handlers to exit.
 func (e *eventHandlerService) StopAndWait() {
 	// 1. notify handlers to stop
 	e.quit <- true
@@ -89,11 +89,10 @@ func (e *eventHandlerService) Start() {
 					log.Infof(e.ctx, "index does not exist, start process directly")
 					e.cursor = &cursor{}
 					break
-				} else {
-					log.Errorf(e.ctx, "failed to get event cursor, error: %+v", err)
-					time.Sleep(time.Second * 3)
-					continue
 				}
+				log.Errorf(e.ctx, "failed to get event cursor, error: %+v", err)
+				time.Sleep(time.Second * 3)
+				continue
 			}
 			e.cursor = &cursor{
 				ID:       eventCursor.ID,
@@ -168,12 +167,12 @@ func (e *eventHandlerService) Start() {
 	}()
 }
 
-// getLastProcessingCursor get the last processing event cursor to resume
+// getLastProcessingCursor get the last processing event cursor to resume.
 func (e *eventHandlerService) getLastProcessingCursor() (uint, error) {
 	return e.webhookMgr.GetMaxEventIDOfLog(e.ctx)
 }
 
-// saveCursor saves the event id as position in case of resume
+// saveCursor saves the event id as position in case of resume.
 func (e *eventHandlerService) saveCursor() {
 	if _, err := e.eventMgr.CreateOrUpdateCursor(e.ctx, &models.EventCursor{
 		ID:       e.cursor.ID,

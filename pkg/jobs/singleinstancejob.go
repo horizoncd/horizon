@@ -17,7 +17,7 @@ import (
 
 type Job = func(ctx context.Context)
 
-// Run runs the job in a single instance
+// Run runs the job in a single instance.
 func Run(ctx context.Context, jobconfig *jobconfig.Config, jobs ...Job) {
 	// get candidate name
 	candidateID := fmt.Sprintf("candidate-%s", uuid.New())

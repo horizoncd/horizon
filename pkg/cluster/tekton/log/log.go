@@ -21,7 +21,7 @@ const (
 	LogTypeTask     = "task"
 )
 
-// Log represents data to write on log channel
+// Log represents data to write on log channel.
 type Log struct {
 	Pipeline string
 	Task     string

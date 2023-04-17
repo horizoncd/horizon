@@ -1,7 +1,6 @@
 package job
 
 type Config struct {
-
 	// LockName is the name of the lock resource
 	LockName string `yaml:"lockName"`
 

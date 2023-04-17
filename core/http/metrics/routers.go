@@ -12,7 +12,7 @@ import (
 func RegisterRoutes(engine *gin.Engine) {
 	api := engine.Group("/metrics")
 
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			HandlerFunc: gin.WrapH(promhttp.Handler()),

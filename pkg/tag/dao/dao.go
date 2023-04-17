@@ -41,7 +41,8 @@ func (d dao) ListByResourceTypeID(ctx context.Context, resourceType string, reso
 }
 
 func (d dao) ListByResourceTypeIDs(ctx context.Context, resourceType string,
-	resourceID []uint, deduplicate bool) ([]*models.Tag, error) {
+	resourceID []uint, deduplicate bool,
+) ([]*models.Tag, error) {
 	var tags []*models.Tag
 
 	querySQL := common.TagListByResourceTypeIDs
@@ -59,7 +60,8 @@ func (d dao) ListByResourceTypeIDs(ctx context.Context, resourceType string,
 }
 
 func (d dao) UpsertByResourceTypeID(ctx context.Context, resourceType string,
-	resourceID uint, tags []*models.Tag) error {
+	resourceID uint, tags []*models.Tag,
+) error {
 	// 1. if tags is empty, delete all tags
 	if len(tags) == 0 {
 		result := d.db.WithContext(ctx).Exec(common.TagDeleteAllByResourceTypeID, resourceType, resourceID)

@@ -17,7 +17,8 @@ import (
 )
 
 func (c *controller) InternalDeploy(ctx context.Context, clusterID uint,
-	r *InternalDeployRequest) (_ *InternalDeployResponse, err error) {
+	r *InternalDeployRequest,
+) (_ *InternalDeployResponse, err error) {
 	const op = "cluster controller: internal deploy"
 	defer wlog.Start(ctx, op).StopPrint()
 

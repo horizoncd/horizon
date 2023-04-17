@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	// ChildTypeGroup used to indicate the 'Child' is a group
+	// ChildTypeGroup used to indicate the 'Child' is a group.
 	ChildTypeGroup = "group"
 	// ChildTypeApplication ...
 	ChildTypeApplication = "application"
@@ -19,7 +19,7 @@ const (
 	ChildTypeTemplate = "template"
 
 	ChildTypeRelease = "release"
-	// RootGroupID id of the root group, which is not actually exists in the group table
+	// RootGroupID id of the root group, which is not actually exists in the group table.
 	RootGroupID = 0
 )
 

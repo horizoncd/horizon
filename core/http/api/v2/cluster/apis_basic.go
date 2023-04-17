@@ -123,9 +123,8 @@ func (a *API) ListSelf(c *gin.Context) {
 		return
 	}
 
-	c.Request.URL.RawQuery =
-		fmt.Sprintf("%s%s", c.Request.URL.RawQuery,
-			fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID()))
+	c.Request.URL.RawQuery = fmt.Sprintf("%s%s", c.Request.URL.RawQuery,
+		fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID()))
 	a.List(c)
 }
 
@@ -290,7 +289,7 @@ func (a *API) Update(c *gin.Context) {
 	response.Success(c)
 }
 
-// Get V2 get api can also be used to get original cluster
+// Get V2 get api can also be used to get original cluster.
 func (a *API) Get(c *gin.Context) {
 	op := "cluster: get v2"
 	clusterIDStr := c.Param(common.ParamClusterID)

@@ -9,10 +9,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-// HeaderXRequestID X-Request-ID header
+// HeaderXRequestID X-Request-ID header.
 const HeaderXRequestID = "X-Request-ID"
 
-// Middleware add X-Request-ID header in the http request when not exist
+// Middleware add X-Request-ID header in the http request when not exist.
 func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		rid := c.Request.Header.Get(HeaderXRequestID)

@@ -19,12 +19,12 @@ import (
 )
 
 const (
-	// param
+	// param.
 	_templateParam = "templateID"
 	_releaseParam  = "releaseID"
 	_groupParam    = "groupID"
 
-	// query
+	// query.
 	_resourceTypeQuery = "resourceType"
 	_clusterIDQuery    = "clusterID"
 	_withFullPath      = "fullpath"

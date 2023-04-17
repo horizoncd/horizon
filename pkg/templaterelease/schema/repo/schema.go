@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	// json schema file path
+	// json schema file path.
 	_pipelineSchemaPath    = "schema/pipeline.schema.json"
 	_applicationSchemaPath = "schema/application.schema.json"
-	// ui schema file path
+	// ui schema file path.
 	_pipelineUISchemaPath    = "schema/pipeline.ui.schema.json"
 	_applicationUISchemaPath = "schema/application.ui.schema.json"
 )
@@ -24,7 +24,8 @@ type Getter struct {
 }
 
 func NewSchemaGetter(_ context.Context, repo templaterepo.TemplateRepo,
-	manager *managerparam.Manager) *Getter {
+	manager *managerparam.Manager,
+) *Getter {
 	return &Getter{
 		repo:               repo,
 		templateReleaseMgr: manager.TemplateReleaseManager,
@@ -32,7 +33,8 @@ func NewSchemaGetter(_ context.Context, repo templaterepo.TemplateRepo,
 }
 
 func (g *Getter) GetTemplateSchema(ctx context.Context,
-	templateName, releaseName string, params map[string]string) (*schema.Schemas, error) {
+	templateName, releaseName string, params map[string]string,
+) (*schema.Schemas, error) {
 	release, err := g.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, templateName, releaseName)
 	if err != nil {
 		return nil, err

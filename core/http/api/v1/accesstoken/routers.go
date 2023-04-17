@@ -10,10 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	coreGroup := engine.Group("/apis/core/v1")
-	var coreRouters = route.Routes{
+	coreRouters := route.Routes{
 		{
 			Method:      http.MethodPost,
 			Pattern:     "/personalaccesstokens",

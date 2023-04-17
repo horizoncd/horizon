@@ -40,7 +40,8 @@ func (m *manager) Create(ctx context.Context, collection *models.Collection) (*m
 }
 
 func (m *manager) DeleteByResource(ctx context.Context, userID uint, resourceID uint,
-	resourceType string) (*models.Collection, error) {
+	resourceType string,
+) (*models.Collection, error) {
 	_, err := m.dao.GetByResource(ctx, userID, resourceID, resourceType)
 	if err != nil {
 		return nil, err
@@ -49,6 +50,7 @@ func (m *manager) DeleteByResource(ctx context.Context, userID uint, resourceID 
 }
 
 func (m *manager) List(ctx context.Context, userID uint, resourceType string,
-	ids []uint) ([]models.Collection, error) {
+	ids []uint,
+) ([]models.Collection, error) {
 	return m.dao.List(ctx, userID, resourceType, ids)
 }

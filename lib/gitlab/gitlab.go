@@ -176,7 +176,7 @@ type helper struct {
 	httpURL string
 }
 
-// New an instance of Gitlab
+// New an instance of Gitlab.
 func New(token, httpURL string) (Interface, error) {
 	client, err := gitlab.NewClient(token,
 		gitlab.WithBaseURL(httpURL),
@@ -207,7 +207,8 @@ func (h *helper) GetGroup(ctx context.Context, gid interface{}) (_ *gitlab.Group
 }
 
 func (h *helper) ListGroupProjects(ctx context.Context, gid interface{},
-	page, perPage int) (_ []*gitlab.Project, err error) {
+	page, perPage int,
+) (_ []*gitlab.Project, err error) {
 	const op = "gitlab: list group projects"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -240,7 +241,6 @@ func (h *helper) CreateGroup(ctx context.Context, name, path string, parentID *i
 		Path:     &path,
 		ParentID: parentID,
 	}, gitlab.WithContext(ctx))
-
 	if err != nil {
 		return nil, parseError(rsp, err)
 	}
@@ -278,7 +278,6 @@ func (h *helper) CreateProject(ctx context.Context, name string, groupID int) (_
 		Path:                 &name,
 		NamespaceID:          &groupID,
 	}, gitlab.WithContext(ctx))
-
 	if err != nil {
 		return nil, parseError(rsp, err)
 	}
@@ -308,7 +307,8 @@ func (h *helper) GetBranch(ctx context.Context, pid interface{}, branch string) 
 }
 
 func (h *helper) ListBranch(ctx context.Context, pid interface{},
-	listBranchOptions *gitlab.ListBranchesOptions) (_ []*gitlab.Branch, err error) {
+	listBranchOptions *gitlab.ListBranchesOptions,
+) (_ []*gitlab.Branch, err error) {
 	const op = "gitlab: list branch"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -320,7 +320,8 @@ func (h *helper) ListBranch(ctx context.Context, pid interface{},
 }
 
 func (h *helper) ListTag(ctx context.Context, pid interface{},
-	listTagsOptions *gitlab.ListTagsOptions) (_ []*gitlab.Tag, err error) {
+	listTagsOptions *gitlab.ListTagsOptions,
+) (_ []*gitlab.Tag, err error) {
 	const op = "gitlab: list tag"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -356,7 +357,8 @@ func (h *helper) GetTag(ctx context.Context, pid interface{}, tag string) (_ *gi
 }
 
 func (h *helper) CreateBranch(ctx context.Context, pid interface{},
-	branch, fromRef string) (_ *gitlab.Branch, err error) {
+	branch, fromRef string,
+) (_ *gitlab.Branch, err error) {
 	const op = "gitlab: create branch"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -364,7 +366,6 @@ func (h *helper) CreateBranch(ctx context.Context, pid interface{},
 		Branch: &branch,
 		Ref:    &fromRef,
 	}, gitlab.WithContext(ctx))
-
 	if err != nil {
 		return nil, parseError(rsp, err)
 	}
@@ -382,7 +383,8 @@ func (h *helper) DeleteBranch(ctx context.Context, pid interface{}, branch strin
 }
 
 func (h *helper) CreateMR(ctx context.Context, pid interface{},
-	source, target, title string) (_ *gitlab.MergeRequest, err error) {
+	source, target, title string,
+) (_ *gitlab.MergeRequest, err error) {
 	const op = "gitlab: create mr"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -391,7 +393,6 @@ func (h *helper) CreateMR(ctx context.Context, pid interface{},
 		SourceBranch: &source,
 		TargetBranch: &target,
 	}, gitlab.WithContext(ctx))
-
 	if err != nil {
 		return nil, parseError(rsp, err)
 	}
@@ -400,13 +401,13 @@ func (h *helper) CreateMR(ctx context.Context, pid interface{},
 }
 
 func (h *helper) ListMRs(ctx context.Context, pid interface{},
-	source, target, state string) (_ []*gitlab.MergeRequest, err error) {
+	source, target, state string,
+) (_ []*gitlab.MergeRequest, err error) {
 	mrs, rsp, err := h.client.MergeRequests.ListProjectMergeRequests(pid, &gitlab.ListProjectMergeRequestsOptions{
 		SourceBranch: &source,
 		TargetBranch: &target,
 		State:        &state,
 	}, gitlab.WithContext(ctx))
-
 	if err != nil {
 		return nil, perror.WithMessagef(parseError(rsp, err),
 			"failed to list merge requests for project: %v", pid)
@@ -436,7 +437,8 @@ func (h *helper) CloseMR(ctx context.Context, pid interface{}, mrID int) (mr *gi
 }
 
 func (h *helper) AcceptMR(ctx context.Context, pid interface{}, mrID int,
-	mergeCommitMsg *string, shouldRemoveSourceBranch *bool) (mr *gitlab.MergeRequest, err error) {
+	mergeCommitMsg *string, shouldRemoveSourceBranch *bool,
+) (mr *gitlab.MergeRequest, err error) {
 	const op = "gitlab: accept mr"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -445,7 +447,6 @@ func (h *helper) AcceptMR(ctx context.Context, pid interface{}, mrID int,
 			MergeCommitMessage:       mergeCommitMsg,
 			ShouldRemoveSourceBranch: shouldRemoveSourceBranch,
 		}, gitlab.WithContext(ctx))
-
 		if err != nil {
 			return nil, parseError(rsp, err)
 		}
@@ -464,7 +465,8 @@ func (h *helper) AcceptMR(ctx context.Context, pid interface{}, mrID int,
 }
 
 func (h *helper) WriteFiles(ctx context.Context, pid interface{}, branch, commitMsg string,
-	startBranch *string, actions []CommitAction) (_ *gitlab.Commit, err error) {
+	startBranch *string, actions []CommitAction,
+) (_ *gitlab.Commit, err error) {
 	const op = "gitlab: write files"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -485,7 +487,6 @@ func (h *helper) WriteFiles(ctx context.Context, pid interface{}, branch, commit
 			return acts
 		}(),
 	}, gitlab.WithContext(ctx))
-
 	if err != nil {
 		log.Errorf(ctx, "err: %v", err)
 		return nil, parseError(rsp, err)
@@ -501,7 +502,6 @@ func (h *helper) GetFile(ctx context.Context, pid interface{}, ref, filepath str
 	content, rsp, err := h.client.RepositoryFiles.GetRawFile(pid, filepath, &gitlab.GetRawFileOptions{
 		Ref: &ref,
 	}, gitlab.WithContext(ctx))
-
 	if err != nil {
 		return nil, parseError(rsp, err)
 	}
@@ -537,7 +537,8 @@ func (h *helper) EditNameAndPathForProject(ctx context.Context, pid interface{},
 }
 
 func (h *helper) Compare(ctx context.Context, pid interface{}, from, to string,
-	straight *bool) (_ *gitlab.Compare, err error) {
+	straight *bool,
+) (_ *gitlab.Compare, err error) {
 	const op = "gitlab: compare branchs"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -552,6 +553,7 @@ func (h *helper) Compare(ctx context.Context, pid interface{}, from, to string,
 
 	return compare, nil
 }
+
 func (h *helper) GetRepositoryArchive(ctx context.Context, pid interface{}, sha string) ([]byte, error) {
 	const op = "gitlab: get repository archive"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -561,20 +563,20 @@ func (h *helper) GetRepositoryArchive(ctx context.Context, pid interface{}, sha 
 		Format: &format,
 		SHA:    &sha,
 	})
-
 	if err != nil {
 		return nil, parseError(resp, err)
 	}
 	return archive, nil
 }
 
-// GetHTTPURL implements Interface
-func (h *helper) GetHTTPURL(ctx context.Context) string {
+// GetHTTPURL implements Interface.
+func (h *helper) GetHTTPURL(_ context.Context) string {
 	return h.httpURL
 }
 
 func (h *helper) GetCreatedGroup(ctx context.Context, parentID int,
-	parentFullPath string, name string) (*gitlab.Group, error) {
+	parentFullPath string, name string,
+) (*gitlab.Group, error) {
 	var group *gitlab.Group
 	group, err := h.GetGroup(ctx, fmt.Sprintf("%v/%v", parentFullPath, name))
 	if err != nil {

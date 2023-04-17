@@ -91,7 +91,8 @@ func (m *manager) GetByName(ctx context.Context, name string) (*models.Applicati
 }
 
 func (m *manager) Create(ctx context.Context, application *models.Application,
-	extraMembers map[string]string) (*models.Application, error) {
+	extraMembers map[string]string,
+) (*models.Application, error) {
 	emails := make([]string, 0, len(extraMembers))
 	for k := range extraMembers {
 		emails = append(emails, k)
@@ -111,7 +112,8 @@ func (m *manager) Create(ctx context.Context, application *models.Application,
 }
 
 func (m *manager) UpdateByID(ctx context.Context,
-	id uint, application *models.Application) (*models.Application, error) {
+	id uint, application *models.Application,
+) (*models.Application, error) {
 	return m.applicationDAO.UpdateByID(ctx, id, application)
 }
 

@@ -146,6 +146,7 @@ func TestClientSecretBasic(t *testing.T) {
 		}
 	}
 }
+
 func checkAuthorizeToken(req *AuthorizeGenerateRequest, token *tokenmodels.Token) bool {
 	if req.ClientID == token.ClientID &&
 		req.Scope == token.Scope &&

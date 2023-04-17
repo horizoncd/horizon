@@ -47,7 +47,6 @@ func (m *MySQLMetricsCollector) Metrics(p *gormprom.Prometheus) []prometheus.Col
 
 func (m *MySQLMetricsCollector) collect(p *gormprom.Prometheus) {
 	rows, err := p.DB.Raw("SHOW STATUS").Rows()
-
 	if err != nil {
 		p.DB.Logger.Error(context.Background(), "gorm:prometheus query error: %v", err)
 		return
@@ -61,7 +60,7 @@ func (m *MySQLMetricsCollector) collect(p *gormprom.Prometheus) {
 			continue
 		}
 
-		var found = len(m.VariableNames) == 0
+		found := len(m.VariableNames) == 0
 
 		for _, name := range m.VariableNames {
 			if name == variableName {

@@ -10,10 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group("/apis/core/v1")
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/groups/:%v/applications", common.ParamGroupID),
@@ -43,11 +43,13 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 			Method:      http.MethodDelete,
 			Pattern:     fmt.Sprintf("/applications/:%v", common.ParamApplicationID),
 			HandlerFunc: api.Delete,
-		}, {
+		},
+		{
 			Method:      http.MethodPut,
 			Pattern:     fmt.Sprintf("/applications/:%v/transfer", common.ParamApplicationID),
 			HandlerFunc: api.Transfer,
-		}, {
+		},
+		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/applications/:%v/pipelinestats", common.ParamApplicationID),
 			HandlerFunc: api.GetApplicationPipelineStats,
@@ -57,7 +59,7 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 	route.RegisterRoutes(apiGroup, routes)
 
 	frontGroup := engine.Group("/apis/front/v1/applications")
-	var frontRoutes = route.Routes{
+	frontRoutes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     "/searchmyapplications",

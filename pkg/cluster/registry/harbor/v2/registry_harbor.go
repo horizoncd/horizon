@@ -23,7 +23,7 @@ import (
 
 const kind = "harbor"
 
-// default params
+// default params.
 const (
 	_backoffDuration = 1 * time.Second
 	_retry           = 3
@@ -34,7 +34,7 @@ func init() {
 	registry.Register(kind, NewHarborRegistry)
 }
 
-// Registry implement Registry
+// Registry implement Registry.
 type Registry struct {
 	// harbor server address
 	server string
@@ -101,7 +101,8 @@ func (h *Registry) DeleteImage(ctx context.Context, appName string, clusterName 
 }
 
 func (h *Registry) sendHTTPRequest(ctx context.Context, method string,
-	url string, body io.Reader, retry bool, operation string) (*http.Response, error) {
+	url string, body io.Reader, retry bool, operation string,
+) (*http.Response, error) {
 	begin := time.Now()
 	var rsp *http.Response
 	var err error

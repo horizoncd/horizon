@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	// json schema file path
+	// json schema file path.
 	_pipelineSchemaPath    = "schema/pipeline.schema.json"
 	_applicationSchemaPath = "schema/application.schema.json"
-	// ui schema file path
+	// ui schema file path.
 	_pipelineUISchemaPath    = "schema/pipeline.ui.schema.json"
 	_applicationUISchemaPath = "schema/application.ui.schema.json"
 )
@@ -33,7 +33,8 @@ type getter struct {
 }
 
 func (g *getter) GetTemplateSchema(ctx context.Context,
-	templateName, releaseName string, params map[string]string) (_ *schema.Schemas, err error) {
+	templateName, releaseName string, params map[string]string,
+) (_ *schema.Schemas, err error) {
 	const op = "template schema getter: getTemplateSchema"
 	defer wlog.Start(ctx, op).StopPrint()
 

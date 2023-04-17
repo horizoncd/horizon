@@ -31,7 +31,7 @@ type DAO interface {
 	ListV2(ctx context.Context, query *q.Query, gorupIDs ...uint) ([]*models.Template, error)
 }
 
-// NewDAO returns an instance of the default DAO
+// NewDAO returns an instance of the default DAO.
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }
@@ -43,7 +43,7 @@ func (d dao) Create(ctx context.Context, template *models.Template) (*models.Tem
 	return template, result.Error
 }
 
-func (d dao) ListTemplate(ctx context.Context) ([]*models.Template, error) {
+func (d dao) ListTemplate(_ context.Context) ([]*models.Template, error) {
 	var templates []*models.Template
 	result := d.db.Raw(dbsql.TemplateList).Scan(&templates)
 	if result.Error != nil {
@@ -52,7 +52,7 @@ func (d dao) ListTemplate(ctx context.Context) ([]*models.Template, error) {
 	return templates, nil
 }
 
-func (d dao) ListByGroupID(ctx context.Context, groupID uint) ([]*models.Template, error) {
+func (d dao) ListByGroupID(_ context.Context, groupID uint) ([]*models.Template, error) {
 	var templates []*models.Template
 	result := d.db.Raw(dbsql.TemplateListByGroup, groupID).Scan(&templates)
 	if result.Error != nil {
@@ -61,7 +61,7 @@ func (d dao) ListByGroupID(ctx context.Context, groupID uint) ([]*models.Templat
 	return templates, nil
 }
 
-func (d dao) DeleteByID(ctx context.Context, id uint) error {
+func (d dao) DeleteByID(_ context.Context, id uint) error {
 	if res := d.db.Exec(dbsql.TemplateDelete, id); res.Error != nil {
 		return perror.Wrap(herrors.NewErrDeleteFailed(herrors.TemplateInDB, res.Error.Error()),
 			fmt.Sprintf("failed to delete template, id = %d", id))

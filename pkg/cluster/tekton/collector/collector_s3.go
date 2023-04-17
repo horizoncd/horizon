@@ -38,11 +38,11 @@ const (
 	_defaultPipelineRunLogDir  = "/var/log"
 	_defaultPipelineRunLogFile = "build.log"
 
-	// _expireTimeDuration one month
+	// _expireTimeDuration one month.
 	_expireTimeDuration = time.Hour * 24 * 30
-	// _mb 1Mb size
+	// _mb 1Mb size.
 	_mb = 1024 * 1024
-	// _limitSize limit size
+	// _limitSize limit size.
 	_limitSize = _mb * 2.5
 )
 
@@ -116,7 +116,8 @@ type CollectResult struct {
 }
 
 func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, horizonMetaData *global.HorizonMetaData) (
-	*CollectResult, error) {
+	*CollectResult, error,
+) {
 	const op = "s3Collector: collect"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -224,7 +225,8 @@ func (c *S3Collector) GetPipelineRunObject(ctx context.Context, object string) (
 }
 
 func (c *S3Collector) GetPipelineRun(ctx context.Context,
-	pr *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
+	pr *prmodels.Pipelinerun,
+) (*v1beta1.PipelineRun, error) {
 	const op = "s3Collector: getPipelineRun"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -254,7 +256,8 @@ type CollectObjectResult struct {
 }
 
 func (c *S3Collector) collectObject(ctx context.Context, metadata *ObjectMeta,
-	pr *v1beta1.PipelineRun) (_ *CollectObjectResult, err error) {
+	pr *v1beta1.PipelineRun,
+) (_ *CollectObjectResult, err error) {
 	const op = "s3Collector: collectObject"
 	defer wlog.Start(ctx, op).StopPrint()
 	object := &Object{
@@ -287,7 +290,8 @@ type CollectLogResult struct {
 }
 
 func (c *S3Collector) collectLog(ctx context.Context,
-	pr *v1beta1.PipelineRun, metadata *ObjectMeta) (_ *CollectLogResult, err error) {
+	pr *v1beta1.PipelineRun, metadata *ObjectMeta,
+) (_ *CollectLogResult, err error) {
 	const op = "s3Collector: collectLog"
 	defer wlog.Start(ctx, op).StopPrint()
 

@@ -20,7 +20,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/apps"
 )
 
-// Repository the credentials for ArgoCD to interact with Git Repository
+// Repository the credentials for ArgoCD to interact with Git Repository.
 type Repository struct {
 	// Type ssh
 	Type string `json:"type"`
@@ -220,7 +220,7 @@ func (argoServer *ArgoServer) DeleteApplication(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusOK)
 }
 
-func (argoServer *ArgoServer) GetApplicationTree(w http.ResponseWriter, r *http.Request) {
+func (argoServer *ArgoServer) GetApplicationTree(w http.ResponseWriter, _ *http.Request) {
 	d := []byte(`
 {
   "nodes": [
@@ -319,8 +319,8 @@ func (argoServer *ArgoServer) GetApplicationTree(w http.ResponseWriter, r *http.
 	_, _ = w.Write(d)
 }
 
-func (argoServer *ArgoServer) GetApplicationResource(w http.ResponseWriter, r *http.Request) {
-	var deployment = apps.Deployment{
+func (argoServer *ArgoServer) GetApplicationResource(w http.ResponseWriter, _ *http.Request) {
+	deployment := apps.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "deployment",
 			Namespace:  "test-1",
@@ -335,7 +335,7 @@ func (argoServer *ArgoServer) GetApplicationResource(w http.ResponseWriter, r *h
 	_, _ = w.Write(data)
 }
 
-func (argoServer *ArgoServer) ListResourceEvents(w http.ResponseWriter, r *http.Request) {
+func (argoServer *ArgoServer) ListResourceEvents(w http.ResponseWriter, _ *http.Request) {
 	d := []byte(`
 {
   "metadata": {

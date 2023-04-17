@@ -23,7 +23,7 @@ func init() {
 	workload.Register(ability)
 }
 
-// please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
+// please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go.
 var ability = &service{}
 
 type service struct{}
@@ -73,7 +73,8 @@ func (s *service) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]
 }
 
 func (s *service) IsHealthy(node *v1alpha1.ResourceNode,
-	client *kube.Client) (bool, error) {
+	client *kube.Client,
+) (bool, error) {
 	instance, err := s.getServiceByNode(node, client)
 	if err != nil {
 		return true, err

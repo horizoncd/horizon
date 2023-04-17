@@ -9,7 +9,7 @@ import (
 
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	group := engine.Group("/apis/front/v1")
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     "code/listbranch",

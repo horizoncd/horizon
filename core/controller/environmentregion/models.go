@@ -16,9 +16,10 @@ type EnvironmentRegion struct {
 
 type EnvironmentRegions []*EnvironmentRegion
 
-// ofEnvironmentModels []*models.Region to []*EnvironmentRegion
+// ofEnvironmentModels []*models.Region to []*EnvironmentRegion.
 func ofRegionModels(regions []*regionmodels.Region,
-	environmentRegions []*envregionmodels.EnvironmentRegion) EnvironmentRegions {
+	environmentRegions []*envregionmodels.EnvironmentRegion,
+) EnvironmentRegions {
 	displayNameMap := make(map[string]*regionmodels.Region)
 	for _, region := range regions {
 		displayNameMap[region.Name] = region

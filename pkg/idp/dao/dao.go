@@ -55,7 +55,8 @@ func (d *dao) GetProviderByName(ctx context.Context, name string) (*models.Ident
 }
 
 func (d *dao) Create(ctx context.Context,
-	idp *models.IdentityProvider) (*models.IdentityProvider, error) {
+	idp *models.IdentityProvider,
+) (*models.IdentityProvider, error) {
 	err := d.db.Create(idp).Error
 	if err != nil {
 		return nil, perror.Wrapf(
@@ -95,7 +96,8 @@ func (d *dao) GetByID(ctx context.Context, id uint) (*models.IdentityProvider, e
 }
 
 func (d *dao) GetByCondition(ctx context.Context,
-	condition q.Query) (*models.IdentityProvider, error) {
+	condition q.Query,
+) (*models.IdentityProvider, error) {
 	tx := d.db.Model(&model)
 	for k, v := range condition.Keywords {
 		switch k {
@@ -119,7 +121,8 @@ func (d *dao) GetByCondition(ctx context.Context,
 }
 
 func (d *dao) Update(ctx context.Context,
-	id uint, param *models.IdentityProvider) (*models.IdentityProvider, error) {
+	id uint, param *models.IdentityProvider,
+) (*models.IdentityProvider, error) {
 	res := &models.IdentityProvider{}
 	err := d.db.Model(&model).Where("id = ?", id).
 		Updates(param).Error

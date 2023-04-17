@@ -26,7 +26,8 @@ type controller struct {
 var _ Controller = (*controller)(nil)
 
 func NewController(authorizer rbac.Authorizer,
-	skippers ...middleware.Skipper) Controller {
+	skippers ...middleware.Skipper,
+) Controller {
 	return &controller{
 		requestInfoFty: prehandle.RequestInfoFty,
 		authorizer:     authorizer,

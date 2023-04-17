@@ -7,7 +7,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
-// Middleware add logger to context
+// Middleware add logger to context.
 func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		rid := c.Value(requestid.HeaderXRequestID)

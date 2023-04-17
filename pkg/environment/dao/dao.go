@@ -29,7 +29,7 @@ type DAO interface {
 
 type dao struct{ db *gorm.DB }
 
-// NewDAO returns an instance of the default DAO
+// NewDAO returns an instance of the default DAO.
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }

@@ -63,7 +63,8 @@ type service struct {
 }
 
 func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manager,
-	manager *managerparam.Manager) Service {
+	manager *managerparam.Manager,
+) Service {
 	return &service{
 		memberManager:             manager.MemberManager,
 		groupManager:              manager.GroupManager,
@@ -80,7 +81,8 @@ func NewService(roleService roleservice.Service, oauthManager oauthmanager.Manag
 }
 
 func (s *service) RequirePermissionEqualOrHigher(ctx context.Context, role,
-	resourceType string, resourceID uint) error {
+	resourceType string, resourceID uint,
+) error {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return err
@@ -217,7 +219,8 @@ func (s *service) listWebhookLogMember(ctx context.Context, id uint) ([]models.M
 }
 
 func (s *service) GetMemberOfResource(ctx context.Context,
-	resourceType string, resourceIDStr string) (*models.Member, error) {
+	resourceType string, resourceIDStr string,
+) (*models.Member, error) {
 	var currentUser userauth.User
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
@@ -364,9 +367,10 @@ func DeduplicateMember(members []models.Member) []models.Member {
 	return retMembers
 }
 
-// getMember return the direct member or member from the parent
+// getMember return the direct member or member from the parent.
 func (s *service) getMember(ctx context.Context, resourceType string, resourceID uint,
-	memberType models.MemberType, memberInfo uint) (*models.Member, error) {
+	memberType models.MemberType, memberInfo uint,
+) (*models.Member, error) {
 	members, err := s.ListMember(ctx, resourceType, resourceID)
 	if err != nil {
 		return nil, err
@@ -497,7 +501,7 @@ func (s *service) listApplicationInstanceMembers(ctx context.Context, resourceID
 	return DeduplicateMember(retMembers), nil
 }
 
-// createMemberDirect for unit test
+// createMemberDirect for unit test.
 func (s *service) createMemberDirect(ctx context.Context, postMember PostMember) (*models.Member, error) {
 	var currentUser userauth.User
 	currentUser, err := common.UserFromContext(ctx)

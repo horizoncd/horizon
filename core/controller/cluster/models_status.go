@@ -32,7 +32,7 @@ type GetClusterStatusResponse struct {
 	TTLSeconds        *uint              `json:"ttlSeconds,omitempty" yaml:"ttlSeconds,omitempty"`
 }
 
-// RunningTask the most recent task in progress
+// RunningTask the most recent task in progress.
 type RunningTask struct {
 	Task string `json:"task" yaml:"task"`
 	// the latest buildDeploy pipelinerun ID
@@ -40,7 +40,7 @@ type RunningTask struct {
 	TaskStatus    string `json:"taskStatus,omitempty" yaml:"taskStatus,omitempty"`
 }
 
-// LatestPipelinerun latest pipelinerun
+// LatestPipelinerun latest pipelinerun.
 type LatestPipelinerun struct {
 	ID     uint   `json:"id"`
 	Action string `json:"action"`

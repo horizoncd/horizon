@@ -67,7 +67,7 @@ func (c *controller) GetClusterBuildStatus(ctx context.Context, clusterID uint) 
 	return resp, nil
 }
 
-// Deprecated
+// Deprecated.
 func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error) {
 	const op = "cluster controller: get cluster status"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -111,6 +111,8 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 		return nil, err
 	}
 
+	//nolint
+	clusterState, err := c.cd.GetClusterState(ctx, &cd.GetClusterStateParams{
 	lagacyCD, ok := c.cd.(cd.LegacyCD)
 	if !ok {
 		return nil, perror.Wrapf(herrors.ErrNotSupport, "cd %s does not support legacy cd", reflect.TypeOf(c.cd))
@@ -188,9 +190,10 @@ func (c *controller) GetClusterStatus(ctx context.Context, clusterID uint) (_ *G
 	return resp, nil
 }
 
-// isClusterActuallyHealthy judge if the cluster is healthy by checking image
+// isClusterActuallyHealthy judge if the cluster is healthy by checking image.
 func isClusterActuallyHealthy(ctx context.Context, clusterState *cd.ClusterState, image string,
-	restartTime time.Time, replicas int) bool {
+	restartTime time.Time, replicas int,
+) bool {
 	checkReplicas := func(clusterVersion *cd.ClusterVersion) bool {
 		if replicas == 0 || len(clusterVersion.Pods) == 0 || image == "" {
 			return true
@@ -242,7 +245,8 @@ func isClusterActuallyHealthy(ctx context.Context, clusterState *cd.ClusterState
 }
 
 func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,
-	clusterID uint) (*prmodels.Pipelinerun, error) {
+	clusterID uint,
+) (*prmodels.Pipelinerun, error) {
 	_, pipelineruns, err := c.pipelinerunMgr.GetByClusterID(ctx, clusterID, false, q.Query{
 		PageNumber: 1,
 		PageSize:   1,
@@ -257,7 +261,8 @@ func (c *controller) getLatestPipelinerunByClusterID(ctx context.Context,
 }
 
 func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *clustermodels.Cluster,
-	pipelinerun *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
+	pipelinerun *prmodels.Pipelinerun,
+) (*v1beta1.PipelineRun, error) {
 	tektonCollector, err := c.tektonFty.GetTektonCollector(cluster.EnvironmentName)
 	if err != nil {
 		return nil, err
@@ -267,7 +272,7 @@ func (c *controller) getLatestPipelineRunObject(ctx context.Context, cluster *cl
 
 // getRunningTask Get the latest currently executing Task of the pipeline Run.
 // If the last executed pipelineRun is successful,
-// return noneRunningTask
+// return noneRunningTask.
 func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun) *RunningTask {
 	noneRunningTask := &RunningTask{
 		Task: _taskNone,
@@ -320,7 +325,8 @@ func (c *controller) getRunningTask(ctx context.Context, pr *v1beta1.PipelineRun
 }
 
 func (c *controller) GetContainerLog(ctx context.Context, clusterID uint, podName, containerName string,
-	tailLines int64) (<-chan string, error) {
+	tailLines int,
+64) (<-chan string, error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -427,7 +433,8 @@ func (c *controller) GetContainers(ctx context.Context, clusterID uint, podName 
 }
 
 func (c *controller) GetClusterPod(ctx context.Context, clusterID uint, podName string) (
-	*GetClusterPodResponse, error) {
+	*GetClusterPodResponse, error,
+) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err

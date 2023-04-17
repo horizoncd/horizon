@@ -60,7 +60,7 @@ type DataSource struct {
 	URL  string `yaml:"url"`
 }
 
-// Dashboard used to unmarshal grafana dashboard's content
+// Dashboard used to unmarshal grafana dashboard's content.
 type Dashboard struct {
 	Title string   `json:"title"`
 	UID   string   `json:"uid"`

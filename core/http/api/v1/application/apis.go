@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	// param
+	// param.
 	_extraOwner = "extraOwner"
 	_groupIDStr = "groupID"
 	_envQuery   = "env"
@@ -222,13 +222,12 @@ func (a *API) ListSelf(c *gin.Context) {
 		return
 	}
 
-	c.Request.URL.RawQuery =
-		fmt.Sprintf("%s%s", c.Request.URL.RawQuery,
-			fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID()))
+	c.Request.URL.RawQuery = fmt.Sprintf("%s%s", c.Request.URL.RawQuery,
+		fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID()))
 	a.List(c)
 }
 
-// List search all applications that authorized to current user
+// List search all applications that authorized to current user.
 func (a *API) List(c *gin.Context) {
 	const op = "application: list application"
 

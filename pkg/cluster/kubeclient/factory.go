@@ -8,13 +8,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-var (
-	ErrBuildKubeClientFailed = perror.New("build kubeclient failed")
-)
+var ErrBuildKubeClientFailed = perror.New("build kubeclient failed")
 
-var (
-	Fty = NewFactory()
-)
+var Fty = NewFactory()
 
 type Factory interface {
 	GetByK8SServer(server, certificate string) (*rest.Config, *kube.Client, error)

@@ -38,7 +38,8 @@ func (m *manager) GetProviderByName(ctx context.Context, name string) (*models.I
 }
 
 func (m *manager) Create(ctx context.Context,
-	idp *models.IdentityProvider) (*models.IdentityProvider, error) {
+	idp *models.IdentityProvider,
+) (*models.IdentityProvider, error) {
 	return m.dao.Create(ctx, idp)
 }
 
@@ -51,11 +52,13 @@ func (m *manager) GetByID(ctx context.Context, id uint) (*models.IdentityProvide
 }
 
 func (m *manager) GetByCondition(ctx context.Context,
-	condition q.Query) (*models.IdentityProvider, error) {
+	condition q.Query,
+) (*models.IdentityProvider, error) {
 	return m.dao.GetByCondition(ctx, condition)
 }
 
 func (m *manager) Update(ctx context.Context,
-	id uint, param *models.IdentityProvider) (*models.IdentityProvider, error) {
+	id uint, param *models.IdentityProvider,
+) (*models.IdentityProvider, error) {
 	return m.dao.Update(ctx, id, param)
 }

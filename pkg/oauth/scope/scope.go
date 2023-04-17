@@ -44,7 +44,7 @@ func NewFileScopeService(config oauth.Scopes) (Service, error) {
 var _ Service = &fileScopeService{}
 
 func (f *fileScopeService) GetRulesByScope(scopes []string) []types.Role {
-	var roles = make([]types.Role, 0)
+	roles := make([]types.Role, 0)
 	if len(scopes) == 0 || (len(scopes) == 1 && scopes[0] == "") {
 		return append(roles, f.DefaultRoles...)
 	}
@@ -59,7 +59,7 @@ func (f *fileScopeService) GetRulesByScope(scopes []string) []types.Role {
 }
 
 func (f *fileScopeService) GetAllScopeNames() []string {
-	var scopeNames = make([]string, 0)
+	scopeNames := make([]string, 0)
 	for _, role := range f.Roles {
 		scopeNames = append(scopeNames, role.Name)
 	}

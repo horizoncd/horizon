@@ -22,7 +22,7 @@ type Schema struct {
 	UISchema   map[string]interface{}
 }
 
-// params
+// params.
 const (
 	ClusterIDKey    string = "clusterID"
 	ResourceTypeKey string = "resourceType"

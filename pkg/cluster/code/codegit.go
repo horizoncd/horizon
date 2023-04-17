@@ -35,7 +35,7 @@ type gitGetter struct {
 	gitMap map[string]git.Helper
 }
 
-// NewGitGetter new a GitGetter instance
+// NewGitGetter new a GitGetter instance.
 func NewGitGetter(ctx context.Context, repos []*gitconfig.Repo) (GitGetter, error) {
 	gitMap := map[string]git.Helper{}
 	// Check if GitHub has been configured, and add it if not.

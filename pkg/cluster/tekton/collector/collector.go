@@ -14,7 +14,7 @@ import (
 	timeutil "github.com/horizoncd/horizon/pkg/util/time"
 )
 
-// Object the pipelinerun object to be collected
+// Object the pipelinerun object to be collected.
 type Object struct {
 	// Metadata meta data
 	Metadata *ObjectMeta `json:"metadata"`

@@ -320,7 +320,6 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 
 	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, rootGroup, gitlabGitops,
 		flags.GitOpsRepoDefaultBranch)
-
 	if err != nil {
 		panic(err)
 	}
@@ -415,7 +414,6 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	userSvc := userservice.NewService(manager)
 	tokenSvc := tokenservice.NewService(manager, coreConfig.TokenConfig)
 
-	// init kube client
 	_, client, err := kube.BuildClient(coreConfig.KubeConfig)
 	if err != nil {
 		panic(err)
@@ -695,7 +693,7 @@ func Run(flags *Flags) {
 	Init(ctx, flags, configs)
 }
 
-// setTasksBeforeExit set stop funcs which will be executed after sigterm and sigint catched
+// setTasksBeforeExit set stop funcs which will be executed after sigterm and sigint catched.
 func setTasksBeforeExit(stopFuncs ...func()) {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)

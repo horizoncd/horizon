@@ -24,7 +24,8 @@ func NewDummyCollector(tekton tekton.Interface) Interface {
 }
 
 func (c *DummyCollector) Collect(ctx context.Context, pr *v1beta1.PipelineRun,
-	horizonMetaData *global.HorizonMetaData) (*CollectResult, error) {
+	horizonMetaData *global.HorizonMetaData,
+) (*CollectResult, error) {
 	const op = "DummyCollector: collect"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -54,14 +55,16 @@ func (c *DummyCollector) GetPipelineRunLog(ctx context.Context, pr *prmodels.Pip
 	}, nil
 }
 
-func (c *DummyCollector) GetPipelineRunObject(ctx context.Context,
-	object string) (*Object, error) {
+func (c *DummyCollector) GetPipelineRunObject(_ context.Context,
+	_ string,
+) (*Object, error) {
 	// no storage to collect pipelineRun object
 	return nil, nil
 }
 
 func (c *DummyCollector) GetPipelineRun(ctx context.Context,
-	pr *prmodels.Pipelinerun) (*v1beta1.PipelineRun, error) {
+	pr *prmodels.Pipelinerun,
+) (*v1beta1.PipelineRun, error) {
 	const op = "DummyCollector: getPipelineRun"
 	defer wlog.Start(ctx, op).StopPrint()
 

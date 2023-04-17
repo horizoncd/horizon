@@ -44,7 +44,8 @@ type manager struct {
 }
 
 func (m *manager) Create(ctx context.Context, cluster *models.Cluster,
-	tags []*tagmodels.Tag, extraMembers map[string]string) (*models.Cluster, error) {
+	tags []*tagmodels.Tag, extraMembers map[string]string,
+) (*models.Cluster, error) {
 	emails := make([]string, 0, len(extraMembers))
 	for email := range extraMembers {
 		emails = append(emails, email)
@@ -107,7 +108,8 @@ func (m *manager) GetByNameFuzzilyIncludeSoftDelete(ctx context.Context, name st
 }
 
 func (m *manager) ListByApplicationID(ctx context.Context,
-	applicationID uint) (int, []*models.ClusterWithRegion, error) {
+	applicationID uint,
+) (int, []*models.ClusterWithRegion, error) {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return 0, nil, err
@@ -117,7 +119,8 @@ func (m *manager) ListByApplicationID(ctx context.Context,
 }
 
 func (m *manager) ListClusterWithExpiry(ctx context.Context,
-	query *q.Query) ([]*models.Cluster, error) {
+	query *q.Query,
+) ([]*models.Cluster, error) {
 	if query == nil {
 		query = &q.Query{
 			PageNumber: common.DefaultPageNumber,

@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-// Middleware to parse tagSelector params
+// Middleware to parse tagSelector params.
 func Middleware(skippers ...middleware.Skipper) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// parse tagSelector

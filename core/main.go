@@ -5,7 +5,7 @@ import (
 
 	"github.com/horizoncd/horizon/core/cmd"
 
-	// for image registry
+	// for image registry.
 	_ "github.com/horizoncd/horizon/pkg/cluster/registry/harbor/v1"
 	_ "github.com/horizoncd/horizon/pkg/cluster/registry/harbor/v2"
 
@@ -13,14 +13,14 @@ import (
 	_ "github.com/horizoncd/horizon/pkg/git/github"
 	_ "github.com/horizoncd/horizon/pkg/git/gitlab"
 
-	// for template repo
+	// for template repo.
 	_ "github.com/horizoncd/horizon/pkg/templaterepo/chartmuseumbase"
 
-	// for k8s workload
-	_ "github.com/horizoncd/horizon/pkg/workload/deployment"
-	_ "github.com/horizoncd/horizon/pkg/workload/kservice"
-	_ "github.com/horizoncd/horizon/pkg/workload/pod"
-	_ "github.com/horizoncd/horizon/pkg/workload/rollout"
+	// for k8s workload.
+	_ "github.com/horizoncd/horizon/pkg/cluster/cd/workload/deployment"
+	_ "github.com/horizoncd/horizon/pkg/cluster/cd/workload/kservice"
+	_ "github.com/horizoncd/horizon/pkg/cluster/cd/workload/pod"
+	_ "github.com/horizoncd/horizon/pkg/cluster/cd/workload/rollout"
 )
 
 func main() {

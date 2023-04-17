@@ -119,7 +119,8 @@ func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWi
 }
 
 func (c *controller) ListByApplication(ctx context.Context,
-	query *q.Query) (_ int, _ []*ListClusterResponse, err error) {
+	query *q.Query,
+) (_ int, _ []*ListClusterResponse, err error) {
 	const op = "cluster controller: list cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -150,7 +151,8 @@ func (c *controller) ListByApplication(ctx context.Context,
 }
 
 func (c *controller) getFullResponses(ctx context.Context,
-	clusters []*cmodels.Cluster) ([]*ListClusterWithFullResponse, error) {
+	clusters []*cmodels.Cluster,
+) ([]*ListClusterWithFullResponse, error) {
 	// get applications
 	var applicationIDs []uint
 	for _, cluster := range clusters {
@@ -187,7 +189,8 @@ func (c *controller) getFullResponses(ctx context.Context,
 }
 
 func (c *controller) getFullResponsesWithRegion(ctx context.Context,
-	clustersWithRegion []*cmodels.ClusterWithRegion) ([]*ListClusterWithFullResponse, error) {
+	clustersWithRegion []*cmodels.ClusterWithRegion,
+) ([]*ListClusterWithFullResponse, error) {
 	clusters := make([]*cmodels.Cluster, 0, len(clustersWithRegion))
 	for _, clusterWithRegion := range clustersWithRegion {
 		clusters = append(clusters, clusterWithRegion.Cluster)
@@ -205,7 +208,8 @@ func (c *controller) getFullResponsesWithRegion(ctx context.Context,
 }
 
 func (c *controller) ListClusterWithExpiry(ctx context.Context,
-	query *q.Query) ([]*ListClusterWithExpiryResponse, error) {
+	query *q.Query,
+) ([]*ListClusterWithExpiryResponse, error) {
 	const op = "cluster controller: list clusters with expiry"
 	defer wlog.Start(ctx, op).StopPrint()
 	clusterList, err := c.clusterMgr.ListClusterWithExpiry(ctx, query)
@@ -347,7 +351,8 @@ const (
 )
 
 func RenderOutputObject(outPutStr, templateName string,
-	clusterValueFiles ...gitrepo.ClusterValueFile) (interface{}, error) {
+	clusterValueFiles ...gitrepo.ClusterValueFile,
+) (interface{}, error) {
 	// remove the  template prefix level, add Value prefix(as helm) and merge to one doc
 	var oneDoc string
 	for _, clusterValueFile := range clusterValueFiles {
@@ -371,7 +376,7 @@ func RenderOutputObject(outPutStr, templateName string,
 		return nil, perror.Wrapf(herrors.ErrParamInvalid, "RenderOutputObject yaml Unmarshal  error, err  = %s", err.Error())
 	}
 
-	var addValuePrefixDocMap = make(map[interface{}]interface{})
+	addValuePrefixDocMap := make(map[interface{}]interface{})
 	addValuePrefixDocMap[_valuePrefix] = oneDocMap
 	var b bytes.Buffer
 	doTemplate := template.Must(template.New("").Funcs(sprig.HtmlFuncMap()).Parse(outPutStr))
@@ -393,7 +398,8 @@ func RenderOutputObject(outPutStr, templateName string,
 }
 
 func (c *controller) CreateCluster(ctx context.Context, applicationID uint, environment,
-	region string, r *CreateClusterRequest, mergePatch bool) (_ *GetClusterResponse, err error) {
+	region string, r *CreateClusterRequest, mergePatch bool,
+) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -533,7 +539,8 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 }
 
 func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
-	r *UpdateClusterRequest, mergePatch bool) (_ *GetClusterResponse, err error) {
+	r *UpdateClusterRequest, mergePatch bool,
+) (_ *GetClusterResponse, err error) {
 	const op = "cluster controller: update cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -705,7 +712,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 }
 
 func (c *controller) GetClusterByName(ctx context.Context,
-	clusterName string) (_ *GetClusterByNameResponse, err error) {
+	clusterName string,
+) (_ *GetClusterByNameResponse, err error) {
 	const op = "cluster controller: get cluster by name"
 	wlog.Start(ctx, op).StopPrint()
 
@@ -752,7 +760,7 @@ func (c *controller) GetClusterByName(ctx context.Context,
 }
 
 // DeleteCluster TODO(gjq): failed to delete cluster, give user a alert.
-// TODO(gjq): add a deleting tag for cluster
+// TODO(gjq): add a deleting tag for cluster.
 func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard bool) (err error) {
 	const op = "cluster controller: delete cluster"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -822,7 +830,6 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 			Kind:               regionEntity.Registry.Kind,
 			Path:               regionEntity.Registry.Path,
 		})
-
 		if err != nil {
 			log.Errorf(newctx, "failed to get registry by config: err = %v", err)
 		}
@@ -882,7 +889,7 @@ func (c *controller) DeleteCluster(ctx context.Context, clusterID uint, hard boo
 	return nil
 }
 
-// FreeCluster to set cluster free
+// FreeCluster to set cluster free.
 func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error) {
 	const op = "cluster controller: free cluster"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -980,7 +987,8 @@ func (c *controller) toExpireSeconds(ctx context.Context, expireTime string, env
 }
 
 func (c *controller) customizeTemplateInfo(ctx context.Context, r *CreateClusterRequest,
-	application *models.Application, environment string, mergePatch bool) error {
+	application *models.Application, environment string, mergePatch bool,
+) error {
 	// 1. if template is empty, set it with application's template
 	if r.Template == nil {
 		r.Template = &Template{
@@ -1039,7 +1047,7 @@ func (c *controller) getRenderValueFromTag(ctx context.Context, clusterID uint) 
 	return renderValues, nil
 }
 
-// validateCreate validate for create cluster
+// validateCreate validate for create cluster.
 func (c *controller) validateCreate(r *CreateClusterRequest) error {
 	if err := validateClusterName(r.Name); err != nil {
 		return err
@@ -1056,9 +1064,10 @@ func (c *controller) validateCreate(r *CreateClusterRequest) error {
 	return nil
 }
 
-// validateTemplateInput validate templateInput is valid for template schema
+// validateTemplateInput validate templateInput is valid for template schema.
 func (c *controller) validateTemplateInput(ctx context.Context,
-	template, release string, templateInput *TemplateInput, templateSchemaRenderVal map[string]string) error {
+	template, release string, templateInput *TemplateInput, templateSchemaRenderVal map[string]string,
+) error {
 	if templateSchemaRenderVal == nil {
 		templateSchemaRenderVal = make(map[string]string)
 	}
@@ -1077,7 +1086,7 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 // validateClusterName validate cluster name
 // 1. name length must be less than 53
 // 2. name must match pattern ^(([a-z][-a-z0-9]*)?[a-z0-9])?$
-// 3. name must start with application name
+// 3. name must start with application name.
 func validateClusterName(name string) error {
 	if len(name) == 0 {
 		return perror.Wrap(herrors.ErrParamInvalid, "name cannot be empty")
@@ -1101,7 +1110,7 @@ func validateClusterName(name string) error {
 	return nil
 }
 
-// isUnstableStatus judge if status is Creating or Deleting
+// isUnstableStatus judge if status is Creating or Deleting.
 func isClusterStatusUnstable(status string) bool {
 	return status == common.ClusterStatusCreating || status == common.ClusterStatusDeleting
 }
@@ -1112,7 +1121,8 @@ var (
 )
 
 func (c *controller) addIsFavoriteForClusters(ctx context.Context,
-	userID uint, clusters []*ListClusterWithFullResponse) error {
+	userID uint, clusters []*ListClusterWithFullResponse,
+) error {
 	ids := make([]uint, 0, len(clusters))
 	for i := range clusters {
 		ids = append(ids, clusters[i].ID)

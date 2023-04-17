@@ -18,7 +18,7 @@ type Claims struct {
 	Email string `json:"email"`
 }
 
-func MakeOuath2Config(ctx context.Context, idp *models.IdentityProvider,
+func MakeOuath2Config(_ context.Context, idp *models.IdentityProvider,
 	extraScopes ...string) (*oauth2.Config, error) {
 	if idp.ClientID != "" &&
 		idp.ClientSecret != "" &&

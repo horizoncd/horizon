@@ -39,7 +39,7 @@ const (
 	ClusterRestartTimeKey  = "cloudnative.music.netease.com/user-restart-time"
 )
 
-// status of cluster
+// status of cluster.
 const (
 	ClusterStatusEmpty    = ""
 	ClusterStatusFreeing  = "Freeing"

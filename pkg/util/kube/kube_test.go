@@ -79,7 +79,7 @@ func TestGetPods(t *testing.T) {
 }
 
 func TestBuildClient(t *testing.T) {
-	data := `
+	var validConfig = []byte(`
 apiVersion: v1
 clusters:
 - cluster:
@@ -93,13 +93,13 @@ contexts:
 current-context: docker-desktop
 kind: Config
 preferences: {}
-`
+`)
 	tempDir, err := ioutil.TempDir("/tmp", "fake-clientset")
 	assert.Nil(t, err)
 	defer cleanup(t, tempDir)
 
 	filePath := filepath.Join(tempDir, "kube.config")
-	err = ioutil.WriteFile(filePath, []byte(data), 0644)
+	err = ioutil.WriteFile(filePath, validConfig, 0644)
 	assert.Nil(t, err)
 
 	_, _, err = BuildClient(filePath)

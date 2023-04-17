@@ -40,19 +40,19 @@ type ApplicationSource struct {
 	Helm *ApplicationSourceHelm `json:"helm" yaml:"helm,omitempty"`
 }
 
-// ApplicationSourceHelm holds helm specific options
+// ApplicationSourceHelm holds helm specific options.
 type ApplicationSourceHelm struct {
 	// ValuesFiles is a list of Helm value files to use when generating a template
 	ValueFiles []string `json:"valueFiles" yaml:"valueFiles,omitempty"`
 }
 
-// SyncPolicy controls when a sync will be performed in response to updates in git
+// SyncPolicy controls when a sync will be performed in response to updates in git.
 type SyncPolicy struct {
 	// Options allow you to specify whole app sync-options
 	SyncOptions SyncOptions `json:"syncOptions" yaml:"syncOptions,omitempty"`
 }
 
-// ApplicationDestination contains deployment destination information
+// ApplicationDestination contains deployment destination information.
 type ApplicationDestination struct {
 	// Server overrides the environment server value in the ksonnet app.yaml
 	Server string `json:"server" yaml:"server,omitempty"`

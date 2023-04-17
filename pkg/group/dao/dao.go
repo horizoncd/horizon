@@ -58,7 +58,7 @@ type DAO interface {
 	UpdateRegionSelector(ctx context.Context, id uint, regionSelector string) error
 }
 
-// NewDAO returns an instance of the default DAO
+// NewDAO returns an instance of the default DAO.
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }
@@ -93,7 +93,8 @@ func (d *dao) GetByIDNameFuzzily(ctx context.Context, id uint, name string) ([]*
 }
 
 func (d *dao) ListChildren(ctx context.Context, parentID uint, pageNumber, pageSize int) (
-	[]*models.GroupOrApplication, int64, error) {
+	[]*models.GroupOrApplication, int64, error,
+) {
 	var gas []*models.GroupOrApplication
 	var count int64
 
@@ -333,7 +334,7 @@ func (d *dao) Create(ctx context.Context, group *models.Group) (*models.Group, e
 	return group, nil
 }
 
-// Delete can only delete a group that doesn't have any children
+// Delete can only delete a group that doesn't have any children.
 func (d *dao) Delete(ctx context.Context, id uint) (int64, error) {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
@@ -388,7 +389,7 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Group, int64,
 	return groups, count, result.Error
 }
 
-// UpdateBasic just update base info, not contains transfer logic
+// UpdateBasic just update base info, not contains transfer logic.
 func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
@@ -406,7 +407,8 @@ func (d *dao) UpdateBasic(ctx context.Context, group *models.Group) error {
 }
 
 func (d *dao) GetByNameOrPathUnderParent(ctx context.Context,
-	name, path string, parentID uint) ([]*models.Group, error) {
+	name, path string, parentID uint,
+) ([]*models.Group, error) {
 	var groups []*models.Group
 	result := d.db.WithContext(ctx).Raw(dbcommon.GroupQueryByNameOrPathUnderParent, parentID, name, path).Scan(&groups)
 
@@ -445,7 +447,6 @@ func (d *dao) ListByTraversalIDsContains(ctx context.Context, ids []uint) ([]*mo
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

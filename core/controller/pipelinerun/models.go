@@ -37,7 +37,7 @@ type PipelineBasic struct {
 
 	// Action type, which can be builddeploy, deploy, restart, rollback
 	Action string `json:"action"`
-	// Status of this pipelinerun, which can be created, ok, failed, cancelled, unknown
+	// Status of this pipelinerun, which can be created, ok, failed, canceled, unknown
 	Status string `json:"status"`
 	// Title of this pipelinerun
 

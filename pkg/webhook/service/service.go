@@ -134,7 +134,7 @@ func (s *service) reconcileWorkers() {
 	}
 }
 
-// start webhook service to reconcile workers
+// start webhook service to reconcile workers.
 func (s *service) Start() {
 	go func() {
 		defer func() {
@@ -169,7 +169,8 @@ func (s *service) StopAndWait() {
 func newWebhookWorker(webhookMgr webhookmanager.Manager,
 	eventMgr eventmanager.Manager, userMgr usermanager.Manager,
 	webhook *models.Webhook, idleWaitInterval uint,
-	clientTimeout, responseBodyTruncateSize uint) *worker {
+	clientTimeout, responseBodyTruncateSize uint,
+) *worker {
 	ww := &worker{
 		idleWaitInterval:         idleWaitInterval,
 		responseBodyTruncateSize: responseBodyTruncateSize,
@@ -267,7 +268,7 @@ func (w *worker) sendWebhook(ctx context.Context, wl *models.WebhookLog) *models
 	return wl
 }
 
-// start webhook worker and begin to send process webhook logs
+// start webhook worker and begin to send process webhook logs.
 func (w *worker) start() {
 	ctx := w.ctx
 	defer func() {

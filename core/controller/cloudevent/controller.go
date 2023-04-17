@@ -114,9 +114,10 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 }
 
 // TODO remove this function in the future
-// check cluster's build type, change tasks' and steps' values if needed
+// check cluster's build type, change tasks' and steps' values if needed.
 func (c *controller) handleJibBuild(ctx context.Context, result *metrics.PipelineResults,
-	data *global.HorizonMetaData) error {
+	data *global.HorizonMetaData,
+) error {
 	clusterID := data.ClusterID
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
@@ -157,9 +158,10 @@ func (c *controller) handleJibBuild(ctx context.Context, result *metrics.Pipelin
 	return nil
 }
 
-// getHorizonMetaData resolves info about this pipelinerun
+// getHorizonMetaData resolves info about this pipelinerun.
 func (c *controller) getHorizonMetaData(ctx context.Context, wpr *WrappedPipelineRun) (
-	*global.HorizonMetaData, error) {
+	*global.HorizonMetaData, error,
+) {
 	eventID := wpr.PipelineRun.Labels[common.TektonTriggersEventIDKey]
 	pipelinerun, err := c.pipelinerunMgr.GetByCIEventID(ctx, eventID)
 	if err != nil {

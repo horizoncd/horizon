@@ -9,10 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (a *API) RegisterRoute(engine *gin.Engine) {
 	coreAPI := engine.Group("/apis/core/v1/groups")
-	var coreRoutes = route.Routes{
+	coreRoutes := route.Routes{
 		{
 			Method:      http.MethodPost,
 			HandlerFunc: a.CreateGroup,
@@ -55,7 +55,7 @@ func (a *API) RegisterRoute(engine *gin.Engine) {
 	}
 
 	frontAPI := engine.Group("/apis/front/v1/groups")
-	var frontRoutes = route.Routes{
+	frontRoutes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			HandlerFunc: a.GetGroupByFullPath,

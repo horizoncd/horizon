@@ -40,7 +40,7 @@ type DAO interface {
 	List(ctx context.Context, groupIDs []uint, query *q.Query) (int, []*models.Application, error)
 }
 
-// NewDAO returns an instance of the default DAO
+// NewDAO returns an instance of the default DAO.
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }
@@ -62,7 +62,8 @@ func (d *dao) CountByGroupID(ctx context.Context, groupID uint) (int64, error) {
 }
 
 func (d *dao) GetByNameFuzzily(ctx context.Context, name string,
-	includeSoftDelete bool) ([]*models.Application, error) {
+	includeSoftDelete bool,
+) ([]*models.Application, error) {
 	var applications []*models.Application
 
 	statement := d.db.Unscoped().WithContext(ctx).Where("name like ?", fmt.Sprintf("%%%s%%", name))
@@ -154,7 +155,8 @@ func (d *dao) GetByNamesUnderGroup(ctx context.Context, groupID uint, names []st
 }
 
 func (d *dao) Create(ctx context.Context, application *models.Application,
-	extraMembers map[*usermodels.User]string) (*models.Application, error) {
+	extraMembers map[*usermodels.User]string,
+) (*models.Application, error) {
 	err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// TODO: check the group exist
 
@@ -283,7 +285,8 @@ func (d *dao) TransferByID(ctx context.Context, id uint, groupID uint) error {
 }
 
 func (d *dao) List(ctx context.Context, groupIDs []uint,
-	query *q.Query) (int, []*models.Application, error) {
+	query *q.Query,
+) (int, []*models.Application, error) {
 	var (
 		applications   []*models.Application
 		total          int64

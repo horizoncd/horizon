@@ -19,7 +19,8 @@ type TektonParams struct {
 }
 
 func NewTektonParams(dynamic dynamic.Interface, kubeClient k8s.Interface,
-	tekton tektonclientset.Interface, namespace string) *TektonParams {
+	tekton tektonclientset.Interface, namespace string,
+) *TektonParams {
 	return &TektonParams{
 		namespace:  namespace,
 		dynamic:    dynamic,

@@ -4,8 +4,10 @@ import (
 	"time"
 )
 
-type EventType string
-type EventResourceType string
+type (
+	EventType         string
+	EventResourceType string
+)
 
 const (
 	Any                    string = "*"
@@ -22,7 +24,7 @@ const (
 	ClusterPodsRescheduled string = "clusters_rescheduled"
 	ClusterUpdated         string = "clusters_updated"
 	ClusterFreed           string = "clusters_freed"
-	// TODO: add group events
+	// TODO: add group events.
 )
 
 type EventSummary struct {

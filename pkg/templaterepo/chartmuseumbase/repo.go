@@ -174,7 +174,7 @@ func (h *Repo) ExistChart(name string, version string) (bool, error) {
 	return true, nil
 }
 
-func (h *Repo) GetChart(name string, version string, lastSyncAt time.Time) (*chart.Chart, error) {
+func (h *Repo) GetChart(name string, version string, _ time.Time) (*chart.Chart, error) {
 	resp, err := h.do(http.MethodGet, h.downloadLink(name, version), nil)
 	if err != nil {
 		return nil, err

@@ -82,7 +82,7 @@ type controller struct {
 
 var _ Controller = (*controller)(nil)
 
-// NewController initializes a new controller
+// NewController initializes a new controller.
 func NewController(param *param.Param, repo templaterepo.TemplateRepo) Controller {
 	return &controller{
 		gitgetter:            param.GitGetter,
@@ -182,7 +182,7 @@ func (c *controller) ListV2(ctx context.Context, query *q.Query, withFullPath bo
 	return tpls, nil
 }
 
-// ListTemplate TODO: remove this, keep it for api callers
+// ListTemplate TODO: remove this, keep it for api callers.
 func (c *controller) ListTemplate(ctx context.Context) (Templates, error) {
 	const op = "template controller: listTemplate"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -220,7 +220,7 @@ func (c *controller) ListTemplate(ctx context.Context) (Templates, error) {
 	return tpls, nil
 }
 
-// listTemplateByUser returns all templates a user obtaining, that means has owner permission
+// listTemplateByUser returns all templates a user obtaining, that means has owner permission.
 func (c *controller) listTemplateByUser(ctx context.Context) (Templates, error) {
 	// get current user
 	currentUser, err := common.UserFromContext(ctx)
@@ -372,7 +372,8 @@ func (c *controller) ListTemplateRelease(ctx context.Context, templateName strin
 }
 
 func (c *controller) GetTemplateSchema(ctx context.Context, releaseID uint,
-	param map[string]string) (_ *Schemas, err error) {
+	param map[string]string,
+) (_ *Schemas, err error) {
 	const op = "template controller: getTemplateSchema"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -389,7 +390,7 @@ func (c *controller) GetTemplateSchema(ctx context.Context, releaseID uint,
 	return toSchemas(schemas), nil
 }
 
-// ListTemplateByGroupID lists all template available
+// ListTemplateByGroupID lists all template available.
 func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint, withoutCI bool) (Templates, error) {
 	const op = "template controller: listTemplateByGroupID"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -427,7 +428,8 @@ func (c *controller) ListTemplateByGroupID(ctx context.Context, groupID uint, wi
 }
 
 func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context,
-	groupID uint, withoutCI bool) (Templates, error) {
+	groupID uint, withoutCI bool,
+) (Templates, error) {
 	if !c.groupMgr.GroupExist(ctx, groupID) {
 		reason := fmt.Sprintf("group not found: %d", groupID)
 		return nil, perror.Wrap(herrors.NewErrNotFound(herrors.GroupInDB, reason), reason)
@@ -477,7 +479,7 @@ func (c *controller) listTemplateByGroupIDRecursively(ctx context.Context,
 	return tpls, err
 }
 
-// ListTemplateReleaseByTemplateID lists all releases of the specified template
+// ListTemplateReleaseByTemplateID lists all releases of the specified template.
 func (c *controller) ListTemplateReleaseByTemplateID(ctx context.Context, templateID uint) (Releases, error) {
 	const op = "template controller: listTemplateReleaseByTemplateID"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -523,7 +525,8 @@ func (c *controller) ListTemplateReleaseByTemplateID(ctx context.Context, templa
 }
 
 func (c *controller) CreateTemplate(ctx context.Context,
-	groupID uint, request CreateTemplateRequest) (*Template, error) {
+	groupID uint, request CreateTemplateRequest,
+) (*Template, error) {
 	const op = "template controller: createTemplate"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -579,7 +582,8 @@ func (c *controller) CreateTemplate(ctx context.Context,
 }
 
 func (c *controller) CreateRelease(ctx context.Context,
-	templateID uint, request CreateReleaseRequest) (*Release, error) {
+	templateID uint, request CreateReleaseRequest,
+) (*Release, error) {
 	const op = "template controller: createTemplateRelease"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -620,7 +624,7 @@ func (c *controller) CreateRelease(ctx context.Context,
 	return toRelease(newRelease), nil
 }
 
-// GetTemplate gets template by templateID
+// GetTemplate gets template by templateID.
 func (c *controller) GetTemplate(ctx context.Context, templateID uint) (*Template, error) {
 	const op = "template controller: getTemplate"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -738,7 +742,7 @@ func (c *controller) DeleteRelease(ctx context.Context, releaseID uint) error {
 	return c.templateReleaseMgr.DeleteByID(ctx, releaseID)
 }
 
-// UpdateTemplate deletes a template by ID
+// UpdateTemplate deletes a template by ID.
 func (c *controller) UpdateTemplate(ctx context.Context, templateID uint, request UpdateTemplateRequest) error {
 	const op = "template controller: updateTemplate"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -768,7 +772,7 @@ func (c *controller) UpdateTemplate(ctx context.Context, templateID uint, reques
 	return c.templateMgr.UpdateByID(ctx, templateID, tplUpdate)
 }
 
-// UpdateRelease deletes a template release by ID
+// UpdateRelease deletes a template release by ID.
 func (c *controller) UpdateRelease(ctx context.Context, releaseID uint, request UpdateReleaseRequest) error {
 	const op = "template controller: updateRelease"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -810,7 +814,8 @@ func (c *controller) SyncReleaseToRepo(ctx context.Context, releaseID uint) erro
 }
 
 func (c *controller) handleReleaseSyncStatus(ctx context.Context,
-	release *trmodels.TemplateRelease, commitID string, failedReason string) error {
+	release *trmodels.TemplateRelease, commitID string, failedReason string,
+) error {
 	if failedReason == "" {
 		release.SyncStatus = trmodels.StatusSucceed
 		release.FailedReason = ""
@@ -825,7 +830,8 @@ func (c *controller) handleReleaseSyncStatus(ctx context.Context,
 }
 
 func (c *controller) getTag(ctx context.Context, repository,
-	name, tag string) (*git.Tag, error) {
+	_, tag string,
+) (*git.Tag, error) {
 	tagDetail, err := c.gitgetter.GetTagArchive(ctx, repository, tag)
 	if err != nil {
 		return nil, err
@@ -835,7 +841,8 @@ func (c *controller) getTag(ctx context.Context, repository,
 }
 
 func (c *controller) checkStatusForReleases(ctx context.Context,
-	template *models.Template, releases []*trmodels.TemplateRelease) []*trmodels.TemplateRelease {
+	template *models.Template, releases []*trmodels.TemplateRelease,
+) []*trmodels.TemplateRelease {
 	var wg sync.WaitGroup
 	res := make([]*trmodels.TemplateRelease, len(releases))
 
@@ -852,7 +859,8 @@ func (c *controller) checkStatusForReleases(ctx context.Context,
 }
 
 func (c *controller) checkStatusForRelease(ctx context.Context,
-	template *models.Template, release *trmodels.TemplateRelease) (*trmodels.TemplateRelease, error) {
+	template *models.Template, release *trmodels.TemplateRelease,
+) (*trmodels.TemplateRelease, error) {
 	if release.SyncStatus != trmodels.StatusSucceed {
 		return release, nil
 	}
@@ -880,7 +888,8 @@ func (c *controller) syncReleaseToRepo(chartBytes []byte, name, tag string) erro
 }
 
 func (c *controller) checkHasOnlyOwnerPermissionForTemplate(ctx context.Context,
-	template *models.Template) bool {
+	template *models.Template,
+) bool {
 	user, err := common.UserFromContext(ctx)
 	if err != nil {
 		return false
@@ -908,7 +917,8 @@ func (c *controller) checkHasOnlyOwnerPermissionForTemplate(ctx context.Context,
 }
 
 func (c *controller) checkHasOnlyOwnerPermissionForRelease(ctx context.Context,
-	release *trmodels.TemplateRelease) bool {
+	release *trmodels.TemplateRelease,
+) bool {
 	user, err := common.UserFromContext(ctx)
 	if err != nil {
 		return false

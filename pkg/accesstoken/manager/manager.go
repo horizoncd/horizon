@@ -26,7 +26,8 @@ func New(db *gorm.DB) Manager {
 }
 
 func (m *manager) ListAccessTokensByResource(ctx context.Context, resourceType string,
-	resourceID uint, query *q.Query) ([]*models.AccessToken, int, error) {
+	resourceID uint, query *q.Query,
+) ([]*models.AccessToken, int, error) {
 	return m.dao.ListAccessTokensByResource(ctx, resourceType, resourceID, query)
 }
 

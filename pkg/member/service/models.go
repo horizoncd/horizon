@@ -56,7 +56,7 @@ type Member struct {
 }
 
 func ConvertResourceType(resourceTypeStr string) (models.ResourceType, bool) {
-	var convertOk = true
+	convertOk := true
 	var resourceType models.ResourceType
 
 	switch resourceTypeStr {

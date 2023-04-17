@@ -13,9 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	ErrInsertPipeline = errors.New("Insert pipeline error")
-)
+var ErrInsertPipeline = errors.New("Insert pipeline error")
 
 type DAO interface {
 	// Create create a pipeline
@@ -136,7 +134,8 @@ func (d *dao) ListPipelineStats(ctx context.Context, query *q.Query) ([]*models.
 }
 
 func formatPipelineStats(pipelines []*models.Pipeline, tasks []*models.Task,
-	steps []*models.Step) []*models.PipelineStats {
+	steps []*models.Step,
+) []*models.PipelineStats {
 	stepMap := make(map[uint]map[string][]*models.StepStats)
 	for _, step := range steps {
 		if task2Step, ok := stepMap[step.PipelinerunID]; ok {

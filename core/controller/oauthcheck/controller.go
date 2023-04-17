@@ -85,7 +85,8 @@ func (c *controller) LoadAccessTokenUser(ctx context.Context, accessToken string
 }
 
 func (c *controller) CheckScopePermission(ctx context.Context, accessToken string,
-	requestInfo auth.RequestInfo) (bool, string, error) {
+	requestInfo auth.RequestInfo,
+) (bool, string, error) {
 	token, err := c.tokenManager.LoadTokenByCode(ctx, accessToken)
 	if err != nil {
 		return false, "", err

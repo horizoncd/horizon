@@ -20,7 +20,7 @@ func init() {
 	workload.Register(ability)
 }
 
-// please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
+// please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go.
 var ability = &deployment{}
 
 type deployment struct{}
@@ -41,7 +41,8 @@ func (*deployment) getDeployByNode(node *v1alpha1.ResourceNode, client *kube.Cli
 }
 
 func (d *deployment) IsHealthy(node *v1alpha1.ResourceNode,
-	client *kube.Client) (bool, error) {
+	client *kube.Client,
+) (bool, error) {
 	instance, err := d.getDeployByNode(node, client)
 	if err != nil {
 		return true, err

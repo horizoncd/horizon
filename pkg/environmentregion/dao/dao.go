@@ -36,7 +36,7 @@ type DAO interface {
 
 type dao struct{ db *gorm.DB }
 
-// NewDAO returns an instance of the default DAO
+// NewDAO returns an instance of the default DAO.
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
 }
@@ -67,7 +67,8 @@ func (d *dao) GetDefaultRegionByEnvironment(ctx context.Context, env string) (*m
 }
 
 func (d *dao) CreateEnvironmentRegion(ctx context.Context,
-	er *models.EnvironmentRegion) (*models.EnvironmentRegion, error) {
+	er *models.EnvironmentRegion,
+) (*models.EnvironmentRegion, error) {
 	var environmentRegions []*models.EnvironmentRegion
 	result := d.db.WithContext(ctx).Raw(common.EnvironmentRegionGetByEnvAndRegion, er.EnvironmentName,
 		er.RegionName).Scan(&environmentRegions)
@@ -125,7 +126,8 @@ func (d *dao) GetEnvironmentRegionByID(ctx context.Context, id uint) (*models.En
 }
 
 func (d *dao) GetEnvironmentRegionByEnvAndRegion(ctx context.Context,
-	env, region string) (*models.EnvironmentRegion, error) {
+	env, region string,
+) (*models.EnvironmentRegion, error) {
 	var environmentRegion models.EnvironmentRegion
 	result := d.db.WithContext(ctx).Raw(common.EnvironmentRegionGet, env, region).First(&environmentRegion)
 
@@ -184,7 +186,7 @@ func (d *dao) ListAllEnvironmentRegions(ctx context.Context) ([]*models.Environm
 	return environmentRegions, nil
 }
 
-// DeleteByID implements DAO
+// DeleteByID implements DAO.
 func (d *dao) DeleteByID(ctx context.Context, id uint) error {
 	_, err := d.GetEnvironmentRegionByID(ctx, id)
 	if err != nil {

@@ -4,7 +4,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Controller get build schema
+// Controller get build schema.
 type Controller interface {
 	GetSchema(ctx context.Context) (*Schema, error)
 }
@@ -17,7 +17,7 @@ func NewController(schema *Schema) Controller {
 	return &controller{schema: schema}
 }
 
-func (c controller) GetSchema(ctx context.Context) (*Schema, error) {
+func (c controller) GetSchema(_ context.Context) (*Schema, error) {
 	return c.schema, nil
 }
 

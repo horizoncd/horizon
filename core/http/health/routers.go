@@ -8,11 +8,11 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/route"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func RegisterRoutes(engine *gin.Engine) {
 	api := engine.Group("/health")
 
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			HandlerFunc: healthCheck,

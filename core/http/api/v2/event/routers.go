@@ -8,10 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (a *API) RegisterRoute(engine *gin.Engine) {
 	coreAPI := engine.Group("/apis/core/v2")
-	var coreRoutes = route.Routes{
+	coreRoutes := route.Routes{
 		{
 			Pattern:     "/supportevents",
 			Method:      http.MethodGet,

@@ -75,7 +75,8 @@ var _ Manager = &OauthManager{}
 func NewManager(oauthAppDAO oauthdao.DAO, tokenStorage tokenstorage.Storage,
 	gen generator.AuthorizationCodeGenerator,
 	authorizeCodeExpireTime time.Duration,
-	accessTokenExpireTime time.Duration) *OauthManager {
+	accessTokenExpireTime time.Duration,
+) *OauthManager {
 	return &OauthManager{
 		oauthAppDAO:                oauthAppDAO,
 		tokenStorage:               tokenStorage,
@@ -95,9 +96,11 @@ type OauthManager struct {
 	clientIDGenerate           ClientIDGenerate
 }
 
-const HorizonAPPClientIDPrefix = "ho_"
-const BasicOauthClientLength = 20
-const OauthClientSecretLength = 40
+const (
+	HorizonAPPClientIDPrefix = "ho_"
+	BasicOauthClientLength   = 20
+	OauthClientSecretLength  = 40
+)
 
 func GenClientID(appType models.AppType) string {
 	if appType == models.HorizonOAuthAPP {
@@ -114,6 +117,7 @@ type ClientIDGenerate func(appType models.AppType) string
 func (m *OauthManager) SetClientIDGenerate(gen ClientIDGenerate) {
 	m.clientIDGenerate = gen
 }
+
 func (m *OauthManager) CreateOauthApp(ctx context.Context, info *CreateOAuthAppReq) (*models.OauthApp, error) {
 	user, err := common.UserFromContext(ctx)
 	if err != nil {
@@ -157,12 +161,14 @@ func (m *OauthManager) DeleteOAuthApp(ctx context.Context, clientID string) erro
 }
 
 func (m *OauthManager) ListOauthApp(ctx context.Context,
-	ownerType models.OwnerType, ownerID uint) ([]models.OauthApp, error) {
+	ownerType models.OwnerType, ownerID uint,
+) ([]models.OauthApp, error) {
 	return m.oauthAppDAO.ListApp(ctx, ownerType, ownerID)
 }
 
 func (m *OauthManager) UpdateOauthApp(ctx context.Context, clientID string,
-	req UpdateOauthAppReq) (*models.OauthApp, error) {
+	req UpdateOauthAppReq,
+) (*models.OauthApp, error) {
 	user, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -195,7 +201,7 @@ func (m *OauthManager) DeleteSecret(ctx context.Context, ClientID string, client
 	return m.oauthAppDAO.DeleteSecret(ctx, ClientID, clientSecretID)
 }
 
-// musk the secrets
+// musk the secrets.
 const (
 	CutPostNum = 8
 	MustPrefix = "*****"
@@ -245,8 +251,10 @@ func (m *OauthManager) NewAuthorizationToken(req *AuthorizeGenerateRequest) *tok
 	})
 	return token
 }
+
 func (m *OauthManager) NewAccessToken(authorizationCodeToken *tokenmodels.Token,
-	req *AccessTokenGenerateRequest, accessCodeGenerator generator.AccessTokenCodeGenerator) *tokenmodels.Token {
+	req *AccessTokenGenerateRequest, accessCodeGenerator generator.AccessTokenCodeGenerator,
+) *tokenmodels.Token {
 	token := &tokenmodels.Token{
 		ClientID:    req.ClientID,
 		RedirectURI: req.RedirectURL,
@@ -263,7 +271,8 @@ func (m *OauthManager) NewAccessToken(authorizationCodeToken *tokenmodels.Token,
 }
 
 func (m *OauthManager) GenAuthorizeCode(ctx context.Context,
-	req *AuthorizeGenerateRequest) (*tokenmodels.Token, error) {
+	req *AuthorizeGenerateRequest,
+) (*tokenmodels.Token, error) {
 	oauthApp, err := m.oauthAppDAO.GetApp(ctx, req.ClientID)
 	if err != nil {
 		return nil, err
@@ -289,7 +298,8 @@ func (m *OauthManager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest,
 }
 
 func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGenerateRequest,
-	accessCodeGenerator generator.AccessTokenCodeGenerator) (*tokenmodels.Token, error) {
+	accessCodeGenerator generator.AccessTokenCodeGenerator,
+) (*tokenmodels.Token, error) {
 	// check client secret ok
 	secrets, err := m.oauthAppDAO.ListSecret(ctx, req.ClientID)
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	// param
+	// param.
 	_environmentParam = "environment"
 )
 
@@ -37,7 +37,7 @@ func (a *API) ListEnvironments(c *gin.Context) {
 	response.SuccessWithData(c, envs)
 }
 
-// ListEnabledRegionsByEnvironment deprecated, use GetSelectableRegionsByEnv in environment api
+// ListEnabledRegionsByEnvironment deprecated, use GetSelectableRegionsByEnv in environment api.
 func (a *API) ListEnabledRegionsByEnvironment(c *gin.Context) {
 	env := c.Param(_environmentParam)
 	regions, err := a.envCtl.ListEnabledRegionsByEnvironment(c, env)
@@ -124,6 +124,7 @@ func (a *API) Delete(c *gin.Context) {
 
 	response.Success(c)
 }
+
 func (a *API) GetByID(c *gin.Context) {
 	const op = "environment: get"
 	envIDStr := c.Param(_environmentParam)

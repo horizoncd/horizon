@@ -17,7 +17,8 @@ import (
 )
 
 func Run(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Manager,
-	clusterCtr clusterctl.Controller, prCtr prctl.Controller) {
+	clusterCtr clusterctl.Controller, prCtr prctl.Controller,
+) {
 	// verify account
 	user, err := userMgr.GetUserByID(ctx, jobConfig.AccountID)
 	if err != nil {
@@ -41,7 +42,7 @@ func Run(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Ma
 		select {
 		case <-ticker.C:
 			rid := uuid.NewV4().String()
-			// nolint
+			//nolint
 			ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
 			log.Infof(ctx, "auto-free job starts to execute, rid: %v", rid)
 			process(ctx, jobConfig, clusterCtr, prCtr)
@@ -52,7 +53,8 @@ func Run(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Ma
 }
 
 func process(ctx context.Context, jobConfig *autofree.Config, clusterCtr clusterctl.Controller,
-	prCtr prctl.Controller) {
+	prCtr prctl.Controller,
+) {
 	op := "job: cluster auto-free"
 	query := &q.Query{
 		PageNumber: common.DefaultPageNumber,

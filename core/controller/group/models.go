@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// NewGroup model for creating a group
+// NewGroup model for creating a group.
 type NewGroup struct {
 	Name            string `json:"name" binding:"required"`
 	Path            string `json:"path" binding:"required"`
@@ -13,7 +13,7 @@ type NewGroup struct {
 	ParentID        uint   `json:"parentID"`
 }
 
-// UpdateGroup model for updating a group
+// UpdateGroup model for updating a group.
 type UpdateGroup struct {
 	Name            string `json:"name" binding:"required"`
 	Path            string `json:"path" binding:"required"`
@@ -21,7 +21,7 @@ type UpdateGroup struct {
 	Description     string `json:"description"`
 }
 
-// SearchParams contains parameters for searching operation
+// SearchParams contains parameters for searching operation.
 type SearchParams struct {
 	Filter     string
 	GroupID    uint
@@ -29,7 +29,7 @@ type SearchParams struct {
 	PageSize   int
 }
 
-// Group basic info of group, including group & application
+// Group basic info of group, including group & application.
 type Group struct {
 	ID              uint      `json:"id"`
 	Name            string    `json:"name"`

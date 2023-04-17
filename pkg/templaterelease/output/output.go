@@ -12,7 +12,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
-// Getter provides some functions for output
+// Getter provides some functions for output.
 type Getter interface {
 	// GetTemplateOutPut get horizon template's output for specified template release.
 	GetTemplateOutPut(ctx context.Context, templateName, releaseName string) (string, error)
@@ -25,7 +25,7 @@ type getter struct {
 }
 
 const (
-	// output yaml file path
+	// output yaml file path.
 	_outputsPath = "output/outputs.yaml"
 )
 
@@ -43,7 +43,8 @@ func NewOutPutGetter(ctx context.Context, repo templaterepo.TemplateRepo, m *man
 }
 
 func (g *getter) GetTemplateOutPut(ctx context.Context,
-	templateName, releaseName string) (string, error) {
+	templateName, releaseName string,
+) (string, error) {
 	const op = "template output getter: getTemplateOutPut"
 	defer wlog.Start(ctx, op).StopPrint()
 

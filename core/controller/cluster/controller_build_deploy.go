@@ -23,7 +23,8 @@ import (
 )
 
 func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
-	r *BuildDeployRequest) (_ *BuildDeployResponse, err error) {
+	r *BuildDeployRequest,
+) (_ *BuildDeployResponse, err error) {
 	const op = "cluster controller: build deploy"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -42,7 +43,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	var gitRef, gitRefType = cluster.GitRef, cluster.GitRefType
+	gitRef, gitRefType := cluster.GitRef, cluster.GitRefType
 	if r.Git != nil {
 		if r.Git.Commit != "" {
 			gitRefType = codemodels.GitRefTypeCommit
@@ -162,7 +163,8 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 }
 
 func assembleImageURL(regionEntity *regionmodels.RegionEntity,
-	application, cluster, branch, commit string) string {
+	application, cluster, branch, commit string,
+) string {
 	// domain is harbor server
 	domain := strings.TrimPrefix(regionEntity.Registry.Server, "http://")
 	domain = strings.TrimPrefix(domain, "https://")
@@ -218,7 +220,8 @@ func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref s
 }
 
 func (c *controller) ofClusterDiff(gitURL, refType, ref string, commit *git.Commit, diff string) (
-	*GetDiffResponse, error) {
+	*GetDiffResponse, error,
+) {
 	var codeInfo *CodeInfo
 
 	if commit != nil {

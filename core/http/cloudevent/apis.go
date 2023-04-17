@@ -30,16 +30,21 @@ func (a *API) CloudEvent(c *gin.Context) {
 		return
 	}
 
-	var wpr *cloudevent.WrappedPipelineRun
+	wpr := cloudevent.WrappedPipelineRun{}
 	if err := c.ShouldBindJSON(&wpr); err != nil {
 		response.AbortWithRequestError(c, common.InvalidRequestBody,
 			fmt.Sprintf("request body is invalid, err: %v", err))
 		return
 	}
 
-	if err := a.cloudEventCtl.CloudEvent(c, wpr); err != nil {
-		log.Errorf(c, "failed to handle cloud event, pipelinerun name: %s, err: %v",
-			wpr.PipelineRun.Name, err)
+	if ceType == string(pipelinecloudevent.PipelineRunSuccessfulEventV1) {
+		log.Infof(c, "pipeline run succeeded - pipelineRunName: %s", wpr.Name())
+	} else if ceType == string(pipelinecloudevent.PipelineRunFailedEventV1) {
+		log.Error(c, "pipeline run failed", "pipelineRunName", wpr.Name(), "reason", wpr.Reason(), "message", wpr.Message())
+	}
+
+	if err := a.cloudEventCtl.CloudEvent(c, &wpr); err != nil {
+		log.Error(c, "failed to handle cloud event", "pipelineRunName", wpr.PipelineRun.Name, "err", err)
 		response.AbortWithError(c, err)
 		return
 	}

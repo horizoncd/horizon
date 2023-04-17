@@ -44,13 +44,14 @@ func (c *controller) ListByEnvironment(ctx context.Context, environment string) 
 	return ofRegionModels(regions, environmentRegions), nil
 }
 
-// DeleteByID implements Controller
+// DeleteByID implements Controller.
 func (c *controller) DeleteByID(ctx context.Context, id uint) error {
 	return c.envRegionMgr.DeleteByID(ctx, id)
 }
 
 func (c *controller) CreateEnvironmentRegion(ctx context.Context,
-	request *CreateEnvironmentRegionRequest) (uint, error) {
+	request *CreateEnvironmentRegionRequest,
+) (uint, error) {
 	environmentRegion, err := c.envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: request.EnvironmentName,
 		RegionName:      request.RegionName,

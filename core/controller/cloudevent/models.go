@@ -25,3 +25,32 @@ func (wpr *WrappedPipelineRun) IsFinished() bool {
 	}
 	return false
 }
+
+func (wpr *WrappedPipelineRun) Name() string {
+	if wpr.PipelineRun == nil {
+		return ""
+	}
+	return wpr.PipelineRun.Name
+}
+
+func (wpr *WrappedPipelineRun) Reason() string {
+	if wpr.PipelineRun == nil {
+		return ""
+	}
+	prc := wpr.PipelineRun.Status.GetCondition(apis.ConditionSucceeded)
+	if prc == nil {
+		return ""
+	}
+	return prc.GetReason()
+}
+
+func (wpr *WrappedPipelineRun) Message() string {
+	if wpr.PipelineRun == nil {
+		return ""
+	}
+	prc := wpr.PipelineRun.Status.GetCondition(apis.ConditionSucceeded)
+	if prc == nil {
+		return ""
+	}
+	return prc.GetMessage()
+}

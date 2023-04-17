@@ -46,7 +46,8 @@ const (
 // Middleware check user is exists in db. If not, add user into db.
 // Then attach a User object into context.
 func Middleware(param *param.Param, store sessions.Store,
-	config *coreconfig.Config, skippers ...middleware.Skipper) gin.HandlerFunc {
+	config *coreconfig.Config, skippers ...middleware.Skipper,
+) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// 1. aksk auth if operator header exists
 		user, err := akskAuthn(c, config.AccessSecretKeys, param.UserManager)

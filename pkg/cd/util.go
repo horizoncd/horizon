@@ -34,7 +34,8 @@ func resourceTreeContains(resourceTree *applicationV1alpha1.ApplicationTree, res
 }
 
 func parsePod(ctx context.Context, clusterInfo *ClusterState,
-	pod *corev1.Pod, events []*corev1.Event) (err error) {
+	pod *corev1.Pod, events []*corev1.Event,
+) (err error) {
 	const deploymentPodTemplateHash = "pod-template-hash"
 	const rolloutPodTemplateHash = "rollouts-pod-template-hash"
 
@@ -151,7 +152,7 @@ func parsePod(ctx context.Context, clusterInfo *ClusterState,
 	return nil
 }
 
-// Deprecated: allContainersStarted determine if all containers have been started
+// Deprecated: allContainersStarted determine if all containers have been started.
 func allContainersStarted(containerStatuses []corev1.ContainerStatus) bool {
 	for _, containerStatus := range containerStatuses {
 		if containerStatus.Started == nil || !*(containerStatus.Started) {
@@ -161,7 +162,7 @@ func allContainersStarted(containerStatuses []corev1.ContainerStatus) bool {
 	return true
 }
 
-// Deprecated: allContainersRunning determine if all containers running
+// Deprecated: allContainersRunning determine if all containers running.
 func allContainersRunning(containerStatuses []corev1.ContainerStatus) bool {
 	for _, containerStatus := range containerStatuses {
 		if containerStatus.State.Running == nil {
@@ -171,7 +172,7 @@ func allContainersRunning(containerStatuses []corev1.ContainerStatus) bool {
 	return true
 }
 
-// Deprecated: allContainersReady determine if all containers ready
+// Deprecated: allContainersReady determine if all containers ready.
 func allContainersReady(containerStatuses []corev1.ContainerStatus) bool {
 	for _, containerStatus := range containerStatuses {
 		if !containerStatus.Ready {
@@ -181,7 +182,7 @@ func allContainersReady(containerStatuses []corev1.ContainerStatus) bool {
 	return true
 }
 
-// Deprecated: oneOfContainersCrash determine if one of containers crash
+// Deprecated: oneOfContainersCrash determine if one of containers crash.
 func oneOfContainersCrash(containerStatuses []corev1.ContainerStatus) bool {
 	for _, containerStatus := range containerStatuses {
 		if containerStatus.State.Waiting != nil && containerStatus.State.Waiting.Reason == PodErrCrashLoopBackOff {
@@ -191,7 +192,7 @@ func oneOfContainersCrash(containerStatuses []corev1.ContainerStatus) bool {
 	return false
 }
 
-// Deprecated
+// Deprecated.
 func parseContainerState(containerStatus corev1.ContainerStatus) ContainerState {
 	waiting := "waiting"
 	running := "running"
@@ -281,7 +282,8 @@ func CompareRevision(ctx context.Context, rs1, rs2 *appsv1.ReplicaSet) bool {
 }
 
 func getDeploymentCondition(status appsv1.DeploymentStatus,
-	condType appsv1.DeploymentConditionType) *appsv1.DeploymentCondition {
+	condType appsv1.DeploymentConditionType,
+) *appsv1.DeploymentCondition {
 	for i := range status.Conditions {
 		c := status.Conditions[i]
 		if c.Type == condType {
@@ -300,7 +302,7 @@ func getStep(rollout *rolloutsV1alpha1.Rollout) *Step {
 		}
 	}
 
-	var replicasTotal = 1
+	replicasTotal := 1
 	if rollout.Spec.Replicas != nil {
 		replicasTotal = int(*rollout.Spec.Replicas)
 	}
@@ -330,7 +332,7 @@ func getStep(rollout *rolloutsV1alpha1.Rollout) *Step {
 		incrementReplicasList = append(incrementReplicasList, replicas)
 	}
 
-	var stepIndex = 0
+	stepIndex := 0
 	// if steps changes, stepIndex = 0
 	if rollout.Status.CurrentStepHash == computeRolloutStepHash(rollout) &&
 		rollout.Status.CurrentStepIndex != nil {
@@ -351,7 +353,8 @@ func getStep(rollout *rolloutsV1alpha1.Rollout) *Step {
 }
 
 func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
-	command []string, executor exec.RemoteExecutor) map[string]ExecResp {
+	command []string, executor exec.RemoteExecutor,
+) map[string]ExecResp {
 	var wg sync.WaitGroup
 	ch := make(chan ExecResp, len(containers))
 	for _, containerRef := range containers {
@@ -405,7 +408,7 @@ func computeRolloutStepHash(rollout *rolloutsV1alpha1.Rollout) string {
 	return rand.SafeEncodeString(fmt.Sprint(rolloutStepHasher.Sum32()))
 }
 
-// Deprecated
+// Deprecated.
 func podMapping(pod corev1.Pod) *ClusterPod {
 	clusterPod := &ClusterPod{
 		Metadata: PodMetadata{
@@ -470,7 +473,7 @@ func podMapping(pod corev1.Pod) *ClusterPod {
 }
 
 // Deprecated
-// parsePodLifecycle parse pod lifecycle by pod status
+// parsePodLifecycle parse pod lifecycle by pod status.
 func parsePodLifeCycle(pod corev1.Pod) []*LifeCycleItem {
 	var lifeCycle []*LifeCycleItem
 	// if DeletionTimestamp is set, pod is Terminating
@@ -570,7 +573,7 @@ func parsePodLifeCycle(pod corev1.Pod) []*LifeCycleItem {
 	return lifeCycle
 }
 
-// extractContainerInfo extract container detail
+// extractContainerInfo extract container detail.
 func extractContainerDetail(pod *corev1.Pod) []ContainerDetail {
 	containers := make([]ContainerDetail, 0)
 	for _, container := range pod.Spec.Containers {
@@ -594,7 +597,7 @@ func extractContainerDetail(pod *corev1.Pod) []ContainerDetail {
 	return containers
 }
 
-// extractContainerMounts extract container status from pod.status.containerStatus
+// extractContainerMounts extract container status from pod.status.containerStatus.
 func extractContainerStatus(pod *corev1.Pod, container *corev1.Container) *corev1.ContainerStatus {
 	for _, status := range pod.Status.ContainerStatuses {
 		if status.Name == container.Name {

@@ -28,7 +28,8 @@ type manager struct {
 }
 
 func (m *manager) ListByEnvApplicationID(ctx context.Context, env string,
-	applicationID uint) (*models.ApplicationRegion, error) {
+	applicationID uint,
+) (*models.ApplicationRegion, error) {
 	return m.dao.ListByEnvApplicationID(ctx, env, applicationID)
 }
 
@@ -37,6 +38,7 @@ func (m *manager) ListByApplicationID(ctx context.Context, applicationID uint) (
 }
 
 func (m *manager) UpsertByApplicationID(ctx context.Context,
-	applicationID uint, applicationRegions []*models.ApplicationRegion) error {
+	applicationID uint, applicationRegions []*models.ApplicationRegion,
+) error {
 	return m.dao.UpsertByApplicationID(ctx, applicationID, applicationRegions)
 }

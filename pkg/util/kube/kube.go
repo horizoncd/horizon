@@ -140,21 +140,29 @@ func DeletePods(ctx context.Context, kubeClientset kubernetes.Interface, namespa
 	return nil
 }
 
+// BuildClient creates a Kubernetes client for interacting with the API server.
+// It takes a kubeconfig file path as an input, and returns a rest.Config and a kubernetes.Interface.
+// If the kubeconfig path is empty, it assumes it's running inside a cluster and uses the in-cluster config.
+// It sets some default values for the rest.Config and creates a new kubernetes.Interface.
 func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) {
 	var restConfig *rest.Config
 	var err error
+
+	// Use the provided kubeconfig file to create a config object.
 	if len(kubeconfig) > 0 {
 		restConfig, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
 			return nil, nil, herrors.NewErrGetFailed(herrors.KubeConfigInK8S, err.Error())
 		}
 	} else {
+		// If no kubeconfig file is provided, assume the code is running inside a cluster and use the in-cluster config.
 		restConfig, err = rest.InClusterConfig()
 		if err != nil {
 			return nil, nil, herrors.NewErrGetFailed(herrors.KubeConfigInK8S, err.Error())
 		}
 	}
 
+	// Set default values for the rest.Config, scheme: go-type -> GVK and GVK -> go-type
 	groupVersion := &schema.GroupVersion{Group: "", Version: "v1"}
 	restConfig.GroupVersion = groupVersion
 	restConfig.APIPath = "/api"
@@ -165,10 +173,12 @@ func BuildClient(kubeconfig string) (*rest.Config, kubernetes.Interface, error) 
 	log.Infof(context.Background(), "BuildClient set kube qps: %v, burst: %v", K8sClientConfigQPS,
 		K8sClientConfigBurst)
 
+	// Create a new kubernetes client from the rest.Config.
 	k8sClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, herrors.NewErrCreateFailed(herrors.KubeConfigInK8S, err.Error())
 	}
+
 	return restConfig, k8sClient, nil
 }
 

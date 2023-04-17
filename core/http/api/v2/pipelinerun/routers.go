@@ -9,23 +9,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group("/apis/core/v2")
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/log", _pipelinerunIDParam),
 			HandlerFunc: api.Log,
-		}, {
+		},
+		{
 			Method:      http.MethodPost,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/stop", _pipelinerunIDParam),
 			HandlerFunc: api.Stop,
-		}, {
+		},
+		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v/diffs", _pipelinerunIDParam),
 			HandlerFunc: api.GetDiff,
-		}, {
+		},
+		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/pipelineruns/:%v", _pipelinerunIDParam),
 			HandlerFunc: api.Get,

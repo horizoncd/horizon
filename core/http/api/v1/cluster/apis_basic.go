@@ -116,9 +116,8 @@ func (a *API) ListSelf(c *gin.Context) {
 		return
 	}
 
-	c.Request.URL.RawQuery =
-		fmt.Sprintf("%s%s", c.Request.URL.RawQuery,
-			fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID()))
+	c.Request.URL.RawQuery = fmt.Sprintf("%s%s", c.Request.URL.RawQuery,
+		fmt.Sprintf("&%s=%d", common.ClusterQueryByUser, currentUser.GetID()))
 	a.List(c)
 }
 

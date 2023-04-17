@@ -52,9 +52,8 @@ type fileRoleService struct {
 	RolePriorityRankDesc []string
 	DefaultRoleName      string
 	Roles                []types.Role
-
-	DefaultRole *types.Role
-	roleRankMap map[string]roleRankMapItem
+	DefaultRole          *types.Role
+	roleRankMap          map[string]roleRankMapItem
 }
 
 func NewFileRoleFrom2(ctx context.Context, config roleconfig.Config) (Service, error) {
@@ -123,7 +122,7 @@ func (fRole *fileRoleService) ListRole(ctx context.Context) ([]types.Role, error
 	return roles, nil
 }
 
-func (fRole *fileRoleService) GetRole(ctx context.Context, roleName string) (*types.Role, error) {
+func (fRole *fileRoleService) GetRole(_ context.Context, roleName string) (*types.Role, error) {
 	role, ifOk := fRole.roleRankMap[roleName]
 	if !ifOk {
 		return nil, ErrorRoleNotFound
@@ -131,7 +130,7 @@ func (fRole *fileRoleService) GetRole(ctx context.Context, roleName string) (*ty
 	return &role.role, nil
 }
 
-func (fRole *fileRoleService) GetDefaultRole(ctx context.Context) *types.Role {
+func (fRole *fileRoleService) GetDefaultRole(_ context.Context) *types.Role {
 	return fRole.DefaultRole
 }
 

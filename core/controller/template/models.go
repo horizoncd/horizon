@@ -50,7 +50,8 @@ type CreateReleaseRequest struct {
 }
 
 func (c *CreateReleaseRequest) toReleaseModel(ctx context.Context,
-	template *tmodels.Template) (*trmodels.TemplateRelease, error) {
+	template *tmodels.Template,
+) (*trmodels.TemplateRelease, error) {
 	t := &trmodels.TemplateRelease{
 		Name:         c.Name,
 		TemplateName: template.Name,

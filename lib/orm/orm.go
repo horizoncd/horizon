@@ -102,7 +102,7 @@ func FormatSortExp(query *q.Query) string {
 	return exp[:len(exp)-2]
 }
 
-// FormatFilterExp returns a where condition string which has prefixed "and"
+// FormatFilterExp returns a where condition string which has prefixed "and".
 func FormatFilterExp(query *q.Query, columnInTable map[string]string) (string, []interface{}) {
 	if query == nil || query.Keywords == nil || len(query.Keywords) == 0 {
 		return "", []interface{}{}

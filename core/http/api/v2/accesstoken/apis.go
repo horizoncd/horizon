@@ -142,9 +142,7 @@ func (a *API) RevokePersonalAccessToken(c *gin.Context) {
 
 func (a *API) ListPersonalAccessTokens(c *gin.Context) {
 	const op = "access token: list pat"
-	var (
-		err error
-	)
+	var err error
 
 	query := q.New(nil).WithPagination(c)
 	tokens, total, err := a.accessTokenCtl.ListPersonalAccessTokens(c, query)
@@ -162,9 +160,7 @@ func (a *API) ListPersonalAccessTokens(c *gin.Context) {
 
 func (a *API) ListResourceAccessTokens(c *gin.Context) {
 	const op = "access token: list rat"
-	var (
-		err error
-	)
+	var err error
 
 	resourceType := c.Param(common.ParamResourceType)
 	resourceIDStr := c.Param(common.ParamResourceID)
@@ -189,8 +185,9 @@ func (a *API) ListResourceAccessTokens(c *gin.Context) {
 	})
 }
 
-func (a *API) validateCreatePersonalAccessTokenRequest(c context.Context,
-	r accesstoken.CreatePersonalAccessTokenRequest) error {
+func (a *API) validateCreatePersonalAccessTokenRequest(_ context.Context,
+	r accesstoken.CreatePersonalAccessTokenRequest,
+) error {
 	if err := a.validateTokenName(r.Name); err != nil {
 		return err
 	}
@@ -203,7 +200,8 @@ func (a *API) validateCreatePersonalAccessTokenRequest(c context.Context,
 }
 
 func (a *API) validateCreateResourceAccessTokenRequest(c context.Context,
-	r accesstoken.CreateResourceAccessTokenRequest, resourceType string) error {
+	r accesstoken.CreateResourceAccessTokenRequest, resourceType string,
+) error {
 	if err := a.validateResourceType(resourceType); err != nil {
 		return err
 	}

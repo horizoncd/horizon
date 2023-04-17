@@ -429,7 +429,7 @@ func TestListGroupMember(t *testing.T) {
 	assert.True(t, PostMemberEqualsMember(postMemberCat1, &members[2]))
 }
 
-func TestListApplicationMember(t *testing.T) {
+func TestListApplicationMember(_ *testing.T) {
 	// TODO(tom)
 }
 

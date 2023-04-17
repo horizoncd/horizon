@@ -63,7 +63,8 @@ func (m *manager) Create(ctx context.Context, member *models.Member) (*models.Me
 }
 
 func (m *manager) Get(ctx context.Context, resourceType models.ResourceType,
-	resourceID uint, memberType models.MemberType, memberInfo uint) (*models.Member, error) {
+	resourceID uint, memberType models.MemberType, memberInfo uint,
+) (*models.Member, error) {
 	return m.dao.Get(ctx, resourceType, resourceID, memberType, memberInfo)
 }
 
@@ -84,26 +85,32 @@ func (m *manager) DeleteMemberByMemberNameID(ctx context.Context, memberNameID u
 }
 
 func (m *manager) HardDeleteMemberByResourceTypeID(ctx context.Context,
-	resourceType string, resourceID uint) error {
+	resourceType string, resourceID uint,
+) error {
 	return m.dao.HardDelete(ctx, resourceType, resourceID)
 }
 
 func (m *manager) ListDirectMember(ctx context.Context, resourceType models.ResourceType,
-	resourceID uint) ([]models.Member, error) {
+	resourceID uint,
+) ([]models.Member, error) {
 	return m.dao.ListDirectMember(ctx, resourceType, resourceID)
 }
 
 func (m *manager) ListDirectMemberOnCondition(ctx context.Context, resourceType models.ResourceType,
-	resourceID uint) ([]models.Member, error) {
+	resourceID uint,
+) ([]models.Member, error) {
 	return m.dao.ListDirectMemberOnCondition(ctx, resourceType, resourceID)
 }
 
 func (m *manager) ListResourceOfMemberInfo(ctx context.Context,
-	resourceType models.ResourceType, memberInfo uint) ([]uint, error) {
+	resourceType models.ResourceType, memberInfo uint,
+) ([]uint, error) {
 	return m.dao.ListResourceOfMemberInfo(ctx, resourceType, memberInfo)
 }
+
 func (m *manager) ListResourceOfMemberInfoByRole(ctx context.Context,
-	resourceType models.ResourceType, memberInfo uint, role string) ([]uint, error) {
+	resourceType models.ResourceType, memberInfo uint, role string,
+) ([]uint, error) {
 	return m.dao.ListResourceOfMemberInfoByRole(ctx, resourceType, memberInfo, role)
 }
 

@@ -2,7 +2,7 @@ package service
 
 import "time"
 
-// Child subResource of a group, including group & application
+// Child subResource of a group, including group & application.
 type Child struct {
 	ID              uint      `json:"id"`
 	Name            string    `json:"name"`
@@ -19,7 +19,7 @@ type Child struct {
 	Children        []*Child  `json:"children"`
 }
 
-// Full is the fullName&fullPath for a group/application/applicationInstance
+// Full is the fullName&fullPath for a group/application/applicationInstance.
 type Full struct {
 	FullName string `json:"fullName"`
 	FullPath string `json:"fullPath"`

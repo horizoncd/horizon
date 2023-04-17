@@ -9,7 +9,7 @@ package redis
 //	password: redis
 //	db: 1
 //
-// ```
+// ```.
 type Redis struct {
 	Protocol string `yaml:"protocol"`
 	Address  string `yaml:"address"`

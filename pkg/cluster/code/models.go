@@ -6,7 +6,7 @@ const (
 	GitRefTypeCommit = "commit"
 )
 
-// Git struct about git
+// Git struct about git.
 type Git struct {
 	URL       string `json:"url"`
 	Subfolder string `json:"subfolder"`

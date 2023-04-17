@@ -37,7 +37,8 @@ func New(db *gorm.DB) Manager {
 }
 
 func (m *manager) CreateEvent(ctx context.Context,
-	event *models.Event) (*models.Event, error) {
+	event *models.Event,
+) (*models.Event, error) {
 	const op = "event manager: create event"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -57,7 +58,8 @@ func (m *manager) CreateEvent(ctx context.Context,
 }
 
 func (m *manager) CreateOrUpdateCursor(ctx context.Context,
-	eventCursor *models.EventCursor) (*models.EventCursor, error) {
+	eventCursor *models.EventCursor,
+) (*models.EventCursor, error) {
 	const op = "event manager: create or update cursor"
 	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.CreateOrUpdateCursor(ctx, eventCursor)

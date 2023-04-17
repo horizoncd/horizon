@@ -34,17 +34,17 @@ type GroupOrApplication struct {
 
 type Groups []*Group
 
-// Len the length of the groups
+// Len the length of the groups.
 func (g Groups) Len() int {
 	return len(g)
 }
 
-// Less sort groups by the size of the traversalIDs array after split by ','
+// Less sort groups by the size of the traversalIDs array after split by ','.
 func (g Groups) Less(i, j int) bool {
 	return len(strings.Split(g[i].TraversalIDs, ",")) < len(strings.Split(g[j].TraversalIDs, ","))
 }
 
-// Swap the two group
+// Swap the two group.
 func (g Groups) Swap(i, j int) {
 	g[i], g[j] = g[j], g[i]
 }

@@ -40,8 +40,10 @@ func NewController(param *param.Param) Controller {
 		buildSchema:          param.BuildSchema,
 	}
 }
+
 func (c *controller) UpdateEnvTemplateV2(ctx context.Context, applicationID uint, env string,
-	r *UpdateEnvTemplateRequest) error {
+	r *UpdateEnvTemplateRequest,
+) error {
 	const op = "env template controller: update env templates"
 
 	// 1. get application
@@ -87,7 +89,8 @@ func (c *controller) UpdateEnvTemplateV2(ctx context.Context, applicationID uint
 }
 
 func (c *controller) UpdateEnvTemplate(ctx context.Context,
-	applicationID uint, env string, r *UpdateEnvTemplateRequest) error {
+	applicationID uint, env string, r *UpdateEnvTemplateRequest,
+) error {
 	const op = "env template controller: update env templates"
 
 	// 1. get application
@@ -130,7 +133,8 @@ func (c *controller) UpdateEnvTemplate(ctx context.Context,
 }
 
 func (c *controller) GetEnvTemplate(ctx context.Context,
-	applicationID uint, env string) (*GetEnvTemplateResponse, error) {
+	applicationID uint, env string,
+) (*GetEnvTemplateResponse, error) {
 	const op = "env template controller: get env templates"
 
 	// 1. get application

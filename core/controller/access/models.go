@@ -10,7 +10,7 @@ type ReviewResult struct {
 	Reason  string `json:"reason"`
 }
 
-// ReviewRequest provide apis for access review
+// ReviewRequest provide apis for access review.
 type ReviewRequest struct {
 	APIs []API `json:"apis"`
 }

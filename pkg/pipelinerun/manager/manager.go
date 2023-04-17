@@ -68,7 +68,8 @@ func (m *manager) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint
 }
 
 func (m *manager) GetLatestByClusterIDAndAction(ctx context.Context,
-	clusterID uint, action string) (*models.Pipelinerun, error) {
+	clusterID uint, action string,
+) (*models.Pipelinerun, error) {
 	return m.dao.GetLatestByClusterIDAndAction(ctx, clusterID, action)
 }
 
@@ -89,7 +90,8 @@ func (m *manager) UpdateResultByID(ctx context.Context, pipelinerunID uint, resu
 }
 
 func (m *manager) GetByClusterID(ctx context.Context,
-	clusterID uint, canRollback bool, query q.Query) (int, []*models.Pipelinerun, error) {
+	clusterID uint, canRollback bool, query q.Query,
+) (int, []*models.Pipelinerun, error) {
 	return m.dao.GetByClusterID(ctx, clusterID, canRollback, query)
 }
 
@@ -98,6 +100,7 @@ func (m *manager) GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID 
 }
 
 func (m *manager) GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint, action,
-	status string) (*models.Pipelinerun, error) {
+	status string,
+) (*models.Pipelinerun, error) {
 	return m.dao.GetLatestByClusterIDAndActionAndStatus(ctx, clusterID, action, status)
 }

@@ -84,7 +84,8 @@ type Scope struct {
 }
 
 func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application,
-	er *envregionmodels.EnvironmentRegion, expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
+	er *envregionmodels.EnvironmentRegion, expireSeconds uint,
+) (*models.Cluster, []*tagmodels.Tag) {
 	var (
 		// r.Git cannot be nil
 		gitURL       = r.Git.URL
@@ -122,7 +123,8 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 }
 
 func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
-	templateRelease string, er *envregionmodels.EnvironmentRegion) *models.Cluster {
+	templateRelease string, er *envregionmodels.EnvironmentRegion,
+) *models.Cluster {
 	var gitURL, gitSubfolder, gitRef, gitRefType string
 	if r.Git != nil {
 		gitURL, gitSubfolder, gitRefType, gitRef = r.Git.URL,
@@ -169,7 +171,8 @@ func toUser(user *usermodels.User) *User {
 }
 
 func ofClusterModel(application *appmodels.Application, cluster *models.Cluster, fullPath, namespace string,
-	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetClusterResponse {
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{},
+) *GetClusterResponse {
 	expireTime := ""
 	if cluster.ExpireSeconds > 0 {
 		expireTime = time.Duration(cluster.ExpireSeconds * 1e9).String()

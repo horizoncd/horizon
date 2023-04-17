@@ -53,13 +53,15 @@ type RollbackRequest struct {
 	PipelinerunID uint `json:"pipelinerunID"`
 }
 
-type BatchResponse map[string]OperationResult
-type OperationResult struct {
-	// Result bool value indicates whether the result is successfully
-	Result   bool   `json:"result"`
-	Error    error  `json:"error,omitempty"`
-	ErrorMsg string `json:"errorMsg,omitempty"`
-}
+type (
+	BatchResponse   map[string]OperationResult
+	OperationResult struct {
+		// Result bool value indicates whether the result is successfully
+		Result   bool   `json:"result"`
+		Error    error  `json:"error,omitempty"`
+		ErrorMsg string `json:"errorMsg,omitempty"`
+	}
+)
 
 func ofBatchResp(resp map[string]cd.OperationResult) BatchResponse {
 	resultMap := make(BatchResponse)

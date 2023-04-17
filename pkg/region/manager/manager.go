@@ -75,7 +75,8 @@ func (m *manager) ListRegionEntities(ctx context.Context) (ret []*models.RegionE
 }
 
 func (m *manager) GetRegionEntity(ctx context.Context,
-	regionName string) (*models.RegionEntity, error) {
+	regionName string,
+) (*models.RegionEntity, error) {
 	region, err := m.regionDAO.GetRegion(ctx, regionName)
 	if err != nil {
 		return nil, err
@@ -110,7 +111,8 @@ func (m *manager) getRegistryByRegion(ctx context.Context, region *models.Region
 }
 
 func (m *manager) ListByRegionSelectors(ctx context.Context, selectors groupmodels.RegionSelectors) (
-	models.RegionParts, error) {
+	models.RegionParts, error,
+) {
 	return m.regionDAO.ListByRegionSelectors(ctx, selectors)
 }
 

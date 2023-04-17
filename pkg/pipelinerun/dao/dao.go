@@ -11,27 +11,41 @@ import (
 )
 
 type DAO interface {
-	// Create create a pipelinerun
+	// Create creates a Pipelinerun object.
 	Create(ctx context.Context, pipelinerun *models.Pipelinerun) (*models.Pipelinerun, error)
+	// GetByID gets a Pipelinerun object by its ID.
 	GetByID(ctx context.Context, pipelinerunID uint) (*models.Pipelinerun, error)
+	// GetByCIEventID gets a Pipelinerun object by its CI event ID.
 	GetByCIEventID(ctx context.Context, ciEventID string) (*models.Pipelinerun, error)
+	// GetByClusterID gets a specified number of Pipelinerun objects by their cluster ID.
 	GetByClusterID(ctx context.Context, clusterID uint,
 		canRollback bool, query q.Query) (int, []*models.Pipelinerun, error)
-	// DeleteByID delete pipelinerun by id
+	// DeleteByID deletes a Pipelinerun object by its ID.
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
+	// DeleteByClusterID deletes a Pipelinerun object by its cluster ID.
 	DeleteByClusterID(ctx context.Context, clusterID uint) error
+	// UpdateConfigCommitByID updates the configuration of a Pipelinerun object by its ID.
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
+	// GetLatestByClusterIDAndAction gets the latest Pipelinerun object by its cluster ID and action.
 	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
-	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint,
-		action, status string) (*models.Pipelinerun, error)
+	// GetLatestByClusterIDAndActionAndStatus gets the latest Pipelinerun object by its cluster ID, action, and status.
+	GetLatestByClusterIDAndActionAndStatus(ctx context.Context,
+		clusterID uint, action, status string) (*models.Pipelinerun, error)
+	// UpdateStatusByID updates the status of a Pipelinerun object by its ID.
 	UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error
+	// UpdateCIEventIDByID updates the CI event ID of a Pipelinerun object by its ID.
 	UpdateCIEventIDByID(ctx context.Context, pipelinerunID uint, ciEventID string) error
+	// UpdateResultByID updates the result of a Pipelinerun object by its ID.
 	UpdateResultByID(ctx context.Context, pipelinerunID uint, result *models.Result) error
+	// GetLatestSuccessByClusterID gets the latest successful Pipelinerun object by its cluster ID.
 	GetLatestSuccessByClusterID(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
+	// GetFirstCanRollbackPipelinerun gets the first Pipelinerun object that can be rolled back.
 	GetFirstCanRollbackPipelinerun(ctx context.Context, clusterID uint) (*models.Pipelinerun, error)
 }
 
-type dao struct{ db *gorm.DB }
+type dao struct {
+	db *gorm.DB
+}
 
 func NewDAO(db *gorm.DB) DAO {
 	return &dao{db: db}
@@ -101,7 +115,8 @@ func (d *dao) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, co
 }
 
 func (d *dao) GetLatestByClusterIDAndAction(ctx context.Context,
-	clusterID uint, action string) (*models.Pipelinerun, error) {
+	clusterID uint, action string,
+) (*models.Pipelinerun, error) {
 	var pipelinerun models.Pipelinerun
 	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestByClusterIDAndAction,
 		clusterID, action).Scan(&pipelinerun)
@@ -115,7 +130,8 @@ func (d *dao) GetLatestByClusterIDAndAction(ctx context.Context,
 }
 
 func (d *dao) GetLatestByClusterIDAndActionAndStatus(ctx context.Context,
-	clusterID uint, action string, status string) (*models.Pipelinerun, error) {
+	clusterID uint, action string, status string,
+) (*models.Pipelinerun, error) {
 	var pipelinerun models.Pipelinerun
 	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestByClusterIDAndActionAndStatus, clusterID,
 		action, status).Scan(&pipelinerun)
@@ -167,7 +183,8 @@ func (d *dao) UpdateResultByID(ctx context.Context, pipelinerunID uint, result *
 }
 
 func (d *dao) GetByClusterID(ctx context.Context, clusterID uint,
-	canRollback bool, query q.Query) (int, []*models.Pipelinerun, error) {
+	canRollback bool, query q.Query,
+) (int, []*models.Pipelinerun, error) {
 	offset := (query.PageNumber - 1) * query.PageSize
 	limit := query.PageSize
 

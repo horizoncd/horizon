@@ -18,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// http params for create cluster api
+// http params for create cluster api.
 var _urlPattern = regexp.MustCompile(`/apis/core/v[12]/applications/(\d+)/clusters`)
 
 const (
@@ -26,9 +26,10 @@ const (
 	_scopeParam = "scope"
 )
 
-// Middleware to set region for create cluster API
+// Middleware to set region for create cluster API.
 func Middleware(param *param.Param, applicationRegionCtl applicationregion.Controller,
-	skippers ...middleware.Skipper) gin.HandlerFunc {
+	skippers ...middleware.Skipper,
+) gin.HandlerFunc {
 	return middleware.New(func(c *gin.Context) {
 		// not create cluster api, skip
 		if !_urlPattern.MatchString(c.Request.URL.Path) || c.Request.Method != _method {
@@ -80,7 +81,8 @@ func Middleware(param *param.Param, applicationRegionCtl applicationregion.Contr
 }
 
 func getRegion(c *gin.Context, applicationRegions applicationregion.ApplicationRegion,
-	environment string, p *param.Param) (string, bool) {
+	environment string, p *param.Param,
+) (string, bool) {
 	for _, applicationRegion := range applicationRegions {
 		if applicationRegion.Environment == environment {
 			r := applicationRegion.Region

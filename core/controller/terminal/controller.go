@@ -62,7 +62,8 @@ func NewController(param *param.Param) Controller {
 }
 
 func (c *controller) GetTerminalID(ctx context.Context, clusterID uint, podName,
-	containerName string) (*SessionIDResp, error) {
+	containerName string,
+) (*SessionIDResp, error) {
 	const op = "terminal: get terminal id"
 	defer wlog.Start(ctx, op).StopPrint()
 	sessionID := &SessionIDResp{}
@@ -136,7 +137,8 @@ func (c *controller) GetSockJSHandler(ctx context.Context, sessionID string) (ht
 }
 
 func (c *controller) CreateShell(ctx context.Context, clusterID uint, podName,
-	containerName string) (string, http.Handler, error) {
+	containerName string,
+) (string, http.Handler, error) {
 	const op = "terminal controller: create shell"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -212,7 +214,8 @@ func genSessionID(clusterID uint, podName, containerName, randomID string) strin
 }
 
 func parseSessionID(sessionID string) (clusterID uint, podName string, containerName string, randomID string,
-	err error) {
+	err error,
+) {
 	parts := strings.Split(sessionID, ":")
 	if len(parts) != 4 {
 		return clusterID, podName, containerName, randomID, fmt.Errorf("invalid sessionID")

@@ -145,7 +145,6 @@ func (d *Driver) GetSignedObjectURL(path string, expire time.Duration) (string, 
 		Key:    aws.String(path),
 	})
 	urlStr, err := req.Presign(expire)
-
 	if err != nil {
 		return "", err
 	}
@@ -204,6 +203,6 @@ func (d *Driver) DeleteObjects(ctx context.Context, prefix string) error {
 	}
 }
 
-func (d *Driver) GetBucket(ctx context.Context) string {
+func (d *Driver) GetBucket(_ context.Context) string {
 	return d.Bucket
 }

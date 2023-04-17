@@ -60,7 +60,8 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*User, error) {
 }
 
 func (c *controller) UpdateByID(ctx context.Context,
-	id uint, u *UpdateUserRequest) (*User, error) {
+	id uint, u *UpdateUserRequest,
+) (*User, error) {
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err

@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// User describes a user that has been authenticated to the system
+// User describes a user that has been authenticated to the system.
 type User interface {
 	GetName() string
 	GetFullName() string

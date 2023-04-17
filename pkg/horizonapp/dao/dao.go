@@ -5,8 +5,8 @@ import (
 )
 
 type DAO interface {
-	Create(ctx context.Context)
-	Get()
-	DeleteByID()
-	List()
+	Create(ctx context.Context) // Create data.
+	Get()                       // Get data.
+	DeleteByID()                // Delete data by ID.
+	List()                      // List all data.
 }

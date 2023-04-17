@@ -11,7 +11,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
-func TestLogOK(t *testing.T) {
+func TestLogOK(_ *testing.T) {
 	ctx := log.WithContext(context.Background(), "traceId")
 
 	const op = "app: create application"
@@ -21,7 +21,7 @@ func TestLogOK(t *testing.T) {
 	Start(ctx, "test: stopPrint").StopPrint()
 }
 
-func TestPanic(t *testing.T) {
+func TestPanic(_ *testing.T) {
 	ctx := log.WithContext(context.Background(), "traceId")
 
 	const op = "app: create application"
@@ -30,7 +30,7 @@ func TestPanic(t *testing.T) {
 	doPanic()
 }
 
-func TestPanic2(t *testing.T) {
+func TestPanic2(_ *testing.T) {
 	ctx := log.WithContext(context.Background(), "traceId")
 
 	const op = "app: create application"
@@ -44,7 +44,7 @@ func doPanic() {
 	*v = 10
 }
 
-func TestLogError(t *testing.T) {
+func TestLogError(_ *testing.T) {
 	ctx := log.WithContext(context.Background(), "traceId")
 
 	const op = "app: create application"
@@ -54,7 +54,7 @@ func TestLogError(t *testing.T) {
 	log.Info(ctx, "hello world")
 }
 
-func TestResponse(t *testing.T) {
+func TestResponse(_ *testing.T) {
 	ctx := log.WithContext(context.Background(), "traceId")
 	resp := &http.Response{
 		Body: ioutil.NopCloser(strings.NewReader("123")),

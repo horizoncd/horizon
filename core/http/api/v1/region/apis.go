@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	// param
+	// param.
 	_regionIDParam = "id"
 )
 

@@ -9,10 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	coreGroup := engine.Group("/apis/core/v2")
-	var coreRoutes = route.Routes{
+	coreRoutes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/shell", _clusterIDParam),

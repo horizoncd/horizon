@@ -16,14 +16,14 @@ const (
 	// TypeApplication represent the application  member entry.
 	TypeApplication = ResourceType(common.ResourceApplication)
 
-	// TypeApplicationCluster represent the application instance member entry
+	// TypeApplicationCluster represent the application instance member entry.
 	TypeApplicationCluster = ResourceType(common.ResourceCluster)
 	// TypePipelinerunStr currently pipelineruns do not have direct member info, will
-	// use the pipeline's cluster's member info
+	// use the pipeline's cluster's member info.
 	TypePipelinerun = ResourceType(common.ResourcePipelinerun)
 
 	// TypeOauthAppsStr urrently oauthapp do not have direct member info, will
-	// use the oauthapp's groups member info
+	// use the oauthapp's groups member info.
 	TypeOauthApps = ResourceType(common.ResourceOauthApps)
 
 	TypeTemplate = ResourceType(common.ResourceTemplate)

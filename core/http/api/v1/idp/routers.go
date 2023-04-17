@@ -10,7 +10,7 @@ import (
 
 func (api *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group("/apis/core/v1/idps")
-	var routes = route.Routes{
+	routes := route.Routes{
 		{
 			Method:      http.MethodGet,
 			HandlerFunc: api.ListIDPs,

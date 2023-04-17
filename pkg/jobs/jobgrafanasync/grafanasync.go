@@ -10,7 +10,8 @@ import (
 )
 
 func Run(ctx context.Context, coreConfig *config.Config,
-	manager *managerparam.Manager, client kubernetes.Interface) {
+	manager *managerparam.Manager, client kubernetes.Interface,
+) {
 	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client)
 	grafanaService.SyncDatasource(ctx)
 }

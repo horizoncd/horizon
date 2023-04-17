@@ -109,9 +109,9 @@ func (t *Tekton) StopPipelineRun(ctx context.Context, ciEventID string) (err err
 }
 
 func (t *Tekton) GetPipelineRunLogByID(ctx context.Context, ciEventID string) (
-	_ <-chan log.Log, _ <-chan error, err error) {
+	_ <-chan log.Log, _ <-chan error, err error,
+) {
 	pr, err := t.getPipelineRunByID(ctx, ciEventID)
-
 	if err != nil {
 		return nil, nil, perror.WithMessage(err, "failed to get pipeline run with labels")
 	}
@@ -119,7 +119,7 @@ func (t *Tekton) GetPipelineRunLogByID(ctx context.Context, ciEventID string) (
 	return t.GetPipelineRunLog(ctx, pr)
 }
 
-func (t *Tekton) GetPipelineRunLog(ctx context.Context, pr *v1beta1.PipelineRun) (<-chan log.Log, <-chan error, error) {
+func (t *Tekton) GetPipelineRunLog(_ context.Context, pr *v1beta1.PipelineRun) (<-chan log.Log, <-chan error, error) {
 	logOps := &options.LogOptions{
 		Params:          log.NewTektonParams(t.client.Dynamic, t.client.Kube, t.client.Tekton, t.namespace),
 		PipelineRunName: pr.Name,
@@ -149,7 +149,8 @@ func (t *Tekton) DeletePipelineRun(ctx context.Context, pr *v1beta1.PipelineRun)
 }
 
 func (t *Tekton) getPipelineRunByID(ctx context.Context, ciEventID string) (_ *v1beta1.PipelineRun,
-	err error) {
+	err error,
+) {
 	selector := fields.ParseSelectorOrDie(fmt.Sprintf("%v=%v", common.TektonTriggersEventIDKey, ciEventID))
 	prs, err := t.client.Tekton.TektonV1beta1().PipelineRuns(t.namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector.String(),
@@ -168,7 +169,8 @@ func (t *Tekton) getPipelineRunByID(ctx context.Context, ciEventID string) (_ *v
 }
 
 func (t *Tekton) sendHTTPRequest(ctx context.Context, method string,
-	url string, body io.Reader) (*http.Response, error) {
+	url string, body io.Reader,
+) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err

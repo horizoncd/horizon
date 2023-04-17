@@ -41,7 +41,8 @@ type API struct {
 }
 
 func NewAPI(oauthServerController oauth.Controller,
-	oauthAppController oauthapp.Controller, oauthHTMLLocation string, scopeService scope.Service) *API {
+	oauthAppController oauthapp.Controller, oauthHTMLLocation string, scopeService scope.Service,
+) *API {
 	return &API{
 		oAuthServer:        oauthServerController,
 		oauthAppController: oauthAppController,

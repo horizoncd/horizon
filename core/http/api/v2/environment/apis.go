@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	// param
+	// param.
 	_environmentParam = "environment"
 )
 
@@ -113,6 +113,7 @@ func (a *API) Delete(c *gin.Context) {
 
 	response.Success(c)
 }
+
 func (a *API) GetByID(c *gin.Context) {
 	const op = "environment: get"
 	envIDStr := c.Param(_environmentParam)

@@ -11,7 +11,8 @@ import (
 type ApplicationRegion []*Region
 
 func ofApplicationRegion(applicationRegions []*models.ApplicationRegion, environments []*envmodels.Environment,
-	environmentRegions []*envregionmodels.EnvironmentRegion) ApplicationRegion {
+	environmentRegions []*envregionmodels.EnvironmentRegion,
+) ApplicationRegion {
 	defaultRegionMap := make(map[string]string)
 	for _, environmentRegion := range environmentRegions {
 		defaultRegionMap[environmentRegion.EnvironmentName] = environmentRegion.RegionName

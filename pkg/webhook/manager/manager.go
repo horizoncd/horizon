@@ -57,7 +57,8 @@ func (m *manager) GetWebhook(ctx context.Context, id uint) (*models.Webhook, err
 }
 
 func (m *manager) ListWebhookOfResources(ctx context.Context,
-	resources map[string][]uint, query *q.Query) ([]*models.Webhook, int64, error) {
+	resources map[string][]uint, query *q.Query,
+) ([]*models.Webhook, int64, error) {
 	const op = "webhook manager: list webhook of resources"
 	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.ListWebhookOfResources(ctx, resources, query)
@@ -70,7 +71,8 @@ func (m *manager) ListWebhooks(ctx context.Context) ([]*models.Webhook, error) {
 }
 
 func (m *manager) UpdateWebhook(ctx context.Context, id uint,
-	w *models.Webhook) (*models.Webhook, error) {
+	w *models.Webhook,
+) (*models.Webhook, error) {
 	const op = "webhook manager: update webhook"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -84,21 +86,24 @@ func (m *manager) DeleteWebhook(ctx context.Context, id uint) error {
 }
 
 func (m *manager) CreateWebhookLog(ctx context.Context,
-	wl *models.WebhookLog) (*models.WebhookLog, error) {
+	wl *models.WebhookLog,
+) (*models.WebhookLog, error) {
 	const op = "webhook manager: create webhook log"
 	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.CreateWebhookLog(ctx, wl)
 }
 
 func (m *manager) ListWebhookLogs(ctx context.Context, wID uint,
-	query *q.Query, resources map[string][]uint) ([]*models.WebhookLogWithEventInfo, int64, error) {
+	query *q.Query, resources map[string][]uint,
+) ([]*models.WebhookLogWithEventInfo, int64, error) {
 	const op = "webhook manager: list webhook logs"
 	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.ListWebhookLogs(ctx, wID, query, resources)
 }
 
 func (m *manager) ListWebhookLogsByMap(ctx context.Context,
-	webhookEventMap map[uint][]uint) ([]*models.WebhookLog, error) {
+	webhookEventMap map[uint][]uint,
+) ([]*models.WebhookLog, error) {
 	const op = "webhook manager: list webhook logs by webhooks and events map"
 	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.ListWebhookLogsByMap(ctx, webhookEventMap)
@@ -111,7 +116,8 @@ func (m *manager) CreateWebhookLogs(ctx context.Context, wls []*models.WebhookLo
 }
 
 func (m *manager) ListWebhookLogsByStatus(ctx context.Context, wID uint,
-	status string) ([]*models.WebhookLog, error) {
+	status string,
+) ([]*models.WebhookLog, error) {
 	return m.dao.ListWebhookLogsByStatus(ctx, wID, status)
 }
 

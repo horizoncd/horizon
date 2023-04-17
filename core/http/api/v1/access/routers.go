@@ -8,10 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes register routes
+// RegisterRoutes register routes.
 func (a *API) RegisterRoute(engine *gin.Engine) {
 	frontGroup := engine.Group("/apis/front/v1")
-	var frontRoutes = route.Routes{
+	frontRoutes := route.Routes{
 		{
 			Method:      http.MethodPost,
 			Pattern:     "/accessreview",

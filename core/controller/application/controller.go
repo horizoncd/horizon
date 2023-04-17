@@ -193,7 +193,8 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 }
 
 func (c *controller) CreateApplication(ctx context.Context, groupID uint,
-	request *CreateApplicationRequest) (_ *GetApplicationResponse, err error) {
+	request *CreateApplicationRequest,
+) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: create application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -281,7 +282,8 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 }
 
 func (c *controller) validateBuildAndTemplateConfigV2(ctx context.Context,
-	request *CreateOrUpdateApplicationRequestV2) error {
+	request *CreateOrUpdateApplicationRequestV2,
+) error {
 	if request.TemplateConfig != nil && request.TemplateInfo != nil {
 		if err := c.validateTemplateInput(ctx, request.TemplateInfo.Name, request.TemplateInfo.Release, &TemplateInput{
 			Application: request.TemplateConfig,
@@ -301,7 +303,8 @@ func (c *controller) validateBuildAndTemplateConfigV2(ctx context.Context,
 }
 
 func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
-	request *CreateOrUpdateApplicationRequestV2) (*CreateApplicationResponseV2, error) {
+	request *CreateOrUpdateApplicationRequestV2,
+) (*CreateApplicationResponseV2, error) {
 	const op = "application controller: create application v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -396,7 +399,8 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 }
 
 func (c *controller) UpdateApplication(ctx context.Context, id uint,
-	request *UpdateApplicationRequest) (_ *GetApplicationResponse, err error) {
+	request *UpdateApplicationRequest,
+) (_ *GetApplicationResponse, err error) {
 	const op = "application controller: update application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -472,7 +476,8 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 }
 
 func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
-	request *CreateOrUpdateApplicationRequestV2) (err error) {
+	request *CreateOrUpdateApplicationRequestV2,
+) (err error) {
 	const op = "application controller: update application v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -624,9 +629,10 @@ func validateGitURL(gitURL string) error {
 	return nil
 }
 
-// validateTemplateInput validate templateInput is valid for template schema
+// validateTemplateInput validate templateInput is valid for template schema.
 func (c *controller) validateTemplateInput(ctx context.Context,
-	template, release string, templateInput *TemplateInput) error {
+	template, release string, templateInput *TemplateInput,
+) error {
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, template, release)
 	if err != nil {
 		return err
@@ -650,7 +656,7 @@ func (c *controller) validateTemplateInput(ctx context.Context,
 	return nil
 }
 
-// validatePriority validate priority
+// validatePriority validate priority.
 func validatePriority(priority string) error {
 	switch models.Priority(priority) {
 	case models.P0, models.P1, models.P2, models.P3:
@@ -662,7 +668,7 @@ func validatePriority(priority string) error {
 
 // validateApplicationName validate application name
 // 1. name length must be less than 40
-// 2. name must match pattern ^(([a-z][-a-z0-9]*)?[a-z0-9])?$
+// 2. name must match pattern ^(([a-z][-a-z0-9]*)?[a-z0-9])?$.
 func validateApplicationName(name string) error {
 	if len(name) == 0 {
 		return perror.Wrap(herrors.ErrParamInvalid, "name cannot be empty")
@@ -688,7 +694,8 @@ func validateApplicationName(name string) error {
 }
 
 func (c *controller) List(ctx context.Context, query *q.Query) (
-	listApplicationResp []*ListApplicationResponse, count int, err error) {
+	listApplicationResp []*ListApplicationResponse, count int, err error,
+) {
 	const op = "application controller: list application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -715,8 +722,7 @@ func (c *controller) List(ctx context.Context, query *q.Query) (
 			// TODO: user filter not support group filter yet
 			// group filter
 			if groupID, ok := query.Keywords[common.ApplicationQueryByGroup].(uint); ok {
-				if groupRecursive, ok :=
-					query.Keywords[common.ApplicationQueryByGroupRecursive].(bool); ok && groupRecursive {
+				if groupRecursive, ok := query.Keywords[common.ApplicationQueryByGroupRecursive].(bool); ok && groupRecursive {
 					groupIDs := []uint{groupID}
 					subGroups, err := c.groupMgr.GetSubGroupsByGroupIDs(ctx, groupIDs)
 					if err != nil {
@@ -775,7 +781,8 @@ func (c *controller) List(ctx context.Context, query *q.Query) (
 }
 
 func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env string) (
-	regionmodels.RegionParts, error) {
+	regionmodels.RegionParts, error,
+) {
 	application, err := c.applicationMgr.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -802,7 +809,8 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 }
 
 func (c controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
-	pageNumber, pageSize int) ([]*pipelinemodels.PipelineStats, int64, error) {
+	pageNumber, pageSize int,
+) ([]*pipelinemodels.PipelineStats, int64, error) {
 	app, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {
 		return nil, 0, err

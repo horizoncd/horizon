@@ -93,8 +93,9 @@ func constructRBACParam(c *gin.Context) (*auth.AttributesRecord, error) {
 	return &authRecord, nil
 }
 
-func handleApplication(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
-	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
+func handleApplication(c *gin.Context, mgr *managerparam.Manager, _ *gin.Engine,
+	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo,
+) {
 	app, err := mgr.ApplicationManager.GetByName(c, authRecord.Name)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
@@ -119,8 +120,9 @@ func handleApplication(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 	c.Next()
 }
 
-func handleCluster(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
-	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
+func handleCluster(c *gin.Context, mgr *managerparam.Manager, _ *gin.Engine,
+	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo,
+) {
 	cluster, err := mgr.ClusterMgr.GetByName(c, authRecord.Name)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
@@ -145,8 +147,9 @@ func handleCluster(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 	c.Next()
 }
 
-func handleGetSchema(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
-	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
+func handleGetSchema(c *gin.Context, mgr *managerparam.Manager, _ *gin.Engine,
+	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo,
+) {
 	template, err := mgr.TemplateMgr.GetByName(c, authRecord.Name)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.TemplateInDB {
@@ -188,8 +191,9 @@ func handleGetSchema(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
 	c.Next()
 }
 
-func handleTemplate(c *gin.Context, mgr *managerparam.Manager, r *gin.Engine,
-	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo) {
+func handleTemplate(c *gin.Context, mgr *managerparam.Manager, _ *gin.Engine,
+	authRecord auth.AttributesRecord, requestInfo *auth.RequestInfo,
+) {
 	template, err := mgr.TemplateMgr.GetByName(c, authRecord.Name)
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.TemplateInDB {

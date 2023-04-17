@@ -32,7 +32,7 @@ const (
 	WebhookContentType       = "application/json;charset=utf-8"
 )
 
-// MessageContent will be marshaled as webhook request body
+// MessageContent will be marshaled as webhook request body.
 type MessageContent struct {
 	ID          uint                  `json:"id,omitempty"`
 	EventID     uint                  `json:"eventID,omitempty"`
@@ -49,20 +49,20 @@ type ResourceCommonInfo struct {
 	Name string `json:"name"`
 }
 
-// ApplicationInfo contains basic info of application
+// ApplicationInfo contains basic info of application.
 type ApplicationInfo struct {
 	ResourceCommonInfo
 	Priority string `json:"priority,omitempty"`
 }
 
-// ClusterInfo contains basic info of cluster
+// ClusterInfo contains basic info of cluster.
 type ClusterInfo struct {
 	ResourceCommonInfo
 	ApplicationName string `json:"applicationName,omitempty"`
 	Env             string `json:"env,omitempty"`
 }
 
-// WebhookLogGenerator generates webhook logs by events
+// WebhookLogGenerator generates webhook logs by events.
 type WebhookLogGenerator struct {
 	webhookMgr     webhookmanager.Manager
 	eventMgr       eventmanager.Manager
@@ -90,16 +90,17 @@ type messageDependency struct {
 	cluster     *clustermodels.Cluster
 }
 
-// listSystemResources lists root group(0) as system resource
+// listSystemResources lists root group(0) as system resource.
 func (w *WebhookLogGenerator) listSystemResources() map[string][]uint {
 	return map[string][]uint{
 		string(common.ResourceGroup): {0},
 	}
 }
 
-// listAssociatedResourcesOfApp get application by id and list all the parent resources
+// listAssociatedResourcesOfApp get application by id and list all the parent resources.
 func (w *WebhookLogGenerator) listAssociatedResourcesOfApp(ctx context.Context,
-	id uint) (*applicationmodels.Application, map[string][]uint) {
+	id uint,
+) (*applicationmodels.Application, map[string][]uint) {
 	resources := w.listSystemResources()
 	app, err := w.applicationMgr.GetByIDIncludeSoftDelete(ctx, id)
 	if err != nil {
@@ -118,9 +119,10 @@ func (w *WebhookLogGenerator) listAssociatedResourcesOfApp(ctx context.Context,
 	return app, resources
 }
 
-// listAssociatedResourcesOfCluster get cluster by id and list all the parent resources
+// listAssociatedResourcesOfCluster get cluster by id and list all the parent resources.
 func (w *WebhookLogGenerator) listAssociatedResourcesOfCluster(ctx context.Context, id uint) (*clustermodels.Cluster,
-	*applicationmodels.Application, map[string][]uint) {
+	*applicationmodels.Application, map[string][]uint,
+) {
 	cluster, err := w.clusterMgr.GetByIDIncludeSoftDelete(ctx, id)
 	if err != nil {
 		log.Warningf(ctx, "cluster %d is not exist",
@@ -135,9 +137,10 @@ func (w *WebhookLogGenerator) listAssociatedResourcesOfCluster(ctx context.Conte
 	return cluster, app, resources
 }
 
-// listAssociatedResources list all the associated resources of event to find all the webhooks
+// listAssociatedResources list all the associated resources of event to find all the webhooks.
 func (w *WebhookLogGenerator) listAssociatedResources(ctx context.Context,
-	e *models.Event) (*messageDependency, map[string][]uint) {
+	e *models.Event,
+) (*messageDependency, map[string][]uint) {
 	var (
 		resources   map[string][]uint
 		cluster     *clustermodels.Cluster
@@ -160,7 +163,7 @@ func (w *WebhookLogGenerator) listAssociatedResources(ctx context.Context,
 	return dep, resources
 }
 
-// makeRequestHeaders assemble headers of webhook request
+// makeRequestHeaders assemble headers of webhook request.
 func (w *WebhookLogGenerator) makeRequestHeaders(secret string) (string, error) {
 	header := http.Header{}
 	header.Add(WebhookSecretHeader, secret)
@@ -172,7 +175,7 @@ func (w *WebhookLogGenerator) makeRequestHeaders(secret string) (string, error) 
 	return string(headerByte), nil
 }
 
-// makeRequestHeaders assemble body of webhook request
+// makeRequestHeaders assemble body of webhook request.
 func (w *WebhookLogGenerator) makeRequestBody(ctx context.Context, dep *messageDependency) (string, error) {
 	user, err := w.userMgr.GetUserByID(ctx, dep.event.CreatedBy)
 	if err != nil {
@@ -218,9 +221,10 @@ func (w *WebhookLogGenerator) makeRequestBody(ctx context.Context, dep *messageD
 	return string(reqBody), nil
 }
 
-// Process processes all the webhook logs that are in waiting status and send webhook requests
+// Process processes all the webhook logs that are in waiting status and send webhook requests.
 func (w *WebhookLogGenerator) Process(ctx context.Context, events []*models.Event,
-	resume bool) error {
+	resume bool,
+) error {
 	var (
 		webhookLogs        []*webhookmodels.WebhookLog
 		conditionsToCreate = map[uint]map[uint]messageDependency{}
