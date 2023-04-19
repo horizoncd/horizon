@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -394,13 +395,13 @@ func (c *controller) retrieveClusterCtx(ctx context.Context, clusterID uint) (*c
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, nil, nil, nil, nil,
-			perror.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
+			herrors.NewErrGetFailed(herrors.ClusterInDB, fmt.Sprintf("cluster id: %d", clusterID))
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
 	if err != nil {
 		return nil, nil, nil, nil, nil,
-			perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
+			herrors.NewErrGetFailed(herrors.ApplicationInDB, fmt.Sprintf("application id: %d", cluster.ApplicationID))
 	}
 
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
@@ -410,13 +411,14 @@ func (c *controller) retrieveClusterCtx(ctx context.Context, clusterID uint) (*c
 	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
 	if err != nil {
 		return nil, nil, nil, nil, nil,
-			perror.WithMessage(err, "failed to get env value")
+			herrors.NewErrGetFailed(herrors.EnvValueInGit,
+				fmt.Sprintf("application id: %d, cluster id: %d", cluster.ApplicationID, cluster.ID))
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
 	if err != nil {
 		return nil, nil, nil, nil, nil,
-			perror.WithMessagef(err, "failed to get region by name: %s", cluster.RegionName)
+			herrors.NewErrGetFailed(herrors.RegionInDB, fmt.Sprintf("region name: %s", cluster.RegionName))
 	}
 	return cluster, application, tr, regionEntity, envValue, nil
 }

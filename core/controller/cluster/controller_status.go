@@ -519,6 +519,7 @@ func (c *controller) GetStep(ctx context.Context, clusterID uint) (resp *GetStep
 			Index:        steps.Index,
 			Replicas:     steps.Replicas,
 			ManualPaused: steps.ManualPaused,
+			AutoPromote:  steps.AutoPromote,
 		}
 	} else {
 		resp = &GetStepResponse{
@@ -526,6 +527,7 @@ func (c *controller) GetStep(ctx context.Context, clusterID uint) (resp *GetStep
 			Index:        0,
 			Replicas:     []int{},
 			ManualPaused: false,
+			AutoPromote:  steps.AutoPromote,
 		}
 	}
 	return

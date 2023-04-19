@@ -1,7 +1,6 @@
 package getter
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 
@@ -11,8 +10,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/workload"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Helper struct {
@@ -67,22 +64,4 @@ func (w *Helper) IsHealthy(node *v1alpha1.ResourceNode, client *kube.Client) (bo
 				fmt.Sprintf("failed to get healthy: resource name = %v, err = %v", node.Name, err))
 	}
 	return isHealthy, nil
-}
-
-func (w *Helper) RunAction(actionName string, resourceName string,
-	ns string, gvr schema.GroupVersionResource, client *kube.Client) error {
-	un, err := client.Dynamic.Resource(gvr).
-		Namespace(ns).Get(context.TODO(), resourceName, v1.GetOptions{})
-	if err != nil {
-		return herrors.NewErrGetFailed(herrors.ResourceInK8S,
-			fmt.Sprintf("failed to get healthy: resource name = %v, err = %v", resourceName, err))
-	}
-	un, err = w.inner.Action(actionName, un)
-	if err != nil {
-		return err
-	}
-
-	_, err = client.Dynamic.Resource(gvr).
-		Namespace(ns).Update(context.TODO(), un, v1.UpdateOptions{})
-	return err
 }

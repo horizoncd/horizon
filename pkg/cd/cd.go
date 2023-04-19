@@ -37,7 +37,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	workload2 "github.com/horizoncd/horizon/pkg/workload"
+	"github.com/horizoncd/horizon/pkg/workload"
 	"github.com/horizoncd/horizon/pkg/workload/getter"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -199,7 +199,7 @@ func (c *cd) GetResourceTree(ctx context.Context,
 	podsMap := make(map[string]*corev1.Pod)
 	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
 		ifContinue := false
-		workload2.LoopAbilities(func(workload workload2.Workload) bool {
+		workload.LoopAbilities(func(workload workload.Workload) bool {
 			if !workload.MatchGK(schema.GroupKind{Group: node.Group, Kind: node.Kind}) {
 				return true
 			}
@@ -256,12 +256,12 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 	}
 
 	ifContinue := true
-	step := (*workload2.Step)(nil)
+	step := (*workload.Step)(nil)
 	c.traverseResourceTree(resourceTreeInArgo, func(node *ResourceTreeNode) bool {
 		if !ifContinue {
 			return ifContinue
 		}
-		workload2.LoopAbilities(func(workload workload2.Workload) bool {
+		workload.LoopAbilities(func(workload workload.Workload) bool {
 			if !workload.MatchGK(schema.GroupKind{Group: node.Group, Kind: node.Kind}) {
 				return true
 			}
@@ -363,7 +363,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 			if !isHealthy {
 				return false
 			}
-			workload2.LoopAbilities(func(workload workload2.Workload) bool {
+			workload.LoopAbilities(func(workload workload.Workload) bool {
 				if !workload.MatchGK(schema.GroupKind{Group: node.Group, Kind: node.Kind}) {
 					return true
 				}

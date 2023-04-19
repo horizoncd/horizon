@@ -77,6 +77,8 @@ var (
 	ProviderFromDiscovery = sourceType{name: "ProviderFromDiscovery"}
 
 	StepInWorkload = sourceType{name: "StepInWorkload"}
+
+	EnvValueInGit = sourceType{name: "EnvValueInGit"}
 )
 
 type HorizonErrNotFound struct {

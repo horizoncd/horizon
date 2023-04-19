@@ -23,7 +23,7 @@ var ability = &pod{}
 type pod struct{}
 
 func (*pod) MatchGK(gk schema.GroupKind) bool {
-	return gk.Group == "" && gk.Kind == "Pod"
+	return gk.Kind == "Pod"
 }
 
 func (*pod) getPodByNode(node *v1alpha1.ResourceNode, client *kube.Client) (*corev1.Pod, error) {
