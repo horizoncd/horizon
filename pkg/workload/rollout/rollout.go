@@ -228,6 +228,8 @@ func (r *rollout) Action(actionName string, un *unstructured.Unstructured) (*uns
 		status["autoPromote"] = true
 		delete(status, "pauseConditions")
 		spec["paused"] = false
+	case "cancel-auto-promote":
+		delete(status, "autoPromote")
 	}
 	return un, nil
 }
