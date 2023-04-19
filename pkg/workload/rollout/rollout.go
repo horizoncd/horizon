@@ -200,45 +200,34 @@ func (r *rollout) Action(actionName string, un *unstructured.Unstructured) (*uns
 	var instance *rolloutsv1alpha1.Rollout
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &instance)
 	if err != nil {
-		return un, err
+		return un, perror.Wrapf(herrors.ErrParamInvalid, "convert to rollout failed: %v", err)
 	}
-
+	spec, ok := un.Object["spec"].(map[string]interface{})
+	if !ok {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "spec not found")
+	}
+	status, ok := un.Object["status"].(map[string]interface{})
+	if !ok {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "status not found")
+	}
 	switch actionName {
 	case "resume":
-		instance.Status.PauseConditions = nil
-		instance.Spec.Paused = false
+		delete(status, "pauseConditions")
+		spec["paused"] = false
 	case "pause":
-		instance.Spec.Paused = true
+		spec["paused"] = true
 	case "promote-full":
 		steps := int32(len(instance.Spec.Strategy.Canary.Steps))
-		instance.Spec.Paused = false
-		instance.Status.PauseConditions = nil
-		instance.Status.CurrentStepIndex = &steps
+		spec["paused"] = false
+		delete(status, "pauseConditions")
+		status["currentStepIndex"] = steps
 	case "promote":
-		instance.Spec.Paused = false
-		instance.Status.PauseConditions = nil
+		spec["paused"] = false
+		delete(status, "pauseConditions")
 	case "auto-promote":
-		status, ok := un.Object["status"].(map[string]interface{})
-		if ok {
-			oldAutoPromote, ok := status["autoPromote"].(bool)
-			if ok {
-				status["autoPromote"] = !oldAutoPromote
-			} else {
-				status["autoPromote"] = true
-			}
-			status["pauseConditions"] = []rolloutsv1alpha1.PauseCondition{}
-		}
-		spec, ok := un.Object["spec"].(map[string]interface{})
-		if ok {
-			spec["paused"] = false
-		}
-
-		return un, nil
+		status["autoPromote"] = true
+		delete(status, "pauseConditions")
+		spec["paused"] = false
 	}
-	m, err := runtime.DefaultUnstructuredConverter.ToUnstructured(instance)
-	if err != nil {
-		return nil, err
-	}
-	un.Object = m
 	return un, nil
 }
