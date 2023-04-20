@@ -116,7 +116,7 @@ endif
 # Linux command settings-CODE DIRS Copyright
 # TODO: if ! ./db/* AND ./openapi/*
 # $$file != '_output' && $$file != 'docs' && $$file != 'vendor' && $$file != 'logger' && $$file != 'applications' 
-CODE_DIRS := $(ROOT_DIR)/pkg $(ROOT_DIR)/core $(ROOT_DIR)/integrationtest $(ROOT_DIR)/lib $(ROOT_DIR)/mock # $(ROOT_DIR)/db $(ROOT_DIR)/openapi
+CODE_DIRS := $(ROOT_DIR)/pkg $(ROOT_DIR)/core $(ROOT_DIR)/integrationtest $(ROOT_DIR)/lib $(ROOT_DIR)/mock $(ROOT_DIR)/db $(ROOT_DIR)/openapi
 FINDS := find $(CODE_DIRS)
 
 # Makefile settings: Select different behaviors by determining whether V option is set
