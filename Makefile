@@ -119,21 +119,40 @@ clean:
 rmi:
 	@$(MAKE) go.rmi
 
-## lint: Run the golangci-lint
+## lint: Check syntax and styling of go sources.
 .PHONY: lint
 lint:
-	@echo "===========> Linting the code"
-	@golangci-lint run --verbose
+	@$(MAKE) go.lint
 
-## gen: Generate all necessary files, such as mock code.
+## gen: Generate all necessary files.
+.PHONY: gen
 gen:
-	@echo "===========> Installing codegen"
-	@go generate ./...
+	@$(MAKE) gen.run
+
+## verify-copyright: Verify the license headers for all files.
+.PHONY: verify-copyright
+verify-license:
+	@$(MAKE) copyright.verify
+
+## add-copyright: Add copyright ensure source code files have license headers.
+.PHONY: add-copyright
+add-license:
+	@$(MAKE) copyright.add
+
+## tools: Install dependent tools.
+.PHONY: tools
+tools:
+	@$(MAKE) tools.install
 
 ## ut: Run the unit tests
 .PHONY: ut
 ut:
 	@sh .unit-test.sh
+
+## test: Run unit test.
+.PHONY: test
+test:
+	@$(MAKE) go.test
 
 ## imports: task to automatically handle import packages in Go files using goimports tool
 .PHONY: imports

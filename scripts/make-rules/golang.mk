@@ -44,7 +44,14 @@ go.build:
 .PHONY: go.test
 go.test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
+	@sh .unit-test.sh
 
+## lint: Run the golangci-lint
+.PHONY: go.lint
+go.lint: tools.verify.golangci-lint
+	@echo "===========> Run golangci to lint source codes"
+#	@golangci-lint run -c $(ROOT_DIR)/.golangci.yaml $(ROOT_DIR)/...
+	@golangci-lint run --verbose
 
 ## go.clean: Clean all builds
 .PHONY: go.clean
