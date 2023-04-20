@@ -13,9 +13,9 @@ import (
 	"github.com/horizoncd/horizon/lib/q"
 	tplctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
-	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 const (

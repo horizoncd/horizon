@@ -15,17 +15,17 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/mergemap"
 
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 
-	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 )
 
 func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*StatusResponseV2, error) {

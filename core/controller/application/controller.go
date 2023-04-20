@@ -22,6 +22,8 @@ import (
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupsvc "github.com/horizoncd/horizon/pkg/group/service"
+	"github.com/horizoncd/horizon/pkg/log"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param"
@@ -33,9 +35,7 @@ import (
 	usersvc "github.com/horizoncd/horizon/pkg/user/service"
 	"github.com/horizoncd/horizon/pkg/util/errors"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/permission"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

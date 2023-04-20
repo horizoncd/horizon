@@ -9,8 +9,8 @@ import (
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/util/log"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/log"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 
 	"github.com/xanzy/go-gitlab"
 )

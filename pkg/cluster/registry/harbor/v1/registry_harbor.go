@@ -17,7 +17,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/registry"
 	"github.com/horizoncd/horizon/pkg/cluster/registry/harbor"
 	perror "github.com/horizoncd/horizon/pkg/errors"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 )
 
 const kind = "harbor_v1"

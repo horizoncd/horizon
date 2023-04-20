@@ -7,8 +7,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/param"
 
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	templateschematagmanager "github.com/horizoncd/horizon/pkg/templateschematag/manager"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

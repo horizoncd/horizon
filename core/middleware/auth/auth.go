@@ -7,10 +7,10 @@ import (
 	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/pkg/auth"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/rbac"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
-	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 func Middleware(authorizer rbac.Authorizer, skipMatchers ...middleware.Skipper) gin.HandlerFunc {

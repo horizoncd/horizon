@@ -8,12 +8,12 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log"
 	oauthdao "github.com/horizoncd/horizon/pkg/oauth/dao"
 	"github.com/horizoncd/horizon/pkg/oauth/models"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/util/rand"
 )

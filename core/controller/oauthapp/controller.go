@@ -3,11 +3,11 @@ package oauthapp
 import (
 	"time"
 
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/oauth/manager"
 	"github.com/horizoncd/horizon/pkg/oauth/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"golang.org/x/net/context"
 )
 

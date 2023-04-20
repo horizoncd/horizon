@@ -9,10 +9,10 @@ import (
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/param"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 	wmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
 	"github.com/horizoncd/horizon/pkg/webhook/models"
 )

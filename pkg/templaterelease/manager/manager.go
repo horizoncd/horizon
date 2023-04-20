@@ -5,9 +5,9 @@ import (
 
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	cmodel "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/templaterelease/dao"
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"gorm.io/gorm"
 )
 

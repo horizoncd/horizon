@@ -12,11 +12,11 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/pkg/log"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermodel "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/horizoncd/horizon/pkg/util/log"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,

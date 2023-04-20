@@ -11,8 +11,8 @@ import (
 	"github.com/horizoncd/horizon/lib/q"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/config/autofree"
+	"github.com/horizoncd/horizon/pkg/log"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	uuid "github.com/satori/go.uuid"
 )
 

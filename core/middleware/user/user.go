@@ -23,12 +23,12 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/config/authenticate"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	"github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 const (

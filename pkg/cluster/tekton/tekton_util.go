@@ -7,7 +7,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"knative.dev/pkg/apis"
 
-	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 )
 
 type PipelineRunStatus struct {

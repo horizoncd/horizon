@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/build"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/server/response"
-	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 type API struct {

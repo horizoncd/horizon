@@ -27,8 +27,8 @@ import (
 
 	"github.com/horizoncd/horizon/lib/s3"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
-	logutil "github.com/horizoncd/horizon/pkg/util/log"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
+	logutil "github.com/horizoncd/horizon/pkg/log"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 )
 
 const (

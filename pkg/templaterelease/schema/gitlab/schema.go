@@ -7,10 +7,10 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/templaterelease/schema"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 const (

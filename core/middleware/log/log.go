@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	middleware "github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
-	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/log"
 )
 
 // Middleware add logger to context

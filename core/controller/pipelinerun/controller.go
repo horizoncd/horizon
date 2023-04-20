@@ -15,13 +15,13 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/param"
 	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
 	"github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	"github.com/horizoncd/horizon/pkg/util/errors"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

@@ -9,9 +9,9 @@ import (
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	"github.com/horizoncd/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/util/common"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
 )
 

@@ -17,11 +17,11 @@ import (
 	envmanager "github.com/horizoncd/horizon/pkg/environment/manager"
 	envregionmanager "github.com/horizoncd/horizon/pkg/environmentregion/manager"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/param"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/util/errors"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"k8s.io/client-go/tools/remotecommand"
 
 	"gopkg.in/igm/sockjs-go.v3/sockjs"

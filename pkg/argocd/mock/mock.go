@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/horizoncd/horizon/pkg/util/log"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/log"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"

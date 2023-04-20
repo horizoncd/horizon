@@ -18,10 +18,10 @@ import (
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	"github.com/horizoncd/horizon/pkg/event/models"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
 	webhookmodels "github.com/horizoncd/horizon/pkg/webhook/models"
 )

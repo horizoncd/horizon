@@ -5,11 +5,11 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
 	"github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 // Getter provides some functions for output

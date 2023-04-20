@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	jobconfig "github.com/horizoncd/horizon/pkg/config/job"
-	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

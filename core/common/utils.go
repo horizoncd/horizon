@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/horizoncd/horizon/pkg/hook/hook"
-	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/log"
 )
 
 func ElegantExit(h hook.Hook) {

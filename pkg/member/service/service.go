@@ -14,6 +14,7 @@ import (
 	memberctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/member"
 	"github.com/horizoncd/horizon/pkg/member/models"
 	oauthmanager "github.com/horizoncd/horizon/pkg/oauth/manager"
@@ -24,7 +25,6 @@ import (
 	templatereleasemanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	webhookmanager "github.com/horizoncd/horizon/pkg/webhook/manager"
 )
 

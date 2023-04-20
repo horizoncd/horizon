@@ -6,10 +6,10 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	logutil "github.com/horizoncd/horizon/pkg/log"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
-	logutil "github.com/horizoncd/horizon/pkg/util/log"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 

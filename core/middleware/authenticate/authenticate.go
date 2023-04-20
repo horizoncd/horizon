@@ -16,8 +16,8 @@ import (
 
 	middleware "github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/pkg/config/authenticate"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/server/response"
-	"github.com/horizoncd/horizon/pkg/util/log"
 
 	"github.com/gin-gonic/gin"
 )

@@ -10,6 +10,7 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 	"github.com/horizoncd/horizon/pkg/util/log"

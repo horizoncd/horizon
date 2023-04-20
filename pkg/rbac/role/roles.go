@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 
 	roleconfig "github.com/horizoncd/horizon/pkg/config/role"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/rbac/types"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	"gopkg.in/yaml.v3"
 )
 

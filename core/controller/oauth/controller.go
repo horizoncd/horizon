@@ -6,11 +6,11 @@ import (
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/oauth/manager"
 	oauthmodel "github.com/horizoncd/horizon/pkg/oauth/models"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/token/generator"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"golang.org/x/net/context"
 )
 

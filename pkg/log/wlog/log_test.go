@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/horizoncd/horizon/core/common"
-	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/log"
 )
 
 func TestLogOK(t *testing.T) {

@@ -8,10 +8,10 @@ import (
 	appmanager "github.com/horizoncd/horizon/pkg/application/manager"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clustermanager "github.com/horizoncd/horizon/pkg/cluster/manager"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/param"
 	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
 	"github.com/horizoncd/horizon/pkg/tag/models"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

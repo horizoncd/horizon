@@ -4,8 +4,8 @@ import (
 	"context"
 
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/param"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 type Controller interface {

@@ -19,6 +19,7 @@ import (
 	gmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	groupModels "github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/group/service"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	membermanager "github.com/horizoncd/horizon/pkg/member"
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
@@ -31,7 +32,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/horizoncd/horizon/pkg/util/permission"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
 

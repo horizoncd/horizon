@@ -19,13 +19,13 @@ import (
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	"github.com/horizoncd/horizon/pkg/group/models"
 	"github.com/horizoncd/horizon/pkg/group/service"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	memberservice "github.com/horizoncd/horizon/pkg/member/service"
 	"github.com/horizoncd/horizon/pkg/param"
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	tmanager "github.com/horizoncd/horizon/pkg/template/manager"
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	"github.com/horizoncd/horizon/pkg/util/errors"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
 const (

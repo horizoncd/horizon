@@ -12,6 +12,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/factory"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton/metrics"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/param"
 	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
@@ -19,8 +21,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/global"
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	usermanager "github.com/horizoncd/horizon/pkg/user/manager"
-	"github.com/horizoncd/horizon/pkg/util/log"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 
 	"github.com/horizoncd/horizon/core/common"
 )

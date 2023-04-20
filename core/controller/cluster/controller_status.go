@@ -13,9 +13,9 @@ import (
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
-	"github.com/horizoncd/horizon/pkg/util/log"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
 
 	"github.com/argoproj/gitops-engine/pkg/health"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"

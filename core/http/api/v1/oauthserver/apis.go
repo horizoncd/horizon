@@ -13,9 +13,9 @@ import (
 	"github.com/horizoncd/horizon/core/controller/oauthapp"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/oauth/scope"
 	"github.com/horizoncd/horizon/pkg/server/response"
-	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 const (

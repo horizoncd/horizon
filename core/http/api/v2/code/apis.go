@@ -5,9 +5,9 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/code"
 	"github.com/horizoncd/horizon/pkg/git"
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/server/request"
 	"github.com/horizoncd/horizon/pkg/server/response"
-	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 const (

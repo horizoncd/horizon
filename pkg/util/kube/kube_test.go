@@ -15,8 +15,8 @@ import (
 	fakek8s "k8s.io/client-go/kubernetes/fake"
 	restclient "k8s.io/client-go/rest"
 
+	"github.com/horizoncd/horizon/pkg/log"
 	"github.com/horizoncd/horizon/pkg/util/kube/fake"
-	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 func TestGetEvents(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/lib/q"
-	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"github.com/horizoncd/horizon/pkg/log/wlog"
 	"github.com/horizoncd/horizon/pkg/webhook/dao"
 	models "github.com/horizoncd/horizon/pkg/webhook/models"
 )
