@@ -1,4 +1,4 @@
-# Copyright 2023 The horizoncd Authors.
+# Copyright 2023 The Horizoncd Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -130,12 +130,12 @@ gen:
 	@$(MAKE) gen.run
 
 ## verify-copyright: Verify the license headers for all files.
-.PHONY: verify-copyright
+.PHONY: verify-license
 verify-license:
 	@$(MAKE) copyright.verify
 
-## add-copyright: Add copyright ensure source code files have license headers.
-.PHONY: add-copyright
+## add-license: Add copyright ensure source code files have license headers.
+.PHONY: add-license
 add-license:
 	@$(MAKE) copyright.add
 

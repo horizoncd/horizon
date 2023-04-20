@@ -1,4 +1,4 @@
-# Copyright 2023 The horizoncd Authors.
+# Copyright 2023 The Horizoncd Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,19 +17,21 @@
 # Makefile helper functions for copyright
 #
 
+LICENSE_TEMPLATE ?= $(ROOT_DIR)/scripts/LICENSE_TEMPLATE
+
 # TODO: GOBIN -> TOOLS_DIR
 ## copyright.verify: Validate boilerplate headers for assign files
 .PHONY: copyright.verify
 copyright.verify: tools.verify.addlicense
 	@echo "===========> Validate boilerplate headers for assign files starting in the $(ROOT_DIR) directory"
-	@$(GOBIN)/addlicense -v -check -ignore **/test/** -f $(LICENSE_TEMPLATE) $(CODE_DIRS)
+	@addlicense -v -check -ignore **/test/** -f $(LICENSE_TEMPLATE) $(CODE_DIRS)
 	@echo "===========> End of boilerplate headers check..."
 
 ## copyright.add: Add the boilerplate headers for all files
 .PHONY: copyright.add
 copyright.add: tools.verify.addlicense
 	@echo "===========> Adding $(LICENSE_TEMPLATE) the boilerplate headers for all files"
-	@$(GOBIN)/addlicense -y $(shell date +"%Y") -v -c "Horizon." -f $(LICENSE_TEMPLATE) $(CODE_DIRS)
+	@addlicense -y $(shell date +"%Y") -v -c "Horizoncd." -f $(LICENSE_TEMPLATE) $(CODE_DIRS)
 	@echo "===========> End the copyright is added..."
 
 ## copyright.help: Show copyright help
