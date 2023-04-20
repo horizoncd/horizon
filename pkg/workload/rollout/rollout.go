@@ -230,6 +230,8 @@ func (r *rollout) Action(actionName string, un *unstructured.Unstructured) (*uns
 		spec["paused"] = false
 	case "cancel-auto-promote":
 		delete(status, "autoPromote")
+	default:
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "unsupported action: %v", actionName)
 	}
-	return nil, perror.Wrapf(herrors.ErrParamInvalid, "unsupported action: %v", actionName)
+	return un, nil
 }
