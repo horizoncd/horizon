@@ -3,20 +3,24 @@ package cluster
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
-	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
+	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *PipelinerunIDResponse, err error) {
@@ -386,129 +390,82 @@ func (c *controller) Rollback(ctx context.Context,
 	}, nil
 }
 
-func (c *controller) Next(ctx context.Context, clusterID uint) (err error) {
-	const op = "cluster controller: next"
-	defer wlog.Start(ctx, op).StopPrint()
-
+func (c *controller) retrieveClusterCtx(ctx context.Context, clusterID uint) (*cmodels.Cluster,
+	*amodels.Application, *trmodels.TemplateRelease, *regionmodels.RegionEntity, *gitrepo.EnvValue, error) {
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
+	if err != nil {
+		return nil, nil, nil, nil, nil,
+			herrors.NewErrGetFailed(herrors.ClusterInDB, fmt.Sprintf("cluster id: %d", clusterID))
+	}
+
+	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
+	if err != nil {
+		return nil, nil, nil, nil, nil,
+			herrors.NewErrGetFailed(herrors.ApplicationInDB, fmt.Sprintf("application id: %d", cluster.ApplicationID))
+	}
+
+	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
+	if err != nil {
+		return nil, nil, nil, nil, nil,
+			herrors.NewErrGetFailed(herrors.EnvValueInGit,
+				fmt.Sprintf("application id: %d, cluster id: %d", cluster.ApplicationID, cluster.ID))
+	}
+
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, nil, nil, nil, nil,
+			herrors.NewErrGetFailed(herrors.RegionInDB, fmt.Sprintf("region name: %s", cluster.RegionName))
+	}
+	return cluster, application, tr, regionEntity, envValue, nil
+}
+
+func (c *controller) ExecuteAction(ctx context.Context, clusterID uint,
+	action string, gvr schema.GroupVersionResource) error {
+	cluster, _, _, regionEntity, envValue, err := c.retrieveClusterCtx(ctx, clusterID)
 	if err != nil {
 		return err
 	}
 
-	return c.cd.Next(ctx, &cd.ClusterNextParams{
-		Environment: cluster.EnvironmentName,
-		Cluster:     cluster.Name,
+	return c.k8sutil.ExecuteAction(ctx, &cd.ExecuteActionParams{
+		RegionEntity: regionEntity,
+		Namespace:    envValue.Namespace,
+		Action:       action,
+		GVR:          gvr,
+		ResourceName: cluster.Name,
 	})
 }
 
-func (c *controller) Promote(ctx context.Context, clusterID uint) (err error) {
-	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
-	}
-
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
-	}
-
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return err
-	}
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
-	if err != nil {
-		return perror.WithMessage(err, "failed to get env value")
-	}
-
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get region by name: %s", cluster.RegionName)
-	}
-
-	param := cd.ClusterPromoteParams{
-		Namespace:    envValue.Namespace,
-		Cluster:      cluster.Name,
-		RegionEntity: regionEntity,
-		Environment:  cluster.EnvironmentName,
-	}
-	return c.cd.Promote(ctx, &param)
+// onlineCommand the location of online.sh in pod is /home/appops/.probe/online-once.sh
+var onlineCommands = []string{"bash", "-c", `
+export ONLINE_SHELL="/home/appops/.probe/online-once.sh"
+[[ -f "$ONLINE_SHELL" ]] || {
+	echo "there is no online config for this cluster." >&2; exit 1
 }
 
-func (c *controller) Pause(ctx context.Context, clusterID uint) (err error) {
-	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
-	}
+bash "$ONLINE_SHELL"
+`}
 
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
-	}
-
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return err
-	}
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
-	if err != nil {
-		return perror.WithMessage(err, "failed to get env value")
-	}
-
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get region by name: %s", cluster.RegionName)
-	}
-
-	param := cd.ClusterPauseParams{
-		Namespace:    envValue.Namespace,
-		Cluster:      cluster.Name,
-		RegionEntity: regionEntity,
-		Environment:  cluster.EnvironmentName,
-	}
-	return c.cd.Pause(ctx, &param)
+// offlineCommand the location of offline.sh in pod is /home/appops/.probe/offline-once.sh
+var offlineCommands = []string{"bash", "-c", `
+export OFFLINE_SHELL="/home/appops/.probe/offline-once.sh"
+[[ -f "$OFFLINE_SHELL" ]] || {
+	echo "there is no offline config for this cluster." >&2; exit 1
 }
 
-func (c *controller) Resume(ctx context.Context, clusterID uint) (err error) {
-	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get cluster by id: %d", clusterID)
-	}
-
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get application by id: %d", cluster.ApplicationID)
-	}
-
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return err
-	}
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
-	if err != nil {
-		return perror.WithMessage(err, "failed to get env value")
-	}
-
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
-	if err != nil {
-		return perror.WithMessagef(err, "failed to get region by name: %s", cluster.RegionName)
-	}
-
-	param := cd.ClusterResumeParams{
-		Namespace:    envValue.Namespace,
-		Cluster:      cluster.Name,
-		RegionEntity: regionEntity,
-		Environment:  cluster.EnvironmentName,
-	}
-	return c.cd.Resume(ctx, &param)
-}
+bash "$OFFLINE_SHELL"
+`}
 
 // Deprecated
 func (c *controller) Online(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
 	const op = "cluster controller: online"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	return c.exec(ctx, clusterID, r, c.cd.Online)
+	r.Commands = onlineCommands
+	return c.Exec(ctx, clusterID, r)
 }
 
 // Deprecated
@@ -516,46 +473,8 @@ func (c *controller) Offline(ctx context.Context, clusterID uint, r *ExecRequest
 	const op = "cluster controller: offline"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	return c.exec(ctx, clusterID, r, c.cd.Offline)
-}
-
-func (c *controller) exec(ctx context.Context, clusterID uint,
-	r *ExecRequest, execFunc cd.ExecFunc) (_ ExecResponse, err error) {
-	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
-	if err != nil {
-		return nil, err
-	}
-
-	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
-	if err != nil {
-		return nil, err
-	}
-
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
-	if err != nil {
-		return nil, err
-	}
-
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
-	if err != nil {
-		return nil, err
-	}
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
-	if err != nil {
-		return nil, err
-	}
-
-	execResp, err := execFunc(ctx, &cd.ExecParams{
-		Environment:  cluster.EnvironmentName,
-		Cluster:      cluster.Name,
-		RegionEntity: regionEntity,
-		Namespace:    envValue.Namespace,
-		PodList:      r.PodList,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return ofExecResp(execResp), nil
+	r.Commands = offlineCommands
+	return c.Exec(ctx, clusterID, r)
 }
 
 func (c *controller) Exec(ctx context.Context, clusterID uint, r *ExecRequest) (_ ExecResponse, err error) {
@@ -595,7 +514,7 @@ func (c *controller) Exec(ctx context.Context, clusterID uint, r *ExecRequest) (
 		PodList:      r.PodList,
 	}
 
-	resp, err := c.cd.Exec(ctx, params)
+	resp, err := c.k8sutil.Exec(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -624,7 +543,7 @@ func (c *controller) DeleteClusterPods(ctx context.Context, clusterID uint, podN
 		return nil, err
 	}
 
-	result, err := c.cd.DeletePods(ctx, &cd.DeletePodsParams{
+	result, err := c.k8sutil.DeletePods(ctx, &cd.DeletePodsParams{
 		Namespace:    envValue.Namespace,
 		RegionEntity: regionEntity,
 		Pods:         podName,

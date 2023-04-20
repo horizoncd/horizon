@@ -9,6 +9,7 @@ type Step struct {
 	Total        int
 	Replicas     []int
 	ManualPaused bool
+	AutoPromote  bool
 }
 
 type Revision struct {

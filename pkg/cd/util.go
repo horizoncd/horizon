@@ -387,19 +387,6 @@ func executeCommandInPods(ctx context.Context, containers []kube.ContainerRef,
 	return result
 }
 
-func getSkipAllStepsPatchStr(stepCnt int) string {
-	return fmt.Sprintf(`{"spec":{"paused":false},"status": {"currentStepIndex": %d, "pauseCondition":null}}`,
-		stepCnt)
-}
-
-func getPausePatchStr() string {
-	return `{"spec": {"paused": true}}`
-}
-
-func getResumePatchStr() string {
-	return `{"spec": {"paused": false}}`
-}
-
 // computeRolloutStepHash returns a hash value calculated from the Rollout's steps. The hash will
 // be safe encoded to avoid bad words.
 func computeRolloutStepHash(rollout *rolloutsV1alpha1.Rollout) string {

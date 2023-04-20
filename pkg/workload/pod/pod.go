@@ -5,11 +5,13 @@ import (
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
+	"github.com/horizoncd/horizon/pkg/workload"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func init() {
@@ -20,8 +22,8 @@ var ability = &pod{}
 
 type pod struct{}
 
-func (*pod) MatchGK(gk string) bool {
-	return "core/Pod" == gk
+func (*pod) MatchGK(gk schema.GroupKind) bool {
+	return gk.Kind == "Pod"
 }
 
 func (*pod) getPodByNode(node *v1alpha1.ResourceNode, client *kube.Client) (*corev1.Pod, error) {
@@ -42,4 +44,8 @@ func (p *pod) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]core
 	}
 
 	return []corev1.Pod{*instance}, nil
+}
+
+func (*pod) Action(actionName string, un *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	return un, nil
 }

@@ -27,6 +27,11 @@ const (
 	ClusterQueryIsFavorite = "isFavorite"
 	// ClusterQueryWithFavorite is used to query cluster with favorite field inside.
 	ClusterQueryWithFavorite = "withFavorite"
+	ClusterQueryAction       = "action"
+
+	ClusterQueryByGVK = "gvk"
+
+	ClusterQueryResourceName = "resourceName"
 )
 
 const (

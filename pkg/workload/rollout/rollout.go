@@ -7,12 +7,13 @@ import (
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	rolloutsv1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/pkg/cluster/cd/workload"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
+	"github.com/horizoncd/horizon/pkg/workload"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/kubectl/pkg/polymorphichelpers"
@@ -25,14 +26,14 @@ func init() {
 // please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
 var ability = &rollout{}
 
-type rollout struct {
+type rollout struct{}
+
+func (*rollout) MatchGK(gk schema.GroupKind) bool {
+	return gk.Group == "argoproj.io" && gk.Kind == "Rollout"
 }
 
-func (*rollout) MatchGK(gk string) bool {
-	return "argoproj.io/Rollout" == gk
-}
-
-func (*rollout) getRolloutByNode(node *v1alpha1.ResourceNode, client *kube.Client) (*rolloutsv1alpha1.Rollout, error) {
+func (*rollout) getRolloutByNode(node *v1alpha1.ResourceNode,
+	client *kube.Client) (*rolloutsv1alpha1.Rollout, *unstructured.Unstructured, error) {
 	gvr := schema.GroupVersionResource{
 		Group:    "argoproj.io",
 		Version:  node.Version,
@@ -42,7 +43,7 @@ func (*rollout) getRolloutByNode(node *v1alpha1.ResourceNode, client *kube.Clien
 	un, err := client.Dynamic.Resource(gvr).Namespace(node.Namespace).
 		Get(context.TODO(), node.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, perror.Wrapf(
+		return nil, nil, perror.Wrapf(
 			herrors.NewErrGetFailed(herrors.ResourceInK8S,
 				"failed to get rollout in k8s"),
 			"failed to get rollout in k8s: deployment = %s, err = %v", node.Name, err)
@@ -51,14 +52,14 @@ func (*rollout) getRolloutByNode(node *v1alpha1.ResourceNode, client *kube.Clien
 	var instance *rolloutsv1alpha1.Rollout
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &instance)
 	if err != nil {
-		return nil, err
+		return nil, un, err
 	}
-	return instance, nil
+	return instance, un, nil
 }
 
 func (r *rollout) IsHealthy(node *v1alpha1.ResourceNode,
 	client *kube.Client) (bool, error) {
-	instance, err := r.getRolloutByNode(node, client)
+	instance, _, err := r.getRolloutByNode(node, client)
 	if err != nil {
 		return true, err
 	}
@@ -117,7 +118,7 @@ OUTTER:
 }
 
 func (r *rollout) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
-	instance, err := r.getRolloutByNode(node, client)
+	instance, _, err := r.getRolloutByNode(node, client)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +133,7 @@ func (r *rollout) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]
 }
 
 func (r *rollout) GetSteps(node *v1alpha1.ResourceNode, client *kube.Client) (*workload.Step, error) {
-	instance, err := r.getRolloutByNode(node, client)
+	instance, un, err := r.getRolloutByNode(node, client)
 	if err != nil {
 		return nil, err
 	}
@@ -180,11 +181,55 @@ func (r *rollout) GetSteps(node *v1alpha1.ResourceNode, client *kube.Client) (*w
 		}
 	}
 
+	autoPromote, _, err := unstructured.NestedBool(un.Object, "status", "autoPromote")
+	if err != nil {
+		return nil, err
+	}
+
 	// manual paused
 	return &workload.Step{
 		Index:        stepIndex,
 		Total:        len(incrementReplicasList),
 		Replicas:     incrementReplicasList,
 		ManualPaused: instance.Spec.Paused,
+		AutoPromote:  autoPromote,
 	}, nil
+}
+
+func (r *rollout) Action(actionName string, un *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	var instance *rolloutsv1alpha1.Rollout
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &instance)
+	if err != nil {
+		return un, perror.Wrapf(herrors.ErrParamInvalid, "convert to rollout failed: %v", err)
+	}
+	spec, ok := un.Object["spec"].(map[string]interface{})
+	if !ok {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "spec not found")
+	}
+	status, ok := un.Object["status"].(map[string]interface{})
+	if !ok {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "status not found")
+	}
+	switch actionName {
+	case "resume":
+		delete(status, "pauseConditions")
+		spec["paused"] = false
+	case "pause":
+		spec["paused"] = true
+	case "promote-full":
+		steps := int32(len(instance.Spec.Strategy.Canary.Steps))
+		spec["paused"] = false
+		delete(status, "pauseConditions")
+		status["currentStepIndex"] = steps
+	case "promote":
+		spec["paused"] = false
+		delete(status, "pauseConditions")
+	case "auto-promote":
+		status["autoPromote"] = true
+		delete(status, "pauseConditions")
+		spec["paused"] = false
+	case "cancel-auto-promote":
+		delete(status, "autoPromote")
+	}
+	return nil, perror.Wrapf(herrors.ErrParamInvalid, "unsupported action: %v", actionName)
 }

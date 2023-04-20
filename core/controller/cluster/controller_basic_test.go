@@ -11,7 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
-	mockcd "github.com/horizoncd/horizon/mock/pkg/cluster/cd"
+	mockcd "github.com/horizoncd/horizon/mock/pkg/cd"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"

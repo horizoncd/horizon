@@ -3,7 +3,7 @@ package param
 import (
 	applicationgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
 	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
-	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/code"
 	clustergitrepo "github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	clusterservice "github.com/horizoncd/horizon/pkg/cluster/service"
@@ -47,6 +47,7 @@ type Param struct {
 	ApplicationGitRepo   applicationgitrepo.ApplicationGitRepo
 	TemplateSchemaGetter templateschema.Getter
 	Cd                   cd.CD
+	K8sUtil              cd.K8sUtil
 	OutputGetter         output.Getter
 	TektonFty            factory.Factory
 	ClusterGitRepo       clustergitrepo.ClusterGitRepo

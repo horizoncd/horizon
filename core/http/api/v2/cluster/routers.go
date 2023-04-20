@@ -74,8 +74,8 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 			HandlerFunc: api.Rollback,
 		}, {
 			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/next", common.ParamClusterID),
-			HandlerFunc: api.Next,
+			Pattern:     fmt.Sprintf("/clusters/:%v/action", common.ParamClusterID),
+			HandlerFunc: api.ExecuteAction,
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/containerlog", common.ParamClusterID),
@@ -108,18 +108,6 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/outputs", common.ParamClusterID),
 			HandlerFunc: api.GetOutput,
-		}, {
-			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/promote", common.ParamClusterID),
-			HandlerFunc: api.Promote,
-		}, {
-			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/pause", common.ParamClusterID),
-			HandlerFunc: api.Pause,
-		}, {
-			Method:      http.MethodPost,
-			Pattern:     fmt.Sprintf("/clusters/:%v/resume", common.ParamClusterID),
-			HandlerFunc: api.Resume,
 		}, {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/clusters/:%v/containers", common.ParamClusterID),

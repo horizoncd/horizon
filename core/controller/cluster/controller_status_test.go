@@ -8,10 +8,10 @@ import (
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
 	applicationmanangermock "github.com/horizoncd/horizon/mock/pkg/application/manager"
-	cdmock "github.com/horizoncd/horizon/mock/pkg/cluster/cd"
+	cdmock "github.com/horizoncd/horizon/mock/pkg/cd"
 	clustermanagermock "github.com/horizoncd/horizon/mock/pkg/cluster/manager"
 	applicationmodel "github.com/horizoncd/horizon/pkg/application/models"
-	"github.com/horizoncd/horizon/pkg/cluster/cd"
+	"github.com/horizoncd/horizon/pkg/cd"
 	clustermodels "github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
@@ -63,11 +63,11 @@ func testGetClusterStatusV2(t *testing.T) {
 	appManagerMock.EXPECT().GetByID(gomock.Any(), gomock.Any()).Times(3).
 		Return(&applicationmodel.Application{}, nil)
 
-	mockCD.EXPECT().GetClusterStateV2(gomock.Any(), gomock.Any()).Times(1).
+	mockCD.EXPECT().GetClusterState(gomock.Any(), gomock.Any()).Times(1).
 		Return(&cd.ClusterStateV2{Status: status}, nil)
-	mockCD.EXPECT().GetClusterStateV2(gomock.Any(), gomock.Any()).Times(1).
+	mockCD.EXPECT().GetClusterState(gomock.Any(), gomock.Any()).Times(1).
 		Return(&cd.ClusterStateV2{Status: status}, nil)
-	mockCD.EXPECT().GetClusterStateV2(gomock.Any(), gomock.Any()).Times(1).
+	mockCD.EXPECT().GetClusterState(gomock.Any(), gomock.Any()).Times(1).
 		Return(nil, perror.Wrap(herrors.NewErrNotFound(herrors.ApplicationInArgo, ""), ""))
 
 	resp, err := c.GetClusterStatusV2(ctx, 1)

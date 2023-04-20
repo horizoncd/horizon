@@ -13,11 +13,11 @@ import (
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	rolloutv1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/argocd/mock"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/kubernetes/pkg/apis/apps"
 
-	"github.com/horizoncd/horizon/pkg/cluster/cd/argocd/mock"
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 

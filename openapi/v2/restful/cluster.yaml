@@ -280,69 +280,34 @@ paths:
               schema:
                 $ref: "common.yaml#/components/schemas/Error"
 
-  /apis/core/v2/clusters/{clusterID}/next:
+  /apis/core/v2/clusters/{clusterID}/action:
     parameters:
       - $ref: 'common.yaml#/components/parameters/paramClusterID'
     post:
       tags:
         - cluster
-      operationId: nextCluster
+      operationId: action
       summary: |
-        Promote a cluster to next step.
-      responses:
-        "200":
-          description: Success
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v2/clusters/{clusterID}/promote:
-    parameters:
-      - $ref: 'common.yaml#/components/parameters/paramClusterID'
-    post:
-      tags:
-        - cluster
-      operationId: promoteCluster
-      summary: |
-        Promote a cluster to skip all steps.
-      responses:
-        "200":
-          description: Success
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v2/clusters/{clusterID}/pause:
-    parameters:
-      - $ref: 'common.yaml#/components/parameters/paramClusterID'
-    post:
-      tags:
-        - cluster
-      operationId: pauseCluster
-      summary: |
-        Pause a cluster.
-      responses:
-        "200":
-          description: Success
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "common.yaml#/components/schemas/Error"
-  /apis/core/v2/clusters/{clusterID}/resume:
-    parameters:
-      - $ref: 'common.yaml#/components/parameters/paramClusterID'
-    post:
-      tags:
-        - cluster
-      operationId: resumeCluster
-      summary: |
-        Resume a paused cluster.
+        Perform an predefined action on a kubernetes resources. Based on the gvr passed in, the action will be performed on the resource whose name is the same as the cluster name.
+        The resource and action shown below are supported:
+        | Resource | Action |
+        | -------- | ------ |
+        | argoproj.io/v1alpha1/Rollout | pause, resume, promote-full, promote, auto-promote, cancel-auto-promote |
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                group:
+                  type: string
+                version:
+                  type: string
+                resource:
+                  type: string
       responses:
         "200":
           description: Success

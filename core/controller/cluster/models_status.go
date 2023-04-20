@@ -69,4 +69,5 @@ type GetStepResponse struct {
 	Total        int   `json:"total"`
 	Replicas     []int `json:"replicas"`
 	ManualPaused bool  `json:"manualPaused"`
+	AutoPromote  bool  `json:"autoPromote"`
 }
