@@ -356,6 +356,10 @@ func (a *API) ExecuteAction(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
+		if e := perror.Cause(err); e == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
 		log.WithFiled(c, "op", op).Errorf(err.Error())
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return

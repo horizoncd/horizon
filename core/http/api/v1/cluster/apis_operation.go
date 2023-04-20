@@ -267,6 +267,10 @@ func (a *API) Next(c *gin.Context) {
 				return
 			}
 		}
+		if e := perror.Cause(err); e == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
@@ -502,6 +506,10 @@ func (a *API) Promote(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
+		if e := perror.Cause(err); e == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
 		log.WithFiled(c, "op", op).Errorf(err.Error())
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
@@ -528,6 +536,10 @@ func (a *API) Pause(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
 			return
 		}
+		if e := perror.Cause(err); e == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+			return
+		}
 		log.WithFiled(c, "op", op).Errorf(err.Error())
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
@@ -552,6 +564,10 @@ func (a *API) Resume(c *gin.Context) {
 		err = perror.Wrap(err, "failed to resume cluster")
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+			return
+		}
+		if e := perror.Cause(err); e == herrors.ErrParamInvalid {
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
 			return
 		}
 		log.WithFiled(c, "op", op).Errorf(err.Error())
