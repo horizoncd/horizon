@@ -289,6 +289,10 @@ paths:
       operationId: action
       summary: |
         Perform an predefined action on a kubernetes resources. Based on the gvr passed in, the action will be performed on the resource whose name is the same as the cluster name.
+        The resource and action shown below are supported:
+        | Resource | Action |
+        | -------- | ------ |
+        | argoproj.io/v1alpha1/Rollout | pause, resume, promote-full, promote, auto-promote, cancel-auto-promote |
       requestBody:
         required: true
         content:
