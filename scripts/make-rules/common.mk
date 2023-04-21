@@ -107,7 +107,7 @@ else
 endif
 
 # Linux command settings
-FIND := find . ! -path './image/*' ! -path './vendor/*' ! -path './'bin/*'
+FIND := find . ! -path './image/*' ! -path './vendor/*' ! -path './bin/*'
 XARGS := xargs -r
 
 # Makefile settings
@@ -125,6 +125,9 @@ FINDS := find $(CODE_DIRS)
 ifeq ($(origin V), undefined) # ifndef V
 MAKEFLAGS += --no-print-directory
 endif
+
+BUILDFILE = "./core/main.go"
+BUILDAPP = "$(OUTPUT_DIR)/app"
 
 # COMMA: Concatenate multiple strings to form a list of strings
 COMMA := ,
@@ -146,7 +149,7 @@ endef
 # Here are some examples of builds
 define MAKEFILE_EXAMPLE
 # make build BINS=app                                            Only a single horizon app binary is built 
-# make fmt vet lint                                              Run code style check
+# make -j $(nproc) all                                           Run tidy gen add-copyright format lint cover build concurrently
 # make gen                                                       Generate all necessary files
 # make deepcopy                                                  Generate deepcopy code
 # make verify-copyright                                          Verify the license headers for all files

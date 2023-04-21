@@ -24,9 +24,6 @@ ifeq ($(ROOT_PACKAGE),)
 	$(error the variable ROOT_PACKAGE must be set prior to including golang.mk, -> /Makefile)
 endif
 
-COMMANDS ?= ${ROOT_DIR}/core/
-BINS ?= $(foreach core,${COMMANDS},$(notdir ${core}))
-
 GOPATH ?= $(shell go env GOPATH)
 ifeq ($(origin GOBIN), undefined)
 	GOBIN := $(GOPATH)/bin
@@ -35,13 +32,9 @@ endif
 ## go.build: Build binaries
 .PHONY: go.build
 go.build:
-	@echo "COMMAND=$(COMMAND)"
-	@echo "PLATFORM=$(PLATFORM)"
-	@echo "OS=$(OS)"
-	@echo "ARCH=$(ARCH)"
 	@echo "GO=$(shell go version)"
 	@echo "===========> Building binary $(BINS) $(VERSION) for $(PLATFORM)"
-	@export CGO_ENABLED=0 && go build -o bin/app -ldflags '-s -w' ./core/main.go
+	@export CGO_ENABLED=0 && go build -o $(BUILDAPP) -ldflags '-s -w' $(BUILDFILE)
 
 ## swagger-run: Run a swagger server locally
 .PHONY: go.swagger-run
@@ -63,15 +56,14 @@ go.test.cover: go.test
 
 ## imports: task to automatically handle import packages in Go files using goimports tool
 .PHONY: go.imports
-go.imports:
-	@goimports -l -w $(SRC)
+go.imports: tools.verify.goimports
+	@$(TOOLS_DIR)/goimports -l -w $(SRC)
 
 ## lint: Run the golangci-lint
 .PHONY: go.lint
 go.lint: tools.verify.golangci-lint
 	@echo "===========> Run golangci to lint source codes"
-#	@golangci-lint run -c $(ROOT_DIR)/.golangci.yaml $(ROOT_DIR)/...
-	@golangci-lint run --verbose
+	@$(TOOLS_DIR)/golangci-lint run -c $(ROOT_DIR)/.golangci.yml $(ROOT_DIR)/...
 
 ## go.clean: Clean all builds
 .PHONY: go.clean

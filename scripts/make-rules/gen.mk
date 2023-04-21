@@ -25,7 +25,7 @@ gen.run: gen.code gen.docgo
 ## gen.code: generate code
 .PHONY: gen.code
 gen.code:
-	@echo "===========> Installing codegen"
+	@echo "===========> Generating codegen"
 	@go generate ./...
 
 ## gen.docgo: generate doc.go

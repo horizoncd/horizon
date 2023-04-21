@@ -20,7 +20,7 @@
 .DEFAULT_GOAL := help
 
 .PHONY: all
-all: tidy gen lint build
+all: tidy gen add-copyright format lint cover build
 
 # ==============================================================================
 # Build options
@@ -91,6 +91,15 @@ core:
 lint:
 	@$(MAKE) go.lint
 
+## format: Gofmt (reformat) package sources (exclude vendor dir if existed).
+.PHONY: format
+format: tools.verify.golines tools.verify.goimports
+	@echo "===========> Formating codes"
+	@$(FIND) -type f -name '*.go' | $(XARGS) gofmt -s -w
+	@$(FIND) -type f -name '*.go' | $(XARGS) $(CODE_DIRS)/goimports -w -local $(ROOT_PACKAGE)
+	@$(FIND) -type f -name '*.go' | $(XARGS) $(CODE_DIRS)/golines -w --max-len=120 --reformat-tags --shorten-comments --ignore-generated .
+	@$(GO) mod edit -fmt
+
 ## gen: Generate all necessary files.
 .PHONY: gen
 gen:
@@ -136,12 +145,16 @@ clean:
 rmi:
 	@$(MAKE) go.rmi
 
+.PHONY: tidy
+tidy:
+	@$(GO) mod tidy
+
 ## help: Show this help info.
 .PHONY: help
 help: Makefile
 	$(call makehelp)
 
 ## all-help: Show all help details info.
-.PHONY: all-help
-all-help: go.help copyright.help tools.help image.help help
+.PHONY: help-all
+help-all: go.help copyright.help tools.help image.help help
 	$(call makeallhelp)

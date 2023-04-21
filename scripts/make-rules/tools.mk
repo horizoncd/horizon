@@ -14,28 +14,54 @@
 
 # ==============================================================================
 # Makefile helper functions for tools(https://github.com/avelino/awesome-go) -> DIR: {TOOT_DIR}/tools | (go >= 1.19)
+# Why download to the tools directory, thinking we might often switch Go versions using gvm.
 #
 
+# horizon build use BUILD_TOOLS
 BUILD_TOOLS ?= golangci-lint goimports addlicense deepcopy-gen conversion-gen ginkgo
+# Code analysis tools
+ANALYSIS_TOOLS = golangci-lint goimports golines go-callvis kube-score
+# Code generation tools
+GENERATION_TOOLS = deepcopy-gen conversion-gen protoc-gen-go cfssl rts codegen
+# Testing tools
+TEST_TOOLS = ginkgo junit-report gotests
+# Version control tools
+VERSION_CONTROL_TOOLS = addlicense go-gitlint git-chglog github-release gsemver
+# Cloud storage tools
+CLOUD_STORAGE_TOOLS = coscli coscmd
+# Utility tools
+UTILITY_TOOLS = go-mod-outdated mockgen gothanks richgo
+# All tools
+ALL_TOOLS ?= $(ANALYSIS_TOOLS) $(GENERATION_TOOLS) $(TEST_TOOLS) $(VERSION_CONTROL_TOOLS) $(CLOUD_STORAGE_TOOLS) $(UTILITY_TOOLS)
 
-## tools.install: Install all tools
+## tools.install: Install a must tools
 .PHONY: tools.install
 tools.install: $(addprefix tools.install., $(BUILD_TOOLS))
  
-## tools.install.%: Install a single tool
+## tools.install-all: Install all tools
+.PHONY: tools.install-all
+tools.install-all: $(addprefix tools.install-all., $(ALL_TOOLS))
+
+## tools.install.%: Install a single tool in $GOBIN/
 .PHONY: tools.install.%
 tools.install.%:
 	@echo "===========> Installing $,The default installation path is $(GOBIN)/$*"
 	@$(MAKE) install.$*
-	@echo "===========> $* installed successfully"
+
+## tools.install-all.%: Parallelism install a single tool in ./tools/*
+.PHONY: tools.install-all.%
+tools.install-all.%:
+	@echo "===========> Installing $,The default installation path is $(TOOLS_DIR)/$*"
+	@$(MAKE) -j $(nproc) install.$*
 
 ## tools.verify.%: Check if a tool is installed and install it
 .PHONY: tools.verify.%
 tools.verify.%:
 	@echo "===========> Verifying $* is installed"
 	@if [ ! -f $(TOOLS_DIR)/$* ]; then GOBIN=$(TOOLS_DIR) $(MAKE) tools.install.$*; fi
+	@echo "===========> $* is install in $(TOOLS_DIR)/$*"
 
-.PHONY:  
+.PHONY: install.golangci-lint
 ## install.golangci-lint: Install golangci-lint
 install.golangci-lint:
 	@echo "===========> Installing golangci-lint,The default installation path is $(GOBIN)/golangci-lint"
@@ -49,7 +75,6 @@ install.goimports:
 	@echo "===========> Installing goimports,The default installation path is $(GOBIN)/goimports"
 	@$(GO) install golang.org/x/tools/cmd/goimports@latest
 
-# Actions path: https://github.com/sealerio/sealer/tree/main/.github/workflows/go.yml#L37-L50
 ## install.addlicense: Install addlicense, used to add license header to source files
 .PHONY: install.addlicense
 install.addlicense:

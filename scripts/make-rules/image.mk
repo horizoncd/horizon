@@ -16,23 +16,28 @@
 # define the default goal
 #
 
-IMAGES ?= 
 SWAGGER_NAME := horizon-swagger
 CORE_NAME := horizon-core
 
-.PHONY: tools.install
-tools.install: $(addprefix tools.install., $(TOOLS))
+IMAGES ?= $(SWAGGER_NAME) $(CORE_NAME)
 
-.PHONY: tools.install.%
-tools.install.%:
-	@echo "===========> Installing $*"
-	@$(MAKE) install.$*
+## image.build: Build all images
+.PHONY: image.build
+image.build: $(addprefix image.build., $(IMAGES))
 
-.PHONY: tools.verify.%
-tools.verify.%:
-	@if ! which $* &>/dev/null; then $(MAKE) tools.install.$*; fi
+## image.verify.%: verify the % image
+.PHONY: image.verify.%
+image.verify.%:
+	@echo "===========> Building $*"
+	@if ! which $* &>/dev/null; then $(MAKE) image.install.$*; fi
 
+## image.build.%: build the % image
+.PHONY: image.build.%
+image.build.%:
+	@echo "===========> Building $*"
+	@$(MAKE) docker build -t $(CORE_NAME) -f build/core/Dockerfile .
 
+## image.core: Build the core
 .PHONY: image.core
 image.core:
 ifeq ($(shell uname -m),arm64)
