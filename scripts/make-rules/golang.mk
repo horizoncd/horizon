@@ -21,8 +21,11 @@ GO := go
 GO_SUPPORTED_VERSIONS ?= |1.15|1.16|1.17|1.18|1.19|1.20|
 
 ifeq ($(ROOT_PACKAGE),)
-	$(error the variable ROOT_PACKAGE must be set prior to including golang.mk, ->/Makefile)
+	$(error the variable ROOT_PACKAGE must be set prior to including golang.mk, -> /Makefile)
 endif
+
+COMMANDS ?= ${ROOT_DIR}/core/
+BINS ?= $(foreach core,${COMMANDS},$(notdir ${core}))
 
 GOPATH ?= $(shell go env GOPATH)
 ifeq ($(origin GOBIN), undefined)
@@ -40,11 +43,28 @@ go.build:
 	@echo "===========> Building binary $(BINS) $(VERSION) for $(PLATFORM)"
 	@export CGO_ENABLED=0 && go build -o bin/app -ldflags '-s -w' ./core/main.go
 
+## swagger-run: Run a swagger server locally
+.PHONY: go.swagger-run
+go.swagger-run: image.swagger
+	@echo "===========> Swagger is available at http://localhost:80"
+	@docker run --rm -p 80:8080 horizon-swagger
+
 ## go.test: Run unit test
 .PHONY: go.test
 go.test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
-	@sh .unit-test.sh
+	@$(GO) test ./... 
+
+## go.test.cover: Run unit test with coverage
+.PHONY: go.test.cover
+go.test.cover: go.test
+	@$(GO) tool cover -func=$(OUTPUT_DIR)/coverage.out | \
+		awk -v target=$(COVERAGE) -f $(ROOT_DIR)/scripts/coverage.awk
+
+## imports: task to automatically handle import packages in Go files using goimports tool
+.PHONY: go.imports
+go.imports:
+	@goimports -l -w $(SRC)
 
 ## lint: Run the golangci-lint
 .PHONY: go.lint
@@ -64,7 +84,6 @@ go.clean:
 go.rmi:
 	@echo "===========> Cleaning all build output"
 	@docker rmi -f $(SWAGGER_NAME)
-	@docker rmi -f $(JOB_NAME)
 	@docker rmi -f $(CORE_NAME)
 
 ## copyright.help: Show copyright help

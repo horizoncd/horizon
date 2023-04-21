@@ -23,6 +23,8 @@ GIT_TAG := $(shell git describe --exact-match --tags --abbrev=0  2> /dev/null ||
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD || echo "0.0.0")
 BUILD_DATE=$(shell date '+%FT %T %z')	# "buildDate":"2023-04-20T 23:19:12 +0800"
 
+SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+
 # include the common makefile
 COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 

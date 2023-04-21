@@ -16,6 +16,39 @@
 # define the default goal
 #
 
+IMAGES ?= 
+SWAGGER_NAME := horizon-swagger
+CORE_NAME := horizon-core
+
+.PHONY: tools.install
+tools.install: $(addprefix tools.install., $(TOOLS))
+
+.PHONY: tools.install.%
+tools.install.%:
+	@echo "===========> Installing $*"
+	@$(MAKE) install.$*
+
+.PHONY: tools.verify.%
+tools.verify.%:
+	@if ! which $* &>/dev/null; then $(MAKE) tools.install.$*; fi
+
+
+.PHONY: image.core
+image.core:
+ifeq ($(shell uname -m),arm64)
+	@docker build -t $(CORE_NAME) -f build/core/Dockerfile . --platform linux/arm64
+else
+	@docker build -t $(CORE_NAME) -f build/core/Dockerfile .
+endif
+
+## swagger: Build the swagger
+.PHONY: image.swagger
+image.swagger:
+ifeq ($(shell uname -m),arm64)
+	@docker build -t $(SWAGGER_NAME) -f build/swagger/Dockerfile . --platform linux/arm64
+else
+	@docker build -t $(SWAGGER_NAME) -f build/swagger/Dockerfile .
+endif
 
 ## image.help: Print help for image targets
 .PHONY: image.help

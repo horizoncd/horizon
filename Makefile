@@ -29,11 +29,6 @@ all: tidy gen lint build
 ROOT_PACKAGE=github.com/horizoncd/horizon
 VERSION_PACKAGE=github.com/horizoncd/horizon/pkg/version
 
-JOB_NAME := horizon-job
-SWAGGER_NAME := horizon-swagger
-CORE_NAME := horizon-core
-
-SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 # ==============================================================================
 # Includes
 include scripts/make-rules/common.mk # make sure include common.mk at the first include line
@@ -79,45 +74,17 @@ build:
 ## swagger: Build the swagger
 .PHONY: swagger
 swagger:
-ifeq ($(shell uname -m),arm64)
-	@docker build -t $(SWAGGER_NAME) -f build/swagger/Dockerfile . --platform linux/arm64
-else
-	@docker build -t $(SWAGGER_NAME) -f build/swagger/Dockerfile .
-endif
+	@$(MAKE) image.swagger
 
 ## swagger-run: Run a swagger server locally
 .PHONY: swagger-run
-swagger-run: swagger
-	@echo "===========> Swagger is available at http://localhost:80"
-	@docker run --rm -p 80:8080 $(SWAGGER_NAME)
-
-## job: Build the job
-.PHONY: job
-job:
-ifeq ($(shell uname -m),arm64)
-	@docker build -t $(JOB_NAME) -f build/job/Dockerfile . --platform linux/arm64
-else
-	@docker build -t $(JOB_NAME) -f build/job/Dockerfile .
-endif
+swagger-run: 
+	@$(MAKE) go.swagger-run
 
 ## core: Build the core
 .PHONY: core
 core:
-ifeq ($(shell uname -m),arm64)
-	@docker build -t $(CORE_NAME) -f build/core/Dockerfile . --platform linux/arm64
-else
-	@docker build -t $(CORE_NAME) -f build/core/Dockerfile .
-endif
-
-## clean: Remove all files that are created by building. 
-.PHONY: clean
-clean:
-	@$(MAKE) go.clean
-
-## rmi: Clean the project and remove the docker images
-.PHONY: rmi
-rmi:
-	@$(MAKE) go.rmi
+	@$(MAKE) image.core
 
 ## lint: Check syntax and styling of go sources.
 .PHONY: lint
@@ -144,20 +111,30 @@ add-license:
 tools:
 	@$(MAKE) tools.install
 
-## ut: Run the unit tests
-.PHONY: ut
-ut:
-	@sh .unit-test.sh
-
 ## test: Run unit test.
 .PHONY: test
 test:
 	@$(MAKE) go.test
 
+## cover: Run unit test and get test coverage.
+.PHONY: cover 
+cover:
+	@$(MAKE) go.test.cover
+
 ## imports: task to automatically handle import packages in Go files using goimports tool
 .PHONY: imports
 imports:
-	@goimports -l -w $(SRC)
+	@$(MAKE) go.imports
+
+## clean: Remove all files that are created by building. 
+.PHONY: clean
+clean:
+	@$(MAKE) go.clean
+
+## rmi: Clean the project and remove the docker images
+.PHONY: rmi
+rmi:
+	@$(MAKE) go.rmi
 
 ## help: Show this help info.
 .PHONY: help
