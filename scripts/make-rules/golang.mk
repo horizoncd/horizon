@@ -32,8 +32,8 @@ endif
 ## go.build: Build binaries
 .PHONY: go.build
 go.build:
-	@echo "GO=$(shell go version)"
-	@echo "===========> Building binary $(BINS) $(VERSION) for $(PLATFORM)"
+	@echo "$(shell go version)"
+	@echo "===========> Building binary $(BUILDAPP) *[Git Info]: $(VERSION)-$(GIT_TAG)-$(GIT_COMMIT)"
 	@export CGO_ENABLED=0 && go build -o $(BUILDAPP) -ldflags '-s -w' $(BUILDFILE)
 
 ## swagger-run: Run a swagger server locally
@@ -48,9 +48,10 @@ go.test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
 	@$(GO) test ./... 
 
-## go.test.cover: Run unit test with coverage
-.PHONY: go.test.cover
-go.test.cover: go.test
+## go.cover: Run unit test with coverage
+.PHONY: go.cover
+go.cover: go.test
+	@touch $(OUTPUT_DIR)/coverage.out
 	@$(GO) tool cover -func=$(OUTPUT_DIR)/coverage.out | \
 		awk -v target=$(COVERAGE) -f $(ROOT_DIR)/scripts/coverage.awk
 

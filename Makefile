@@ -19,9 +19,6 @@
 # Build all by default, even if it's not first
 .DEFAULT_GOAL := help
 
-.PHONY: all
-all: tidy gen add-copyright format lint cover build
-
 # ==============================================================================
 # Build options
 
@@ -65,6 +62,10 @@ export USAGE_OPTIONS
 
 # ==============================================================================
 # Targets
+
+## all: Run all targets
+.PHONY: all
+all: tidy gen add-copyright format lint cover build
 
 ## build: Build the project for horizon
 .PHONY: build
@@ -128,7 +129,7 @@ test:
 ## cover: Run unit test and get test coverage.
 .PHONY: cover 
 cover:
-	@$(MAKE) go.test.cover
+	@$(MAKE) go.cover
 
 ## imports: task to automatically handle import packages in Go files using goimports tool
 .PHONY: imports
@@ -145,6 +146,7 @@ clean:
 rmi:
 	@$(MAKE) go.rmi
 
+## tidy: tidy go.mod
 .PHONY: tidy
 tidy:
 	@$(GO) mod tidy
@@ -154,7 +156,7 @@ tidy:
 help: Makefile
 	$(call makehelp)
 
-## all-help: Show all help details info.
+## help-all: Show all help details info.
 .PHONY: help-all
 help-all: go.help copyright.help tools.help image.help help
 	$(call makeallhelp)

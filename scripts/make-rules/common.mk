@@ -149,11 +149,11 @@ endef
 # Here are some examples of builds
 define MAKEFILE_EXAMPLE
 # make build BINS=app                                            Only a single horizon app binary is built 
-# make -j $(nproc) all                                           Run tidy gen add-copyright format lint cover build concurrently
+# make -j (nproc) all                                            Run tidy gen add-copyright format lint cover build concurrently
 # make gen                                                       Generate all necessary files
 # make deepcopy                                                  Generate deepcopy code
-# make verify-copyright                                          Verify the license headers for all files
-# make install-deepcopy-gen                                      Install deepcopy-gen tools if the license is missing
+# make verify-license                                            Verify the license headers for all files
+# make install.deepcopy-gen                                      Install deepcopy-gen tools if the license is missing
 # make build BINS=app V=1 DEBUG=1                                Build debug binaries for only horizon app
 # make build.multiarch PLATFORMS="linux_arm64 linux_amd64" V=1   Build binaries for both platforms
 endef

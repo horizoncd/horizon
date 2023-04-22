@@ -18,7 +18,7 @@
 #
 
 # horizon build use BUILD_TOOLS
-BUILD_TOOLS ?= golangci-lint goimports addlicense deepcopy-gen conversion-gen ginkgo
+BUILD_TOOLS ?= golangci-lint goimports addlicense conversion-gen ginkgo
 # Code analysis tools
 ANALYSIS_TOOLS = golangci-lint goimports golines go-callvis kube-score
 # Code generation tools
@@ -80,11 +80,6 @@ install.goimports:
 install.addlicense:
 	@$(GO) install github.com/google/addlicense@latest
 
-## install.deepcopy-gen: Install deepcopy-gen, used to generate deep copy functions
-.PHONY: install.deepcopy-gen
-install.deepcopy-gen:
-	@$(GO) install k8s.io/code-generator/cmd/deepcopy-gen@latest
-
 ## install.conversion-gen: Install conversion-gen, used to generate conversion functions
 .PHONY: install.conversion-gen
 install.conversion-gen:
@@ -99,6 +94,11 @@ install.ginkgo:
 # ==============================================================================
 # Tools that might be used include go gvm
 #
+
+## install.deepcopy-gen: Install deepcopy-gen, used to generate deep copy functions
+.PHONY: install.deepcopy-gen
+install.deepcopy-gen:
+	@$(GO) install k8s.io/code-generator/cmd/deepcopy-gen@latest
 
 ## go-junit-report: Install go-junit-report, used to convert go test output to junit xml
 .PHONY: install.go-junit-report
