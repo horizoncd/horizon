@@ -58,7 +58,10 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 
 	commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, gitRefType, gitRef)
 	if err != nil {
-		return nil, err
+		commit = &git.Commit{
+			Message: "commit not found",
+			ID:      gitRef,
+		}
 	}
 
 	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
@@ -180,8 +183,12 @@ func assembleImageURL(regionEntity *regionmodels.RegionEntity,
 	normalizedBranch := strings.Join(pinyin.LazyPinyin(branch, args), "")
 	normalizedBranch = regexp.MustCompile(`[^a-zA-Z0-9_.-]`).ReplaceAllString(normalizedBranch, "_")
 
+	if len(commit) > 8 {
+		commit = commit[:8]
+	}
+
 	return path.Join(domain, regionEntity.Registry.Path, application,
-		fmt.Sprintf("%v:%v-%v-%v", cluster, normalizedBranch, commit[:8], timeStr))
+		fmt.Sprintf("%v:%v-%v-%v", cluster, normalizedBranch, commit, timeStr))
 }
 
 func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref string) (_ *GetDiffResponse, err error) {
@@ -205,7 +212,15 @@ func (c *controller) GetDiff(ctx context.Context, clusterID uint, refType, ref s
 	if ref != "" {
 		commit, err = c.commitGetter.GetCommit(ctx, cluster.GitURL, refType, ref)
 		if err != nil {
-			return nil, err
+			commit = &git.Commit{
+				ID:      ref,
+				Message: fmt.Sprintf("failed to get commit message: %s", err),
+			}
+		}
+	} else {
+		commit = &git.Commit{
+			ID:      "",
+			Message: "no commit",
 		}
 	}
 
