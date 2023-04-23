@@ -69,6 +69,7 @@ endif
 GIT_COMMIT:=$(shell git rev-parse HEAD)
 
 # Minimum test coverage
+# Please modify it here, it is recommended to increase it slowly
 ifeq ($(origin COVERAGE),undefined)
 COVERAGE := 60
 endif

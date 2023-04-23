@@ -18,7 +18,7 @@
 #
 
 # horizon build use BUILD_TOOLS
-BUILD_TOOLS ?= golangci-lint goimports addlicense conversion-gen ginkgo
+BUILD_TOOLS ?= golangci-lint goimports mockgen addlicense conversion-gen ginkgo
 # Code analysis tools
 ANALYSIS_TOOLS = golangci-lint goimports golines go-callvis kube-score
 # Code generation tools
@@ -28,11 +28,11 @@ TEST_TOOLS = ginkgo junit-report gotests
 # Version control tools
 VERSION_CONTROL_TOOLS = addlicense go-gitlint git-chglog github-release gsemver
 # Cloud storage tools
-CLOUD_STORAGE_TOOLS = coscli coscmd
+# CLOUD_STORAGE_TOOLS = coscli coscmd
 # Utility tools
 UTILITY_TOOLS = go-mod-outdated mockgen gothanks richgo
 # All tools
-ALL_TOOLS ?= $(ANALYSIS_TOOLS) $(GENERATION_TOOLS) $(TEST_TOOLS) $(VERSION_CONTROL_TOOLS) $(CLOUD_STORAGE_TOOLS) $(UTILITY_TOOLS)
+ALL_TOOLS ?= $(ANALYSIS_TOOLS) $(GENERATION_TOOLS) $(TEST_TOOLS) $(VERSION_CONTROL_TOOLS) $(UTILITY_TOOLS)
 
 ## tools.install: Install a must tools
 .PHONY: tools.install
@@ -100,7 +100,7 @@ install.ginkgo:
 install.deepcopy-gen:
 	@$(GO) install k8s.io/code-generator/cmd/deepcopy-gen@latest
 
-## go-junit-report: Install go-junit-report, used to convert go test output to junit xml
+## install.go-junit-report: Install go-junit-report, used to convert go test output to junit xml
 .PHONY: install.go-junit-report
 install.go-junit-report:
 	@$(GO) install github.com/jstemmer/go-junit-report@latest
@@ -136,17 +136,6 @@ install.gvm:
 	@echo "===========> Installing gvm,The default installation path is ~/.gvm/scripts/gvm"
 	@bash < <(curl -s -S -L https://raw.gitee.com/moovweb/gvm/master/binscripts/gvm-installer)
 	@$(shell source /root/.gvm/scripts/gvm)
-
-## install.coscli: Install coscli. COSCLI is a command line tool for Tencent Cloud Object Storage (COS)
-.PHONY: install.coscli
-install.coscli:
-	@wget -q https://github.com/tencentyun/coscli/releases/download/v0.10.2-beta/coscli-linux -O ${HOME}/bin/coscli
-	@chmod +x ${HOME}/bin/coscli
-
-## install.coscmd: Install coscmd, used to upload files to Tencent Cloud Object Storage (COS)
-.PHONY: install.coscmd
-install.coscmd:
-	@if which pip &>/dev/null; then pip install coscmd; else pip3 install coscmd; fi
 
 ## install.golines: Install golines, used to format long lines
 .PHONY: install.golines

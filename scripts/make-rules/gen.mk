@@ -24,9 +24,9 @@ gen.run: gen.code gen.docgo
 
 ## gen.code: generate code
 .PHONY: gen.code
-gen.code:
+gen.code: tools.install.mockgen
 	@echo "===========> Generating codegen"
-	@go generate ./...
+	@$(GO) generate ./...
 
 ## gen.docgo: generate doc.go
 .PHONY: gen.docgo

@@ -24,7 +24,7 @@
 
 # TODO: It is recommended to refactor horizon cmd module with cobra and add version information. It should be placed in pkg directory
 ROOT_PACKAGE=github.com/horizoncd/horizon
-VERSION_PACKAGE=github.com/horizoncd/horizon/pkg/version
+#VERSION_PACKAGE=github.com/horizoncd/horizon/pkg/version
 
 # ==============================================================================
 # Includes
@@ -129,7 +129,7 @@ test:
 ## cover: Run unit test and get test coverage.
 .PHONY: cover 
 cover:
-	@$(MAKE) go.cover
+	@$(MAKE) go.test.cover
 
 ## imports: task to automatically handle import packages in Go files using goimports tool
 .PHONY: imports
