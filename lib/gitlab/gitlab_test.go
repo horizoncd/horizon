@@ -135,7 +135,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, project)
 
 	// 5. create a project
-	project, err = g.CreateProject(ctx, projectName, group.ID)
+	project, err = g.CreateProject(ctx, projectName, group.ID, "")
 	assert.Nil(t, err)
 	assert.Equal(t, projectName, project.Name)
 

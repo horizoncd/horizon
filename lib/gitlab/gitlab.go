@@ -46,7 +46,7 @@ type Interface interface {
 
 	// CreateProject create a project under the specified group.
 	// See https://docs.gitlab.com/ee/api/projects.html#create-project for more information.
-	CreateProject(ctx context.Context, name string, groupID int) (*gitlab.Project, error)
+	CreateProject(ctx context.Context, name string, groupID int, visibility string) (*gitlab.Project, error)
 
 	// DeleteProject delete a project with the given pid.
 	// The pid can be the project's ID or relative path such as fist/second.
@@ -268,15 +268,19 @@ func (h *helper) GetProject(ctx context.Context, pid interface{}) (_ *gitlab.Pro
 	return project, nil
 }
 
-func (h *helper) CreateProject(ctx context.Context, name string, groupID int) (_ *gitlab.Project, err error) {
+func (h *helper) CreateProject(ctx context.Context, name string,
+	groupID int, visibility string) (_ *gitlab.Project, err error) {
 	const op = "gitlab: create project"
 	defer wlog.Start(ctx, op).StopPrint()
+
+	visibilityValue := gitlab.VisibilityValue(visibility)
 
 	project, rsp, err := h.client.Projects.CreateProject(&gitlab.CreateProjectOptions{
 		InitializeWithReadme: func() *bool { b := true; return &b }(),
 		Name:                 &name,
 		Path:                 &name,
 		NamespaceID:          &groupID,
+		Visibility:           &visibilityValue,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {

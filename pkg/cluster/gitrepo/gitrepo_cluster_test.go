@@ -72,6 +72,8 @@ var (
 	g             gitlablib.Interface
 	defaultBranch string
 
+	defaultVisibility string
+
 	sshURL        string
 	rootGroupName string
 	rootGroup     *gitlab.Group
@@ -132,6 +134,8 @@ func TestMain(m *testing.M) {
 		defaultBranch = "master"
 	}
 
+	defaultVisibility = "public"
+
 	var p *Param
 	if err := json.Unmarshal([]byte(param), &p); err != nil {
 		panic(err)
@@ -164,7 +168,7 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) {
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
 
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch, defaultVisibility)
 	assert.Nil(t, err)
 
 	application := "app"
@@ -295,7 +299,7 @@ func Test(t *testing.T) {
 
 func TestV2(t *testing.T) {
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch, defaultVisibility)
 	assert.Nil(t, err)
 
 	application := "appv2"
@@ -399,7 +403,7 @@ func TestV2(t *testing.T) {
 
 func TestUpgradeToV2(t *testing.T) {
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch, defaultVisibility)
 	assert.Nil(t, err)
 
 	application := "appUpgrade"
@@ -517,7 +521,7 @@ func TestHardDeleteCluster(t *testing.T) {
 		BaseParams: baseParams,
 	}
 	repo, _ := chartmuseumbase.NewRepo(config.Repo{Host: "https://harbor.cloudnative.com"})
-	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch)
+	r, err := NewClusterGitlabRepo(ctx, rootGroup, repo, g, defaultBranch, defaultVisibility)
 	assert.Nil(t, err)
 	err = r.CreateCluster(ctx, createParams)
 	assert.Nil(t, err)
@@ -536,7 +540,7 @@ func TestGetClusterValueFile(t *testing.T) {
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
 	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{},
-		gitlabmockLib, defaultBranch)
+		gitlabmockLib, defaultBranch, defaultVisibility)
 	assert.Nil(t, err)
 
 	// 1. test gitlab get file error
@@ -594,7 +598,7 @@ java:
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
 	clusterGitRepoInstance, err := NewClusterGitlabRepo(ctx, rootGroup, &chartmuseumbase.Repo{},
-		gitlabmockLib, defaultBranch)
+		gitlabmockLib, defaultBranch, defaultVisibility)
 	assert.Nil(t, err)
 
 	expectedOutput := `java:

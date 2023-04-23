@@ -127,18 +127,18 @@ func (mr *MockInterfaceMockRecorder) CreateMR(ctx, pid, source, target, title in
 }
 
 // CreateProject mocks base method.
-func (m *MockInterface) CreateProject(ctx context.Context, name string, groupID int) (*gitlab0.Project, error) {
+func (m *MockInterface) CreateProject(ctx context.Context, name string, groupID int, visibility string) (*gitlab0.Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateProject", ctx, name, groupID)
+	ret := m.ctrl.Call(m, "CreateProject", ctx, name, groupID, visibility)
 	ret0, _ := ret[0].(*gitlab0.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateProject indicates an expected call of CreateProject.
-func (mr *MockInterfaceMockRecorder) CreateProject(ctx, name, groupID interface{}) *gomock.Call {
+func (mr *MockInterfaceMockRecorder) CreateProject(ctx, name, groupID, visibility interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProject", reflect.TypeOf((*MockInterface)(nil).CreateProject), ctx, name, groupID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProject", reflect.TypeOf((*MockInterface)(nil).CreateProject), ctx, name, groupID, visibility)
 }
 
 // DeleteBranch mocks base method.

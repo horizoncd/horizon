@@ -158,15 +158,14 @@ import (
 
 // Flags defines agent CLI flags.
 type Flags struct {
-	ConfigFile              string
-	RoleConfigFile          string
-	ScopeRoleFile           string
-	BuildJSONSchemaFile     string
-	BuildUISchemaFile       string
-	Dev                     bool
-	Environment             string
-	LogLevel                string
-	GitOpsRepoDefaultBranch string
+	ConfigFile          string
+	RoleConfigFile      string
+	ScopeRoleFile       string
+	BuildJSONSchemaFile string
+	BuildUISchemaFile   string
+	Dev                 bool
+	Environment         string
+	LogLevel            string
 }
 
 type RegisterRouter interface {
@@ -200,10 +199,6 @@ func ParseFlags() *Flags {
 
 	flag.StringVar(
 		&flags.LogLevel, "loglevel", "info", "the loglevel(panic/fatal/error/warn/info/debug/trace))")
-
-	flag.StringVar(
-		&flags.GitOpsRepoDefaultBranch, "gitOpsRepoDefaultBranch", "master",
-		"configure gitops git engine default branch")
 
 	flag.Parse()
 	return &flags
@@ -319,7 +314,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	}
 
 	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, rootGroup, gitlabGitops,
-		flags.GitOpsRepoDefaultBranch)
+		coreConfig.GitopsRepoConfig.DefaultBranch, coreConfig.GitopsRepoConfig.DefaultVisibility)
 
 	if err != nil {
 		panic(err)
@@ -331,7 +326,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	}
 
 	clusterGitRepo, err := clustergitrepo.NewClusterGitlabRepo(ctx, rootGroup, templateRepo, gitlabGitops,
-		flags.GitOpsRepoDefaultBranch)
+		coreConfig.GitopsRepoConfig.DefaultBranch, coreConfig.GitopsRepoConfig.DefaultVisibility)
 	if err != nil {
 		panic(err)
 	}
@@ -437,14 +432,15 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		ScopeService:         scopeService,
 		ApplicationGitRepo:   applicationGitRepo,
 		TemplateSchemaGetter: templateSchemaGetter,
-		Cd:                   cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper, flags.GitOpsRepoDefaultBranch),
-		K8sUtil:              cd.NewK8sUtil(),
-		OutputGetter:         outputGetter,
-		TektonFty:            tektonFty,
-		ClusterGitRepo:       clusterGitRepo,
-		GitGetter:            gitGetter,
-		GrafanaService:       grafanaService,
-		BuildSchema:          buildSchema,
+		Cd: cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper,
+			coreConfig.GitopsRepoConfig.DefaultVisibility),
+		K8sUtil:        cd.NewK8sUtil(),
+		OutputGetter:   outputGetter,
+		TektonFty:      tektonFty,
+		ClusterGitRepo: clusterGitRepo,
+		GitGetter:      gitGetter,
+		GrafanaService: grafanaService,
+		BuildSchema:    buildSchema,
 	}
 
 	var (

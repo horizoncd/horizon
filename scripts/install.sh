@@ -18,7 +18,8 @@ MINIKUBE=false
 KIND=false
 
 INTERNAL_GITLAB_ENABLED=false
-GITLAB="core.args.gitOpsRepoDefaultBranch=main"
+GITLAB="core.gitopsRepoConfig.gitOpsRepoDefaultBranch=main"
+GITLAB="core.gitopsRepoConfig.gitOpsRepoDefaultVisibility=public"
 GITLAB="$GITLAB,config.gitopsRepoConfig.rootGroupPath=horizoncd1"
 GITLAB="$GITLAB,config.gitopsRepoConfig.url=https://gitlab.com"
 GITLAB="$GITLAB,config.gitopsRepoConfig.token=glpat-2n6qmgCah_Yz4kErMC5V"
@@ -632,6 +633,7 @@ function parseinput() {
     docker exec $CONTAINER_NAME bash -c "echo \"nameserver $nameserver\" > /etc/resolv.conf"
 
     echo 'Horizon is installed successfully!'
+    echo "Horizon is a gitops platform, you can find your gitops repo at https://gitlab.com/horizoncd1"
     echo "Please access the Horizon UI at http://horizon.h8r.site:$HTTP_PORT with username: admin@cloudnative.com and password: 123456"
 }
 

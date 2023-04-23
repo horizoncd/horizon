@@ -53,12 +53,13 @@ type gitRepo struct {
 	applicationsGroup          *gitlab.Group
 	recyclingApplicationsGroup *gitlab.Group
 	defaultBranch              string
+	defaultVisibility          string
 }
 
 var _ ApplicationGitRepo = &gitRepo{}
 
 func NewApplicationGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
-	gitlabLib gitlablib.Interface, defaultBranch string) (ApplicationGitRepo, error) {
+	gitlabLib gitlablib.Interface, defaultBranch string, defaultVisibility string) (ApplicationGitRepo, error) {
 	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _applications)
 	if err != nil {
 		return nil, err
@@ -73,6 +74,7 @@ func NewApplicationGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 		applicationsGroup:          applicationsGroup,
 		recyclingApplicationsGroup: recyclingApplicationsGroup,
 		defaultBranch:              defaultBranch,
+		defaultVisibility:          defaultVisibility,
 	}, nil
 }
 
@@ -110,7 +112,7 @@ func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application stri
 				return err
 			}
 		}
-		project, err = g.gitlabLib.CreateProject(ctx, environmentRepoName, parentGroup.ID)
+		project, err = g.gitlabLib.CreateProject(ctx, environmentRepoName, parentGroup.ID, g.defaultVisibility)
 		if err != nil {
 			return err
 		}

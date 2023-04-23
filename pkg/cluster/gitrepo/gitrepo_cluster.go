@@ -147,11 +147,12 @@ type clusterGitRepo struct {
 	recyclingClustersGroup *gitlab.Group
 	templateRepo           templaterepo.TemplateRepo
 	defaultBranch          string
+	defaultVisibility      string
 }
 
 func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 	templateRepo templaterepo.TemplateRepo,
-	gitlabLib gitlablib.Interface, defaultBranch string) (ClusterGitRepo, error) {
+	gitlabLib gitlablib.Interface, defaultBranch string, defaultVisibility string) (ClusterGitRepo, error) {
 	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, common.GitopsGroupClusters)
 	if err != nil {
 		return nil, err
@@ -167,6 +168,7 @@ func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 		recyclingClustersGroup: recyclingClustersGroup,
 		templateRepo:           templateRepo,
 		defaultBranch:          defaultBranch,
+		defaultVisibility:      defaultVisibility,
 	}, nil
 }
 
@@ -421,7 +423,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	}
 
 	// 3. create cluster repo under appGroup
-	if _, err := g.gitlabLib.CreateProject(ctx, params.Cluster, appGroup.ID); err != nil {
+	if _, err := g.gitlabLib.CreateProject(ctx, params.Cluster, appGroup.ID, g.defaultVisibility); err != nil {
 		return err
 	}
 
