@@ -46,26 +46,32 @@ go.swagger-run: image.swagger
 	@docker run --rm -p 80:8080 horizon-swagger
 
 ## go.test: Run unit test
-.PHONY: go.test
-go.test: tools.verify.go-junit-report
+go.test:
+	@echo "===========> Run unit test"
+	@$(GO) test ./...
+
+## go.test.junit-report: Run unit test
+.PHONY: go.test.junit-report
+go.test.junit-report: tools.verify.go-junit-report
 	@echo "===========> Run unit test > $(OUTPUT_DIR)/report.xml"
 	@$(GO) test -v -coverprofile=$(OUTPUT_DIR)/coverage.out 2>&1 ./... | $(TOOLS_DIR)/go-junit-report -set-exit-code > $(OUTPUT_DIR)/report.xml
+	@sed -i '/mock_.*.go/d' $(OUTPUT_DIR)/coverage.out
 	@echo "===========> Test coverage of Go code is reported to $(OUTPUT_DIR)/coverage.html by generating HTML"
 	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
 
-.PHONY: go.test.junit-report
-go.test.junit-report: tools.verify.go-junit-report
-	@echo "===========> Run unit test"
-	@$(GO) test -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
-		-timeout=10m -shuffle=on -short -v `go list ./pkg/hook/ |\
-		egrep -v $(subst $(SPACE),'|',$(sort $(EXCLUDE_TESTS)))` 2>&1 | \
-		tee >(go-junit-report --set-exit-code >$(OUTPUT_DIR)/report.xml)
-	@sed -i '/mock_.*.go/d' $(OUTPUT_DIR)/coverage.out # remove mock_.*.go files from test coverage
-	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
+# .PHONY: go.test.junit-report
+# go.test.junit-report: tools.verify.go-junit-report
+# 	@echo "===========> Run unit test"
+# 	@$(GO) test -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
+# 		-timeout=10m -shuffle=on -short -v `go list ./pkg/hook/ |\
+# 		egrep -v $(subst $(SPACE),'|',$(sort $(EXCLUDE_TESTS)))` 2>&1 | \
+# 		tee >(go-junit-report --set-exit-code >$(OUTPUT_DIR)/report.xml)
+# 	@sed -i '/mock_.*.go/d' $(OUTPUT_DIR)/coverage.out # remove mock_.*.go files from test coverage
+# 	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
 
 ## go.test.cover: Run unit test with coverage
 .PHONY: go.test.cover
-go.test.cover: 
+go.test.cover: go.test.junit-report
 	@touch $(OUTPUT_DIR)/coverage.out
 	@$(GO) tool cover -func=$(OUTPUT_DIR)/coverage.out | \
 		awk -v target=$(COVERAGE) -f $(ROOT_DIR)/scripts/coverage.awk
