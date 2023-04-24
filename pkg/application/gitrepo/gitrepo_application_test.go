@@ -198,7 +198,7 @@ func TestV2(t *testing.T) {
 		return
 	}
 
-	r, err := NewApplicationGitlabRepo(ctx, rootGroup, g, defaultBranch, defaultVisibility)
+	r, err := NewApplicationGitlabRepo(ctx, g, ApplicationGitRepoConfig{rootGroup, defaultBranch, defaultVisibility})
 	assert.Nil(t, err)
 
 	defer func() {

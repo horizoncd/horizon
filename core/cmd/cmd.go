@@ -313,8 +313,11 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		}
 	}
 
-	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, rootGroup, gitlabGitops,
-		coreConfig.GitopsRepoConfig.DefaultBranch, coreConfig.GitopsRepoConfig.DefaultVisibility)
+	applicationGitRepo, err := gitrepo.NewApplicationGitlabRepo(ctx, gitlabGitops, gitrepo.ApplicationGitRepoConfig{
+		RootGroup:         rootGroup,
+		DefaultBranch:     coreConfig.GitopsRepoConfig.DefaultBranch,
+		DefaultVisibility: coreConfig.GitopsRepoConfig.DefaultVisibility,
+	})
 
 	if err != nil {
 		panic(err)

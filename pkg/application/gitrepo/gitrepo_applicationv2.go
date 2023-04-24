@@ -48,7 +48,7 @@ type ApplicationGitRepo interface {
 	HardDeleteApplication(ctx context.Context, application string) error
 }
 
-type gitRepo struct {
+type appGitopsRepo struct {
 	gitlabLib                  gitlablib.Interface
 	applicationsGroup          *gitlab.Group
 	recyclingApplicationsGroup *gitlab.Group
@@ -56,29 +56,36 @@ type gitRepo struct {
 	defaultVisibility          string
 }
 
-var _ ApplicationGitRepo = &gitRepo{}
+type ApplicationGitRepoConfig struct {
+	RootGroup         *gitlab.Group
+	DefaultBranch     string
+	DefaultVisibility string
+}
 
-func NewApplicationGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
-	gitlabLib gitlablib.Interface, defaultBranch string, defaultVisibility string) (ApplicationGitRepo, error) {
-	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, _applications)
+var _ ApplicationGitRepo = &appGitopsRepo{}
+
+func NewApplicationGitlabRepo(ctx context.Context, gitlabLib gitlablib.Interface,
+	config ApplicationGitRepoConfig) (ApplicationGitRepo, error) {
+	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, config.RootGroup.ID, config.RootGroup.FullPath, _applications)
 	if err != nil {
 		return nil, err
 	}
-	recyclingApplicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID,
-		rootGroup.FullPath, _recyclingApplications)
+	recyclingApplicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, config.RootGroup.ID,
+		config.RootGroup.FullPath, _recyclingApplications)
 	if err != nil {
 		return nil, err
 	}
-	return &gitRepo{
+	return &appGitopsRepo{
 		gitlabLib:                  gitlabLib,
 		applicationsGroup:          applicationsGroup,
 		recyclingApplicationsGroup: recyclingApplicationsGroup,
-		defaultBranch:              defaultBranch,
-		defaultVisibility:          defaultVisibility,
+		defaultBranch:              config.DefaultBranch,
+		defaultVisibility:          config.DefaultVisibility,
 	}, nil
 }
 
-func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application string, req CreateOrUpdateRequest) error {
+func (g appGitopsRepo) CreateOrUpdateApplication(ctx context.Context,
+	application string, req CreateOrUpdateRequest) error {
 	const op = "gitlab repo: create or update application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -198,7 +205,7 @@ func (g gitRepo) CreateOrUpdateApplication(ctx context.Context, application stri
 	return nil
 }
 
-func (g gitRepo) GetApplication(ctx context.Context, application, environment string) (*GetResponse, error) {
+func (g appGitopsRepo) GetApplication(ctx context.Context, application, environment string) (*GetResponse, error) {
 	const op = "gitlab repo: get application"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -267,7 +274,7 @@ func (g gitRepo) GetApplication(ctx context.Context, application, environment st
 	return &res, nil
 }
 
-func (g gitRepo) HardDeleteApplication(ctx context.Context, application string) error {
+func (g appGitopsRepo) HardDeleteApplication(ctx context.Context, application string) error {
 	const op = "gitlab repo: hard delete application"
 	defer wlog.Start(ctx, op).StopPrint()
 
