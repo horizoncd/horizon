@@ -18,8 +18,8 @@ MINIKUBE=false
 KIND=false
 
 INTERNAL_GITLAB_ENABLED=false
-GITLAB="core.gitopsRepoConfig.gitOpsRepoDefaultBranch=main"
-GITLAB="core.gitopsRepoConfig.gitOpsRepoDefaultVisibility=public"
+GITLAB="config.gitopsRepoConfig.defaultBranch=main"
+GITLAB="$GITLAB config.gitopsRepoConfig.defaultVisibility=public"
 GITLAB="$GITLAB,config.gitopsRepoConfig.rootGroupPath=horizoncd1"
 GITLAB="$GITLAB,config.gitopsRepoConfig.url=https://gitlab.com"
 GITLAB="$GITLAB,config.gitopsRepoConfig.token=glpat-2n6qmgCah_Yz4kErMC5V"
@@ -547,10 +547,11 @@ function parseinput() {
                 shift 2
                 ;;
             -e|--external-gitlab)
-                GITLAB="core.args.gitOpsRepoDefaultBranch=$2"
+                GITLAB="config.gitopsRepoConfig.defaultBranch=$2"
                 GITLAB="$GITLAB,config.gitopsRepoConfig.rootGroupPath=$3"
                 GITLAB="$GITLAB,config.gitopsRepoConfig.url=$4"
                 GITLAB="$GITLAB,config.gitopsRepoConfig.token=$5"
+                GITLAB="$GITLAB,config.gitopsRepoConfig.defaultVisibility=private"
                 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.url=$4"
                 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.password=$5"
                 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.username=root"
