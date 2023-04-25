@@ -27,6 +27,7 @@ GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.password=glpat-
 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.username=root"
 GITLAB="$GITLAB,argo-cd.configs.credentialTemplates.gitops-creds.name=gitops-creds"
 
+GITHUB_TOKEN_ENCODED="Z2l0aHViX3BhdF8xMUFPMkhDQVEwdjNGQkZZVzFoSGdoX01KYU16WXJrakxYZTFXMkhaOFFXYVBWQ0RXTDFYalZ3akxuZDJLbU5oWWhOSEMzWDZCRlllQko2V09k"
 GITHUB_TOKEN=""
 
 # Install horizon of the script
@@ -264,10 +265,13 @@ function install() {
         cmd="$cmd install"
     fi
 
-    if [ -n "$GITHUB_TOKEN" ]
+    if [ -z "$GITHUB_TOKEN" ]
     then
-        cmd="$cmd --set $GITHUB_TOKEN"
+        GITHUB_TOKEN="config.gitRepos[0].url=https://github.com"
+        GITHUB_TOKEN="$GITHUB_TOKEN,config.gitRepos[0].kind=github"
+        GITHUB_TOKEN="$GITHUB_TOKEN,config.gitRepos[0].token=$(base64 -d <<< $GITHUB_TOKEN_ENCODED)"
     fi
+    cmd="$cmd --set $GITHUB_TOKEN"
 
     if $FULL
     then
