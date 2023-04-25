@@ -153,12 +153,13 @@ type clusterGitopsRepo struct {
 func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 	templateRepo templaterepo.TemplateRepo,
 	gitlabLib gitlablib.Interface, defaultBranch string, defaultVisibility string) (ClusterGitRepo, error) {
-	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, common.GitopsGroupClusters)
+	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath,
+		common.GitopsGroupClusters, defaultVisibility)
 	if err != nil {
 		return nil, err
 	}
 	recyclingClustersGroup, err := gitlabLib.GetCreatedGroup(ctx,
-		rootGroup.ID, rootGroup.FullPath, common.GitopsGroupRecyclingClusters)
+		rootGroup.ID, rootGroup.FullPath, common.GitopsGroupRecyclingClusters, defaultVisibility)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +418,7 @@ func (g *clusterGitopsRepo) CreateCluster(ctx context.Context, params *CreateClu
 
 	// 1. create application group if necessary
 	appGroup, err := g.gitlabLib.GetCreatedGroup(ctx, g.clustersGroup.ID,
-		g.clustersGroup.FullPath, params.Application.Name)
+		g.clustersGroup.FullPath, params.Application.Name, g.defaultVisibility)
 	if err != nil {
 		return err
 	}
@@ -670,7 +671,8 @@ func (g *clusterGitopsRepo) DeleteCluster(ctx context.Context,
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
-		_, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.recyclingClustersGroup.ID)
+		_, err = g.gitlabLib.CreateGroup(ctx, application, application,
+			&g.recyclingClustersGroup.ID, g.defaultVisibility)
 		if err != nil {
 			return err
 		}

@@ -535,7 +535,7 @@ func TestGetClusterValueFile(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	gitlabmockLib := gitlablibmock.NewMockInterface(mockCtrl)
-	gitlabmockLib.EXPECT().GetCreatedGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+	gitlabmockLib.EXPECT().GetCreatedGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint
@@ -593,7 +593,7 @@ java:
 			output = actions.([]gitlablib.CommitAction)[0].Content
 			return "", nil
 		}).AnyTimes()
-	gitlabmockLib.EXPECT().GetCreatedGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+	gitlabmockLib.EXPECT().GetCreatedGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(&gitlab.Group{}, nil).AnyTimes()
 
 	var clusterGitRepoInstance ClusterGitRepo // nolint

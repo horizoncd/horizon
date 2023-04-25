@@ -19,7 +19,7 @@ KIND=false
 
 INTERNAL_GITLAB_ENABLED=false
 GITLAB="config.gitopsRepoConfig.defaultBranch=main"
-GITLAB="$GITLAB config.gitopsRepoConfig.defaultVisibility=public"
+GITLAB="$GITLAB,config.gitopsRepoConfig.defaultVisibility=public"
 GITLAB="$GITLAB,config.gitopsRepoConfig.rootGroupPath=horizoncd1"
 GITLAB="$GITLAB,config.gitopsRepoConfig.url=https://gitlab.com"
 GITLAB="$GITLAB,config.gitopsRepoConfig.token=glpat-2n6qmgCah_Yz4kErMC5V"
@@ -405,7 +405,7 @@ data:
     sql_group = "INSERT INTO tb_group (id, name, path, description, visibility_level, parent_id, traversal_ids, region_selector) VALUES (1,'horizon', 'horizon', '', 'private', 0, 1, '- key: cloudnative-kubernetes-groups\n  values:\n    - public\n  operator: ""')"
     sql_template = "INSERT INTO tb_template (id, name, description, repository, group_id, chart_name, only_admin, only_owner, without_ci) VALUES (1, 'deployment', '', 'https://github.com/horizoncd/deployment.git', 0, 'deployment', 0, 0, 1)"
     sql_template_release = "INSERT INTO tb_template_release (id, template_name, name, description, recommended, template, chart_name, only_admin, chart_version, sync_status, failed_reason, commit_id, last_sync_at, only_owner) VALUES (1, 'deployment', 'v0.0.1', '', 1, 1, 'deployment', 0, 'v0.0.1-5e5193b355961b983cab05a83fa22934001ddf4d', 'status_succeed', '', '5e5193b355961b983cab05a83fa22934001ddf4d', '2023-03-22 17:28:38', 0)"
-    sql_application = "INSERT INTO tb_application (id, group_id, name, description, priority, git_url, git_subfolder, git_branch, git_ref, git_ref_type, template, template_release, created_by, updated_by) VALUES (1, 1, 'demo', 'example demo app', 'P0', 'https://github.com/horizoncd/springboot-source-demo.git', '', NULL, 'master', 'branch', 'deployment', 'v0.0.1', 1, 1)"
+    sql_application = "INSERT INTO tb_application (id, group_id, name, description, priority, git_url, git_subfolder, git_branch, git_ref, git_ref_type, template, template_release, created_by, updated_by) VALUES (1, 1, 'demo', 'example demo app', 'P0', 'https://github.com/horizoncd/hello-world.git', '', NULL, 'cn', 'branch', 'deployment', 'v0.0.1', 1, 1)"
     sql_member = "INSERT INTO tb_member (id, resource_type, resource_id, role, member_type, membername_id, granted_by, created_by) values (1, 'applications', 1, 'owner', 0, 1, 1, 1)"
 
     sqls = [sql_registry, sql_kubernetes, sql_tag, sql_environment,

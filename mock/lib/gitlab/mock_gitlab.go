@@ -97,18 +97,18 @@ func (mr *MockInterfaceMockRecorder) CreateBranch(ctx, pid, branch, fromRef inte
 }
 
 // CreateGroup mocks base method.
-func (m *MockInterface) CreateGroup(ctx context.Context, name, path string, parentID *int) (*gitlab0.Group, error) {
+func (m *MockInterface) CreateGroup(ctx context.Context, name, path string, parentID *int, visibility string) (*gitlab0.Group, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateGroup", ctx, name, path, parentID)
+	ret := m.ctrl.Call(m, "CreateGroup", ctx, name, path, parentID, visibility)
 	ret0, _ := ret[0].(*gitlab0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateGroup indicates an expected call of CreateGroup.
-func (mr *MockInterfaceMockRecorder) CreateGroup(ctx, name, path, parentID interface{}) *gomock.Call {
+func (mr *MockInterfaceMockRecorder) CreateGroup(ctx, name, path, parentID, visibility interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGroup", reflect.TypeOf((*MockInterface)(nil).CreateGroup), ctx, name, path, parentID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGroup", reflect.TypeOf((*MockInterface)(nil).CreateGroup), ctx, name, path, parentID, visibility)
 }
 
 // CreateMR mocks base method.
@@ -228,18 +228,18 @@ func (mr *MockInterfaceMockRecorder) GetCommit(ctx, pid, commit interface{}) *go
 }
 
 // GetCreatedGroup mocks base method.
-func (m *MockInterface) GetCreatedGroup(ctx context.Context, parentID int, parentPath, name string) (*gitlab0.Group, error) {
+func (m *MockInterface) GetCreatedGroup(ctx context.Context, parentID int, parentPath, name, visibility string) (*gitlab0.Group, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCreatedGroup", ctx, parentID, parentPath, name)
+	ret := m.ctrl.Call(m, "GetCreatedGroup", ctx, parentID, parentPath, name, visibility)
 	ret0, _ := ret[0].(*gitlab0.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCreatedGroup indicates an expected call of GetCreatedGroup.
-func (mr *MockInterfaceMockRecorder) GetCreatedGroup(ctx, parentID, parentPath, name interface{}) *gomock.Call {
+func (mr *MockInterfaceMockRecorder) GetCreatedGroup(ctx, parentID, parentPath, name, visibility interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCreatedGroup", reflect.TypeOf((*MockInterface)(nil).GetCreatedGroup), ctx, parentID, parentPath, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCreatedGroup", reflect.TypeOf((*MockInterface)(nil).GetCreatedGroup), ctx, parentID, parentPath, name, visibility)
 }
 
 // GetFile mocks base method.

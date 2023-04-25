@@ -66,12 +66,13 @@ var _ ApplicationGitRepo = &appGitopsRepo{}
 
 func NewApplicationGitlabRepo(ctx context.Context, gitlabLib gitlablib.Interface,
 	config ApplicationGitRepoConfig) (ApplicationGitRepo, error) {
-	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, config.RootGroup.ID, config.RootGroup.FullPath, _applications)
+	applicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, config.RootGroup.ID,
+		config.RootGroup.FullPath, _applications, config.DefaultVisibility)
 	if err != nil {
 		return nil, err
 	}
 	recyclingApplicationsGroup, err := gitlabLib.GetCreatedGroup(ctx, config.RootGroup.ID,
-		config.RootGroup.FullPath, _recyclingApplications)
+		config.RootGroup.FullPath, _recyclingApplications, config.DefaultVisibility)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +115,8 @@ func (g appGitopsRepo) CreateOrUpdateApplication(ctx context.Context,
 			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 				return err
 			}
-			parentGroup, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.applicationsGroup.ID)
+			parentGroup, err = g.gitlabLib.CreateGroup(ctx, application, application,
+				&g.applicationsGroup.ID, g.defaultVisibility)
 			if err != nil {
 				return err
 			}

@@ -307,7 +307,8 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	rootGroup, err := gitlabGitops.GetGroup(ctx, rootGroupPath)
 	if err != nil {
 		log.Printf("failed to get gitops root group, error: %s, start to create it", err.Error())
-		rootGroup, err = gitlabGitops.CreateGroup(ctx, rootGroupPath, rootGroupPath, nil)
+		rootGroup, err = gitlabGitops.CreateGroup(ctx, rootGroupPath, rootGroupPath,
+			nil, coreConfig.GitopsRepoConfig.DefaultVisibility)
 		if err != nil {
 			panic(err)
 		}
