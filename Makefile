@@ -1,73 +1,162 @@
+# Copyright 2023 The Horizoncd Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# ==============================================================================
+# define the default goal
+#
+
+# Build all by default, even if it's not first
 .DEFAULT_GOAL := help
-SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
-# Declare all targets as phony targets
-.PHONY: all build swagger swagger-run job core clean lint ut imports help 
+# ==============================================================================
+# Build options
 
-all: tidy gen format lint cover build
+# TODO: It is recommended to refactor horizon cmd module with cobra and add version information. It should be placed in pkg directory
+ROOT_PACKAGE=github.com/horizoncd/horizon
+#VERSION_PACKAGE=github.com/horizoncd/horizon/pkg/version
+
+# ==============================================================================
+# Includes
+include scripts/make-rules/common.mk # make sure include common.mk at the first include line
+include scripts/make-rules/golang.mk
+include scripts/make-rules/image.mk
+#include scripts/make-rules/deploy.mk
+include scripts/make-rules/copyright.mk
+include scripts/make-rules/gen.mk
+#include scripts/make-rules/release.mk
+#include scripts/make-rules/swagger.mk
+#include scripts/make-rules/dependencies.mk
+include scripts/make-rules/tools.mk
+
+# ==============================================================================
+# Usage
+
+define USAGE_OPTIONS
+
+Options:
+
+  DEBUG            Whether or not to generate debug symbols. Default is 0.
+
+  BINS             Binaries to build. Default is all binaries under cmd.
+                   This option is available when using: make {build}(.multiarch)
+                   Example: make build BINS="app"
+
+  PLATFORMS        Platform to build for. Default is linux_arm64 and linux_amd64.
+                   This option is available when using: make {build}.multiarch
+                   Example: make build.multiarch PLATFORMS="linux_arm64 linux_amd64"
+
+  V                Set to 1 enable verbose build. Default is 0.
+endef
+export USAGE_OPTIONS
+
+# ==============================================================================
+# Targets
+
+## all: Run all targets
+.PHONY: all
+all: tidy gen add-copyright format lint cover build
 
 ## build: Build the project for horizon
+.PHONY: build
 build:
-	@mkdir -p bin && export CGO_ENABLED=0 && go build -o bin/app -ldflags '-s -w' ./core/main.go
+	@$(MAKE) go.build
 
 ## swagger: Build the swagger
+.PHONY: swagger
 swagger:
-ifeq ($(shell uname -m),arm64)
-	@docker build -t horizon-swagger -f build/swagger/Dockerfile . --platform linux/arm64
-else
-	@docker build -t horizon-swagger -f build/swagger/Dockerfile .
-endif
+	@$(MAKE) image.swagger
 
-## Run a swagger server locally
-swagger-run: swagger
-	@echo "===========> Swagger is available at http://localhost:80"
-	@docker run --rm -p 80:8080 horizon-swagger
-
-## job: Build the job
-job:
-ifeq ($(shell uname -m),arm64)
-	@docker build -t horizon-job -f build/job/Dockerfile . --platform linux/arm64
-else
-	@docker build -t horizon-job -f build/job/Dockerfile .
-endif
+## swagger-run: Run a swagger server locally
+.PHONY: swagger-run
+swagger-run: 
+	@$(MAKE) go.swagger-run
 
 ## core: Build the core
+.PHONY: core
 core:
-ifeq ($(shell uname -m),arm64)
-	@docker build -t horizon-core -f build/core/Dockerfile . --platform linux/arm64
-else
-	@docker build -t horizon-core -f build/core/Dockerfile .
-endif
+	@$(MAKE) image.core
 
-## clean: Clean the project and remove the docker images
-clean:
-	@echo "===========> Cleaning all build output"
-	@docker rmi -f horizon-swagger
-	@docker rmi -f horizon-job
-	@docker rmi -f horizon-core
-
-## lint: Run the golangci-lint
+## lint: Check syntax and styling of go sources.
+.PHONY: lint
 lint:
-	@echo "===========> Linting the code"
-	@golangci-lint run --verbose
+	@$(MAKE) go.lint
 
-## ut: Run the unit tests
-ut:
-	@sh .unit-test.sh
+## format: Gofmt (reformat) package sources (exclude vendor dir if existed).
+.PHONY: format
+format: tools.verify.golines tools.verify.goimports
+	@echo "===========> Formating codes"
+	@$(FIND) -type f -name '*.go' | $(XARGS) gofmt -s -w
+	@$(FIND) -type f -name '*.go' | $(XARGS) $(TOOLS_DIR)/goimports -w -local $(ROOT_PACKAGE)
+	@$(FIND) -type f -name '*.go' | $(XARGS) $(TOOLS_DIR)/golines -w --max-len=120 --reformat-tags --shorten-comments --ignore-generated .
+	@$(GO) mod edit -fmt
+
+## gen: Generate all necessary files.
+.PHONY: gen
+gen:
+	@$(MAKE) gen.run
+
+## verify-copyright: Verify the license headers for all files.
+.PHONY: verify-license
+verify-license:
+	@$(MAKE) copyright.verify
+
+## add-license: Add copyright ensure source code files have license headers.
+.PHONY: add-license
+add-license:
+	@$(MAKE) copyright.add
+
+## tools: Install dependent tools.
+.PHONY: tools
+tools:
+	@$(MAKE) tools.install
+
+## test: Run unit test.
+.PHONY: test
+test:
+	@$(MAKE) go.test
+
+## cover: Run unit test and get test coverage.
+.PHONY: cover 
+cover:
+	@$(MAKE) go.test.cover
 
 ## imports: task to automatically handle import packages in Go files using goimports tool
+.PHONY: imports
 imports:
-	@goimports -l -w $(SRC)
+	@$(MAKE) go.imports
 
+## clean: Remove all files that are created by building. 
+.PHONY: clean
+clean:
+	@$(MAKE) go.clean
 
-## help: Display help information
+## rmi: Clean the project and remove the docker images
+.PHONY: rmi
+rmi:
+	@$(MAKE) go.rmi
+
+## tidy: tidy go.mod
+.PHONY: tidy
+tidy:
+	@$(GO) mod tidy
+
+## help: Show this help info.
+.PHONY: help
 help: Makefile
-	@echo ""
-	@echo "Usage:"
-	@echo ""
-	@echo "  make [comment]"
-	@echo ""
-	@echo "Comments:"
-	@echo ""
-	@awk -F ':|##' '/^[^\.%\t][^\t]*:.*##/{printf "  \033[36m%-20s\033[0m %s\n", $$1, $$NF}' $(MAKEFILE_LIST) | sort
-	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /'
+	$(call makehelp)
+
+## help-all: Show all help details info.
+.PHONY: help-all
+help-all: go.help copyright.help tools.help image.help help
+	$(call makeallhelp)
