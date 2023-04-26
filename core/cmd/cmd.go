@@ -451,7 +451,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		ApplicationGitRepo:   applicationGitRepo,
 		TemplateSchemaGetter: templateSchemaGetter,
 		CD: cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper,
-			coreConfig.GitopsRepoConfig.DefaultVisibility),
+			coreConfig.GitopsRepoConfig.DefaultBranch),
 		K8sUtil:        cd.NewK8sUtil(),
 		OutputGetter:   outputGetter,
 		TektonFty:      tektonFty,
