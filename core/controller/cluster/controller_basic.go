@@ -133,9 +133,15 @@ func (c *controller) List(ctx context.Context, query *q.Query) ([]*ListClusterWi
 }
 
 func (c *controller) ListByApplication(ctx context.Context,
-	query *q.Query) (_ int, _ []*ListClusterResponse, err error) {
+	query *q.Query) (_ int, _ []*ListClusterWithFullResponse, err error) {
 	const op = "cluster controller: list cluster"
 	defer wlog.Start(ctx, op).StopPrint()
+
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	currentUserID := currentUser.GetID()
 
 	count, clustersWithEnvAndRegion, err := c.clusterMgr.List(ctx, query)
 	if err != nil {
@@ -160,7 +166,21 @@ func (c *controller) ListByApplication(ctx context.Context,
 		}
 	}
 
-	return count, clusters, nil
+	responses := make([]*ListClusterWithFullResponse, 0, len(clusters))
+	for _, cluster := range clusters {
+		responses = append(responses, &ListClusterWithFullResponse{
+			ListClusterResponse: cluster,
+		})
+	}
+
+	if _, ok := query.Keywords[common.ClusterQueryWithFavorite]; ok {
+		err = c.addIsFavoriteForClusters(ctx, currentUserID, responses)
+		if err != nil {
+			return 0, nil, err
+		}
+	}
+
+	return count, responses, nil
 }
 
 func (c *controller) getFullResponses(ctx context.Context,

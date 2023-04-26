@@ -301,7 +301,7 @@ type GetClusterByNameResponse struct {
 
 type ListClusterWithFullResponse struct {
 	*ListClusterResponse
-	IsFavorite *bool  `json:"isFavorite"`
+	IsFavorite *bool  `json:"isFavorite,omitempty"`
 	FullName   string `json:"fullName,omitempty"`
 	FullPath   string `json:"fullPath,omitempty"`
 }
