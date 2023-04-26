@@ -154,7 +154,7 @@ func NewController(config *config.Config, param *param.Param) Controller {
 		clusterGitRepo:        param.ClusterGitRepo,
 		applicationGitRepo:    param.ApplicationGitRepo,
 		commitGetter:          param.GitGetter,
-		cd:                    param.Cd,
+		cd:                    param.CD,
 		k8sutil:               param.K8sUtil,
 		applicationMgr:        param.ApplicationManager,
 		applicationSvc:        param.ApplicationSvc,
