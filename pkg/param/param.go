@@ -60,7 +60,7 @@ type Param struct {
 	Hook                 hook.Hook
 	ApplicationGitRepo   applicationgitrepo.ApplicationGitRepo
 	TemplateSchemaGetter templateschema.Getter
-	Cd                   cd.CD
+	CD                   cd.CD
 	K8sUtil              cd.K8sUtil
 	OutputGetter         output.Getter
 	TektonFty            factory.Factory

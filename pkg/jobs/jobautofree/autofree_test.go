@@ -126,7 +126,7 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	parameter := &param.Param{
 		AutoFreeSvc: service.New([]string{"dev"}),
 		Manager:     manager,
-		Cd:          cd,
+		CD:          cd,
 	}
 	mockPipelineManager := pipelinemockmanager.NewMockManager(mockCtl)
 	parameter.PipelinerunMgr = mockPipelineManager

@@ -128,7 +128,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, &herrors.HorizonErrNotFound{Source: herrors.GitlabResource}, perror.Cause(err))
 
 	// 2. create this group
-	group, err = g.CreateGroup(ctx, groupName, groupName, intToPtr(rootGroupID))
+	group, err = g.CreateGroup(ctx, groupName, groupName, intToPtr(rootGroupID), "private")
 	assert.Nil(t, err)
 	b, err := json.Marshal(group)
 	assert.Nil(t, err)
@@ -149,7 +149,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, project)
 
 	// 5. create a project
-	project, err = g.CreateProject(ctx, projectName, group.ID)
+	project, err = g.CreateProject(ctx, projectName, group.ID, "")
 	assert.Nil(t, err)
 	assert.Equal(t, projectName, project.Name)
 
@@ -284,7 +284,7 @@ func Test(t *testing.T) {
 
 	// 17. transfer a project
 	newGroupName := "newGroup"
-	_, err = g.CreateGroup(ctx, newGroupName, newGroupName, intToPtr(rootGroupID))
+	_, err = g.CreateGroup(ctx, newGroupName, newGroupName, intToPtr(rootGroupID), "private")
 	assert.Nil(t, err)
 
 	newGroupPath := fmt.Sprintf("%v/%v", rootGroupName, newGroupName)

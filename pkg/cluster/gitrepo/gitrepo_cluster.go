@@ -155,36 +155,39 @@ type ClusterGitRepo interface {
 	GetManifest(ctx context.Context, application,
 		cluster string, commit *string) (*pkgcommon.Manifest, error)
 }
-type clusterGitRepo struct {
+type clusterGitopsRepo struct {
 	gitlabLib              gitlablib.Interface
 	clustersGroup          *gitlab.Group
 	recyclingClustersGroup *gitlab.Group
 	templateRepo           templaterepo.TemplateRepo
 	defaultBranch          string
+	defaultVisibility      string
 }
 
 func NewClusterGitlabRepo(ctx context.Context, rootGroup *gitlab.Group,
 	templateRepo templaterepo.TemplateRepo,
-	gitlabLib gitlablib.Interface, defaultBranch string) (ClusterGitRepo, error) {
-	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath, common.GitopsGroupClusters)
+	gitlabLib gitlablib.Interface, defaultBranch string, defaultVisibility string) (ClusterGitRepo, error) {
+	clustersGroup, err := gitlabLib.GetCreatedGroup(ctx, rootGroup.ID, rootGroup.FullPath,
+		common.GitopsGroupClusters, defaultVisibility)
 	if err != nil {
 		return nil, err
 	}
 	recyclingClustersGroup, err := gitlabLib.GetCreatedGroup(ctx,
-		rootGroup.ID, rootGroup.FullPath, common.GitopsGroupRecyclingClusters)
+		rootGroup.ID, rootGroup.FullPath, common.GitopsGroupRecyclingClusters, defaultVisibility)
 	if err != nil {
 		return nil, err
 	}
-	return &clusterGitRepo{
+	return &clusterGitopsRepo{
 		gitlabLib:              gitlabLib,
 		clustersGroup:          clustersGroup,
 		recyclingClustersGroup: recyclingClustersGroup,
 		templateRepo:           templateRepo,
 		defaultBranch:          defaultBranch,
+		defaultVisibility:      defaultVisibility,
 	}, nil
 }
 
-func (g *clusterGitRepo) GetCluster(ctx context.Context,
+func (g *clusterGitopsRepo) GetCluster(ctx context.Context,
 	application, cluster, templateName string) (_ *ClusterFiles, err error) {
 	const op = "cluster git repo: get cluster"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -317,7 +320,7 @@ func (g *clusterGitRepo) GetCluster(ctx context.Context,
 	}, nil
 }
 
-func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
+func (g *clusterGitopsRepo) GetClusterValueFiles(ctx context.Context,
 	application, cluster string) (_ []ClusterValueFile, err error) {
 	const op = "cluster git repo: get cluster value files"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -389,7 +392,7 @@ func (g *clusterGitRepo) GetClusterValueFiles(ctx context.Context,
 	return clusterValueFiles, nil
 }
 
-func (g *clusterGitRepo) GetClusterTemplate(ctx context.Context, application,
+func (g *clusterGitopsRepo) GetClusterTemplate(ctx context.Context, application,
 	cluster string) (*ClusterTemplate, error) {
 	const op = "cluster git repo: get cluster template"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -418,7 +421,7 @@ func (g *clusterGitRepo) GetClusterTemplate(ctx context.Context, application,
 	return nil, perror.Wrapf(herrors.ErrParamInvalid,
 		"failed to get cluster template from chart")
 }
-func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
+func (g *clusterGitopsRepo) CreateCluster(ctx context.Context, params *CreateClusterParams) (err error) {
 	const op = "cluster git repo: create cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -429,13 +432,13 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 
 	// 1. create application group if necessary
 	appGroup, err := g.gitlabLib.GetCreatedGroup(ctx, g.clustersGroup.ID,
-		g.clustersGroup.FullPath, params.Application.Name)
+		g.clustersGroup.FullPath, params.Application.Name, g.defaultVisibility)
 	if err != nil {
 		return err
 	}
 
 	// 3. create cluster repo under appGroup
-	if _, err := g.gitlabLib.CreateProject(ctx, params.Cluster, appGroup.ID); err != nil {
+	if _, err := g.gitlabLib.CreateProject(ctx, params.Cluster, appGroup.ID, g.defaultVisibility); err != nil {
 		return err
 	}
 
@@ -556,7 +559,7 @@ func (g *clusterGitRepo) CreateCluster(ctx context.Context, params *CreateCluste
 	return nil
 }
 
-func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateClusterParams) error {
+func (g *clusterGitopsRepo) UpdateCluster(ctx context.Context, params *UpdateClusterParams) error {
 	const op = "cluster git repo: update cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -671,7 +674,8 @@ func (g *clusterGitRepo) UpdateCluster(ctx context.Context, params *UpdateCluste
 	return nil
 }
 
-func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster string, clusterID uint) (err error) {
+func (g *clusterGitopsRepo) DeleteCluster(ctx context.Context,
+	application, cluster string, clusterID uint) (err error) {
 	const op = "cluster git repo: delete cluster"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -681,7 +685,8 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return err
 		}
-		_, err = g.gitlabLib.CreateGroup(ctx, application, application, &g.recyclingClustersGroup.ID)
+		_, err = g.gitlabLib.CreateGroup(ctx, application, application,
+			&g.recyclingClustersGroup.ID, g.defaultVisibility)
 		if err != nil {
 			return err
 		}
@@ -702,7 +707,7 @@ func (g *clusterGitRepo) DeleteCluster(ctx context.Context, application, cluster
 		fmt.Sprintf("%v/%v", g.recyclingClustersGroup.FullPath, application))
 }
 
-func (g *clusterGitRepo) HardDeleteCluster(ctx context.Context, application,
+func (g *clusterGitopsRepo) HardDeleteCluster(ctx context.Context, application,
 	cluster string) (err error) {
 	const op = "cluster git repo: hard delete cluster"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -711,7 +716,7 @@ func (g *clusterGitRepo) HardDeleteCluster(ctx context.Context, application,
 	return g.gitlabLib.DeleteProject(ctx, pid)
 }
 
-func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
+func (g *clusterGitopsRepo) CompareConfig(ctx context.Context, application,
 	cluster string, from, to *string) (_ string, err error) {
 	const op = "cluster git repo: compare config"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -739,7 +744,7 @@ func (g *clusterGitRepo) CompareConfig(ctx context.Context, application,
 	return diffStr, nil
 }
 
-func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster,
+func (g *clusterGitopsRepo) MergeBranch(ctx context.Context, application, cluster,
 	sourceBranch, targetBranch string, pipelineRunID *uint) (_ string, err error) {
 	removeSourceBranch := false
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
@@ -790,7 +795,7 @@ func (g *clusterGitRepo) MergeBranch(ctx context.Context, application, cluster,
 	return mr.MergeCommitSHA, nil
 }
 
-func (g *clusterGitRepo) GetManifest(ctx context.Context, application,
+func (g *clusterGitopsRepo) GetManifest(ctx context.Context, application,
 	cluster string, commit *string) (*pkgcommon.Manifest, error) {
 	const op = "cluster git repo: get manifest"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -823,7 +828,7 @@ func (g *clusterGitRepo) GetManifest(ctx context.Context, application,
 	return manifest, nil
 }
 
-func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, cluster string,
+func (g *clusterGitopsRepo) GetPipelineOutput(ctx context.Context, application, cluster string,
 	template string) (interface{}, error) {
 	ret := make(map[string]interface{})
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
@@ -847,7 +852,7 @@ func (g *clusterGitRepo) GetPipelineOutput(ctx context.Context, application, clu
 	return pipelineOutput, nil
 }
 
-func (g *clusterGitRepo) getPipelineOutput(ctx context.Context,
+func (g *clusterGitopsRepo) getPipelineOutput(ctx context.Context,
 	application, cluster string) (map[string]map[string]interface{}, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	content, err := g.gitlabLib.GetFile(ctx, pid, GitOpsBranch, common.GitopsFilePipelineOutput)
@@ -873,7 +878,7 @@ func (g *clusterGitRepo) getPipelineOutput(ctx context.Context,
 	return pipelineOutput, nil
 }
 
-func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
+func (g *clusterGitopsRepo) UpdatePipelineOutput(ctx context.Context, application, cluster, template string,
 	pipelineOutput interface{}) (commitID string, err error) {
 	const op = "cluster git repo: update pipeline output"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -944,7 +949,7 @@ func (g *clusterGitRepo) UpdatePipelineOutput(ctx context.Context, application, 
 	return commit.ID, nil
 }
 
-func (g *clusterGitRepo) GetRestartTime(ctx context.Context, application, cluster string,
+func (g *clusterGitopsRepo) GetRestartTime(ctx context.Context, application, cluster string,
 	template string) (string, error) {
 	ret := make(map[string]map[string]string)
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
@@ -969,7 +974,7 @@ func (g *clusterGitRepo) GetRestartTime(ctx context.Context, application, cluste
 	return restartStr, nil
 }
 
-func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
+func (g *clusterGitopsRepo) UpdateRestartTime(ctx context.Context,
 	application, cluster, template string) (_ string, err error) {
 	const op = "cluster git repo: update restartTime"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -1011,7 +1016,7 @@ func (g *clusterGitRepo) UpdateRestartTime(ctx context.Context,
 	return commit.ID, nil
 }
 
-func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
+func (g *clusterGitopsRepo) GetConfigCommit(ctx context.Context,
 	application, cluster string) (_ *ClusterCommit, err error) {
 	const op = "cluster git repo: get config commit"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -1044,7 +1049,7 @@ func (g *clusterGitRepo) GetConfigCommit(ctx context.Context,
 	}, nil
 }
 
-func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo {
+func (g *clusterGitopsRepo) GetRepoInfo(ctx context.Context, application, cluster string) *RepoInfo {
 	repoURL := g.gitlabLib.GetHTTPURL(ctx)
 	return &RepoInfo{
 		GitRepoURL: fmt.Sprintf("%v/%v/%v/%v.git", repoURL, g.clustersGroup.FullPath, application, cluster),
@@ -1053,7 +1058,7 @@ func (g *clusterGitRepo) GetRepoInfo(ctx context.Context, application, cluster s
 	}
 }
 
-func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
+func (g *clusterGitopsRepo) GetEnvValue(ctx context.Context,
 	application, cluster, templateName string) (_ *EnvValue, err error) {
 	const op = "cluster git repo: get config commit"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -1074,7 +1079,7 @@ func (g *clusterGitRepo) GetEnvValue(ctx context.Context,
 	return envMap[templateName][common.GitopsEnvValueNamespace], nil
 }
 
-func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, commit string) (_ string, err error) {
+func (g *clusterGitopsRepo) Rollback(ctx context.Context, application, cluster, commit string) (_ string, err error) {
 	const op = "cluster git repo: rollback"
 	defer wlog.Start(ctx, op).StopPrint()
 
@@ -1142,7 +1147,7 @@ func (g *clusterGitRepo) Rollback(ctx context.Context, application, cluster, com
 	return newCommit.ID, nil
 }
 
-func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, templateName string,
+func (g *clusterGitopsRepo) UpdateTags(ctx context.Context, application, cluster, templateName string,
 	tags []*tagmodels.Tag) (err error) {
 	const op = "cluster git repo: update tags"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -1199,11 +1204,11 @@ func (g *clusterGitRepo) UpdateTags(ctx context.Context, application, cluster, t
 	return nil
 }
 
-func (g *clusterGitRepo) DefaultBranch() string {
+func (g *clusterGitopsRepo) DefaultBranch() string {
 	return g.defaultBranch
 }
 
-func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
+func (g *clusterGitopsRepo) UpgradeCluster(ctx context.Context,
 	param *UpgradeValuesParam) (string, error) {
 	const op = "cluster git repo: upgrade cluster"
 	defer wlog.Start(ctx, op).StopPrint()
@@ -1538,14 +1543,14 @@ func (g *clusterGitRepo) UpgradeCluster(ctx context.Context,
 }
 
 // assembleApplicationValue assemble application.yaml data
-func (g *clusterGitRepo) assembleApplicationValue(params *BaseParams) map[string]map[string]interface{} {
+func (g *clusterGitopsRepo) assembleApplicationValue(params *BaseParams) map[string]map[string]interface{} {
 	ret := make(map[string]map[string]interface{})
 	ret[params.TemplateRelease.ChartName] = params.ApplicationJSONBlob
 	return ret
 }
 
 // assembleApplicationValue assemble pipeline.yaml data
-func (g *clusterGitRepo) assemblePipelineValue(params *BaseParams) map[string]map[string]interface{} {
+func (g *clusterGitopsRepo) assemblePipelineValue(params *BaseParams) map[string]map[string]interface{} {
 	ret := make(map[string]map[string]interface{})
 	// the default version prefix pipeline value with template ChartName
 	if params.Version == "" {
@@ -1557,7 +1562,7 @@ func (g *clusterGitRepo) assemblePipelineValue(params *BaseParams) map[string]ma
 }
 
 // assembleSreValue assemble sre value data
-func (g *clusterGitRepo) assembleSREValue(params *CreateClusterParams) map[string]interface{} {
+func (g *clusterGitopsRepo) assembleSREValue(params *CreateClusterParams) map[string]interface{} {
 	ret := make(map[string]interface{})
 	ret[params.TemplateRelease.ChartName] = make(map[string]string)
 	return ret
@@ -1578,7 +1583,7 @@ func getNamespace(params *BaseParams) string {
 	return fmt.Sprintf("%v-%v", params.Environment, params.Application.GroupID)
 }
 
-func (g *clusterGitRepo) assembleEnvValue(params *BaseParams) map[string]map[string]*EnvValue {
+func (g *clusterGitopsRepo) assembleEnvValue(params *BaseParams) map[string]map[string]*EnvValue {
 	envMap := make(map[string]*EnvValue)
 	envMap[common.GitopsEnvValueNamespace] = &EnvValue{
 		Environment: params.Environment,
@@ -1621,7 +1626,7 @@ type BaseValueTemplate struct {
 
 // assembleBaseValue assemble base value. return a map, key is template name,
 // and value is a map which key is "horizon", and value is *BaseValue
-func (g *clusterGitRepo) assembleBaseValue(params *BaseParams) map[string]map[string]*BaseValue {
+func (g *clusterGitopsRepo) assembleBaseValue(params *BaseParams) map[string]map[string]*BaseValue {
 	baseMap := make(map[string]*BaseValue)
 	baseMap[common.GitopsBaseValueNamespace] = &BaseValue{
 		Application: params.Application.Name,
@@ -1652,7 +1657,7 @@ type Dependency struct {
 	Repository string `yaml:"repository"`
 }
 
-func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
+func (g *clusterGitopsRepo) assembleChart(params *BaseParams) (*Chart, error) {
 	templateRepo := g.templateRepo.GetLoc()
 	return &Chart{
 		APIVersion: "v2",
@@ -1703,7 +1708,7 @@ func (g *clusterGitRepo) assembleChart(params *BaseParams) (*Chart, error) {
 //			"diff": "..."
 //		}
 //	]
-func (g *clusterGitRepo) revertAction(ctx context.Context, application, cluster,
+func (g *clusterGitopsRepo) revertAction(ctx context.Context, application, cluster,
 	commit string, diff gitlab.Diff) (*gitlablib.CommitAction, error) {
 	if diff.DeletedFile {
 		// file is deleted from gitops branch to the commit
@@ -1745,7 +1750,7 @@ func (g *clusterGitRepo) revertAction(ctx context.Context, application, cluster,
 }
 
 // readFile gets file for specific revision, defaults to gitOps branch
-func (g *clusterGitRepo) readFile(ctx context.Context, application, cluster,
+func (g *clusterGitopsRepo) readFile(ctx context.Context, application, cluster,
 	fileName string, commit *string) ([]byte, error) {
 	pid := fmt.Sprintf("%v/%v/%v", g.clustersGroup.FullPath, application, cluster)
 	if commit != nil {

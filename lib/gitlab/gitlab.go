@@ -46,7 +46,7 @@ type Interface interface {
 	// The parentID is alternative, if you specify the parentID, it will
 	// create a subgroup of this parent.
 	// See https://docs.gitlab.com/ee/api/groups.html#new-group for more information.
-	CreateGroup(ctx context.Context, name, path string, parentID *int) (*gitlab.Group, error)
+	CreateGroup(ctx context.Context, name, path string, parentID *int, visibility string) (*gitlab.Group, error)
 
 	// DeleteGroup delete a gitlab group with the given gid.
 	// The gid can be the group's ID or relative path such as first/second/third.
@@ -60,7 +60,7 @@ type Interface interface {
 
 	// CreateProject create a project under the specified group.
 	// See https://docs.gitlab.com/ee/api/projects.html#create-project for more information.
-	CreateProject(ctx context.Context, name string, groupID int) (*gitlab.Project, error)
+	CreateProject(ctx context.Context, name string, groupID int, visibility string) (*gitlab.Project, error)
 
 	// DeleteProject delete a project with the given pid.
 	// The pid can be the project's ID or relative path such as fist/second.
@@ -157,7 +157,8 @@ type Interface interface {
 
 	GetHTTPURL(ctx context.Context) string
 
-	GetCreatedGroup(ctx context.Context, parentID int, parentPath string, name string) (*gitlab.Group, error)
+	GetCreatedGroup(ctx context.Context, parentID int, parentPath string,
+		name string, visibility string) (*gitlab.Group, error)
 }
 
 var _ Interface = (*helper)(nil)
@@ -245,14 +246,18 @@ func (h *helper) ListGroupProjects(ctx context.Context, gid interface{},
 	return projects, nil
 }
 
-func (h *helper) CreateGroup(ctx context.Context, name, path string, parentID *int) (_ *gitlab.Group, err error) {
+func (h *helper) CreateGroup(ctx context.Context, name, path string,
+	parentID *int, visibility string) (_ *gitlab.Group, err error) {
 	const op = "gitlab: create group"
 	defer wlog.Start(ctx, op).StopPrint()
 
+	visibilityValue := gitlab.VisibilityValue(visibility)
+
 	group, rsp, err := h.client.Groups.CreateGroup(&gitlab.CreateGroupOptions{
-		Name:     &name,
-		Path:     &path,
-		ParentID: parentID,
+		Name:       &name,
+		Path:       &path,
+		ParentID:   parentID,
+		Visibility: &visibilityValue,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
@@ -282,15 +287,19 @@ func (h *helper) GetProject(ctx context.Context, pid interface{}) (_ *gitlab.Pro
 	return project, nil
 }
 
-func (h *helper) CreateProject(ctx context.Context, name string, groupID int) (_ *gitlab.Project, err error) {
+func (h *helper) CreateProject(ctx context.Context, name string,
+	groupID int, visibility string) (_ *gitlab.Project, err error) {
 	const op = "gitlab: create project"
 	defer wlog.Start(ctx, op).StopPrint()
+
+	visibilityValue := gitlab.VisibilityValue(visibility)
 
 	project, rsp, err := h.client.Projects.CreateProject(&gitlab.CreateProjectOptions{
 		InitializeWithReadme: func() *bool { b := true; return &b }(),
 		Name:                 &name,
 		Path:                 &name,
 		NamespaceID:          &groupID,
+		Visibility:           &visibilityValue,
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
@@ -588,14 +597,14 @@ func (h *helper) GetHTTPURL(ctx context.Context) string {
 }
 
 func (h *helper) GetCreatedGroup(ctx context.Context, parentID int,
-	parentFullPath string, name string) (*gitlab.Group, error) {
+	parentFullPath string, name string, visibility string) (*gitlab.Group, error) {
 	var group *gitlab.Group
 	group, err := h.GetGroup(ctx, fmt.Sprintf("%v/%v", parentFullPath, name))
 	if err != nil {
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); !ok {
 			return nil, err
 		}
-		return h.CreateGroup(ctx, name, name, &parentID)
+		return h.CreateGroup(ctx, name, name, &parentID, visibility)
 	}
 
 	return group, nil

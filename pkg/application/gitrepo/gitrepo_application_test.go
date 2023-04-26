@@ -69,6 +69,8 @@ var (
 	g             gitlablib.Interface
 	defaultBranch string
 
+	defaultVisibility string
+
 	rootGroupName string
 	rootGroup     *gitlab.Group
 	app           = "app"
@@ -170,6 +172,8 @@ func testInit() error {
 		defaultBranch = "master"
 	}
 
+	defaultVisibility = "public"
+
 	g, err = gitlablib.New(p.Token, p.BaseURL)
 	if err != nil {
 		panic(err)
@@ -208,7 +212,7 @@ func TestV2(t *testing.T) {
 		return
 	}
 
-	r, err := NewApplicationGitlabRepo(ctx, rootGroup, g, defaultBranch)
+	r, err := NewApplicationGitlabRepo(ctx, g, ApplicationGitRepoConfig{rootGroup, defaultBranch, defaultVisibility})
 	assert.Nil(t, err)
 
 	defer func() {
