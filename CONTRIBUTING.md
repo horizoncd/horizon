@@ -7,9 +7,9 @@ This document provides guidelines and best practices to help you contribute effe
 
 ## Requirements
 
-Please meet the minimum version of the Go language published in [go.mod](./go.mod). If you want to manage the Go language version, we provide tools to install [gvm](https://github.com/moovweb/gvm) in our [Makefile](./Makefile)
+Please meet the minimum version of the Go language published in [go.mod](./go.mod).
 
-You'd better use Linux as the development environment, Linux with [Makefile](./Makefile) can help you quickly build and test horizon project.
+You'd better use Linux OR WSL as the development environment, Linux with [Makefile](./Makefile) can help you quickly build and test horizon project.
 
 If you are familiar with [Makefile](./Makefile) , you can easily see the clever design of the horizon Makefile. Storing the necessary tools such as golangci in the `/tools` directory can avoid some tool version issues.
 
@@ -17,39 +17,6 @@ The [Makefile](./Makefile) is for every developer, even if you don't know how to
 
 
 ## Code of Conduct
-
-We divide the problem into security and general problems:
-
-#### Reporting security issues
-
-Security issues are always treated seriously. As our usual principle, we discourage anyone to spread security issues. If you find a security issue of horizon, please do not discuss it in public and even do not open a public issue.
-
-You can also message us on [slack]((https://join.slack.com/t/horizoncd/shared_invite/zt-1pqpobiwn-1mgV60SIa1oi4mL1WXf7uA)) or chat with us on wechat.
-
-
-#### Reporting general issues
-
-To be honest, we regard every user of horizonas a very kind contributor. After experiencing horizon, you may have some feedback for the project. Then feel free to open an issue via [NEW ISSUE](https://github.com/horizoncd/horizon/issues/new/choose).
-
-Since we collaborate project horizon in a distributed way, we appreciate **WELL-WRITTEN**, **DETAILED**, **EXPLICIT** issue reports. To make the communication more efficient, we wish everyone could search if your issue is an existing one in the searching list. If you find it existing, please add your details in comments under the existing issue instead of opening a brand new one.
-
-To make the issue details as standard as possible, we setup an [ISSUE TEMPLATE](https://github.com/horizon/tree/main/.github/ISSUE_TEMPLATE) for issue reporters. You can find three kinds of issue templates there: question, bug report and feature request. Please **BE SURE** to follow the instructions to fill fields in template.
-
-**There are a lot of cases when you could open an issue:**
-
-+ bug report
-+ feature request
-+ horizon performance issues 
-+ feature proposal
-+ feature design
-+ help wanted
-+ doc incomplete
-+ test improvement
-+ any questions on horizon project 
-+ and so on 
-
-Also, we must be reminded when submitting a new question about horizon, please remember to remove the sensitive data from your post. Sensitive data could be password, secret key, network locations, private business data and so on.
-
 
 #### Code and doc contribution
 
@@ -81,7 +48,7 @@ Any substantial design deserves a design document. Design documents are written 
 
 Anybody can access the shared Drive for reading. To get access to comment. Once you've done that, head to the [shared Drive](https://drive.google.com/) and behold all the docs.
 
-In addition to that, we'd love to invite you to [join our Slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1pqpobiwn-1mgV60SIa1oi4mL1WXf7uA) where you can play with your imagination, tell us what you're working on, and get a quick response.
+In addition to that, we'd love to invite you to [join our Slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1sehbmzcx-dgIwaExNR4fZKXppj5kmgQ) where you can play with your imagination, tell us what you're working on, and get a quick response.
 
 When documenting a new design, we recommend a 2-step approach:
 
@@ -90,7 +57,7 @@ When documenting a new design, we recommend a 2-step approach:
 
 In order to contribute a feature to horizon you'll need to go through the following steps:
 
-+ Discuss your idea with the appropriate [working groups](https://join.slack.com/t/horizoncd/shared_invite/zt-1pqpobiwn-1mgV60SIa1oi4mL1WXf7uA) on the working group's Slack channel.
++ Discuss your idea with the appropriate [working groups](https://join.slack.com/t/horizoncd/shared_invite/zt-1sehbmzcx-dgIwaExNR4fZKXppj5kmgQ) on the working group's Slack channel.
 + Once there is general agreement that the feature is useful, create a GitHub issue to track the discussion. The issue should include information about the requirements and use cases that it is trying to address.
 + Include a discussion of the proposed design and technical details of the implementation in the issue.
 
@@ -128,7 +95,7 @@ To propose PR for the horizon item, we assume you have registered a GitHub ID. T
 
    ```bash
    ❯ cd horizon
-   ❯ git fetch upstream
+   ❯ git fetch upstream/main
    ❯ git checkout main
    ```
 
@@ -146,7 +113,7 @@ To propose PR for the horizon item, we assume you have registered a GitHub ID. T
    ❯ git rebase upstream/main
    ❯ make link	  # golangci-lint run -c .golangci.yml
    ❯ git add -A  # add changes to staging
-   ❯ git commit -a -s -m "message for your changes" # -s adds a Signed-off-by trailer
+   ❯ git commit -a -s -m "fix: message for your changes" # -s adds a Signed-off-by trailer
    ```
 
 6. **Push your branch** to your forked repository, it is recommended to have only one commit for a PR.
@@ -184,11 +151,42 @@ To propose PR for the horizon item, we assume you have registered a GitHub ID. T
    # then create pull request, and merge
    ```
 
-7. **File a pull request** to `horizoncd/horizon:main`
+7. **Oile a pull request** to `horizoncd/horizon:main`
 
    It is recommended to review your changes before filing a pull request. Check if your code doesn't conflict with the main branch and no redundant code is included.
 
 ## Style and Specification
+
+We divide the problem into security and general problems:
+
+#### Reporting security issues
+
+Security issues are always treated seriously. As our usual principle, we discourage anyone to spread security issues. If you find a security issue of horizon, please do not discuss it in public and even do not open a public issue.
+
+You can also message us on [slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1sehbmzcx-dgIwaExNR4fZKXppj5kmgQ) or chat with us on wechat.
+
+#### Reporting general issues
+
+To be honest, we regard every user of horizonas a very kind contributor. After experiencing horizon, you may have some feedback for the project. Then feel free to open an issue via [NEW ISSUE](https://github.com/horizoncd/horizon/issues/new/choose).
+
+Since we collaborate project horizon in a distributed way, we appreciate **WELL-WRITTEN**, **DETAILED**, **EXPLICIT** issue reports. To make the communication more efficient, we wish everyone could search if your issue is an existing one in the searching list. If you find it existing, please add your details in comments under the existing issue instead of opening a brand new one.
+
+To make the issue details as standard as possible, we setup an [ISSUE TEMPLATE](https://github.com/horizon/tree/main/.github/ISSUE_TEMPLATE) for issue reporters. You can find three kinds of issue templates there: question, bug report and feature request. Please **BE SURE** to follow the instructions to fill fields in template.
+
+**There are a lot of cases when you could open an issue:**
+
++ bug report
++ feature request
++ horizon performance issues 
++ feature proposal
++ feature design
++ help wanted
++ doc incomplete
++ test improvement
++ any questions on horizon project 
++ and so on 
+
+Also, we must be reminded when submitting a new question about horizon, please remember to remove the sensitive data from your post. Sensitive data could be password, secret key, network locations, private business data and so on.
 
 #### Commit Rules
 
@@ -262,13 +260,13 @@ You can find some very formal PR in [RFC](https://github.com/horizoncd/horizon/i
 
 **⚠️ DCO check:**
 
-We have a DCO check which runs on every PR to verify that the commit has been signed off.
-
-To sign off the last commit you made, you can use:
+We have a DCO check that runs on every pull request to ensure code quality and maintainability. This check verifies that the commit has been signed off, indicating that you have read and agreed to the provisions of the Developer Certificate of Origin. If you have not yet signed off on the commit, you can use the following command to sign off on the last commit you made:
 
 ```bash
-❯ git commit --amend --signoffgit commit --amend --signoff
+❯ git commit --amend --signoff
 ```
+
+Please note that signing off on a commit is a commitment that you have read and agreed to the provisions of the Developer Certificate of Origin. If you have not yet read this document, we strongly recommend that you take some time to read it carefully. If you have any questions about the content of this document, or if you need further assistance, please contact an administrator or relevant personnel.
 
 You can also automate signing off your commits by adding the following to your `.zshrc` or `.bashrc`:
 
