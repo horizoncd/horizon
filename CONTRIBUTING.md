@@ -95,8 +95,8 @@ To propose PR for the horizon item, we assume you have registered a GitHub ID. T
 
    ```bash
    ❯ cd horizon
-   ❯ git fetch upstream/main
-   ❯ git checkout main
+   ❯ git fetch upstream
+   ❯ git checkout upstream/main
    ```
 
    Create a new branch: 
@@ -151,7 +151,7 @@ To propose PR for the horizon item, we assume you have registered a GitHub ID. T
    # then create pull request, and merge
    ```
 
-7. **Oile a pull request** to `horizoncd/horizon:main`
+7. **Open a pull request** to `horizoncd/horizon:main`
 
    It is recommended to review your changes before filing a pull request. Check if your code doesn't conflict with the main branch and no redundant code is included.
 
@@ -190,7 +190,7 @@ Also, we must be reminded when submitting a new question about horizon, please r
 
 #### Commit Rules
 
-Actually in sealos, we take two rules serious when committing:
+Actually in Horizon, we take two rules serious when committing:
 
 **🥇 Commit Message:**
 
