@@ -28,6 +28,7 @@ import (
 	groupmanager "github.com/horizoncd/horizon/pkg/group/manager"
 	idpmanager "github.com/horizoncd/horizon/pkg/idp/manager"
 	membermanager "github.com/horizoncd/horizon/pkg/member"
+	metatagmanager "github.com/horizoncd/horizon/pkg/metatag/manager"
 	prmanager "github.com/horizoncd/horizon/pkg/pipelinerun/manager"
 	pipelinemanager "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/manager"
 	regionmanager "github.com/horizoncd/horizon/pkg/region/manager"
@@ -69,6 +70,7 @@ type Manager struct {
 	WebhookManager           webhookManager.Manager
 	EventManager             eventManager.Manager
 	TokenManager             tokenmanager.Manager
+	MetatagManager           metatagmanager.Manager
 }
 
 func InitManager(db *gorm.DB) *Manager {
@@ -98,5 +100,6 @@ func InitManager(db *gorm.DB) *Manager {
 		WebhookManager:           webhookManager.New(db),
 		EventManager:             eventManager.New(db),
 		TokenManager:             tokenmanager.New(db),
+		MetatagManager:           metatagmanager.New(db),
 	}
 }

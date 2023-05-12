@@ -545,7 +545,7 @@ CREATE TABLE `tb_event`
     KEY             `idx_resource_action` (`resource_id`,`resource_type`,`event_type`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
-  DEFAULT CHARSET = utf8mb4
+  DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE `tb_event_cursor`
 (
@@ -557,7 +557,7 @@ CREATE TABLE `tb_event_cursor`
     UNIQUE KEY `idx_value` (`position`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
-  DEFAULT CHARSET = utf8mb4
+  DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE `tb_webhook`
 (
@@ -577,7 +577,7 @@ CREATE TABLE `tb_webhook`
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
-  DEFAULT CHARSET = utf8mb4
+  DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE `tb_webhook_log`
 (

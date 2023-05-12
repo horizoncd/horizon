@@ -1,0 +1,107 @@
+# Copyright © 2023 Horizoncd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+openapi: 3.0.1
+info:
+  title: Horizon-Metatag-Restful
+  description: Restful API About Metatag
+  version: 2.0.0
+servers:
+  - url: "http://localhost:8080/"
+paths:
+  /apis/core/v2/metatags:
+    post:
+      tags:
+        - metatag
+      operationId: createMetatag
+      summary: create a metatag
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+    get:
+      tags:
+        - metatag
+      parameters:
+        - name: key
+          in: query
+          description: metatag key
+          required: false
+          schema:
+            type: string
+      operationId: listMetatags
+      summary: list metatags
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Metatag'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+  /apis/core/v2/metatagkeys:
+    get:
+      tags:
+        - metatag
+      operationId: listMetatagKeys
+      summary: list metatag keys
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "common.yaml#/components/schemas/Error"
+
+
+components:
+  schemas:
+    Metatag:
+      type: object
+      properties:
+        tagKey:
+          type: string
+        tagValue:
+          type: string
+        tagIdentity:
+          type: string
+        CreatedAt:
+          $ref: "common.yaml#/components/schemas/Date"
+        UpdatedAt:
+          $ref: "common.yaml#/components/schemas/Date"

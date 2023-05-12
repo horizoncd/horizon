@@ -70,6 +70,7 @@ var (
 	EventCursorInDB           = sourceType{name: "EventCursorInDB"}
 	WebhookInDB               = sourceType{name: "WebhookInDB"}
 	WebhookLogInDB            = sourceType{name: "WebhookLogInDB"}
+	DataMetatagInDB           = sourceType{name: "DataMetatagInDB"}
 
 	// S3
 	PipelinerunLog = sourceType{name: "PipelinerunLog"}

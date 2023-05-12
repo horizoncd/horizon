@@ -44,9 +44,9 @@ import (
 	groupctl "github.com/horizoncd/horizon/core/controller/group"
 	idpctl "github.com/horizoncd/horizon/core/controller/idp"
 	memberctl "github.com/horizoncd/horizon/core/controller/member"
+	metatagctl "github.com/horizoncd/horizon/core/controller/metatag"
 	oauthservicectl "github.com/horizoncd/horizon/core/controller/oauth"
 	oauthappctl "github.com/horizoncd/horizon/core/controller/oauthapp"
-	oauthcheckctl "github.com/horizoncd/horizon/core/controller/oauthcheck"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
 	regionctl "github.com/horizoncd/horizon/core/controller/region"
 	registryctl "github.com/horizoncd/horizon/core/controller/registry"
@@ -90,6 +90,7 @@ import (
 	groupv2 "github.com/horizoncd/horizon/core/http/api/v2/group"
 	idpv2 "github.com/horizoncd/horizon/core/http/api/v2/idp"
 	memberv2 "github.com/horizoncd/horizon/core/http/api/v2/member"
+	"github.com/horizoncd/horizon/core/http/api/v2/metatag"
 	oauthappv2 "github.com/horizoncd/horizon/core/http/api/v2/oauthapp"
 	pipelinerunv2 "github.com/horizoncd/horizon/core/http/api/v2/pipelinerun"
 	regionv2 "github.com/horizoncd/horizon/core/http/api/v2/region"
@@ -102,7 +103,6 @@ import (
 	userv2 "github.com/horizoncd/horizon/core/http/api/v2/user"
 	webhookv2 "github.com/horizoncd/horizon/core/http/api/v2/webhook"
 	"github.com/horizoncd/horizon/core/middleware"
-	"github.com/horizoncd/horizon/core/middleware/auth"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/cd"
@@ -133,8 +133,6 @@ import (
 	prehandlemiddle "github.com/horizoncd/horizon/core/middleware/prehandle"
 	regionmiddle "github.com/horizoncd/horizon/core/middleware/region"
 	tagmiddle "github.com/horizoncd/horizon/core/middleware/tag"
-	tokenmiddle "github.com/horizoncd/horizon/core/middleware/token"
-	usermiddle "github.com/horizoncd/horizon/core/middleware/user"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/pkg/application/gitrepo"
 	applicationservice "github.com/horizoncd/horizon/pkg/application/service"
@@ -489,7 +487,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers...)
 		applicationRegionCtl = applicationregionctl.NewController(parameter)
 		groupCtl             = groupctl.NewController(parameter)
-		oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(parameter)
+		//oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(parameter)
 		oauthAppCtl          = oauthappctl.NewController(parameter)
 		oauthServerCtl       = oauthservicectl.NewController(parameter)
 		regionCtl            = regionctl.NewController(parameter)
@@ -503,6 +501,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		scopeCtl             = scopectl.NewController(parameter)
 		webhookCtl           = webhookctl.NewController(parameter)
 		eventCtl             = eventctl.NewController(parameter)
+		metatagCtl           = metatagctl.NewController(parameter)
 	)
 
 	var (
@@ -562,6 +561,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		terminalAPIV2          = terminalv2.NewAPI(terminalCtl)
 		userAPIV2              = userv2.NewAPI(userCtl, store)
 		webhookAPIV2           = webhookv2.NewAPI(webhookCtl)
+		metatagAPIV2           = metatag.NewAPI(metatagCtl)
 	)
 
 	// start jobs
@@ -589,19 +589,19 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		regionmiddle.Middleware(parameter, applicationRegionCtl),
-		tokenmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
+		//tokenmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
 		//  user middleware, check user and attach current user to context.
-		usermiddle.Middleware(parameter, store, coreConfig,
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
-			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/internal/v2/.*")),
-			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
-			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login"))),
+		//usermiddle.Middleware(parameter, store, coreConfig,
+		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
+		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
+		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
+		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
+		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
+		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/internal/v2/.*")),
+		//	middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
+		//	middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login"))),
 		prehandlemiddle.Middleware(r, manager),
-		auth.Middleware(rbacAuthorizer, rbacSkippers...),
+		//auth.Middleware(rbacAuthorizer, rbacSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}
 	r.Use(middlewares...)
@@ -670,6 +670,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		terminalAPIV2,
 		userAPIV2,
 		webhookAPIV2,
+		metatagAPIV2,
 	}
 
 	// start cloud event server
