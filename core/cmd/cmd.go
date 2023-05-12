@@ -47,6 +47,7 @@ import (
 	metatagctl "github.com/horizoncd/horizon/core/controller/metatag"
 	oauthservicectl "github.com/horizoncd/horizon/core/controller/oauth"
 	oauthappctl "github.com/horizoncd/horizon/core/controller/oauthapp"
+	oauthcheckctl "github.com/horizoncd/horizon/core/controller/oauthcheck"
 	prctl "github.com/horizoncd/horizon/core/controller/pipelinerun"
 	regionctl "github.com/horizoncd/horizon/core/controller/region"
 	registryctl "github.com/horizoncd/horizon/core/controller/registry"
@@ -103,7 +104,10 @@ import (
 	userv2 "github.com/horizoncd/horizon/core/http/api/v2/user"
 	webhookv2 "github.com/horizoncd/horizon/core/http/api/v2/webhook"
 	"github.com/horizoncd/horizon/core/middleware"
+	"github.com/horizoncd/horizon/core/middleware/auth"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
+	tokenmiddle "github.com/horizoncd/horizon/core/middleware/token"
+	usermiddle "github.com/horizoncd/horizon/core/middleware/user"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/environment/service"
@@ -487,7 +491,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers...)
 		applicationRegionCtl = applicationregionctl.NewController(parameter)
 		groupCtl             = groupctl.NewController(parameter)
-		//oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(parameter)
+		oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(parameter)
 		oauthAppCtl          = oauthappctl.NewController(parameter)
 		oauthServerCtl       = oauthservicectl.NewController(parameter)
 		regionCtl            = regionctl.NewController(parameter)
@@ -589,19 +593,19 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		regionmiddle.Middleware(parameter, applicationRegionCtl),
-		//tokenmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
+		tokenmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
 		//  user middleware, check user and attach current user to context.
-		//usermiddle.Middleware(parameter, store, coreConfig,
-		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
-		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
-		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
-		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
-		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
-		//	middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/internal/v2/.*")),
-		//	middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
-		//	middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login"))),
+		usermiddle.Middleware(parameter, store, coreConfig,
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v1/terminal")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/front/v2/buildschema")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/login/oauth/access_token")),
+			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/apis/internal/v2/.*")),
+			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
+			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login"))),
 		prehandlemiddle.Middleware(r, manager),
-		//auth.Middleware(rbacAuthorizer, rbacSkippers...),
+		auth.Middleware(rbacAuthorizer, rbacSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}
 	r.Use(middlewares...)
