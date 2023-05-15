@@ -450,6 +450,7 @@ func (c *controller) ExecuteAction(ctx context.Context, clusterID uint,
 		Action:       action,
 		GVR:          gvr,
 		ResourceName: cluster.Name,
+		ClusterID:    clusterID,
 	})
 }
 

@@ -29,6 +29,7 @@ import (
 	kubeutil "github.com/argoproj/gitops-engine/pkg/utils/kube"
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/core/operater"
 	"github.com/horizoncd/horizon/pkg/argocd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
@@ -44,6 +45,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -88,18 +90,21 @@ type CD interface {
 }
 
 type cd struct {
-	kubeClientFty  kubeclient.Factory
-	factory        argocd.Factory
-	clusterGitRepo gitrepo.ClusterGitRepo
-	targetRevision string
+	kubeClientFty     kubeclient.Factory
+	informerFactories *operater.RegionInformers
+	factory           argocd.Factory
+	clusterGitRepo    gitrepo.ClusterGitRepo
+	targetRevision    string
 }
 
-func NewCD(clusterGitRepo gitrepo.ClusterGitRepo, argoCDMapper argocdconf.Mapper, targetRevision string) CD {
+func NewCD(informerFactories *operater.RegionInformers, clusterGitRepo gitrepo.ClusterGitRepo,
+	argoCDMapper argocdconf.Mapper, targetRevision string) CD {
 	return &cd{
-		kubeClientFty:  kubeclient.Fty,
-		factory:        argocd.NewFactory(argoCDMapper),
-		clusterGitRepo: clusterGitRepo,
-		targetRevision: targetRevision,
+		kubeClientFty:     kubeclient.Fty,
+		informerFactories: informerFactories,
+		factory:           argocd.NewFactory(argoCDMapper),
+		clusterGitRepo:    clusterGitRepo,
+		targetRevision:    targetRevision,
 	}
 }
 
@@ -184,12 +189,6 @@ func (c *cd) GetResourceTree(ctx context.Context,
 		return nil, err
 	}
 
-	_, kubeClient, err := c.kubeClientFty.
-		GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
-	if err != nil {
-		return nil, err
-	}
-
 	// get resourceTreeInArgo
 	resourceTreeInArgo, err := argo.GetApplicationTree(ctx, params.Cluster)
 	if err != nil {
@@ -204,7 +203,16 @@ func (c *cd) GetResourceTree(ctx context.Context,
 				return true
 			}
 			gt := getter.New(workload)
-			pods, err := gt.ListPods(node.ResourceNode, kubeClient)
+
+			var (
+				pods []corev1.Pod
+				err  error
+			)
+			_ = c.informerFactories.GetDynamicFactory(params.RegionEntity.ID,
+				func(factory dynamicinformer.DynamicSharedInformerFactory) error {
+					pods, err = gt.ListPods(node.ResourceNode, factory)
+					return nil
+				})
 			if err != nil {
 				return true
 			}

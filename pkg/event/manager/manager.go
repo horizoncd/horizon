@@ -17,6 +17,7 @@ package manager
 import (
 	"context"
 
+	perror "github.com/horizoncd/horizon/pkg/errors"
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -30,14 +31,18 @@ import (
 )
 
 type Manager interface {
-	CreateEvent(ctx context.Context, event *models.Event) (*models.Event, error)
-	ListEvents(ctx context.Context, offset, limit int) ([]*models.Event, error)
+	CreateEvent(ctx context.Context, event ...*models.Event) ([]*models.Event, error)
+	ListEvents(ctx context.Context, query *q.Query) ([]*models.Event, error)
 	ListEventsByRange(ctx context.Context, start, end uint) ([]*models.Event, error)
 	CreateOrUpdateCursor(ctx context.Context,
 		eventIndex *models.EventCursor) (*models.EventCursor, error)
-	GetCursor(ctx context.Context) (*models.EventCursor, error)
+	GetCursor(ctx context.Context, cursorType models.EventCursorType,
+		RegionIDs ...uint) (*models.EventCursor, error)
+	GetCursors(ctx context.Context, cursorType models.EventCursorType,
+		RegionIDs ...uint) ([]*models.EventCursor, error)
 	GetEvent(ctx context.Context, id uint) (*models.Event, error)
 	ListSupportEvents() map[string]string
+	DeleteEvents(ctx context.Context, id ...uint) (int64, error)
 }
 
 type manager struct {
@@ -51,18 +56,20 @@ func New(db *gorm.DB) Manager {
 }
 
 func (m *manager) CreateEvent(ctx context.Context,
-	event *models.Event) (*models.Event, error) {
+	events ...*models.Event) ([]*models.Event, error) {
 	const op = "event manager: create event"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	if event.ReqID == "" {
-		rid, err := requestid.FromContext(ctx)
-		if err != nil {
-			log.Warningf(ctx, "failed to get request id, err: %s", err.Error())
+	for _, event := range events {
+		if event.ReqID == "" {
+			rid, err := requestid.FromContext(ctx)
+			if err != nil {
+				log.Warningf(ctx, "failed to get request id, err: %s", err.Error())
+			}
+			event.ReqID = rid
 		}
-		event.ReqID = rid
 	}
-	e, err := m.dao.CreateEvent(ctx, event)
+	e, err := m.dao.CreateEvent(ctx, events...)
 	if err != nil {
 		return nil, herrors.NewErrCreateFailed(herrors.EventInDB, err.Error())
 	}
@@ -74,30 +81,44 @@ func (m *manager) CreateOrUpdateCursor(ctx context.Context,
 	eventCursor *models.EventCursor) (*models.EventCursor, error) {
 	const op = "event manager: create or update cursor"
 	defer wlog.Start(ctx, op).StopPrint()
+	if eventCursor.Type == models.CursorRegion {
+		if eventCursor.RegionID == 0 {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid, "region id is required")
+		}
+	}
 	return m.dao.CreateOrUpdateCursor(ctx, eventCursor)
 }
 
-func (m *manager) GetCursor(ctx context.Context) (*models.EventCursor, error) {
+func (m *manager) GetCursor(ctx context.Context, cursorType models.EventCursorType,
+	regionIDs ...uint) (*models.EventCursor, error) {
 	const op = "event manager: get cursor"
 	defer wlog.Start(ctx, op).StopPrint()
-	return m.dao.GetCursor(ctx)
+	return m.dao.GetCursor(ctx, cursorType, regionIDs...)
 }
 
-func (m *manager) ListEvents(ctx context.Context, offset, limit int) ([]*models.Event, error) {
+func (m *manager) GetCursors(ctx context.Context, cursorType models.EventCursorType,
+	regionIDs ...uint) ([]*models.EventCursor, error) {
+	const op = "event manager: get cursors"
+	defer wlog.Start(ctx, op).StopPrint()
+	return m.dao.GetCursors(ctx, cursorType, regionIDs...)
+}
+
+func (m *manager) ListEvents(ctx context.Context, query *q.Query) ([]*models.Event, error) {
 	const op = "event manager: list events"
 	defer wlog.Start(ctx, op).StopPrint()
-	return m.dao.ListEvents(ctx, &q.Query{
-		Keywords: q.KeyWords{
-			common.Offset: offset,
-			common.Limit:  limit,
-		},
-	})
+	if query == nil {
+		query = &q.Query{}
+	}
+	if query.Keywords == nil {
+		query.Keywords = q.KeyWords{}
+	}
+	return m.dao.List(ctx, query)
 }
 
 func (m *manager) ListEventsByRange(ctx context.Context, start, end uint) ([]*models.Event, error) {
 	const op = "event manager: list events by range"
 	defer wlog.Start(ctx, op).StopPrint()
-	return m.dao.ListEvents(ctx, &q.Query{
+	return m.dao.List(ctx, &q.Query{
 		Keywords: q.KeyWords{
 			common.StartID: start,
 			common.EndID:   end,
@@ -109,6 +130,12 @@ func (m *manager) GetEvent(ctx context.Context, id uint) (*models.Event, error) 
 	const op = "event manager: get event"
 	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.GetEvent(ctx, id)
+}
+
+func (m *manager) DeleteEvents(ctx context.Context, id ...uint) (int64, error) {
+	const op = "event manager: delete event"
+	defer wlog.Start(ctx, op).StopPrint()
+	return m.dao.DeleteEvents(ctx, id...)
 }
 
 var supportedEvents = map[string]string{
@@ -124,7 +151,9 @@ var supportedEvents = map[string]string{
 	models.ClusterRollbacked:      "Cluster has triggered a rollback task",
 	models.ClusterFreed:           "Cluster has been freed",
 	models.ClusterRestarted:       "Cluster has been restarted",
+	models.ClusterAction:          "Cluster has triggered an action",
 	models.ClusterPodsRescheduled: "Pods has been deleted to reschedule",
+	models.ClusterKubernetesEvent: "Kubernetes event associated with cluster has been triggered",
 }
 
 func (m *manager) ListSupportEvents() map[string]string {

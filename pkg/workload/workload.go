@@ -16,16 +16,27 @@ package workload
 
 import (
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	"github.com/horizoncd/horizon/core/operater"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 )
 
 var abilities = make([]Workload, 0, 4)
 
-func Register(ability Workload) {
+var Resources = make([]operater.Resource, 0, 16)
+
+func Register(ability Workload, gvrs ...schema.GroupVersionResource) {
 	abilities = append(abilities, ability)
+	gvrsUnderResource := make([]operater.Resource, 0, len(gvrs))
+	for _, gvr := range gvrs {
+		gvrsUnderResource = append(gvrsUnderResource, operater.Resource{
+			GVR: gvr,
+		})
+	}
+	Resources = append(Resources, gvrsUnderResource...)
 }
 
 type Handler func(workload Workload) bool
@@ -52,7 +63,8 @@ type GreyscaleReleaser interface {
 
 type PodsLister interface {
 	Workload
-	ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error)
+	ListPods(node *v1alpha1.ResourceNode,
+		factory dynamicinformer.DynamicSharedInformerFactory) ([]corev1.Pod, error)
 }
 
 type HealthStatusGetter interface {

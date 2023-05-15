@@ -83,6 +83,7 @@ import (
 	accessv2 "github.com/horizoncd/horizon/core/http/api/v2/access"
 	accesstokenv2 "github.com/horizoncd/horizon/core/http/api/v2/accesstoken"
 	applicationregionv2 "github.com/horizoncd/horizon/core/http/api/v2/applicationregion"
+	clusterv2 "github.com/horizoncd/horizon/core/http/api/v2/cluster"
 	codev2 "github.com/horizoncd/horizon/core/http/api/v2/code"
 	environmentv2 "github.com/horizoncd/horizon/core/http/api/v2/environment"
 	environmentregionv2 "github.com/horizoncd/horizon/core/http/api/v2/environmentregion"
@@ -104,18 +105,23 @@ import (
 	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/core/middleware/auth"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
+	"github.com/horizoncd/horizon/core/operater"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/environment/service"
 	"github.com/horizoncd/horizon/pkg/grafana"
 	"github.com/horizoncd/horizon/pkg/jobs"
-	"github.com/horizoncd/horizon/pkg/jobs/jobautofree"
-	"github.com/horizoncd/horizon/pkg/jobs/jobgrafanasync"
-	"github.com/horizoncd/horizon/pkg/jobs/jobwebhook"
+	"github.com/horizoncd/horizon/pkg/jobs/autofree"
+	"github.com/horizoncd/horizon/pkg/jobs/clean"
+	"github.com/horizoncd/horizon/pkg/jobs/eventhandler"
+	"github.com/horizoncd/horizon/pkg/jobs/grafanasync"
+	"github.com/horizoncd/horizon/pkg/jobs/k8sevent"
+	jobwebhook "github.com/horizoncd/horizon/pkg/jobs/webhook"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
 	"github.com/horizoncd/horizon/pkg/util/kube"
+	"github.com/horizoncd/horizon/pkg/workload"
 
 	templateschematagapi "github.com/horizoncd/horizon/core/http/api/v1/templateschematag"
 	terminalapi "github.com/horizoncd/horizon/core/http/api/v1/terminal"
@@ -164,7 +170,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
-	clusterv2 "github.com/horizoncd/horizon/core/http/api/v2/cluster"
 	"github.com/rbcervilla/redisstore/v8"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -256,9 +261,6 @@ func LoadConfig(flags *Flags) (*config.Config, error) {
 }
 
 func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
-	// init log
-	InitLog(flags)
-
 	// init roles
 	file, err := os.OpenFile(flags.RoleConfigFile, os.O_RDONLY, 0644)
 	if err != nil {
@@ -435,7 +437,8 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	}
 
 	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client)
-
+	regionInformers := operater.NewRegionInformers(manager.RegionMgr, 0)
+	regionInformers.Register(workload.Resources...)
 	parameter := &param.Param{
 		Manager:              manager,
 		OauthManager:         oauthManager,
@@ -450,9 +453,9 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		ScopeService:         scopeService,
 		ApplicationGitRepo:   applicationGitRepo,
 		TemplateSchemaGetter: templateSchemaGetter,
-		CD: cd.NewCD(clusterGitRepo, coreConfig.ArgoCDMapper,
+		CD: cd.NewCD(regionInformers, clusterGitRepo, coreConfig.ArgoCDMapper,
 			coreConfig.GitopsRepoConfig.DefaultBranch),
-		K8sUtil:        cd.NewK8sUtil(),
+		K8sUtil:        cd.NewK8sUtil(regionInformers, manager.EventManager),
 		OutputGetter:   outputGetter,
 		TektonFty:      tektonFty,
 		ClusterGitRepo: clusterGitRepo,
@@ -565,16 +568,18 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	)
 
 	// start jobs
+	cleaner := clean.New(coreConfig.Clean, manager)
 	autoFreeJob := func(ctx context.Context) {
-		jobautofree.Run(ctx, &coreConfig.AutoFreeConfig, parameter.UserManager, clusterCtl, prCtl)
+		autofree.Run(ctx, &coreConfig.AutoFreeConfig, manager.UserManager, clusterCtl, prCtl)
 	}
-	webhookJob := func(ctx context.Context) {
-		jobwebhook.Run(ctx, coreConfig.EventHandlerConfig, coreConfig.WebhookConfig, manager)
-	}
+	eventHandlerJob, eventHandlerSvc := eventhandler.New(ctx, coreConfig.EventHandlerConfig, manager)
+	webhookJob, _ := jobwebhook.New(ctx, eventHandlerSvc, coreConfig.WebhookConfig, manager)
 	grafanaSyncJob := func(ctx context.Context) {
-		jobgrafanasync.Run(ctx, coreConfig, manager, client)
+		grafanasync.Run(ctx, coreConfig, manager, client)
 	}
-	go jobs.Run(ctx, &coreConfig.JobConfig, autoFreeJob, webhookJob, grafanaSyncJob)
+	k8seventJob := k8sevent.New(coreConfig.KubernetesEvent, regionInformers, manager, mysqlDB)
+	go jobs.Run(ctx, &coreConfig.JobConfig, eventHandlerJob, webhookJob,
+		k8seventJob.Run, cleaner.Run, autoFreeJob, grafanaSyncJob)
 
 	// init server
 	r := gin.New()
@@ -704,6 +709,9 @@ func Run(flags *Flags) {
 
 	// enable pprof
 	runPProfServer(&configs.PProf)
+
+	// init log
+	InitLog(flags)
 
 	// init api
 	Init(ctx, flags, configs)

@@ -16,6 +16,7 @@ package deployment
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -26,12 +27,32 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/kubectl/pkg/polymorphichelpers"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+)
+
+var (
+	GVRDeployment = schema.GroupVersionResource{
+		Group:    "apps",
+		Version:  "v1",
+		Resource: "deployments",
+	}
+	GVRReplicaSet = schema.GroupVersionResource{
+		Group:    "apps",
+		Version:  "v1",
+		Resource: "replicasets",
+	}
+	GVRPod = schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "pods",
+	}
 )
 
 func init() {
-	workload.Register(ability)
+	workload.Register(ability, GVRDeployment, GVRReplicaSet, GVRPod)
 }
 
 // please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
@@ -41,6 +62,36 @@ type deployment struct{}
 
 func (*deployment) MatchGK(gk schema.GroupKind) bool {
 	return gk.Group == "apps" && gk.Kind == "Deployment"
+}
+
+func (*deployment) getDeploy(node *v1alpha1.ResourceNode,
+	factory dynamicinformer.DynamicSharedInformerFactory) (*v1.Deployment, error) {
+	obj, err := factory.ForResource(GVRDeployment).Lister().ByNamespace(node.Namespace).Get(node.Name)
+	if err != nil {
+		return nil,
+			herrors.NewErrGetFailed(herrors.ResourceInK8S,
+				fmt.Sprintf("failed to get deployment in k8s: deployment = %s, ns = %v, err = %v",
+					node.Name, node.Namespace, err),
+			)
+	}
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return nil,
+			herrors.NewErrGetFailed(herrors.ResourceInK8S,
+				fmt.Sprintf("failed to convert obj into unstructured: name = %s, ns = %v",
+					node.Name, node.Namespace),
+			)
+	}
+	deploy := &v1.Deployment{}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, deploy)
+	if err != nil {
+		return nil,
+			herrors.NewErrGetFailed(herrors.ResourceInK8S,
+				fmt.Sprintf("failed to convert unstructured into deployment: name = %s, ns = %v, err = %v",
+					node.Name, node.Namespace, err),
+			)
+	}
+	return deploy, nil
 }
 
 func (*deployment) getDeployByNode(node *v1alpha1.ResourceNode, client *kube.Client) (*v1.Deployment, error) {
@@ -68,21 +119,22 @@ func (d *deployment) IsHealthy(node *v1alpha1.ResourceNode,
 	return instance.Status.AvailableReplicas == *instance.Spec.Replicas, nil
 }
 
-func (d *deployment) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
-	instance, err := d.getDeployByNode(node, client)
+func (d *deployment) ListPods(node *v1alpha1.ResourceNode,
+	factory dynamicinformer.DynamicSharedInformerFactory) ([]corev1.Pod, error) {
+	instance, err := d.getDeploy(node, factory)
 	if err != nil {
 		return nil, err
 	}
 
-	selector := instance.Spec.Selector
-	pods, err := client.Basic.CoreV1().Pods(instance.ObjectMeta.Namespace).List(context.TODO(), metav1.ListOptions{
-		LabelSelector:   polymorphichelpers.MakeLabels(selector.MatchLabels),
-		ResourceVersion: "0",
-	})
+	selector := labels.SelectorFromSet(instance.Spec.Selector.MatchLabels)
+	objs, err := factory.ForResource(GVRPod).Lister().ByNamespace(node.Namespace).List(selector)
 	if err != nil {
 		return nil, err
 	}
-	return pods.Items, nil
+
+	pods := workload.ObjIntoPod(objs...)
+
+	return pods, nil
 }
 
 func (*deployment) Action(actionName string, un *unstructured.Unstructured) (*unstructured.Unstructured, error) {

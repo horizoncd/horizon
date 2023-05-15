@@ -135,6 +135,7 @@ type ExecuteActionParams struct {
 	Action       string
 	GVR          schema.GroupVersionResource
 	ResourceName string
+	ClusterID    uint
 }
 
 type ClusterAutoPromoteParams struct {

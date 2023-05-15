@@ -12,37 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jobwebhook
+package webhook
 
 import (
 	"context"
 	"log"
 
-	eventhandlercfg "github.com/horizoncd/horizon/pkg/config/eventhandler"
 	webhookcfg "github.com/horizoncd/horizon/pkg/config/webhook"
 	eventhandlersvc "github.com/horizoncd/horizon/pkg/eventhandler"
 	"github.com/horizoncd/horizon/pkg/eventhandler/wlgenerator"
+	"github.com/horizoncd/horizon/pkg/jobs"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	webhooksvc "github.com/horizoncd/horizon/pkg/webhook/service"
 )
 
-// Run runs the agent.
-func Run(ctx context.Context, eventHandlerConfig eventhandlercfg.Config,
-	webhookCfg webhookcfg.Config, mgrs *managerparam.Manager) {
-	// start event handler service to generate webhook log by events
-	eventHandlerService := eventhandlersvc.NewService(ctx, mgrs, eventHandlerConfig)
+// New runs the agent.
+func New(ctx context.Context, eventHandlerService eventhandlersvc.Service,
+	webhookCfg webhookcfg.Config, mgrs *managerparam.Manager) (jobs.Job, webhooksvc.Service) {
 	if err := eventHandlerService.RegisterEventHandler("webhook",
 		wlgenerator.NewWebhookLogGenerator(mgrs)); err != nil {
 		log.Printf("failed to register event handler, error: %s", err.Error())
+		panic(err)
 	}
-	eventHandlerService.Start()
-
-	// start webhook service with multi workers to consume webhook logs and send webhook events
 	webhookService := webhooksvc.NewService(ctx, mgrs, webhookCfg)
-	webhookService.Start()
 
-	<-ctx.Done()
-	// graceful exit
-	webhookService.StopAndWait()
-	eventHandlerService.StopAndWait()
+	return func(ctx context.Context) {
+		// start webhook service with multi workers to consume webhook logs and send webhook events
+		webhookService.Start()
+
+		<-ctx.Done()
+		// graceful exit
+		webhookService.StopAndWait()
+	}, webhookService
 }

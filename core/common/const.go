@@ -23,13 +23,19 @@ const (
 	TemplateRelease = "templateRelease"
 	TagSelector     = "tagSelector"
 
-	Offset    = "offset"
+	// Offset should be type int
+	Offset = "offset"
+	// Limit should be type int
 	Limit     = "limit"
 	StartID   = "startID"
 	EndID     = "endID"
 	EventType = "eventType"
+	WebhookID = "webhookID"
 	CreatedAt = "createdAt"
 	Enabled   = "enabled"
+	Orphaned  = "orphaned"
+	OrderBy   = "orderBy"
+	ReqID     = "reqID"
 
 	DefaultPageNumber = 1
 	DefaultPageSize   = 20

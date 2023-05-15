@@ -191,7 +191,17 @@ func (c *controller) ListWebhookLogs(ctx context.Context, wID uint,
 		}
 	}
 
-	webhookLogs, total, err := c.webhookMgr.ListWebhookLogs(ctx, wID, query, resources)
+	if query == nil {
+		query = &q.Query{}
+	}
+	if query.Keywords == nil {
+		query.Keywords = make(q.KeyWords)
+	}
+	query.Keywords[common.WebhookID] = wID
+	query.Keywords[common.Offset] = query.Offset()
+	query.Keywords[common.Limit] = query.Limit()
+	query.Keywords[common.OrderBy] = "e.created_at desc"
+	webhookLogs, total, err := c.webhookMgr.ListWebhookLogs(ctx, query, resources)
 	if err != nil {
 		return nil, total, err
 	}

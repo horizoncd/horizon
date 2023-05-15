@@ -21,12 +21,14 @@ import (
 	"github.com/horizoncd/horizon/pkg/config/argocd"
 	"github.com/horizoncd/horizon/pkg/config/authenticate"
 	"github.com/horizoncd/horizon/pkg/config/autofree"
+	"github.com/horizoncd/horizon/pkg/config/clean"
 	"github.com/horizoncd/horizon/pkg/config/db"
 	"github.com/horizoncd/horizon/pkg/config/eventhandler"
 	"github.com/horizoncd/horizon/pkg/config/git"
 	"github.com/horizoncd/horizon/pkg/config/gitlab"
 	"github.com/horizoncd/horizon/pkg/config/grafana"
 	"github.com/horizoncd/horizon/pkg/config/job"
+	"github.com/horizoncd/horizon/pkg/config/k8sevent"
 	"github.com/horizoncd/horizon/pkg/config/oauth"
 	"github.com/horizoncd/horizon/pkg/config/pprof"
 	"github.com/horizoncd/horizon/pkg/config/redis"
@@ -63,6 +65,8 @@ type Config struct {
 	CodeGitRepos           []*git.Repo             `yaml:"gitRepos"`
 	TokenConfig            token.Config            `yaml:"tokenConfig"`
 	TemplateUpgradeMapper  template.UpgradeMapper  `yaml:"templateUpgradeMapper"`
+	KubernetesEvent        k8sevent.Config         `yaml:"kubernetesEvent"`
+	Clean                  clean.Config            `yaml:"clean"`
 }
 
 func LoadConfig(configFilePath string) (*Config, error) {

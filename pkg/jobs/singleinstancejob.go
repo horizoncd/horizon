@@ -17,6 +17,7 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,8 +34,9 @@ type Job = func(ctx context.Context)
 
 // Run runs the job in a single instance
 func Run(ctx context.Context, jobconfig *jobconfig.Config, jobs ...Job) {
+	hostname := os.Getenv("HOSTNAME")
 	// get candidate name
-	candidateID := fmt.Sprintf("candidate-%s", uuid.New())
+	candidateID := fmt.Sprintf("%s-%s", hostname, uuid.New())
 
 	// get jobconfig in cluster
 	config, err := rest.InClusterConfig()
@@ -68,6 +70,7 @@ func Run(ctx context.Context, jobconfig *jobconfig.Config, jobs ...Job) {
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) {
 				for _, job := range jobs {
+					log.Debugf(ctx, "job %p is running", job)
 					go job(ctx)
 				}
 			},

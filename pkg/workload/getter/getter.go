@@ -24,6 +24,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/workload"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 )
 
 type Helper struct {
@@ -49,13 +50,14 @@ func (w *Helper) GetSteps(node *v1alpha1.ResourceNode, client *kube.Client) (*wo
 }
 
 // TODO: remove this after using informer
-func (w *Helper) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
+func (w *Helper) ListPods(node *v1alpha1.ResourceNode,
+	factory dynamicinformer.DynamicSharedInformerFactory) ([]corev1.Pod, error) {
 	lister, ok := w.inner.(workload.PodsLister)
 	if !ok {
 		return nil, perror.Wrapf(herrors.ErrMethodNotImplemented,
 			"workload %v not support list release", reflect.TypeOf(w.inner))
 	}
-	pods, err := lister.ListPods(node, client)
+	pods, err := lister.ListPods(node, factory)
 	if err != nil {
 		return nil,
 			herrors.NewErrGetFailed(herrors.ResourceInK8S,
