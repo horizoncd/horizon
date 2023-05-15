@@ -16,7 +16,7 @@ package workload
 
 import (
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
-	"github.com/horizoncd/horizon/core/operater"
+	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,13 +26,13 @@ import (
 
 var abilities = make([]Workload, 0, 4)
 
-var Resources = make([]operater.Resource, 0, 16)
+var Resources = make([]regioninformers.Resource, 0, 16)
 
 func Register(ability Workload, gvrs ...schema.GroupVersionResource) {
 	abilities = append(abilities, ability)
-	gvrsUnderResource := make([]operater.Resource, 0, len(gvrs))
+	gvrsUnderResource := make([]regioninformers.Resource, 0, len(gvrs))
 	for _, gvr := range gvrs {
-		gvrsUnderResource = append(gvrsUnderResource, operater.Resource{
+		gvrsUnderResource = append(gvrsUnderResource, regioninformers.Resource{
 			GVR: gvr,
 		})
 	}

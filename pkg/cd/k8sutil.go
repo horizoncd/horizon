@@ -26,10 +26,10 @@ import (
 	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/core/operater"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
@@ -51,11 +51,11 @@ type K8sUtil interface {
 }
 
 type util struct {
-	informerFactories *operater.RegionInformers
+	informerFactories *regioninformers.RegionInformers
 	eventMgr          eventmanager.Manager
 }
 
-func NewK8sUtil(factories *operater.RegionInformers, mgr eventmanager.Manager) K8sUtil {
+func NewK8sUtil(factories *regioninformers.RegionInformers, mgr eventmanager.Manager) K8sUtil {
 	return &util{
 		informerFactories: factories,
 		eventMgr:          mgr,

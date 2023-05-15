@@ -29,12 +29,12 @@ import (
 	kubeutil "github.com/argoproj/gitops-engine/pkg/utils/kube"
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/core/operater"
 	"github.com/horizoncd/horizon/pkg/argocd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
 	argocdconf "github.com/horizoncd/horizon/pkg/config/argocd"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
@@ -91,13 +91,13 @@ type CD interface {
 
 type cd struct {
 	kubeClientFty     kubeclient.Factory
-	informerFactories *operater.RegionInformers
+	informerFactories *regioninformers.RegionInformers
 	factory           argocd.Factory
 	clusterGitRepo    gitrepo.ClusterGitRepo
 	targetRevision    string
 }
 
-func NewCD(informerFactories *operater.RegionInformers, clusterGitRepo gitrepo.ClusterGitRepo,
+func NewCD(informerFactories *regioninformers.RegionInformers, clusterGitRepo gitrepo.ClusterGitRepo,
 	argoCDMapper argocdconf.Mapper, targetRevision string) CD {
 	return &cd{
 		kubeClientFty:     kubeclient.Fty,

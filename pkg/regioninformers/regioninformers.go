@@ -1,4 +1,4 @@
-package operater
+package regioninformers
 
 import (
 	"context"

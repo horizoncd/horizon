@@ -105,7 +105,6 @@ import (
 	"github.com/horizoncd/horizon/core/middleware"
 	"github.com/horizoncd/horizon/core/middleware/auth"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
-	"github.com/horizoncd/horizon/core/operater"
 	gitlablib "github.com/horizoncd/horizon/lib/gitlab"
 	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/environment/service"
@@ -117,6 +116,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/jobs/grafanasync"
 	"github.com/horizoncd/horizon/pkg/jobs/k8sevent"
 	jobwebhook "github.com/horizoncd/horizon/pkg/jobs/webhook"
+	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/token/generator"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	tokenstorage "github.com/horizoncd/horizon/pkg/token/storage"
@@ -437,7 +437,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	}
 
 	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client)
-	regionInformers := operater.NewRegionInformers(manager.RegionMgr, 0)
+	regionInformers := regioninformers.NewRegionInformers(manager.RegionMgr, 0)
 	regionInformers.Register(workload.Resources...)
 	parameter := &param.Param{
 		Manager:              manager,

@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
-	"github.com/horizoncd/horizon/core/operater"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/config/k8sevent"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/region/models"
+	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"gorm.io/gorm"
 	corev1 "k8s.io/api/core/v1"
@@ -41,13 +41,13 @@ var gvrEvent = schema.GroupVersionResource{
 
 type SuperVisor struct {
 	filter    *gvkFilter
-	informers *operater.RegionInformers
+	informers *regioninformers.RegionInformers
 	mgr       *managerparam.Manager
 	db        *gorm.DB
 	cacheMax  int
 }
 
-func New(config k8sevent.Config, informers *operater.RegionInformers,
+func New(config k8sevent.Config, informers *regioninformers.RegionInformers,
 	mgr *managerparam.Manager, db *gorm.DB) *SuperVisor {
 	v := &SuperVisor{
 		filter:    newGVKFilter(config),
@@ -61,7 +61,7 @@ func New(config k8sevent.Config, informers *operater.RegionInformers,
 }
 
 func (v *SuperVisor) Run(ctx context.Context) {
-	v.informers.Register(operater.Resource{GVR: gvrEvent, MakeHandler: v.newEventHandler})
+	v.informers.Register(regioninformers.Resource{GVR: gvrEvent, MakeHandler: v.newEventHandler})
 
 	v.informers.WatchDB(ctx, 60*time.Second)
 }
