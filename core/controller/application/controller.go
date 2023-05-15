@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/build"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -202,6 +203,7 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 			}
 			return codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRefType, app.GitRef)
 		}(),
+		Image:       app.Image,
 		BuildConfig: applicationRepo.BuildConf,
 		Tags:        tagmodels.Tags(tags).IntoTagsBasic(),
 		TemplateInfo: func() *codemodels.TemplateInfo {
@@ -355,6 +357,11 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	}
 	if request.Git != nil {
 		if err := validateGitURL(request.Git.URL); err != nil {
+			return nil, err
+		}
+	}
+	if request.Image != nil {
+		if err := validateImageURL(*request.Image); err != nil {
 			return nil, err
 		}
 	}
@@ -547,6 +554,11 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 			return err
 		}
 	}
+	if request.Image != nil {
+		if err := validateImageURL(*request.Image); err != nil {
+			return err
+		}
+	}
 
 	if err := c.validateBuildAndTemplateConfigV2(ctx, request); err != nil {
 		return err
@@ -687,6 +699,16 @@ func validateGitURL(gitURL string) error {
 	if !pattern.MatchString(gitURL) {
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("invalid git url, should satisfies the pattern %v", re))
+	}
+	return nil
+}
+
+// validate OCI container image url
+func validateImageURL(imageURL string) error {
+	_, err := name.ParseReference(imageURL)
+	if err != nil {
+		return perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("invalid image url, error: %v", err.Error()))
 	}
 	return nil
 }
@@ -868,7 +890,7 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 	return selectableRegionsByEnv, nil
 }
 
-func (c controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
+func (c *controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
 	pageNumber, pageSize int) ([]*pipelinemodels.PipelineStats, int64, error) {
 	app, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {

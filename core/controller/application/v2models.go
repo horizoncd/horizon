@@ -29,6 +29,7 @@ type GetApplicationResponseV2 struct {
 	Priority    string              `json:"priority"`
 	Tags        tagmodels.TagsBasic `json:"tags,omitempty"`
 	Git         *codemodels.Git     `json:"git"`
+	Image       string          `json:"image"`
 
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`
 	TemplateInfo   *codemodels.TemplateInfo `json:"templateInfo"`
@@ -49,6 +50,7 @@ type CreateOrUpdateApplicationRequestV2 struct {
 	Priority       *string                  `json:"priority"`
 	Tags           tagmodels.TagsBasic      `json:"tags,omitempty"`
 	Git            *codemodels.Git          `json:"git"`
+	Image          *string                  `json:"image"`
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`
 	TemplateInfo   *codemodels.TemplateInfo `json:"templateInfo"`
 	TemplateConfig map[string]interface{}   `json:"templateConfig"`
@@ -92,6 +94,12 @@ func (req *CreateOrUpdateApplicationRequestV2) CreateToApplicationModel(groupID 
 			}
 			return ""
 		}(),
+		Image: func() string {
+			if req.Image != nil {
+				return *req.Image
+			}
+			return ""
+		}(),
 		Template: func() string {
 			if req.TemplateInfo != nil {
 				return req.TemplateInfo.Name
@@ -116,6 +124,7 @@ func (req *CreateOrUpdateApplicationRequestV2) UpdateToApplicationModel(
 		GitSubfolder:    appExistsInDB.GitSubfolder,
 		GitRef:          appExistsInDB.GitRef,
 		GitRefType:      appExistsInDB.GitRefType,
+		Image:           appExistsInDB.Image,
 		Template:        appExistsInDB.Template,
 		TemplateRelease: appExistsInDB.TemplateRelease,
 	}
@@ -129,7 +138,9 @@ func (req *CreateOrUpdateApplicationRequestV2) UpdateToApplicationModel(
 		application.GitRef = req.Git.Ref()
 		application.GitSubfolder = req.Git.Subfolder
 	}
-
+	if req.Image != nil {
+		application.Image = *req.Image
+	}
 	if req.TemplateInfo != nil {
 		application.Template = req.TemplateInfo.Name
 		application.TemplateRelease = req.TemplateInfo.Release
