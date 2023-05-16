@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
+	herrors "github.com/horizoncd/horizon/core/errors"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	"github.com/horizoncd/horizon/pkg/git"
@@ -49,6 +50,10 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err
+	}
+
+	if cluster.GitURL == "" {
+		return nil, herrors.ErrBuildDeployNotSupported
 	}
 
 	application, err := c.applicationMgr.GetByID(ctx, cluster.ApplicationID)
@@ -147,6 +152,7 @@ func (c *controller) BuildDeploy(ctx context.Context, clusterID uint,
 	}
 
 	ciEventID, err := tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
+		Action:           prmodels.ActionBuildDeploy,
 		Application:      application.Name,
 		ApplicationID:    application.ID,
 		Cluster:          cluster.Name,

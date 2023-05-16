@@ -61,6 +61,10 @@ func (a *API) BuildDeploy(c *gin.Context) {
 				return
 			}
 		}
+		if perror.Cause(err) == herrors.ErrBuildDeployNotSupported {
+			response.AbortWithRPCError(c, rpcerror.BadRequestError.WithErrMsg(err.Error()))
+			return
+		}
 		log.WithFiled(c, "op", op).Errorf("%+v", err)
 		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
 		return
