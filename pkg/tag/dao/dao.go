@@ -119,7 +119,7 @@ func (d dao) UpsertByResourceTypeID(ctx context.Context, resourceType string,
 func (d dao) CreateMetatags(ctx context.Context, metatags []*models.Metatag) error {
 	result := d.db.WithContext(ctx).Create(&metatags)
 	if result.Error != nil {
-		return herrors.NewErrInsertFailed(herrors.DataMetatagInDB, result.Error.Error())
+		return herrors.NewErrInsertFailed(herrors.MetatagInDB, result.Error.Error())
 	}
 
 	return nil
