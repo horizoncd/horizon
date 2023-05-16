@@ -26,6 +26,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../../mock/pkg/tag/manager/manager.go -package=mock_manager
 type Manager interface {
 	// ListByResourceTypeID Lists tags by resourceType and resourceID
 	ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error)
