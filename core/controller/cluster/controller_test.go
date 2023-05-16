@@ -1427,6 +1427,14 @@ func testV2(t *testing.T) {
 		ExtraMembers:   nil,
 	}
 	resp, err := c.CreateClusterV2(ctx, application.ID, "test2", "hz", createReq, false)
+	resp, err := c.CreateClusterV2(ctx, &CreateClusterParamsV2{
+		CreateClusterRequestV2: createReq,
+		ApplicationID:          application.ID,
+		Environment:            "test",
+		Region:                 "hz",
+		MergePatch:             false,
+		InheritConfig:          true,
+	})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.ApplicationID, application.ID)

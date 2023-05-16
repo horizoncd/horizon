@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 )
@@ -28,6 +29,26 @@ func CheckURL(u string) error {
 	if !pattern.MatchString(u) {
 		return perror.Wrap(herrors.ErrParamInvalid,
 			fmt.Sprintf("invalid url, should satisfies the pattern %v", re))
+	}
+	return nil
+}
+
+func CheckGitURL(gitURL string) error {
+	re := `^(?:git|ssh|https?|git@[-\w.]+):(//)?(.*?)(\.git)(/?|#[-\d\w._]+?)$`
+	pattern := regexp.MustCompile(re)
+	if !pattern.MatchString(gitURL) {
+		return perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("invalid git url, should satisfies the pattern %v", re))
+	}
+	return nil
+}
+
+// CheckImageURL validate OCI container image url
+func CheckImageURL(imageURL string) error {
+	_, err := name.ParseReference(imageURL)
+	if err != nil {
+		return perror.Wrap(herrors.ErrParamInvalid,
+			fmt.Sprintf("invalid image url, error: %v", err.Error()))
 	}
 	return nil
 }

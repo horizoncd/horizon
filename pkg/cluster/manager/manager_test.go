@@ -103,6 +103,7 @@ func Test(t *testing.T) {
 		gitURL          = "ssh://git@github.com"
 		gitSubfolder    = "/"
 		gitBranch       = "develop"
+		image           = "ubuntu:latest"
 		template        = "javaapp"
 		templateRelease = "v1.1.0"
 		createdBy       = currentUser.GetID()
@@ -125,6 +126,7 @@ func Test(t *testing.T) {
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubfolder,
 		GitRef:          gitBranch,
+		Image:           image,
 		Template:        template,
 		TemplateRelease: templateRelease,
 		CreatedBy:       createdBy,
@@ -151,9 +153,11 @@ func Test(t *testing.T) {
 	assert.Equal(t, role.Owner, clusterMembers[1].Role)
 
 	cluster.Description = "new Description"
+	cluster.Image = "ubuntu:v1.0.0"
 	newCluster, err := mgr.UpdateByID(ctx, cluster.ID, cluster)
 	assert.Nil(t, err)
 	assert.Equal(t, cluster.Description, newCluster.Description)
+	assert.Equal(t, cluster.Image, newCluster.Image)
 
 	clusterGetByID, err := mgr.GetByID(ctx, cluster.ID)
 	assert.Nil(t, err)

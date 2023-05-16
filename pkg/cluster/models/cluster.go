@@ -30,6 +30,7 @@ type Cluster struct {
 	GitSubfolder    string
 	GitRef          string
 	GitRefType      string
+	Image           string
 	Template        string
 	TemplateRelease string
 	Status          string

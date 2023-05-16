@@ -20,7 +20,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/build"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -52,6 +51,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/permission"
+	"github.com/horizoncd/horizon/pkg/util/validate"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
@@ -356,12 +356,12 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		}
 	}
 	if request.Git != nil {
-		if err := validateGitURL(request.Git.URL); err != nil {
+		if err := validate.CheckGitURL(request.Git.URL); err != nil {
 			return nil, err
 		}
 	}
 	if request.Image != nil {
-		if err := validateImageURL(*request.Image); err != nil {
+		if err := validate.CheckImageURL(*request.Image); err != nil {
 			return nil, err
 		}
 	}
@@ -550,12 +550,12 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 		}
 	}
 	if request.Git != nil {
-		if err := validateGitURL(request.Git.URL); err != nil {
+		if err := validate.CheckGitURL(request.Git.URL); err != nil {
 			return err
 		}
 	}
 	if request.Image != nil {
-		if err := validateImageURL(*request.Image); err != nil {
+		if err := validate.CheckImageURL(*request.Image); err != nil {
 			return err
 		}
 	}
@@ -688,27 +688,7 @@ func (c *controller) validateUpdate(b Base) error {
 
 func validateGit(b Base) error {
 	if b.Git != nil && b.Git.URL != "" {
-		return validateGitURL(b.Git.URL)
-	}
-	return nil
-}
-
-func validateGitURL(gitURL string) error {
-	re := `^(?:git|ssh|https?|git@[-\w.]+):(//)?(.*?)(\.git)(/?|#[-\d\w._]+?)$`
-	pattern := regexp.MustCompile(re)
-	if !pattern.MatchString(gitURL) {
-		return perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("invalid git url, should satisfies the pattern %v", re))
-	}
-	return nil
-}
-
-// validate OCI container image url
-func validateImageURL(imageURL string) error {
-	_, err := name.ParseReference(imageURL)
-	if err != nil {
-		return perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("invalid image url, error: %v", err.Error()))
+		return validate.CheckGitURL(b.Git.URL)
 	}
 	return nil
 }

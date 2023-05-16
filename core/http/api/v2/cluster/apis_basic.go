@@ -211,6 +211,17 @@ func (a *API) Create(c *gin.Context) {
 		}
 	}
 
+	inheritConfig := true
+	inheritConfigStr := c.Request.URL.Query().Get(common.ClusterQueryInheritConfig)
+	if inheritConfigStr != "" {
+		inheritConfig, err = strconv.ParseBool(inheritConfigStr)
+		if err != nil {
+			response.AbortWithRequestError(c, common.InvalidRequestParam,
+				fmt.Sprintf("inheritConfig is invalid, err: %v", err))
+			return
+		}
+	}
+
 	extraOwners := c.QueryArray(common.ClusterQueryExtraOwner)
 
 	var request *cluster.CreateClusterRequestV2
@@ -234,8 +245,16 @@ func (a *API) Create(c *gin.Context) {
 		request.ExtraMembers[extraOwner] = role.Owner
 	}
 
-	resp, err := a.clusterCtl.CreateClusterV2(c, uint(applicationID), environment,
-		region, request, mergePatch)
+	// resp, err := a.clusterCtl.CreateClusterV2(c, uint(applicationID), environment,
+	// 	region, request, mergePatch)
+	resp, err := a.clusterCtl.CreateClusterV2(c, &cluster.CreateClusterParamsV2{
+		CreateClusterRequestV2: request,
+		ApplicationID:          uint(applicationID),
+		Environment:            environment,
+		Region:                 region,
+		MergePatch:             mergePatch,
+		InheritConfig:          inheritConfig,
+	})
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
 			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, request)

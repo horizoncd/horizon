@@ -26,6 +26,7 @@ const (
 	ClusterQueryTagSelector   = "tagSelector"
 	ClusterQueryScope         = "scope"
 	ClusterQueryMergePatch    = "mergePatch"
+	ClusterQueryInheritConfig = "inheritConfig"
 	ClusterQueryTargetBranch  = "targetBranch"
 	ClusterQueryTargetCommit  = "targetCommit"
 	ClusterQueryTargetTag     = "targetTag"
