@@ -58,3 +58,7 @@ func ofTags(tags []*tagmodels.Tag) *ListResponse {
 		}(),
 	}
 }
+
+type CreateMetatagsRequest struct {
+	Metatags []*tagmodels.Metatag
+}

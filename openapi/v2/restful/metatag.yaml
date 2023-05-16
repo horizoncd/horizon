@@ -99,7 +99,7 @@ components:
           type: string
         tagValue:
           type: string
-        tagIdentity:
+        description:
           type: string
         CreatedAt:
           $ref: "common.yaml#/components/schemas/Date"

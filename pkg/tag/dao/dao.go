@@ -27,12 +27,15 @@ import (
 type DAO interface {
 	// ListByResourceTypeID Lists tags by resourceType and resourceID
 	ListByResourceTypeID(ctx context.Context, resourceType string, resourceID uint) ([]*models.Tag, error)
-	// ListByResourceTypeID Lists tags by resourceType and resourceIDs
+	// ListByResourceTypeIDs ListByResourceTypeID Lists tags by resourceType and resourceIDs
 	// if distinct enabled, tags only contains tag_key and tag_value
 	ListByResourceTypeIDs(ctx context.Context, resourceType string, resourceIDs []uint,
 		deduplicate bool) ([]*models.Tag, error)
 	// UpsertByResourceTypeID upsert tags
 	UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.Tag) error
+	CreateMetatags(ctx context.Context, metatags []*models.Metatag) error
+	GetMetatagKeys(ctx context.Context) ([]string, error)
+	GetMetatagsByKey(ctx context.Context, key string) ([]*models.Metatag, error)
 }
 
 type dao struct {
@@ -111,4 +114,31 @@ func (d dao) UpsertByResourceTypeID(ctx context.Context, resourceType string,
 		return herrors.NewErrInsertFailed(herrors.TagInDB, result.Error.Error())
 	}
 	return nil
+}
+
+func (d dao) CreateMetatags(ctx context.Context, metatags []*models.Metatag) error {
+	result := d.db.WithContext(ctx).Create(&metatags)
+	if result.Error != nil {
+		return herrors.NewErrInsertFailed(herrors.DataMetatagInDB, result.Error.Error())
+	}
+
+	return nil
+}
+
+func (d dao) GetMetatagsByKey(ctx context.Context, key string) ([]*models.Metatag, error) {
+	var metatags []*models.Metatag
+	result := d.db.WithContext(ctx).Table("tb_metatag").Where("tag_key = ?", key).Find(&metatags)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return metatags, nil
+}
+
+func (d dao) GetMetatagKeys(ctx context.Context) ([]string, error) {
+	var keys []string
+	result := d.db.WithContext(ctx).Table("tb_metatag").Distinct("tag_key").Find(&keys)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return keys, nil
 }

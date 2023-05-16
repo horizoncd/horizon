@@ -44,7 +44,6 @@ import (
 	groupctl "github.com/horizoncd/horizon/core/controller/group"
 	idpctl "github.com/horizoncd/horizon/core/controller/idp"
 	memberctl "github.com/horizoncd/horizon/core/controller/member"
-	metatagctl "github.com/horizoncd/horizon/core/controller/metatag"
 	oauthservicectl "github.com/horizoncd/horizon/core/controller/oauth"
 	oauthappctl "github.com/horizoncd/horizon/core/controller/oauthapp"
 	oauthcheckctl "github.com/horizoncd/horizon/core/controller/oauthcheck"
@@ -91,7 +90,6 @@ import (
 	groupv2 "github.com/horizoncd/horizon/core/http/api/v2/group"
 	idpv2 "github.com/horizoncd/horizon/core/http/api/v2/idp"
 	memberv2 "github.com/horizoncd/horizon/core/http/api/v2/member"
-	"github.com/horizoncd/horizon/core/http/api/v2/metatag"
 	oauthappv2 "github.com/horizoncd/horizon/core/http/api/v2/oauthapp"
 	pipelinerunv2 "github.com/horizoncd/horizon/core/http/api/v2/pipelinerun"
 	regionv2 "github.com/horizoncd/horizon/core/http/api/v2/region"
@@ -505,7 +503,6 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		scopeCtl             = scopectl.NewController(parameter)
 		webhookCtl           = webhookctl.NewController(parameter)
 		eventCtl             = eventctl.NewController(parameter)
-		metatagCtl           = metatagctl.NewController(parameter)
 	)
 
 	var (
@@ -565,7 +562,6 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		terminalAPIV2          = terminalv2.NewAPI(terminalCtl)
 		userAPIV2              = userv2.NewAPI(userCtl, store)
 		webhookAPIV2           = webhookv2.NewAPI(webhookCtl)
-		metatagAPIV2           = metatag.NewAPI(metatagCtl)
 	)
 
 	// start jobs
@@ -674,7 +670,6 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		terminalAPIV2,
 		userAPIV2,
 		webhookAPIV2,
-		metatagAPIV2,
 	}
 
 	// start cloud event server

@@ -34,6 +34,9 @@ type Manager interface {
 		deduplicate bool) ([]*models.Tag, error)
 	// UpsertByResourceTypeID upsert tags
 	UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.Tag) error
+	CreateMetatags(ctx context.Context, metatags []*models.Metatag) error
+	GetMetatagKeys(ctx context.Context) ([]string, error)
+	GetMetatagsByKey(ctx context.Context, key string) ([]*models.Metatag, error)
 }
 
 func New(db *gorm.DB) Manager {
@@ -93,4 +96,16 @@ func ValidateUpsert(tags []*models.Tag) error {
 		}
 	}
 	return nil
+}
+
+func (m *manager) CreateMetatags(ctx context.Context, metatags []*models.Metatag) error {
+	return m.dao.CreateMetatags(ctx, metatags)
+}
+
+func (m *manager) GetMetatagKeys(ctx context.Context) ([]string, error) {
+	return m.dao.GetMetatagKeys(ctx)
+}
+
+func (m *manager) GetMetatagsByKey(ctx context.Context, key string) ([]*models.Metatag, error) {
+	return m.dao.GetMetatagsByKey(ctx, key)
 }
