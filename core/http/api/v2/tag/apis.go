@@ -31,6 +31,7 @@ import (
 const (
 	_resourceTypeParam = "resourceType"
 	_resourceIDParam   = "resourceID"
+	_tagKey            = "key"
 )
 
 type API struct {
@@ -119,4 +120,36 @@ func (a *API) ListSubResourceTags(c *gin.Context) {
 		return
 	}
 	response.SuccessWithData(c, resp)
+}
+
+func (a *API) GetMetatagKeys(c *gin.Context) {
+	keys, err := a.tagCtl.GetMetatagKeys(c)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.SuccessWithData(c, keys)
+}
+
+func (a *API) GetMetatagsByKey(c *gin.Context) {
+	key := c.Query(_tagKey)
+	metatags, err := a.tagCtl.GetMetatagsByKey(c, key)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.SuccessWithData(c, metatags)
+}
+
+func (a *API) CreateMetatags(c *gin.Context) {
+	var createMetatagsRequest tag.CreateMetatagsRequest
+	if err := c.ShouldBindJSON(&createMetatagsRequest); err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(err.Error()))
+		return
+	}
+	if err := a.tagCtl.CreateMetatags(c, &createMetatagsRequest); err != nil {
+		response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+		return
+	}
+	response.Success(c)
 }

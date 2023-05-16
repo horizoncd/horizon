@@ -52,3 +52,11 @@ const (
 	NotIn        string = "notin"
 	Exists       string = "exists"
 )
+
+type Metatag struct {
+	TagKey      string    `json:"tagKey"`
+	TagValue    string    `json:"tagValue"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}

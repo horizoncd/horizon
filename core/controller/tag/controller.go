@@ -33,6 +33,9 @@ type Controller interface {
 	ListSubResourceTags(ctx context.Context, resourceType string,
 		resourceID uint) (*ListResponse, error)
 	Update(ctx context.Context, resourceType string, resourceID uint, r *UpdateRequest) error
+	CreateMetatags(ctx context.Context, createMetatagRequest *CreateMetatagsRequest) error
+	GetMetatagKeys(ctx context.Context) ([]string, error)
+	GetMetatagsByKey(ctx context.Context, key string) ([]*models.Metatag, error)
 }
 
 type controller struct {
@@ -119,4 +122,16 @@ func (c *controller) ListSubResourceTags(ctx context.Context, resourceType strin
 	}
 
 	return ofTags(results), nil
+}
+
+func (c *controller) CreateMetatags(ctx context.Context, createMetatagRequest *CreateMetatagsRequest) error {
+	return c.tagMgr.CreateMetatags(ctx, createMetatagRequest.Metatags)
+}
+
+func (c *controller) GetMetatagKeys(ctx context.Context) ([]string, error) {
+	return c.tagMgr.GetMetatagKeys(ctx)
+}
+
+func (c *controller) GetMetatagsByKey(ctx context.Context, key string) ([]*models.Metatag, error) {
+	return c.tagMgr.GetMetatagsByKey(ctx, key)
 }

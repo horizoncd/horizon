@@ -38,6 +38,20 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 			Method:      http.MethodGet,
 			Pattern:     fmt.Sprintf("/:%v/:%v/subresourcetags", _resourceTypeParam, _resourceIDParam),
 			HandlerFunc: api.ListSubResourceTags,
+		}, {
+			Method:      http.MethodPost,
+			Pattern:     "/metatags",
+			HandlerFunc: api.CreateMetatags,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     "/metatags",
+			HandlerFunc: api.GetMetatagsByKey,
+		},
+		{
+			Method:      http.MethodGet,
+			Pattern:     "/metatagkeys",
+			HandlerFunc: api.GetMetatagKeys,
 		},
 	}
 	route.RegisterRoutes(group, routes)
