@@ -578,6 +578,7 @@ func TestV2(t *testing.T) {
 	err = c.UpdateApplicationV2(ctx, resp.ID, updateReq)
 	assert.Nil(t, err)
 	getResponse, err = c.GetApplicationV2(ctx, resp.ID)
+	assert.Nil(t, err)
 	assert.Equal(t, getResponse.Priority, P1)
 	assert.Equal(t, getResponse.Image, image1)
 }

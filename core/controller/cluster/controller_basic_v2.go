@@ -96,7 +96,8 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 	return resp, nil
 }
 
-func (c *controller) CreateClusterV2(ctx context.Context, params *CreateClusterParamsV2) (*CreateClusterResponseV2, error) {
+func (c *controller) CreateClusterV2(ctx context.Context,
+	params *CreateClusterParamsV2) (*CreateClusterResponseV2, error) {
 	const op = "cluster controller: create cluster v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
