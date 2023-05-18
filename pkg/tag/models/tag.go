@@ -18,6 +18,7 @@ package models
 import (
 	"time"
 
+	"github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/util/sets"
 )
 
@@ -31,6 +32,56 @@ type Tag struct {
 	UpdatedAt    time.Time
 	CreatedBy    uint
 	UpdatedBy    uint
+}
+
+type Tags []*Tag
+
+func (t Tags) IntoTagsBasic() TagsBasic {
+	tags := make(TagsBasic, 0, len(t))
+	for _, tag := range t {
+		tags = append(tags, &TagBasic{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+	return tags
+}
+
+func (t Tags) Eq(rhs Tags) bool {
+	if len(t) != len(rhs) {
+		return false
+	}
+	index := make(map[TagBasic]struct{})
+	for _, tag := range t {
+		index[TagBasic{
+			Key:   tag.Key,
+			Value: tag.Value,
+		}] = struct{}{}
+	}
+	for _, tag := range rhs {
+		if _, ok := index[TagBasic{
+			Key:   tag.Key,
+			Value: tag.Value,
+		}]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+type TagsBasic []*TagBasic
+
+func (t TagsBasic) IntoTags(resourceType models.ResourceType, resourceID uint) []*Tag {
+	tags := make([]*Tag, 0, len(t))
+	for _, tag := range t {
+		tags = append(tags, &Tag{
+			ResourceType: string(resourceType),
+			ResourceID:   resourceID,
+			Key:          tag.Key,
+			Value:        tag.Value,
+		})
+	}
+	return tags
 }
 
 type TagBasic struct {

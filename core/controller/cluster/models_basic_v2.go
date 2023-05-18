@@ -116,6 +116,7 @@ type UpdateClusterRequestV2 struct {
 	Environment *string `json:"environment"`
 	Region      *string `json:"region"`
 
+	Tags []*controllertag.Tag `json:"tags"`
 	// source info
 	Git *codemodels.Git `json:"git"`
 
@@ -126,7 +127,7 @@ type UpdateClusterRequestV2 struct {
 }
 
 func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireSeconds uint, environmentName,
-	regionName, templateName, templateRelease string) *models.Cluster {
+	regionName, templateName, templateRelease string) (*models.Cluster, []*tagmodels.Tag) {
 	var gitURL, gitSubFolder, gitRef, gitRefType string
 	if r.Git != nil {
 		gitURL, gitSubFolder, gitRefType, gitRef = r.Git.URL,
@@ -137,6 +138,15 @@ func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireS
 		gitRefType = cluster.GitRefType
 		gitRef = cluster.GitRef
 	}
+
+	tags := make([]*tagmodels.Tag, 0)
+	for _, tag := range r.Tags {
+		tags = append(tags, &tagmodels.Tag{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
+	}
+
 	return &models.Cluster{
 		EnvironmentName: environmentName,
 		RegionName:      regionName,
@@ -148,21 +158,21 @@ func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireS
 		GitRefType:      gitRefType,
 		Template:        templateName,
 		TemplateRelease: templateRelease,
-	}
+	}, tags
 }
 
 type GetClusterResponseV2 struct {
 	// basic infos
-	ID              uint                `json:"id"`
-	Name            string              `json:"name"`
-	Description     string              `json:"description"`
-	Priority        string              `json:"priority"`
-	ExpireTime      string              `json:"expireTime"`
-	Scope           *Scope              `json:"scope"`
-	FullPath        string              `json:"fullPath"`
-	ApplicationName string              `json:"applicationName"`
-	ApplicationID   uint                `json:"applicationID"`
-	Tags            []controllertag.Tag `json:"tags"`
+	ID              uint                  `json:"id"`
+	Name            string                `json:"name"`
+	Description     string                `json:"description"`
+	Priority        string                `json:"priority"`
+	ExpireTime      string                `json:"expireTime"`
+	Scope           *Scope                `json:"scope"`
+	FullPath        string                `json:"fullPath"`
+	ApplicationName string                `json:"applicationName"`
+	ApplicationID   uint                  `json:"applicationID"`
+	Tags            []*tagmodels.TagBasic `json:"tags"`
 
 	// source info
 	Git *codemodels.Git `json:"git"`

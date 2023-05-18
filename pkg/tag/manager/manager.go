@@ -62,6 +62,10 @@ func (m *manager) ListByResourceTypeIDs(ctx context.Context, resourceType string
 
 func (m *manager) UpsertByResourceTypeID(ctx context.Context,
 	resourceType string, resourceID uint, tags []*models.Tag) error {
+	for _, tag := range tags {
+		tag.ResourceID = resourceID
+		tag.ResourceType = resourceType
+	}
 	return m.dao.UpsertByResourceTypeID(ctx, resourceType, resourceID, tags)
 }
 

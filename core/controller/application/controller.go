@@ -42,6 +42,8 @@ import (
 	pipelinemanager "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/manager"
 	pipelinemodels "github.com/horizoncd/horizon/pkg/pipelinerun/pipeline/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	trmanager "github.com/horizoncd/horizon/pkg/templaterelease/manager"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	usersvc "github.com/horizoncd/horizon/pkg/user/service"
@@ -93,6 +95,7 @@ type controller struct {
 	userSvc              usersvc.Service
 	memberManager        member.Manager
 	eventMgr             eventmanager.Manager
+	tagMgr               tagmanager.Manager
 	applicationRegionMgr applicationregionmanager.Manager
 	pipelinemanager      pipelinemanager.Manager
 	buildSchema          *build.Schema
@@ -113,6 +116,7 @@ func NewController(param *param.Param) Controller {
 		userSvc:              param.UserSvc,
 		memberManager:        param.MemberManager,
 		eventMgr:             param.EventManager,
+		tagMgr:               param.TagManager,
 		applicationRegionMgr: param.ApplicationRegionManager,
 		pipelinemanager:      param.PipelineMgr,
 		buildSchema:          param.BuildSchema,
@@ -149,7 +153,14 @@ func (c *controller) GetApplication(ctx context.Context, id uint) (_ *GetApplica
 		return nil, err
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, app.Name)
-	return ofApplicationModel(app, fullPath, trs, pipelineJSONBlob, applicationJSONBlob), nil
+
+	// 5. get tags
+	tags, err := c.tagMgr.ListByResourceTypeID(ctx, common.ResourceApplication, app.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return ofApplicationModel(app, fullPath, trs, pipelineJSONBlob, applicationJSONBlob, tags...), nil
 }
 
 func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetApplicationResponseV2, err error) {
@@ -174,6 +185,12 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 	}
 	fullPath := fmt.Sprintf("%v/%v", group.FullPath, app.Name)
 
+	// 4. get tags
+	tags, err := c.tagMgr.ListByResourceTypeID(ctx, common.ResourceApplication, app.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	resp := &GetApplicationResponseV2{
 		ID:          id,
 		Name:        app.Name,
@@ -186,6 +203,7 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 			return codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRefType, app.GitRef)
 		}(),
 		BuildConfig: applicationRepo.BuildConf,
+		Tags:        tagmodels.Tags(tags).IntoTagsBasic(),
 		TemplateInfo: func() *codemodels.TemplateInfo {
 			if app.Template == "" {
 				return nil
@@ -275,6 +293,15 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 	trs, err := c.templateReleaseMgr.ListByTemplateName(ctx, applicationModel.Template)
 	if err != nil {
 		return nil, err
+	}
+
+	// 7. create tags
+	if request.Tags != nil {
+		tags := request.Tags.IntoTags(common.ResourceApplication, applicationModel.ID)
+		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, applicationModel.ID, tags)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	ret := ofApplicationModel(applicationModel, fullPath, trs,
@@ -384,6 +411,14 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		return nil, err
 	}
 
+	if request.Tags != nil {
+		tags := request.Tags.IntoTags(common.ResourceApplication, applicationDBModel.ID)
+		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, applicationDBModel.ID, tags)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	ret := &CreateApplicationResponseV2{
 		ID:        applicationDBModel.ID,
 		Name:      request.Name,
@@ -481,6 +516,15 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 		return nil, err
 	}
 
+	// 8. update tags
+	if request.Tags != nil {
+		tags := request.Tags.IntoTags(common.ResourceApplication, applicationModel.ID)
+		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, applicationModel.ID, tags)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return ofApplicationModel(applicationModel, fullPath, trs,
 		request.TemplateInput.Pipeline, request.TemplateInput.Application), nil
 }
@@ -525,6 +569,19 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 	// 4. update application in db
 	applicationModel := request.UpdateToApplicationModel(appExistsInDB)
 	_, err = c.applicationMgr.UpdateByID(ctx, id, applicationModel)
+	if err != nil {
+		return err
+	}
+
+	// 5. update tags
+	if request.Tags != nil {
+		tags := request.Tags.IntoTags(common.ResourceApplication, id)
+		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, id, tags)
+		if err != nil {
+			return err
+		}
+	}
+
 	return err
 }
 

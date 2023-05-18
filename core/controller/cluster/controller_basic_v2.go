@@ -21,7 +21,6 @@ import (
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/build"
-	controllertag "github.com/horizoncd/horizon/core/controller/tag"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	appgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
@@ -29,6 +28,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	collectionmodels "github.com/horizoncd/horizon/pkg/collection/models"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	"github.com/horizoncd/horizon/pkg/templaterelease/models"
 	templateschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
@@ -314,16 +314,7 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 		FullPath:        fullPath,
 		ApplicationName: application.Name,
 		ApplicationID:   application.ID,
-		Tags: func() []controllertag.Tag {
-			retTags := make([]controllertag.Tag, 0, len(tags))
-			for _, tag := range retTags {
-				retTags = append(retTags, controllertag.Tag{
-					Key:   tag.Key,
-					Value: tag.Value,
-				})
-			}
-			return retTags
-		}(),
+		Tags:            tagmodels.Tags(tags).IntoTagsBasic(),
 		Git: func() *codemodels.Git {
 			if cluster.GitURL == "" {
 				return nil
@@ -509,11 +500,25 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	}
 
 	// 8. update cluster in db
-	clusterModel := r.toClusterModel(cluster, expireSeconds, environmentName,
+	clusterModel, tags := r.toClusterModel(cluster, expireSeconds, environmentName,
 		regionName, templateInfo.Name, templateInfo.Release)
 	_, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {
 		return err
+	}
+
+	// 9. update cluster tags
+	tagsInDB, err := c.tagMgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
+	if err != nil {
+		return err
+	}
+	if !tagmodels.Tags(tags).Eq(tagsInDB) {
+		if err := c.clusterGitRepo.UpdateTags(ctx, application.Name, cluster.Name, cluster.Template, tags); err != nil {
+			return err
+		}
+		if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, tags); err != nil {
+			return err
+		}
 	}
 	return nil
 }

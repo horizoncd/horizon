@@ -19,16 +19,18 @@ import (
 
 	"github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 )
 
 // Base holds the parameters which can be updated of an application
 type Base struct {
-	Description   string          `json:"description"`
-	Priority      string          `json:"priority"`
-	Template      *Template       `json:"template"`
-	Git           *codemodels.Git `json:"git"`
-	TemplateInput *TemplateInput  `json:"templateInput"`
+	Description   string              `json:"description"`
+	Priority      string              `json:"priority"`
+	Tags          tagmodels.TagsBasic `json:"tags,omitempty"`
+	Template      *Template           `json:"template"`
+	Git           *codemodels.Git     `json:"git"`
+	TemplateInput *TemplateInput      `json:"templateInput"`
 }
 
 type TemplateInput struct {
@@ -129,13 +131,15 @@ func (m *UpdateApplicationRequest) toApplicationModel(appExistsInDB *models.Appl
 
 // ofApplicationModel transfer models.Application, templateInput, pipelineInput to GetApplicationResponse
 func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodels.TemplateRelease,
-	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetApplicationResponse {
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{}, tags ...*tagmodels.Tag) *GetApplicationResponse {
 	var recommendedRelease string
 	for _, tr := range trs {
 		if *tr.Recommended {
 			recommendedRelease = tr.Name
 		}
 	}
+
+	tagsBasic := tagmodels.Tags(tags).IntoTagsBasic()
 
 	resp := &GetApplicationResponse{
 		CreateApplicationRequest: CreateApplicationRequest{
@@ -147,7 +151,8 @@ func ofApplicationModel(app *models.Application, fullPath string, trs []*trmodel
 					Release:            app.TemplateRelease,
 					RecommendedRelease: recommendedRelease,
 				},
-				Git: codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRefType, app.GitRef),
+				Tags: tagsBasic,
+				Git:  codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRefType, app.GitRef),
 				TemplateInput: &TemplateInput{
 					Application: applicationJSONBlob,
 					Pipeline:    pipelineJSONBlob,
