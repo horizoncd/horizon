@@ -16,6 +16,7 @@ package rollout
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 
@@ -257,6 +258,14 @@ func (r *rollout) GetSteps(node *v1alpha1.ResourceNode, client *kube.Client) (*w
 		return nil, err
 	}
 
+	bts, err := json.Marshal(map[string]interface{}{"currentIndex": *instance.Status.CurrentStepIndex})
+	if err != nil {
+		log.Errorf(context.TODO(), "marshal current step index failed: %v", err)
+		bts = append(bts, []byte("{}")...)
+	}
+
+	extra := string(bts)
+
 	// manual paused
 	return &workload.Step{
 		Index:        stepIndex,
@@ -264,6 +273,7 @@ func (r *rollout) GetSteps(node *v1alpha1.ResourceNode, client *kube.Client) (*w
 		Replicas:     incrementReplicasList,
 		ManualPaused: instance.Spec.Paused,
 		AutoPromote:  autoPromote,
+		Extra:        &extra,
 	}, nil
 }
 

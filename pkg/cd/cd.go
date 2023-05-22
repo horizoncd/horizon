@@ -303,6 +303,7 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 		Replicas:     step.Replicas,
 		ManualPaused: step.ManualPaused,
 		AutoPromote:  step.AutoPromote,
+		Extra:        step.Extra,
 	}, nil
 }
 

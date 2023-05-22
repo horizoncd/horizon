@@ -79,9 +79,10 @@ type GetResourceTreeResponse struct {
 }
 
 type GetStepResponse struct {
-	Index        int   `json:"index"`
-	Total        int   `json:"total"`
-	Replicas     []int `json:"replicas"`
-	ManualPaused bool  `json:"manualPaused"`
-	AutoPromote  bool  `json:"autoPromote"`
+	Index        int     `json:"index"`
+	Total        int     `json:"total"`
+	Replicas     []int   `json:"replicas"`
+	ManualPaused bool    `json:"manualPaused"`
+	AutoPromote  bool    `json:"autoPromote"`
+	Extra        *string `json:"extra"`
 }

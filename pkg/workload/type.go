@@ -24,6 +24,7 @@ type Step struct {
 	Replicas     []int
 	ManualPaused bool
 	AutoPromote  bool
+	Extra        *string
 }
 
 type Revision struct {
