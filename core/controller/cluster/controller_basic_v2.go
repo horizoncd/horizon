@@ -516,7 +516,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		if err := c.clusterGitRepo.UpdateTags(ctx, application.Name, cluster.Name, cluster.Template, tags); err != nil {
 			return err
 		}
-		if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, tags); err != nil {
+		if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, r.Tags); err != nil {
 			return err
 		}
 	}

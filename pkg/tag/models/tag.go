@@ -71,6 +71,25 @@ func (t Tags) Eq(rhs Tags) bool {
 
 type TagsBasic []*TagBasic
 
+func (t TagsBasic) Eq(rhs Tags) bool {
+	if len(t) != len(rhs) {
+		return false
+	}
+	index := make(map[TagBasic]struct{})
+	for _, tag := range t {
+		index[*tag] = struct{}{}
+	}
+	for _, tag := range rhs {
+		if _, ok := index[TagBasic{
+			Key:   tag.Key,
+			Value: tag.Value,
+		}]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func (t TagsBasic) IntoTags(resourceType models.ResourceType, resourceID uint) []*Tag {
 	tags := make([]*Tag, 0, len(t))
 	for _, tag := range t {

@@ -511,30 +511,22 @@ func Test_manager_GetSelectableRegionsByEnv(t *testing.T) {
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz3",
 	})
-	_ = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r1.ID, []*tagmodels.Tag{
+	_ = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r1.ID, []*tagmodels.TagBasic{
 		{
-			ResourceType: common.ResourceRegion,
-			ResourceID:   r1.ID,
-			Key:          "a",
-			Value:        "1",
+			Key:   "a",
+			Value: "1",
 		}, {
-			ResourceType: common.ResourceRegion,
-			ResourceID:   r1.ID,
-			Key:          "b",
-			Value:        "1",
+			Key:   "b",
+			Value: "1",
 		},
 	})
-	_ = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r3.ID, []*tagmodels.Tag{
+	_ = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r3.ID, []*tagmodels.TagBasic{
 		{
-			ResourceType: common.ResourceRegion,
-			ResourceID:   r3.ID,
-			Key:          "a",
-			Value:        "1",
+			Key:   "a",
+			Value: "1",
 		}, {
-			ResourceType: common.ResourceRegion,
-			ResourceID:   r3.ID,
-			Key:          "c",
-			Value:        "1",
+			Key:   "c",
+			Value: "1",
 		},
 	})
 	g1, err := Mgr.Create(ctx, &models.Group{
@@ -617,20 +609,16 @@ func Test_manager_GetSelectableRegions(t *testing.T) {
 		DisplayName: "HZ",
 	})
 
-	_ = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r1.ID, []*tagmodels.Tag{
+	_ = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r1.ID, []*tagmodels.TagBasic{
 		{
-			ResourceType: common.ResourceRegion,
-			ResourceID:   r1.ID,
-			Key:          "a",
-			Value:        "11",
+			Key:   "a",
+			Value: "11",
 		},
 	})
-	_ = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r3.ID, []*tagmodels.Tag{
+	_ = tagMgr.UpsertByResourceTypeID(ctx, common.ResourceRegion, r3.ID, []*tagmodels.TagBasic{
 		{
-			ResourceType: common.ResourceRegion,
-			ResourceID:   r3.ID,
-			Key:          "a",
-			Value:        "11",
+			Key:   "a",
+			Value: "11",
 		},
 	})
 

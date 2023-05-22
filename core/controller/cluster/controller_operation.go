@@ -734,17 +734,15 @@ func (c *controller) updateTemplateAndTagsFromFile(ctx context.Context,
 			}
 			midMap := file.Content[release.ChartName].(map[string]interface{})
 			tagsMap := midMap[common.GitopsKeyTags].(map[string]interface{})
-			tags := make([]*tmodels.Tag, 0, len(tagsMap))
+			tags := make([]*tmodels.TagBasic, 0, len(tagsMap))
 			for k, v := range tagsMap {
 				value, ok := v.(string)
 				if !ok {
 					continue
 				}
-				tags = append(tags, &tmodels.Tag{
-					ResourceID:   cluster.ID,
-					ResourceType: common.ResourceCluster,
-					Key:          k,
-					Value:        value,
+				tags = append(tags, &tmodels.TagBasic{
+					Key:   k,
+					Value: value,
 				})
 			}
 			return cluster, c.tagMgr.UpsertByResourceTypeID(ctx,

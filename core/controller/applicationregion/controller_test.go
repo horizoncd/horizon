@@ -81,30 +81,24 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, r3)
-	err = manager.TagManager.UpsertByResourceTypeID(ctx, common.ResourceRegion, r1.ID, []*tagmodels.Tag{
+	err = manager.TagManager.UpsertByResourceTypeID(ctx, common.ResourceRegion, r1.ID, []*tagmodels.TagBasic{
 		{
-			ResourceID:   r1.ID,
-			ResourceType: common.ResourceRegion,
-			Key:          "a",
-			Value:        "1",
+			Key:   "a",
+			Value: "1",
 		},
 	})
 	assert.Nil(t, err)
-	err = manager.TagManager.UpsertByResourceTypeID(ctx, common.ResourceRegion, r2.ID, []*tagmodels.Tag{
+	err = manager.TagManager.UpsertByResourceTypeID(ctx, common.ResourceRegion, r2.ID, []*tagmodels.TagBasic{
 		{
-			ResourceID:   r2.ID,
-			ResourceType: common.ResourceRegion,
-			Key:          "a",
-			Value:        "1",
+			Key:   "a",
+			Value: "1",
 		},
 	})
 	assert.Nil(t, err)
-	err = manager.TagManager.UpsertByResourceTypeID(ctx, common.ResourceRegion, r3.ID, []*tagmodels.Tag{
+	err = manager.TagManager.UpsertByResourceTypeID(ctx, common.ResourceRegion, r3.ID, []*tagmodels.TagBasic{
 		{
-			ResourceID:   r3.ID,
-			ResourceType: common.ResourceRegion,
-			Key:          "a",
-			Value:        "1",
+			Key:   "a",
+			Value: "1",
 		},
 	})
 	assert.Nil(t, err)

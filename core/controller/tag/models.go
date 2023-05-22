@@ -28,7 +28,7 @@ type Tag struct {
 }
 
 type UpdateRequest struct {
-	Tags []*Tag `json:"tags"`
+	Tags []*tagmodels.TagBasic `json:"tags"`
 }
 
 func (r *UpdateRequest) toTags(resourceType string, resourceID uint) []*tagmodels.Tag {

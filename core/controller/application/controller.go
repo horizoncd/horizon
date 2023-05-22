@@ -297,8 +297,7 @@ func (c *controller) CreateApplication(ctx context.Context, groupID uint,
 
 	// 7. create tags
 	if request.Tags != nil {
-		tags := request.Tags.IntoTags(common.ResourceApplication, applicationModel.ID)
-		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, applicationModel.ID, tags)
+		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, applicationModel.ID, request.Tags)
 		if err != nil {
 			return nil, err
 		}
@@ -412,8 +411,7 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 	}
 
 	if request.Tags != nil {
-		tags := request.Tags.IntoTags(common.ResourceApplication, applicationDBModel.ID)
-		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, applicationDBModel.ID, tags)
+		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, applicationDBModel.ID, request.Tags)
 		if err != nil {
 			return nil, err
 		}
@@ -518,8 +516,7 @@ func (c *controller) UpdateApplication(ctx context.Context, id uint,
 
 	// 8. update tags
 	if request.Tags != nil {
-		tags := request.Tags.IntoTags(common.ResourceApplication, applicationModel.ID)
-		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, applicationModel.ID, tags)
+		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, applicationModel.ID, request.Tags)
 		if err != nil {
 			return nil, err
 		}
@@ -575,8 +572,7 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 
 	// 5. update tags
 	if request.Tags != nil {
-		tags := request.Tags.IntoTags(common.ResourceApplication, id)
-		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, id, tags)
+		err = c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceApplication, id, request.Tags)
 		if err != nil {
 			return err
 		}
