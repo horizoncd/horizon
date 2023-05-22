@@ -37,6 +37,7 @@ import (
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	tmodels "github.com/horizoncd/horizon/pkg/template/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
@@ -286,6 +287,9 @@ func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&membermodels.Member{}); err != nil {
 		panic(err)
 	}
+	if err := db.AutoMigrate(&tagmodels.Tag{}); err != nil {
+		panic(err)
+	}
 	if err := db.AutoMigrate(&eventmodels.Event{}); err != nil {
 		panic(err)
 	}
@@ -351,6 +355,7 @@ func Test(t *testing.T) {
 	c = &controller{
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
+		tagMgr:               manager.TagManager,
 		applicationMgr:       manager.ApplicationManager,
 		groupMgr:             manager.GroupManager,
 		groupSvc:             groupservice.NewService(manager),
@@ -506,6 +511,7 @@ func TestV2(t *testing.T) {
 		applicationGitRepo:   applicationGitRepo,
 		templateSchemaGetter: templateSchemaGetter,
 		applicationMgr:       manager.ApplicationManager,
+		tagMgr:               manager.TagManager,
 		groupMgr:             manager.GroupManager,
 		groupSvc:             groupservice.NewService(manager),
 		templateReleaseMgr:   manager.TemplateReleaseManager,

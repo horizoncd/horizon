@@ -738,7 +738,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	return ofClusterModel(application, cluster, fullPath, envValue.Namespace,
-		r.TemplateInput.Pipeline, r.TemplateInput.Application), nil
+		r.TemplateInput.Pipeline, r.TemplateInput.Application, tags...), nil
 }
 
 func (c *controller) GetClusterByName(ctx context.Context,

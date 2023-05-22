@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
-	controllertag "github.com/horizoncd/horizon/core/controller/tag"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
@@ -27,12 +26,12 @@ import (
 )
 
 type CreateClusterRequestV2 struct {
-	Name        string               `json:"name"`
-	Description string               `json:"description"`
-	Priority    string               `json:"priority"`
-	ExpireTime  string               `json:"expireTime"`
-	Git         *codemodels.Git      `json:"git"`
-	Tags        []*controllertag.Tag `json:"tags"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Priority    string              `json:"priority"`
+	ExpireTime  string              `json:"expireTime"`
+	Git         *codemodels.Git     `json:"git"`
+	Tags        tagmodels.TagsBasic `json:"tags"`
 
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`
 	TemplateInfo   *codemodels.TemplateInfo `json:"templateInfo"`
@@ -116,7 +115,7 @@ type UpdateClusterRequestV2 struct {
 	Environment *string `json:"environment"`
 	Region      *string `json:"region"`
 
-	Tags []*controllertag.Tag `json:"tags"`
+	Tags tagmodels.TagsBasic `json:"tags"`
 	// source info
 	Git *codemodels.Git `json:"git"`
 
@@ -163,16 +162,16 @@ func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireS
 
 type GetClusterResponseV2 struct {
 	// basic infos
-	ID              uint                  `json:"id"`
-	Name            string                `json:"name"`
-	Description     string                `json:"description"`
-	Priority        string                `json:"priority"`
-	ExpireTime      string                `json:"expireTime"`
-	Scope           *Scope                `json:"scope"`
-	FullPath        string                `json:"fullPath"`
-	ApplicationName string                `json:"applicationName"`
-	ApplicationID   uint                  `json:"applicationID"`
-	Tags            []*tagmodels.TagBasic `json:"tags"`
+	ID              uint                `json:"id"`
+	Name            string              `json:"name"`
+	Description     string              `json:"description"`
+	Priority        string              `json:"priority"`
+	ExpireTime      string              `json:"expireTime"`
+	Scope           *Scope              `json:"scope"`
+	FullPath        string              `json:"fullPath"`
+	ApplicationName string              `json:"applicationName"`
+	ApplicationID   uint                `json:"applicationID"`
+	Tags            tagmodels.TagsBasic `json:"tags"`
 
 	// source info
 	Git *codemodels.Git `json:"git"`
