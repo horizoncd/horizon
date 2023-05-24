@@ -512,7 +512,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	if err != nil {
 		return err
 	}
-	if !tagmodels.Tags(tags).Eq(tagsInDB) {
+	if r.Tags != nil && !tagmodels.Tags(tags).Eq(tagsInDB) {
 		if err := c.clusterGitRepo.UpdateTags(ctx, application.Name, cluster.Name, cluster.Template, tags); err != nil {
 			return err
 		}
