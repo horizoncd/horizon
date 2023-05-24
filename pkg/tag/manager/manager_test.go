@@ -43,17 +43,13 @@ func TestMain(m *testing.M) {
 
 func Test(t *testing.T) {
 	clusterID := uint(1)
-	err := mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.Tag{
+	err := mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.TagBasic{
 		{
-			ResourceType: common.ResourceCluster,
-			ResourceID:   clusterID,
-			Key:          "a",
-			Value:        "1",
+			Key:   "a",
+			Value: "1",
 		}, {
-			ResourceType: common.ResourceCluster,
-			ResourceID:   clusterID,
-			Key:          "b",
-			Value:        "2",
+			Key:   "b",
+			Value: "2",
 		},
 	})
 	assert.Nil(t, err)
@@ -67,17 +63,13 @@ func Test(t *testing.T) {
 	assert.Equal(t, "b", tags[1].Key)
 	assert.Equal(t, "2", tags[1].Value)
 
-	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.Tag{
+	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.TagBasic{
 		{
-			ResourceType: common.ResourceCluster,
-			ResourceID:   clusterID,
-			Key:          "a",
-			Value:        "1",
+			Key:   "a",
+			Value: "1",
 		}, {
-			ResourceType: common.ResourceCluster,
-			ResourceID:   clusterID,
-			Key:          "c",
-			Value:        "3",
+			Key:   "c",
+			Value: "3",
 		},
 	})
 	assert.Nil(t, err)
@@ -91,22 +83,16 @@ func Test(t *testing.T) {
 	assert.Equal(t, "c", tags[1].Key)
 	assert.Equal(t, "3", tags[1].Value)
 
-	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.Tag{
+	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.TagBasic{
 		{
-			ResourceType: common.ResourceCluster,
-			ResourceID:   clusterID,
-			Key:          "a",
-			Value:        "1",
+			Key:   "a",
+			Value: "1",
 		}, {
-			ResourceType: common.ResourceCluster,
-			ResourceID:   clusterID,
-			Key:          "c",
-			Value:        "3",
+			Key:   "c",
+			Value: "3",
 		}, {
-			ResourceType: common.ResourceCluster,
-			ResourceID:   clusterID,
-			Key:          "d",
-			Value:        "4",
+			Key:   "d",
+			Value: "4",
 		},
 	})
 	assert.Nil(t, err)
@@ -122,12 +108,10 @@ func Test(t *testing.T) {
 	assert.Equal(t, "d", tags[2].Key)
 	assert.Equal(t, "4", tags[2].Value)
 
-	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.Tag{
+	err = mgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, []*models.TagBasic{
 		{
-			ResourceType: common.ResourceCluster,
-			ResourceID:   clusterID,
-			Key:          "d",
-			Value:        "4",
+			Key:   "d",
+			Value: "4",
 		},
 	})
 	assert.Nil(t, err)

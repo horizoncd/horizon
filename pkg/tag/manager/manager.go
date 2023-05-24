@@ -34,7 +34,7 @@ type Manager interface {
 	ListByResourceTypeIDs(ctx context.Context, resourceType string, resourceIDs []uint,
 		deduplicate bool) ([]*models.Tag, error)
 	// UpsertByResourceTypeID upsert tags
-	UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.Tag) error
+	UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.TagBasic) error
 	CreateMetatags(ctx context.Context, metatags []*models.Metatag) error
 	GetMetatagKeys(ctx context.Context) ([]string, error)
 	GetMetatagsByKey(ctx context.Context, key string) ([]*models.Metatag, error)
@@ -61,7 +61,16 @@ func (m *manager) ListByResourceTypeIDs(ctx context.Context, resourceType string
 }
 
 func (m *manager) UpsertByResourceTypeID(ctx context.Context,
-	resourceType string, resourceID uint, tags []*models.Tag) error {
+	resourceType string, resourceID uint, tagsBasic []*models.TagBasic) error {
+	tags := make([]*models.Tag, 0, len(tagsBasic))
+	for _, tag := range tagsBasic {
+		tags = append(tags, &models.Tag{
+			Key:          tag.Key,
+			Value:        tag.Value,
+			ResourceID:   resourceID,
+			ResourceType: resourceType,
+		})
+	}
 	return m.dao.UpsertByResourceTypeID(ctx, resourceType, resourceID, tags)
 }
 

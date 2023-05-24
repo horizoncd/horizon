@@ -45,7 +45,6 @@ import (
 	registryftymock "github.com/horizoncd/horizon/mock/pkg/cluster/registry/factory"
 	tektonmock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton"
 	tektonftymock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/factory"
-	tagmock "github.com/horizoncd/horizon/mock/pkg/tag/manager"
 	outputmock "github.com/horizoncd/horizon/mock/pkg/templaterelease/output"
 	trschemamock "github.com/horizoncd/horizon/mock/pkg/templaterelease/schema"
 	appgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
@@ -74,11 +73,12 @@ import (
 	registrydao "github.com/horizoncd/horizon/pkg/registry/dao"
 	registrymodels "github.com/horizoncd/horizon/pkg/registry/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	tmodel "github.com/horizoncd/horizon/pkg/tag/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	gitlabschema "github.com/horizoncd/horizon/pkg/templaterelease/schema/gitlab"
-	tagmodel "github.com/horizoncd/horizon/pkg/templateschematag/models"
+	schematagmodel "github.com/horizoncd/horizon/pkg/templateschematag/models"
 	tokenmodels "github.com/horizoncd/horizon/pkg/token/models"
 	tokenservice "github.com/horizoncd/horizon/pkg/token/service"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
@@ -453,7 +453,7 @@ func TestMain(m *testing.M) {
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
 		&registrymodels.Registry{}, eventmodels.Event{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{}, &eventmodels.Event{},
-		&prmodels.Pipelinerun{}, &tagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{},
+		&prmodels.Pipelinerun{}, &schematagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{},
 		&envmodels.Environment{}, &tokenmodels.Token{}); err != nil {
 		panic(err)
 	}
@@ -526,7 +526,7 @@ func test(t *testing.T) {
 	tektonFty := tektonftymock.NewMockFactory(mockCtl)
 	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	commitGetter := commitmock.NewMockGitGetter(mockCtl)
-	tagManager := tagmock.NewMockManager(mockCtl)
+	tagManager := manager.TagManager
 
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
 	expectparams := make(map[string]string)
@@ -656,7 +656,6 @@ func test(t *testing.T) {
 	}
 
 	commitGetter.EXPECT().GetHTTPLink(gomock.Any()).Return("https://cloudnative.com:22222/demo/springboot-demo", nil).AnyTimes()
-	tagManager.EXPECT().ListByResourceTypeIDs(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	applicationGitRepo.EXPECT().GetApplication(ctx, gomock.Any(), gomock.Any()).
 		Return(&appgitrepo.GetResponse{
 			Manifest:     nil,
@@ -691,6 +690,8 @@ func test(t *testing.T) {
 	clusterGitRepo.EXPECT().DefaultBranch().Return("master").AnyTimes()
 	cd.EXPECT().CreateCluster(ctx, gomock.Any()).Return(nil).AnyTimes()
 
+	clusterGitRepo.EXPECT().UpdateTags(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
 	createClusterRequest := &CreateClusterRequest{
 		Base: &Base{
 			Description: "cluster description",
@@ -700,6 +701,12 @@ func test(t *testing.T) {
 			TemplateInput: &TemplateInput{
 				Application: applicationJSONBlob,
 				Pipeline:    pipelineJSONBlob,
+			},
+			Tags: tagmodels.TagsBasic{
+				{
+					Key:   "key1",
+					Value: "value1",
+				},
 			},
 		},
 		Name:       "app-cluster",
@@ -731,6 +738,12 @@ func test(t *testing.T) {
 				Subfolder: "/new",
 				Branch:    "new",
 			},
+			Tags: tagmodels.TagsBasic{
+				{
+					Key:   "key1",
+					Value: "value2",
+				},
+			},
 			TemplateInput: &TemplateInput{
 				Application: applicationJSONBlob,
 				Pipeline:    pipelineJSONBlob,
@@ -760,6 +773,8 @@ func test(t *testing.T) {
 	// NOTE: template name cannot be edited! template release can be edited
 	assert.Equal(t, resp.Template.Name, "javaapp")
 	assert.Equal(t, resp.Template.Release, "v1.0.1")
+	assert.Equal(t, 1, len(resp.Base.Tags))
+	assert.Equal(t, "value2", resp.Base.Tags[0].Value)
 
 	resp, err = c.GetCluster(ctx, resp.ID)
 	assert.Nil(t, err)
@@ -773,6 +788,8 @@ func test(t *testing.T) {
 	assert.Equal(t, resp.Template.Release, "v1.0.1")
 	assert.Equal(t, resp.TemplateInput.Application, applicationJSONBlob)
 	assert.Equal(t, resp.TemplateInput.Pipeline, pipelineJSONBlob)
+	assert.Equal(t, 1, len(resp.Base.Tags))
+	assert.Equal(t, "value2", resp.Base.Tags[0].Value)
 
 	resp, err = c.UpdateCluster(ctx, resp.ID, &UpdateClusterRequest{
 		Base:       &Base{},
@@ -782,6 +799,7 @@ func test(t *testing.T) {
 	resp, err = c.GetCluster(ctx, resp.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, "48h0m0s", resp.ExpireTime)
+	assert.Equal(t, 0, len(resp.Base.Tags))
 
 	count, respList, err := c.ListByApplication(ctx,
 		q.New(q.KeyWords{
@@ -1249,7 +1267,6 @@ func testV2(t *testing.T) {
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
-	tagManager := tagmock.NewMockManager(mockCtl)
 	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	mockCd := cdmock.NewMockCD(mockCtl)
 
@@ -1269,6 +1286,48 @@ func testV2(t *testing.T) {
 	regionMgr := manager.RegionMgr
 	groupMgr := manager.GroupManager
 	envRegionMgr := manager.EnvRegionMgr
+
+	registryDAO := registrydao.NewDAO(db)
+	id, err := registryDAO.Create(ctx, &registrymodels.Registry{
+		Server: "https://harbor.com",
+		Token:  "xxx",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, id)
+
+	region, err := regionMgr.Create(ctx, &regionmodels.Region{
+		Name:        "hz",
+		DisplayName: "HZ",
+		RegistryID:  id,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, region)
+
+	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+		EnvironmentName: "test2",
+		RegionName:      "hz",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, er)
+	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &envregionmodels.EnvironmentRegion{
+		EnvironmentName: "dev2",
+		RegionName:      "hz",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, er)
+
+	env, err := envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+		Name:        "dev2",
+		DisplayName: "开发",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, env)
+	env, err = envMgr.CreateEnvironment(ctx, &envmodels.Environment{
+		Name:        "test2",
+		DisplayName: "开发",
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, env)
 
 	// init data
 	group, err := groupMgr.Create(ctx, &groupmodels.Group{
@@ -1319,11 +1378,11 @@ func testV2(t *testing.T) {
 		groupSvc:             groupservice.NewService(manager),
 		pipelinerunMgr:       manager.PipelinerunMgr,
 		userManager:          manager.UserManager,
-		autoFreeSvc:          param.AutoFreeSvc,
+		autoFreeSvc:          service.New([]string{"dev2", "test2"}),
 		userSvc:              userservice.NewService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		applicationGitRepo:   applicationGitRepo,
-		tagMgr:               tagManager,
+		tagMgr:               manager.TagManager,
 		registryFty:          registryFty,
 		cd:                   mockCd,
 		eventMgr:             manager.EventManager,
@@ -1344,6 +1403,12 @@ func testV2(t *testing.T) {
 		Git: &codemodels.Git{
 			Branch: "develop",
 		},
+		Tags: tagmodels.TagsBasic{
+			{
+				Key:   "key1",
+				Value: "value1",
+			},
+		},
 		BuildConfig: pipelineJSONBlob,
 		TemplateInfo: &codemodels.TemplateInfo{
 			Name:    templateName,
@@ -1352,7 +1417,7 @@ func testV2(t *testing.T) {
 		TemplateConfig: applicationJSONBlob,
 		ExtraMembers:   nil,
 	}
-	resp, err := c.CreateClusterV2(ctx, application.ID, "test", "hz", createReq, false)
+	resp, err := c.CreateClusterV2(ctx, application.ID, "test2", "hz", createReq, false)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.ApplicationID, application.ID)
@@ -1360,7 +1425,6 @@ func testV2(t *testing.T) {
 	t.Logf("%+v", resp)
 
 	// then get cluster
-	tagManager.EXPECT().ListByResourceTypeID(ctx, gomock.Any(), resp.ID).Return(nil, nil).Times(1)
 	clusterGitRepo.EXPECT().GetCluster(ctx, applicationName, createClusterName, templateName).Return(&gitrepo.ClusterFiles{
 		PipelineJSONBlob:    pipelineJSONBlob,
 		ApplicationJSONBlob: applicationJSONBlob,
@@ -1383,6 +1447,8 @@ func testV2(t *testing.T) {
 	assert.Equal(t, getClusterResp.TemplateInfo.Release, templateVersion)
 	assert.Nil(t, getClusterResp.Manifest)
 	assert.Equal(t, getClusterResp.Status, "")
+	assert.Equal(t, 1, len(getClusterResp.Tags))
+	assert.Equal(t, getClusterResp.Tags[0].Value, "value1")
 	t.Logf("%+v", getClusterResp)
 
 	// update v2
@@ -1393,6 +1459,12 @@ func testV2(t *testing.T) {
 	}, nil).Times(1)
 
 	updateRequestV2 := &UpdateClusterRequestV2{
+		Tags: tagmodels.TagsBasic{
+			{
+				Key:   "key1",
+				Value: "value2",
+			},
+		},
 		Description:    "",
 		ExpireTime:     "336h0m0s",
 		BuildConfig:    pipelineJSONBlob,
@@ -1414,6 +1486,7 @@ func testV2(t *testing.T) {
 		Manifest:            manifest,
 	}, nil).Times(1)
 	clusterGitRepo.EXPECT().UpdateCluster(ctx, gomock.Any()).Return(nil).Times(1)
+	clusterGitRepo.EXPECT().UpdateTags(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 	templateSchemaGetter.EXPECT().GetTemplateSchema(gomock.Any(), templateName, "v1.0.0", gomock.Any()).
 		Return(&trschema.Schemas{
 			Application: &trschema.Schema{
@@ -1453,7 +1526,6 @@ func testUpgrade(t *testing.T) {
 	clusterGitRepo := clustergitrepomock.NewMockClusterGitRepo(mockCtl)
 	applicationGitRepo := applicationgitrepomock.NewMockApplicationGitRepo2(mockCtl)
 	templateSchemaGetter := trschemamock.NewMockGetter(mockCtl)
-	tagManager := tagmock.NewMockManager(mockCtl)
 	registryFty := registryftymock.NewMockRegistryGetter(mockCtl)
 	mockCd := cdmock.NewMockCD(mockCtl)
 
@@ -1528,7 +1600,7 @@ func testUpgrade(t *testing.T) {
 		userSvc:               userservice.NewService(manager),
 		schemaTagManager:      manager.ClusterSchemaTagMgr,
 		applicationGitRepo:    applicationGitRepo,
-		tagMgr:                tagManager,
+		tagMgr:                manager.TagManager,
 		registryFty:           registryFty,
 		cd:                    mockCd,
 		eventMgr:              manager.EventManager,

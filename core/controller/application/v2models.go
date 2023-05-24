@@ -19,14 +19,16 @@ import (
 
 	"github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 )
 
 type GetApplicationResponseV2 struct {
-	ID          uint            `json:"id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Priority    string          `json:"priority"`
-	Git         *codemodels.Git `json:"git"`
+	ID          uint                `json:"id"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Priority    string              `json:"priority"`
+	Tags        tagmodels.TagsBasic `json:"tags,omitempty"`
+	Git         *codemodels.Git     `json:"git"`
 
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`
 	TemplateInfo   *codemodels.TemplateInfo `json:"templateInfo"`
@@ -45,6 +47,7 @@ type CreateOrUpdateApplicationRequestV2 struct {
 	Name           string                   `json:"name"`
 	Description    string                   `json:"description"`
 	Priority       *string                  `json:"priority"`
+	Tags           tagmodels.TagsBasic      `json:"tags,omitempty"`
 	Git            *codemodels.Git          `json:"git"`
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`
 	TemplateInfo   *codemodels.TemplateInfo `json:"templateInfo"`

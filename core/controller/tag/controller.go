@@ -93,7 +93,7 @@ func (c *controller) Update(ctx context.Context, resourceType string, resourceID
 		}
 	}
 
-	return c.tagMgr.UpsertByResourceTypeID(ctx, resourceType, resourceID, tags)
+	return c.tagMgr.UpsertByResourceTypeID(ctx, resourceType, resourceID, r.Tags)
 }
 
 func (c *controller) ListSubResourceTags(ctx context.Context, resourceType string,

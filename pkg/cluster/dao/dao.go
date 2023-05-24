@@ -29,6 +29,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
+	"gorm.io/gorm/clause"
 
 	"gorm.io/gorm"
 )
@@ -110,7 +111,18 @@ func (d *dao) Create(ctx context.Context, cluster *models.Cluster,
 			tags[i].ResourceID = cluster.ID
 		}
 
-		result = tx.Create(tags)
+		result = tx.Clauses(clause.OnConflict{
+			Columns: []clause.Column{
+				{
+					Name: "resource_type",
+				}, {
+					Name: "resource_id",
+				}, {
+					Name: "tag_key",
+				},
+			},
+			DoUpdates: clause.AssignmentColumns([]string{"tag_value"}),
+		}).Create(tags)
 		if result.Error != nil {
 			return herrors.NewErrInsertFailed(herrors.ClusterInDB, result.Error.Error())
 		}

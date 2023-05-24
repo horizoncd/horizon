@@ -40,6 +40,7 @@ import (
 	membermodels "github.com/horizoncd/horizon/pkg/member/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tagmanager "github.com/horizoncd/horizon/pkg/tag/manager"
+	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/mergemap"
@@ -283,11 +284,17 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 		}
 	}
 
-	// 7. transfer model
-	clusterResp := ofClusterModel(application, cluster, fullPath, envValue.Namespace,
-		clusterFiles.PipelineJSONBlob, clusterFiles.ApplicationJSONBlob)
+	// 7. get tags
+	tags, err := c.tagMgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
+	if err != nil {
+		return nil, err
+	}
 
-	// 8. get latest deployed commit
+	// 8. transfer model
+	clusterResp := ofClusterModel(application, cluster, fullPath, envValue.Namespace,
+		clusterFiles.PipelineJSONBlob, clusterFiles.ApplicationJSONBlob, tags...)
+
+	// 9. get latest deployed commit
 	latestPR, err := c.pipelinerunMgr.GetLatestSuccessByClusterID(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -297,7 +304,7 @@ func (c *controller) GetCluster(ctx context.Context, clusterID uint) (_ *GetClus
 		clusterResp.Image = latestPR.ImageURL
 	}
 
-	// 9. get createdBy and updatedBy users
+	// 10. get createdBy and updatedBy users
 	userMap, err := c.userManager.GetUserMapByIDs(ctx, []uint{cluster.CreatedBy, cluster.UpdatedBy})
 	if err != nil {
 		return nil, err
@@ -619,6 +626,9 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
+
+	clusterModel, tags := r.toClusterModel(cluster, templateRelease, er)
+
 	// 4. if templateInput is not empty, validate templateInput and update templateInput in git repo
 	if r.TemplateInput != nil {
 		// merge cluster config and request config
@@ -681,11 +691,24 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	// 5. update cluster in db
-	clusterModel := r.toClusterModel(cluster, templateRelease, er)
 	// todo: atomicity
 	cluster, err = c.clusterMgr.UpdateByID(ctx, clusterID, clusterModel)
 	if err != nil {
 		return nil, err
+	}
+
+	// 7. update cluster tags
+	tagsInDB, err := c.tagMgr.ListByResourceTypeID(ctx, common.ResourceCluster, clusterID)
+	if err != nil {
+		return nil, err
+	}
+	if !tagmodels.Tags(tags).Eq(tagsInDB) {
+		if err := c.clusterGitRepo.UpdateTags(ctx, application.Name, cluster.Name, cluster.Template, tags); err != nil {
+			return nil, err
+		}
+		if err := c.tagMgr.UpsertByResourceTypeID(ctx, common.ResourceCluster, clusterID, r.Tags); err != nil {
+			return nil, err
+		}
 	}
 
 	// 6. record event
@@ -715,7 +738,7 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	}
 
 	return ofClusterModel(application, cluster, fullPath, envValue.Namespace,
-		r.TemplateInput.Pipeline, r.TemplateInput.Application), nil
+		r.TemplateInput.Pipeline, r.TemplateInput.Application, tags...), nil
 }
 
 func (c *controller) GetClusterByName(ctx context.Context,

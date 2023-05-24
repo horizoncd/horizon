@@ -17,7 +17,6 @@ package cluster
 import (
 	"time"
 
-	controllertag "github.com/horizoncd/horizon/core/controller/tag"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/models"
@@ -27,11 +26,11 @@ import (
 )
 
 type Base struct {
-	Description   string               `json:"description"`
-	Git           *codemodels.Git      `json:"git"`
-	Template      *Template            `json:"template"`
-	TemplateInput *TemplateInput       `json:"templateInput"`
-	Tags          []*controllertag.Tag `json:"tags"`
+	Description   string                `json:"description"`
+	Git           *codemodels.Git       `json:"git"`
+	Template      *Template             `json:"template"`
+	TemplateInput *TemplateInput        `json:"templateInput"`
+	Tags          []*tagmodels.TagBasic `json:"tags"`
 }
 
 type TemplateInput struct {
@@ -136,7 +135,7 @@ func (r *CreateClusterRequest) toClusterModel(application *appmodels.Application
 }
 
 func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
-	templateRelease string, er *envregionmodels.EnvironmentRegion) *models.Cluster {
+	templateRelease string, er *envregionmodels.EnvironmentRegion) (*models.Cluster, []*tagmodels.Tag) {
 	var gitURL, gitSubfolder, gitRef, gitRefType string
 	if r.Git != nil {
 		gitURL, gitSubfolder, gitRefType, gitRef = r.Git.URL,
@@ -146,6 +145,14 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		gitSubfolder = cluster.GitSubfolder
 		gitRefType = cluster.GitRefType
 		gitRef = cluster.GitRef
+	}
+
+	tags := make([]*tagmodels.Tag, 0)
+	for _, tag := range r.Tags {
+		tags = append(tags, &tagmodels.Tag{
+			Key:   tag.Key,
+			Value: tag.Value,
+		})
 	}
 
 	return &models.Cluster{
@@ -160,7 +167,7 @@ func (r *UpdateClusterRequest) toClusterModel(cluster *models.Cluster,
 		TemplateRelease: templateRelease,
 		Status:          cluster.Status,
 		ExpireSeconds:   cluster.ExpireSeconds,
-	}
+	}, tags
 }
 
 func getUserFromMap(id uint, userMap map[uint]*usermodels.User) *usermodels.User {
@@ -183,15 +190,17 @@ func toUser(user *usermodels.User) *User {
 }
 
 func ofClusterModel(application *appmodels.Application, cluster *models.Cluster, fullPath, namespace string,
-	pipelineJSONBlob, applicationJSONBlob map[string]interface{}) *GetClusterResponse {
+	pipelineJSONBlob, applicationJSONBlob map[string]interface{}, tags ...*tagmodels.Tag) *GetClusterResponse {
 	expireTime := ""
 	if cluster.ExpireSeconds > 0 {
 		expireTime = time.Duration(cluster.ExpireSeconds * 1e9).String()
 	}
+
 	return &GetClusterResponse{
 		CreateClusterRequest: &CreateClusterRequest{
 			Base: &Base{
 				Description: cluster.Description,
+				Tags:        tagmodels.Tags(tags).IntoTagsBasic(),
 				Git: codemodels.NewGit(cluster.GitURL, cluster.GitSubfolder,
 					cluster.GitRefType, cluster.GitRef),
 				TemplateInput: &TemplateInput{

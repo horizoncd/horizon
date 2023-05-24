@@ -116,7 +116,7 @@ func Test(t *testing.T) {
 
 	clusterID := cluster.ID
 	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
-		Tags: []*Tag{
+		Tags: []*tagmodels.TagBasic{
 			{
 				Key:   "a",
 				Value: "1",
@@ -137,7 +137,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "2", resp.Tags[1].Value)
 
 	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
-		Tags: []*Tag{
+		Tags: []*tagmodels.TagBasic{
 			{
 				Key:   "a",
 				Value: "1",
@@ -158,7 +158,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "3", resp.Tags[1].Value)
 
 	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
-		Tags: []*Tag{
+		Tags: []*tagmodels.TagBasic{
 			{
 				Key:   "a",
 				Value: "1",
@@ -184,7 +184,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "4", resp.Tags[2].Value)
 
 	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
-		Tags: []*Tag{
+		Tags: []*tagmodels.TagBasic{
 			{
 				Key:   "d",
 				Value: "4",
@@ -200,7 +200,7 @@ func Test(t *testing.T) {
 	assert.Equal(t, "4", resp.Tags[0].Value)
 
 	err = c.Update(ctx, common.ResourceCluster, clusterID, &UpdateRequest{
-		Tags: []*Tag{},
+		Tags: []*tagmodels.TagBasic{},
 	})
 	assert.Nil(t, err)
 
@@ -208,9 +208,9 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(resp.Tags))
 
-	tags := make([]*Tag, 0)
+	tags := make([]*tagmodels.TagBasic, 0)
 	for i := 0; i < 21; i++ {
-		tags = append(tags, &Tag{
+		tags = append(tags, &tagmodels.TagBasic{
 			Key:   strconv.Itoa(i),
 			Value: strconv.Itoa(i),
 		})
@@ -231,7 +231,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = c.Update(ctx, common.ResourceCluster, cluster2.ID, &UpdateRequest{
-		Tags: []*Tag{
+		Tags: []*tagmodels.TagBasic{
 			{
 				Key:   "d",
 				Value: "4",
