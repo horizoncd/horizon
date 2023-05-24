@@ -15,11 +15,13 @@
 -- metatag table
 CREATE TABLE `tb_metatag`
 (
-    `tag_key`    varchar(64)  NOT NULL DEFAULT '' comment 'key of the metatag',
-    `tag_value`  varchar(128) NOT NULL DEFAULT '' comment 'value of the metatag',
-    `description`  varchar(64)  NOT NULL DEFAULT '' comment 'description',
-    `created_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `id`          bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    `tag_key`     varchar(64)  NOT NULL DEFAULT '' comment 'key of the metatag',
+    `tag_value`   varchar(128) NOT NULL DEFAULT '' comment 'value of the metatag',
+    `description` varchar(64)  NOT NULL DEFAULT '' comment 'description',
+    `created_at`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
     UNIQUE KEY `idx_key_value` (`tag_key`, `tag_value`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
