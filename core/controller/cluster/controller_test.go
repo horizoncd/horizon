@@ -799,6 +799,15 @@ func test(t *testing.T) {
 	resp, err = c.GetCluster(ctx, resp.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, "48h0m0s", resp.ExpireTime)
+	assert.Equal(t, 1, len(resp.Base.Tags))
+
+	resp, err = c.UpdateCluster(ctx, resp.ID, &UpdateClusterRequest{
+		Base:       &Base{Tags: tagmodels.TagsBasic{}},
+		ExpireTime: "48h0m0s",
+	}, false)
+	assert.Nil(t, err)
+	resp, err = c.GetCluster(ctx, resp.ID)
+	assert.Nil(t, err)
 	assert.Equal(t, 0, len(resp.Base.Tags))
 
 	count, respList, err := c.ListByApplication(ctx,
