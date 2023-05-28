@@ -208,8 +208,8 @@ const (
 	PipelinerunDeleteByID                    = "delete from tb_pipelinerun where id = ?"
 	PipelinerunDeleteByClusterID             = "delete from tb_pipelinerun where cluster_id = ?"
 	PipelinerunUpdateConfigCommitByID        = "update tb_pipelinerun set config_commit = ? where id = ?"
-	PipelinerunGetLatestByClusterIDAndAction = "select * from tb_pipelinerun where cluster_id = ? " +
-		"and action = ? order by id desc limit 1"
+	PipelinerunGetLatestByClusterIDAndActions = "select * from tb_pipelinerun where cluster_id = ? " +
+		"and action in ? order by id desc limit 1"
 	PipelinerunGetLatestByClusterIDAndActionAndStatus = "select * from tb_pipelinerun where cluster_id = ? " +
 		"and action = ? and status = ? order by id desc limit 1"
 	PipelinerunGetLatestSuccessByClusterID = "select * from tb_pipelinerun where cluster_id = ? and status = 'ok' and " +

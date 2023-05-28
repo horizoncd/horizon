@@ -141,9 +141,9 @@ func (mr *MockManagerMockRecorder) GetFirstCanRollbackPipelinerun(ctx, clusterID
 }
 
 // GetLatestByClusterIDAndAction mocks base method.
-func (m *MockManager) GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error) {
+func (m *MockManager) GetLatestByClusterIDAndActions(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestByClusterIDAndAction", ctx, clusterID, action)
+	ret := m.ctrl.Call(m, "GetLatestByClusterIDAndActions", ctx, clusterID, action)
 	ret0, _ := ret[0].(*models.Pipelinerun)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -152,7 +152,7 @@ func (m *MockManager) GetLatestByClusterIDAndAction(ctx context.Context, cluster
 // GetLatestByClusterIDAndAction indicates an expected call of GetLatestByClusterIDAndAction.
 func (mr *MockManagerMockRecorder) GetLatestByClusterIDAndAction(ctx, clusterID, action interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestByClusterIDAndAction", reflect.TypeOf((*MockManager)(nil).GetLatestByClusterIDAndAction), ctx, clusterID, action)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestByClusterIDAndActions", reflect.TypeOf((*MockManager)(nil).GetLatestByClusterIDAndActions), ctx, clusterID, action)
 }
 
 // GetLatestByClusterIDAndActionAndStatus mocks base method.

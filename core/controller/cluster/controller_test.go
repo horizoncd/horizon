@@ -923,7 +923,7 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(clusterStatusResp)
 	t.Logf("%v", string(b))
 
-	buildStatusResp, err := c.GetClusterBuildStatus(ctx, resp.ID)
+	buildStatusResp, err := c.GetClusterPipelinerunStatus(ctx, resp.ID)
 	assert.Nil(t, err)
 	b, _ = json.Marshal(buildStatusResp)
 	t.Logf("%v", string(b))

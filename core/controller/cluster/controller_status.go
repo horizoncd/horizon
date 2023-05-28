@@ -44,8 +44,8 @@ const (
 	_notFound = "NotFound"
 )
 
-func (c *controller) GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error) {
-	resp := &BuildStatusResponse{}
+func (c *controller) GetClusterPipelinerunStatus(ctx context.Context, clusterID uint) (*PipelinerunStatusResponse, error) {
+	resp := &PipelinerunStatusResponse{}
 
 	// get latest pipelinerun
 	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, clusterID)
@@ -65,7 +65,8 @@ func (c *controller) GetClusterBuildStatus(ctx context.Context, clusterID uint) 
 	}
 
 	if latestPipelinerun == nil ||
-		latestPipelinerun.Action != prmodels.ActionBuildDeploy {
+		(latestPipelinerun.Action != prmodels.ActionBuildDeploy &&
+			latestPipelinerun.Action != prmodels.ActionDeploy) {
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}

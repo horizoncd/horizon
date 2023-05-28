@@ -287,7 +287,7 @@ func Test(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	pr, err := pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, uint(1), prmodels.ActionBuildDeploy)
+	pr, err := pipelinerunMgr.GetLatestByClusterIDAndActions(ctx, uint(1), prmodels.ActionBuildDeploy)
 	assert.Nil(t, err)
 	assert.Equal(t, pr.Status, "ok")
 	assert.Equal(t, pr.LogObject, "log-object")

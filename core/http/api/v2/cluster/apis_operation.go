@@ -177,8 +177,8 @@ func (a *API) ClusterStatus(c *gin.Context) {
 	response.SuccessWithData(c, resp)
 }
 
-func (a *API) ClusterBuildStatus(c *gin.Context) {
-	op := "cluster: cluster build status"
+func (a *API) ClusterPipelinerunStatus(c *gin.Context) {
+	op := "cluster: cluster pipelinerun status"
 	clusterIDStr := c.Param(common.ParamClusterID)
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 0)
 	if err != nil {
@@ -186,7 +186,7 @@ func (a *API) ClusterBuildStatus(c *gin.Context) {
 		return
 	}
 
-	resp, err := a.clusterCtl.GetClusterBuildStatus(c, uint(clusterID))
+	resp, err := a.clusterCtl.GetClusterPipelinerunStatus(c, uint(clusterID))
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ClusterInDB {
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))

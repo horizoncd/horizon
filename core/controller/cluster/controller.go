@@ -114,7 +114,7 @@ type Controller interface {
 		r *InternalDeployRequestV2) (_ *InternalDeployResponseV2, err error)
 	InternalGetClusterStatus(ctx context.Context, clusterID uint) (_ *GetClusterStatusResponse, err error)
 	GetClusterStatusV2(ctx context.Context, clusterID uint) (_ *StatusResponseV2, err error)
-	GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error)
+	GetClusterPipelinerunStatus(ctx context.Context, clusterID uint) (*PipelinerunStatusResponse, error)
 	GetResourceTree(ctx context.Context, clusterID uint) (*GetResourceTreeResponse, error)
 	GetStep(ctx context.Context, clusterID uint) (resp *GetStepResponse, err error)
 	// Deprecated: for internal usage, v1 to v2

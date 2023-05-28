@@ -121,6 +121,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	const op = "cluster controller: deploy"
 	defer wlog.Start(ctx, op).StopPrint()
 
+	// 1. get models and do some validation
 	currentUser, err := common.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -141,39 +142,39 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-	// if pipeline config exists && image is empty, should buildDeploy first
-	if len(clusterFiles.PipelineJSONBlob) > 0 {
-		po, err := c.clusterGitRepo.GetPipelineOutput(ctx, application.Name, cluster.Name, cluster.Template)
-		if err != nil {
-			if perror.Cause(err) != herrors.ErrPipelineOutputEmpty {
-				return nil, err
-			}
-			return nil, herrors.ErrShouldBuildDeployFirst
-		}
-		if po == nil {
-			return nil, herrors.ErrShouldBuildDeployFirst
-		}
-	}
-
-	// 1. get config commit
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return nil, err
 	}
-	diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
-		&configCommit.Master, &configCommit.Gitops)
-	if err != nil {
-		return nil, err
-	}
-	if diff == "" && cluster.Status != common.ClusterStatusFreed {
-		return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
-	}
-
 	codeCommitID := cluster.GitRef
+
 	if cluster.GitURL != "" {
 		commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, cluster.GitRefType, cluster.GitRef)
 		if err == nil {
 			codeCommitID = commit.ID
+		}
+
+		// if cluster is imported from git, check pipeline output and config diffs
+		if len(clusterFiles.PipelineJSONBlob) > 0 {
+			po, err := c.clusterGitRepo.GetPipelineOutput(ctx, application.Name, cluster.Name, cluster.Template)
+			if err != nil {
+				if perror.Cause(err) != herrors.ErrPipelineOutputEmpty {
+					return nil, err
+				}
+				return nil, herrors.ErrShouldBuildDeployFirst
+			}
+			if po == nil {
+				return nil, herrors.ErrShouldBuildDeployFirst
+			}
+		}
+
+		diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
+			&configCommit.Master, &configCommit.Gitops)
+		if err != nil {
+			return nil, err
+		}
+		if diff == "" && cluster.Status != common.ClusterStatusFreed {
+			return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
 		}
 	}
 
