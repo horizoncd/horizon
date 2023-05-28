@@ -1426,7 +1426,6 @@ func testV2(t *testing.T) {
 		TemplateConfig: applicationJSONBlob,
 		ExtraMembers:   nil,
 	}
-	resp, err := c.CreateClusterV2(ctx, application.ID, "test2", "hz", createReq, false)
 	resp, err := c.CreateClusterV2(ctx, &CreateClusterParamsV2{
 		CreateClusterRequestV2: createReq,
 		ApplicationID:          application.ID,
