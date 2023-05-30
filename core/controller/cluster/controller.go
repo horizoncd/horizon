@@ -68,7 +68,7 @@ type Controller interface {
 		clusterName string) (*GetClusterByNameResponse, error)
 	GetClusterOutput(ctx context.Context, clusterID uint) (interface{}, error)
 	List(ctx context.Context, query *q.Query) ([]*ListClusterWithFullResponse, int, error)
-	ListByApplication(ctx context.Context, query *q.Query) (int, []*ListClusterResponse, error)
+	ListByApplication(ctx context.Context, query *q.Query) (int, []*ListClusterWithFullResponse, error)
 	ListClusterWithExpiry(ctx context.Context, query *q.Query) ([]*ListClusterWithExpiryResponse, error)
 
 	BuildDeploy(ctx context.Context, clusterID uint,
