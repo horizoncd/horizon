@@ -64,7 +64,7 @@ func (c *controller) GetClusterPipelinerunStatus(ctx context.Context, clusterID 
 		return nil, err
 	}
 
-	if latestPipelinerun == nil ||
+	if latestPipelinerun == nil || latestPipelinerun.Status == string(prmodels.StatusOK) ||
 		(latestPipelinerun.Action != prmodels.ActionBuildDeploy &&
 			latestPipelinerun.Action != prmodels.ActionDeploy) {
 		resp.RunningTask = &RunningTask{
