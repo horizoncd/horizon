@@ -27,6 +27,7 @@ type PipelinerunIDResponse struct {
 type DeployRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	ImageTag    string `json:"imageTag"`
 }
 
 type ExecuteActionRequest struct {

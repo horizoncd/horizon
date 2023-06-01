@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
@@ -147,6 +148,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 	codeCommitID := cluster.GitRef
+	imageURL := cluster.Image
 
 	if cluster.GitURL != "" {
 		commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, cluster.GitRefType, cluster.GitRef)
@@ -176,6 +178,12 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		if diff == "" && cluster.Status != common.ClusterStatusFreed {
 			return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
 		}
+	} else if cluster.Image != "" && r.ImageTag != "" {
+		imageRef, err := name.ParseReference(cluster.Image)
+		if err != nil {
+			return nil, perror.Wrapf(herrors.ErrParamInvalid, "invalid image url: %s", cluster.Image)
+		}
+		imageURL = fmt.Sprintf("%s:%s", imageRef.Context().Name(), r.ImageTag)
 	}
 
 	// 2. create pipeline record
@@ -189,7 +197,7 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		GitRefType:       cluster.GitRefType,
 		GitRef:           cluster.GitRef,
 		GitCommit:        codeCommitID,
-		ImageURL:         cluster.Image,
+		ImageURL:         imageURL,
 		LastConfigCommit: configCommit.Master,
 		ConfigCommit:     configCommit.Gitops,
 	})
