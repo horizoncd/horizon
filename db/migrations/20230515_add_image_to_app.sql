@@ -13,9 +13,9 @@
 -- limitations under the License.
 
 ALTER TABLE tb_application
-ADD COLUMN `image` varchar(256) DEFAULT NULL COMMENT 'artifact image url'
+ADD COLUMN `image` varchar(256) DEFAULT NULL
 COMMENT 'artifact image url for the application';
 
 ALTER TABLE tb_cluster
-ADD COLUMN `image` varchar(256) DEFAULT NULL COMMENT 'artifact image url'
+ADD COLUMN `image` varchar(256) DEFAULT NULL
 COMMENT 'artifact image url for the cluster';

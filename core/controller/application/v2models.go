@@ -29,7 +29,7 @@ type GetApplicationResponseV2 struct {
 	Priority    string              `json:"priority"`
 	Tags        tagmodels.TagsBasic `json:"tags,omitempty"`
 	Git         *codemodels.Git     `json:"git"`
-	Image       string          `json:"image"`
+	Image       string              `json:"image"`
 
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`
 	TemplateInfo   *codemodels.TemplateInfo `json:"templateInfo"`

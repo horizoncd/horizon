@@ -89,7 +89,6 @@ func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) 
 	}
 
 	// only builddeploy and deploy have logs
-	// TODO(zhuxu): 如何后向兼容没有日志的deploy类型流水线
 	if pr.Action != prmodels.ActionBuildDeploy && pr.Action != prmodels.ActionDeploy {
 		return nil, errors.E(op, fmt.Errorf("%v action has no log", pr.Action))
 	}
@@ -97,7 +96,6 @@ func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) 
 	return c.getPipelinerunLog(ctx, pr, cluster.EnvironmentName)
 }
 
-// TODO(zhuxu): 后向兼容没有日志的deploy类型流水线
 func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_ *collector.Log, err error) {
 	const op = "pipelinerun controller: get cluster latest log"
 	defer wlog.Start(ctx, op).StopPrint()

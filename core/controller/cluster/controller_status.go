@@ -44,7 +44,8 @@ const (
 	_notFound = "NotFound"
 )
 
-func (c *controller) GetClusterPipelinerunStatus(ctx context.Context, clusterID uint) (*PipelinerunStatusResponse, error) {
+func (c *controller) GetClusterPipelinerunStatus(ctx context.Context,
+	clusterID uint) (*PipelinerunStatusResponse, error) {
 	resp := &PipelinerunStatusResponse{}
 
 	// get latest pipelinerun

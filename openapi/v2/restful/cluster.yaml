@@ -1210,6 +1210,8 @@ components:
           $ref: "#/components/schemas/Commit"
     Image:
       type: string
+    ImageTag:
+      type: string
     GitResponse:
       type: object
       properties:
@@ -1462,6 +1464,8 @@ components:
           $ref: "#/components/schemas/Title"
         description:
           $ref: "#/components/schemas/Description"
+        imageTag:
+          $ref: "#/components/schemas/ImageTag"
 
     RollbackRequest:
       type: object

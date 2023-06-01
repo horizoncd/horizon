@@ -245,8 +245,6 @@ func (a *API) Create(c *gin.Context) {
 		request.ExtraMembers[extraOwner] = role.Owner
 	}
 
-	// resp, err := a.clusterCtl.CreateClusterV2(c, uint(applicationID), environment,
-	// 	region, request, mergePatch)
 	resp, err := a.clusterCtl.CreateClusterV2(c, &cluster.CreateClusterParamsV2{
 		CreateClusterRequestV2: request,
 		ApplicationID:          uint(applicationID),

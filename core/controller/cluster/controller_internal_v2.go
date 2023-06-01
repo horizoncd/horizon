@@ -172,9 +172,8 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 			EventType: func() string {
 				if pr.Action == prmodels.ActionBuildDeploy {
 					return eventmodels.ClusterBuildDeployed
-				} else {
-					return eventmodels.ClusterDeployed
 				}
+				return eventmodels.ClusterDeployed
 			}(),
 			ResourceID: cluster.ID,
 		},

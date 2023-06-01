@@ -203,11 +203,11 @@ const (
 
 /* sql about pipelinerun */
 const (
-	PipelinerunGetByID                       = "select * from tb_pipelinerun where id = ?"
-	PipelinerunGetByCIEventID                = "select * from tb_pipelinerun where ci_event_id = ?"
-	PipelinerunDeleteByID                    = "delete from tb_pipelinerun where id = ?"
-	PipelinerunDeleteByClusterID             = "delete from tb_pipelinerun where cluster_id = ?"
-	PipelinerunUpdateConfigCommitByID        = "update tb_pipelinerun set config_commit = ? where id = ?"
+	PipelinerunGetByID                        = "select * from tb_pipelinerun where id = ?"
+	PipelinerunGetByCIEventID                 = "select * from tb_pipelinerun where ci_event_id = ?"
+	PipelinerunDeleteByID                     = "delete from tb_pipelinerun where id = ?"
+	PipelinerunDeleteByClusterID              = "delete from tb_pipelinerun where cluster_id = ?"
+	PipelinerunUpdateConfigCommitByID         = "update tb_pipelinerun set config_commit = ? where id = ?"
 	PipelinerunGetLatestByClusterIDAndActions = "select * from tb_pipelinerun where cluster_id = ? " +
 		"and action in ? order by id desc limit 1"
 	PipelinerunGetLatestByClusterIDAndActionAndStatus = "select * from tb_pipelinerun where cluster_id = ? " +

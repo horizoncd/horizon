@@ -31,7 +31,7 @@ type CreateClusterRequestV2 struct {
 	Priority    string              `json:"priority"`
 	ExpireTime  string              `json:"expireTime"`
 	Git         *codemodels.Git     `json:"git"`
-	Image       *string              `json:"image"`
+	Image       *string             `json:"image"`
 	Tags        tagmodels.TagsBasic `json:"tags"`
 
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`

@@ -110,7 +110,7 @@ func (mr *MockManagerMockRecorder) ListByResourceTypeIDs(ctx, resourceType, reso
 }
 
 // UpsertByResourceTypeID mocks base method.
-func (m *MockManager) UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.Tag) error {
+func (m *MockManager) UpsertByResourceTypeID(ctx context.Context, resourceType string, resourceID uint, tags []*models.TagBasic) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpsertByResourceTypeID", ctx, resourceType, resourceID, tags)
 	ret0, _ := ret[0].(error)
