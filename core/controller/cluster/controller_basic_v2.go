@@ -173,7 +173,7 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	}
 
 	// 8. customize db infos
-	cluster, tags := params.CreateClusterRequestV2.toClusterModel(application,
+	cluster, tags := params.toClusterModel(application,
 		envEntity, buildTemplateInfo, expireSeconds)
 
 	// 9. update db and tags

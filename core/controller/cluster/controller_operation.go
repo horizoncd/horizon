@@ -151,39 +151,16 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	imageURL := cluster.Image
 
 	if cluster.GitURL != "" {
+		err = c.checkAllowDeploy(ctx, application, cluster, clusterFiles, configCommit)
+		if err != nil {
+			return nil, err
+		}
 		commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, cluster.GitRefType, cluster.GitRef)
 		if err == nil {
 			codeCommitID = commit.ID
 		}
-
-		// if cluster is imported from git, check pipeline output and config diffs
-		if len(clusterFiles.PipelineJSONBlob) > 0 {
-			po, err := c.clusterGitRepo.GetPipelineOutput(ctx, application.Name, cluster.Name, cluster.Template)
-			if err != nil {
-				if perror.Cause(err) != herrors.ErrPipelineOutputEmpty {
-					return nil, err
-				}
-				return nil, herrors.ErrShouldBuildDeployFirst
-			}
-			if po == nil {
-				return nil, herrors.ErrShouldBuildDeployFirst
-			}
-		}
-
-		diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
-			&configCommit.Master, &configCommit.Gitops)
-		if err != nil {
-			return nil, err
-		}
-		if diff == "" && cluster.Status != common.ClusterStatusFreed {
-			return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
-		}
-	} else if cluster.Image != "" && r.ImageTag != "" {
-		imageRef, err := name.ParseReference(cluster.Image)
-		if err != nil {
-			return nil, perror.Wrapf(herrors.ErrParamInvalid, "invalid image url: %s", cluster.Image)
-		}
-		imageURL = fmt.Sprintf("%s:%s", imageRef.Context().Name(), r.ImageTag)
+	} else if cluster.Image != "" {
+		imageURL, err = getDeployImage(cluster.Image, r.ImageTag)
 	}
 
 	// 2. create pipeline record
@@ -265,6 +242,46 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,
 	}, nil
+}
+
+func (c *controller) checkAllowDeploy(ctx context.Context,
+	application *amodels.Application, cluster *cmodels.Cluster,
+	clusterFiles *gitrepo.ClusterFiles, configCommit *gitrepo.ClusterCommit) error {
+	// check pipeline output
+	if len(clusterFiles.PipelineJSONBlob) > 0 {
+		po, err := c.clusterGitRepo.GetPipelineOutput(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
+			if perror.Cause(err) != herrors.ErrPipelineOutputEmpty {
+				return err
+			}
+			return herrors.ErrShouldBuildDeployFirst
+		}
+		if po == nil {
+			return herrors.ErrShouldBuildDeployFirst
+		}
+	}
+
+	// check config diffs
+	diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
+		&configCommit.Master, &configCommit.Gitops)
+	if err != nil {
+		return err
+	}
+	if diff == "" && cluster.Status != common.ClusterStatusFreed {
+		return perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
+	}
+	return nil
+}
+
+func getDeployImage(imageURL, deployTag string) (string, error) {
+	imageRef, err := name.ParseReference(imageURL)
+	if err != nil {
+		return "", perror.Wrapf(herrors.ErrParamInvalid, "invalid image url: %s", imageURL)
+	}
+	if deployTag != "" {
+		return fmt.Sprintf("%s:%s", imageRef.Context().Name(), deployTag), nil
+	}
+	return imageRef.Name(), nil
 }
 
 func (c *controller) Rollback(ctx context.Context,

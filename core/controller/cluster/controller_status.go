@@ -65,9 +65,7 @@ func (c *controller) GetClusterPipelinerunStatus(ctx context.Context,
 		return nil, err
 	}
 
-	if latestPipelinerun == nil || latestPipelinerun.Status == string(prmodels.StatusOK) ||
-		(latestPipelinerun.Action != prmodels.ActionBuildDeploy &&
-			latestPipelinerun.Action != prmodels.ActionDeploy) {
+	if isNonRunningTask(latestPipelinerun) {
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}
@@ -567,4 +565,15 @@ func willExpireIn(ttl uint, tms ...time.Time) *uint {
 	}
 	res = uint(time.Until(expireAt).Seconds())
 	return &res
+}
+
+func isNonRunningTask(latestPipelinerun *prmodels.Pipelinerun) bool {
+	if latestPipelinerun == nil || latestPipelinerun.Status == string(prmodels.StatusOK) {
+		return true
+	}
+	if latestPipelinerun.Action == prmodels.ActionRestart ||
+		latestPipelinerun.Action == prmodels.ActionRollback {
+		return true
+	}
+	return false
 }

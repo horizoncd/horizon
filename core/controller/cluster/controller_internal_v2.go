@@ -24,6 +24,7 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
+	"github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
@@ -166,7 +167,16 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}
 
 	// 10. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+	c.recordEvent(ctx, pr, cluster)
+
+	return &InternalDeployResponseV2{
+		PipelinerunID: pr.ID,
+		Commit:        commit,
+	}, nil
+}
+
+func (c *controller) recordEvent(ctx context.Context, pr *prmodels.Pipelinerun, cluster *models.Cluster) {
+	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
 		EventSummary: eventmodels.EventSummary{
 			ResourceType: common.ResourceCluster,
 			EventType: func() string {
@@ -177,14 +187,10 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 			}(),
 			ResourceID: cluster.ID,
 		},
-	}); err != nil {
+	})
+	if err != nil {
 		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
-
-	return &InternalDeployResponseV2{
-		PipelinerunID: pr.ID,
-		Commit:        commit,
-	}, nil
 }
 
 func (c *controller) retrieveClaimsAndUser(ctx context.Context) (*tokenservice.Claims, *usermodel.User, error) {

@@ -42,7 +42,16 @@ type CreateClusterRequestV2 struct {
 	ExtraMembers map[string]string `json:"extraMembers"`
 }
 
-func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Application,
+type CreateClusterParamsV2 struct {
+	*CreateClusterRequestV2
+	ApplicationID uint
+	Environment   string
+	Region        string
+	// whether to merge json schema form data
+	MergePatch bool
+}
+
+func (r *CreateClusterParamsV2) toClusterModel(application *appmodels.Application,
 	er *envregionmodels.EnvironmentRegion, info *BuildTemplateInfo,
 	expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
 	cluster := &models.Cluster{
@@ -207,13 +216,4 @@ type GetClusterResponseV2 struct {
 
 type WhetherLike struct {
 	IsFavorite bool `json:"isFavorite"`
-}
-
-type CreateClusterParamsV2 struct {
-	*CreateClusterRequestV2
-	ApplicationID uint
-	Environment   string
-	Region        string
-	// whether to merge json schema form data
-	MergePatch bool
 }
