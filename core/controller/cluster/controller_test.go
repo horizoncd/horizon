@@ -1434,7 +1434,6 @@ func testV2(t *testing.T) {
 		Environment:            "test2",
 		Region:                 "hz",
 		MergePatch:             false,
-		InheritConfig:          true,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)

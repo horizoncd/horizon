@@ -80,13 +80,6 @@ paths:
         schema:
           type: boolean
           default: false
-      - name: inheritConfig
-        in: query
-        description: whether to inherit build and deploy configs from app if not set
-        required: false
-        schema:
-          type: boolean
-          default: true
     post:
       tags:
         - cluster

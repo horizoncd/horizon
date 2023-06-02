@@ -211,17 +211,6 @@ func (a *API) Create(c *gin.Context) {
 		}
 	}
 
-	inheritConfig := true
-	inheritConfigStr := c.Request.URL.Query().Get(common.ClusterQueryInheritConfig)
-	if inheritConfigStr != "" {
-		inheritConfig, err = strconv.ParseBool(inheritConfigStr)
-		if err != nil {
-			response.AbortWithRequestError(c, common.InvalidRequestParam,
-				fmt.Sprintf("inheritConfig is invalid, err: %v", err))
-			return
-		}
-	}
-
 	extraOwners := c.QueryArray(common.ClusterQueryExtraOwner)
 
 	var request *cluster.CreateClusterRequestV2
@@ -251,7 +240,6 @@ func (a *API) Create(c *gin.Context) {
 		Environment:            environment,
 		Region:                 region,
 		MergePatch:             mergePatch,
-		InheritConfig:          inheritConfig,
 	})
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {

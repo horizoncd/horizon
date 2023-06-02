@@ -121,9 +121,6 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 				return nil, err
 			}
 		}
-		if params.Git.URL == "" && !params.InheritConfig {
-			return nil, perror.Wrap(herrors.ErrParamInvalid, "git url is required")
-		}
 	}
 	if params.Image != nil {
 		if err := validate.CheckImageURL(*params.Image); err != nil {
@@ -177,7 +174,7 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 
 	// 8. customize db infos
 	cluster, tags := params.CreateClusterRequestV2.toClusterModel(application,
-		envEntity, buildTemplateInfo, expireSeconds, params.InheritConfig)
+		envEntity, buildTemplateInfo, expireSeconds)
 
 	// 9. update db and tags
 	clusterResp, err := c.clusterMgr.Create(ctx, cluster, tags, params.ExtraMembers)
@@ -592,45 +589,38 @@ func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, pa
 		return nil, err
 	}
 
-	if params.InheritConfig {
-		// inherit config from application if it's empty in the request
-		buildTemplateInfo.BuildConfig = appGitRepoFile.BuildConf
-		buildTemplateInfo.TemplateInfo = &codemodels.TemplateInfo{
-			Name:    application.Template,
-			Release: application.TemplateRelease,
-		}
-		buildTemplateInfo.TemplateConfig = appGitRepoFile.TemplateConf
+	// inherit config from application if it's empty in the request
+	buildTemplateInfo.BuildConfig = appGitRepoFile.BuildConf
+	buildTemplateInfo.TemplateInfo = &codemodels.TemplateInfo{
+		Name:    application.Template,
+		Release: application.TemplateRelease,
+	}
+	buildTemplateInfo.TemplateConfig = appGitRepoFile.TemplateConf
 
-		if params.BuildConfig != nil {
-			if params.MergePatch {
-				buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepoFile.BuildConf, params.BuildConfig)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				buildTemplateInfo.BuildConfig = params.BuildConfig
+	if params.BuildConfig != nil {
+		if params.MergePatch {
+			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepoFile.BuildConf, params.BuildConfig)
+			if err != nil {
+				return nil, err
 			}
+		} else {
+			buildTemplateInfo.BuildConfig = params.BuildConfig
 		}
+	}
 
-		if params.TemplateInfo != nil {
-			buildTemplateInfo.TemplateInfo = params.TemplateInfo
-		}
-
-		if params.TemplateConfig != nil {
-			if params.MergePatch {
-				buildTemplateInfo.TemplateConfig, err = mergemap.Merge(appGitRepoFile.TemplateConf, params.TemplateConfig)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				buildTemplateInfo.TemplateConfig = params.TemplateConfig
-			}
-		}
-	} else {
-		// use the config in the request directly
-		buildTemplateInfo.BuildConfig = params.BuildConfig
+	if params.TemplateInfo != nil {
 		buildTemplateInfo.TemplateInfo = params.TemplateInfo
-		buildTemplateInfo.TemplateConfig = params.TemplateConfig
+	}
+
+	if params.TemplateConfig != nil {
+		if params.MergePatch {
+			buildTemplateInfo.TemplateConfig, err = mergemap.Merge(appGitRepoFile.TemplateConf, params.TemplateConfig)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			buildTemplateInfo.TemplateConfig = params.TemplateConfig
+		}
 	}
 	return buildTemplateInfo, nil
 }
