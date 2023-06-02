@@ -22,7 +22,6 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/controller/build"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	appgitrepo "github.com/horizoncd/horizon/pkg/application/gitrepo"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
@@ -34,6 +33,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/mergemap"
+	"github.com/horizoncd/horizon/pkg/util/validate"
 
 	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	perror "github.com/horizoncd/horizon/pkg/errors"
@@ -96,13 +96,13 @@ func (c *controller) GetClusterStatusV2(ctx context.Context, clusterID uint) (*S
 	return resp, nil
 }
 
-func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, environment,
-	region string, r *CreateClusterRequestV2, mergePatch bool) (*CreateClusterResponseV2, error) {
+func (c *controller) CreateClusterV2(ctx context.Context,
+	params *CreateClusterParamsV2) (*CreateClusterResponseV2, error) {
 	const op = "cluster controller: create cluster v2"
 	defer wlog.Start(ctx, op).StopPrint()
 
 	// 1. check exist
-	exists, err := c.clusterMgr.CheckClusterExists(ctx, r.Name)
+	exists, err := c.clusterMgr.CheckClusterExists(ctx, params.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -112,33 +112,45 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	}
 
 	// 2. validate create req
-	if err := validateClusterName(r.Name); err != nil {
+	if err := validateClusterName(params.Name); err != nil {
 		return nil, err
+	}
+	if params.Git != nil {
+		if params.Git.URL != "" {
+			if err := validate.CheckGitURL(params.Git.URL); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if params.Image != nil {
+		if err := validate.CheckImageURL(*params.Image); err != nil {
+			return nil, err
+		}
 	}
 
 	// 3. get application
-	application, err := c.applicationMgr.GetByID(ctx, applicationID)
+	application, err := c.applicationMgr.GetByID(ctx, params.ApplicationID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 4. customize buildTemplateInfo and do validate
-	buildTemplateInfo, err := c.customizeCreateReqBuildTemplateInfo(ctx, r, application, environment, mergePatch)
+	buildTemplateInfo, err := c.customizeCreateReqBuildTemplateInfo(ctx, params, application)
 	if err != nil {
 		return nil, err
 	}
-
 	if err := buildTemplateInfo.Validate(ctx,
 		c.templateSchemaGetter, nil, c.buildSchema); err != nil {
 		return nil, err
 	}
 
 	// 5. get environment and region
-	envEntity, err := c.envRegionMgr.GetByEnvironmentAndRegion(ctx, environment, region)
+	envEntity, err := c.envRegionMgr.GetByEnvironmentAndRegion(ctx,
+		params.Environment, params.Region)
 	if err != nil {
 		return nil, err
 	}
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, region)
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, params.Region)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +160,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	}
 
 	// 6. transfer expireTime to expireSeconds and verify environment.
-	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, environment)
+	expireSeconds, err := c.toExpireSeconds(ctx, params.ExpireTime, params.Environment)
 	if err != nil {
 		return nil, err
 	}
@@ -161,10 +173,11 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 	}
 
 	// 8. customize db infos
-	cluster, tags := r.toClusterModel(application, envEntity, buildTemplateInfo, expireSeconds)
+	cluster, tags := params.toClusterModel(application,
+		envEntity, buildTemplateInfo, expireSeconds)
 
 	// 9. update db and tags
-	clusterResp, err := c.clusterMgr.Create(ctx, cluster, tags, r.ExtraMembers)
+	clusterResp, err := c.clusterMgr.Create(ctx, cluster, tags, params.ExtraMembers)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +191,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 			ApplicationJSONBlob: buildTemplateInfo.TemplateConfig,
 			TemplateRelease:     tr,
 			Application:         application,
-			Environment:         environment,
+			Environment:         params.Environment,
 			RegionEntity:        regionEntity,
 			Version:             common.MetaVersion2,
 		},
@@ -212,7 +225,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 
 	ret := &CreateClusterResponseV2{
 		ID:   updateClusterResp.ID,
-		Name: r.Name,
+		Name: updateClusterResp.Name,
 		Application: &Application{
 			ID:   application.ID,
 			Name: application.Name,
@@ -222,7 +235,7 @@ func (c *controller) CreateClusterV2(ctx context.Context, applicationID uint, en
 			Region:      cluster.RegionName,
 		},
 		FullPath:      fullPath,
-		ApplicationID: applicationID,
+		ApplicationID: application.ID,
 		CreatedAt:     updateClusterResp.CreatedAt,
 		UpdatedAt:     updateClusterResp.UpdatedAt,
 	}
@@ -322,6 +335,7 @@ func (c *controller) GetClusterV2(ctx context.Context, clusterID uint) (*GetClus
 			return codemodels.NewGit(cluster.GitURL, cluster.GitSubfolder,
 				cluster.GitRefType, cluster.GitRef)
 		}(),
+		Image:       cluster.Image,
 		BuildConfig: clusterGitRepoFile.PipelineJSONBlob,
 		TemplateInfo: func() *codemodels.TemplateInfo {
 			if cluster.Template == "" {
@@ -357,6 +371,18 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	r *UpdateClusterRequestV2, mergePatch bool) error {
 	const op = "cluster controller: update cluster v2"
 	defer wlog.Start(ctx, op).StopPrint()
+
+	// validate request
+	if r.Git != nil && r.Git.URL != "" {
+		if err := validate.CheckGitURL(r.Git.URL); err != nil {
+			return err
+		}
+	}
+	if r.Image != nil && *r.Image != "" {
+		if err := validate.CheckImageURL(*r.Image); err != nil {
+			return err
+		}
+	}
 
 	// 1. get cluster and application from db
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -469,7 +495,7 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 		return info.Validate(ctx, c.templateSchemaGetter, renderValues, c.buildSchema)
 	}()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// 6. update in git repo
@@ -546,7 +572,7 @@ func (info *BuildTemplateInfo) Validate(ctx context.Context,
 		return err
 	}
 
-	if buildSchema != nil && info.BuildConfig != nil {
+	if buildSchema != nil && info.BuildConfig != nil && len(info.BuildConfig) > 0 {
 		err = jsonschema.Validate(buildSchema.JSONSchema, info.BuildConfig, false)
 		if err != nil {
 			return err
@@ -555,48 +581,46 @@ func (info *BuildTemplateInfo) Validate(ctx context.Context,
 	return nil
 }
 
-func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, r *CreateClusterRequestV2,
-	application *appmodels.Application, environment string, mergePatch bool) (*BuildTemplateInfo, error) {
+func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, params *CreateClusterParamsV2,
+	application *appmodels.Application) (*BuildTemplateInfo, error) {
 	buildTemplateInfo := &BuildTemplateInfo{}
-
-	var appGitRepoFile *appgitrepo.GetResponse
-	var err error
-	appGitRepoFile, err = c.applicationGitRepo.GetApplication(ctx, application.Name, environment)
+	appGitRepoFile, err := c.applicationGitRepo.GetApplication(ctx, application.Name, params.Environment)
 	if err != nil {
 		return nil, err
 	}
 
-	if r.BuildConfig != nil {
-		if mergePatch {
-			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepoFile.BuildConf, r.BuildConfig)
+	// inherit config from application if it's empty in the request
+	buildTemplateInfo.BuildConfig = appGitRepoFile.BuildConf
+	buildTemplateInfo.TemplateInfo = &codemodels.TemplateInfo{
+		Name:    application.Template,
+		Release: application.TemplateRelease,
+	}
+	buildTemplateInfo.TemplateConfig = appGitRepoFile.TemplateConf
+
+	if params.BuildConfig != nil {
+		if params.MergePatch {
+			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepoFile.BuildConf, params.BuildConfig)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			buildTemplateInfo.BuildConfig = r.BuildConfig
+			buildTemplateInfo.BuildConfig = params.BuildConfig
 		}
-	} else {
-		buildTemplateInfo.BuildConfig = appGitRepoFile.BuildConf
 	}
 
-	if r.TemplateInfo == nil && r.TemplateConfig == nil {
-		buildTemplateInfo.TemplateInfo = &codemodels.TemplateInfo{
-			Name:    application.Template,
-			Release: application.TemplateRelease,
-		}
-		buildTemplateInfo.TemplateConfig = appGitRepoFile.TemplateConf
-	} else if r.TemplateInfo != nil && r.TemplateConfig != nil {
-		buildTemplateInfo.TemplateInfo = r.TemplateInfo
-		if mergePatch {
-			buildTemplateInfo.TemplateConfig, err = mergemap.Merge(appGitRepoFile.TemplateConf, r.TemplateConfig)
+	if params.TemplateInfo != nil {
+		buildTemplateInfo.TemplateInfo = params.TemplateInfo
+	}
+
+	if params.TemplateConfig != nil {
+		if params.MergePatch {
+			buildTemplateInfo.TemplateConfig, err = mergemap.Merge(appGitRepoFile.TemplateConf, params.TemplateConfig)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			buildTemplateInfo.TemplateConfig = r.TemplateConfig
+			buildTemplateInfo.TemplateConfig = params.TemplateConfig
 		}
-	} else {
-		return nil, perror.Wrap(herrors.ErrParamInvalid, "TemplateInfo or TemplateConfig nil")
 	}
 	return buildTemplateInfo, nil
 }

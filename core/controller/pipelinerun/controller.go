@@ -88,8 +88,8 @@ func (c *controller) GetPipelinerunLog(ctx context.Context, pipelinerunID uint) 
 		return nil, errors.E(op, err)
 	}
 
-	// only builddeploy have logs
-	if pr.Action != prmodels.ActionBuildDeploy {
+	// only builddeploy and deploy have logs
+	if pr.Action != prmodels.ActionBuildDeploy && pr.Action != prmodels.ActionDeploy {
 		return nil, errors.E(op, fmt.Errorf("%v action has no log", pr.Action))
 	}
 
@@ -100,12 +100,13 @@ func (c *controller) GetClusterLatestLog(ctx context.Context, clusterID uint) (_
 	const op = "pipelinerun controller: get cluster latest log"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	pr, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
+	pr, err := c.pipelinerunMgr.GetLatestByClusterIDAndActions(ctx, clusterID,
+		prmodels.ActionBuildDeploy, prmodels.ActionDeploy)
 	if err != nil {
 		return nil, errors.E(op, err)
 	}
 	if pr == nil {
-		return nil, errors.E(op, fmt.Errorf("no builddeploy pipelinerun"))
+		return nil, errors.E(op, fmt.Errorf("no pipelinerun with log"))
 	}
 
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
@@ -122,7 +123,7 @@ func (c *controller) getPipelinerunLog(ctx context.Context, pr *prmodels.Pipelin
 
 	tektonCollector, err := c.tektonFty.GetTektonCollector(environment)
 	if err != nil {
-		return nil, perror.WithMessagef(err, "faild to get tekton collector for %s", environment)
+		return nil, perror.WithMessagef(err, "failed to get tekton collector for %s", environment)
 	}
 
 	return tektonCollector.GetPipelineRunLog(ctx, pr)
@@ -324,7 +325,7 @@ func (c *controller) StopPipelinerunForCluster(ctx context.Context, clusterID ui
 		return errors.E(op, err)
 	}
 	// get cluster latest builddeploy pipelinerun
-	pipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndAction(ctx, clusterID, prmodels.ActionBuildDeploy)
+	pipelinerun, err := c.pipelinerunMgr.GetLatestByClusterIDAndActions(ctx, clusterID, prmodels.ActionBuildDeploy)
 
 	// if pipelinerun.Status is not created, ignore, and return success
 	if pipelinerun.Status != string(prmodels.StatusCreated) {

@@ -35,7 +35,7 @@ type DAO interface {
 	DeleteByID(ctx context.Context, pipelinerunID uint) error
 	DeleteByClusterID(ctx context.Context, clusterID uint) error
 	UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, commit string) error
-	GetLatestByClusterIDAndAction(ctx context.Context, clusterID uint, action string) (*models.Pipelinerun, error)
+	GetLatestByClusterIDAndActions(ctx context.Context, clusterID uint, action ...string) (*models.Pipelinerun, error)
 	GetLatestByClusterIDAndActionAndStatus(ctx context.Context, clusterID uint,
 		action, status string) (*models.Pipelinerun, error)
 	UpdateStatusByID(ctx context.Context, pipelinerunID uint, result models.PipelineStatus) error
@@ -114,11 +114,11 @@ func (d *dao) UpdateConfigCommitByID(ctx context.Context, pipelinerunID uint, co
 	return result.Error
 }
 
-func (d *dao) GetLatestByClusterIDAndAction(ctx context.Context,
-	clusterID uint, action string) (*models.Pipelinerun, error) {
+func (d *dao) GetLatestByClusterIDAndActions(ctx context.Context,
+	clusterID uint, actions ...string) (*models.Pipelinerun, error) {
 	var pipelinerun models.Pipelinerun
-	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestByClusterIDAndAction,
-		clusterID, action).Scan(&pipelinerun)
+	result := d.db.WithContext(ctx).Raw(common.PipelinerunGetLatestByClusterIDAndActions,
+		clusterID, actions).Scan(&pipelinerun)
 	if result.Error != nil {
 		return nil, herrors.NewErrGetFailed(herrors.PipelinerunInDB, result.Error.Error())
 	}

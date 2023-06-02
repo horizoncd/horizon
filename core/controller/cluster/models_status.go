@@ -34,7 +34,7 @@ type StatusResponseV2 struct {
 	Status string `json:"status"`
 }
 
-type BuildStatusResponse struct {
+type PipelinerunStatusResponse struct {
 	LatestPipelinerun *LatestPipelinerun `json:"latestPipelinerun,omitempty"`
 	RunningTask       *RunningTask       `json:"runningTask,omitempty"`
 }

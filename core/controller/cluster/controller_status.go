@@ -44,8 +44,9 @@ const (
 	_notFound = "NotFound"
 )
 
-func (c *controller) GetClusterBuildStatus(ctx context.Context, clusterID uint) (*BuildStatusResponse, error) {
-	resp := &BuildStatusResponse{}
+func (c *controller) GetClusterPipelinerunStatus(ctx context.Context,
+	clusterID uint) (*PipelinerunStatusResponse, error) {
+	resp := &PipelinerunStatusResponse{}
 
 	// get latest pipelinerun
 	latestPipelinerun, err := c.getLatestPipelinerunByClusterID(ctx, clusterID)
@@ -64,8 +65,7 @@ func (c *controller) GetClusterBuildStatus(ctx context.Context, clusterID uint) 
 		return nil, err
 	}
 
-	if latestPipelinerun == nil ||
-		latestPipelinerun.Action != prmodels.ActionBuildDeploy {
+	if isNonRunningTask(latestPipelinerun) {
 		resp.RunningTask = &RunningTask{
 			Task: _taskNone,
 		}
@@ -565,4 +565,15 @@ func willExpireIn(ttl uint, tms ...time.Time) *uint {
 	}
 	res = uint(time.Until(expireAt).Seconds())
 	return &res
+}
+
+func isNonRunningTask(latestPipelinerun *prmodels.Pipelinerun) bool {
+	if latestPipelinerun == nil || latestPipelinerun.Status == string(prmodels.StatusOK) {
+		return true
+	}
+	if latestPipelinerun.Action == prmodels.ActionRestart ||
+		latestPipelinerun.Action == prmodels.ActionRollback {
+		return true
+	}
+	return false
 }

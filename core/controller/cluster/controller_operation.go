@@ -18,20 +18,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	amodels "github.com/horizoncd/horizon/pkg/application/models"
 	"github.com/horizoncd/horizon/pkg/cd"
+	codemodels "github.com/horizoncd/horizon/pkg/cluster/code"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
 	cmodels "github.com/horizoncd/horizon/pkg/cluster/models"
+	"github.com/horizoncd/horizon/pkg/cluster/tekton"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
+	tokensvc "github.com/horizoncd/horizon/pkg/token/service"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -114,9 +119,14 @@ func (c *controller) Restart(ctx context.Context, clusterID uint) (_ *Pipelineru
 
 func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	r *DeployRequest) (_ *PipelinerunIDResponse, err error) {
-	const op = "cluster controller: deploy "
+	const op = "cluster controller: deploy"
 	defer wlog.Start(ctx, op).StopPrint()
 
+	// 1. get models and do some validation
+	currentUser, err := common.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	cluster, err := c.clusterMgr.GetByID(ctx, clusterID)
 	if err != nil {
 		return nil, err
@@ -129,32 +139,28 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-	// if pipeline config exists && image is empty, should buildDeploy first
-	if len(clusterFiles.PipelineJSONBlob) > 0 {
-		po, err := c.clusterGitRepo.GetPipelineOutput(ctx, application.Name, cluster.Name, cluster.Template)
-		if err != nil {
-			if perror.Cause(err) != herrors.ErrPipelineOutputEmpty {
-				return nil, err
-			}
-			return nil, herrors.ErrShouldBuildDeployFirst
-		}
-		if po == nil {
-			return nil, herrors.ErrShouldBuildDeployFirst
-		}
+	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+	if err != nil {
+		return nil, err
 	}
-
-	// 1. get config commit
 	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
 		return nil, err
 	}
-	diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
-		&configCommit.Master, &configCommit.Gitops)
-	if err != nil {
-		return nil, err
-	}
-	if diff == "" && cluster.Status != common.ClusterStatusFreed {
-		return nil, perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
+	codeCommitID := cluster.GitRef
+	imageURL := cluster.Image
+
+	if cluster.GitURL != "" {
+		err = c.checkAllowDeploy(ctx, application, cluster, clusterFiles, configCommit)
+		if err != nil {
+			return nil, err
+		}
+		commit, err := c.commitGetter.GetCommit(ctx, cluster.GitURL, cluster.GitRefType, cluster.GitRef)
+		if err == nil {
+			codeCommitID = commit.ID
+		}
+	} else if cluster.Image != "" {
+		imageURL, err = getDeployImage(cluster.Image, r.ImageTag)
 	}
 
 	// 2. create pipeline record
@@ -164,6 +170,11 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		Status:           string(prmodels.StatusCreated),
 		Title:            r.Title,
 		Description:      r.Description,
+		GitURL:           cluster.GitURL,
+		GitRefType:       cluster.GitRefType,
+		GitRef:           cluster.GitRef,
+		GitCommit:        codeCommitID,
+		ImageURL:         imageURL,
 		LastConfigCommit: configCommit.Master,
 		ConfigCommit:     configCommit.Gitops,
 	})
@@ -171,83 +182,106 @@ func (c *controller) Deploy(ctx context.Context, clusterID uint,
 		return nil, err
 	}
 
-	// 3. merge branch & update status
-	var commit string
-	if diff == "" {
-		// freed cluster is allowed to deploy without diff
-		commit = configCommit.Master
-	} else {
-		commit, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name,
-			gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &prCreated.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionDeploy,
-		prCreated.ID, prmodels.StatusMerged, commit); err != nil {
-		return nil, err
-	}
-
-	// 5. create cluster in cd system
-	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
+	// 3. generate a JWT token for tekton callback
+	token, err := c.tokenSvc.CreateJWTToken(strconv.Itoa(int(currentUser.GetID())),
+		c.tokenConfig.CallbackTokenExpireIn, tokensvc.WithPipelinerunID(prCreated.ID))
 	if err != nil {
 		return nil, err
 	}
-	envValue, err := c.clusterGitRepo.GetEnvValue(ctx, application.Name, cluster.Name, tr.ChartName)
+
+	// 4. create pipelinerun in k8s
+	prGit := tekton.PipelineRunGit{
+		URL:       cluster.GitURL,
+		Subfolder: cluster.GitSubfolder,
+		Commit:    codeCommitID,
+	}
+	switch prCreated.GitRefType {
+	case codemodels.GitRefTypeTag:
+		prGit.Tag = prCreated.GitRef
+	case codemodels.GitRefTypeBranch:
+		prGit.Branch = prCreated.GitRef
+	}
+	pipelineJSONBlob := make(map[string]interface{})
+	if clusterFiles.PipelineJSONBlob != nil {
+		pipelineJSONBlob = clusterFiles.PipelineJSONBlob
+	}
+	tektonClient, err := c.tektonFty.GetTekton(cluster.EnvironmentName)
 	if err != nil {
 		return nil, err
 	}
-	regionEntity, err := c.regionMgr.GetRegionEntity(ctx, cluster.RegionName)
+
+	ciEventID, err := tektonClient.CreatePipelineRun(ctx, &tekton.PipelineRun{
+		Action:           prmodels.ActionDeploy,
+		Application:      application.Name,
+		ApplicationID:    application.ID,
+		Cluster:          cluster.Name,
+		ClusterID:        cluster.ID,
+		Environment:      cluster.EnvironmentName,
+		Git:              prGit,
+		ImageURL:         imageURL,
+		Operator:         currentUser.GetEmail(),
+		PipelinerunID:    prCreated.ID,
+		PipelineJSONBlob: pipelineJSONBlob,
+		Region:           cluster.RegionName,
+		RegionID:         regionEntity.ID,
+		Template:         cluster.Template,
+		Token:            token,
+	})
 	if err != nil {
 		return nil, err
 	}
-	repoInfo := c.clusterGitRepo.GetRepoInfo(ctx, application.Name, cluster.Name)
-	if err := c.cd.CreateCluster(ctx, &cd.CreateClusterParams{
-		Environment:  cluster.EnvironmentName,
-		Cluster:      cluster.Name,
-		GitRepoURL:   repoInfo.GitRepoURL,
-		ValueFiles:   repoInfo.ValueFiles,
-		RegionEntity: regionEntity,
-		Namespace:    envValue.Namespace,
-	}); err != nil {
-		return nil, err
-	}
 
-	// 6. reset cluster status
-	if cluster.Status == common.ClusterStatusFreed {
-		cluster.Status = common.ClusterStatusEmpty
-		cluster, err = c.clusterMgr.UpdateByID(ctx, cluster.ID, cluster)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// 7. deploy cluster in cd system
-	if err := c.cd.DeployCluster(ctx, &cd.DeployClusterParams{
-		Environment: cluster.EnvironmentName,
-		Cluster:     cluster.Name,
-		Revision:    commit,
-	}); err != nil {
+	// update event id returned from tekton-trigger EventListener
+	log.Infof(ctx, "received event id: %s from tekton-trigger EventListener, pipelinerunID: %d",
+		ciEventID, prCreated.ID)
+	err = c.pipelinerunMgr.UpdateCIEventIDByID(ctx, prCreated.ID, ciEventID)
+	if err != nil {
 		return nil, err
-	}
-	if err := c.updatePipelineRunStatus(ctx, prmodels.ActionDeploy, prCreated.ID, prmodels.StatusOK, commit); err != nil {
-		return nil, err
-	}
-
-	// 8. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterDeployed,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
 	}
 
 	return &PipelinerunIDResponse{
 		PipelinerunID: prCreated.ID,
 	}, nil
+}
+
+func (c *controller) checkAllowDeploy(ctx context.Context,
+	application *amodels.Application, cluster *cmodels.Cluster,
+	clusterFiles *gitrepo.ClusterFiles, configCommit *gitrepo.ClusterCommit) error {
+	// check pipeline output
+	if len(clusterFiles.PipelineJSONBlob) > 0 {
+		po, err := c.clusterGitRepo.GetPipelineOutput(ctx, application.Name, cluster.Name, cluster.Template)
+		if err != nil {
+			if perror.Cause(err) != herrors.ErrPipelineOutputEmpty {
+				return err
+			}
+			return herrors.ErrShouldBuildDeployFirst
+		}
+		if po == nil {
+			return herrors.ErrShouldBuildDeployFirst
+		}
+	}
+
+	// check config diffs
+	diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
+		&configCommit.Master, &configCommit.Gitops)
+	if err != nil {
+		return err
+	}
+	if diff == "" && cluster.Status != common.ClusterStatusFreed {
+		return perror.Wrap(herrors.ErrClusterNoChange, "there is no change to deploy")
+	}
+	return nil
+}
+
+func getDeployImage(imageURL, deployTag string) (string, error) {
+	imageRef, err := name.ParseReference(imageURL)
+	if err != nil {
+		return "", perror.Wrapf(herrors.ErrParamInvalid, "invalid image url: %s", imageURL)
+	}
+	if deployTag != "" {
+		return fmt.Sprintf("%s:%s", imageRef.Context().Name(), deployTag), nil
+	}
+	return imageRef.Name(), nil
 }
 
 func (c *controller) Rollback(ctx context.Context,

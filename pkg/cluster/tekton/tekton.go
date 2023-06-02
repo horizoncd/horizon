@@ -55,6 +55,7 @@ func NewTekton(tektonConfig *tekton.Tekton) (*Tekton, error) {
 
 type (
 	PipelineRun struct {
+		Action           string                 `json:"action"`
 		Application      string                 `json:"application"`
 		ApplicationID    uint                   `json:"applicationID"`
 		Cluster          string                 `json:"cluster"`

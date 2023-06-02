@@ -51,6 +51,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/jsonschema"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/permission"
+	"github.com/horizoncd/horizon/pkg/util/validate"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 )
 
@@ -202,6 +203,7 @@ func (c *controller) GetApplicationV2(ctx context.Context, id uint) (_ *GetAppli
 			}
 			return codemodels.NewGit(app.GitURL, app.GitSubfolder, app.GitRefType, app.GitRef)
 		}(),
+		Image:       app.Image,
 		BuildConfig: applicationRepo.BuildConf,
 		Tags:        tagmodels.Tags(tags).IntoTagsBasic(),
 		TemplateInfo: func() *codemodels.TemplateInfo {
@@ -354,7 +356,12 @@ func (c *controller) CreateApplicationV2(ctx context.Context, groupID uint,
 		}
 	}
 	if request.Git != nil {
-		if err := validateGitURL(request.Git.URL); err != nil {
+		if err := validate.CheckGitURL(request.Git.URL); err != nil {
+			return nil, err
+		}
+	}
+	if request.Image != nil {
+		if err := validate.CheckImageURL(*request.Image); err != nil {
 			return nil, err
 		}
 	}
@@ -543,7 +550,12 @@ func (c *controller) UpdateApplicationV2(ctx context.Context, id uint,
 		}
 	}
 	if request.Git != nil {
-		if err := validateGitURL(request.Git.URL); err != nil {
+		if err := validate.CheckGitURL(request.Git.URL); err != nil {
+			return err
+		}
+	}
+	if request.Image != nil {
+		if err := validate.CheckImageURL(*request.Image); err != nil {
 			return err
 		}
 	}
@@ -676,17 +688,7 @@ func (c *controller) validateUpdate(b Base) error {
 
 func validateGit(b Base) error {
 	if b.Git != nil && b.Git.URL != "" {
-		return validateGitURL(b.Git.URL)
-	}
-	return nil
-}
-
-func validateGitURL(gitURL string) error {
-	re := `^(?:git|ssh|https?|git@[-\w.]+):(//)?(.*?)(\.git)(/?|#[-\d\w._]+?)$`
-	pattern := regexp.MustCompile(re)
-	if !pattern.MatchString(gitURL) {
-		return perror.Wrap(herrors.ErrParamInvalid,
-			fmt.Sprintf("invalid git url, should satisfies the pattern %v", re))
+		return validate.CheckGitURL(b.Git.URL)
 	}
 	return nil
 }
@@ -868,7 +870,7 @@ func (c *controller) GetSelectableRegionsByEnv(ctx context.Context, id uint, env
 	return selectableRegionsByEnv, nil
 }
 
-func (c controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
+func (c *controller) GetApplicationPipelineStats(ctx context.Context, applicationID uint, cluster string,
 	pageNumber, pageSize int) ([]*pipelinemodels.PipelineStats, int64, error) {
 	app, err := c.applicationMgr.GetByID(ctx, applicationID)
 	if err != nil {

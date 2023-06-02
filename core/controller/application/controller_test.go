@@ -527,6 +527,7 @@ func TestV2(t *testing.T) {
 	assert.Nil(t, err)
 
 	P0 := "P0"
+	image := "horizoncd/horizon-core:latest"
 	TemplateName := "javaapp"
 	TemplateVersion := "v1.0.0"
 	Description := "this is an v2 application interface"
@@ -539,6 +540,7 @@ func TestV2(t *testing.T) {
 			Subfolder: "/",
 			Branch:    "develop",
 		},
+		Image:       &image,
 		BuildConfig: nil,
 		TemplateInfo: &codemodels.TemplateInfo{
 			Name:    TemplateName,
@@ -559,11 +561,26 @@ func TestV2(t *testing.T) {
 	assert.Equal(t, getResponse.Description, Description)
 	assert.Equal(t, getResponse.Priority, P0)
 	assert.Equal(t, getResponse.Git, createReq.Git)
+	assert.Equal(t, getResponse.Image, image)
 	assert.Equal(t, getResponse.BuildConfig, createReq.BuildConfig)
 	assert.Equal(t, getResponse.TemplateInfo, createReq.TemplateInfo)
 	assert.Equal(t, getResponse.TemplateConfig, createReq.TemplateConfig)
 	assert.Nil(t, getResponse.Manifest)
 	t.Logf("%+v", getResponse.Manifest)
+
+	// update application
+	P1 := "P1"
+	image1 := "horizoncd/horizon-web:v1.0.0"
+	updateReq := &CreateOrUpdateApplicationRequestV2{
+		Priority: &P1,
+		Image:    &image1,
+	}
+	err = c.UpdateApplicationV2(ctx, resp.ID, updateReq)
+	assert.Nil(t, err)
+	getResponse, err = c.GetApplicationV2(ctx, resp.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, getResponse.Priority, P1)
+	assert.Equal(t, getResponse.Image, image1)
 }
 
 func Test_validateApplicationName(t *testing.T) {

@@ -844,7 +844,7 @@ func test(t *testing.T) {
 
 	tekton := tektonmock.NewMockInterface(mockCtl)
 	tektonFty.EXPECT().GetTekton(gomock.Any()).Return(tekton, nil).AnyTimes()
-	tekton.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("abc", nil)
+	tekton.EXPECT().CreatePipelineRun(ctx, gomock.Any()).Return("abc", nil).Times(2)
 	tekton.EXPECT().GetPipelineRunByID(ctx, gomock.Any()).Return(pr, nil).AnyTimes()
 	tektonCollector := tektoncollectormock.NewMockInterface(mockCtl)
 
@@ -923,7 +923,7 @@ func test(t *testing.T) {
 	b, _ = json.Marshal(clusterStatusResp)
 	t.Logf("%v", string(b))
 
-	buildStatusResp, err := c.GetClusterBuildStatus(ctx, resp.ID)
+	buildStatusResp, err := c.GetClusterPipelinerunStatus(ctx, resp.ID)
 	assert.Nil(t, err)
 	b, _ = json.Marshal(buildStatusResp)
 	t.Logf("%v", string(b))
@@ -972,7 +972,10 @@ func test(t *testing.T) {
 
 	// test deploy
 	clusterGitRepo.EXPECT().GetPipelineOutput(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, herrors.ErrPipelineOutputEmpty).Times(1)
-
+	commitGetter.EXPECT().GetCommit(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(&git.Commit{
+		ID:      commitID,
+		Message: commitMsg,
+	}, nil).AnyTimes()
 	deployResp, err := c.Deploy(ctx, resp.ID, &DeployRequest{
 		Title:       "deploy-title",
 		Description: "deploy-description",
@@ -1009,8 +1012,7 @@ func test(t *testing.T) {
 
 	pr, err = manager.PipelinerunMgr.GetByID(ctx, deployResp.PipelinerunID)
 	assert.Nil(t, err)
-	assert.Equal(t, string(prmodels.StatusOK), pr.Status)
-	assert.NotNil(t, pr.FinishedAt)
+	assert.Equal(t, string(prmodels.StatusCreated), pr.Status)
 
 	// test next
 	k8sutil.EXPECT().ExecuteAction(ctx, gomock.Any()).Return(nil)
@@ -1426,7 +1428,13 @@ func testV2(t *testing.T) {
 		TemplateConfig: applicationJSONBlob,
 		ExtraMembers:   nil,
 	}
-	resp, err := c.CreateClusterV2(ctx, application.ID, "test2", "hz", createReq, false)
+	resp, err := c.CreateClusterV2(ctx, &CreateClusterParamsV2{
+		CreateClusterRequestV2: createReq,
+		ApplicationID:          application.ID,
+		Environment:            "test2",
+		Region:                 "hz",
+		MergePatch:             false,
+	})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.ApplicationID, application.ID)

@@ -72,7 +72,7 @@ func (c *controller) UpdateEnvTemplateV2(ctx context.Context, applicationID uint
 	if err := jsonschema.Validate(schema.Application.JSONSchema, r.Application, false); err != nil {
 		return errors.E(op, http.StatusBadRequest, err)
 	}
-	if c.buildSchema != nil && c.buildSchema.JSONSchema != nil {
+	if c.buildSchema != nil && c.buildSchema.JSONSchema != nil && r.Pipeline != nil {
 		if err := jsonschema.Validate(c.buildSchema.JSONSchema, r.Pipeline, false); err != nil {
 			return errors.E(op, http.StatusBadRequest, err)
 		}

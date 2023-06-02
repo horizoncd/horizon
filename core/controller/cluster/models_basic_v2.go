@@ -31,6 +31,7 @@ type CreateClusterRequestV2 struct {
 	Priority    string              `json:"priority"`
 	ExpireTime  string              `json:"expireTime"`
 	Git         *codemodels.Git     `json:"git"`
+	Image       *string             `json:"image"`
 	Tags        tagmodels.TagsBasic `json:"tags"`
 
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`
@@ -41,7 +42,16 @@ type CreateClusterRequestV2 struct {
 	ExtraMembers map[string]string `json:"extraMembers"`
 }
 
-func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Application,
+type CreateClusterParamsV2 struct {
+	*CreateClusterRequestV2
+	ApplicationID uint
+	Environment   string
+	Region        string
+	// whether to merge json schema form data
+	MergePatch bool
+}
+
+func (r *CreateClusterParamsV2) toClusterModel(application *appmodels.Application,
 	er *envregionmodels.EnvironmentRegion, info *BuildTemplateInfo,
 	expireSeconds uint) (*models.Cluster, []*tagmodels.Tag) {
 	cluster := &models.Cluster{
@@ -51,39 +61,44 @@ func (r *CreateClusterRequestV2) toClusterModel(application *appmodels.Applicati
 		RegionName:      er.RegionName,
 		Description:     r.Description,
 		ExpireSeconds:   expireSeconds,
-		// cluster provide git info or just use the application's git info
-		GitURL: func() string {
-			if r.Git == nil {
-				return application.GitURL
-			}
-			if r.Git != nil && r.Git.URL == "" && application.GitURL != "" {
-				return application.GitURL
-			}
-			// if URL is empty string, this means this cluster not depends on build from git
-			return r.Git.URL
-		}(),
-		GitSubfolder: func() string {
-			if r.Git == nil || r.Git.Subfolder == "" {
-				return application.GitSubfolder
-			}
-			return r.Git.Subfolder
-		}(),
-		GitRef: func() string {
-			if r.Git == nil {
-				return application.GitRef
-			}
-			return r.Git.Ref()
-		}(),
-		GitRefType: func() string {
-			if r.Git == nil {
-				return application.GitRefType
-			}
-			return r.Git.RefType()
-		}(),
 		Template:        info.TemplateInfo.Name,
 		TemplateRelease: info.TemplateInfo.Release,
 		Status:          common.ClusterStatusCreating,
 	}
+	cluster.GitURL = func() string {
+		if r.Git == nil {
+			return application.GitURL
+		}
+		if r.Git.URL == "" && application.GitURL != "" {
+			return application.GitURL
+		}
+		// if URL is empty string, this means this cluster not depends on build from git
+		return r.Git.URL
+	}()
+	cluster.GitSubfolder = func() string {
+		if r.Git == nil || r.Git.Subfolder == "" {
+			return application.GitSubfolder
+		}
+		return r.Git.Subfolder
+	}()
+	cluster.GitRef = func() string {
+		if r.Git == nil {
+			return application.GitRef
+		}
+		return r.Git.Ref()
+	}()
+	cluster.GitRefType = func() string {
+		if r.Git == nil {
+			return application.GitRefType
+		}
+		return r.Git.RefType()
+	}()
+	cluster.Image = func() string {
+		if r.Image == nil {
+			return application.Image
+		}
+		return *r.Image
+	}()
 	tags := make([]*tagmodels.Tag, 0)
 	for _, tag := range r.Tags {
 		tags = append(tags, &tagmodels.Tag{
@@ -117,7 +132,8 @@ type UpdateClusterRequestV2 struct {
 
 	Tags tagmodels.TagsBasic `json:"tags"`
 	// source info
-	Git *codemodels.Git `json:"git"`
+	Git   *codemodels.Git `json:"git"`
+	Image *string         `json:"image"`
 
 	// git config info
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`
@@ -127,7 +143,7 @@ type UpdateClusterRequestV2 struct {
 
 func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireSeconds uint, environmentName,
 	regionName, templateName, templateRelease string) (*models.Cluster, []*tagmodels.Tag) {
-	var gitURL, gitSubFolder, gitRef, gitRefType string
+	var gitURL, gitSubFolder, gitRef, gitRefType, image string
 	if r.Git != nil {
 		gitURL, gitSubFolder, gitRefType, gitRef = r.Git.URL,
 			r.Git.Subfolder, r.Git.RefType(), r.Git.Ref()
@@ -136,6 +152,11 @@ func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireS
 		gitSubFolder = cluster.GitSubfolder
 		gitRefType = cluster.GitRefType
 		gitRef = cluster.GitRef
+	}
+	if r.Image != nil {
+		image = *r.Image
+	} else {
+		image = cluster.Image
 	}
 
 	tags := make([]*tagmodels.Tag, 0)
@@ -155,6 +176,7 @@ func (r *UpdateClusterRequestV2) toClusterModel(cluster *models.Cluster, expireS
 		GitSubfolder:    gitSubFolder,
 		GitRef:          gitRef,
 		GitRefType:      gitRefType,
+		Image:           image,
 		Template:        templateName,
 		TemplateRelease: templateRelease,
 	}, tags
@@ -174,7 +196,8 @@ type GetClusterResponseV2 struct {
 	Tags            tagmodels.TagsBasic `json:"tags"`
 
 	// source info
-	Git *codemodels.Git `json:"git"`
+	Git   *codemodels.Git `json:"git"`
+	Image string          `json:"image"`
 
 	// git config info
 	BuildConfig    map[string]interface{}   `json:"buildConfig"`

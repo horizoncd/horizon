@@ -59,7 +59,7 @@ type Pipelinerun struct {
 	GitRefType string
 	// GitCommit the git commit this pipelinerun to build with, can be empty when action is not builddeploy
 	GitCommit string
-	// ImageURL image url of this pipelinerun to build image
+	// ImageURL image url of this pipelinerun to build or deploy image
 	ImageURL string
 	// the two commit used to compare the config difference of this pipelinerun
 	// LastConfigCommit config commit in master branch of this pipelinerun, can be empty when action is restart

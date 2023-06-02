@@ -73,6 +73,13 @@ paths:
         required: false
         schema:
           type: string
+      - name: mergePatch
+        in: query
+        description: whether to patch build and deploy configs to app config
+        required: false
+        schema:
+          type: boolean
+          default: false
     post:
       tags:
         - cluster
@@ -1194,6 +1201,10 @@ components:
           $ref: "#/components/schemas/GitTag"
         commit:
           $ref: "#/components/schemas/Commit"
+    Image:
+      type: string
+    ImageTag:
+      type: string
     GitResponse:
       type: object
       properties:
@@ -1302,6 +1313,8 @@ components:
           $ref: "#/components/schemas/ExpireTime"
         git:
           $ref: "#/components/schemas/Git"
+        image:
+          $ref: "#/components/schemas/Image"
         tags:
           $ref: "#/components/schemas/Tags"
         buildConfig:
@@ -1348,6 +1361,8 @@ components:
           $ref: "#/components/schemas/Region"
         git:
           $ref: "#/components/schemas/Git"
+        image:
+          $ref: "#/components/schemas/Image"
         buildConfig:
           $ref: "#/components/schemas/BuildConfig"
         templateInfo:
@@ -1380,6 +1395,8 @@ components:
           $ref: "#/components/schemas/Tags"
         git:
           $ref: "#/components/schemas/Git"
+        image:
+          $ref: "#/components/schemas/Image"
         buildConfig:
           $ref: "#/components/schemas/BuildConfig"
         templateInfo:
@@ -1440,6 +1457,8 @@ components:
           $ref: "#/components/schemas/Title"
         description:
           $ref: "#/components/schemas/Description"
+        imageTag:
+          $ref: "#/components/schemas/ImageTag"
 
     RollbackRequest:
       type: object

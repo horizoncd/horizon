@@ -122,6 +122,7 @@ func Test(t *testing.T) {
 		gitURL          = "ssh://git@github.com"
 		gitSubfolder    = "/"
 		gitBranch       = "develop"
+		image           = "ubuntu:latest"
 		template        = "javaapp"
 		templateRelease = "v1.1.0"
 		createdBy       = currentUser.GetID()
@@ -135,6 +136,7 @@ func Test(t *testing.T) {
 		GitURL:          gitURL,
 		GitSubfolder:    gitSubfolder,
 		GitRef:          gitBranch,
+		Image:           image,
 		Template:        template,
 		TemplateRelease: templateRelease,
 		CreatedBy:       createdBy,
@@ -144,6 +146,7 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, name, application.Name)
+	assert.Equal(t, image, application.Image)
 	assert.Equal(t, 1, int(application.ID))
 	clusterMembers, err := memberMgr.ListDirectMember(ctx, membermodels.TypeApplication, application.ID)
 	assert.Nil(t, err)
@@ -164,8 +167,11 @@ func Test(t *testing.T) {
 	assert.Equal(t, application.ID, appGetByName.ID)
 
 	appGetByName.Description = "new"
+	appGetByName.Image = "ubuntu:v1.0.0"
 	appGetByName, err = mgr.UpdateByID(ctx, application.ID, appGetByName)
 	assert.Nil(t, err)
+	assert.Equal(t, "new", appGetByName.Description)
+	assert.Equal(t, "ubuntu:v1.0.0", appGetByName.Image)
 
 	apps, err := mgr.GetByNameFuzzily(ctx, "app")
 	assert.Nil(t, err)

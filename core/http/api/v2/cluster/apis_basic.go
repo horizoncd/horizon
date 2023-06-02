@@ -234,8 +234,13 @@ func (a *API) Create(c *gin.Context) {
 		request.ExtraMembers[extraOwner] = role.Owner
 	}
 
-	resp, err := a.clusterCtl.CreateClusterV2(c, uint(applicationID), environment,
-		region, request, mergePatch)
+	resp, err := a.clusterCtl.CreateClusterV2(c, &cluster.CreateClusterParamsV2{
+		CreateClusterRequestV2: request,
+		ApplicationID:          uint(applicationID),
+		Environment:            environment,
+		Region:                 region,
+		MergePatch:             mergePatch,
+	})
 	if err != nil {
 		if e, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok && e.Source == herrors.ApplicationInDB {
 			log.WithFiled(c, "op", op).Warningf("err = %+v, request = %+v", err, request)

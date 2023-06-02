@@ -24,6 +24,7 @@ import (
 	userauth "github.com/horizoncd/horizon/pkg/authentication/user"
 	"github.com/horizoncd/horizon/pkg/cd"
 	"github.com/horizoncd/horizon/pkg/cluster/gitrepo"
+	"github.com/horizoncd/horizon/pkg/cluster/models"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
 	prmodels "github.com/horizoncd/horizon/pkg/pipelinerun/models"
@@ -77,23 +78,11 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	if err != nil {
 		return nil, err
 	}
-
-	// 3. update image in git repo
 	tr, err := c.templateReleaseMgr.GetByTemplateNameAndRelease(ctx, cluster.Template, cluster.TemplateRelease)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof(ctx, "pipeline %v output content: %+v", r.PipelinerunID, r.Output)
-	commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
-		tr.ChartName, r.Output)
-	if err != nil {
-		return nil, perror.WithMessage(err, op)
-	}
 
-	// 4. update config commit and status
-	if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
-		return nil, err
-	}
 	updatePRStatus := func(pState prmodels.PipelineStatus, revision string) error {
 		if err = c.pipelinerunMgr.UpdateStatusByID(ctx, pr.ID, pState); err != nil {
 			log.Errorf(ctx, "UpdateStatusByID error, pr = %d, status = %s, err = %v",
@@ -104,8 +93,23 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 			pr.ID, pState, revision)
 		return nil
 	}
-	if err := updatePRStatus(prmodels.StatusCommitted, commit); err != nil {
-		return nil, err
+
+	commit := ""
+	if pr.Action != prmodels.ActionDeploy || pr.GitURL == "" {
+		// 3. update image in git repo
+		log.Infof(ctx, "pipeline %v output content: %+v", r.PipelinerunID, r.Output)
+		commit, err = c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
+			tr.ChartName, r.Output)
+		if err != nil {
+			return nil, perror.WithMessage(err, op)
+		}
+		// 4. update config commit and status
+		if err := c.pipelinerunMgr.UpdateConfigCommitByID(ctx, pr.ID, commit); err != nil {
+			return nil, err
+		}
+		if err := updatePRStatus(prmodels.StatusCommitted, commit); err != nil {
+			return nil, err
+		}
 	}
 
 	// 5. merge branch from gitops to master  and update status
@@ -163,20 +167,30 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 	}
 
 	// 10. record event
-	if _, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-		EventSummary: eventmodels.EventSummary{
-			ResourceType: common.ResourceCluster,
-			EventType:    eventmodels.ClusterBuildDeployed,
-			ResourceID:   cluster.ID,
-		},
-	}); err != nil {
-		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-	}
+	c.recordEvent(ctx, pr, cluster)
 
 	return &InternalDeployResponseV2{
 		PipelinerunID: pr.ID,
 		Commit:        commit,
 	}, nil
+}
+
+func (c *controller) recordEvent(ctx context.Context, pr *prmodels.Pipelinerun, cluster *models.Cluster) {
+	_, err := c.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+		EventSummary: eventmodels.EventSummary{
+			ResourceType: common.ResourceCluster,
+			EventType: func() string {
+				if pr.Action == prmodels.ActionBuildDeploy {
+					return eventmodels.ClusterBuildDeployed
+				}
+				return eventmodels.ClusterDeployed
+			}(),
+			ResourceID: cluster.ID,
+		},
+	})
+	if err != nil {
+		log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+	}
 }
 
 func (c *controller) retrieveClaimsAndUser(ctx context.Context) (*tokenservice.Claims, *usermodel.User, error) {

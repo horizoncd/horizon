@@ -299,6 +299,8 @@ components:
           $ref: "#/components/schemas/Tag"
         commit:
           $ref: "#/components/schemas/Commit"
+    Image:
+      type: string
     BuildConfig:
       type: object
       additionalProperties: true
@@ -331,6 +333,8 @@ components:
           $ref: "#/components/schemas/Priority"
         git:
           $ref: "#/components/schemas/Git"
+        image:
+          $ref: "#/components/schemas/Image"
         buildConfig:
           $ref: "#/components/schemas/BuildConfig"
         templateInfo:
@@ -371,6 +375,8 @@ components:
           $ref: "#/components/schemas/Priority"
         git:
           $ref: "#/components/schemas/Git"
+        image:
+          $ref: "#/components/schemas/Image"
         buildConfig:
           $ref: "#/components/schemas/BuildConfig"
         templateInfo:
