@@ -151,17 +151,17 @@ func (d *dao) GetCursors(ctx context.Context, cursorType models.EventCursorType,
 	return eventIndex, nil
 }
 
-func (d *dao) DeleteEvents(ctx context.Context, id ...uint) (int64, error) {
+func (d *dao) DeleteEvents(ctx context.Context, ids ...uint) (int64, error) {
 	var events []*models.Event
 	tx := d.db.WithContext(ctx).Begin()
 
-	result := tx.Where("id in (?)", id).Delete(&events)
+	result := tx.Where("id in (?)", ids).Delete(&events)
 	if result.Error != nil {
 		tx.Rollback()
 		return 0, herrors.NewErrDeleteFailed(herrors.EventInDB, result.Error.Error())
 	}
 
-	if result := tx.Where("event_id in (?)", id).Delete(&webhookmodels.WebhookLog{}); result.Error != nil {
+	if result := tx.Where("event_id in (?)", ids).Delete(&webhookmodels.WebhookLog{}); result.Error != nil {
 		tx.Rollback()
 		return 0, herrors.NewErrDeleteFailed(herrors.WebhookLogInDB, result.Error.Error())
 	}

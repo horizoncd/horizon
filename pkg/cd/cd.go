@@ -90,7 +90,7 @@ type CD interface {
 }
 
 type cd struct {
-	kubeClientFty     kubeclient.Factory
+	kubeClientFactory kubeclient.Factory
 	informerFactories *regioninformers.RegionInformers
 	factory           argocd.Factory
 	clusterGitRepo    gitrepo.ClusterGitRepo
@@ -100,7 +100,7 @@ type cd struct {
 func NewCD(informerFactories *regioninformers.RegionInformers, clusterGitRepo gitrepo.ClusterGitRepo,
 	argoCDMapper argocdconf.Mapper, targetRevision string) CD {
 	return &cd{
-		kubeClientFty:     kubeclient.Fty,
+		kubeClientFactory: kubeclient.Fty,
 		informerFactories: informerFactories,
 		factory:           argocd.NewFactory(argoCDMapper),
 		clusterGitRepo:    clusterGitRepo,
@@ -247,7 +247,7 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 	const op = "cd: get step"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	_, kubeClient, err := c.kubeClientFactory.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +355,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		return status, nil
 	}
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	_, kubeClient, err := c.kubeClientFactory.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +407,7 @@ func (c *cd) GetClusterStateV1(ctx context.Context,
 		return nil, err
 	}
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	_, kubeClient, err := c.kubeClientFactory.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -572,7 +572,7 @@ func (c *cd) GetPodEvents(ctx context.Context,
 	const op = "cd: get cluster pod events"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	_, kubeClient, err := c.kubeClientFactory.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
