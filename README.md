@@ -113,7 +113,7 @@ Thank you to all of our [contributors](https://github.com/horizoncd/horizon/cont
 You can contact with us by the following ways:
 
 * [Discussions](https://github.com/horizoncd/horizon/discussions)
-* [Slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1pqpobiwn-1mgV60SIa1oi4mL1WXf7uA)
+* [Slack](https://join.slack.com/t/horizoncd/shared_invite/zt-1sehbmzcx-dgIwaExNR4fZKXppj5kmgQ)
 * WeChat Group
   
   Add administrator wechat and you will be invited to join the group.
