@@ -94,11 +94,10 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		return nil
 	}
 
-	commit := ""
 	if pr.Action != prmodels.ActionDeploy || pr.GitURL == "" {
-		// 3. update image in git repo
+		// 3. update pipeline output in git repo
 		log.Infof(ctx, "pipeline %v output content: %+v", r.PipelinerunID, r.Output)
-		commit, err = c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
+		commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
 			tr.ChartName, r.Output)
 		if err != nil {
 			return nil, perror.WithMessage(err, op)
@@ -112,14 +111,26 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		}
 	}
 
-	// 5. merge branch from gitops to master  and update status
-	masterRevision, err := c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name,
-		gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &pr.ID)
+	// 5. merge branch from gitops to master if diff is not empty and update status
+	configCommit, err := c.clusterGitRepo.GetConfigCommit(ctx, application.Name, cluster.Name)
 	if err != nil {
-		return nil, perror.WithMessage(err, op)
-	}
-	if err := updatePRStatus(prmodels.StatusMerged, masterRevision); err != nil {
 		return nil, err
+	}
+	diff, err := c.clusterGitRepo.CompareConfig(ctx, application.Name, cluster.Name,
+		&configCommit.Master, &configCommit.Gitops)
+	if err != nil {
+		return nil, err
+	}
+	masterRevision := configCommit.Master
+	if diff != "" {
+		masterRevision, err = c.clusterGitRepo.MergeBranch(ctx, application.Name, cluster.Name,
+			gitrepo.GitOpsBranch, c.clusterGitRepo.DefaultBranch(), &pr.ID)
+		if err != nil {
+			return nil, perror.WithMessage(err, op)
+		}
+		if err := updatePRStatus(prmodels.StatusMerged, masterRevision); err != nil {
+			return nil, err
+		}
 	}
 
 	// 6. create cluster in cd system
@@ -171,7 +182,7 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 
 	return &InternalDeployResponseV2{
 		PipelinerunID: pr.ID,
-		Commit:        commit,
+		Commit:        configCommit.Gitops,
 	}, nil
 }
 

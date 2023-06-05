@@ -898,6 +898,13 @@ func test(t *testing.T) {
 	assert.Nil(t, err)
 	newCtx := common.WithContextJWTTokenString(ctx, token)
 
+	clusterGitRepo.EXPECT().GetConfigCommit(gomock.Any(), application.Name, resp.Name).
+		Return(&gitrepo.ClusterCommit{
+			Master: "master",
+			Gitops: "gitops",
+		}, nil).AnyTimes()
+	clusterGitRepo.EXPECT().CompareConfig(gomock.Any(), application.Name, resp.Name, gomock.Any(), gomock.Any()).
+		Return("config-diff", nil).AnyTimes()
 	clusterGitRepo.EXPECT().UpdatePipelineOutput(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("image-commit", nil).AnyTimes()
 	clusterGitRepo.EXPECT().MergeBranch(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
 		gomock.Any(), gomock.Any()).Return("newest-commit", nil).AnyTimes()
