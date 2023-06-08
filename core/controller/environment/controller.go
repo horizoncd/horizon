@@ -20,7 +20,6 @@ import (
 	environmentmanager "github.com/horizoncd/horizon/pkg/manager"
 	"github.com/horizoncd/horizon/pkg/models"
 	"github.com/horizoncd/horizon/pkg/param"
-	"github.com/horizoncd/horizon/pkg/service"
 )
 
 type Controller interface {
@@ -39,7 +38,6 @@ var _ Controller = (*controller)(nil)
 
 func NewController(param *param.Param) Controller {
 	return &controller{
-		autoFreeSvc:  param.AutoFreeSvc,
 		envMgr:       param.EnvMgr,
 		envRegionMgr: param.EnvRegionMgr,
 		regionMgr:    param.RegionMgr,
@@ -50,7 +48,6 @@ type controller struct {
 	envMgr       environmentmanager.EnvironmentManager
 	envRegionMgr environmentmanager.EnvironmentRegionManager
 	regionMgr    environmentmanager.RegionManager
-	autoFreeSvc  *service.AutoFreeSVC
 }
 
 func (c *controller) GetByID(ctx context.Context, id uint) (*Environment, error) {
@@ -59,7 +56,7 @@ func (c *controller) GetByID(ctx context.Context, id uint) (*Environment, error)
 		return nil, err
 	}
 
-	return ofEnvironmentModel(environment, c.autoFreeSvc.WhetherSupported(environment.Name)), nil
+	return ofEnvironmentModel(environment), nil
 }
 
 func (c *controller) GetByName(ctx context.Context, name string) (*Environment, error) {
@@ -67,7 +64,7 @@ func (c *controller) GetByName(ctx context.Context, name string) (*Environment, 
 	if err != nil {
 		return nil, err
 	}
-	return ofEnvironmentModel(environment, c.autoFreeSvc.WhetherSupported(environment.Name)), nil
+	return ofEnvironmentModel(environment), nil
 }
 
 func (c *controller) Create(ctx context.Context, request *CreateEnvironmentRequest) (uint, error) {
@@ -93,7 +90,7 @@ func (c *controller) ListEnvironments(ctx context.Context) (_ Environments, err 
 		return nil, err
 	}
 
-	return ofEnvironmentModels(envs, c.autoFreeSvc), nil
+	return ofEnvironmentModels(envs), nil
 }
 
 func (c *controller) ListEnabledRegionsByEnvironment(ctx context.Context, environment string) (

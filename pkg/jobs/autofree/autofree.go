@@ -16,6 +16,7 @@ package autofree
 
 import (
 	"context"
+	"github.com/horizoncd/horizon/pkg/service"
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -31,7 +32,7 @@ import (
 )
 
 func Run(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.UserManager,
-	clusterCtr clusterctl.Controller, prCtr prctl.Controller) {
+	autoFreeSVC *service.AutoFreeSVC, clusterCtr clusterctl.Controller, prCtr prctl.Controller) {
 	// verify account
 	user, err := userMgr.GetUserByID(ctx, jobConfig.AccountID)
 	if err != nil {
@@ -58,14 +59,15 @@ func Run(ctx context.Context, jobConfig *autofree.Config, userMgr usermanager.Us
 			// nolint
 			ctx = context.WithValue(ctx, requestid.HeaderXRequestID, rid)
 			log.Infof(ctx, "auto-free job starts to execute, rid: %v", rid)
-			process(ctx, jobConfig, clusterCtr, prCtr)
+			process(ctx, jobConfig, autoFreeSVC, clusterCtr, prCtr)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func process(ctx context.Context, jobConfig *autofree.Config, clusterCtr clusterctl.Controller,
+func process(ctx context.Context, jobConfig *autofree.Config,
+	autoFreeSVC *service.AutoFreeSVC, clusterCtr clusterctl.Controller,
 	prCtr prctl.Controller) {
 	op := "job: cluster auto-free"
 	query := &q.Query{
@@ -99,10 +101,8 @@ func process(ctx context.Context, jobConfig *autofree.Config, clusterCtr cluster
 					return false, nil
 				}
 				supported := func() bool {
-					for _, env := range jobConfig.SupportedEnvs {
-						if clr.EnvironmentName == env {
-							return true
-						}
+					if autoFreeSVC.WhetherSupported(clr.EnvironmentName, clr.RegionName) {
+						return true
 					}
 					log.WithFiled(ctx, "op", op).
 						Warningf("%v environment does not allow auto-free. cluster: %v, expire seconds: %v",

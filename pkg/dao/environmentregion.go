@@ -16,6 +16,7 @@ package dao
 
 import (
 	"context"
+	"errors"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/common"
@@ -43,6 +44,7 @@ type EnvironmentRegionDAO interface {
 	GetDefaultRegions(ctx context.Context) ([]*models.EnvironmentRegion, error)
 	// SetEnvironmentRegionToDefaultByID set region to default by id
 	SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error
+	SetEnvironmentRegionIfAutoFree(ctx context.Context, id uint, autoFree bool) error
 	// DeleteByID delete an environmentRegion by id
 	DeleteByID(ctx context.Context, id uint) error
 }
@@ -187,6 +189,24 @@ func (d *environmentRegionDAO) SetEnvironmentRegionToDefaultByID(ctx context.Con
 		})
 	}
 
+	return nil
+}
+
+func (d *environmentRegionDAO) SetEnvironmentRegionIfAutoFree(ctx context.Context, id uint, autoFree bool) error {
+	db := d.db.WithContext(ctx)
+	er := models.EnvironmentRegion{}
+	result := db.Where("id = ?", id).First(&er)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return herrors.NewErrNotFound(herrors.EnvironmentRegionInDB, result.Error.Error())
+		}
+		return herrors.NewErrGetFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+	}
+	result = db.Model(models.EnvironmentRegion{}).
+		Where("id = ?", id).Update("auto_free", autoFree)
+	if result.Error != nil {
+		return herrors.NewErrUpdateFailed(herrors.EnvironmentRegionInDB, result.Error.Error())
+	}
 	return nil
 }
 

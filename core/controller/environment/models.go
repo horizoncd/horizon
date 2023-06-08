@@ -18,14 +18,12 @@ import (
 	"time"
 
 	"github.com/horizoncd/horizon/pkg/models"
-	"github.com/horizoncd/horizon/pkg/service"
 )
 
 type Environment struct {
 	ID          uint      `json:"id"`
 	Name        string    `json:"name"`
 	DisplayName string    `json:"displayName"`
-	AutoFree    bool      `json:"autoFree"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -33,20 +31,19 @@ type Environment struct {
 type Environments []*Environment
 
 // ofEnvironmentModels []*models.Environment to []*Environment
-func ofEnvironmentModels(envs []*models.Environment, autoFreeSvc *service.AutoFreeSVC) Environments {
+func ofEnvironmentModels(envs []*models.Environment) Environments {
 	environments := make(Environments, 0)
 	for _, env := range envs {
-		environments = append(environments, ofEnvironmentModel(env, autoFreeSvc.WhetherSupported(env.Name)))
+		environments = append(environments, ofEnvironmentModel(env))
 	}
 	return environments
 }
 
-func ofEnvironmentModel(env *models.Environment, isAutoFree bool) *Environment {
+func ofEnvironmentModel(env *models.Environment) *Environment {
 	return &Environment{
 		ID:          env.ID,
 		Name:        env.Name,
 		DisplayName: env.DisplayName,
-		AutoFree:    isAutoFree,
 		CreatedAt:   env.CreatedAt,
 		UpdatedAt:   env.UpdatedAt,
 	}

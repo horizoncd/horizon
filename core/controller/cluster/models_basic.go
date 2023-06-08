@@ -317,6 +317,7 @@ type ListClusterWithExpiryResponse struct {
 	ID              uint      `json:"id"`
 	Name            string    `json:"name"`
 	EnvironmentName string    `json:"environmentName"`
+	RegionName      string    `json:"regionName"`
 	Status          string    `json:"status"`
 	ExpireSeconds   uint      `json:"expireSeconds"`
 	UpdatedAt       time.Time `json:"updatedAt"`
@@ -329,6 +330,7 @@ func ofClusterWithExpiry(clusters []*appmodels.Cluster) []*ListClusterWithExpiry
 			ID:              c.ID,
 			Name:            c.Name,
 			EnvironmentName: c.EnvironmentName,
+			RegionName:      c.RegionName,
 			Status:          c.Status,
 			ExpireSeconds:   c.ExpireSeconds,
 			UpdatedAt:       c.UpdatedAt,

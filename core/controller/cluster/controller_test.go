@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:lll
 package cluster
 
 import (
@@ -437,10 +438,12 @@ func createApplicationCtx() (context.Context, *v1beta1.PipelineRun, map[string]i
 		panic(err)
 	}
 	ctx = context.TODO()
+	// nolint
 	ctx = context.WithValue(ctx, common.UserContextKey(), &userauth.DefaultInfo{
 		Name: "Tony",
 		ID:   uint(1),
 	})
+	// nolint
 	ctx = context.WithValue(ctx, requestid.HeaderXRequestID, "requestid")
 
 	if err := json.Unmarshal([]byte(applicationSchemaJSON), &applicationSchema); err != nil {
@@ -496,8 +499,9 @@ func test(t *testing.T) {
 		applicationJSONBlob, _, db, manager, _, _, _, _, _ := createApplicationCtx()
 	// for test
 	conf := config.Config{}
+	erMgr := manager.EnvironmentRegionMgr
 	param := param.Param{
-		AutoFreeSvc: groupservice.NewAutoFreeSVC([]string{"test", "dev"}),
+		AutoFreeSvc: groupservice.NewAutoFreeSVC(erMgr),
 		Manager:     managerparam.InitManager(nil),
 	}
 	NewController(&conf, &param)
@@ -592,10 +596,12 @@ func test(t *testing.T) {
 	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: "test",
 		RegionName:      "hz",
+		AutoFree:        true,
 	})
 	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: "dev",
 		RegionName:      "hz",
+		AutoFree:        true,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
@@ -1262,7 +1268,7 @@ func testV2(t *testing.T) {
 	// for test
 	conf := config.Config{}
 	param := param.Param{
-		AutoFreeSvc: groupservice.NewAutoFreeSVC([]string{"dev", "test"}),
+		AutoFreeSvc: groupservice.NewAutoFreeSVC(manager.EnvironmentRegionMgr),
 		Manager:     managerparam.InitManager(nil),
 	}
 	NewController(&conf, &param)
@@ -1311,12 +1317,14 @@ func testV2(t *testing.T) {
 	er, err := envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: "test2",
 		RegionName:      "hz",
+		AutoFree:        true,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
 	er, err = envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: "dev2",
 		RegionName:      "hz",
+		AutoFree:        true,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
@@ -1383,7 +1391,7 @@ func testV2(t *testing.T) {
 		groupSvc:             groupservice.NewGroupService(manager),
 		pipelinerunMgr:       manager.PipelinerunMgr,
 		userManager:          manager.UserManager,
-		autoFreeSvc:          groupservice.NewAutoFreeSVC([]string{"dev2", "test2"}),
+		autoFreeSvc:          groupservice.NewAutoFreeSVC(manager.EnvironmentRegionMgr),
 		userSvc:              groupservice.NewUserService(manager),
 		schemaTagManager:     manager.ClusterSchemaTagMgr,
 		applicationGitRepo:   applicationGitRepo,
@@ -1532,7 +1540,7 @@ func testUpgrade(t *testing.T) {
 	// for test
 	conf := config.Config{}
 	parameter := param.Param{
-		AutoFreeSvc: groupservice.NewAutoFreeSVC([]string{"dev", "test"}),
+		AutoFreeSvc: groupservice.NewAutoFreeSVC(manager.EnvironmentRegionMgr),
 		Manager:     managerparam.InitManager(nil),
 	}
 	NewController(&conf, &parameter)
@@ -1556,6 +1564,7 @@ func testUpgrade(t *testing.T) {
 	_, err := envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: "test",
 		RegionName:      "hz",
+		AutoFree:        true,
 	})
 	assert.Nil(t, err)
 

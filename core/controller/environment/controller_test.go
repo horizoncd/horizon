@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 
 func Test(t *testing.T) {
 	param := &param.Param{
-		AutoFreeSvc: service.NewAutoFreeSVC([]string{}),
+		AutoFreeSvc: service.NewAutoFreeSVC(manager.EnvironmentRegionMgr),
 		Manager:     manager,
 	}
 	regionCtl := region.NewController(param)
@@ -82,7 +82,6 @@ func Test(t *testing.T) {
 	env, err := ctl.GetByID(ctx, devID)
 	assert.Nil(t, err)
 	assert.Equal(t, "dev", env.Name)
-	assert.Equal(t, false, env.AutoFree)
 
 	envByName, err := ctl.GetByName(ctx, env.Name)
 	assert.Nil(t, err)
@@ -93,7 +92,6 @@ func Test(t *testing.T) {
 	assert.Equal(t, 1, len(envs))
 	assert.Equal(t, "dev", envs[0].Name)
 	assert.Equal(t, "DEV", envs[0].DisplayName)
-	assert.Equal(t, false, envs[0].AutoFree)
 
 	err = ctl.UpdateByID(ctx, devID, &UpdateEnvironmentRequest{
 		DisplayName: "DEV-update",

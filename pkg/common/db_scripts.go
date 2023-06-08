@@ -162,7 +162,7 @@ const (
 const (
 	EnvironmentListRegion = "select * from tb_environment_region " +
 		"where environment_name = ? and deleted_ts = 0"
-	EnvironmentListEnabledRegion = "select r.name, r.display_name, r.disabled, er.is_default " +
+	EnvironmentListEnabledRegion = "select r.name, r.display_name, r.disabled, er.is_default, er.auto_free " +
 		"from tb_environment_region er " +
 		"join tb_region r on er.region_name = r.name " +
 		"where er.environment_name = ? and er.deleted_ts = 0 and r.deleted_ts = 0"

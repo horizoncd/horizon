@@ -86,6 +86,7 @@ func TestEnvironmentRegion(t *testing.T) {
 	devHzEr, err := mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{
 		EnvironmentName: devEnv.Name,
 		RegionName:      "hz",
+		AutoFree:        true,
 		IsDefault:       true,
 	})
 	assert.Nil(t, err)
@@ -103,7 +104,16 @@ func TestEnvironmentRegion(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(regions))
 	assert.Equal(t, "hz", regions[0].RegionName)
+	assert.Equal(t, true, regions[0].AutoFree)
 	t.Logf("%v", regions[0])
+
+	err = mgr.SetEnvironmentRegionIfAutoFree(ctx, devHzEr.ID, false)
+	assert.Nil(t, err)
+
+	regions, err = mgr.ListByEnvironment(ctx, devEnv.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(regions))
+	assert.Equal(t, false, regions[0].AutoFree)
 
 	// test SetEnvironmentRegionToDefaultByID
 	r2, _ := mgr.CreateEnvironmentRegion(ctx, &envmodels.EnvironmentRegion{

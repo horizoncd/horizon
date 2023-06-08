@@ -122,3 +122,34 @@ func (a *API) DeleteByID(c *gin.Context) {
 
 	response.Success(c)
 }
+
+func (a *API) SetIfAutoFree(c *gin.Context) {
+	idStr := c.Param(_environmentRegionIDParam)
+	id, err := strconv.ParseUint(idStr, 10, 0)
+	if err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid id: %s, err: %s",
+			idStr, err.Error())))
+		return
+	}
+
+	var request environmentregion.SetAutoFreeRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("invalid request body, err: %s",
+			err.Error())))
+		return
+	}
+
+	err = a.environmentRegionCtl.SetEnvironmentRegionIfAutoFree(c, uint(id), request.AutoFree)
+	if err != nil {
+		if err != nil {
+			if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+				response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(err.Error()))
+				return
+			}
+			response.AbortWithRPCError(c, rpcerror.InternalError.WithErrMsg(err.Error()))
+			return
+		}
+	}
+
+	response.Success(c)
+}

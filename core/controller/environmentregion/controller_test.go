@@ -76,6 +76,7 @@ func Test(t *testing.T) {
 	er, err := ctl.CreateEnvironmentRegion(ctx, &CreateEnvironmentRegionRequest{
 		EnvironmentName: "dev",
 		RegionName:      "hz",
+		AutoFree:        true,
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, er)
@@ -84,11 +85,16 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(ers))
 	assert.Equal(t, "hz", ers[0].RegionName)
+	assert.Equal(t, true, ers[0].AutoFree)
+
+	err = ctl.SetEnvironmentRegionIfAutoFree(ctx, er, false)
+	assert.Nil(t, err)
 
 	ers, err = ctl.ListByEnvironment(ctx, "dev")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(ers))
 	assert.Equal(t, "hz", ers[0].RegionName)
+	assert.Equal(t, false, ers[0].AutoFree)
 
 	err = ctl.SetEnvironmentRegionToDefault(ctx, er)
 	assert.Nil(t, err)

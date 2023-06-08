@@ -14,21 +14,30 @@
 
 package service
 
+import (
+	"context"
+	"github.com/horizoncd/horizon/pkg/manager"
+)
+
 type AutoFreeSVC struct {
-	envsWithAutoFree map[string]struct{}
+	erMgr manager.EnvironmentRegionManager
 }
 
-func NewAutoFreeSVC(envsWithAutoFreeArr []string) *AutoFreeSVC {
-	m := make(map[string]struct{})
-	for _, env := range envsWithAutoFreeArr {
-		m[env] = struct{}{}
-	}
+func NewAutoFreeSVC(erMgr manager.EnvironmentRegionManager) *AutoFreeSVC {
 	return &AutoFreeSVC{
-		envsWithAutoFree: m,
+		erMgr: erMgr,
 	}
 }
 
-func (s *AutoFreeSVC) WhetherSupported(env string) bool {
-	_, ok := s.envsWithAutoFree[env]
-	return ok
+func (s *AutoFreeSVC) WhetherSupported(env string, region string) bool {
+	ers, err := s.erMgr.ListByEnvironment(context.TODO(), env)
+	if err != nil {
+		return false
+	}
+	for _, er := range ers {
+		if er.RegionName == region && er.AutoFree {
+			return true
+		}
+	}
+	return false
 }

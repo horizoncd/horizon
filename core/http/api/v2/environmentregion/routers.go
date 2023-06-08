@@ -40,6 +40,10 @@ func (api *API) RegisterRoute(engine *gin.Engine) {
 			Method:      http.MethodDelete,
 			Pattern:     fmt.Sprintf("/:%v", _environmentRegionIDParam),
 			HandlerFunc: api.DeleteByID,
+		}, {
+			Method:      http.MethodPut,
+			Pattern:     fmt.Sprintf("/:%v/autofree", _environmentRegionIDParam),
+			HandlerFunc: api.SetIfAutoFree,
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)

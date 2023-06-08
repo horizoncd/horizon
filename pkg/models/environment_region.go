@@ -24,6 +24,7 @@ type EnvironmentRegion struct {
 	EnvironmentName string
 	RegionName      string
 	IsDefault       bool
+	AutoFree        bool
 	CreatedBy       uint
 	UpdatedBy       uint
 }

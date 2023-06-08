@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 		&appmodels.Registry{}, &appmodels.IdentityProvider{}, &appmodels.UserLink{},
 		&appmodels.Region{}, &appmodels.EnvironmentRegion{},
 		&appmodels.Pipelinerun{}, &appmodels.ClusterTemplateSchemaTag{},
-		&appmodels.Tag{}, &appmodels.Environment{}); err != nil {
+		&appmodels.Tag{}, &appmodels.Environment{}, &appmodels.EnvironmentRegion{}); err != nil {
 		panic(err)
 	}
 	// nolint
@@ -108,8 +108,15 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	cd := cdmock.NewMockCD(mockCtl)
 	conf := &coreconfig.Config{}
+	erMgr := manager.EnvironmentRegionMgr
+	_, err := erMgr.CreateEnvironmentRegion(ctx, &appmodels.EnvironmentRegion{
+		EnvironmentName: "dev",
+		RegionName:      "hzListClusterWithExpiry",
+	})
+	assert.Nil(t, err)
+
 	parameter := &param.Param{
-		AutoFreeSvc: service.NewAutoFreeSVC([]string{"dev"}),
+		AutoFreeSvc: service.NewAutoFreeSVC(erMgr),
 		Manager:     manager,
 		CD:          cd,
 	}
@@ -193,6 +200,5 @@ func TestAutoFreeExpiredCluster(t *testing.T) {
 		JobInterval:   1 * time.Second,
 		BatchInterval: 0 * time.Second,
 		BatchSize:     20,
-		SupportedEnvs: []string{"dev"},
-	}, manager.UserManager, clrCtl, prCtl)
+	}, manager.UserManager, parameter.AutoFreeSvc, clrCtl, prCtl)
 }

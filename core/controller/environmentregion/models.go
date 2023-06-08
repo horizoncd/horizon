@@ -25,6 +25,7 @@ type EnvironmentRegion struct {
 	RegionDisplayName string `json:"regionDisplayName"`
 	IsDefault         bool   `json:"isDefault"`
 	Disabled          bool   `json:"disabled"`
+	AutoFree          bool   `json:"autoFree"`
 }
 
 type EnvironmentRegions []*EnvironmentRegion
@@ -47,6 +48,7 @@ func ofRegionModels(regions []*envregionmodels.Region,
 			EnvironmentName:   envRegion.EnvironmentName,
 			IsDefault:         envRegion.IsDefault,
 			Disabled:          region.Disabled,
+			AutoFree:          envRegion.AutoFree,
 		})
 	}
 	return rs
@@ -55,4 +57,9 @@ func ofRegionModels(regions []*envregionmodels.Region,
 type CreateEnvironmentRegionRequest struct {
 	EnvironmentName string `json:"environmentName"`
 	RegionName      string `json:"regionName"`
+	AutoFree        bool   `json:"autoFree"`
+}
+
+type SetAutoFreeRequest struct {
+	AutoFree bool `json:"autoFree"`
 }

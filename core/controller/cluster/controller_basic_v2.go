@@ -155,7 +155,8 @@ func (c *controller) CreateClusterV2(ctx context.Context,
 	}
 
 	// 6. transfer expireTime to expireSeconds and verify environment.
-	expireSeconds, err := c.toExpireSeconds(ctx, params.ExpireTime, params.Environment)
+	expireSeconds, err := c.toExpireSeconds(ctx, params.ExpireTime,
+		params.Environment, params.Region)
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +416,8 @@ func (c *controller) UpdateClusterV2(ctx context.Context, clusterID uint,
 	// 3. check and transfer ExpireTime
 	expireSeconds := cluster.ExpireSeconds
 	if r.ExpireTime != "" {
-		expireSeconds, err = c.toExpireSeconds(ctx, r.ExpireTime, environmentName)
+		expireSeconds, err = c.toExpireSeconds(ctx, r.ExpireTime,
+			environmentName, regionName)
 		if err != nil {
 			return err
 		}

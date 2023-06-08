@@ -477,7 +477,7 @@ func (c *controller) CreateCluster(ctx context.Context, applicationID uint, envi
 
 	// transfer expireTime to expireSeconds and verify environment.
 	// expireTime's format is e.g. "300ms", "-1.5h" or "2h45m".
-	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, environment)
+	expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, environment, region)
 	if err != nil {
 		return nil, err
 	}
@@ -593,7 +593,8 @@ func (c *controller) UpdateCluster(ctx context.Context, clusterID uint,
 	)
 
 	if r.ExpireTime != "" {
-		expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime, cluster.EnvironmentName)
+		expireSeconds, err := c.toExpireSeconds(ctx, r.ExpireTime,
+			cluster.EnvironmentName, cluster.RegionName)
 		if err != nil {
 			return nil, err
 		}
@@ -1012,7 +1013,8 @@ func (c *controller) FreeCluster(ctx context.Context, clusterID uint) (err error
 	return nil
 }
 
-func (c *controller) toExpireSeconds(ctx context.Context, expireTime string, environment string) (uint, error) {
+func (c *controller) toExpireSeconds(ctx context.Context,
+	expireTime string, environment string, region string) (uint, error) {
 	expireSeconds := uint(0)
 	if expireTime != "" {
 		duration, err := time.ParseDuration(expireTime)
@@ -1021,7 +1023,7 @@ func (c *controller) toExpireSeconds(ctx context.Context, expireTime string, env
 			return 0, perror.Wrap(herrors.ErrParamInvalid, err.Error())
 		}
 		expireSeconds = uint(duration.Seconds())
-		if !c.autoFreeSvc.WhetherSupported(environment) && expireSeconds > 0 {
+		if !c.autoFreeSvc.WhetherSupported(environment, region) && expireSeconds > 0 {
 			log.Warningf(ctx, "%v environment dose not support auto-free, but expireSeconds are %v",
 				environment, expireSeconds)
 			expireSeconds = 0

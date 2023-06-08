@@ -28,6 +28,7 @@ type Controller interface {
 	CreateEnvironmentRegion(ctx context.Context, request *CreateEnvironmentRegionRequest) (uint, error)
 	SetEnvironmentRegionToDefault(ctx context.Context, id uint) error
 	DeleteByID(ctx context.Context, id uint) error
+	SetEnvironmentRegionIfAutoFree(ctx context.Context, id uint, autoFree bool) error
 }
 
 var _ Controller = (*controller)(nil)
@@ -67,6 +68,7 @@ func (c *controller) CreateEnvironmentRegion(ctx context.Context,
 	environmentRegion, err := c.envRegionMgr.CreateEnvironmentRegion(ctx, &models.EnvironmentRegion{
 		EnvironmentName: request.EnvironmentName,
 		RegionName:      request.RegionName,
+		AutoFree:        request.AutoFree,
 	})
 	if err != nil {
 		return 0, err
@@ -89,4 +91,8 @@ func (c *controller) ListAll(ctx context.Context) (_ EnvironmentRegions, err err
 
 func (c *controller) SetEnvironmentRegionToDefault(ctx context.Context, id uint) error {
 	return c.envRegionMgr.SetEnvironmentRegionToDefaultByID(ctx, id)
+}
+
+func (c *controller) SetEnvironmentRegionIfAutoFree(ctx context.Context, id uint, autoFree bool) error {
+	return c.envRegionMgr.SetEnvironmentRegionIfAutoFree(ctx, id, autoFree)
 }

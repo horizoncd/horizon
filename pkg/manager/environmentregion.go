@@ -41,6 +41,7 @@ type EnvironmentRegionManager interface {
 	GetDefaultRegionByEnvironment(ctx context.Context, env string) (*models.EnvironmentRegion, error)
 	SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error
 	// ListAllEnvironmentRegions list all environmentRegions
+	SetEnvironmentRegionIfAutoFree(ctx context.Context, id uint, autoFree bool) error
 	ListAllEnvironmentRegions(ctx context.Context) ([]*models.EnvironmentRegion, error)
 	DeleteByID(ctx context.Context, id uint) error
 }
@@ -91,6 +92,10 @@ func (m *environmentRegionManager) GetByEnvironmentAndRegion(ctx context.Context
 
 func (m *environmentRegionManager) SetEnvironmentRegionToDefaultByID(ctx context.Context, id uint) error {
 	return m.envRegionDAO.SetEnvironmentRegionToDefaultByID(ctx, id)
+}
+
+func (m *environmentRegionManager) SetEnvironmentRegionIfAutoFree(ctx context.Context, id uint, autoFree bool) error {
+	return m.envRegionDAO.SetEnvironmentRegionIfAutoFree(ctx, id, autoFree)
 }
 
 func (m *environmentRegionManager) ListAllEnvironmentRegions(ctx context.Context) ([]*models.EnvironmentRegion, error) {

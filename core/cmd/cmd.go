@@ -393,7 +393,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		panic(err)
 	}
 
-	autoFreeSvc := service.NewAutoFreeSVC(coreConfig.AutoFreeConfig.SupportedEnvs)
+	autoFreeSvc := service.NewAutoFreeSVC(manager.EnvironmentRegionMgr)
 
 	// init build schema controller
 	readJSONFileFunc := func(filePath string) map[string]interface{} {
@@ -571,7 +571,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	// start jobs
 	cleaner := clean.New(coreConfig.Clean, manager)
 	autoFreeJob := func(ctx context.Context) {
-		autofree.Run(ctx, &coreConfig.AutoFreeConfig, manager.UserManager, clusterCtl, prCtl)
+		autofree.Run(ctx, &coreConfig.AutoFreeConfig, manager.UserManager, parameter.AutoFreeSvc, clusterCtl, prCtl)
 	}
 	eventHandlerJob, eventHandlerSvc := eventhandler.New(ctx, coreConfig.EventHandlerConfig, manager)
 	webhookJob, _ := jobwebhook.New(ctx, eventHandlerSvc, coreConfig.WebhookConfig, manager)
