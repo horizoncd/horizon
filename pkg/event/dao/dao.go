@@ -34,8 +34,7 @@ type DAO interface {
 	List(ctx context.Context, query *q.Query) ([]*models.Event, error)
 	CreateOrUpdateCursor(ctx context.Context,
 		eventIndex *models.EventCursor) (*models.EventCursor, error)
-	GetCursor(ctx context.Context, cursorType models.EventCursorType,
-		regionIDs ...uint) (*models.EventCursor, error)
+	GetCursor(ctx context.Context) (*models.EventCursor, error)
 	GetEvent(ctx context.Context, id uint) (*models.Event, error)
 	DeleteEvents(ctx context.Context, id ...uint) (int64, error)
 }
@@ -103,9 +102,7 @@ func (d *dao) CreateOrUpdateCursor(ctx context.Context,
 	if result := d.db.Clauses(clause.OnConflict{
 		Columns: []clause.Column{
 			{
-				Name: "type",
-			}, {
-				Name: "region_id",
+				Name: "id",
 			},
 		},
 		DoUpdates: clause.AssignmentColumns([]string{"position"}),
@@ -115,13 +112,9 @@ func (d *dao) CreateOrUpdateCursor(ctx context.Context,
 	return eventCursor, nil
 }
 
-func (d *dao) GetCursor(ctx context.Context,
-	cursorType models.EventCursorType, regionIDs ...uint) (*models.EventCursor, error) {
+func (d *dao) GetCursor(ctx context.Context) (*models.EventCursor, error) {
 	var eventIndex models.EventCursor
-	statement := d.db.WithContext(ctx).Where("type = ?", cursorType)
-	if len(regionIDs) > 0 {
-		statement.Where("region_id in (?)", regionIDs)
-	}
+	statement := d.db.WithContext(ctx)
 	if result := statement.First(&eventIndex); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, herrors.NewErrNotFound(herrors.EventCursorInDB,

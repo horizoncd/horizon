@@ -17,7 +17,6 @@ package manager
 import (
 	"context"
 
-	perror "github.com/horizoncd/horizon/pkg/errors"
 	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -36,8 +35,7 @@ type Manager interface {
 	ListEventsByRange(ctx context.Context, start, end uint) ([]*models.Event, error)
 	CreateOrUpdateCursor(ctx context.Context,
 		eventIndex *models.EventCursor) (*models.EventCursor, error)
-	GetCursor(ctx context.Context, cursorType models.EventCursorType,
-		RegionIDs ...uint) (*models.EventCursor, error)
+	GetCursor(ctx context.Context) (*models.EventCursor, error)
 	GetEvent(ctx context.Context, id uint) (*models.Event, error)
 	ListSupportEvents() map[string]string
 	DeleteEvents(ctx context.Context, id ...uint) (int64, error)
@@ -79,19 +77,13 @@ func (m *manager) CreateOrUpdateCursor(ctx context.Context,
 	eventCursor *models.EventCursor) (*models.EventCursor, error) {
 	const op = "event manager: create or update cursor"
 	defer wlog.Start(ctx, op).StopPrint()
-	if eventCursor.Type == models.CursorRegion {
-		if eventCursor.RegionID == 0 {
-			return nil, perror.Wrapf(herrors.ErrParamInvalid, "region id is required")
-		}
-	}
 	return m.dao.CreateOrUpdateCursor(ctx, eventCursor)
 }
 
-func (m *manager) GetCursor(ctx context.Context, cursorType models.EventCursorType,
-	regionIDs ...uint) (*models.EventCursor, error) {
+func (m *manager) GetCursor(ctx context.Context) (*models.EventCursor, error) {
 	const op = "event manager: get cursor"
 	defer wlog.Start(ctx, op).StopPrint()
-	return m.dao.GetCursor(ctx, cursorType, regionIDs...)
+	return m.dao.GetCursor(ctx)
 }
 
 func (m *manager) ListEvents(ctx context.Context, query *q.Query) ([]*models.Event, error) {
