@@ -27,14 +27,29 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/kubectl/pkg/polymorphichelpers"
 	servicev1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
+var (
+	GVRService = schema.GroupVersionResource{
+		Group:    "serving.knative.dev",
+		Version:  "v1",
+		Resource: "services",
+	}
+	GVRPod = schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "pods",
+	}
+)
+
 func init() {
-	workload.Register(ability)
+	workload.Register(ability, GVRService, GVRPod)
 }
 
 // please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
@@ -44,6 +59,30 @@ type service struct{}
 
 func (*service) MatchGK(gk schema.GroupKind) bool {
 	return gk.Group == "serving.knative.dev" && gk.Kind == "Service"
+}
+
+func (*service) getService(node *v1alpha1.ResourceNode,
+	factory dynamicinformer.DynamicSharedInformerFactory) (*servicev1.Service, error) {
+	obj, err := factory.ForResource(GVRService).Lister().ByNamespace(node.Namespace).
+		Get(node.Name)
+	if err != nil {
+		return nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.ResourceInK8S,
+				"failed to get deployment in k8s"),
+			"failed to get deployment in k8s: deployment = %s, err = %v", node.Name, err)
+	}
+
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "failed to convert obj to unstructured")
+	}
+
+	var ksvc *servicev1.Service
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &ksvc)
+	if err != nil {
+		return nil, err
+	}
+	return ksvc, nil
 }
 
 func (*service) getServiceByNode(node *v1alpha1.ResourceNode, client *kube.Client) (*servicev1.Service, error) {
@@ -70,20 +109,22 @@ func (*service) getServiceByNode(node *v1alpha1.ResourceNode, client *kube.Clien
 	return ksvc, nil
 }
 
-func (s *service) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
-	instance, err := s.getServiceByNode(node, client)
+func (s *service) ListPods(node *v1alpha1.ResourceNode,
+	factory dynamicinformer.DynamicSharedInformerFactory) ([]corev1.Pod, error) {
+	instance, err := s.getService(node, factory)
 	if err != nil {
 		return nil, err
 	}
 
-	selector := metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: instance.Spec.Template.Labels})
-	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
-		List(context.TODO(), metav1.ListOptions{LabelSelector: selector, ResourceVersion: "0"})
+	selector := labels.SelectorFromSet(instance.Spec.Template.ObjectMeta.Labels)
+	objs, err := factory.ForResource(GVRPod).Lister().ByNamespace(node.Namespace).List(selector)
 	if err != nil {
 		return nil, err
 	}
 
-	return pods.Items, nil
+	pods := workload.ObjIntoPod(objs...)
+
+	return pods, nil
 }
 
 func (s *service) IsHealthy(node *v1alpha1.ResourceNode,

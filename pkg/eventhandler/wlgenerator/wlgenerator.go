@@ -188,17 +188,19 @@ func (w *WebhookLogGenerator) makeRequestHeaders(secret string) (string, error) 
 
 // makeRequestHeaders assemble body of webhook request
 func (w *WebhookLogGenerator) makeRequestBody(ctx context.Context, dep *messageDependency) (string, error) {
-	user, err := w.userMgr.GetUserByID(ctx, dep.event.CreatedBy)
-	if err != nil {
-		return "", err
-	}
-
 	message := MessageContent{
 		EventID:   dep.event.ID,
 		WebhookID: dep.webhook.ID,
-		EventType: string(dep.event.EventType),
-		User:      usermodels.ToUser(user),
+		EventType: dep.event.EventType,
 		Extra:     dep.event.EventSummary.Extra,
+	}
+
+	if dep.event.CreatedBy != 0 {
+		user, err := w.userMgr.GetUserByID(ctx, dep.event.CreatedBy)
+		if err != nil {
+			return "", err
+		}
+		message.User = usermodels.ToUser(user)
 	}
 
 	if dep.event.ResourceType == common.ResourceApplication &&

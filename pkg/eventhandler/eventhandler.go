@@ -18,7 +18,9 @@ import (
 	"context"
 	"time"
 
+	corecommon "github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/lib/q"
 	eventhandlerconfig "github.com/horizoncd/horizon/pkg/config/eventhandler"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
@@ -97,7 +99,7 @@ func (e *eventHandlerService) Start() {
 
 		// 1. get cursor
 		for e.cursor == nil {
-			eventCursor, err := e.eventMgr.GetCursor(e.ctx)
+			eventCursor, err := e.getCursor(e.ctx)
 			if err != nil {
 				if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 					log.Infof(e.ctx, "index does not exist, start process directly")
@@ -136,7 +138,11 @@ func (e *eventHandlerService) Start() {
 				)
 
 				if !e.resume {
-					events, err = e.eventMgr.ListEvents(e.ctx, int(e.cursor.Position), int(batchEventsCount))
+					events, err = e.eventMgr.ListEvents(e.ctx,
+						&q.Query{Keywords: q.KeyWords{
+							corecommon.StartID: e.cursor.Position,
+							corecommon.Limit:   int(batchEventsCount)},
+						})
 					if err != nil {
 						log.Errorf(e.ctx, "failed to list event by offset: %d, limit: %d",
 							e.cursor.Position, batchEventsCount)
@@ -180,6 +186,10 @@ func (e *eventHandlerService) Start() {
 			}
 		}
 	}()
+}
+
+func (e *eventHandlerService) getCursor(ctx context.Context) (*models.EventCursor, error) {
+	return e.eventMgr.GetCursor(ctx, models.CursorHorizon)
 }
 
 // getLastProcessingCursor get the last processing event cursor to resume

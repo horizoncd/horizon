@@ -17,21 +17,27 @@ package cd
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
 	applicationV1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
+	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	eventmanager "github.com/horizoncd/horizon/pkg/event/manager"
+	eventmodels "github.com/horizoncd/horizon/pkg/event/models"
+	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 	"github.com/horizoncd/horizon/pkg/workload"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 )
 
 //go:generate mockgen -source=$GOFILE -destination=../../mock/pkg/cd/k8sutil_mock.go -package=mock_cd
@@ -45,64 +51,65 @@ type K8sUtil interface {
 }
 
 type util struct {
-	kubeClientFty kubeclient.Factory
+	informerFactories *regioninformers.RegionInformers
+	eventMgr          eventmanager.Manager
 }
 
-func NewK8sUtil() K8sUtil {
+func NewK8sUtil(factories *regioninformers.RegionInformers, mgr eventmanager.Manager) K8sUtil {
 	return &util{
-		kubeClientFty: kubeclient.Fty,
+		informerFactories: factories,
+		eventMgr:          mgr,
 	}
 }
 
 func (e *util) DeletePods(ctx context.Context,
 	params *DeletePodsParams) (map[string]OperationResult, error) {
 	result := map[string]OperationResult{}
-	_, kubeClient, err := e.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
-	if err != nil {
-		return result, err
-	}
 
-	for _, pod := range params.Pods {
-		err = kube.DeletePods(ctx, kubeClient.Basic, params.Namespace, pod)
-		if err != nil {
-			result[pod] = OperationResult{
-				Result: false,
-				Error:  err,
+	_ = e.informerFactories.GetClientSet(params.RegionEntity.ID, func(clientset kubernetes.Interface) error {
+		for _, pod := range params.Pods {
+			err := kube.DeletePods(ctx, clientset, params.Namespace, pod)
+			if err != nil {
+				result[pod] = OperationResult{
+					Result: false,
+					Error:  err,
+				}
+				continue
 			}
-			continue
+			result[pod] = OperationResult{
+				Result: true,
+			}
 		}
-		result[pod] = OperationResult{
-			Result: true,
-		}
-	}
+		return nil
+	})
 
 	return result, nil
 }
 
 func (e *util) GetContainerLog(ctx context.Context, params *GetContainerLogParams) (<-chan string, error) {
-	_, kubeClient, err := e.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	var logC = make(chan string)
+	err := e.informerFactories.GetClientSet(params.RegionEntity.ID, func(clientset kubernetes.Interface) error {
+		podLogRequest := clientset.CoreV1().Pods(params.Namespace).GetLogs(params.Pod, &corev1.PodLogOptions{
+			Container:  params.Container,
+			TailLines:  &params.TailLines,
+			Timestamps: true,
+		})
+		stream, err := podLogRequest.Stream(context.TODO())
+		if err != nil {
+			return herrors.NewErrGetFailed(herrors.PodLogsInK8S, err.Error())
+		}
+
+		go func() {
+			defer stream.Close()
+			defer close(logC)
+			parseLogsStream(stream, logC)
+		}()
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
-
-	podLogRequest := kubeClient.Basic.CoreV1().Pods(params.Namespace).GetLogs(params.Pod, &corev1.PodLogOptions{
-		Container:  params.Container,
-		TailLines:  &params.TailLines,
-		Timestamps: true,
-	})
-	stream, err := podLogRequest.Stream(context.TODO())
-	if err != nil {
-		return nil, herrors.NewErrGetFailed(herrors.PodLogsInK8S, err.Error())
-	}
-
-	logC := make(chan string)
-
-	go func() {
-		defer stream.Close()
-		defer close(logC)
-		parseLogsStream(stream, logC)
-	}()
-
 	return logC, nil
 }
 
@@ -139,46 +146,66 @@ func parseLogsStream(stream io.ReadCloser, ch chan string) {
 
 func (e *util) ExecuteAction(ctx context.Context,
 	params *ExecuteActionParams) (err error) {
-	_, kubeClient, err := e.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
-	if err != nil {
-		return herrors.NewErrGetFailed(herrors.K8SClient,
-			fmt.Sprintf("failed to get kube client for %s", params.RegionEntity.Server))
-	}
-	un, err := kubeClient.Dynamic.Resource(params.GVR).Namespace(params.Namespace).
-		Get(ctx, params.ResourceName, metav1.GetOptions{})
-	if err != nil {
-		return herrors.NewErrGetFailed(herrors.ResourceInK8S,
-			fmt.Sprintf("failed to get %s(%s)", params.ResourceName, params.GVR.String()))
-	}
-
-	workload.LoopAbilities(func(workload workload.Workload) bool {
-		if workload.MatchGK(un.GroupVersionKind().GroupKind()) {
-			un, err = workload.Action(params.Action, un)
-			return false
+	err = e.informerFactories.GetDynamicClientSet(params.RegionEntity.ID, func(clientset dynamic.Interface) error {
+		un, err := clientset.Resource(params.GVR).Namespace(params.Namespace).
+			Get(ctx, params.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return herrors.NewErrGetFailed(herrors.ResourceInK8S,
+				fmt.Sprintf("failed to get %s(%s)", params.ResourceName, params.GVR.String()))
 		}
-		return true
-	})
-	if err != nil {
-		return perror.Wrapf(err, "failed to execute '%s' for %s(%s)",
-			params.Action, params.ResourceName, params.GVR.String())
-	}
 
-	un, err = kubeClient.Dynamic.Resource(params.GVR).Namespace(params.Namespace).
-		Update(ctx, un, metav1.UpdateOptions{})
-	log.Debugf(ctx, "update %s(%s) with %s: %v", params.ResourceName,
-		params.GVR.String(), params.Action, un)
+		workload.LoopAbilities(func(workload workload.Workload) bool {
+			if workload.MatchGK(un.GroupVersionKind().GroupKind()) {
+				un, err = workload.Action(params.Action, un)
+				return false
+			}
+			return true
+		})
+		if err != nil {
+			return perror.Wrapf(err, "failed to execute '%s' for %s(%s)",
+				params.Action, params.ResourceName, params.GVR.String())
+		}
+
+		un, err = clientset.Resource(params.GVR).Namespace(params.Namespace).
+			Update(ctx, un, metav1.UpdateOptions{})
+		log.Debugf(ctx, "update %s(%s) with %s: %v", params.ResourceName,
+			params.GVR.String(), params.Action, un)
+		if err != nil {
+			return herrors.NewErrUpdateFailed(herrors.ResourceInK8S,
+				fmt.Sprintf("failed to update gvr(%s), ns(%s), name(%s)",
+					params.GVR.String(), params.Namespace, un.GetName()))
+		}
+		if err != nil {
+			bts, err := json.Marshal(map[string]interface{}{
+				"action":       params.Action,
+				"gvr":          params.GVR.String(),
+				"resourceName": params.Namespace,
+			})
+			if err != nil {
+				log.Warningf(ctx, "failed to marshal event extra, err: %s", err.Error())
+			}
+			extra := string(bts)
+			if _, err = e.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+				EventSummary: eventmodels.EventSummary{
+					ResourceType: common.ResourceApplication,
+					EventType:    eventmodels.ClusterRestarted,
+					ResourceID:   params.ClusterID,
+					Extra:        &extra,
+				},
+			}); err != nil {
+				log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+			}
+		}
+		return err
+	})
 
 	return err
 }
 
 func (e *util) GetPodContainers(ctx context.Context,
 	params *GetPodParams) (containers []ContainerDetail, err error) {
-	_, kubeClient, err := e.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
-	if err != nil {
-		return nil, err
-	}
+	pod, err := e.GetPod(ctx, params)
 
-	pod, err := kube.GetPod(ctx, kubeClient.Basic, params.Namespace, params.Pod)
 	if err != nil {
 		return nil, err
 	}
@@ -188,39 +215,36 @@ func (e *util) GetPodContainers(ctx context.Context,
 
 func (e *util) GetPod(ctx context.Context,
 	params *GetPodParams) (pod *corev1.Pod, err error) {
-	_, kubeClient, err := e.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	err = e.informerFactories.GetClientSet(params.RegionEntity.ID, func(clientset kubernetes.Interface) error {
+		pod, err = kube.GetPod(ctx, clientset, params.Namespace, params.Pod)
+		return err
+	})
+
 	if err != nil {
 		return nil, err
 	}
-
-	pod, err = kube.GetPod(ctx, kubeClient.Basic, params.Namespace, params.Pod)
-	if err != nil {
-		return nil, err
-	}
-
 	return pod, nil
 }
 
-func (e *util) Exec(ctx context.Context, params *ExecParams) (_ map[string]ExecResp, err error) {
+func (e *util) Exec(ctx context.Context, params *ExecParams) (resp map[string]ExecResp, err error) {
 	const op = "cd: shell exec"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	config, kubeClient, err := e.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
-	if err != nil {
-		return nil, err
-	}
-	containers := make([]kube.ContainerRef, 0)
-	for _, pod := range params.PodList {
-		containers = append(containers, kube.ContainerRef{
-			Config:        config,
-			KubeClientset: kubeClient.Basic,
-			Namespace:     params.Namespace,
-			Pod:           pod,
-			Container:     params.Cluster,
-		})
-	}
+	_ = e.informerFactories.GetClientSet(params.RegionEntity.ID, func(clientset kubernetes.Interface) error {
+		containers := make([]kube.ContainerRef, 0)
+		for _, pod := range params.PodList {
+			containers = append(containers, kube.ContainerRef{
+				KubeClientset: clientset,
+				Namespace:     params.Namespace,
+				Pod:           pod,
+				Container:     params.Cluster,
+			})
+		}
+		resp = executeCommandInPods(ctx, containers, params.Commands, nil)
+		return nil
+	})
 
-	return executeCommandInPods(ctx, containers, params.Commands, nil), nil
+	return resp, nil
 }
 
 // TraverseOperator stops if result is false

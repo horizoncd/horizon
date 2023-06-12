@@ -115,7 +115,7 @@ func TestRuleAllow(t *testing.T) {
 			},
 			allowed: false,
 		}, {
-			// case list case deny (Resource)
+			// case list case deny (GVR)
 			attr: auth.AttributesRecord{
 				User:            &testUser,
 				Verb:            "delete",

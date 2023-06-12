@@ -34,6 +34,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/cluster/kubeclient"
 	argocdconf "github.com/horizoncd/horizon/pkg/config/argocd"
 	perror "github.com/horizoncd/horizon/pkg/errors"
+	"github.com/horizoncd/horizon/pkg/regioninformers"
 	"github.com/horizoncd/horizon/pkg/util/kube"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
@@ -44,6 +45,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -88,18 +90,21 @@ type CD interface {
 }
 
 type cd struct {
-	kubeClientFty  kubeclient.Factory
-	factory        argocd.Factory
-	clusterGitRepo gitrepo.ClusterGitRepo
-	targetRevision string
+	kubeClientFactory kubeclient.Factory
+	informerFactories *regioninformers.RegionInformers
+	factory           argocd.Factory
+	clusterGitRepo    gitrepo.ClusterGitRepo
+	targetRevision    string
 }
 
-func NewCD(clusterGitRepo gitrepo.ClusterGitRepo, argoCDMapper argocdconf.Mapper, targetRevision string) CD {
+func NewCD(informerFactories *regioninformers.RegionInformers, clusterGitRepo gitrepo.ClusterGitRepo,
+	argoCDMapper argocdconf.Mapper, targetRevision string) CD {
 	return &cd{
-		kubeClientFty:  kubeclient.Fty,
-		factory:        argocd.NewFactory(argoCDMapper),
-		clusterGitRepo: clusterGitRepo,
-		targetRevision: targetRevision,
+		kubeClientFactory: kubeclient.Fty,
+		informerFactories: informerFactories,
+		factory:           argocd.NewFactory(argoCDMapper),
+		clusterGitRepo:    clusterGitRepo,
+		targetRevision:    targetRevision,
 	}
 }
 
@@ -184,12 +189,6 @@ func (c *cd) GetResourceTree(ctx context.Context,
 		return nil, err
 	}
 
-	_, kubeClient, err := c.kubeClientFty.
-		GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
-	if err != nil {
-		return nil, err
-	}
-
 	// get resourceTreeInArgo
 	resourceTreeInArgo, err := argo.GetApplicationTree(ctx, params.Cluster)
 	if err != nil {
@@ -204,7 +203,16 @@ func (c *cd) GetResourceTree(ctx context.Context,
 				return true
 			}
 			gt := getter.New(workload)
-			pods, err := gt.ListPods(node.ResourceNode, kubeClient)
+
+			var (
+				pods []corev1.Pod
+				err  error
+			)
+			_ = c.informerFactories.GetDynamicFactory(params.RegionEntity.ID,
+				func(factory dynamicinformer.DynamicSharedInformerFactory) error {
+					pods, err = gt.ListPods(node.ResourceNode, factory)
+					return nil
+				})
 			if err != nil {
 				return true
 			}
@@ -239,7 +247,7 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 	const op = "cd: get step"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	_, kubeClient, err := c.kubeClientFactory.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -295,6 +303,7 @@ func (c *cd) GetStep(ctx context.Context, params *GetStepParams) (*Step, error) 
 		Replicas:     step.Replicas,
 		ManualPaused: step.ManualPaused,
 		AutoPromote:  step.AutoPromote,
+		Extra:        step.Extra,
 	}, nil
 }
 
@@ -346,7 +355,7 @@ func (c *cd) GetClusterState(ctx context.Context,
 		return status, nil
 	}
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	_, kubeClient, err := c.kubeClientFactory.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +407,7 @@ func (c *cd) GetClusterStateV1(ctx context.Context,
 		return nil, err
 	}
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	_, kubeClient, err := c.kubeClientFactory.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}
@@ -563,7 +572,7 @@ func (c *cd) GetPodEvents(ctx context.Context,
 	const op = "cd: get cluster pod events"
 	defer wlog.Start(ctx, op).StopPrint()
 
-	_, kubeClient, err := c.kubeClientFty.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
+	_, kubeClient, err := c.kubeClientFactory.GetByK8SServer(params.RegionEntity.Server, params.RegionEntity.Certificate)
 	if err != nil {
 		return nil, err
 	}

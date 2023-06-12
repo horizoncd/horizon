@@ -37,7 +37,7 @@ type DAO interface {
 	DeleteWebhook(ctx context.Context, id uint) error
 	CreateWebhookLog(ctx context.Context, wl *models.WebhookLog) (*models.WebhookLog, error)
 	CreateWebhookLogs(ctx context.Context, wls []*models.WebhookLog) ([]*models.WebhookLog, error)
-	ListWebhookLogs(ctx context.Context, wID uint, query *q.Query,
+	ListWebhookLogs(ctx context.Context, query *q.Query,
 		resources map[string][]uint) ([]*models.WebhookLogWithEventInfo, int64, error)
 	ListWebhookLogsByStatus(ctx context.Context, wID uint,
 		status string) ([]*models.WebhookLog, error)
@@ -47,6 +47,7 @@ type DAO interface {
 	GetWebhookLog(ctx context.Context, id uint) (*models.WebhookLog, error)
 	GetWebhookLogByEventID(ctx context.Context, webhookID, eventID uint) (*models.WebhookLog, error)
 	GetMaxEventIDOfLog(ctx context.Context) (uint, error)
+	DeleteWebhookLogs(ctx context.Context, id ...uint) (int64, error)
 }
 
 type dao struct{ db *gorm.DB }
@@ -170,20 +171,41 @@ func (d *dao) CreateWebhookLogs(ctx context.Context,
 	return wls, nil
 }
 
-func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
-	query *q.Query, resources map[string][]uint) ([]*models.WebhookLogWithEventInfo, int64, error) {
+func (d *dao) ListWebhookLogs(ctx context.Context, query *q.Query,
+	resources map[string][]uint) ([]*models.WebhookLogWithEventInfo, int64, error) {
 	var (
 		logs  []*models.WebhookLogWithEventInfo
 		count int64
 	)
 
-	stm := d.db.Table("tb_webhook_log l").
-		Joins("join tb_event e on l.event_id=e.id").
-		Where("l.webhook_id=?", wID).
+	stm := d.db.WithContext(ctx).Table("tb_webhook_log l").
+		Joins("left join tb_event e on l.event_id=e.id").
 		Select("l.*, e.resource_type, e.resource_id, e.event_type")
-	if query != nil {
-		if v, ok := query.Keywords[common.EventType].(string); ok {
-			stm = stm.Where("e.event_type = ?", v)
+
+	if query != nil && query.Keywords != nil {
+		for k, v := range query.Keywords {
+			switch k {
+			case common.Orphaned:
+				stm = stm.Where("e.id is null")
+			case common.WebhookID:
+				stm = stm.Where("l.webhook_id = ?", v)
+			case common.EventType:
+				stm = stm.Where("e.event_type = ?", v)
+			case common.Offset:
+				if offset, ok := v.(int); ok {
+					stm = stm.Offset(offset)
+				}
+			case common.Limit:
+				if limit, ok := v.(int); ok {
+					stm = stm.Limit(limit)
+				}
+			case common.StartID:
+				stm = stm.Where("l.id > ?", v)
+			case common.EndID:
+				stm = stm.Where("l.id <= ?", v)
+			case common.OrderBy:
+				stm = stm.Order(v)
+			}
 		}
 	}
 
@@ -201,9 +223,6 @@ func (d *dao) ListWebhookLogs(ctx context.Context, wID uint,
 	}
 
 	if result := stm.
-		Order("e.created_at desc").
-		Offset(query.Offset()).
-		Limit(query.Limit()).
 		Scan(&logs).
 		Offset(-1).
 		Count(&count); result.Error != nil {
@@ -285,6 +304,14 @@ func (d *dao) GetWebhookLogByEventID(ctx context.Context, webhookID, eventID uin
 		return nil, herrors.NewErrGetFailed(herrors.WebhookLogInDB, result.Error.Error())
 	}
 	return &wl, nil
+}
+
+func (d *dao) DeleteWebhookLogs(ctx context.Context, ids ...uint) (int64, error) {
+	result := d.db.WithContext(ctx).Where("id in (?)", ids).Delete(&models.WebhookLog{})
+	if result.Error != nil {
+		return 0, herrors.NewErrDeleteFailed(herrors.WebhookLogInDB, result.Error.Error())
+	}
+	return result.RowsAffected, nil
 }
 
 func (d *dao) GetMaxEventIDOfLog(ctx context.Context) (uint, error) {

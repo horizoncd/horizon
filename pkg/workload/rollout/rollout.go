@@ -16,6 +16,8 @@ package rollout
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"math"
 
 	"github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
@@ -28,13 +30,34 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/informers"
 	"k8s.io/kubectl/pkg/polymorphichelpers"
 )
 
+var (
+	GVRRollout = schema.GroupVersionResource{
+		Group:    "argoproj.io",
+		Version:  "v1alpha1",
+		Resource: "rollouts",
+	}
+	GVRReplicaSet = schema.GroupVersionResource{
+		Group:    "apps",
+		Version:  "v1",
+		Resource: "replicasets",
+	}
+	GVRPod = schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "pods",
+	}
+)
+
 func init() {
-	workload.Register(ability)
+	workload.Register(ability, GVRRollout, GVRReplicaSet, GVRPod)
 }
 
 // please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go
@@ -44,6 +67,32 @@ type rollout struct{}
 
 func (*rollout) MatchGK(gk schema.GroupKind) bool {
 	return gk.Group == "argoproj.io" && gk.Kind == "Rollout"
+}
+
+func (*rollout) getRollout(node *v1alpha1.ResourceNode,
+	rolloutInformer informers.GenericInformer) (*rolloutsv1alpha1.Rollout, *unstructured.Unstructured, error) {
+	obj, err := rolloutInformer.Lister().ByNamespace(node.Namespace).Get(node.Name)
+	if err != nil {
+		return nil, nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.ResourceInK8S,
+				"failed to get rollout in k8s"),
+			"failed to get rollout in k8s: deployment = %s, err = %v", node.Name, err)
+	}
+
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return nil, nil, perror.Wrapf(
+			herrors.NewErrGetFailed(herrors.ResourceInK8S,
+				"failed to get rollout in k8s"),
+			"failed to get rollout in k8s: deployment = %s, err = \"could not convert obj into unstructured\"", node.Name)
+	}
+
+	var instance *rolloutsv1alpha1.Rollout
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), &instance)
+	if err != nil {
+		return nil, un, err
+	}
+	return instance, un, nil
 }
 
 func (*rollout) getRolloutByNode(node *v1alpha1.ResourceNode,
@@ -131,19 +180,28 @@ OUTTER:
 	return true, nil
 }
 
-func (r *rollout) ListPods(node *v1alpha1.ResourceNode, client *kube.Client) ([]corev1.Pod, error) {
-	instance, _, err := r.getRolloutByNode(node, client)
+func (r *rollout) ListPods(node *v1alpha1.ResourceNode,
+	factory dynamicinformer.DynamicSharedInformerFactory) ([]corev1.Pod, error) {
+	rolloutInformer := factory.ForResource(GVRRollout)
+	podInformer := factory.ForResource(GVRPod)
+
+	instance, _, err := r.getRollout(node, rolloutInformer)
 	if err != nil {
 		return nil, err
 	}
 
-	labels := polymorphichelpers.MakeLabels(instance.Spec.Template.ObjectMeta.Labels)
-	pods, err := client.Basic.CoreV1().Pods(instance.Namespace).
-		List(context.TODO(), metav1.ListOptions{LabelSelector: labels, ResourceVersion: "0"})
+	selector := labels.SelectorFromSet(instance.Spec.Template.ObjectMeta.Labels)
+	if err != nil {
+		return nil, herrors.NewErrGetFailed(herrors.ResourceInK8S,
+			fmt.Sprintf("failed to get selectors for object %s/%s", instance.Namespace, instance.Name))
+	}
+	objs, err := podInformer.Lister().ByNamespace(node.Namespace).List(selector)
 	if err != nil {
 		return nil, err
 	}
-	return pods.Items, nil
+
+	pods := workload.ObjIntoPod(objs...)
+	return pods, nil
 }
 
 func (r *rollout) GetSteps(node *v1alpha1.ResourceNode, client *kube.Client) (*workload.Step, error) {
@@ -200,6 +258,14 @@ func (r *rollout) GetSteps(node *v1alpha1.ResourceNode, client *kube.Client) (*w
 		return nil, err
 	}
 
+	bts, err := json.Marshal(map[string]interface{}{"currentIndex": *instance.Status.CurrentStepIndex})
+	if err != nil {
+		log.Errorf(context.TODO(), "marshal current step index failed: %v", err)
+		bts = append(bts, []byte("{}")...)
+	}
+
+	extra := string(bts)
+
 	// manual paused
 	return &workload.Step{
 		Index:        stepIndex,
@@ -207,6 +273,7 @@ func (r *rollout) GetSteps(node *v1alpha1.ResourceNode, client *kube.Client) (*w
 		Replicas:     incrementReplicasList,
 		ManualPaused: instance.Spec.Paused,
 		AutoPromote:  autoPromote,
+		Extra:        &extra,
 	}, nil
 }
 

@@ -135,6 +135,7 @@ type ExecuteActionParams struct {
 	Action       string
 	GVR          schema.GroupVersionResource
 	ResourceName string
+	ClusterID    uint
 }
 
 type ClusterAutoPromoteParams struct {
@@ -248,11 +249,12 @@ type ClusterState struct {
 }
 
 type Step struct {
-	Index        int   `json:"index"`
-	Total        int   `json:"total"`
-	Replicas     []int `json:"replicas"`
-	ManualPaused bool  `json:"manualPaused"`
-	AutoPromote  bool  `json:"autoPromote"`
+	Index        int     `json:"index"`
+	Total        int     `json:"total"`
+	Replicas     []int   `json:"replicas"`
+	ManualPaused bool    `json:"manualPaused"`
+	AutoPromote  bool    `json:"autoPromote"`
+	Extra        *string `json:"extra"`
 }
 
 // ClusterVersion version information
