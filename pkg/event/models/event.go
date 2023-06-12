@@ -56,20 +56,9 @@ type Event struct {
 	CreatedBy uint
 }
 
-type EventCursorType string
-
-const (
-	// CursorHorizon is the cursor for taking out events from db
-	CursorHorizon EventCursorType = "horizon"
-	// CursorRegion is the cursor for recording the resourceVersion of the last written event from kubernetes
-	CursorRegion EventCursorType = "region"
-)
-
 type EventCursor struct {
 	ID        uint
 	Position  uint
-	Type      EventCursorType `gorm:"default:'horizon';uniqueIndex:idx_type_region_id"`
-	RegionID  uint            `gorm:"column:region_id;uniqueIndex:idx_type_region_id"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

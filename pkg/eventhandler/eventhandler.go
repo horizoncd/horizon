@@ -189,7 +189,7 @@ func (e *eventHandlerService) Start() {
 }
 
 func (e *eventHandlerService) getCursor(ctx context.Context) (*models.EventCursor, error) {
-	return e.eventMgr.GetCursor(ctx, models.CursorHorizon)
+	return e.eventMgr.GetCursor(ctx)
 }
 
 // getLastProcessingCursor get the last processing event cursor to resume

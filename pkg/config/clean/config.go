@@ -3,7 +3,8 @@ package clean
 import "time"
 
 type WebhookLogCleanRule struct {
-	TTL time.Duration `yaml:"ttl"`
+	RelatedEventType string        `yaml:"relatedEventType"`
+	TTL              time.Duration `yaml:"ttl"`
 }
 
 type EventCleanRule struct {
