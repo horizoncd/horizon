@@ -91,10 +91,19 @@ func (c *Cleaner) webhookLogClean(ctx context.Context) {
 			if webhooklog.ID > maxID {
 				maxID = webhooklog.ID
 			}
+			event, err := c.mgr.EventManager.GetEvent(ctx, webhooklog.EventID)
+			if err != nil {
+				log.Errorf(ctx, "failed to get event: %v", err)
+				continue
+			}
 			for _, rule := range c.WebhookLogCleanRules {
-				if webhooklog.UpdatedAt.Add(rule.TTL).Before(time.Now()) {
-					needDeleted = append(needDeleted, webhooklog.ID)
+				if webhooklog.UpdatedAt.Add(rule.TTL).After(time.Now()) {
+					continue
 				}
+				if rule.RelatedEventType != event.EventType {
+					continue
+				}
+				needDeleted = append(needDeleted, webhooklog.ID)
 			}
 		}
 
