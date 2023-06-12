@@ -36,8 +36,6 @@ type DAO interface {
 		eventIndex *models.EventCursor) (*models.EventCursor, error)
 	GetCursor(ctx context.Context, cursorType models.EventCursorType,
 		regionIDs ...uint) (*models.EventCursor, error)
-	GetCursors(ctx context.Context, cursorType models.EventCursorType,
-		regionIDs ...uint) ([]*models.EventCursor, error)
 	GetEvent(ctx context.Context, id uint) (*models.Event, error)
 	DeleteEvents(ctx context.Context, id ...uint) (int64, error)
 }
@@ -132,23 +130,6 @@ func (d *dao) GetCursor(ctx context.Context,
 		return nil, herrors.NewErrGetFailed(herrors.EventCursorInDB, result.Error.Error())
 	}
 	return &eventIndex, nil
-}
-
-func (d *dao) GetCursors(ctx context.Context, cursorType models.EventCursorType,
-	regionIDs ...uint) ([]*models.EventCursor, error) {
-	var eventIndex []*models.EventCursor
-	statement := d.db.WithContext(ctx).Where("type = ?", cursorType)
-	if len(regionIDs) > 0 {
-		statement.Where("region_id in (?)", regionIDs)
-	}
-	if result := statement.Find(&eventIndex); result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return nil, herrors.NewErrNotFound(herrors.EventCursorInDB,
-				result.Error.Error())
-		}
-		return nil, herrors.NewErrGetFailed(herrors.EventCursorInDB, result.Error.Error())
-	}
-	return eventIndex, nil
 }
 
 func (d *dao) DeleteEvents(ctx context.Context, ids ...uint) (int64, error) {

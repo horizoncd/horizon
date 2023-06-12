@@ -50,41 +50,6 @@ var (
 
 func init() {
 	workload.Register(ability, GVRService, GVRPod)
-	// schema.GroupVersionResource{
-	// 	Group:    "serving.knative.dev",
-	// 	Version:  "v1",
-	// 	Resource: "configurations",
-	// },
-	// schema.GroupVersionResource{
-	// 	Group:    "serving.knative.dev",
-	// 	Version:  "v1",
-	// 	Resource: "routes",
-	// },
-	// schema.GroupVersionResource{
-	// 	Group:    "serving.knative.dev",
-	// 	Version:  "v1",
-	// 	Resource: "revisions",
-	// },
-	// schema.GroupVersionResource{
-	// 	Group:    "networking.internal.knative.dev",
-	// 	Version:  "v1alpha1",
-	// 	Resource: "ingresses",
-	// },
-	// schema.GroupVersionResource{
-	// 	Group:    "",
-	// 	Version:  "v1",
-	// 	Resource: "pods",
-	// },
-	// schema.GroupVersionResource{
-	// 	Group:    "apps",
-	// 	Version:  "v1",
-	// 	Resource: "replicasets",
-	// },
-	// schema.GroupVersionResource{
-	// 	Group:    "apps",
-	// 	Version:  "v1",
-	// 	Resource: "deployments",
-	// },
 }
 
 // please refer to github.com/horizoncd/horizon/pkg/cluster/cd/workload/workload.go

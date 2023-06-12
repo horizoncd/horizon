@@ -38,8 +38,6 @@ type Manager interface {
 		eventIndex *models.EventCursor) (*models.EventCursor, error)
 	GetCursor(ctx context.Context, cursorType models.EventCursorType,
 		RegionIDs ...uint) (*models.EventCursor, error)
-	GetCursors(ctx context.Context, cursorType models.EventCursorType,
-		RegionIDs ...uint) ([]*models.EventCursor, error)
 	GetEvent(ctx context.Context, id uint) (*models.Event, error)
 	ListSupportEvents() map[string]string
 	DeleteEvents(ctx context.Context, id ...uint) (int64, error)
@@ -94,13 +92,6 @@ func (m *manager) GetCursor(ctx context.Context, cursorType models.EventCursorTy
 	const op = "event manager: get cursor"
 	defer wlog.Start(ctx, op).StopPrint()
 	return m.dao.GetCursor(ctx, cursorType, regionIDs...)
-}
-
-func (m *manager) GetCursors(ctx context.Context, cursorType models.EventCursorType,
-	regionIDs ...uint) ([]*models.EventCursor, error) {
-	const op = "event manager: get cursors"
-	defer wlog.Start(ctx, op).StopPrint()
-	return m.dao.GetCursors(ctx, cursorType, regionIDs...)
 }
 
 func (m *manager) ListEvents(ctx context.Context, query *q.Query) ([]*models.Event, error) {

@@ -161,15 +161,6 @@ func (f *RegionInformers) listRegion(ctx context.Context) ([]*models.Region, err
 	if err != nil {
 		return nil, err
 	}
-	// offset := 0
-	// for i := range regions {
-	// 	if regions[i].Disabled {
-	// 		offset++
-	// 		continue
-	// 	}
-	// 	regions[i-offset] = regions[i]
-	// }
-	// return regions[:len(regions)-offset], nil
 	return regions, nil
 }
 

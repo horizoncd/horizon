@@ -8,6 +8,7 @@ import (
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
 	"github.com/horizoncd/horizon/pkg/config/clean"
+	"github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/util/log"
 	"github.com/robfig/cron/v3"
@@ -38,7 +39,7 @@ func (c *Cleaner) Run(ctx context.Context) {
 	}
 	cron := cron.New(cron.WithSeconds(), cron.WithLocation(loc))
 	_, err = cron.AddFunc(c.TimeToRun, func() {
-		runtime.HandleCrash()
+		defer runtime.HandleCrash()
 		log.Debugf(ctx, "start to clean")
 		c.eventClean(ctx)
 		c.webhookLogClean(ctx)
@@ -107,6 +108,45 @@ func (c *Cleaner) webhookLogClean(ctx context.Context) {
 	}
 }
 
+func (c *Cleaner) needClean(ctx context.Context, event *models.Event) bool {
+	for _, rule := range c.EventCleanRules {
+		if rule.EventType != event.EventType {
+			continue
+		}
+		if time.Now().Before(event.CreatedAt.Add(rule.TTL)) {
+			continue
+		}
+		m := make(map[string]interface{})
+		if event.Extra != nil {
+			err := json.Unmarshal([]byte(*event.Extra), &m)
+			if err != nil {
+				log.Errorf(ctx, "failed to unmarshal event extra: %v", err)
+				return false
+			}
+			if rule.Reason != "" && rule.Reason != m["reason"] {
+				continue
+			}
+			involvedObject := m["involvedObject"].(map[string]interface{})
+			if involvedObject != nil {
+				if rule.APIVersion != "" && rule.APIVersion != involvedObject["apiVersion"] {
+					continue
+				}
+				if rule.Kind != "" && rule.Kind != involvedObject["kind"] {
+					continue
+				}
+				if rule.Name != "" && rule.Name != involvedObject["name"] {
+					continue
+				}
+				if rule.Namespace != "" && rule.Namespace != involvedObject["namespace"] {
+					continue
+				}
+			}
+		}
+		return true
+	}
+	return false
+}
+
 func (c *Cleaner) eventClean(ctx context.Context) {
 	log.Debugf(ctx, "start to clean events")
 	defer func() {
@@ -138,46 +178,12 @@ func (c *Cleaner) eventClean(ctx context.Context) {
 
 		maxID := uint(0)
 		needDeleted = needDeleted[:0]
-	OUTTER:
 		for _, event := range events {
 			if event.ID > maxID {
 				maxID = event.ID
 			}
-			for _, rule := range c.EventCleanRules {
-				if rule.EventType != event.EventType {
-					continue
-				}
-				if time.Now().Before(event.CreatedAt.Add(rule.TTL)) {
-					continue
-				}
-				m := make(map[string]interface{})
-				if event.Extra != nil {
-					err = json.Unmarshal([]byte(*event.Extra), &m)
-					if err != nil {
-						log.Errorf(ctx, "failed to unmarshal event extra: %v", err)
-						continue
-					}
-					if rule.Reason != "" && rule.Reason != m["reason"] {
-						continue
-					}
-					involvedObject := m["involvedObject"].(map[string]interface{})
-					if involvedObject != nil {
-						if rule.APIVersion != "" && rule.APIVersion != involvedObject["apiVersion"] {
-							continue
-						}
-						if rule.Kind != "" && rule.Kind != involvedObject["kind"] {
-							continue
-						}
-						if rule.Name != "" && rule.Name != involvedObject["name"] {
-							continue
-						}
-						if rule.Namespace != "" && rule.Namespace != involvedObject["namespace"] {
-							continue
-						}
-					}
-				}
+			if c.needClean(ctx, event) {
 				needDeleted = append(needDeleted, event.ID)
-				continue OUTTER
 			}
 		}
 		c.eventCursor = maxID

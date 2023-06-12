@@ -104,26 +104,19 @@ func Test(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, ec2.Position, ec2.Position)
 
-	ec1, err := m.CreateOrUpdateCursor(ctx, &eventmodels.EventCursor{
+	_, err = m.CreateOrUpdateCursor(ctx, &eventmodels.EventCursor{
 		Position: 32,
 		Type:     eventmodels.CursorRegion,
 		RegionID: 1,
 	})
 	assert.Nil(t, err)
 
-	ec2, err = m.CreateOrUpdateCursor(ctx, &eventmodels.EventCursor{
+	_, err = m.CreateOrUpdateCursor(ctx, &eventmodels.EventCursor{
 		Position: 2,
 		Type:     eventmodels.CursorRegion,
 		RegionID: 2,
 	})
 	assert.Nil(t, err)
-
-	ecs, err := m.GetCursors(ctx, eventmodels.CursorRegion)
-	assert.Nil(t, err)
-
-	assert.Equal(t, 2, len(ecs))
-	assert.Equal(t, ec1.ID, uint(2))
-	assert.Equal(t, ec2.ID, uint(3))
 
 	_, err = m.DeleteEvents(ctx, 1, 3)
 	assert.Nil(t, err)
