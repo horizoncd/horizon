@@ -3,6 +3,8 @@ package clean
 import (
 	"context"
 	"encoding/json"
+	"github.com/robfig/cron/v3"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	"time"
 
 	"github.com/horizoncd/horizon/core/common"
@@ -11,12 +13,11 @@ import (
 	"github.com/horizoncd/horizon/pkg/event/models"
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	"github.com/horizoncd/horizon/pkg/util/log"
-	"github.com/robfig/cron/v3"
-	"k8s.io/apimachinery/pkg/util/runtime"
 )
 
 type Cleaner struct {
 	clean.Config
+	eventRules       map[string][]clean.EventCleanRule
 	mgr              *managerparam.Manager
 	eventCursor      uint
 	webhookLogCursor uint
@@ -26,9 +27,14 @@ func New(config clean.Config, mgr *managerparam.Manager) *Cleaner {
 	if config.Batch == 0 {
 		config.Batch = 160
 	}
+	eventRules := make(map[string][]clean.EventCleanRule, len(config.EventCleanRules))
+	for _, rule := range config.EventCleanRules {
+		eventRules[rule.EventType] = append(eventRules[rule.EventType], rule)
+	}
 	return &Cleaner{
-		Config: config,
-		mgr:    mgr,
+		Config:     config,
+		eventRules: eventRules,
+		mgr:        mgr,
 	}
 }
 
@@ -41,8 +47,8 @@ func (c *Cleaner) Run(ctx context.Context) {
 	_, err = cron.AddFunc(c.TimeToRun, func() {
 		defer runtime.HandleCrash()
 		log.Debugf(ctx, "start to clean")
-		c.eventClean(ctx)
 		c.webhookLogClean(ctx)
+		c.eventClean(ctx)
 	})
 	if err != nil {
 		panic(err)
@@ -118,19 +124,17 @@ func (c *Cleaner) webhookLogClean(ctx context.Context) {
 }
 
 func (c *Cleaner) needClean(ctx context.Context, event *models.Event) bool {
-	for _, rule := range c.EventCleanRules {
-		if rule.EventType != event.EventType {
-			continue
-		}
+	rules := c.eventRules[event.EventType]
+	for _, rule := range rules {
 		if time.Now().Before(event.CreatedAt.Add(rule.TTL)) {
 			continue
 		}
 		m := make(map[string]interface{})
-		if event.Extra != nil {
+		if event.Extra != nil && *event.Extra != "" {
 			err := json.Unmarshal([]byte(*event.Extra), &m)
 			if err != nil {
 				log.Errorf(ctx, "failed to unmarshal event extra: %v", err)
-				return false
+				return true
 			}
 			if rule.Reason != "" && rule.Reason != m["reason"] {
 				continue
@@ -199,7 +203,7 @@ func (c *Cleaner) eventClean(ctx context.Context) {
 		if len(needDeleted) == 0 {
 			continue
 		}
-		log.Debugf(ctx, "need to delete event: %v", needDeleted)
+		log.Infof(ctx, "need to delete event: %v", needDeleted)
 		_, _ = c.mgr.EventManager.DeleteEvents(ctx, needDeleted...)
 	}
 }
