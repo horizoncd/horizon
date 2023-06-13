@@ -3,6 +3,7 @@ package regioninformers
 import (
 	"context"
 	"fmt"
+	"k8s.io/client-go/metadata"
 	"sync"
 	"time"
 
@@ -99,6 +100,7 @@ func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 	if err != nil {
 		return err
 	}
+	restConfig = metadata.ConfigFor(restConfig)
 
 	clientSet, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
