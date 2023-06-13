@@ -465,7 +465,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	}
 
 	var (
-		rbacSkippers = []middleware.Skipper{
+		authnSkippers = []middleware.Skipper{
 			middleware.MethodAndPathSkipper("*",
 				regexp.MustCompile("(^/apis/front/.*)|(^/health)|(^/metrics)|(^/apis/login)|"+
 					"(^/apis/core/v[12]/roles)|(^/apis/internal/.*)|(^/login/oauth/authorize)|(^/login/oauth/access_token)")),
@@ -475,7 +475,14 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login")),
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/users/self")),
 		}
+		authzSkippers = []middleware.Skipper{
+			middleware.MethodAndPathSkipper("*",
+				regexp.MustCompile("^/apis/core/v[12]/templates$")),
+		}
+	)
+	authzSkippers = append(authzSkippers, authnSkippers...)
 
+	var (
 		// init controller
 		memberCtl            = memberctl.NewController(parameter)
 		applicationCtl       = applicationctl.NewController(parameter)
@@ -488,7 +495,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 		codeGitCtl           = codectl.NewController(gitGetter)
 		tagCtl               = tagctl.NewController(parameter)
 		templateSchemaTagCtl = templateschematagctl.NewController(parameter)
-		accessCtl            = accessctl.NewController(rbacAuthorizer, rbacSkippers...)
+		accessCtl            = accessctl.NewController(rbacAuthorizer, authzSkippers...)
 		applicationRegionCtl = applicationregionctl.NewController(parameter)
 		groupCtl             = groupctl.NewController(parameter)
 		oauthCheckerCtl      = oauthcheckctl.NewOauthChecker(parameter)
@@ -593,7 +600,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/metrics"))),
 		regionmiddle.Middleware(parameter, applicationRegionCtl),
-		tokenmiddle.MiddleWare(oauthCheckerCtl, rbacSkippers...),
+		tokenmiddle.MiddleWare(oauthCheckerCtl, authnSkippers...),
 		//  user middleware, check user and attach current user to context.
 		usermiddle.Middleware(parameter, store, coreConfig,
 			middleware.MethodAndPathSkipper("*", regexp.MustCompile("^/health")),
@@ -605,7 +612,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 			middleware.MethodAndPathSkipper(http.MethodGet, regexp.MustCompile("^/apis/core/v[12]/idps/endpoints")),
 			middleware.MethodAndPathSkipper(http.MethodPost, regexp.MustCompile("^/apis/core/v[12]/users/login"))),
 		prehandlemiddle.Middleware(r, manager),
-		auth.Middleware(rbacAuthorizer, rbacSkippers...),
+		auth.Middleware(rbacAuthorizer, authzSkippers...),
 		tagmiddle.Middleware(), // tag middleware, parse and attach tagSelector to context
 	}
 	r.Use(middlewares...)
