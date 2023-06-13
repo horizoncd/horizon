@@ -36,8 +36,11 @@ import (
 	"github.com/horizoncd/horizon/pkg/workload"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 //go:generate mockgen -source=$GOFILE -destination=../../mock/pkg/cd/k8sutil_mock.go -package=mock_cd
@@ -175,28 +178,26 @@ func (e *util) ExecuteAction(ctx context.Context,
 				fmt.Sprintf("failed to update gvr(%s), ns(%s), name(%s)",
 					params.GVR.String(), params.Namespace, un.GetName()))
 		}
+		bts, err := json.Marshal(map[string]interface{}{
+			"action":       params.Action,
+			"gvr":          params.GVR.String(),
+			"resourceName": params.Namespace,
+		})
 		if err != nil {
-			bts, err := json.Marshal(map[string]interface{}{
-				"action":       params.Action,
-				"gvr":          params.GVR.String(),
-				"resourceName": params.Namespace,
-			})
-			if err != nil {
-				log.Warningf(ctx, "failed to marshal event extra, err: %s", err.Error())
-			}
-			extra := string(bts)
-			if _, err = e.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-				EventSummary: eventmodels.EventSummary{
-					ResourceType: common.ResourceApplication,
-					EventType:    eventmodels.ClusterRestarted,
-					ResourceID:   params.ClusterID,
-					Extra:        &extra,
-				},
-			}); err != nil {
-				log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-			}
+			log.Warningf(ctx, "failed to marshal event extra, err: %s", err.Error())
 		}
-		return err
+		extra := string(bts)
+		if _, err = e.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+			EventSummary: eventmodels.EventSummary{
+				ResourceType: common.ResourceApplication,
+				EventType:    eventmodels.ClusterRestarted,
+				ResourceID:   params.ClusterID,
+				Extra:        &extra,
+			},
+		}); err != nil {
+			log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+		}
+		return nil
 	})
 
 	return err
@@ -230,10 +231,23 @@ func (e *util) Exec(ctx context.Context, params *ExecParams) (resp map[string]Ex
 	const op = "cd: shell exec"
 	defer wlog.Start(ctx, op).StopPrint()
 
+	config, err := e.informerFactories.GetRestConfig(params.RegionEntity.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	tmpConfig := *config
+	config = &tmpConfig
+	config.GroupVersion = &schema.GroupVersion{Group: "", Version: "v1"}
+	config.APIPath = "/api"
+	config.ContentType = runtime.ContentTypeJSON
+	config.NegotiatedSerializer = scheme.Codecs
+
 	_ = e.informerFactories.GetClientSet(params.RegionEntity.ID, func(clientset kubernetes.Interface) error {
 		containers := make([]kube.ContainerRef, 0)
 		for _, pod := range params.PodList {
 			containers = append(containers, kube.ContainerRef{
+				Config:        config,
 				KubeClientset: clientset,
 				Namespace:     params.Namespace,
 				Pod:           pod,
