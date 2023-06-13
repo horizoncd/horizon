@@ -45,10 +45,10 @@ func (c *Cleaner) Run(ctx context.Context) {
 	}
 	cron := cron.New(cron.WithSeconds(), cron.WithLocation(loc))
 	_, err = cron.AddFunc(c.TimeToRun, func() {
-		defer runtime.HandleCrash()
 		log.Debugf(ctx, "start to clean")
-		c.webhookLogClean(ctx)
-		c.eventClean(ctx)
+		current := time.Now()
+		c.webhookLogClean(ctx, current)
+		c.eventClean(ctx, current)
 	})
 	if err != nil {
 		panic(err)
@@ -56,7 +56,8 @@ func (c *Cleaner) Run(ctx context.Context) {
 	cron.Run()
 }
 
-func (c *Cleaner) webhookLogClean(ctx context.Context) {
+func (c *Cleaner) webhookLogClean(ctx context.Context, current time.Time) {
+	defer runtime.HandleCrash()
 	log.Debugf(ctx, "start to clean webhooklogs")
 	defer func() {
 		c.webhookLogCursor = 0
@@ -103,7 +104,7 @@ func (c *Cleaner) webhookLogClean(ctx context.Context) {
 				continue
 			}
 			for _, rule := range c.WebhookLogCleanRules {
-				if webhooklog.UpdatedAt.Add(rule.TTL).After(time.Now()) {
+				if webhooklog.UpdatedAt.Add(rule.TTL).After(current) {
 					continue
 				}
 				if rule.RelatedEventType != event.EventType {
@@ -123,10 +124,10 @@ func (c *Cleaner) webhookLogClean(ctx context.Context) {
 	}
 }
 
-func (c *Cleaner) needClean(ctx context.Context, event *models.Event) bool {
+func (c *Cleaner) needClean(ctx context.Context, event *models.Event, current time.Time) bool {
 	rules := c.eventRules[event.EventType]
 	for _, rule := range rules {
-		if time.Now().Before(event.CreatedAt.Add(rule.TTL)) {
+		if current.Before(event.CreatedAt.Add(rule.TTL)) {
 			continue
 		}
 		m := make(map[string]interface{})
@@ -160,7 +161,8 @@ func (c *Cleaner) needClean(ctx context.Context, event *models.Event) bool {
 	return false
 }
 
-func (c *Cleaner) eventClean(ctx context.Context) {
+func (c *Cleaner) eventClean(ctx context.Context, current time.Time) {
+	defer runtime.HandleCrash()
 	log.Debugf(ctx, "start to clean events")
 	defer func() {
 		c.eventCursor = 0
@@ -195,7 +197,7 @@ func (c *Cleaner) eventClean(ctx context.Context) {
 			if event.ID > maxID {
 				maxID = event.ID
 			}
-			if c.needClean(ctx, event) {
+			if c.needClean(ctx, event, current) {
 				needDeleted = append(needDeleted, event.ID)
 			}
 		}
