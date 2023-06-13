@@ -178,28 +178,26 @@ func (e *util) ExecuteAction(ctx context.Context,
 				fmt.Sprintf("failed to update gvr(%s), ns(%s), name(%s)",
 					params.GVR.String(), params.Namespace, un.GetName()))
 		}
+		bts, err := json.Marshal(map[string]interface{}{
+			"action":       params.Action,
+			"gvr":          params.GVR.String(),
+			"resourceName": params.Namespace,
+		})
 		if err != nil {
-			bts, err := json.Marshal(map[string]interface{}{
-				"action":       params.Action,
-				"gvr":          params.GVR.String(),
-				"resourceName": params.Namespace,
-			})
-			if err != nil {
-				log.Warningf(ctx, "failed to marshal event extra, err: %s", err.Error())
-			}
-			extra := string(bts)
-			if _, err = e.eventMgr.CreateEvent(ctx, &eventmodels.Event{
-				EventSummary: eventmodels.EventSummary{
-					ResourceType: common.ResourceApplication,
-					EventType:    eventmodels.ClusterRestarted,
-					ResourceID:   params.ClusterID,
-					Extra:        &extra,
-				},
-			}); err != nil {
-				log.Warningf(ctx, "failed to create event, err: %s", err.Error())
-			}
+			log.Warningf(ctx, "failed to marshal event extra, err: %s", err.Error())
 		}
-		return err
+		extra := string(bts)
+		if _, err = e.eventMgr.CreateEvent(ctx, &eventmodels.Event{
+			EventSummary: eventmodels.EventSummary{
+				ResourceType: common.ResourceApplication,
+				EventType:    eventmodels.ClusterRestarted,
+				ResourceID:   params.ClusterID,
+				Extra:        &extra,
+			},
+		}); err != nil {
+			log.Warningf(ctx, "failed to create event, err: %s", err.Error())
+		}
+		return nil
 	})
 
 	return err
