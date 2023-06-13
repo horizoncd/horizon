@@ -94,8 +94,9 @@ func (c *controller) InternalDeployV2(ctx context.Context, clusterID uint,
 		return nil
 	}
 
-	if pr.Action != prmodels.ActionDeploy || pr.GitURL == "" {
-		// 3. update pipeline output in git repo
+	// 3. update pipeline output in git repo if builddeploy for gitImport and deploy for imageDeploy
+	if (pr.Action == prmodels.ActionBuildDeploy && pr.GitURL != "") ||
+		(pr.Action == prmodels.ActionDeploy && pr.GitURL == "") {
 		log.Infof(ctx, "pipeline %v output content: %+v", r.PipelinerunID, r.Output)
 		commit, err := c.clusterGitRepo.UpdatePipelineOutput(ctx, application.Name, cluster.Name,
 			tr.ChartName, r.Output)
