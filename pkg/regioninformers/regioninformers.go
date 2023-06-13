@@ -3,9 +3,11 @@ package regioninformers
 import (
 	"context"
 	"fmt"
-	"k8s.io/client-go/metadata"
 	"sync"
 	"time"
+
+	"k8s.io/client-go/metadata"
+	"k8s.io/client-go/rest"
 
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/pkg/region/manager"
@@ -24,6 +26,7 @@ import (
 )
 
 type RegionClient struct {
+	restConfig       *rest.Config
 	regionID         uint
 	watched          map[schema.GroupVersionResource]informers.GenericInformer
 	dynamicWatched   map[schema.GroupVersionResource]informers.GenericInformer
@@ -125,6 +128,7 @@ func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 
 	stopCh := make(chan struct{}, 1)
 	client := RegionClient{
+		restConfig:       restConfig,
 		regionID:         region.ID,
 		watched:          make(map[schema.GroupVersionResource]informers.GenericInformer),
 		dynamicWatched:   make(map[schema.GroupVersionResource]informers.GenericInformer),
@@ -249,6 +253,16 @@ func (f *RegionInformers) GetClientSet(regionID uint, operation ClientSetOperati
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return operation(f.clients[regionID].clientset)
+}
+
+func (f *RegionInformers) GetRestConfig(regionID uint) (*rest.Config, error) {
+	if err := f.ensureRegion(regionID); err != nil {
+		return nil, err
+	}
+
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return f.clients[regionID].restConfig, nil
 }
 
 type DynamicClientSetOperation func(clientset dynamic.Interface) error
