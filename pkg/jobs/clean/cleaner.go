@@ -3,9 +3,10 @@ package clean
 import (
 	"context"
 	"encoding/json"
+	"time"
+
 	"github.com/robfig/cron/v3"
 	"k8s.io/apimachinery/pkg/util/runtime"
-	"time"
 
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/q"
@@ -15,9 +16,12 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
+const DefaultRule = ""
+
 type Cleaner struct {
 	clean.Config
 	eventRules       map[string][]clean.EventCleanRule
+	webhookRules     map[string][]clean.WebhookLogCleanRule
 	mgr              *managerparam.Manager
 	eventCursor      uint
 	webhookLogCursor uint
@@ -27,14 +31,19 @@ func New(config clean.Config, mgr *managerparam.Manager) *Cleaner {
 	if config.Batch == 0 {
 		config.Batch = 160
 	}
-	eventRules := make(map[string][]clean.EventCleanRule, len(config.EventCleanRules))
+	eventCleanRules := make(map[string][]clean.EventCleanRule, len(config.EventCleanRules))
+	webhookCleanRules := make(map[string][]clean.WebhookLogCleanRule, len(config.WebhookLogCleanRules))
 	for _, rule := range config.EventCleanRules {
-		eventRules[rule.EventType] = append(eventRules[rule.EventType], rule)
+		eventCleanRules[rule.EventType] = append(eventCleanRules[rule.EventType], rule)
+	}
+	for _, rule := range config.WebhookLogCleanRules {
+		webhookCleanRules[rule.RelatedEventType] = append(webhookCleanRules[rule.RelatedEventType], rule)
 	}
 	return &Cleaner{
-		Config:     config,
-		eventRules: eventRules,
-		mgr:        mgr,
+		Config:       config,
+		eventRules:   eventCleanRules,
+		webhookRules: webhookCleanRules,
+		mgr:          mgr,
 	}
 }
 
@@ -43,9 +52,9 @@ func (c *Cleaner) Run(ctx context.Context) {
 	if err != nil {
 		panic(err)
 	}
-	cron := cron.New(cron.WithSeconds(), cron.WithLocation(loc))
-	_, err = cron.AddFunc(c.TimeToRun, func() {
-		log.Debugf(ctx, "start to clean")
+	crontab := cron.New(cron.WithSeconds(), cron.WithLocation(loc))
+	_, err = crontab.AddFunc(c.TimeToRun, func() {
+		log.Info(ctx, "start to clean")
 		current := time.Now()
 		c.webhookLogClean(ctx, current)
 		c.eventClean(ctx, current)
@@ -53,7 +62,7 @@ func (c *Cleaner) Run(ctx context.Context) {
 	if err != nil {
 		panic(err)
 	}
-	cron.Run()
+	crontab.Run()
 }
 
 func (c *Cleaner) webhookLogClean(ctx context.Context, current time.Time) {
@@ -98,16 +107,10 @@ func (c *Cleaner) webhookLogClean(ctx context.Context, current time.Time) {
 			if webhooklog.ID > maxID {
 				maxID = webhooklog.ID
 			}
-			event, err := c.mgr.EventManager.GetEvent(ctx, webhooklog.EventID)
-			if err != nil {
-				log.Errorf(ctx, "failed to get event: %v", err)
-				continue
-			}
-			for _, rule := range c.WebhookLogCleanRules {
+			rules := c.webhookRules[webhooklog.EventType]
+			rules = append(rules, c.webhookRules[DefaultRule]...)
+			for _, rule := range rules {
 				if webhooklog.UpdatedAt.Add(rule.TTL).After(current) {
-					continue
-				}
-				if rule.RelatedEventType != event.EventType {
 					continue
 				}
 				needDeleted = append(needDeleted, webhooklog.ID)
@@ -119,12 +122,12 @@ func (c *Cleaner) webhookLogClean(ctx context.Context, current time.Time) {
 			continue
 		}
 
-		log.Debugf(ctx, "need to delete webhooklogs: %v", needDeleted)
+		log.Infof(ctx, "need to delete webhooklogs: %v", needDeleted)
 		_, _ = c.mgr.WebhookManager.DeleteWebhookLogs(ctx, needDeleted...)
 	}
 }
 
-func (c *Cleaner) needClean(ctx context.Context, event *models.Event, current time.Time) bool {
+func (c *Cleaner) eventNeedClean(ctx context.Context, event *models.Event, current time.Time) bool {
 	rules := c.eventRules[event.EventType]
 	for _, rule := range rules {
 		if current.Before(event.CreatedAt.Add(rule.TTL)) {
@@ -197,7 +200,7 @@ func (c *Cleaner) eventClean(ctx context.Context, current time.Time) {
 			if event.ID > maxID {
 				maxID = event.ID
 			}
-			if c.needClean(ctx, event, current) {
+			if c.eventNeedClean(ctx, event, current) {
 				needDeleted = append(needDeleted, event.ID)
 			}
 		}

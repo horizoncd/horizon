@@ -87,7 +87,7 @@ func (d *dao) List(ctx context.Context, query *q.Query) ([]*models.Event, error)
 
 func (d *dao) GetEvent(ctx context.Context, id uint) (*models.Event, error) {
 	var event *models.Event
-	if result := d.db.WithContext(ctx).Where("id = ?", id).Find(&event); result.Error != nil {
+	if result := d.db.WithContext(ctx).Where("id = ?", id).First(&event); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, herrors.NewErrNotFound(herrors.EventInDB,
 				result.Error.Error())
