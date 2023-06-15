@@ -62,8 +62,6 @@ func New(config k8sevent.Config, informers *regioninformers.RegionInformers,
 
 func (v *SuperVisor) Run(ctx context.Context) {
 	v.informers.Register(regioninformers.Resource{GVR: gvrEvent, MakeHandler: v.newEventHandler})
-
-	v.informers.WatchDB(ctx, 60*time.Second)
 }
 
 type EventWithTime struct {

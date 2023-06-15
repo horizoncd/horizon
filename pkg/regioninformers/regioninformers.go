@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 
@@ -34,6 +35,7 @@ type RegionClient struct {
 	dynamicFactory   dynamicinformer.DynamicSharedInformerFactory
 	clientset        kubernetes.Interface
 	dynamicClientset dynamic.Interface
+	discoveryClient  *discovery.DiscoveryClient
 	handlers         map[int]struct{}
 	mapper           meta.RESTMapper
 	stopCh           chan struct{}
@@ -110,6 +112,8 @@ func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 		return err
 	}
 
+	discoveryClient := discovery.NewDiscoveryClient(clientSet.RESTClient())
+
 	factory := informers.NewSharedInformerFactory(clientSet, f.defaultResync)
 
 	dynamicClientSet, err := dynamic.NewForConfig(restConfig)
@@ -135,6 +139,7 @@ func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 		factory:          factory,
 		dynamicFactory:   dynamicFactory,
 		clientset:        clientSet,
+		discoveryClient:  discoveryClient,
 		dynamicClientset: dynamicClientSet,
 		handlers:         make(map[int]struct{}),
 		mapper:           mapper,
@@ -323,10 +328,14 @@ func (f *RegionInformers) ensureGVR(regionID uint, gvr schema.GroupVersionResour
 	return nil
 }
 
-func (f *RegionInformers) ensureDynamicGVR(regionID uint, gvr schema.GroupVersionResource) {
+func (f *RegionInformers) ensureDynamicGVR(regionID uint, gvr schema.GroupVersionResource) error {
 	if !f.whetherGVRExist(regionID, gvr) {
+		if !f.resourceExistInK8S(gvr, f.clients[regionID]) {
+			return fmt.Errorf("resource %s not exist in region %d", gvr.String(), regionID)
+		}
 		f.watchDynamicGvr(regionID, gvr)
 	}
+	return nil
 }
 
 type InformerOperation func(informer informers.GenericInformer) error
@@ -374,7 +383,9 @@ func (f *RegionInformers) GetDynamicInformer(regionID uint,
 		return err
 	}
 
-	f.ensureDynamicGVR(regionID, gvr)
+	if err := f.ensureDynamicGVR(regionID, gvr); err != nil {
+		return err
+	}
 
 	f.mu.RLock()
 	defer f.mu.RUnlock()
@@ -422,11 +433,36 @@ func (f *RegionInformers) Register(handlers ...Resource) {
 	}
 }
 
+func (f *RegionInformers) resourceExistInK8S(gvr schema.GroupVersionResource, client *RegionClient) bool {
+	if client == nil {
+		return false
+	}
+
+	apiResourceList, err := client.discoveryClient.ServerResourcesForGroupVersion(gvr.GroupVersion().String())
+	if err != nil {
+		log.Errorf(context.Background(), "list api resources failed: %v", err)
+		return false
+	}
+
+	for _, apiResource := range apiResourceList.APIResources {
+		if apiResource.Name == gvr.Resource {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (f *RegionInformers) registerHandler(client *RegionClient) {
 	for i, handler := range f.handlers {
 		if _, ok := client.handlers[i]; ok {
 			continue
 		}
+
+		if !f.resourceExistInK8S(handler.GVR, client) {
+			continue
+		}
+
 		informer := client.dynamicFactory.ForResource(handler.GVR)
 		if handler.MakeHandler != nil {
 			eventHandler, err := handler.MakeHandler(client.regionID, client.stopCh)

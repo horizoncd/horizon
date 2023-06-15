@@ -28,6 +28,7 @@ import (
 	"regexp"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/horizoncd/horizon/core/config"
 	accessctl "github.com/horizoncd/horizon/core/controller/access"
@@ -439,6 +440,7 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 	grafanaService := grafana.NewService(coreConfig.GrafanaConfig, manager, client)
 	regionInformers := regioninformers.NewRegionInformers(manager.RegionMgr, 0)
 	regionInformers.Register(workload.Resources...)
+	go regionInformers.WatchDB(ctx, 60*time.Second)
 	parameter := &param.Param{
 		Manager:              manager,
 		OauthManager:         oauthManager,
