@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 
@@ -35,6 +35,7 @@ type RegionClient struct {
 	dynamicFactory   dynamicinformer.DynamicSharedInformerFactory
 	clientset        kubernetes.Interface
 	dynamicClientset dynamic.Interface
+	discoveryClient  *discovery.DiscoveryClient
 	handlers         map[int]struct{}
 	mapper           meta.RESTMapper
 	stopCh           chan struct{}
@@ -111,6 +112,8 @@ func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 		return err
 	}
 
+	discoveryClient := discovery.NewDiscoveryClient(clientSet.RESTClient())
+
 	factory := informers.NewSharedInformerFactory(clientSet, f.defaultResync)
 
 	dynamicClientSet, err := dynamic.NewForConfig(restConfig)
@@ -136,6 +139,7 @@ func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 		factory:          factory,
 		dynamicFactory:   dynamicFactory,
 		clientset:        clientSet,
+		discoveryClient:  discoveryClient,
 		dynamicClientset: dynamicClientSet,
 		handlers:         make(map[int]struct{}),
 		mapper:           mapper,
@@ -433,14 +437,20 @@ func (f *RegionInformers) resourceExistInK8S(gvr schema.GroupVersionResource, cl
 	if client == nil {
 		return false
 	}
-	_, err := client.dynamicClientset.Resource(gvr).List(context.Background(), metav1.ListOptions{})
+
+	apiResourceList, err := client.discoveryClient.ServerResourcesForGroupVersion(gvr.GroupVersion().String())
 	if err != nil {
-		log.Errorf(context.Background(),
-			"list %s failed: %v\ngvr %s not exist in region %d",
-			gvr, err, gvr, client.regionID)
+		log.Errorf(context.Background(), "list api resources failed: %v", err)
 		return false
 	}
-	return true
+
+	for _, apiResource := range apiResourceList.APIResources {
+		if apiResource.Name == gvr.Resource {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (f *RegionInformers) registerHandler(client *RegionClient) {
