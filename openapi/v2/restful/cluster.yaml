@@ -1293,6 +1293,10 @@ components:
           $ref: "#/components/schemas/Template"
         git:
           $ref: "#/components/schemas/GitResponse"
+        type:
+          type: string
+          enum: [workload, database, middleware, other, v1]
+          description: type of template related to cluster
         tags:
           $ref: "#/components/schemas/Tags"
         createdAt:

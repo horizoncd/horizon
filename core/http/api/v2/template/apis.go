@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/horizoncd/horizon/core/common"
 	templatectl "github.com/horizoncd/horizon/core/controller/template"
 	templateschematagctl "github.com/horizoncd/horizon/core/controller/templateschematag"
@@ -120,6 +121,13 @@ func (a *API) List(c *gin.Context) {
 			return
 		}
 		keywords[common.TemplateQueryWithoutCI] = withoutCI
+	}
+
+	tp := c.QueryArray(common.TemplateQueryType)
+	if len(tp) == 1 {
+		keywords[common.TemplateQueryType] = tp[0]
+	} else if len(tp) > 1 {
+		keywords[common.TemplateQueryType] = tp
 	}
 
 	withRelease := c.Query(common.TemplateQueryWithRelease)

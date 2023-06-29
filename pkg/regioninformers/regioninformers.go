@@ -10,10 +10,6 @@ import (
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 
-	herrors "github.com/horizoncd/horizon/core/errors"
-	"github.com/horizoncd/horizon/pkg/region/manager"
-	"github.com/horizoncd/horizon/pkg/region/models"
-	"github.com/horizoncd/horizon/pkg/util/log"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -24,6 +20,11 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+
+	herrors "github.com/horizoncd/horizon/core/errors"
+	"github.com/horizoncd/horizon/pkg/region/manager"
+	"github.com/horizoncd/horizon/pkg/region/models"
+	"github.com/horizoncd/horizon/pkg/util/log"
 )
 
 type RegionClient struct {
@@ -90,6 +91,12 @@ func NewRegionInformers(regionMgr manager.Manager, defaultResync time.Duration) 
 	}
 	wg.Wait()
 	return &f
+}
+
+func (f *RegionInformers) Close() {
+	for _, client := range f.clients {
+		close(client.stopCh)
+	}
 }
 
 func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
@@ -175,8 +182,8 @@ func (f *RegionInformers) listRegion(ctx context.Context) ([]*models.Region, err
 	return regions, nil
 }
 
-// WatchDB blocks until ctx is done, and watch the database for region changes
-func (f *RegionInformers) WatchDB(ctx context.Context, pollInterval time.Duration) {
+// WatchRegion blocks until ctx is done, and watch the database for region changes
+func (f *RegionInformers) WatchRegion(ctx context.Context, pollInterval time.Duration) {
 	err := wait.Poll(pollInterval, 0, func() (done bool, err error) {
 		select {
 		case <-ctx.Done():
@@ -188,7 +195,7 @@ func (f *RegionInformers) WatchDB(ctx context.Context, pollInterval time.Duratio
 		return false, nil
 	})
 	if err != nil {
-		log.Errorf(ctx, "WatchDB polling error: %v", err)
+		log.Errorf(ctx, "WatchRegion polling error: %v", err)
 	}
 }
 

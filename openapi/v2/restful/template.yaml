@@ -50,6 +50,10 @@ paths:
                   type: string
                 token:
                   type: string
+                type:
+                  type: string
+                  enum: [database, middleware, other, v1, workload]
+                  description: The type of template to create.
                 release:
                   type: object
                   properties:
@@ -107,6 +111,12 @@ paths:
           in: query
           schema:
             type: number
+        - name: type
+          description: The type of template to filter by
+          in: query
+          schema:
+            type: string
+            enum: [database, middleware, other, v1, workload]
       responses:
         200:
           description: Success

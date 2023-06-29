@@ -29,6 +29,7 @@ type Template struct {
 	GroupID     uint
 	OnlyOwner   *bool
 	WithoutCI   bool
+	Type        string
 	CreatedBy   uint
 	UpdatedBy   uint
 }

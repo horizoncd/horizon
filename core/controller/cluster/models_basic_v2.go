@@ -67,7 +67,7 @@ func (r *CreateClusterParamsV2) toClusterModel(application *appmodels.Applicatio
 	}
 	cluster.GitURL = func() string {
 		if r.Git == nil {
-			return application.GitURL
+			return ""
 		}
 		if r.Git.URL == "" && application.GitURL != "" {
 			return application.GitURL

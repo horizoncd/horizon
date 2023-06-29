@@ -589,27 +589,24 @@ func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, pa
 		return nil, err
 	}
 
-	// inherit config from application if it's empty in the request
-	buildTemplateInfo.BuildConfig = appGitRepoFile.BuildConf
-	buildTemplateInfo.TemplateInfo = &codemodels.TemplateInfo{
-		Name:    application.Template,
-		Release: application.TemplateRelease,
-	}
-	buildTemplateInfo.TemplateConfig = appGitRepoFile.TemplateConf
-
-	if params.BuildConfig != nil {
-		if params.MergePatch {
-			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepoFile.BuildConf, params.BuildConfig)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			buildTemplateInfo.BuildConfig = params.BuildConfig
-		}
-	}
+	inherit := true
 
 	if params.TemplateInfo != nil {
 		buildTemplateInfo.TemplateInfo = params.TemplateInfo
+		if params.TemplateInfo.Name != application.Template {
+			inherit = false
+		}
+	} else {
+		buildTemplateInfo.TemplateInfo = &codemodels.TemplateInfo{
+			Name:    application.Template,
+			Release: application.TemplateRelease,
+		}
+	}
+
+	if inherit {
+		// inherit config from application if it's empty in the request
+		buildTemplateInfo.BuildConfig = appGitRepoFile.BuildConf
+		buildTemplateInfo.TemplateConfig = appGitRepoFile.TemplateConf
 	}
 
 	if params.TemplateConfig != nil {
@@ -620,6 +617,17 @@ func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, pa
 			}
 		} else {
 			buildTemplateInfo.TemplateConfig = params.TemplateConfig
+		}
+	}
+
+	if params.BuildConfig != nil {
+		if params.MergePatch {
+			buildTemplateInfo.BuildConfig, err = mergemap.Merge(appGitRepoFile.BuildConf, params.BuildConfig)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			buildTemplateInfo.BuildConfig = params.BuildConfig
 		}
 	}
 	return buildTemplateInfo, nil

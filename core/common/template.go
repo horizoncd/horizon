@@ -22,4 +22,5 @@ const (
 	TemplateQueryByGroups         = "templateGroupIDs"
 	TemplateQueryWithRelease      = "withRelease"
 	TemplateQueryName             = "filter"
+	TemplateQueryType             = "type"
 )

@@ -239,12 +239,15 @@ func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
 		total    int64
 	)
 
+	d.db = d.db.Debug()
+
 	statement := d.db.WithContext(ctx).
 		Table("tb_cluster as c").
-		Select("c.*")
+		Select("c.*, t.type").
+		Joins("join tb_template as t on t.name = c.template")
 	if withRegion {
 		statement.
-			Select("c.*, r.display_name as region_display_name").
+			Select("c.*, t.type, r.display_name as region_display_name").
 			Joins("join tb_region as r on r.name = c.region_name").
 			Where("r.deleted_ts = 0")
 	}
@@ -305,10 +308,11 @@ func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
 			query.Keywords[common.ClusterQueryByUser] != nil {
 			statementGroup := d.db.WithContext(ctx).
 				Table("tb_cluster as c").
-				Select("c.*")
+				Select("c.*, t.type").
+				Joins("join tb_template as t on t.name = c.template")
 			if withRegion {
 				statementGroup.
-					Select("c.*, r.display_name as region_display_name").
+					Select("c.*, t.type, r.display_name as region_display_name").
 					Joins("join tb_region as r on r.name = c.region_name").
 					Where("r.deleted_ts = 0")
 			}
