@@ -28,6 +28,7 @@ import (
 	"github.com/horizoncd/horizon/pkg/server/rpcerror"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/horizoncd/horizon/pkg/server/response"
 	"github.com/horizoncd/horizon/pkg/util/log"
 )
@@ -172,6 +173,11 @@ func (a *API) CreateTemplate(c *gin.Context) {
 		if perror.Cause(err) == herrors.ErrNoPrivilege {
 			log.WithFiled(c, "op", op).Info("non-admin user try to access root group")
 			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(fmt.Sprintf("no privilege: %s", err.Error())))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Infof("request body is invalid %s", err)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("request body is invalid: %v", err)))
 			return
 		}
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {

@@ -288,6 +288,11 @@ func (a *API) CreateTemplate(c *gin.Context) {
 			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(fmt.Sprintf("no privilege: %s", err.Error())))
 			return
 		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Infof("request body is invalid %s", err)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("request body is invalid: %v", err)))
+			return
+		}
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
 			log.WithFiled(c, "op", op).Infof("group with ID %d not found", groupID)
 			response.AbortWithRPCError(c, rpcerror.NotFoundError.WithErrMsg(fmt.Sprintf("not found: %s", err)))

@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"gorm.io/gorm/clause"
+
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
@@ -29,7 +31,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/rbac/role"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	"gorm.io/gorm/clause"
 
 	"gorm.io/gorm"
 )
@@ -239,12 +240,10 @@ func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
 		total    int64
 	)
 
-	d.db = d.db.Debug()
-
 	statement := d.db.WithContext(ctx).
 		Table("tb_cluster as c").
 		Select("c.*, t.type").
-		Joins("join tb_template as t on t.name = c.template")
+		Joins("left join tb_template as t on t.name = c.template")
 	if withRegion {
 		statement.
 			Select("c.*, t.type, r.display_name as region_display_name").
@@ -309,7 +308,7 @@ func (d *dao) List(ctx context.Context, query *q.Query, userID uint,
 			statementGroup := d.db.WithContext(ctx).
 				Table("tb_cluster as c").
 				Select("c.*, t.type").
-				Joins("join tb_template as t on t.name = c.template")
+				Joins("left join tb_template as t on t.name = c.template")
 			if withRegion {
 				statementGroup.
 					Select("c.*, t.type, r.display_name as region_display_name").

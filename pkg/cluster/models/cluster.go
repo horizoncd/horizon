@@ -26,7 +26,7 @@ type Cluster struct {
 	EnvironmentName string
 	RegionName      string
 	Description     string
-	Type            *string `gorm:"-"`
+	Type            *string `gorm:"->"`
 	GitURL          string
 	GitSubfolder    string
 	GitRef          string

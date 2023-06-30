@@ -224,14 +224,9 @@ func (d dao) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) ([]*m
 			case common.TemplateQueryType:
 				tp := reflect.TypeOf(v)
 				if tp.Kind() == reflect.Slice {
-					tps := v.([]string)
-					condition := d.db.WithContext(context.Background())
-					for _, t := range tps {
-						condition = condition.Or("t.type like ?", fmt.Sprintf("%%%v%%", t))
-					}
-					statement = statement.Where(condition)
+					statement = statement.Or("t.type in ?", v)
 				} else {
-					statement = statement.Where("t.type like ?", fmt.Sprintf("%%%v%%", v))
+					statement = statement.Where("t.type = ?", v)
 				}
 			case common.TemplateQueryByGroups:
 				if _, ok := v.(uint); ok {

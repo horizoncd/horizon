@@ -19,6 +19,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	"github.com/horizoncd/horizon/lib/q"
@@ -33,11 +35,11 @@ import (
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
 	userdao "github.com/horizoncd/horizon/pkg/user/dao"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
 	callbacks "github.com/horizoncd/horizon/pkg/util/ormcallbacks"
 	"github.com/horizoncd/horizon/pkg/util/sets"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -65,7 +67,7 @@ func TestMain(m *testing.M) {
 	}))
 	if err := db.AutoMigrate(&models.Cluster{}, &tagmodels.Tag{}, &usermodels.User{},
 		&envregionmodels.EnvironmentRegion{}, &regionmodels.Region{}, &membermodels.Member{},
-		&pipelinemodel.Pipelinerun{}); err != nil {
+		&pipelinemodel.Pipelinerun{}, &templatemodels.Template{}); err != nil {
 		panic(err)
 	}
 	userDAO := userdao.NewDAO(db)

@@ -93,12 +93,6 @@ func NewRegionInformers(regionMgr manager.Manager, defaultResync time.Duration) 
 	return &f
 }
 
-func (f *RegionInformers) Close() {
-	for _, client := range f.clients {
-		close(client.stopCh)
-	}
-}
-
 func (f *RegionInformers) NewRegionInformers(region *models.Region) error {
 	if region == nil {
 		return nil

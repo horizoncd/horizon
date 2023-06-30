@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/core/middleware/requestid"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -32,8 +34,8 @@ import (
 	"github.com/horizoncd/horizon/pkg/param/managerparam"
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
+	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
 	trmodels "github.com/horizoncd/horizon/pkg/templaterelease/models"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -48,7 +50,7 @@ func TestMain(m *testing.M) {
 	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{},
 		&tagmodels.Tag{}, &membermodels.Member{}, &regionmodels.Region{},
-		&trmodels.TemplateRelease{}); err != nil {
+		&trmodels.TemplateRelease{}, &templatemodels.Template{}); err != nil {
 		panic(err)
 	}
 	ctx = context.TODO()

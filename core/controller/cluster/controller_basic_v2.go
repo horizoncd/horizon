@@ -605,7 +605,9 @@ func (c *controller) customizeCreateReqBuildTemplateInfo(ctx context.Context, pa
 
 	if inherit {
 		// inherit config from application if it's empty in the request
-		buildTemplateInfo.BuildConfig = appGitRepoFile.BuildConf
+		if params.Git != nil && params.Git.URL != "" {
+			buildTemplateInfo.BuildConfig = appGitRepoFile.BuildConf
+		}
 		buildTemplateInfo.TemplateConfig = appGitRepoFile.TemplateConf
 	}
 
