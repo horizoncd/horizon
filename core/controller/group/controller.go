@@ -615,6 +615,9 @@ func generateChildrenWithLevelStruct(groupID uint, groups []*models.Group,
 	// generate children by applications
 	for _, application := range applications {
 		parent := idToFull[application.GroupID]
+		if parent == nil {
+			continue
+		}
 		child := service.ConvertApplicationToChild(application, &service.Full{
 			FullName: fmt.Sprintf("%s/%s", parent.FullName, application.Name),
 			FullPath: fmt.Sprintf("%s/%s", parent.FullPath, application.Name),
