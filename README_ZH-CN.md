@@ -102,7 +102,7 @@ GitOps是应用程序交付的最佳实践，Horizon遵循GitOps最佳实践。�
 我们欢迎社区的贡献！以下是您可以帮助改进此项目的一些方法：
 
 + 通过在我们的[问题跟踪器](https://github.com/horizoncd/horizon/issues)中打开问题报告和请求新功能来**报告错误和请求新功能**。
-+ 通过打开拉取请求**提交代码贡献**。提交之前，请确保遵循我们的[贡献指南](notion://www.notion.so/nsddd/CONTRIBUTING.md)和[行为准则](https://github.com/horizoncd/horizon/CODE_OF_CONDUCT.md)。
++ 通过打开拉取请求**提交代码贡献**。提交之前，请确保遵循我们的[贡献指南](./CONTRIBUTING.md)和[行为准则](./CODE-OF-CONDUCT.md)。
 + 通过建议更改或提交拉取请求来**改进文档**。
 
 感谢所有的[贡献者](https://github.com/horizoncd/horizon/contributors)为帮助使这个项目成功！
