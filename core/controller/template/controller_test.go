@@ -25,6 +25,10 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
+	"helm.sh/helm/v3/pkg/chart"
+
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/orm"
@@ -56,9 +60,6 @@ import (
 	trschema "github.com/horizoncd/horizon/pkg/templaterelease/schema"
 	reposchema "github.com/horizoncd/horizon/pkg/templaterelease/schema/repo"
 	usermodels "github.com/horizoncd/horizon/pkg/user/models"
-	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
-	"helm.sh/helm/v3/pkg/chart"
 )
 
 const (
@@ -664,6 +665,7 @@ func createChart(t *testing.T, ctl Controller, groupID uint) {
 		Name:        templateName,
 		Description: "",
 		Repository:  templateRepo,
+		Type:        "v1",
 	}
 	template, err := ctl.CreateTemplate(ctx, groupID, request)
 	assert.Nil(t, err)

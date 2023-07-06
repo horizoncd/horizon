@@ -65,40 +65,42 @@ func (r *CreateClusterParamsV2) toClusterModel(application *appmodels.Applicatio
 		TemplateRelease: info.TemplateInfo.Release,
 		Status:          common.ClusterStatusCreating,
 	}
-	cluster.GitURL = func() string {
-		if r.Git == nil {
-			return application.GitURL
-		}
-		if r.Git.URL == "" && application.GitURL != "" {
-			return application.GitURL
-		}
-		// if URL is empty string, this means this cluster not depends on build from git
-		return r.Git.URL
-	}()
-	cluster.GitSubfolder = func() string {
-		if r.Git == nil || r.Git.Subfolder == "" {
-			return application.GitSubfolder
-		}
-		return r.Git.Subfolder
-	}()
-	cluster.GitRef = func() string {
-		if r.Git == nil {
-			return application.GitRef
-		}
-		return r.Git.Ref()
-	}()
-	cluster.GitRefType = func() string {
-		if r.Git == nil {
-			return application.GitRefType
-		}
-		return r.Git.RefType()
-	}()
-	cluster.Image = func() string {
-		if r.Image == nil {
-			return application.Image
-		}
-		return *r.Image
-	}()
+	if cluster.Template == application.Template {
+		cluster.GitURL = func() string {
+			if r.Git == nil {
+				return application.GitURL
+			}
+			if r.Git.URL == "" && application.GitURL != "" {
+				return application.GitURL
+			}
+			// if URL is empty string, this means this cluster not depends on build from git
+			return r.Git.URL
+		}()
+		cluster.GitSubfolder = func() string {
+			if r.Git == nil || r.Git.Subfolder == "" {
+				return application.GitSubfolder
+			}
+			return r.Git.Subfolder
+		}()
+		cluster.GitRef = func() string {
+			if r.Git == nil {
+				return application.GitRef
+			}
+			return r.Git.Ref()
+		}()
+		cluster.GitRefType = func() string {
+			if r.Git == nil {
+				return application.GitRefType
+			}
+			return r.Git.RefType()
+		}()
+		cluster.Image = func() string {
+			if r.Image == nil {
+				return application.Image
+			}
+			return *r.Image
+		}()
+	}
 	tags := make([]*tagmodels.Tag, 0)
 	for _, tag := range r.Tags {
 		tags = append(tags, &tagmodels.Tag{

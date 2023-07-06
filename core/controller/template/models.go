@@ -34,6 +34,7 @@ type CreateTemplateRequest struct {
 	Name                 string `json:"name"`
 	Description          string `json:"description"`
 	Repository           string `json:"repository"`
+	Type                 string `json:"type"`
 	OnlyOwner            bool   `json:"onlyOwner"`
 }
 
@@ -52,6 +53,7 @@ func (c *CreateTemplateRequest) toTemplateModel(ctx context.Context) (*tmodels.T
 		Description: c.Description,
 		Repository:  c.Repository,
 		OnlyOwner:   &c.OnlyOwner,
+		Type:        c.Type,
 	}
 	return t, nil
 }
@@ -134,6 +136,7 @@ type Template struct {
 	GroupID     uint      `json:"group"`
 	OnlyOwner   bool      `json:"onlyOwner"`
 	WithoutCI   bool      `json:"withoutCI"`
+	Type        string    `json:"type"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 	CreatedBy   uint      `json:"createdBy"`
@@ -152,6 +155,7 @@ func toTemplate(m *tmodels.Template) *Template {
 		Repository:  m.Repository,
 		GroupID:     m.GroupID,
 		WithoutCI:   m.WithoutCI,
+		Type:        m.Type,
 		CreatedAt:   m.Model.CreatedAt,
 		UpdatedAt:   m.Model.UpdatedAt,
 		CreatedBy:   m.CreatedBy,

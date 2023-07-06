@@ -17,6 +17,9 @@ package dao
 import (
 	"context"
 	"fmt"
+	"reflect"
+
+	"gorm.io/gorm"
 
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
@@ -27,7 +30,6 @@ import (
 	hctx "github.com/horizoncd/horizon/pkg/context"
 	perror "github.com/horizoncd/horizon/pkg/errors"
 	"github.com/horizoncd/horizon/pkg/template/models"
-	"gorm.io/gorm"
 )
 
 type DAO interface {
@@ -219,6 +221,13 @@ func (d dao) ListV2(ctx context.Context, query *q.Query, groupIDs ...uint) ([]*m
 				statement = statement.Where("t.group_id = ?", v)
 			case common.TemplateQueryName:
 				statement = statement.Where("t.name like ?", fmt.Sprintf("%%%v%%", v))
+			case common.TemplateQueryType:
+				tp := reflect.TypeOf(v)
+				if tp.Kind() == reflect.Slice {
+					statement = statement.Or("t.type in ?", v)
+				} else {
+					statement = statement.Where("t.type = ?", v)
+				}
 			case common.TemplateQueryByGroups:
 				if _, ok := v.(uint); ok {
 					statement = statement.Where("t.group_id = ?", v)

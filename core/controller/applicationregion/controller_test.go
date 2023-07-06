@@ -20,6 +20,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/horizoncd/horizon/core/common"
 	"github.com/horizoncd/horizon/lib/orm"
 	appmodels "github.com/horizoncd/horizon/pkg/application/models"
@@ -33,7 +35,7 @@ import (
 	regionmodels "github.com/horizoncd/horizon/pkg/region/models"
 	"github.com/horizoncd/horizon/pkg/server/global"
 	tagmodels "github.com/horizoncd/horizon/pkg/tag/models"
-	"github.com/stretchr/testify/assert"
+	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
 )
 
 var (
@@ -48,7 +50,7 @@ func TestMain(m *testing.M) {
 	manager = managerparam.InitManager(db)
 	if err := db.AutoMigrate(&models.ApplicationRegion{}, &regionmodels.Region{},
 		&envmodels.Environment{}, &envregionmodels.EnvironmentRegion{}, &tagmodels.Tag{},
-		groupmodels.Group{}, appmodels.Application{}, membermodels.Member{},
+		groupmodels.Group{}, appmodels.Application{}, membermodels.Member{}, &templatemodels.Template{},
 	); err != nil {
 		panic(err)
 	}

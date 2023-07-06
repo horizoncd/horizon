@@ -241,6 +241,7 @@ type GitResponse struct {
 type ListClusterResponse struct {
 	ID          uint                  `json:"id"`
 	Name        string                `json:"name"`
+	Type        *string               `json:"type,omitempty"`
 	Description string                `json:"description"`
 	Scope       *Scope                `json:"scope"`
 	Template    *Template             `json:"template"`
@@ -256,6 +257,7 @@ func ofCluster(cluster *models.Cluster) *ListClusterResponse {
 		ID:          cluster.ID,
 		Name:        cluster.Name,
 		Description: cluster.Description,
+		Type:        cluster.Type,
 		Scope: &Scope{
 			Environment: cluster.EnvironmentName,
 			Region:      cluster.RegionName,

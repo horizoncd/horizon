@@ -24,6 +24,8 @@ import (
 	"sync"
 	"time"
 
+	"helm.sh/helm/v3/pkg/chart/loader"
+
 	"github.com/horizoncd/horizon/core/common"
 	herrors "github.com/horizoncd/horizon/core/errors"
 	"github.com/horizoncd/horizon/lib/q"
@@ -46,7 +48,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/templaterepo"
 	"github.com/horizoncd/horizon/pkg/util/permission"
 	"github.com/horizoncd/horizon/pkg/util/wlog"
-	"helm.sh/helm/v3/pkg/chart/loader"
 )
 
 type Controller interface {
@@ -570,6 +571,10 @@ func (c *controller) CreateTemplate(ctx context.Context,
 	template.GroupID = groupID
 	// should always be true
 	template.WithoutCI = true
+
+	if template.Type == "" {
+		return nil, perror.Wrapf(herrors.ErrParamInvalid, "template type is empty")
+	}
 
 	template, err = c.templateMgr.Create(ctx, template)
 	if err != nil {

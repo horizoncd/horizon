@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/horizoncd/horizon/core/common"
 	templatectl "github.com/horizoncd/horizon/core/controller/template"
 	templateschematagctl "github.com/horizoncd/horizon/core/controller/templateschematag"
@@ -120,6 +121,13 @@ func (a *API) List(c *gin.Context) {
 			return
 		}
 		keywords[common.TemplateQueryWithoutCI] = withoutCI
+	}
+
+	tp := c.QueryArray(common.TemplateQueryType)
+	if len(tp) == 1 {
+		keywords[common.TemplateQueryType] = tp[0]
+	} else if len(tp) > 1 {
+		keywords[common.TemplateQueryType] = tp
 	}
 
 	withRelease := c.Query(common.TemplateQueryWithRelease)
@@ -278,6 +286,11 @@ func (a *API) CreateTemplate(c *gin.Context) {
 		if perror.Cause(err) == herrors.ErrNoPrivilege {
 			log.WithFiled(c, "op", op).Info("non-admin user try to access root group")
 			response.AbortWithRPCError(c, rpcerror.ForbiddenError.WithErrMsg(fmt.Sprintf("no privilege: %s", err.Error())))
+			return
+		}
+		if perror.Cause(err) == herrors.ErrParamInvalid {
+			log.WithFiled(c, "op", op).Infof("request body is invalid %s", err)
+			response.AbortWithRPCError(c, rpcerror.ParamError.WithErrMsg(fmt.Sprintf("request body is invalid: %v", err)))
 			return
 		}
 		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {

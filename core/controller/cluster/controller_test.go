@@ -26,6 +26,8 @@ import (
 
 	tektoncollectormock "github.com/horizoncd/horizon/mock/pkg/cluster/tekton/collector"
 	clustercd "github.com/horizoncd/horizon/pkg/cd"
+	templatemodels "github.com/horizoncd/horizon/pkg/template/models"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -451,7 +453,7 @@ const secondsInOneDay = 24 * 3600
 func TestMain(m *testing.M) {
 	if err := db.AutoMigrate(&appmodels.Application{}, &models.Cluster{}, &groupmodels.Group{},
 		&trmodels.TemplateRelease{}, &membermodels.Member{}, &usermodels.User{},
-		&registrymodels.Registry{}, eventmodels.Event{},
+		&registrymodels.Registry{}, eventmodels.Event{}, &templatemodels.Template{},
 		&regionmodels.Region{}, &envregionmodels.EnvironmentRegion{}, &eventmodels.Event{},
 		&prmodels.Pipelinerun{}, &schematagmodel.ClusterTemplateSchemaTag{}, &tmodel.Tag{},
 		&envmodels.Environment{}, &tokenmodels.Token{}); err != nil {
