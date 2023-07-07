@@ -48,7 +48,6 @@ import (
 	"github.com/horizoncd/horizon/pkg/util/wlog"
 
 	"github.com/Masterminds/sprig"
-	"gopkg.in/yaml.v3"
 	kyaml "sigs.k8s.io/yaml"
 )
 
@@ -390,30 +389,24 @@ const (
 func RenderOutputObject(outPutStr, templateName string,
 	clusterValueFiles ...gitrepo.ClusterValueFile) (interface{}, error) {
 	// remove the  template prefix level, add Value prefix(as helm) and merge to one doc
-	var oneDoc string
+	oneMap := make(map[string]interface{})
+	var err error
 	for _, clusterValueFile := range clusterValueFiles {
 		if clusterValueFile.Content != nil {
 			if content, ok := clusterValueFile.Content[templateName]; ok {
 				// if content is empty or {}, continue
-				if contentMap, ok := content.(map[string]interface{}); !ok || len(contentMap) == 0 {
-					continue
+				if contentMap, ok := content.(map[string]interface{}); ok && len(contentMap) > 0 {
+					oneMap, err = mergemap.Merge(oneMap, contentMap)
+					if err != nil {
+						return nil, perror.Wrapf(herrors.ErrParamInvalid, "merge map error, err = %s", err.Error())
+					}
 				}
-				binaryContent, err := yaml.Marshal(content)
-				if err != nil {
-					return nil, perror.Wrap(herrors.ErrParamInvalid, err.Error())
-				}
-				oneDoc += string(binaryContent) + "\n"
 			}
 		}
 	}
-	var oneDocMap map[interface{}]interface{}
-	err := yaml.Unmarshal([]byte(oneDoc), &oneDocMap)
-	if err != nil {
-		return nil, perror.Wrapf(herrors.ErrParamInvalid, "RenderOutputObject yaml Unmarshal  error, err  = %s", err.Error())
-	}
 
 	var addValuePrefixDocMap = make(map[interface{}]interface{})
-	addValuePrefixDocMap[_valuePrefix] = oneDocMap
+	addValuePrefixDocMap[_valuePrefix] = oneMap
 	var b bytes.Buffer
 	doTemplate := template.Must(template.New("").Funcs(sprig.HtmlFuncMap()).Parse(outPutStr))
 	err = doTemplate.ExecuteTemplate(&b, "", addValuePrefixDocMap)

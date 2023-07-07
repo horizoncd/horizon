@@ -141,7 +141,7 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, hori
 		return nil, err
 	}
 
-	logutil.Debugf(ctx, "collected log result: logObject: %s, logURL: %s",
+	logutil.Infof(ctx, "collected log result: logObject: %s, logURL: %s",
 		collectLogResult.LogObject, collectLogResult.LogURL)
 
 	collectObjectResult, err := c.collectObject(ctx, metadata, pr)
@@ -149,7 +149,7 @@ func (c *S3Collector) Collect(ctx context.Context, pr *v1beta1.PipelineRun, hori
 		return nil, err
 	}
 
-	logutil.Debugf(ctx, "collected object result: %+v", collectObjectResult)
+	logutil.Infof(ctx, "collected object result: %+v", collectObjectResult)
 
 	logStruct := NewLogStruct(collectObjectResult.PrURL,
 		metadata, collectLogResult.LogURL, collectLogResult.LogContent)

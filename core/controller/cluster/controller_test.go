@@ -499,6 +499,7 @@ func TestAll(t *testing.T) {
 	t.Run("TestGetClusterOutPut", testGetClusterOutPut)
 	t.Run("TestRenderOutPutObject", testRenderOutPutObject)
 	t.Run("TestRenderOutPutObjectMissingKey", testRenderOutPutObjectMissingKey)
+	t.Run("testRenderOutPutObjectRepetitiveKey", testRenderOutPutObjectRepetitiveKey)
 	t.Run("TestIsClusterActuallyHealthy", testIsClusterActuallyHealthy)
 	t.Run("TestImageURL", testImageURL)
 	t.Run("TestPinyin", testPinyin)
@@ -1899,6 +1900,47 @@ javaapp:
 	assert.Nil(t, err)
 	t.Logf("outPutRenderStr = \n%+s", string(jsonBytes))
 	var expectOutPutStr = `{"syncDomainName":{"Description":"sync domain name","Value":"."}}` // nolint
+	assert.Equal(t, expectOutPutStr, string(jsonBytes))
+}
+
+func testRenderOutPutObjectRepetitiveKey(t *testing.T) {
+	var envValueFile, horizonValueFile, applicationValueFile, sreValueFile gitrepo.ClusterValueFile
+
+	var sreValue = `
+javaapp:
+  app:
+    health:
+      port: 9999
+`
+	err := yaml.Unmarshal([]byte(envValue), &(envValueFile.Content))
+	assert.Nil(t, err)
+
+	err = yaml.Unmarshal([]byte(horizonValue), &(horizonValueFile.Content))
+	assert.Nil(t, err)
+
+	err = yaml.Unmarshal([]byte(applicationValue), &(applicationValueFile.Content))
+	assert.Nil(t, err)
+
+	err = yaml.Unmarshal([]byte(sreValue), &(sreValueFile.Content))
+	assert.Nil(t, err)
+
+	var outPutStr = `healthPort:
+  Description: health port
+  Value: {{ .Values.app.health.port}}
+syncDomainName:
+  Description: sync domain name
+  Value: {{ .Values.horizon.cluster}}.{{ .Values.env.ingressDomain}}
+`
+	outPutRenderJSONObject, err := RenderOutputObject(outPutStr, "javaapp",
+		horizonValueFile, envValueFile, applicationValueFile, sreValueFile)
+
+	assert.Nil(t, err)
+	t.Logf("outPutRenderStr = \n%+v", outPutRenderJSONObject)
+
+	jsonBytes, err := json.Marshal(outPutRenderJSONObject)
+	assert.Nil(t, err)
+	t.Logf("outPutRenderStr = \n%+s", string(jsonBytes))
+	var expectOutPutStr = `{"healthPort":{"Description":"health port","Value":9999},"syncDomainName":{"Description":"sync domain name","Value":"music-social-zone-pre.cloudnative.com"}}` // nolint
 	assert.Equal(t, expectOutPutStr, string(jsonBytes))
 }
 
