@@ -75,7 +75,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 	if err != nil {
 		return err
 	}
-	log.Debugf(ctx, "got cloudEvent of pipelineRun %v, event id: %v",
+	log.Infof(ctx, "got cloudEvent of pipelineRun %v, event id: %v",
 		horizonMetaData.PipelinerunID, horizonMetaData.EventID)
 
 	environment := horizonMetaData.Environment
@@ -96,7 +96,7 @@ func (c *controller) CloudEvent(ctx context.Context, wpr *WrappedPipelineRun) (e
 		return err
 	}
 
-	log.Debugf(ctx, "pipelineRun %v status: %v, started at %v, finished at %v",
+	log.Infof(ctx, "pipelineRun %v status: %v, started at %v, finished at %v",
 		pipelinerunID, result.Result, result.StartTime, result.CompletionTime)
 
 	// 2. update pipelinerun in db
