@@ -235,7 +235,7 @@ func MuskClientSecrets(clientSecrets []models.OauthClientSecret) {
 	}
 }
 
-func checkMusicSecret(muskedSecret, realSecret string) bool {
+func checkClientSecret(muskedSecret, realSecret string) bool {
 	if strings.HasPrefix(muskedSecret, MustPrefix) &&
 		strings.HasSuffix(realSecret, strings.TrimPrefix(muskedSecret, MustPrefix)) {
 		return true
@@ -367,6 +367,9 @@ func (m *OauthManager) GenOauthTokens(ctx context.Context, req *OauthTokensReque
 	refreshToken := m.NewRefreshToken(accessToken, req)
 	refreshToken.RefID = accessTokenInDB.ID
 	refreshTokenInDB, err := m.tokenStorage.Create(ctx, refreshToken)
+	if err != nil {
+		return nil, err
+	}
 
 	// delete authorize code
 	err = m.tokenStorage.DeleteByCode(ctx, req.Code)

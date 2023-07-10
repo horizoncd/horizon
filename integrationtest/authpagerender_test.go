@@ -65,7 +65,7 @@ var (
 	ctx                   = context.WithValue(context.Background(), common.UserContextKey(), aUser)
 	authorizeCodeExpireIn = time.Minute * 30
 	accessTokenExpireIn   = time.Second * 3
-	refreshtokenExpireIn  = time.Minute * 30
+	refreshTokenExpireIn  = time.Minute * 30
 	manager               *managerparam.Manager
 )
 
@@ -122,7 +122,7 @@ func TestServer(t *testing.T) {
 	tokenStorage := tokenstorage.NewStorage(db)
 	oauthAppDAO := oauthdao.NewDAO(db)
 	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
-		authorizeCodeExpireIn, accessTokenExpireIn, refreshtokenExpireIn)
+		authorizeCodeExpireIn, accessTokenExpireIn, refreshTokenExpireIn)
 	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
 	clientIDGen := func(appType models.AppType) string {
 		return clientID
@@ -216,8 +216,9 @@ func TestServer(t *testing.T) {
 	authorizeCode := parsedURL.Query().Get(oauthserver.Code)
 	t.Logf("code = %s", authorizeCode)
 
-	// get  the access token
+	// get the access token
 	accessTokenReqData := url.Values{
+		oauthserver.GrantType:    {oauthserver.GrantTypeAuthCode},
 		oauthserver.Code:         {authorizeCode},
 		oauthserver.ClientID:     {clientID},
 		oauthserver.ClientSecret: {secret.ClientSecret},
@@ -244,8 +245,29 @@ func TestServer(t *testing.T) {
 	default:
 		assert.Fail(t, "unSupport")
 	}
+	assert.True(t, strings.HasPrefix(tokenResponse.RefreshToken, generator.RefreshTokenPrefix))
 
-	//  token expired
+	// refresh token
+	refreshTokenReqData := url.Values{
+		oauthserver.GrantType:    {oauthserver.GrantTypeRefreshToken},
+		oauthserver.RefreshToken: {tokenResponse.RefreshToken},
+		oauthserver.ClientID:     {clientID},
+		oauthserver.ClientSecret: {secret.ClientSecret},
+		oauthserver.RedirectURI:  {createReq.RedirectURI},
+	}
+	resp, err = http.PostForm("http://localhost"+ListenPort+accessTokenURI, refreshTokenReqData)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	bytes, err = ioutil.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	tokenResponse = oauth.AccessTokenResponse{}
+	assert.Nil(t, json.Unmarshal(bytes, &tokenResponse))
+	t.Logf("%v", tokenResponse)
+
+	// token expired
 	time.Sleep(accessTokenExpireIn)
 	resourceURI := "/apis/core/v1/clusters/123"
 	req, err := http.NewRequest("GET", "http://localhost"+ListenPort+resourceURI, nil)

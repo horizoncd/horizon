@@ -153,9 +153,9 @@ func TestClientSecretBasic(t *testing.T) {
 	for _, secret := range secrets {
 		if secret.CreatedBy == aUser.GetID() &&
 			(secret.ClientID == secret1.ClientID || secret.ClientID == secret2.ClientID) &&
-			(checkMusicSecret(secret.ClientSecret, secret1.ClientSecret) ||
-				checkMusicSecret(secret.ClientSecret, secret2.ClientSecret)) {
-			// noop
+			(checkClientSecret(secret.ClientSecret, secret1.ClientSecret) ||
+				checkClientSecret(secret.ClientSecret, secret2.ClientSecret)) {
+			continue
 		} else {
 			assert.Fail(t, "secret error")
 		}
