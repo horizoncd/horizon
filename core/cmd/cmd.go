@@ -371,8 +371,11 @@ func Init(ctx context.Context, flags *Flags, coreConfig *config.Config) {
 
 	oauthAppDAO := oauthdao.NewDAO(mysqlDB)
 	tokenStorage := tokenstorage.NewStorage(mysqlDB)
-	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
-		coreConfig.Oauth.AuthorizeCodeExpireIn, coreConfig.Oauth.AccessTokenExpireIn)
+	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage,
+		generator.NewAuthorizeGenerator(),
+		coreConfig.Oauth.AuthorizeCodeExpireIn,
+		coreConfig.Oauth.AccessTokenExpireIn,
+		coreConfig.Oauth.RefreshTokenExpireIn)
 
 	roleService, err := role.NewFileRoleFrom2(context.TODO(), roleConfig)
 	if err != nil {

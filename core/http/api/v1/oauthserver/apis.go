@@ -40,7 +40,12 @@ const (
 	Authorize   = "authorize"
 
 	Code         = "code"
+	RefreshToken = "refresh_token"
 	ClientSecret = "client_secret"
+
+	GrantType             = "grant_type"
+	GrantTypeAuthCode     = "authorization_code"
+	GrantTypeRefreshToken = "refresh_token"
 )
 
 const (
@@ -231,14 +236,30 @@ func (a *API) handlerPostAuthorizationReq(c *gin.Context) {
 }
 
 func (a *API) HandleAccessTokenReq(c *gin.Context) {
+	// check grant type
+	grantType, ok := c.GetPostForm(GrantType)
+	if !ok {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, "grant_type not exist")
+		return
+	}
+
+	keys := []string{
+		ClientID,
+		ClientSecret,
+		RedirectURI,
+	}
+	if grantType == GrantTypeAuthCode {
+		keys = append(keys, Code)
+	} else if grantType == GrantTypeRefreshToken {
+		keys = append(keys, RefreshToken)
+	} else {
+		response.AbortWithRequestError(c, common.InvalidRequestParam, "grant_type not supported")
+		return
+	}
+
+	// check post form keys exist
 	var err error
-	checkReq := func() bool {
-		keys := []string{
-			ClientID,
-			ClientSecret,
-			RedirectURI,
-			Code,
-		}
+	checkKeysExist := func(keys []string) bool {
 		for _, key := range keys {
 			if _, ok := c.GetPostForm(key); !ok {
 				err = fmt.Errorf("%s not exist", key)
@@ -248,18 +269,29 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 		}
 		return true
 	}
-	if !checkReq() {
+	if !checkKeysExist(keys) {
 		response.AbortWithRequestError(c, common.InvalidRequestParam, err.Error())
 		return
 	}
 
-	tokenResponse, err := a.oAuthServer.GenAccessToken(c, &oauth.AccessTokenReq{
+	var tokenResponse *oauth.AccessTokenResponse
+	baseTokenReq := oauth.BaseTokenReq{
 		ClientID:     c.PostForm(ClientID),
 		ClientSecret: c.PostForm(ClientSecret),
-		Code:         c.PostForm(Code),
 		RedirectURL:  c.PostForm(RedirectURI),
 		Request:      c.Request,
-	})
+	}
+	if grantType == GrantTypeAuthCode {
+		tokenResponse, err = a.oAuthServer.GenAccessToken(c, &oauth.AccessTokenReq{
+			BaseTokenReq: baseTokenReq,
+			Code:         c.PostForm(Code),
+		})
+	} else {
+		tokenResponse, err = a.oAuthServer.RefreshToken(c, &oauth.RefreshTokenReq{
+			BaseTokenReq: baseTokenReq,
+			RefreshToken: c.PostForm(RefreshToken),
+		})
+	}
 	if err != nil {
 		causeErr := perror.Cause(err)
 		log.Warning(c, err.Error())
@@ -269,9 +301,13 @@ func (a *API) HandleAccessTokenReq(c *gin.Context) {
 		case herrors.ErrOAuthReqNotValid:
 			fallthrough
 		case herrors.ErrOAuthAuthorizationCodeNotExist:
+			fallthrough
+		case herrors.ErrOAuthRefreshTokenNotExist:
 			response.AbortWithUnauthorized(c, common.Unauthorized, err.Error())
 			return
 		case herrors.ErrOAuthCodeExpired:
+			fallthrough
+		case herrors.ErrOAuthRefreshTokenExpired:
 			response.AbortWithUnauthorized(c, common.CodeExpired, err.Error())
 			return
 		default:

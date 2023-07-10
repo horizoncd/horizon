@@ -44,27 +44,38 @@ type AuthorizeCodeResponse struct {
 	State       string
 }
 
-type AccessTokenReq struct {
+type BaseTokenReq struct {
 	ClientID     string
 	ClientSecret string
-	Code         string
 	RedirectURL  string
 
 	Request *http.Request
 }
 
+type AccessTokenReq struct {
+	BaseTokenReq
+	Code string
+}
+
+type RefreshTokenReq struct {
+	BaseTokenReq
+	RefreshToken string
+}
+
 type AccessTokenResponse struct {
-	AccessToken string        `json:"access_token"`
-	ExpiresIn   time.Duration `json:"expires_in"`
-	Scope       string        `json:"scope"`
-	TokenType   string        `json:"token_type"`
+	AccessToken  string        `json:"access_token"`
+	RefreshToken string        `json:"refresh_token"`
+	ExpiresIn    time.Duration `json:"expires_in"`
+	Scope        string        `json:"scope"`
+	TokenType    string        `json:"token_type"`
 }
 
 type Controller interface {
-	// GenAuthorizeCode oauth  Authorization Request ref:rfc6750
+	// GenAuthorizeCode oauth  Authorization GenOauthTokensRequest ref:rfc6750
 	GenAuthorizeCode(ctx context.Context, req *AuthorizeReq) (*AuthorizeCodeResponse, error)
-	// GenAccessToken Access Token Request,ref:rfc6750
+	// GenAccessToken Access Token GenOauthTokensRequest,ref:rfc6750
 	GenAccessToken(ctx context.Context, req *AccessTokenReq) (*AccessTokenResponse, error)
+	RefreshToken(ctx context.Context, req *RefreshTokenReq) (*AccessTokenResponse, error)
 }
 
 func NewController(param *param.Param) Controller {
@@ -102,8 +113,9 @@ func (c *controller) GenAuthorizeCode(ctx context.Context, req *AuthorizeReq) (*
 	return resp, nil
 }
 
-func (c *controller) GenAccessToken(ctx context.Context, req *AccessTokenReq) (*AccessTokenResponse, error) {
-	app, err := c.oauthManager.GetOAuthApp(ctx, req.ClientID)
+func (c *controller) getAccessTokenGenerator(ctx context.Context,
+	clientID string) (generator.AccessTokenCodeGenerator, error) {
+	app, err := c.oauthManager.GetOAuthApp(ctx, clientID)
 	if err != nil {
 		return nil, err
 	}
@@ -117,21 +129,62 @@ func (c *controller) GenAccessToken(ctx context.Context, req *AccessTokenReq) (*
 		return nil, perror.Wrapf(herrors.ErrOAuthInternal,
 			"appType Not Supported, appType = %d", app.AppType)
 	}
+	return gen, nil
+}
 
-	token, err := c.oauthManager.GenAccessToken(ctx, &manager.AccessTokenGenerateRequest{
-		ClientID:     req.ClientID,
-		ClientSecret: req.ClientSecret,
-		Code:         req.Code,
-		RedirectURL:  req.RedirectURL,
-		Request:      req.Request,
-	}, gen)
+func (c *controller) GenAccessToken(ctx context.Context, req *AccessTokenReq) (*AccessTokenResponse, error) {
+	accessTokenGenerator, err := c.getAccessTokenGenerator(ctx, req.ClientID)
+	if err != nil {
+		return nil, err
+	}
+	refreshTokenGenerator := generator.NewBasicRefreshTokenGenerator()
+
+	tokens, err := c.oauthManager.GenOauthTokens(ctx, &manager.OauthTokensRequest{
+		ClientID:              req.ClientID,
+		ClientSecret:          req.ClientSecret,
+		Code:                  req.Code,
+		RedirectURL:           req.RedirectURL,
+		Request:               req.Request,
+		AccessTokenGenerator:  accessTokenGenerator,
+		RefreshTokenGenerator: refreshTokenGenerator,
+	})
 	if err != nil {
 		return nil, err
 	}
 	return &AccessTokenResponse{
-		AccessToken: token.Code,
-		ExpiresIn:   token.ExpiresIn,
-		Scope:       token.Scope,
-		TokenType:   "bearer",
-	}, err
+		AccessToken:  tokens.AccessToken.Code,
+		RefreshToken: tokens.RefreshToken.Code,
+		ExpiresIn:    tokens.AccessToken.ExpiresIn,
+		Scope:        tokens.AccessToken.Scope,
+		TokenType:    "bearer",
+	}, nil
+}
+
+func (c *controller) RefreshToken(ctx context.Context,
+	req *RefreshTokenReq) (*AccessTokenResponse, error) {
+	accessTokenGenerator, err := c.getAccessTokenGenerator(ctx, req.ClientID)
+	if err != nil {
+		return nil, err
+	}
+	refreshTokenGenerator := generator.NewBasicRefreshTokenGenerator()
+
+	tokens, err := c.oauthManager.RefreshOauthTokens(ctx, &manager.OauthTokensRequest{
+		ClientID:              req.ClientID,
+		ClientSecret:          req.ClientSecret,
+		RefreshToken:          req.RefreshToken,
+		RedirectURL:           req.RedirectURL,
+		Request:               req.Request,
+		AccessTokenGenerator:  accessTokenGenerator,
+		RefreshTokenGenerator: refreshTokenGenerator,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &AccessTokenResponse{
+		AccessToken:  tokens.AccessToken.Code,
+		RefreshToken: tokens.RefreshToken.Code,
+		ExpiresIn:    tokens.AccessToken.ExpiresIn,
+		Scope:        tokens.AccessToken.Scope,
+		TokenType:    "bearer",
+	}, nil
 }

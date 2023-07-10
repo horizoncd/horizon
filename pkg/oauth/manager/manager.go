@@ -42,13 +42,22 @@ type AuthorizeGenerateRequest struct {
 	Request      *http.Request
 }
 
-type AccessTokenGenerateRequest struct {
+type OauthTokensRequest struct {
 	ClientID     string
 	ClientSecret string
 	Code         string // authorization code
+	RefreshToken string // refresh token
 	RedirectURL  string
 
 	Request *http.Request
+
+	AccessTokenGenerator  generator.AccessTokenCodeGenerator
+	RefreshTokenGenerator generator.RefreshTokenCodeGenerator
+}
+
+type OauthTokensResponse struct {
+	AccessToken  *tokenmodels.Token
+	RefreshToken *tokenmodels.Token
 }
 
 type CreateOAuthAppReq struct {
@@ -80,22 +89,24 @@ type Manager interface {
 	ListSecret(ctx context.Context, ClientID string) ([]models.OauthClientSecret, error)
 
 	GenAuthorizeCode(ctx context.Context, req *AuthorizeGenerateRequest) (*tokenmodels.Token, error)
-	GenAccessToken(ctx context.Context, req *AccessTokenGenerateRequest,
-		accessCodeGenerator generator.AccessTokenCodeGenerator) (*tokenmodels.Token, error)
+	GenOauthTokens(ctx context.Context, req *OauthTokensRequest) (*OauthTokensResponse, error)
+	RefreshOauthTokens(ctx context.Context, req *OauthTokensRequest) (*OauthTokensResponse, error)
 }
 
 var _ Manager = &OauthManager{}
 
 func NewManager(oauthAppDAO oauthdao.DAO, tokenStorage tokenstorage.Storage,
 	gen generator.AuthorizationCodeGenerator,
-	authorizeCodeExpireTime time.Duration,
-	accessTokenExpireTime time.Duration) *OauthManager {
+	authorizeCodeExpireTime,
+	accessTokenExpireTime,
+	refreshTokenExpireTime time.Duration) *OauthManager {
 	return &OauthManager{
 		oauthAppDAO:                oauthAppDAO,
 		tokenStorage:               tokenStorage,
 		authorizationCodeGenerator: gen,
 		authorizeCodeExpireTime:    authorizeCodeExpireTime,
 		accessTokenExpireTime:      accessTokenExpireTime,
+		refreshTokenExpireTime:     refreshTokenExpireTime,
 		clientIDGenerate:           GenClientID,
 	}
 }
@@ -106,6 +117,7 @@ type OauthManager struct {
 	authorizationCodeGenerator generator.AuthorizationCodeGenerator
 	authorizeCodeExpireTime    time.Duration
 	accessTokenExpireTime      time.Duration
+	refreshTokenExpireTime     time.Duration
 	clientIDGenerate           ClientIDGenerate
 }
 
@@ -253,14 +265,14 @@ func (m *OauthManager) NewAuthorizationToken(req *AuthorizeGenerateRequest) *tok
 		Scope:       req.Scope,
 		UserID:      req.UserIdentify,
 	}
-	token.Code = m.authorizationCodeGenerator.GenCode(&generator.CodeGenerateInfo{
+	token.Code = m.authorizationCodeGenerator.Generate(&generator.CodeGenerateInfo{
 		Token:   *token,
 		Request: req.Request,
 	})
 	return token
 }
 func (m *OauthManager) NewAccessToken(authorizationCodeToken *tokenmodels.Token,
-	req *AccessTokenGenerateRequest, accessCodeGenerator generator.AccessTokenCodeGenerator) *tokenmodels.Token {
+	req *OauthTokensRequest) *tokenmodels.Token {
 	token := &tokenmodels.Token{
 		ClientID:    req.ClientID,
 		RedirectURI: req.RedirectURL,
@@ -269,7 +281,24 @@ func (m *OauthManager) NewAccessToken(authorizationCodeToken *tokenmodels.Token,
 		Scope:       authorizationCodeToken.Scope,
 		UserID:      authorizationCodeToken.UserID,
 	}
-	token.Code = accessCodeGenerator.GenCode(&generator.CodeGenerateInfo{
+	token.Code = req.AccessTokenGenerator.Generate(&generator.CodeGenerateInfo{
+		Token:   *token,
+		Request: req.Request,
+	})
+	return token
+}
+
+func (m *OauthManager) NewRefreshToken(accessToken *tokenmodels.Token,
+	req *OauthTokensRequest) *tokenmodels.Token {
+	token := &tokenmodels.Token{
+		ClientID:    req.ClientID,
+		RedirectURI: req.RedirectURL,
+		CreatedAt:   time.Now(),
+		ExpiresIn:   m.refreshTokenExpireTime,
+		Scope:       accessToken.Scope,
+		UserID:      accessToken.UserID,
+	}
+	token.Code = req.RefreshTokenGenerator.Generate(&generator.CodeGenerateInfo{
 		Token:   *token,
 		Request: req.Request,
 	})
@@ -291,7 +320,7 @@ func (m *OauthManager) GenAuthorizeCode(ctx context.Context,
 	return authorizationToken, err
 }
 
-func (m *OauthManager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest, codeToken *tokenmodels.Token) error {
+func (m *OauthManager) checkByAuthorizationCode(req *OauthTokensRequest, codeToken *tokenmodels.Token) error {
 	if req.RedirectURL != codeToken.RedirectURI {
 		return perror.Wrapf(herrors.ErrOAuthReqNotValid,
 			"req redirect url = %s, code redirect url = %s", req.RedirectURL, codeToken.RedirectURI)
@@ -302,22 +331,11 @@ func (m *OauthManager) CheckByAuthorizationCode(req *AccessTokenGenerateRequest,
 	return nil
 }
 
-func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGenerateRequest,
-	accessCodeGenerator generator.AccessTokenCodeGenerator) (*tokenmodels.Token, error) {
-	// check client secret ok
-	secrets, err := m.oauthAppDAO.ListSecret(ctx, req.ClientID)
+func (m *OauthManager) GenOauthTokens(ctx context.Context, req *OauthTokensRequest) (*OauthTokensResponse, error) {
+	// check client secret
+	err := m.checkClientSecret(ctx, req)
 	if err != nil {
 		return nil, err
-	}
-	secretOk := false
-	for _, secret := range secrets {
-		if secret.ClientSecret == req.ClientSecret {
-			secretOk = true
-		}
-	}
-	if !secretOk {
-		return nil, perror.Wrapf(herrors.ErrOAuthSecretNotValid,
-			"clientId = %s, secret = %s", req.ClientID, req.ClientSecret)
 	}
 
 	// get authorize token, and check by it
@@ -329,7 +347,7 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 		return nil, err
 	}
 
-	if err := m.CheckByAuthorizationCode(req, authorizationCodeToken); err != nil {
+	if err := m.checkByAuthorizationCode(req, authorizationCodeToken); err != nil {
 		if perror.Cause(err) == herrors.ErrOAuthCodeExpired {
 			if delErr := m.tokenStorage.DeleteByCode(ctx, req.Code); delErr != nil {
 				log.Warningf(ctx, "delete expired code error, err = %v", delErr)
@@ -338,12 +356,17 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 		return nil, err
 	}
 
-	// new access token and store
-	accessToken := m.NewAccessToken(authorizationCodeToken, req, accessCodeGenerator)
-	_, err = m.tokenStorage.Create(ctx, accessToken)
+	// generate access token and store
+	accessToken := m.NewAccessToken(authorizationCodeToken, req)
+	accessTokenInDB, err := m.tokenStorage.Create(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}
+
+	// generate refresh token, store and associate with the access token
+	refreshToken := m.NewRefreshToken(accessToken, req)
+	refreshToken.RefID = accessTokenInDB.ID
+	refreshTokenInDB, err := m.tokenStorage.Create(ctx, refreshToken)
 
 	// delete authorize code
 	err = m.tokenStorage.DeleteByCode(ctx, req.Code)
@@ -351,5 +374,115 @@ func (m *OauthManager) GenAccessToken(ctx context.Context, req *AccessTokenGener
 		log.Warningf(ctx, "Delete Authorization token error, code = %s, error = %v", req.Code, err)
 	}
 
+	return &OauthTokensResponse{
+		AccessToken:  accessTokenInDB,
+		RefreshToken: refreshTokenInDB,
+	}, nil
+}
+
+func (m *OauthManager) RefreshOauthTokens(ctx context.Context,
+	req *OauthTokensRequest) (*OauthTokensResponse, error) {
+	// check client secret
+	err := m.checkClientSecret(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// check refresh token
+	refreshToken, err := m.checkRefreshToken(ctx, req.RefreshToken, req.RedirectURL)
+	if err != nil {
+		return nil, err
+	}
+
+	// refresh associated access token
+	accessToken, err := m.refreshAccessToken(ctx, refreshToken, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// update refresh token code and ref_id
+	refreshToken.Code = req.RefreshTokenGenerator.Generate(&generator.CodeGenerateInfo{
+		Token:   *accessToken,
+		Request: req.Request,
+	})
+	refreshToken.RefID = accessToken.ID
+	err = m.tokenStorage.UpdateByID(ctx, refreshToken.ID, refreshToken)
+	if err != nil {
+		return nil, err
+	}
+	return &OauthTokensResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (m *OauthManager) checkClientSecret(ctx context.Context, req *OauthTokensRequest) error {
+	secrets, err := m.oauthAppDAO.ListSecret(ctx, req.ClientID)
+	if err != nil {
+		return err
+	}
+	for _, secret := range secrets {
+		if secret.ClientSecret == req.ClientSecret {
+			return nil
+		}
+	}
+	return perror.Wrapf(herrors.ErrOAuthSecretNotValid,
+		"clientId = %s, secret = %s", req.ClientID, req.ClientSecret)
+}
+
+func (m *OauthManager) checkRefreshToken(ctx context.Context,
+	refreshToken, redirectURL string) (*tokenmodels.Token, error) {
+	token, err := m.tokenStorage.GetByCode(ctx, refreshToken)
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			return nil, herrors.ErrOAuthRefreshTokenNotExist
+		}
+		return nil, err
+	}
+	if redirectURL != token.RedirectURI {
+		return nil, perror.Wrapf(herrors.ErrOAuthReqNotValid,
+			"req redirect url = %s, token redirect url = %s", redirectURL, token.RedirectURI)
+	}
+	if token.CreatedAt.Add(m.refreshTokenExpireTime).Before(time.Now()) {
+		return nil, perror.Wrap(herrors.ErrOAuthRefreshTokenExpired, "")
+	}
+	return token, nil
+}
+
+func (m *OauthManager) refreshAccessToken(ctx context.Context, refreshToken *tokenmodels.Token,
+	req *OauthTokensRequest) (*tokenmodels.Token, error) {
+	accessToken, err := m.tokenStorage.GetByID(ctx, refreshToken.RefID)
+	accessTokenNotFound := false
+	if err != nil {
+		if _, ok := perror.Cause(err).(*herrors.HorizonErrNotFound); ok {
+			// TODO(zhuxu): remove this log after adding token cleanup policy
+			log.Warningf(ctx, "associated access token does not exist, id: %d", refreshToken.RefID)
+			accessTokenNotFound = true
+		} else {
+			return nil, err
+		}
+	}
+	if accessTokenNotFound {
+		// generate new access token and insert to db
+		token := m.NewAccessToken(&tokenmodels.Token{
+			Scope:  refreshToken.Scope,
+			UserID: refreshToken.UserID,
+		}, req)
+		accessToken, err = m.tokenStorage.Create(ctx, token)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// update token code and creation time
+		accessToken.Code = req.AccessTokenGenerator.Generate(&generator.CodeGenerateInfo{
+			Token:   *accessToken,
+			Request: req.Request,
+		})
+		accessToken.CreatedAt = time.Now()
+		err = m.tokenStorage.UpdateByID(ctx, accessToken.ID, accessToken)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return accessToken, nil
 }

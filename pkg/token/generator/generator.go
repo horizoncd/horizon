@@ -29,6 +29,7 @@ const (
 	HorizonAppUserToServerAccessTokenPrefix = "hu_"
 	OauthAPPAccessTokenPrefix               = "ho_"
 	AccessTokenPrefix                       = "ha_"
+	RefreshTokenPrefix                      = "hr_"
 )
 
 func NewAuthorizeGenerator() AuthorizationCodeGenerator {
@@ -47,6 +48,10 @@ func NewGeneralAccessTokenGenerator() AccessTokenCodeGenerator {
 	return &GeneralAccessTokenGenerator{prefix: AccessTokenPrefix}
 }
 
+func NewBasicRefreshTokenGenerator() RefreshTokenCodeGenerator {
+	return &BasicRefreshTokenGenerator{prefix: RefreshTokenPrefix}
+}
+
 type AuthorizeGenerator struct{}
 
 type BasicAccessTokenGenerator struct {
@@ -57,7 +62,11 @@ type GeneralAccessTokenGenerator struct {
 	prefix string
 }
 
-func (g *AuthorizeGenerator) GenCode(info *CodeGenerateInfo) string {
+type BasicRefreshTokenGenerator struct {
+	prefix string
+}
+
+func (g *AuthorizeGenerator) Generate(info *CodeGenerateInfo) string {
 	buf := bytes.NewBufferString(info.Token.ClientID)
 	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
 	token := uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes())
@@ -66,19 +75,30 @@ func (g *AuthorizeGenerator) GenCode(info *CodeGenerateInfo) string {
 	return code
 }
 
-func (g *BasicAccessTokenGenerator) GenCode(info *CodeGenerateInfo) string {
-	buf := bytes.NewBufferString(info.Token.ClientID)
-	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
-	buf.WriteString(strconv.FormatInt(info.Token.CreatedAt.UnixNano(), 10))
-	access := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))
-	access = g.prefix + strings.ToUpper(strings.TrimRight(access, "="))
-	return access
+func (g *BasicAccessTokenGenerator) Generate(info *CodeGenerateInfo) string {
+	access := encodeInfoWithClient(info)
+	code := g.prefix + strings.ToUpper(strings.TrimRight(access, "="))
+	return code
 }
 
-func (g *GeneralAccessTokenGenerator) GenCode(info *CodeGenerateInfo) string {
+func (g *GeneralAccessTokenGenerator) Generate(info *CodeGenerateInfo) string {
 	buf := bytes.NewBufferString(time.Now().String())
 	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
 	code := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))
 	code = g.prefix + strings.ToUpper(strings.TrimRight(code, "="))
 	return code
+}
+
+func (g *BasicRefreshTokenGenerator) Generate(info *CodeGenerateInfo) string {
+	access := encodeInfoWithClient(info)
+	code := g.prefix + strings.ToUpper(strings.TrimRight(access, "="))
+	return code
+}
+
+func encodeInfoWithClient(info *CodeGenerateInfo) string {
+	buf := bytes.NewBufferString(info.Token.ClientID)
+	buf.WriteString(strconv.Itoa(int(info.Token.UserID)))
+	buf.WriteString(strconv.FormatInt(info.Token.CreatedAt.UnixNano(), 10))
+	access := base64.URLEncoding.EncodeToString([]byte(uuid.NewMD5(uuid.Must(uuid.NewRandom()), buf.Bytes()).String()))
+	return access
 }

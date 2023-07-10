@@ -61,6 +61,22 @@ func (d *storage) GetByCode(ctx context.Context, code string) (*models.Token, er
 	return &token, nil
 }
 
+func (d *storage) UpdateByID(ctx context.Context, id uint, token *models.Token) error {
+	tokenInDB, err := d.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	// can only update code, created_at and ref_id
+	tokenInDB.Code = token.Code
+	tokenInDB.CreatedAt = token.CreatedAt
+	tokenInDB.RefID = token.RefID
+	result := d.db.WithContext(ctx).Save(tokenInDB)
+	if result.Error != nil {
+		return herrors.NewErrUpdateFailed(herrors.TokenInDB, result.Error.Error())
+	}
+	return nil
+}
+
 func (d *storage) DeleteByID(ctx context.Context, id uint) error {
 	result := d.db.WithContext(ctx).Exec(common.DeleteTokenByID, id)
 	return result.Error

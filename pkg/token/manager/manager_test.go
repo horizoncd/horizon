@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 
 func TestTokenBasic(t *testing.T) {
 	// create
-	code := userAccessTokenGenerator.GenCode(&generator.CodeGenerateInfo{
+	code := userAccessTokenGenerator.Generate(&generator.CodeGenerateInfo{
 		Token: tokenmodels.Token{UserID: aUser.GetID()},
 	})
 	token := &tokenmodels.Token{

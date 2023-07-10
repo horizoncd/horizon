@@ -26,9 +26,13 @@ type CodeGenerateInfo struct {
 }
 
 type AuthorizationCodeGenerator interface {
-	GenCode(info *CodeGenerateInfo) string
+	Generate(info *CodeGenerateInfo) string
 }
 
 type AccessTokenCodeGenerator interface {
-	GenCode(info *CodeGenerateInfo) string
+	Generate(info *CodeGenerateInfo) string
+}
+
+type RefreshTokenCodeGenerator interface {
+	Generate(info *CodeGenerateInfo) string
 }

@@ -27,22 +27,22 @@ const (
 	AccessTokenPath = "/access_token"
 )
 
-func (api *API) RegisterRoute(engine *gin.Engine) {
+func (a *API) RegisterRoute(engine *gin.Engine) {
 	apiGroup := engine.Group(BasicPath)
 
 	var routes = route.Routes{
 		{
 			Pattern:     AuthorizePath,
 			Method:      http.MethodGet,
-			HandlerFunc: api.HandleAuthorizationGetReq,
+			HandlerFunc: a.HandleAuthorizationGetReq,
 		}, {
 			Pattern:     AuthorizePath,
 			Method:      http.MethodPost,
-			HandlerFunc: api.HandleAuthorizationReq,
+			HandlerFunc: a.HandleAuthorizationReq,
 		}, {
 			Pattern:     AccessTokenPath,
 			Method:      http.MethodPost,
-			HandlerFunc: api.HandleAccessTokenReq,
+			HandlerFunc: a.HandleAccessTokenReq,
 		},
 	}
 	route.RegisterRoutes(apiGroup, routes)

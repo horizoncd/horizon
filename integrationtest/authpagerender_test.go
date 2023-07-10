@@ -65,6 +65,7 @@ var (
 	ctx                   = context.WithValue(context.Background(), common.UserContextKey(), aUser)
 	authorizeCodeExpireIn = time.Minute * 30
 	accessTokenExpireIn   = time.Second * 3
+	refreshtokenExpireIn  = time.Minute * 30
 	manager               *managerparam.Manager
 )
 
@@ -121,7 +122,7 @@ func TestServer(t *testing.T) {
 	tokenStorage := tokenstorage.NewStorage(db)
 	oauthAppDAO := oauthdao.NewDAO(db)
 	oauthManager := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
-		authorizeCodeExpireIn, accessTokenExpireIn)
+		authorizeCodeExpireIn, accessTokenExpireIn, refreshtokenExpireIn)
 	clientID := "ho_t65dvkmfqb8v8xzxfbc5"
 	clientIDGen := func(appType models.AppType) string {
 		return clientID

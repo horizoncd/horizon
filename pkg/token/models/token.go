@@ -35,5 +35,8 @@ type Token struct {
 	ExpiresIn time.Duration `gorm:"column:expires_in"`
 	Scope     string        `gorm:"column:scope"`
 
+	// access token id when code type is refresh_token
+	RefID uint `gorm:"column:ref_id"`
+
 	UserID uint `gorm:"column:user_id"`
 }

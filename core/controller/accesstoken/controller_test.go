@@ -94,11 +94,12 @@ func TestMain(m *testing.M) {
 
 	authorizeCodeExpireIn := time.Second * 3
 	accessTokenExpireIn := time.Hour * 24
+	refreshTokenExpireIn := time.Hour * 24 * 30
 
 	tokenStorage := tokenstorage.NewStorage(db)
 	oauthAppDAO := oauthdao.NewDAO(db)
-	oauthMgr := oauthmanager.NewManager(oauthAppDAO, tokenStorage,
-		generator.NewAuthorizeGenerator(), authorizeCodeExpireIn, accessTokenExpireIn)
+	oauthMgr := oauthmanager.NewManager(oauthAppDAO, tokenStorage, generator.NewAuthorizeGenerator(),
+		authorizeCodeExpireIn, accessTokenExpireIn, refreshTokenExpireIn)
 
 	parameter := &param.Param{
 		Manager:       manager,
