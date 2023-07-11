@@ -83,6 +83,7 @@ oauth:
   oauthHTMLLocation: ""
   authorizeCodeExpireIn: 10m
   accessTokenExpireIn: 24h
+  refreshTokenExpireIn: 720h
 
 tokenConfig:
   jwtSigningKey: ""
